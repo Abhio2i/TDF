@@ -1,0 +1,56 @@
+
+#ifndef HIERARCHYTREE_H
+#define HIERARCHYTREE_H
+
+#include <QWidget>
+#include <QTreeWidget>
+#include <QMap>
+#include <QVariant>
+
+class ContextMenu;
+
+class HierarchyTree : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit HierarchyTree(QWidget *parent = nullptr);
+    ~HierarchyTree();
+    QTreeWidget* getTreeWidget();
+    // Item management methods
+    void profileAdded(QString ID, QString profileName);
+    void folderAdded(QString parentID, QString ID, QString folderName);
+    void entityAdded(QString parentID, QString ID, QString entityName);
+    void componentAdded(QString parentID, QString componentName);
+    // Item removal methods
+    void profileRemoved(QString ID);
+    void folderRemoved(QString ID);
+    void entityRemoved(QString ID);
+
+    ///////////////////////
+    void componentRemoved(QString entityID, QString componentName); // New slot for component removal
+    // Renaming methods
+    void profileRenamed(QString ID, QString name);
+    void folderRenamed(QString ID, QString name);
+    void entityRenamed(QString ID, QString name);
+    ContextMenu* getContextMenu() const { return contextMenu; }
+
+signals:
+    void itemSelected(QVariantMap data);
+    void copyItemRequested(QVariantMap data);
+    void pasteItemRequested(QVariantMap targetData);
+    //=====================
+    void removeComponentRequested(QString entityID, QString componentName); // New signal for component removal
+protected:
+    void showContextMenu(const QPoint &pos);
+    void contextMenuEvent(QContextMenuEvent *event);
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
+private:
+    QTreeWidget *tree;
+    ContextMenu *contextMenu;
+    QMap<QString, QTreeWidgetItem*> Items;
+
+};
+
+#endif // HIERARCHYTREE_H
