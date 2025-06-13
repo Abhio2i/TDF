@@ -6,8 +6,8 @@
 #include <QDockWidget>
 #include <QWidget>
 #include <GUI/Tacticaldisplay/canvaswidget.h>
-#include <core/Components/transform.h>
-#include <core/Components/mesh.h>
+#include <core/Hierarchy/Components/transform.h>
+#include <core/Hierarchy/Components/mesh.h>
 #include <QSplitter>
 #include "canvaswidget.h"
 #include "GUI/scene3dwidget/scene3dwidget.h"

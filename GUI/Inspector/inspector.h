@@ -2,6 +2,7 @@
 #ifndef INSPECTOR_H
 #define INSPECTOR_H
 
+/* Includes section */
 #include <QDockWidget>
 #include <QTableWidget>
 #include <QJsonObject>
@@ -10,18 +11,21 @@
 #include <QWheelEvent>
 #include <QPushButton>
 #include <QMenu>
-#include "core/structure/hierarchy.h"
-#include <QListWidget>
 
+#include <QListWidget>
+#include "core/Hierarchy/hierarchy.h"
+class CustomParameterDialog;
+
+/* WheelableLineEdit class section */
 class WheelableLineEdit : public QLineEdit {
     Q_OBJECT
 public:
     explicit WheelableLineEdit(QWidget *parent = nullptr);
-
 protected:
     void wheelEvent(QWheelEvent *event) override;
 };
 
+/* Inspector class section */
 class Inspector : public QDockWidget
 {
     Q_OBJECT
@@ -40,11 +44,14 @@ signals:
     void foucsEntity(QString ID);
     void valueChanged(QString ID, QString name, QJsonObject delta);
     void addTabRequested();
+    void parameterChanged(QString ID, QString name, QString key, QString parameterType, bool add); // Added signal
 
 private slots:
     void copyCurrentComponent();
     void pasteToCurrentComponent();
     void handleAddTab();
+    void handleAddParameter();
+    void handleRemoveParameter();
 
 private:
     QTableWidget *tableWidget;
@@ -52,11 +59,13 @@ private:
     QString ConnectedID;
     QString Name;
     QMap<int, QString> rowToKeyPath;
+    QSet<QString> customParameterKeys;
     QWidget *titleBarWidget;
     QPushButton *menuButton;
     QJsonObject copiedComponentData;
     QString copiedComponentType;
     Hierarchy* hierarchy = nullptr;
+
     void setupUI();
     void setupTitleBar();
     QMenu *createContextMenu();

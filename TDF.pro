@@ -22,6 +22,9 @@ SOURCES += \
     GUI/Hierarchytree/contextmenu.cpp \
     GUI/Hierarchytree/hierarchyconnector.cpp \
     GUI/Hierarchytree/hierarchytree.cpp \
+    # GUI/Inspector/customparameterdialog.cpp \
+    # GUI/Inspector/customparameterdialog.cpp \
+    GUI/Inspector/customparameterdialog.cpp \
     GUI/Inspector/inspector.cpp \
     GUI/Menubars/menubar.cpp \
     GUI/Navigation/navigationpage.cpp \
@@ -240,48 +243,81 @@ SOURCES += \
     bullet/btBulletDynamicsAll.cpp \
     bullet/btLinearMathAll.cpp \
     bullet/clew/clew.c \
-    core/Components/attachedenitities.cpp \
-    core/Components/collider.cpp \
-    core/Components/component.cpp \
-    core/Components/dynamicmodel.cpp \
-    core/Components/formation.cpp \
-    core/Components/mesh.cpp \
-    core/Components/meshrenderer2d.cpp \
-    core/Components/mission.cpp \
-    core/Components/networkobject.cpp \
-    core/Components/rigidbody.cpp \
-    core/Components/trajectory.cpp \
-    core/Components/transform.cpp \
+    # core/Components/attachedenitities.cpp \
+    # core/Components/collider.cpp \
+    # core/Components/component.cpp \
+    # core/Components/dynamicmodel.cpp \
+    # core/Components/formation.cpp \
+    # core/Components/mesh.cpp \
+    # core/Components/meshrenderer2d.cpp \
+    # core/Components/mission.cpp \
+    # core/Components/networkobject.cpp \
+    # core/Components/rigidbody.cpp \
+    # core/Components/trajectory.cpp \
+    # core/Components/transform.cpp \
     core/Config/scenarioconfig.cpp \
     core/Config/sessionmanager.cpp \
     core/Debug/console.cpp \
     core/Debug/frame.cpp \
     core/Debug/profiler.cpp \
     core/GlobalRegistry.cpp \
+    core/Hierarchy/Components/attachedenitities.cpp \
+    core/Hierarchy/Components/collider.cpp \
+    core/Hierarchy/Components/component.cpp \
+    core/Hierarchy/Components/dynamicmodel.cpp \
+    core/Hierarchy/Components/formation.cpp \
+    core/Hierarchy/Components/mesh.cpp \
+    core/Hierarchy/Components/meshrenderer2d.cpp \
+    core/Hierarchy/Components/mission.cpp \
+    core/Hierarchy/Components/networkobject.cpp \
+    core/Hierarchy/Components/rigidbody.cpp \
+    core/Hierarchy/Components/trajectory.cpp \
+    core/Hierarchy/Components/transform.cpp \
+    core/Hierarchy/EntityProfiles/fixedpoints.cpp \
+    core/Hierarchy/EntityProfiles/iff.cpp \
+    core/Hierarchy/EntityProfiles/platform.cpp \
+    core/Hierarchy/EntityProfiles/radio.cpp \
+    core/Hierarchy/EntityProfiles/sensor.cpp \
+    core/Hierarchy/EntityProfiles/weapons.cpp \
+    core/Hierarchy/Struct/action.cpp \
+    core/Hierarchy/Struct/color.cpp \
+    core/Hierarchy/Struct/condition.cpp \
+    core/Hierarchy/Struct/constants.cpp \
+    core/Hierarchy/Struct/formationposition.cpp \
+    core/Hierarchy/Struct/geocords.cpp \
+    core/Hierarchy/Struct/parameter.cpp \
+    core/Hierarchy/Struct/task.cpp \
+    core/Hierarchy/Struct/vector.cpp \
+    core/Hierarchy/Struct/waypoints.cpp \
+    core/Hierarchy/Utils/entityutils.cpp \
+    core/Hierarchy/entity.cpp \
+    core/Hierarchy/folder.cpp \
+    core/Hierarchy/hierarchy.cpp \
+    core/Hierarchy/profilecategaory.cpp \
     core/InputSystem/inputmanager.cpp \
     core/Network/netwoktransport.cpp \
     core/Network/networkmanager.cpp \
     core/Plugins/pluginmanager.cpp \
     core/Render/scenerenderer.cpp \
     core/Simulation/simulation.cpp \
-    core/Struct/action.cpp \
-    core/Struct/color.cpp \
-    core/Struct/condition.cpp \
-    core/Struct/constants.cpp \
-    core/Struct/formationposition.cpp \
-    core/Struct/geocords.cpp \
-    core/Struct/parameter.cpp \
-    core/Struct/task.cpp \
-    core/Struct/vector.cpp \
-    core/Struct/waypoints.cpp \
+    # core/Struct/action.cpp \
+    # core/Struct/color.cpp \
+    # core/Struct/condition.cpp \
+    # core/Struct/constants.cpp \
+    # core/Struct/formationposition.cpp \
+    # core/Struct/geocords.cpp \
+    # core/Struct/parameter.cpp \
+    # core/Struct/task.cpp \
+    # core/Struct/vector.cpp \
+    # core/Struct/waypoints.cpp \
     core/Utility/uuid.cpp \
     core/structure/database.cpp \
-    core/structure/entity.cpp \
-    core/structure/folder.cpp \
-    core/structure/hierarchy.cpp \
+    # core/structure/entity.cpp \
+    # core/structure/folder.cpp \
+    # core/structure/hierarchy.cpp \
     core/structure/missioncreator.cpp \
     core/structure/missionexcuter.cpp \
-    core/structure/profilecategaory.cpp \
+    # core/structure/profilecategaory.cpp \
     core/structure/runtime.cpp \
     core/structure/scenario.cpp \
     main.cpp
@@ -296,6 +332,11 @@ HEADERS += \
     GUI/Hierarchytree/contextmenu.h \
     GUI/Hierarchytree/hierarchyconnector.h \
     GUI/Hierarchytree/hierarchytree.h \
+    GUI/Inspector/customparameterdialog.h \
+    GUI/Inspector/customparameterdialog.h \
+    GUI/Inspector/customparameterdialog.h \
+    GUI/Inspector/customparameterdialog.h \
+    GUI/Inspector/customparameterdialog.h \
     GUI/Inspector/inspector.h \
     GUI/Menubars/menubar.h \
     GUI/Navigation/navigationpage.h \
@@ -694,6 +735,39 @@ HEADERS += \
     core/Debug/frame.h \
     core/Debug/profiler.h \
     core/GlobalRegistry.h \
+    core/Hierarchy/Components/attachedenitities.h \
+    core/Hierarchy/Components/collider.h \
+    core/Hierarchy/Components/component.h \
+    core/Hierarchy/Components/dynamicmodel.h \
+    core/Hierarchy/Components/formation.h \
+    core/Hierarchy/Components/mesh.h \
+    core/Hierarchy/Components/meshrenderer2d.h \
+    core/Hierarchy/Components/mission.h \
+    core/Hierarchy/Components/networkobject.h \
+    core/Hierarchy/Components/rigidbody.h \
+    core/Hierarchy/Components/trajectory.h \
+    core/Hierarchy/Components/transform.h \
+    core/Hierarchy/EntityProfiles/fixedpoints.h \
+    core/Hierarchy/EntityProfiles/iff.h \
+    core/Hierarchy/EntityProfiles/platform.h \
+    core/Hierarchy/EntityProfiles/radio.h \
+    core/Hierarchy/EntityProfiles/sensor.h \
+    core/Hierarchy/EntityProfiles/weapons.h \
+    core/Hierarchy/Struct/action.h \
+    core/Hierarchy/Struct/color.h \
+    core/Hierarchy/Struct/condition.h \
+    core/Hierarchy/Struct/constants.h \
+    core/Hierarchy/Struct/formationposition.h \
+    core/Hierarchy/Struct/geocords.h \
+    core/Hierarchy/Struct/parameter.h \
+    core/Hierarchy/Struct/task.h \
+    core/Hierarchy/Struct/vector.h \
+    core/Hierarchy/Struct/waypoints.h \
+    core/Hierarchy/Utils/entityutils.h \
+    core/Hierarchy/entity.h \
+    core/Hierarchy/folder.h \
+    core/Hierarchy/hierarchy.h \
+    core/Hierarchy/profilecategaory.h \
     core/InputSystem/inputmanager.h \
     core/Network/netwoktransport.h \
     core/Network/networkmanager.h \

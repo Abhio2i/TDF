@@ -3,11 +3,11 @@
 #define CANVASWIDGET_H
 #include <QWidget>
 #include <QPainter>
-#include <core/Struct/vector.h>
-#include <core/Components/mesh.h>
-#include <core/Components/collider.h>
+#include <core/Hierarchy/Struct/vector.h>
+#include <core/Hierarchy/Components/mesh.h>
+#include <core/Hierarchy/Components/collider.h>
 #include <QMouseEvent>
-
+/* MeshEntry structure section */
 struct MeshEntry {
     QString name;
     Vector* position;
@@ -17,31 +17,34 @@ struct MeshEntry {
     Mesh* mesh;
     Collider* collider;
 };
-
+/* TransformMode enumeration section */
 enum TransformMode {
     Panning,
     Translate,
     Rotate,
     Scale
 };
-
+/* Class declaration section */
 class CanvasWidget : public QWidget {
     Q_OBJECT
 public:
+        /* Constructor section */
     CanvasWidget(QWidget *parent = nullptr);
+        /* Public members section */
     std::unordered_map<std::string, MeshEntry> Meshes;
     std::string selectedEntityId;
-    TransformMode currentMode = Translate; // Default mode
+    TransformMode currentMode = Translate;
+      /* Rendering and mode control section */
     void Render(float deltatime);
     void setTransformMode(TransformMode mode);
-
+  /* Simulation and editor control section */
     void simulation();
     void editor();
-    //=============grid===
+   /* Grid visibility and settings section */
     void setXGridVisible(bool visible) { showXGrid = visible; update(); }
     void setYGridVisible(bool visible) { showYGrid = visible; update(); }
     void setGridOpacity(int opacity) { gridOpacity = opacity; update(); }
-    //=====================================================
+
     void toggleColliders(bool show) { showColliders = show; update(); }
     void toggleMesh(bool show) { showMesh = show; update(); }
     void toggleOutline(bool show) { showOutline = show; update(); }

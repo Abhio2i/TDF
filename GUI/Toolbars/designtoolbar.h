@@ -6,7 +6,7 @@
 #include <QToolBar>
 #include <QAction>
 #include <QMenu>
-#include <core/Components/transform.h>
+#include <core/Hierarchy/Components/transform.h>
 
 
 

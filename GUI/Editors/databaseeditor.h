@@ -21,7 +21,7 @@ public:
 
 private slots:
     void addInspectorTab();
-    void showFeedbackWindow(); // New slot for Feedback window
+    void showFeedbackWindow();
 
 private:
     void setupMenuBar();

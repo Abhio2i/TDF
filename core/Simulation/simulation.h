@@ -1,19 +1,19 @@
+
 #ifndef SIMULATION_H
 #define SIMULATION_H
 
-// #define BT_NO_SIMD
-// #define BT_NO_SIMD_OPERATOR_OVERLOADS
-#include <btBulletDynamicsCommon.h> // 🆕 Bullet include
-
-#include <qobject.h>
-#include "core/structure/entity.h"
-#include "qtimer.h"
+#include <btBulletDynamicsCommon.h>
+#include <QObject>
+#include <QTimer>
 #include <QElapsedTimer>
-#include <core/Struct/vector.h>
-#include <core/Components/transform.h>
-#include <core/Components/collider.h>
-#include <core/Components/rigidbody.h>
-
+#include <core/Hierarchy/entity.h>
+#include <core/Hierarchy/EntityProfiles/platform.h>
+#include <core/Hierarchy/Struct/vector.h>
+#include <core/Hierarchy/Components/transform.h>
+#include <core/Hierarchy/Components/collider.h>
+#include <core/Hierarchy/Components/rigidbody.h>
+#include <core/Hierarchy/Components/dynamicmodel.h> // Added for DynamicModel
+#include <unordered_map>
 
 struct PhysicsComponent {
     std::string name;
@@ -23,13 +23,12 @@ struct PhysicsComponent {
     Collider *collider;
 };
 
-class Simulation: public QObject
-{
+class Simulation : public QObject {
     Q_OBJECT
 public:
     Simulation();
     ~Simulation();
-     std::unordered_map<std::string, PhysicsComponent> physicsComponent;
+    std::unordered_map<std::string, PhysicsComponent> physicsComponent;
 
     int SimulationFrameRate;
     int PhysicsUpdateFrameRate;
@@ -48,15 +47,13 @@ public:
     void toJson();
     void fromJson();
 
-
-
-
     void calculatePhysics();
+
 private:
     void frame();
 
 public slots:
-    void entityAdded(QString parentID,Entity* entity);
+    void entityAdded(QString parentID, Entity* entity);
     void entityRemoved(QString ID);
     void entityUpdate(QString ID);
 
@@ -74,9 +71,8 @@ private:
     btCollisionDispatcher* dispatcher;
     btSequentialImpulseConstraintSolver* solver;
     btDiscreteDynamicsWorld* dynamicsWorld;
-    std::unordered_map<std::string, btRigidBody*> bulletBodies; // 🆕 Entity ID -> Bullet Body map
+    std::unordered_map<std::string, btRigidBody*> bulletBodies;
 
-private:
     QTimer *updateTimer;
     float deltaTime;
     float speed;

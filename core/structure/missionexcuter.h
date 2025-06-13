@@ -1,8 +1,8 @@
 #ifndef MISSIONEXCUTER_H
 #define MISSIONEXCUTER_H
 #include <QObject>
-#include <core/structure/entity.h>
-#include <core/Struct/task.h>
+#include <core/Hierarchy/entity.h>
+#include <core/Hierarchy/Struct/task.h>
 
 class MissionExcuter: public QObject
 {

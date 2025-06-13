@@ -2,9 +2,9 @@
 #include <QJsonDocument>
 
 #include <core/Debug/console.h>
-#include <core/structure/profilecategaory.h>
-#include <core/structure/folder.h>
-#include <core/structure/entity.h>
+#include <core/Hierarchy/profilecategaory.h>
+#include <core/Hierarchy/folder.h>
+#include <core/Hierarchy/entity.h>
 Scenario::Scenario() {
     hierarchy = new Hierarchy();
     Library = new Hierarchy();

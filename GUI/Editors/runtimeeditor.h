@@ -12,7 +12,7 @@
 #include "GUI/Toolbars/runtimetoolbar.h"
 #include "GUI/Toolbars/networktoolbar.h"
 #include "core/Debug/console.h"
-#include "core/structure/hierarchy.h"
+#include "core/Hierarchy/hierarchy.h"
 #include <QMainWindow>
 #include <QDockWidget>
 
@@ -39,7 +39,7 @@ private:
     void setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures);
     void setupToolBarConnections();
 
-    // Hierarchy components
+    // core Hierarchy components
     HierarchyTree *treeView;
     Inspector *inspector;
     Console *console;
@@ -67,9 +67,9 @@ private:
     // Toolbars
     DesignToolBar *designToolBar;
     RuntimeToolBar *runtimeToolBar;
-    NetworkToolbar *networkToolBar; // Added for NetworkToolbar
+    NetworkToolbar *networkToolBar;
 
-    QList<QDockWidget*> inspectorDocks; // To keep track of all inspector docks
+    QList<QDockWidget*> inspectorDocks;
     int inspectorCount = 0;
     QList<QMetaObject::Connection> inspectorConnections;
     QList<Inspector*> inspectors;

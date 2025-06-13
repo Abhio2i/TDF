@@ -2,7 +2,7 @@
 #define PLUGINMANAGER_H0
 #include <qobject.h>
 #include <core/Config/scenarioconfig.h>
-#include <core/structure/hierarchy.h>
+#include <core/Hierarchy/hierarchy.h>
 #include <core/Config/sessionmanager.h>
 #include <core/Simulation/simulation.h>
 #include <core/Render/scenerenderer.h>

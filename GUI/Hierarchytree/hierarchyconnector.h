@@ -1,19 +1,24 @@
-
+/* Header guard section */
 #ifndef HIERARCHYCONNECTOR_H
 #define HIERARCHYCONNECTOR_H
 
+/* Includes section */
 #include "GUI/Inspector/inspector.h"
 #include "GUI/Tacticaldisplay/tacticaldisplay.h"
 #include "hierarchytree.h"
 
-#include <core/structure/hierarchy.h>
+#include <core/Hierarchy/hierarchy.h>
 #include <QMainWindow>
 #include <QObject>
 
+/* Class declaration section */
 class HierarchyConnector : public QObject
 {
+    /* Qt meta-object section */
     Q_OBJECT
+
 public:
+    /* Public methods section */
     static HierarchyConnector* instance();
 
     void connectSignals(Hierarchy* hierarchy, HierarchyTree* treeView,
@@ -29,10 +34,12 @@ public:
     void setLibTreeView(HierarchyTree* tree) { libTreeView = tree; }
 
 public slots:
+    /* Public slots section */
     void handleLibraryToHierarchyDrop(QVariantMap sourceData, QVariantMap targetData);
     void handleHierarchyToLibraryDrop(QVariantMap sourceData, QVariantMap targetData);
 
 private:
+    /* Private members section */
     explicit HierarchyConnector(QObject* parent = nullptr);
     static HierarchyConnector* m_instance;
 
@@ -43,4 +50,5 @@ private:
     HierarchyTree* libTreeView = nullptr;
 };
 
+/* End of header guard section */
 #endif

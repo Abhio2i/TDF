@@ -1,8 +1,8 @@
 #ifndef MISSIONCREATOR_H
 #define MISSIONCREATOR_H
 #include <QObject>
-#include <core/structure/folder.h>
-#include <core/Components/mission.h>
+#include <core/Hierarchy/folder.h>
+#include <core/Hierarchy/Components/mission.h>
 
 class MissionCreator: public QObject
 {

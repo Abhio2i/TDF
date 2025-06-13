@@ -17,8 +17,8 @@
 #include "GUI/Toolbars/standardtoolbar.h"
 #include <core/Render/scenerenderer.h>
 #include <core/structure/runtime.h>
-#include <core/Components/transform.h>
-#include <core/Components/mesh.h>
+#include <core/Hierarchy/Components/transform.h>
+#include <core/Hierarchy/Components/mesh.h>
 
 
 /*
@@ -56,9 +56,39 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     HierarchyConnector::instance()->setLibTreeView(libTreeView);
     library = scenario->Library;
 
-    // Connect console output to display
+    // // Connect console output to display
+    // connect(console, &Console::logUpdate, this, [=](std::string log) {
+    //     consoleView->appendText(QString::fromStdString(log));
+    // });
+    consoleView->setConsoleDock(consoleDock);
+
+
     connect(console, &Console::logUpdate, this, [=](std::string log) {
-        consoleView->appendText(QString::fromStdString(log));
+        if (consoleView) {
+            consoleView->appendLog(QString::fromStdString(log));
+            consoleView->appendText(QString::fromStdString(log)); // Also append to Console tab
+        }
+    });
+
+    connect(console, &Console::errorUpdate, this, [=](std::string error) {
+        if (consoleView) {
+            consoleView->appendError(QString::fromStdString(error));
+            consoleView->appendText(QString::fromStdString(error)); // Also append to Console tab
+        }
+    });
+
+    connect(console, &Console::warningUpdate, this, [=](std::string warning) {
+        if (consoleView) {
+            consoleView->appendWarning(QString::fromStdString(warning));
+            consoleView->appendText(QString::fromStdString(warning)); // Also append to Console tab
+        }
+    });
+
+    connect(console, &Console::debugUpdate, this, [=](std::string debug) {
+        if (consoleView) {
+            consoleView->appendDebug(QString::fromStdString(debug));
+            consoleView->appendText(QString::fromStdString(debug)); // Also append to Console tab
+        }
     });
 
     // Setup scene rendering connections
@@ -177,16 +207,11 @@ void ScenarioEditor::setupToolBarConnections()
             tacticalDisplay->mapWidget->setCenter(0, 0);
         }
     });
-
-
     connect(designToolBar->zoomInAction, &QAction::triggered,
             tacticalDisplay, &TacticalDisplay::zoomIn);
     connect(designToolBar->zoomOutAction, &QAction::triggered,
             tacticalDisplay, &TacticalDisplay::zoomOut);
-
-
 }
-
 /*
  * Creates and configures the main menu bar
  */

@@ -56,7 +56,6 @@ void ConsoleView::setupConsoleTabs()
             "background-color: #1E1E1E; "
             "color: white; "
             "border: none; "
-            // "padding: 5px; "
             "}"
             );
     };
@@ -86,10 +85,8 @@ void ConsoleView::setupButtons()
 {
     clearButton->setStyleSheet(
         "QPushButton { "
-
         "color: white; "
         "border: 1px solid #5A5A5A; "
-
         "}"
         "QPushButton:hover { background-color: #4A4A4A; }"
         );
@@ -98,7 +95,6 @@ void ConsoleView::setupButtons()
         "QPushButton { "
         "color: white; "
         "border: 1px solid #5A5A5A; "
-        // "padding: 5px 10px; "
         "}"
         "QPushButton:hover { background-color: #4A4A4A; }"
         );
@@ -119,34 +115,50 @@ void ConsoleView::appendTextToConsole(QTextEdit *console, const QString &text, c
     console->moveCursor(QTextCursor::End);
 }
 
-// Original function - maintains backward compatibility
 void ConsoleView::appendText(const QString &text)
 {
     appendTextToConsole(generalConsole, text, Qt::gray);
+    // Only switch to Console tab if it's explicitly requested or no other tab is active
+    if (consoleDock && consoleDock->isVisible() && tabWidget->currentWidget() != generalConsole) {
+        tabWidget->setCurrentWidget(generalConsole);
+    }
 }
 
 void ConsoleView::appendError(const QString &text)
 {
     appendTextToConsole(errorConsole, text, Qt::red);
-    tabWidget->setCurrentWidget(errorConsole);
+    if (consoleDock && consoleDock->isVisible()) {
+        tabWidget->setCurrentWidget(errorConsole);
+    }
 }
 
 void ConsoleView::appendDebug(const QString &text)
 {
     appendTextToConsole(debugConsole, text, Qt::cyan);
-    tabWidget->setCurrentWidget(debugConsole);
+    if (consoleDock && consoleDock->isVisible()) {
+        tabWidget->setCurrentWidget(debugConsole);
+    }
 }
 
 void ConsoleView::appendWarning(const QString &text)
 {
     appendTextToConsole(warningConsole, text, QColor(255, 165, 0));
-    tabWidget->setCurrentWidget(warningConsole);
+    if (consoleDock && consoleDock->isVisible()) {
+        tabWidget->setCurrentWidget(warningConsole);
+    }
 }
 
 void ConsoleView::appendLog(const QString &text)
 {
     appendTextToConsole(logConsole, text, Qt::gray);
-    tabWidget->setCurrentWidget(logConsole);
+    if (consoleDock && consoleDock->isVisible()) {
+        tabWidget->setCurrentWidget(logConsole);
+    }
+}
+
+void ConsoleView::setConsoleDock(QDockWidget *dock)
+{
+    consoleDock = dock;
 }
 
 void ConsoleView::clearConsole()

@@ -1,6 +1,6 @@
 #ifndef NETWORKMANAGER_H
 #define NETWORKMANAGER_H
-#include "core/structure/profilecategaory.h"
+#include "core/Hierarchy/profilecategaory.h"
 #include <QObject>
 #include <core/Network/netwoktransport.h>
 

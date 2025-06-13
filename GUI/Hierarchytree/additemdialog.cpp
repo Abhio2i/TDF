@@ -1,6 +1,7 @@
 
 #include "GUI/Hierarchytree/additemdialog.h"
-#include "core/structure/entity.h"
+#include "core/Hierarchy/entity.h"
+#include "core/Hierarchy/EntityProfiles/platform.h"
 #include <QDebug>
 #include <QCheckBox>
 #include <QGroupBox>
@@ -74,9 +75,15 @@ void AddItemDialog::setupUI(DialogType type)
     QVBoxLayout *componentsLayout = new QVBoxLayout();
 
     // Create an instance of Entity to get supported components
-    Entity tempEntity(nullptr);
-    std::vector<Component*> supportedComponents = tempEntity.getSupportedComponents();
-
+    // Entity tempEntity(nullptr);
+    // std::vector<Component*> supportedComponents = tempEntity.getSupportedComponents();
+    std::vector<Component*> supportedComponents = {
+        new Transform(),
+        new MeshRenderer2D(),
+        new DynamicModel(),
+        new Rigidbody(),
+        new Collider()
+    };
     // Use a map to track unique components by their display name
     QMap<QString, Component*> uniqueComponents;
 

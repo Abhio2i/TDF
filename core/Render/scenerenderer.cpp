@@ -1,36 +1,63 @@
- #include "scenerenderer.h"
+
+#include "scenerenderer.h"
+#include <core/Debug/console.h>
 
 SceneRenderer::SceneRenderer() {
-    // updateTimer = new QTimer(this);
-    // elapsedTimer = new QElapsedTimer();
-    // elapsedTimer->start();
-    // lastTime = elapsedTimer->elapsed();
-
-    // connect(updateTimer, &QTimer::timeout, this, [=]() {
-    //     qint64 currentTime = elapsedTimer->elapsed();
-    //     float deltaTime = (currentTime - lastTime) / 1000.0f; // in seconds
-    //     lastTime = currentTime;
-    //     // Optional: emit deltaTime if needed somewhere else
-    //     emit DeltaTimeUpdated(deltaTime);
-    //     QTimer::singleShot(0, this, [=]() {
-    //         emit this->Render(deltaTime);
-    //     });
-
-    // });
-
-    // updateTimer->start(1); // ~100 FPS, adjust as needed
+    meshes = new std::unordered_map<std::string, Mesh>();
 }
 
-void SceneRenderer::entityAdded(QString parentID,Entity* entity){
+void SceneRenderer::entityAdded(QString /*parentID*/, Entity* entity) {
+    Platform* platform = dynamic_cast<Platform*>(entity);
+    if (!platform) {
+        Console::error("Entity is not a Platform");
+        return;
+    }
+
+    if (!platform->transform || !platform->collider || !platform->meshRenderer2d) {
+        Console::error("Required components missing for entity: " + platform->Name);
+        return;
+    }
+
     MeshData meshData;
-    meshData.name = QString::fromStdString(entity->Name);
-    meshData.transform = entity->transform;
-    meshData.collider = entity->collider;
-    meshData.Meshes = entity->meshRenderer2d->Meshes;
-    emit addMesh(QString::fromStdString(entity->ID),meshData);
+    meshData.name = QString::fromStdString(platform->Name);
+    meshData.transform = platform->transform;
+    meshData.collider = platform->collider;
+    meshData.Meshes = platform->meshRenderer2d->Meshes;
+    emit addMesh(QString::fromStdString(platform->ID), meshData);
+
+
 }
 
-void SceneRenderer::entityRemoved(QString ID){
+void SceneRenderer::entityRemoved(QString ID) {
     emit removeMesh(ID);
+    // Remove from meshes map
+    std::string key = ID.toStdString();
+    auto it = meshes->begin();
+    while (it != meshes->end()) {
+        if (it->first.find(key) == 0) { // Matches ID prefix
+            it = meshes->erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
+void SceneRenderer::cleanBuffer() {
+    meshes->clear();
+    Console::log("Mesh buffer cleared");
+}
+
+void SceneRenderer::addMeshBuffer() {
+    // Stub: Add mesh data to a buffer (implementation depends on requirements)
+    Console::log("Adding mesh to buffer");
+}
+
+void SceneRenderer::removeBuffer() {
+    // Stub: Remove mesh data from buffer
+    Console::log("Removing mesh from buffer");
+}
+
+void SceneRenderer::getSnapshot() {
+    // Stub: Return a snapshot of the current render state
+    Console::log("Snapshot requested");
+}
