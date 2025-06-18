@@ -1,16 +1,14 @@
- #include "trajectory.h"
+
+
+#include "trajectory.h"
 #include "core/Debug/console.h"
 #include <QJsonArray>
-
+#include <iostream>
 
 Trajectory::Trajectory() {
-    // array.push_back("Ram");
-    // array.push_back("Sita");
-    // array.push_back("Lakshman");
-    // array.push_back("Bharat");
-    // array.push_back("Sukhdev");
-
-
+    Waypoints* waypoin = new Waypoints();
+    waypoin->position = new Vector(0, 0, 0);
+    Trajectories.push_back(waypoin);
 }
 
 QJsonObject Trajectory::toJson() const {
@@ -24,18 +22,14 @@ QJsonObject Trajectory::toJson() const {
     }
     obj["array"] = strArray;
 
-
-    QJsonArray outerArray;
-
-    for (const auto& innerVec : Trajectories) {
-        QJsonArray innerArray;
-        for (const auto& waypoint : innerVec) {
-            innerArray.append(waypoint->toJson());
+    QJsonArray trajArray;
+    for (const Waypoints* waypoint : Trajectories) {
+        if (waypoint) {
+            trajArray.append(waypoint->toJson());
         }
-        outerArray.append(innerArray);
     }
+    obj["trajectories"] = trajArray;
 
-    obj["trajectories"] = outerArray;
     Console::log(obj);
     return obj;
 }
@@ -58,24 +52,41 @@ void Trajectory::fromJson(const QJsonObject& obj) {
     }
 
     if (obj.contains("trajectories") && obj["trajectories"].isArray()) {
+        for (Waypoints* wp : Trajectories) {
+            delete wp->position;
+            delete wp;
+        }
         Trajectories.clear();
 
-        QJsonArray outerArray = obj["trajectories"].toArray();
-        for (const QJsonValue& innerVal : outerArray) {
-            if (!innerVal.isArray()) continue;
-
-            QJsonArray innerArray = innerVal.toArray();
-            std::vector<Waypoints*> innerVec;
-
-            for (const QJsonValue& wpVal : innerArray) {
-                if (wpVal.isObject()) {
-                    Waypoints* wp = new Waypoints();
-                    wp->fromJson(wpVal.toObject());
-                    innerVec.push_back(wp);
-                }
+        QJsonArray trajArray = obj["trajectories"].toArray();
+        for (const QJsonValue& wpVal : trajArray) {
+            if (wpVal.isObject()) {
+                Waypoints* wp = new Waypoints();
+                wp->fromJson(wpVal.toObject());
+                Trajectories.push_back(wp);
             }
-
-            Trajectories.push_back(innerVec);
         }
+    }
+}
+
+bool Trajectory::removeTrajectory(size_t index) {
+    if (index >= Trajectories.size()) {
+        Console::log("Error: Trajectory index out of bounds");
+        return false;
+    }
+    delete Trajectories[index]->position;
+    delete Trajectories[index];
+    Trajectories.erase(Trajectories.begin() + index);
+    return true;
+}
+
+void Trajectory::addTrajectory(Waypoints* waypoint) {
+    if (waypoint) {
+        Trajectories.push_back(waypoint);
+        std::cout << "Trajectory::addTrajectory this=" << this << std::endl;
+        std::cout << "Trajectories size=" << Trajectories.size() << std::endl;
+        std::cout << &Trajectories << ", capacity: " << Trajectories.capacity() << std::endl;
+    } else {
+        Console::error("Attempted to add null waypoint to trajectory");
     }
 }

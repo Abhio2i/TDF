@@ -72,6 +72,7 @@ TacticalDisplay::TacticalDisplay(QWidget *parent) : QWidget(parent) {
     connect(canvas, &CanvasWidget::MoveEntity, scene3dwidget, &Scene3DWidget::MoveEntity);
     connect(canvas, &CanvasWidget::selectEntitybyCursor, scene3dwidget, &Scene3DWidget::selectedEntity);
     connect(scene3dwidget, &Scene3DWidget::selectEntityByCursor, this, &TacticalDisplay::selectedMesh);
+
 }
 void TacticalDisplay::addMesh(QString ID, MeshData meshData)
 {
@@ -84,6 +85,7 @@ void TacticalDisplay::addMesh(QString ID, MeshData meshData)
     entity.size = meshData.transform->size;
     entity.mesh = meshData.Meshes[0];
     entity.collider = meshData.collider;
+    entity.trajectory = meshData.trajectory;
     canvas->Meshes[ID.toStdString()] = entity;
     canvas->update();
 

@@ -1,36 +1,3 @@
-// #include "menubar.h"
-
-// MenuBar::MenuBar(QWidget *parent) : QMenuBar(parent)
-// {
-//     fileMenu = addMenu("File");
-
-//     loadJsonAction = new QAction("📂 Load JSON", this);
-//     saveJsonAction = new QAction("💾 Save JSON", this);
-
-//     fileMenu->addAction(loadJsonAction);
-//     fileMenu->addAction(saveJsonAction);
-
-//     addMenu("Edit");
-//     addMenu("View");
-//     addMenu("Database");
-//     addMenu("Tools");
-//     addMenu("Feedback");
-// }
-
-// QMenu* MenuBar::getFileMenu()
-// {
-//     return fileMenu;
-// }
-
-// QAction* MenuBar::getLoadAction()
-// {
-//     return loadJsonAction;
-// }
-
-// QAction* MenuBar::getSaveAction()
-// {
-//     return saveJsonAction;
-// }
 
 
 #include "menubar.h"

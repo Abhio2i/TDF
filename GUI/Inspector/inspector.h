@@ -1,4 +1,5 @@
 
+
 #ifndef INSPECTOR_H
 #define INSPECTOR_H
 
@@ -11,8 +12,8 @@
 #include <QWheelEvent>
 #include <QPushButton>
 #include <QMenu>
-
 #include <QListWidget>
+#include <QJsonArray>
 #include "core/Hierarchy/hierarchy.h"
 class CustomParameterDialog;
 
@@ -39,12 +40,15 @@ public slots:
     void init(QString ID, QString name, QJsonObject obj);
     int addSimpleRow(int row, const QString &key, const QJsonValue &value);
     void setupValueCell(int row, const QString &fullKey, const QJsonValue &value);
+    void updateTrajectory(QString entityId, QJsonArray waypoints);
 
 signals:
     void foucsEntity(QString ID);
     void valueChanged(QString ID, QString name, QJsonObject delta);
     void addTabRequested();
-    void parameterChanged(QString ID, QString name, QString key, QString parameterType, bool add); // Added signal
+    void parameterChanged(QString ID, QString name, QString key, QString parameterType, bool add);
+
+    void trajectoryWaypointsChanged(QString entityId, QJsonArray waypoints);
 
 private slots:
     void copyCurrentComponent();

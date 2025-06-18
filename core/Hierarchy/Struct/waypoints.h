@@ -10,8 +10,8 @@ class Waypoints: public QObject
     Q_OBJECT
 public:
     Waypoints();
-    Geocords *geocord;
-    Vector *position;
+    Geocords *geocord = nullptr;
+    Vector *position = nullptr;
 
     QJsonObject toJson()const;
     void fromJson(const QJsonObject& obj);

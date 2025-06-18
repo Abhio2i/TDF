@@ -215,7 +215,7 @@ void Feedback::setupOverviewWidget()
         "background-color: #2a3552;"
         "color: #ffffff;"
         );
-    metricsLayout->addWidget(systemStatusLabel, 0, 0, 1, 3); // Span all three columns
+    metricsLayout->addWidget(systemStatusLabel, 0, 0, 1, 3);
 
     // Uptime row
     uptimeLabel = new QLabel("Uptime: 12 h 34 m");
@@ -258,7 +258,7 @@ void Feedback::setupOverviewWidget()
         "   border-radius: 4px;"
         "}"
         );
-    metricsLayout->addWidget(cpuProgressBar, 5, 0, 1, 3); // Span all three columns
+    metricsLayout->addWidget(cpuProgressBar, 5, 0, 1, 3);
 
     overviewFrameLayout->addLayout(metricsLayout);
     mainLayout->addWidget(overviewFrame);

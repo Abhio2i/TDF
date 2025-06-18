@@ -4,6 +4,7 @@
 #include <QDebug>
 #include <QMouseEvent>
 #include <cmath>
+#include <core/Debug/console.h>
 
 CanvasWidget::CanvasWidget(QWidget *parent) : QWidget(parent) {
     setMinimumSize(300, 300);
@@ -17,17 +18,16 @@ CanvasWidget::CanvasWidget(QWidget *parent) : QWidget(parent) {
     fps = 0;
     fpsTimer.start();
 
-    // Timer to update FPS every second
     QTimer* fpsUpdateTimer = new QTimer(this);
     connect(fpsUpdateTimer, &QTimer::timeout, this, [this]() {
         fps = frameCount;
         frameCount = 0;
     });
-    fpsUpdateTimer->start(100); // 1 second interval
+    fpsUpdateTimer->start(100);
 }
 
-void CanvasWidget::Render(float deltatime) {
-    angle += 2.0f;   // increment sweep
+void CanvasWidget::Render(float /*deltatime*/) {
+    angle += 2.0f;
     if (angle >= 360.0f) angle = 0;
     update();
 }
@@ -42,7 +42,151 @@ void CanvasWidget::editor() {
 
 void CanvasWidget::setTransformMode(TransformMode mode) {
     currentMode = mode;
+    if (mode != DrawTrajectory) {
+        setTrajectoryDrawingMode(false);
+    }
     update();
+}
+
+void CanvasWidget::setTrajectoryDrawingMode(bool enabled) {
+    isDrawingTrajectory = enabled;
+    if (enabled) {
+        currentMode = DrawTrajectory;
+        currentTrajectory.clear();
+        setCursor(Qt::CrossCursor);
+        Console::log("Trajectory drawing mode enabled");
+    } else {
+        currentMode = Translate;
+        setCursor(Qt::ArrowCursor);
+        Console::log("Trajectory drawing mode disabled");
+    }
+    update();
+}
+
+void CanvasWidget::saveTrajectory() {
+    Console::log("saveTrajectory called");
+    if (!isDrawingTrajectory) {
+        Console::error("Trajectory drawing mode is not enabled");
+        return;
+    }
+    if (currentTrajectory.empty()) {
+        Console::error("No waypoints to save");
+        return;
+    }
+    if (selectedEntityId.empty()) {
+        Console::error("No entity selected for trajectory");
+        return;
+    }
+
+    Console::log("Attempting to save trajectory for entity: " + selectedEntityId);
+
+    auto it = Meshes.find(selectedEntityId);
+    if (it == Meshes.end()) {
+        Console::error("Selected entity not found in Meshes: " + selectedEntityId);
+        return;
+    }
+
+    MeshEntry& entry = it->second;
+    if (!entry.trajectory) {
+        entry.trajectory = new Trajectory();
+        entry.trajectory->ID = selectedEntityId;
+    }
+
+    entry.trajectory->Trajectories.clear();
+
+    for (Waypoints* waypoint : currentTrajectory) {
+        Waypoints* newWaypoint = new Waypoints();
+        newWaypoint->position = new Vector(waypoint->position->x, waypoint->position->y, waypoint->position->z);
+        entry.trajectory->addTrajectory(newWaypoint);
+    }
+    entry.trajectory->Active = true;
+
+    Console::log("Saved trajectory with " + std::to_string(currentTrajectory.size()) + " waypoints for entity: " + selectedEntityId);
+
+    QJsonObject trajJson = entry.trajectory->toJson();
+    QJsonDocument doc(trajJson);
+    Console::log("Trajectory JSON: " + QString(doc.toJson(QJsonDocument::Indented)).toStdString());
+
+    for (Waypoints* waypoint : currentTrajectory) {
+        delete waypoint->position;
+        delete waypoint;
+    }
+    currentTrajectory.clear();
+
+    QJsonArray waypointsArray;
+    for (const Waypoints* wp : entry.trajectory->Trajectories) {
+        QJsonObject wpObj;
+        QJsonObject posObj;
+        posObj["type"] = "vector";
+        posObj["x"] = wp->position->x;
+        posObj["y"] = wp->position->y;
+        posObj["z"] = wp->position->z;
+        wpObj["position"] = posObj;
+        waypointsArray.append(wpObj);
+    }
+    emit trajectoryUpdated(QString::fromStdString(selectedEntityId), waypointsArray);
+    Console::log("Emitted trajectoryUpdated signal for entity: " + selectedEntityId);
+}
+
+void CanvasWidget::updateWaypointsFromInspector(QString entityId, QJsonArray waypoints) {
+    Console::log("updateWaypointsFromInspector called for entity: " + entityId.toStdString() + " with " + std::to_string(waypoints.size()) + " waypoints");
+
+    auto it = Meshes.find(entityId.toStdString());
+    if (it == Meshes.end()) {
+        Console::error("Entity not found in Meshes: " + entityId.toStdString());
+        return;
+    }
+
+    MeshEntry& entry = it->second;
+    if (!entry.trajectory) {
+        entry.trajectory = new Trajectory();
+        entry.trajectory->ID = entityId.toStdString();
+    }
+
+    for (Waypoints* wp : entry.trajectory->Trajectories) {
+        delete wp->position;
+        delete wp;
+    }
+    entry.trajectory->Trajectories.clear();
+
+    for (const QJsonValue& val : waypoints) {
+        QJsonObject wpObj = val.toObject();
+        if (!wpObj.contains("position")) {
+            Console::error("Invalid waypoint data: missing position");
+            continue;
+        }
+        QJsonObject posObj = wpObj["position"].toObject();
+        Waypoints* newWaypoint = new Waypoints();
+        newWaypoint->position = new Vector(
+            posObj["x"].toDouble(),
+            posObj["y"].toDouble(),
+            posObj["z"].toDouble()
+            );
+        entry.trajectory->addTrajectory(newWaypoint);
+    }
+    entry.trajectory->Active = !waypoints.isEmpty();
+
+    if (isDrawingTrajectory && selectedEntityId == entityId.toStdString()) {
+        for (Waypoints* wp : currentTrajectory) {
+            delete wp->position;
+            delete wp;
+        }
+        currentTrajectory.clear();
+        for (const QJsonValue& val : waypoints) {
+            QJsonObject wpObj = val.toObject();
+            QJsonObject posObj = wpObj["position"].toObject();
+            Waypoints* newWaypoint = new Waypoints();
+            newWaypoint->position = new Vector(
+                posObj["x"].toDouble(),
+                posObj["y"].toDouble(),
+                posObj["z"].toDouble()
+                );
+            currentTrajectory.push_back(newWaypoint);
+        }
+    }
+
+    update();
+    Console::log("Updated trajectory for entity: " + entityId.toStdString() + " with " + std::to_string(entry.trajectory->Trajectories.size()) + " waypoints");
 }
 
 void CanvasWidget::handleMousePress(QMouseEvent *event) {
@@ -52,6 +196,31 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
         setCursor(Qt::ClosedHandCursor);
         return;
     } else if (event->button() == Qt::LeftButton) {
+        if (currentMode == DrawTrajectory && isDrawingTrajectory && !selectedEntityId.empty()) {
+            Waypoints* waypoint = new Waypoints();
+            waypoint->position = new Vector(event->pos().x() - canvasOffset.x(), event->pos().y() - canvasOffset.y(), 0);
+            currentTrajectory.push_back(waypoint);
+            Console::log("Added waypoint at (" + std::to_string(waypoint->position->x) + ", " + std::to_string(waypoint->position->y) + ")");
+
+            QJsonArray waypointsArray;
+            for (const Waypoints* wp : currentTrajectory) {
+                QJsonObject wpObj;
+                QJsonObject posObj;
+                posObj["type"] = "vector";
+                posObj["x"] = wp->position->x;
+                posObj["y"] = wp->position->y;
+                posObj["z"] = wp->position->z;
+                wpObj["position"] = posObj;
+                waypointsArray.append(wpObj);
+            }
+
+            QJsonDocument doc(waypointsArray);
+            Console::log("Emitting trajectoryUpdated with waypoints: " + QString(doc.toJson(QJsonDocument::Indented)).toStdString());
+
+            emit trajectoryUpdated(QString::fromStdString(selectedEntityId), waypointsArray);
+            update();
+            return;
+        }
         for (auto& [id, entry] : Meshes) {
             float dx = event->pos().x() - entry.position->x - canvasOffset.x();
             float dy = event->pos().y() - entry.position->y - canvasOffset.y();
@@ -59,6 +228,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                 selectedEntityId = id;
                 emit selectEntitybyCursor(QString::fromStdString(id));
                 selectEntity = true;
+                Console::log("Selected entity: " + id);
                 return;
             } else if (qAbs(dx - 50) < 25 && qAbs(dy) < 10) {
                 activeDragAxis = "x";
@@ -66,6 +236,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                 emit selectEntitybyCursor(QString::fromStdString(id));
                 dragStartPos = event->pos();
                 selectEntity = true;
+                Console::log("Selected entity (x-axis): " + id);
                 return;
             } else if (qAbs(dy - 50) < 25 && qAbs(dx) < 10) {
                 activeDragAxis = "y";
@@ -73,10 +244,12 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                 emit selectEntitybyCursor(QString::fromStdString(id));
                 dragStartPos = event->pos();
                 selectEntity = true;
+                Console::log("Selected entity (y-axis): " + id);
                 return;
             }
         }
         selectedEntityId = "";
+        Console::log("Deselected entity");
     }
 }
 
@@ -96,7 +269,6 @@ void CanvasWidget::handleMouseMove(QMouseEvent *event) {
     float dx = event->pos().x() - entry.position->x - canvasOffset.x();
     float dy = event->pos().y() - entry.position->y - canvasOffset.y();
 
-    // Set active axis based on gizmo hitbox
     if (qAbs(dx) < 10 && qAbs(dy) < 10) {
         activeDragAxis = "both";
     } else if (qAbs(dx - 50) < 25 && qAbs(dy) < 10) {
@@ -105,19 +277,18 @@ void CanvasWidget::handleMouseMove(QMouseEvent *event) {
         activeDragAxis = "y";
     }
 
-    // Do action based on mode
-    if (selectEntity && !simulate) {
+    if (selectEntity && !simulate && currentMode != DrawTrajectory) {
         if (currentMode == Translate) {
             if (activeDragAxis == "x" || activeDragAxis == "both")
                 entry.position->x += delta.x();
             if (activeDragAxis == "y" || activeDragAxis == "both")
                 entry.position->y += delta.y();
         } else if (currentMode == Rotate) {
-            float angleChange = delta.x() * 0.5f; // sensitivity
+            float angleChange = delta.x() * 0.5f;
             entry.rotation->z += angleChange;
         } else if (currentMode == Scale) {
             if (activeDragAxis == "x" || activeDragAxis == "both")
-                entry.size->x += delta.x() * 0.01f; // scaling factor
+                entry.size->x += delta.x() * 0.01f;
             if (activeDragAxis == "y" || activeDragAxis == "both")
                 entry.size->y += delta.y() * 0.01f;
         } else if (currentMode == Panning) {
@@ -139,14 +310,27 @@ void CanvasWidget::handleMouseRelease(QMouseEvent *event) {
 }
 
 void CanvasWidget::handleKeyPress(QKeyEvent *event) {
-    if (event->key() == Qt::Key_1)
+    Console::log("Key pressed: " + std::to_string(event->key()));
+    if (event->key() == Qt::Key_1) {
         currentMode = Translate;
-    else if (event->key() == Qt::Key_2)
+        Console::log("Mode set to Translate");
+    } else if (event->key() == Qt::Key_2) {
         currentMode = Rotate;
-    else if (event->key() == Qt::Key_3)
+        Console::log("Mode set to Rotate");
+    } else if (event->key() == Qt::Key_3) {
         currentMode = Scale;
-    else if (event->key() == Qt::Key_4)
+        Console::log("Mode set to Scale");
+    } else if (event->key() == Qt::Key_4) {
         simulate = !simulate;
+        Console::log("Simulation mode: " + std::string(simulate ? "enabled" : "disabled"));
+    } else if (event->key() == Qt::Key_Escape) {
+        Console::log("Escape key pressed, currentMode: " + std::to_string(currentMode));
+        if (currentMode == DrawTrajectory) {
+            Console::log("Calling saveTrajectory");
+            saveTrajectory();
+            setTrajectoryDrawingMode(false);
+        }
+    }
 }
 
 void CanvasWidget::handlePaint(QPaintEvent *event) {
@@ -159,19 +343,34 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
     drawImage(painter);
     drawSelectionOutline(painter);
     drawCollider(painter);
+    drawTrajectory(painter);
+
+    if (isDrawingTrajectory && !currentTrajectory.empty()) {
+        painter.save();
+        QPen pen(Qt::magenta, 2, Qt::DashLine);
+        painter.setPen(pen);
+        painter.setBrush(Qt::NoBrush);
+        QPolygonF polyline;
+        for (const Waypoints* waypoint : currentTrajectory) {
+            polyline << QPointF(waypoint->position->x, waypoint->position->y);
+            painter.setBrush(Qt::magenta);
+            painter.drawEllipse(QPointF(waypoint->position->x, waypoint->position->y), 3, 3);
+            painter.setBrush(Qt::NoBrush);
+        }
+        if (polyline.size() > 1) {
+            painter.drawPolyline(polyline);
+        }
+        painter.restore();
+    }
     drawSceneInformation(painter);
     drawEntityInformation(painter);
     drawTransformGizmo(painter);
 
-    // Center
     QPointF center(width() / 2.0, height() / 2.0);
-
-    // Radar Dot
     painter.setBrush(Qt::green);
     painter.setPen(Qt::NoPen);
     painter.drawEllipse(center, 10, 10);
 
-    // Radar Sweep Line
     painter.setPen(QPen(Qt::red, 2));
     float radius = qMin(width(), height()) / 2.5;
     float rad = qDegreesToRadians(angle);
@@ -278,7 +477,6 @@ void CanvasWidget::applyGravityAndBounce(float deltaTime) {
         }
     }
 }
-
 void CanvasWidget::drawGridLines(QPainter& painter) {
     int alpha = (gridOpacity * 255) / 100;
 
@@ -333,6 +531,8 @@ void CanvasWidget::drawEntityInformation(QPainter& painter) {
                    .arg(size->x)
                    .arg(size->y)
                    .arg(size->z);
+    } else if (currentMode == DrawTrajectory) {
+        text = QString("Drawing Trajectory: %1 waypoints").arg(currentTrajectory.size());
     }
 
     QFont font("Arial", 10, QFont::Bold);
@@ -341,11 +541,12 @@ void CanvasWidget::drawEntityInformation(QPainter& painter) {
     painter.drawText(QPointF(10 - canvasOffset.x(), height() - 50 - canvasOffset.y()), name);
     painter.drawText(QPointF(10 - canvasOffset.x(), height() - 10 - canvasOffset.y()), text);
     painter.drawText(QPointF(10 - canvasOffset.x(), height() - 30 - canvasOffset.y()), QString("Mode: %1")
-                                                                                           .arg(currentMode == Translate ? "Translate" : currentMode == Rotate ? "Rotate" : "Scale"));
+                                                                                           .arg(currentMode == Translate ? "Translate" : currentMode == Rotate ? "Rotate" : currentMode == Scale ? "Scale" : "Draw Trajectory"));
 }
 
+
 void CanvasWidget::drawTransformGizmo(QPainter& painter) {
-    if (simulate) return;
+    if (simulate || currentMode == DrawTrajectory) return;
     if (Meshes.find(selectedEntityId) == Meshes.end()) return;
 
     auto& pos = Meshes[selectedEntityId].position;
@@ -373,6 +574,7 @@ void CanvasWidget::drawTransformGizmo(QPainter& painter) {
         painter.drawRect(QRectF(base + QPointF(0, 40), QSizeF(6, 6))); // Y box
     }
 }
+
 
 void CanvasWidget::drawSelectionOutline(QPainter& painter) {
     if (!showOutline || simulate) return;
@@ -491,6 +693,28 @@ void CanvasWidget::drawImage(QPainter& painter) {
     }
 }
 
+void CanvasWidget::drawTrajectory(QPainter& painter) {
+    for (const auto& [id, entry] : Meshes) {
+        if (!entry.trajectory || !entry.trajectory->Active || entry.trajectory->Trajectories.empty()) continue;
+
+        painter.save();
+        QPen pen(Qt::cyan, 2);
+        painter.setPen(pen);
+        painter.setBrush(Qt::NoBrush);
+        QPolygonF polyline;
+        for (const Waypoints* waypoint : entry.trajectory->Trajectories) {
+            polyline << QPointF(waypoint->position->x, waypoint->position->y);
+            painter.setBrush(Qt::cyan);
+            painter.drawEllipse(QPointF(waypoint->position->x, waypoint->position->y), 3, 3);
+            painter.setBrush(Qt::NoBrush);
+        }
+        if (polyline.size() > 1) {
+            painter.drawPolyline(polyline);
+        }
+        painter.restore();
+    }
+}
+
 void CanvasWidget::toggleLayerVisibility(const QString& layer, bool visible) {
     if (layer == "Collider") {
         showColliders = visible;
@@ -505,3 +729,5 @@ void CanvasWidget::toggleLayerVisibility(const QString& layer, bool visible) {
     }
     update();
 }
+
+

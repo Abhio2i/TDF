@@ -1,3 +1,6 @@
+
+
+
 #ifndef TRAJECTORY_H
 #define TRAJECTORY_H
 #include "./component.h"
@@ -14,11 +17,17 @@ public:
     bool Active;
     std::string ID;
     std::vector<QJsonObject> array;
-    std::vector<std::vector<Waypoints*>> Trajectories;
+    std::vector<Waypoints*> Trajectories;
 
-    QJsonObject toJson()const override;
+    QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
 
+    // Function declarations
+    bool removeTrajectory(size_t index);
+    void addTrajectory(Waypoints* waypoint);
 };
 
 #endif // TRAJECTORY_H
+
+
+

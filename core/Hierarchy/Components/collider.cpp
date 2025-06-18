@@ -84,6 +84,5 @@ void Collider::fromJson(const QJsonObject& obj) {
             collider = stringToColliderType(colliderObj["value"].toString());
     }
 
-
 }
 

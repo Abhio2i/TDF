@@ -1,4 +1,5 @@
 
+
 #include "scenerenderer.h"
 #include <core/Debug/console.h>
 
@@ -22,10 +23,9 @@ void SceneRenderer::entityAdded(QString /*parentID*/, Entity* entity) {
     meshData.name = QString::fromStdString(platform->Name);
     meshData.transform = platform->transform;
     meshData.collider = platform->collider;
+    meshData.trajectory = platform->trajectory;
     meshData.Meshes = platform->meshRenderer2d->Meshes;
     emit addMesh(QString::fromStdString(platform->ID), meshData);
-
-
 }
 
 void SceneRenderer::entityRemoved(QString ID) {

@@ -5,9 +5,6 @@
 #include "core/Hierarchy/EntityProfiles/iff.h"
 #include <QJsonArray>
 
-// 🔹 Optional: Uncomment if custom exceptions are being used
-// #include "core/Debug/ExceptionMacros.h"
-
 // 🔸 Thread-local context pointer (for auto-registration)
 thread_local Hierarchy* Hierarchy::currentContext = nullptr;
 
@@ -42,20 +39,7 @@ Hierarchy::Hierarchy()
     delete e;
 }
 
-// 🔸 Destructor (Uncomment if managing memory manually)
-/*
-Hierarchy::~Hierarchy()
-{
-    // Clean up dynamically allocated profile categories
-    for (auto& [name, profile] : ProfileCategories) {
-        delete profile;
-    }
 
-    // Free folders and entities
-    delete Folders;
-    delete Entities;
-}
-*/
 
 // 🔹 Add a new ProfileCategory to the hierarchy
 ProfileCategaory* Hierarchy::addProfileCategaory(QString profileName)
@@ -196,17 +180,7 @@ QJsonObject Hierarchy::toJson()
         obj["entities"] = entitiesObj;
     }
 
-    // // 🔸 Serialize Dictionary (key -> list of strings)
-    // QJsonObject dictJson;
-    // for (const auto& [key, stringList] : dictionry) {
-    //     QJsonArray array;
-    //     for (const auto& str : stringList) {
-    //         array.append(QString::fromStdString(str));
-    //     }
-    //     dictJson[QString::fromStdString(key)] = array;
-    // }
 
-    //obj["dictionry"] = dictJson;
 
     return obj;
 }
@@ -239,46 +213,6 @@ void Hierarchy::fromJson(const QJsonObject& obj)
         }
     }
 
-    // // 🔸 Deserialize Folders
-    // if (obj.contains("folders") && obj["folders"].isObject()) {
-    //     hierarchy->Folders = new std::unordered_map<std::string, Folder*>(); // allocate new map
-    //     QJsonObject foldersObj = obj["folders"].toObject();
-
-    //     for (const QString& key : foldersObj.keys()) {
-    //         QString folderName = foldersObj[key].toString();
-    //         Folder* folder = new Folder();
-    //         folder->Name = folderName.toStdString();
-    //         hierarchy->Folders->insert({ key.toStdString(), folder });
-    //     }
-    // }
-
-    // // 🔸 Deserialize Entities
-    // if (obj.contains("entities") && obj["entities"].isObject()) {
-    //     hierarchy->Entities = new std::unordered_map<std::string, Entity*>(); // allocate new map
-    //     QJsonObject entitiesObj = obj["entities"].toObject();
-
-    //     for (const QString& key : entitiesObj.keys()) {
-    //         QString entityName = entitiesObj[key].toString();
-    //         Entity* entity = new Entity();
-    //         entity->Name = entityName.toStdString();
-    //         hierarchy->Entities->insert({ key.toStdString(), entity });
-    //     }
-    // }
-
-    // // 🔸 Deserialize Dictionary
-    // if (obj.contains("dictionry") && obj["dictionry"].isObject()) {
-    //     QJsonObject dictJson = obj["dictionry"].toObject();
-    //     for (const QString& key : dictJson.keys()) {
-    //         QJsonArray array = dictJson[key].toArray();
-    //         std::list<std::string> listData;
-    //         for (const QJsonValue& val : array) {
-    //             listData.push_back(val.toString().toStdString());
-    //         }
-    //         hierarchy->dictionry[key.toStdString()] = listData;
-    //     }
-    // }
-
-    // return hierarchy;
 }
 void Hierarchy::removeComponent(QString entityId, QString componentName)
 {
