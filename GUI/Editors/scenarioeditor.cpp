@@ -187,9 +187,14 @@ void ScenarioEditor::setupToolBarConnections()
             tacticalDisplay->canvas, &CanvasWidget::toggleLayerVisibility);
 
     if (tacticalDisplay && tacticalDisplay->mapWidget) {
+        // connect(designToolBar, &DesignToolBar::mapLayerChanged,
+        //         tacticalDisplay->mapWidget, &GISlib::setLayer,
+        //         Qt::QueuedConnection);
         connect(designToolBar, &DesignToolBar::mapLayerChanged,
-                tacticalDisplay->mapWidget, &GISlib::setLayer,
-                Qt::QueuedConnection);
+                this, [=](const QString &layers) {
+                    tacticalDisplay->setMapLayers(layers.split(",", Qt::SkipEmptyParts));
+                    Console::log("Map layers updated: " + layers.toStdString());
+                });
         connect(designToolBar, &DesignToolBar::searchPlaceTriggered,
                 tacticalDisplay->mapWidget, &GISlib::serachPlace);
         connect(designToolBar->zoomInAction, &QAction::triggered,

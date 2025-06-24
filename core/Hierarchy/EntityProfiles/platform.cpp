@@ -80,6 +80,76 @@ QJsonObject Platform::toJson() const {
     return obj;
 }
 
+// void Platform::fromJson(const QJsonObject& obj) {
+//     Name = obj["name"].toString().toStdString();
+//     ID = obj["id"].toString().toStdString();
+//     parentID = obj["parent_id"].toString().toStdString();
+//     Active = obj["active"].toBool();
+
+//     if (obj.contains("parameters")) {
+//         QJsonObject parObj = obj["parameters"].toObject();
+//         if (parObj.contains("array")) {
+//             QJsonObject paramMap = obj["array"].toObject();
+//             for (const QString& key : paramMap.keys()) {
+//                 QJsonObject paramObj = paramMap[key].toObject();
+//                 std::shared_ptr<Parameter> param = std::make_shared<Parameter>();
+//                 param->fromJson(paramObj);
+//                 parameters[key.toStdString()] = param;
+//             }
+//         }
+//     }
+
+//     if (obj.contains("type") && obj["type"].isObject()) {
+//         QJsonObject entityObj = obj["type"].toObject();
+//         if (entityObj.contains("value"))
+//             type = stringToEntityType(entityObj["value"].toString());
+//     }
+
+//     if (obj.contains("transform") && obj["transform"].isObject()) {
+//         if (!transform) addComponent("transform");
+//         transform->fromJson(obj["transform"].toObject());
+//     }
+
+//     if (obj.contains("trajectory") && obj["trajectory"].isObject()) {
+//         if (!trajectory) addComponent("trajectory");
+//         trajectory->fromJson(obj["trajectory"].toObject());
+//     }
+
+//     if (obj.contains("rigidbody") && obj["rigidbody"].isObject()) {
+//         if (!rigidbody) addComponent("rigidbody");
+//         rigidbody->fromJson(obj["rigidbody"].toObject());
+//     }
+
+//     if (obj.contains("dynamicModel") && obj["dynamicModel"].isObject()) {
+//         if (!dynamicModel) addComponent("dynamicModel");
+//         dynamicModel->fromJson(obj["dynamicModel"].toObject());
+//     }
+
+//     if (obj.contains("collider") && obj["collider"].isObject()) {
+//         if (!collider) addComponent("collider");
+//         collider->fromJson(obj["collider"].toObject());
+//     }
+
+//     if (obj.contains("meshRenderer2d") && obj["meshrenderer2d"].isObject()) {
+//         if (!meshRenderer2d) addComponent("meshRenderer2d");
+//         meshRenderer2d->fromJson(obj["meshRenderer2d"].toObject());
+//     }
+
+//     if (obj.contains("radios") && obj["radios"].isObject()) {
+//         if (!radios) addComponent("radios");
+//         radios->fromJson(obj["radios"].toObject());
+//     }
+
+//     if (obj.contains("weopons") && obj["weopons"].isObject()) {
+//         if (!weopons) addComponent("weopons");
+//         weopons->fromJson(obj["weopons"].toObject());
+//     }
+
+//     if (obj.contains("radar") && obj["radar"].isObject()) {
+//         if (!radar) addComponent("radar");
+//         radar->fromJson(obj["radar"].toObject());
+//     }
+// }
 void Platform::fromJson(const QJsonObject& obj) {
     Name = obj["name"].toString().toStdString();
     ID = obj["id"].toString().toStdString();
@@ -88,8 +158,8 @@ void Platform::fromJson(const QJsonObject& obj) {
 
     if (obj.contains("parameters")) {
         QJsonObject parObj = obj["parameters"].toObject();
-        if (parObj.contains("array")) {
-            QJsonObject paramMap = obj["array"].toObject();
+        if (parObj.contains("value")) { // Fix: Check "value" instead of "array"
+            QJsonObject paramMap = parObj["value"].toObject();
             for (const QString& key : paramMap.keys()) {
                 QJsonObject paramObj = paramMap[key].toObject();
                 std::shared_ptr<Parameter> param = std::make_shared<Parameter>();
@@ -130,7 +200,7 @@ void Platform::fromJson(const QJsonObject& obj) {
         collider->fromJson(obj["collider"].toObject());
     }
 
-    if (obj.contains("meshRenderer2d") && obj["meshrenderer2d"].isObject()) {
+    if (obj.contains("meshRenderer2d") && obj["meshRenderer2d"].isObject()) { // Fix: Correct key
         if (!meshRenderer2d) addComponent("meshRenderer2d");
         meshRenderer2d->fromJson(obj["meshRenderer2d"].toObject());
     }
@@ -150,7 +220,6 @@ void Platform::fromJson(const QJsonObject& obj) {
         radar->fromJson(obj["radar"].toObject());
     }
 }
-
 void Platform::addComponent(std::string name) {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (name == "transform") {
@@ -170,9 +239,11 @@ void Platform::addComponent(std::string name) {
             if (!transform) addComponent("transform");
             if (!rigidbody) addComponent("rigidbody");
             if (!collider) addComponent("collider");
+            if (!trajectory) addComponent("trajectory");
             dynamicModel = new DynamicModel();
             dynamicModel->transform = transform;
             dynamicModel->rigidbody = rigidbody;
+            dynamicModel->trajectory = trajectory;
         }
         emit parent->componentAdded(QString::fromStdString(ID), "dynamicModel");
         emit parent->entityPhysicsAdded(QString::fromStdString(parentID), this);

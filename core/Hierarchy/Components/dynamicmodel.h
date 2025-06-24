@@ -4,6 +4,7 @@
 #include <QJsonObject>
 #include "./transform.h"
 #include "./rigidbody.h"
+#include "./trajectory.h"
 class DynamicModel: public QObject, public Component
 {
     Q_OBJECT
@@ -32,17 +33,23 @@ public:
     float forwardSpeed = 0.0f;
     float enginePower = 0.0f;
     float aeroFactor = 0.0f;
-    float moveSpeed = 1;
+    float moveSpeed = 0.01;
     float rotationSpeed = 1;
     Transform* transform;
     Rigidbody* rigidbody;
+    Trajectory* trajectory;
 
 
     QJsonObject toJson()const override;
     void fromJson(const QJsonObject &obj) override;
 
+    void FollowTrajectory();
+
 public slots:
     void Update(float deltaTime);
+    void setMoveSpeed(float speed);
+
+
 };
 
 #endif // DYNAMICMODEL_H

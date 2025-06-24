@@ -1,9 +1,8 @@
 
-
 #include "simulation.h"
 #include <algorithm>
 #include <core/Debug/console.h>
-#include <QJsonObject> // For toJson/fromJson
+#include <QJsonObject>
 
 Simulation::Simulation() {
     updateTimer = new QTimer(this);
@@ -11,9 +10,9 @@ Simulation::Simulation() {
     elapsedTimer->start();
     lastTime = elapsedTimer->elapsed();
     SimulationFrameRate = 260;
-    PhysicsUpdateFrameRate = 60; // Example value
-    UIUpdateFrameRate = 30;      // Example value
-    Gravity = new Vector(0, 0, -3.81f); // Match Bullet gravity
+    PhysicsUpdateFrameRate = 60;
+    UIUpdateFrameRate = 30;
+    Gravity = new Vector(0, 0, -3.81f);
     speed = 1;
     isPlay = false;
     complete = false;
@@ -22,7 +21,6 @@ Simulation::Simulation() {
         frame();
     });
 
-    // Bullet World Initialization
     broadphase = new btDbvtBroadphase();
     collisionConfiguration = new btDefaultCollisionConfiguration();
     dispatcher = new btCollisionDispatcher(collisionConfiguration);
@@ -51,7 +49,7 @@ Simulation::~Simulation() {
 
 void Simulation::frame() {
     qint64 currentTime = elapsedTimer->elapsed();
-    deltaTime = (currentTime - lastTime) / 1000.0f; // in seconds
+    deltaTime = (currentTime - lastTime) / 1000.0f;
     lastTime = currentTime;
     calculatePhysics();
     QTimer::singleShot(0, this, [=]() {
@@ -80,14 +78,18 @@ void Simulation::stop() {
 
 void Simulation::setSpeed(float value) {
     speed = value;
+    for (auto& [id, comp] : physicsComponent) {
+        if (comp.dynamicModel) {
+            comp.dynamicModel->setMoveSpeed(value);
+        }
+    }
+    emit speedUpdated(value);
 }
-
 void Simulation::nextStep() {
     frame();
 }
 
 void Simulation::toJson() {
-    // Stub: Implement serialization of simulation state
     QJsonObject obj;
     obj["SimulationFrameRate"] = SimulationFrameRate;
     obj["PhysicsUpdateFrameRate"] = PhysicsUpdateFrameRate;
@@ -99,19 +101,17 @@ void Simulation::toJson() {
     };
     obj["isPlay"] = isPlay;
     obj["complete"] = complete;
-    // Add physicsComponent and bulletBodies serialization if needed
     Console::log("Simulation state serialized to JSON");
 }
 
 void Simulation::fromJson() {
-    // Stub: Implement deserialization of simulation state
     Console::log("Simulation state deserialized from JSON");
 }
 
 void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
     Platform* platform = dynamic_cast<Platform*>(entity);
     if (!platform) {
-
+        Console::error("Entity is not a Platform");
         return;
     }
 
@@ -124,7 +124,6 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
 
     physicsComponent[platform->ID] = component;
 
-    // Bullet body creation
     if (platform->transform && platform->rigidbody) {
         btCollisionShape* shape = nullptr;
 
@@ -147,10 +146,9 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
                 platform->transform->position->z));
             btQuaternion quat;
             quat.setEulerZYX(
-                qDegreesToRadians(platform->transform->rotation->z), // yaw
-                qDegreesToRadians(platform->transform->rotation->y), // pitch
-                qDegreesToRadians(platform->transform->rotation->x)  // roll
-            );
+                qDegreesToRadians(platform->transform->rotation->z),
+                qDegreesToRadians(platform->transform->rotation->y),
+                qDegreesToRadians(platform->transform->rotation->x));
             transform.setRotation(quat);
 
             float mass = platform->rigidbody->Mass;
@@ -162,12 +160,10 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
             btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, inertia);
             btRigidBody* body = new btRigidBody(rbInfo);
 
-            // Gravity Control
             if (!platform->rigidbody->Gravity) {
                 body->setGravity(btVector3(0, 0, 0));
             }
 
-            // Kinematic Control
             if (platform->rigidbody->Kinematics) {
                 body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
                 body->setActivationState(DISABLE_DEACTIVATION);
@@ -191,7 +187,6 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
                 body->setAngularVelocity(btVector3(velocity.x, velocity.y, velocity.z));
             });
 
-            // Freeze Axes
             btVector3 linearFactor(1, 1, 1);
             if (platform->rigidbody->freezePositionX) linearFactor.setX(0);
             if (platform->rigidbody->freezePositionY) linearFactor.setY(0);
@@ -256,15 +251,15 @@ void Simulation::calculatePhysics() {
 
             btVector3 pos = trans.getOrigin();
             btQuaternion rot = trans.getRotation();
-            comp.transform->position->x = pos.getX();
-            comp.transform->position->y = pos.getY();
-            comp.transform->position->z = pos.getZ();
+            // comp.transform->position->x = pos.getX();
+            // comp.transform->position->y = pos.getY();
+            // comp.transform->position->z = pos.getZ();
 
             btScalar x, y, z;
             rot.getEulerZYX(z, y, x);
-            comp.transform->rotation->x = qRadiansToDegrees(x); // Pitch (X)
-            comp.transform->rotation->y = qRadiansToDegrees(y); // Yaw (Y)
-            comp.transform->rotation->z = qRadiansToDegrees(z); // Roll (Z)
+            // comp.transform->rotation->x = qRadiansToDegrees(x);
+            // comp.transform->rotation->y = qRadiansToDegrees(y);
+            // comp.transform->rotation->z = qRadiansToDegrees(z);
 
             if (comp.collider) {
                 body->getCollisionShape()->setLocalScaling(btVector3(
@@ -332,10 +327,9 @@ void Simulation::entityUpdate(QString ID) {
 
         btQuaternion quat;
         quat.setEulerZYX(
-            qDegreesToRadians(comp.transform->rotation->z), // yaw
-            qDegreesToRadians(comp.transform->rotation->y), // pitch
-            qDegreesToRadians(comp.transform->rotation->x)  // roll
-        );
+            qDegreesToRadians(comp.transform->rotation->z),
+            qDegreesToRadians(comp.transform->rotation->y),
+            qDegreesToRadians(comp.transform->rotation->x));
         trans.setRotation(quat);
 
         body->setWorldTransform(trans);

@@ -18,6 +18,7 @@ public:
     std::string ID;
     std::vector<QJsonObject> array;
     std::vector<Waypoints*> Trajectories;
+    int current = 0;
 
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;

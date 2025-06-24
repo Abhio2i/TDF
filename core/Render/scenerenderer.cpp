@@ -1,5 +1,4 @@
 
-
 #include "scenerenderer.h"
 #include <core/Debug/console.h>
 
@@ -30,11 +29,10 @@ void SceneRenderer::entityAdded(QString /*parentID*/, Entity* entity) {
 
 void SceneRenderer::entityRemoved(QString ID) {
     emit removeMesh(ID);
-    // Remove from meshes map
     std::string key = ID.toStdString();
     auto it = meshes->begin();
     while (it != meshes->end()) {
-        if (it->first.find(key) == 0) { // Matches ID prefix
+        if (it->first.find(key) == 0) {
             it = meshes->erase(it);
         } else {
             ++it;
@@ -48,16 +46,13 @@ void SceneRenderer::cleanBuffer() {
 }
 
 void SceneRenderer::addMeshBuffer() {
-    // Stub: Add mesh data to a buffer (implementation depends on requirements)
     Console::log("Adding mesh to buffer");
 }
 
 void SceneRenderer::removeBuffer() {
-    // Stub: Remove mesh data from buffer
     Console::log("Removing mesh from buffer");
 }
 
 void SceneRenderer::getSnapshot() {
-    // Stub: Return a snapshot of the current render state
     Console::log("Snapshot requested");
 }

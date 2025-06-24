@@ -55,6 +55,7 @@
         <file>images/Texture/waall.jpg</file>
         <file>images/Texture/walll.jpg</file>
         <file>images/Texture/water.png</file>
+        <file>images/Texture/fighterjet.png</file>
     </qresource>
     <qresource prefix="/model/airplane">
         <file>Model/Airplane/11803_Airplane_body_diff.jpg</file>

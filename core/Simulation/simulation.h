@@ -64,6 +64,7 @@ signals:
     void Physics();
     void HierarchyUpdate();
     void Render(float deltaTime);
+    void speedUpdated(float speed);
 
 private:
     btBroadphaseInterface* broadphase;

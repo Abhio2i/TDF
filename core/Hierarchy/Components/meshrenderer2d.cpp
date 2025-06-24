@@ -4,8 +4,8 @@ MeshRenderer2D::MeshRenderer2D() {
     Active = true;
     color = new QColor(Qt::red);
     color2 = std::make_shared<QColor>(Qt::blue); // ya koi bhi value
-    Sprite = new std::string(":/texture/Images/Texture/car.png");
-    Texture = new std::string(":/texture/Images/Texture/waall.jpg");
+    Sprite = new std::string(":/texture/images/Texture/fighterjet.png");
+    Texture = new std::string(":/texture/images/Texture/waall.jpg");
     Mesh *mesh = new Mesh();
     mesh->color = color;
     mesh->Sprite = Sprite;

@@ -1,10 +1,142 @@
 
 
+// #include "tacticaldisplay.h"
+// #include "QVBoxLayout"
+// #include "QStackedLayout"
+// #include "QLabel"
+
+
+// TacticalDisplay::TacticalDisplay(QWidget *parent) : QWidget(parent) {
+//     QVBoxLayout *mainLayout = new QVBoxLayout(this);
+//     mainLayout->setContentsMargins(0, 0, 0, 0);
+
+//     splitter = new QSplitter(Qt::Horizontal, this);
+
+//     QWidget *mapCanvasContainer = new QWidget(this);
+//     QStackedLayout *containerLayout = new QStackedLayout(mapCanvasContainer);
+//     containerLayout->setStackingMode(QStackedLayout::StackAll);
+
+//     // Canvas widget (top layer)
+//     canvas = new CanvasWidget(mapCanvasContainer);
+//     canvas->setAttribute(Qt::WA_TranslucentBackground);
+//     canvas->setAttribute(Qt::WA_TransparentForMouseEvents);
+//     canvas->setStyleSheet("background: transparent;");
+//     containerLayout->addWidget(canvas);
+//     canvas->setMinimumWidth(200);
+
+//     // Map widget (bottom layer)
+//     mapWidget = new GISlib(mapCanvasContainer);
+//     mapWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+//     containerLayout->addWidget(mapWidget);
+
+//     // Overlay label
+//     QLabel *overlayLabel = new QLabel("Lat: ---, Lon: ---", mapWidget);
+//     overlayLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
+//     overlayLabel->setGeometry(20, 20, 200, 60);
+//     overlayLabel->setStyleSheet(
+//         "color: white;"
+//         "background-color: rgba(0,0,0,150);"
+//         "padding: 5px;"
+//         "border-radius: 6px;"
+//         "font-family: Arial;"
+//         );
+//     overlayLabel->raise();
+
+//     // Connect GISlib mouseCords signal
+//     connect(mapWidget, &GISlib::mouseCords, this, [=](QString lat, QString lon) {
+//         qDebug() << "Received coordinates:" << lat << lon;
+//         overlayLabel->setText(QString("Lat: %1\nLon: %2").arg(lat, lon));
+//     });
+
+//     // Connect GISlib event signals to CanvasWidget slots
+//     connect(mapWidget, &GISlib::keyPressed, canvas, &CanvasWidget::onGISKeyPressed);
+//     connect(mapWidget, &GISlib::mousePressed, canvas, &CanvasWidget::onGISMousePressed);
+//     connect(mapWidget, &GISlib::mouseMoved, canvas, &CanvasWidget::onGISMouseMoved);
+//     connect(mapWidget, &GISlib::mouseReleased, canvas, &CanvasWidget::onGISMouseReleased);
+//     connect(mapWidget, &GISlib::painted, canvas, &CanvasWidget::onGISPainted);
+
+//     splitter->addWidget(mapCanvasContainer);
+
+//     // Rest of 3D view setup
+//     scene3dwidget = new Scene3DWidget();
+//     splitter->addWidget(scene3dwidget);
+//     scene3dwidget->setMinimumWidth(200);
+
+//     splitter->setStretchFactor(0, 3);
+//     splitter->setStretchFactor(1, 1);
+
+//     mainLayout->addWidget(splitter);
+//     setMinimumWidth(400);
+
+//     // Connect existing signals
+//     connect(canvas, &CanvasWidget::MoveEntity, scene3dwidget, &Scene3DWidget::MoveEntity);
+//     connect(canvas, &CanvasWidget::selectEntitybyCursor, scene3dwidget, &Scene3DWidget::selectedEntity);
+//     connect(scene3dwidget, &Scene3DWidget::selectEntityByCursor, this, &TacticalDisplay::selectedMesh);
+
+// }
+// void TacticalDisplay::addMesh(QString ID, MeshData meshData)
+// {
+//     // Add to 2D canvas
+//     MeshEntry entity;
+//     entity.name = meshData.name;
+//     entity.velocity = new Vector(0,0,0);
+//     entity.position = meshData.transform->position;
+//     entity.rotation = meshData.transform->rotation;
+//     entity.size = meshData.transform->size;
+//     entity.mesh = meshData.Meshes[0];
+//     entity.collider = meshData.collider;
+//     entity.trajectory = meshData.trajectory;
+//     canvas->Meshes[ID.toStdString()] = entity;
+//     canvas->update();
+
+//     // Add to 3D view
+//     Mesh3dEntry entity3d;
+//     entity3d.name = meshData.name;
+//     entity3d.velocity = new Vector(0,0,0);
+//     entity3d.position = meshData.transform->position;
+//     entity3d.rotation = meshData.transform->rotation;
+//     entity3d.size = meshData.transform->size;
+//     entity3d.mesh = meshData.Meshes[0];
+//     entity3d.collider = meshData.collider;
+//     scene3dwidget->addEntity(ID, entity3d);
+//     scene3dwidget->updateEntities();
+// }
+
+// void TacticalDisplay::removeMesh(QString ID)
+// {
+//     std::string key = ID.toStdString();
+
+//     // Remove from 2D canvas
+//     if (canvas->Meshes.find(key) != canvas->Meshes.end()) {
+//         canvas->Meshes.erase(key);
+//         canvas->update();
+//     }
+
+//     // Remove from 3D view
+//     scene3dwidget->removeEntity(ID);
+//     scene3dwidget->updateEntities();
+// }
+
+// void TacticalDisplay::selectedMesh(QString ID)
+// {
+//     std::string key = ID.toStdString();
+
+//     // Update selection in 2D canvas
+//     canvas->selectedEntityId = key;
+//     canvas->update();
+
+//     // Update selection in 3D view
+//     scene3dwidget->selectedEntity(ID);
+//     scene3dwidget->updateEntities();
+
+//     // Emit signal about selection change
+//     emit meshSelected(ID);
+// }
+//===================================================================
 #include "tacticaldisplay.h"
 #include "QVBoxLayout"
 #include "QStackedLayout"
 #include "QLabel"
-
 
 TacticalDisplay::TacticalDisplay(QWidget *parent) : QWidget(parent) {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -16,7 +148,6 @@ TacticalDisplay::TacticalDisplay(QWidget *parent) : QWidget(parent) {
     QStackedLayout *containerLayout = new QStackedLayout(mapCanvasContainer);
     containerLayout->setStackingMode(QStackedLayout::StackAll);
 
-    // Canvas widget (top layer)
     canvas = new CanvasWidget(mapCanvasContainer);
     canvas->setAttribute(Qt::WA_TranslucentBackground);
     canvas->setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -24,12 +155,10 @@ TacticalDisplay::TacticalDisplay(QWidget *parent) : QWidget(parent) {
     containerLayout->addWidget(canvas);
     canvas->setMinimumWidth(200);
 
-    // Map widget (bottom layer)
     mapWidget = new GISlib(mapCanvasContainer);
     mapWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     containerLayout->addWidget(mapWidget);
 
-    // Overlay label
     QLabel *overlayLabel = new QLabel("Lat: ---, Lon: ---", mapWidget);
     overlayLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
     overlayLabel->setGeometry(20, 20, 200, 60);
@@ -42,13 +171,11 @@ TacticalDisplay::TacticalDisplay(QWidget *parent) : QWidget(parent) {
         );
     overlayLabel->raise();
 
-    // Connect GISlib mouseCords signal
     connect(mapWidget, &GISlib::mouseCords, this, [=](QString lat, QString lon) {
         qDebug() << "Received coordinates:" << lat << lon;
         overlayLabel->setText(QString("Lat: %1\nLon: %2").arg(lat, lon));
     });
 
-    // Connect GISlib event signals to CanvasWidget slots
     connect(mapWidget, &GISlib::keyPressed, canvas, &CanvasWidget::onGISKeyPressed);
     connect(mapWidget, &GISlib::mousePressed, canvas, &CanvasWidget::onGISMousePressed);
     connect(mapWidget, &GISlib::mouseMoved, canvas, &CanvasWidget::onGISMouseMoved);
@@ -57,7 +184,6 @@ TacticalDisplay::TacticalDisplay(QWidget *parent) : QWidget(parent) {
 
     splitter->addWidget(mapCanvasContainer);
 
-    // Rest of 3D view setup
     scene3dwidget = new Scene3DWidget();
     splitter->addWidget(scene3dwidget);
     scene3dwidget->setMinimumWidth(200);
@@ -68,18 +194,15 @@ TacticalDisplay::TacticalDisplay(QWidget *parent) : QWidget(parent) {
     mainLayout->addWidget(splitter);
     setMinimumWidth(400);
 
-    // Connect existing signals
     connect(canvas, &CanvasWidget::MoveEntity, scene3dwidget, &Scene3DWidget::MoveEntity);
     connect(canvas, &CanvasWidget::selectEntitybyCursor, scene3dwidget, &Scene3DWidget::selectedEntity);
     connect(scene3dwidget, &Scene3DWidget::selectEntityByCursor, this, &TacticalDisplay::selectedMesh);
-
 }
-void TacticalDisplay::addMesh(QString ID, MeshData meshData)
-{
-    // Add to 2D canvas
+
+void TacticalDisplay::addMesh(QString ID, MeshData meshData) {
     MeshEntry entity;
     entity.name = meshData.name;
-    entity.velocity = new Vector(0,0,0);
+    entity.velocity = new Vector(0, 0, 0);
     entity.position = meshData.transform->position;
     entity.rotation = meshData.transform->rotation;
     entity.size = meshData.transform->size;
@@ -89,10 +212,9 @@ void TacticalDisplay::addMesh(QString ID, MeshData meshData)
     canvas->Meshes[ID.toStdString()] = entity;
     canvas->update();
 
-    // Add to 3D view
     Mesh3dEntry entity3d;
     entity3d.name = meshData.name;
-    entity3d.velocity = new Vector(0,0,0);
+    entity3d.velocity = new Vector(0, 0, 0);
     entity3d.position = meshData.transform->position;
     entity3d.rotation = meshData.transform->rotation;
     entity3d.size = meshData.transform->size;
@@ -102,33 +224,41 @@ void TacticalDisplay::addMesh(QString ID, MeshData meshData)
     scene3dwidget->updateEntities();
 }
 
-void TacticalDisplay::removeMesh(QString ID)
-{
+void TacticalDisplay::removeMesh(QString ID) {
     std::string key = ID.toStdString();
-
-    // Remove from 2D canvas
     if (canvas->Meshes.find(key) != canvas->Meshes.end()) {
         canvas->Meshes.erase(key);
         canvas->update();
     }
-
-    // Remove from 3D view
     scene3dwidget->removeEntity(ID);
     scene3dwidget->updateEntities();
 }
 
-void TacticalDisplay::selectedMesh(QString ID)
-{
+void TacticalDisplay::selectedMesh(QString ID) {
     std::string key = ID.toStdString();
-
-    // Update selection in 2D canvas
     canvas->selectedEntityId = key;
     canvas->update();
-
-    // Update selection in 3D view
     scene3dwidget->selectedEntity(ID);
     scene3dwidget->updateEntities();
-
-    // Emit signal about selection change
     emit meshSelected(ID);
+}
+
+// void TacticalDisplay::setMapLayers(const QStringList& layerNames) {
+//     if (mapWidget) {
+//         mapWidget->setLayers(layerNames);
+//     }
+// }
+void TacticalDisplay::setMapLayers(const QStringList& layerNames) {
+    if (mapWidget) {
+        qDebug() << "Setting map layers:" << layerNames;
+        mapWidget->setLayers(layerNames);
+        mapWidget->update();
+    } else {
+        qDebug() << "Error: mapWidget is null";
+    }
+}
+void TacticalDisplay::addCustomMap(const QString& layerName, int zoomMin, int zoomMax, const QString& tileUrl) {
+    if (mapWidget) {
+        mapWidget->addCustomMap(layerName, zoomMin, zoomMax, tileUrl);
+    }
 }

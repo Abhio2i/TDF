@@ -1,11 +1,13 @@
 
+
 #include "GUI/Toolbars/designtoolbar.h"
-#include "qlineedit.h"
+#include "GUI/Tacticaldisplay/Gis/custommapdialog.h"
+#include <QLineEdit>
 #include <QIcon>
 #include <QDebug>
 #include <QPainter>
 #include <QPixmap>
-#include <qmenu.h>
+#include <QMenu>
 #include <QToolButton>
 #include <QLabel>
 #include <QSlider>
@@ -14,8 +16,7 @@
 #include <QCheckBox>
 #include <QActionGroup>
 
-QPixmap DesignToolBar::withWhiteBg(const QString &iconPath)
-{
+QPixmap DesignToolBar::withWhiteBg(const QString &iconPath) {
     QPixmap pixmap(iconPath);
     if (pixmap.isNull()) return QPixmap();
 
@@ -29,50 +30,36 @@ QPixmap DesignToolBar::withWhiteBg(const QString &iconPath)
     return newPixmap;
 }
 
-DesignToolBar::DesignToolBar(QWidget *parent) : QToolBar(parent)
-{
-    // Set style for white dropdown arrows
-    this->setStyleSheet(
-        "QToolButton::menu-indicator {"
-        "   image: none;"
-        "}"
-        "QToolButton::menu-button {"
-        "   border: none;"
-        "   width: 16px;"
-        "}"
-        "QToolButton::menu-button:open {"
-        "   background-color: transparent;"
-        "}"
+DesignToolBar::DesignToolBar(QWidget *parent) : QToolBar(parent) {
+    setStyleSheet(
+        "QToolButton::menu-indicator { image: none; }"
+        "QToolButton::menu-button { border: none; width: 16px; }"
+        "QToolButton::menu-button:open { background-color: transparent; }"
         );
 
     createActions();
     setupToolBar();
 
-    // Create a menu for the database action
     QMenu* databaseMenu = new QMenu(this);
     loadJsonAction = new QAction("📂 Load JSON", this);
     saveJsonAction = new QAction("💾 Save JSON", this);
-
     databaseMenu->addAction(loadJsonAction);
     databaseMenu->addAction(saveJsonAction);
-
     databaseAction->setMenu(databaseMenu);
 
-    // Make database action show menu on click
     QToolButton* dbButton = dynamic_cast<QToolButton*>(widgetForAction(databaseAction));
     if (dbButton) {
         dbButton->setPopupMode(QToolButton::InstantPopup);
     }
 }
 
-void DesignToolBar::createActions()
-{
+void DesignToolBar::createActions() {
     viewAction = new QAction(QIcon(withWhiteBg(":/icons/images/view.jpg")), tr("View"), this);
     viewAction->setCheckable(true);
     viewAction->setShortcut(QKeySequence(Qt::Key_0));
     connect(viewAction, &QAction::triggered, this, [=]() {
         highlightAction(viewAction);
-        emit modeChanged(Panning); // Move mode
+        emit modeChanged(Panning);
         emit viewTriggered();
     });
 
@@ -103,16 +90,15 @@ void DesignToolBar::createActions()
         qDebug() << "Scale mode activated";
     });
 
-
     zoomInAction = new QAction(QIcon(withWhiteBg(":/icons/images/zoom-in.png")), tr("Zoom In"), this);
-    zoomInAction->setCheckable(false); // Change from true to false since we don't want it to stay checked
+    zoomInAction->setCheckable(false);
     connect(zoomInAction, &QAction::triggered, this, [=]() {
         highlightAction(zoomInAction);
         emit zoomInTriggered();
     });
 
     zoomOutAction = new QAction(QIcon(withWhiteBg(":/icons/images/zoom-out.png")), tr("Zoom Out"), this);
-    zoomOutAction->setCheckable(false); // Change from true to false
+    zoomOutAction->setCheckable(false);
     connect(zoomOutAction, &QAction::triggered, this, [=]() {
         highlightAction(zoomOutAction);
         emit zoomOutTriggered();
@@ -121,16 +107,12 @@ void DesignToolBar::createActions()
     mapSelectLayerAction = new QAction(QIcon(withWhiteBg(":/icons/images/map.png")), tr("Map Layer"), this);
     mapSelectLayerAction->setCheckable(true);
 
-
-    // selectCenterAction = new QAction(QIcon(withWhiteBg(":/icons/images/centremap.png")), tr("Select Center"), this);
-    // selectCenterAction->setCheckable(true);
     selectCenterAction = new QAction(QIcon(withWhiteBg(":/icons/images/centremap.png")), tr("Select Center"), this);
     selectCenterAction->setCheckable(true);
     connect(selectCenterAction, &QAction::triggered, this, [=]() {
         highlightAction(selectCenterAction);
         emit selectCenterTriggered();
     });
-
 
     searchPlaceAction = new QAction(QIcon(withWhiteBg(":/icons/images/search.png")), tr("Search Place"), this);
     searchPlaceAction->setCheckable(true);
@@ -203,15 +185,12 @@ void DesignToolBar::createActions()
         emit snapScaleToggled(checked);
     });
 
-    // Layer Select Action with StayOpenMenu
     layerSelectAction = new QAction(QIcon(withWhiteBg(":/icons/images/layers.png")), tr("Select Layer"), this);
     layerSelectAction->setCheckable(true);
 
-    // Create menu for layer select using StayOpenMenu
     StayOpenMenu* layerMenu = new StayOpenMenu(this);
     layerMenu->setStyleSheet("QMenu::item:checked { background-color: #d0e0ff; }");
 
-    // Create layer actions with checkboxes
     QAction* colliderAction = new QAction("Collider", this);
     QAction* meshAction = new QAction("Mesh", this);
     QAction* outlineAction = new QAction("Outline", this);
@@ -219,7 +198,6 @@ void DesignToolBar::createActions()
     QAction* fpsAction = new QAction("FPS", this);
     QAction* imageAction = new QAction("Image", this);
 
-    // Set all actions to be checkable and checked by default
     colliderAction->setCheckable(true);
     colliderAction->setChecked(true);
     meshAction->setCheckable(true);
@@ -233,7 +211,6 @@ void DesignToolBar::createActions()
     imageAction->setCheckable(true);
     imageAction->setChecked(true);
 
-    // Add actions to menu
     layerMenu->addAction(colliderAction);
     layerMenu->addAction(meshAction);
     layerMenu->addAction(outlineAction);
@@ -241,10 +218,8 @@ void DesignToolBar::createActions()
     layerMenu->addAction(fpsAction);
     layerMenu->addAction(imageAction);
 
-    // Set the menu for the layer select action
     layerSelectAction->setMenu(layerMenu);
 
-    // Connect signals
     connect(colliderAction, &QAction::triggered, this, [=](bool checked) {
         emit layerOptionToggled("Collider", checked);
     });
@@ -264,7 +239,7 @@ void DesignToolBar::createActions()
         emit layerOptionToggled("Image", checked);
     });
 
-    measureAreaAction = new QAction(QIcon(withWhiteBg(":/icons/images//area.png")), tr("Measure Area"), this);
+    measureAreaAction = new QAction(QIcon(withWhiteBg(":/icons/images/area.png")), tr("Measure Area"), this);
     measureAreaAction->setCheckable(true);
     connect(measureAreaAction, &QAction::triggered, this, [=]() {
         highlightAction(measureAreaAction);
@@ -285,28 +260,35 @@ void DesignToolBar::createActions()
         emit databaseTriggered();
     });
 
-    // Create actions for database menu
     loadJsonAction = new QAction("📂 Load JSON", this);
     saveJsonAction = new QAction("💾 Save JSON", this);
+
+    addCustomMapAction = new QAction("Add Custom Map", this);
+    connect(addCustomMapAction, &QAction::triggered, this, [=]() {
+        CustomMapDialog dialog(this);
+        if (dialog.exec() == QDialog::Accepted) {
+            QString mapName = dialog.getMapName().trimmed();
+            QString tileUrl = dialog.getTileUrl();
+            int zoomMin = dialog.getZoomMin();
+            int zoomMax = dialog.getZoomMax();
+            if (!mapName.isEmpty() && !tileUrl.isEmpty()) {
+                emit customMapAdded(mapName, zoomMin, zoomMax, tileUrl);
+            }
+        }
+    });
 }
 
-void DesignToolBar::setupToolBar()
-{
+void DesignToolBar::setupToolBar() {
     addAction(viewAction);
     addAction(moveAction);
     addAction(rotateAction);
     addAction(scaleAction);
+    addSeparator();
 
-    // addAction(zoomInAction);
-    // addAction(zoomOutAction);
-
-
-    // First add the grid toggle button with dropdown
     QToolButton* gridButton = new QToolButton(this);
     gridButton->setDefaultAction(gridToggleAction);
     gridButton->setPopupMode(QToolButton::InstantPopup);
 
-    // Create white arrow icon
     QPixmap arrowPixmap(12, 12);
     arrowPixmap.fill(Qt::transparent);
     QPainter painter(&arrowPixmap);
@@ -315,7 +297,6 @@ void DesignToolBar::setupToolBar()
     painter.setBrush(Qt::white);
     painter.drawPolygon(QPolygonF() << QPointF(2,4) << QPointF(10,4) << QPointF(6,8));
 
-    // Create dropdown button
     QToolButton* dropdownBtn = new QToolButton(this);
     dropdownBtn->setIcon(QIcon(arrowPixmap));
     dropdownBtn->setFixedSize(16, 16);
@@ -324,7 +305,6 @@ void DesignToolBar::setupToolBar()
         gridButton->showMenu();
     });
 
-    // Container widget for grid button + dropdown
     QWidget* gridContainer = new QWidget();
     QHBoxLayout* gridLayout = new QHBoxLayout(gridContainer);
     gridLayout->setContentsMargins(0, 0, 0, 0);
@@ -332,10 +312,7 @@ void DesignToolBar::setupToolBar()
     gridLayout->addWidget(gridButton);
     gridLayout->addWidget(dropdownBtn);
 
-    // Create and setup grid menu
     QMenu* gridMenu = new QMenu(this);
-
-    // Grid plane controls
     QWidget* gridPlaneWidget = new QWidget();
     QHBoxLayout* gridPlaneLayout = new QHBoxLayout(gridPlaneWidget);
     gridPlaneLayout->setContentsMargins(5, 5, 5, 5);
@@ -364,7 +341,6 @@ void DesignToolBar::setupToolBar()
     gridPlaneAction->setDefaultWidget(gridPlaneWidget);
     gridMenu->addAction(gridPlaneAction);
 
-    // Opacity slider
     QWidgetAction* opacityAction = new QWidgetAction(this);
     QWidget* opacityWidget = new QWidget();
     QHBoxLayout* opacityLayout = new QHBoxLayout(opacityWidget);
@@ -383,12 +359,10 @@ void DesignToolBar::setupToolBar()
     gridButton->setMenu(gridMenu);
     addWidget(gridContainer);
 
-    // Now add the snap toggle button right after grid toggle
     QToolButton* snapButton = new QToolButton(this);
     snapButton->setDefaultAction(snappingToggleAction);
     snapButton->setPopupMode(QToolButton::InstantPopup);
 
-    // Create dropdown button for snap
     QToolButton* snapDropdownBtn = new QToolButton(this);
     snapDropdownBtn->setIcon(QIcon(arrowPixmap));
     snapDropdownBtn->setFixedSize(16, 16);
@@ -397,7 +371,6 @@ void DesignToolBar::setupToolBar()
         snapButton->showMenu();
     });
 
-    // Container widget for snap button + dropdown
     QWidget* snapContainer = new QWidget();
     QHBoxLayout* snapLayout = new QHBoxLayout(snapContainer);
     snapLayout->setContentsMargins(0, 0, 0, 0);
@@ -405,10 +378,7 @@ void DesignToolBar::setupToolBar()
     snapLayout->addWidget(snapButton);
     snapLayout->addWidget(snapDropdownBtn);
 
-    // Create and setup snap menu
     QMenu* snapMenu = new QMenu(this);
-
-    // Grid size controls
     QWidget* snapSizeWidget = new QWidget();
     QHBoxLayout* snapSizeLayout = new QHBoxLayout(snapSizeWidget);
     snapSizeLayout->setContentsMargins(5, 5, 5, 5);
@@ -437,7 +407,6 @@ void DesignToolBar::setupToolBar()
     snapSizeAction->setDefaultWidget(snapSizeWidget);
     snapMenu->addAction(snapSizeAction);
 
-    // Rotate and Scale on separate lines
     snapMenu->addSeparator();
 
     QWidget* rotateWidget = new QWidget();
@@ -467,7 +436,6 @@ void DesignToolBar::setupToolBar()
 
     addSeparator();
 
-    // Create layer select button with dropdown
     QToolButton* layerButton = new QToolButton(this);
     layerButton->setDefaultAction(layerSelectAction);
     layerButton->setPopupMode(QToolButton::InstantPopup);
@@ -480,7 +448,6 @@ void DesignToolBar::setupToolBar()
         layerButton->showMenu();
     });
 
-    // Container widget for layer button + dropdown
     QWidget* layerContainer = new QWidget();
     QHBoxLayout* layerLayout = new QHBoxLayout(layerContainer);
     layerLayout->setContentsMargins(0, 0, 0, 0);
@@ -492,14 +459,10 @@ void DesignToolBar::setupToolBar()
 
     addAction(measureAreaAction);
     addAction(drawAction);
-
     addAction(databaseAction);
-
-
     addSeparator();
     addAction(zoomInAction);
     addAction(zoomOutAction);
-
 
     QToolButton* mapLayerButton = new QToolButton(this);
     mapLayerButton->setDefaultAction(mapSelectLayerAction);
@@ -507,10 +470,11 @@ void DesignToolBar::setupToolBar()
 
 
     StayOpenMenu* mapLayerMenu = new StayOpenMenu(this);
-    QActionGroup* layerGroup = new QActionGroup(this);
-    layerGroup->setExclusive(true);
+    mapLayerMenu->setStyleSheet("QMenu::item:checked { background-color: #d0e0ff; }");
 
-    // Supported map layers with proper mapping
+    QActionGroup* layerGroup = new QActionGroup(this);
+    layerGroup->setExclusive(false); // Allow multiple layers to be selected
+
     QVector<QPair<QString, QString>> layers = {
         {"OpenStreetMap", "osm"},
         {"ArcGIS Imagery", "arcgis"},
@@ -522,87 +486,98 @@ void DesignToolBar::setupToolBar()
         {"Wikimedia Maps", "Wikimedia Maps"}
     };
 
+    QMap<QString, QAction*> layerActions; // Store actions for dynamic updates
     for (const auto& layer : layers) {
         QAction* action = new QAction(layer.first, this);
         action->setCheckable(true);
-        action->setData(layer.second); // Store the layer ID as data
+        action->setData(layer.second);
         if (layer.first == "OpenStreetMap") action->setChecked(true);
-
         mapLayerMenu->addAction(action);
         layerGroup->addAction(action);
+        layerActions[layer.second] = action;
 
-        connect(action, &QAction::triggered, this, [this, action]() {
-            QString layerId = action->data().toString();
-            if (!layerId.isEmpty()) {
-                emit mapLayerChanged(layerId);
-            } else {
-                qWarning() << "Invalid layer ID for action:" << action->text();
+        connect(action, &QAction::triggered, this, [=]() {
+            QStringList activeLayers;
+            for (const auto& act : qAsConst(layerActions)) {
+                if (act->isChecked()) {
+                    activeLayers.append(act->data().toString());
+                }
             }
+            qDebug() << "Emitting mapLayerChanged with layers:" << activeLayers;
+            emit mapLayerChanged(activeLayers.join(","));
         });
     }
+
+    mapLayerMenu->addSeparator();
+    mapLayerMenu->addAction(addCustomMapAction);
+
     mapSelectLayerAction->setMenu(mapLayerMenu);
     addWidget(mapLayerButton);
 
-    // Select Center action
-    addAction(selectCenterAction);
-    connect(selectCenterAction, &QAction::triggered, this, [this]() {
-        emit selectCenterTriggered();
+    // Store layer actions for custom map additions
+    connect(this, &DesignToolBar::customMapAdded, this, [=](const QString &layerName, int zoomMin, int zoomMax, const QString &tileUrl) mutable {
+        // Prevent duplicate layer names
+        if (layerActions.contains(layerName)) {
+            qDebug() << "Error: Layer name" << layerName << "already exists";
+            return;
+        }
+
+        QAction* action = new QAction(layerName, this);
+        action->setCheckable(true);
+        action->setData(layerName);
+        action->setChecked(true); // Activate new layer immediately
+        mapLayerMenu->insertAction(mapLayerMenu->actions().last(), action); // Add before separator
+        layerGroup->addAction(action);
+        layerActions[layerName] = action;
+
+        connect(action, &QAction::triggered, this, [=]() {
+            QStringList activeLayers;
+            for (const auto& act : qAsConst(layerActions)) {
+                if (act->isChecked()) {
+                    activeLayers.append(act->data().toString());
+                }
+            }
+            qDebug() << "Custom layer action triggered, emitting mapLayerChanged with layers:" << activeLayers;
+            emit mapLayerChanged(activeLayers.join(","));
+        });
+
+        // Trigger layer update immediately after adding
+        QStringList activeLayers;
+        for (const auto& act : qAsConst(layerActions)) {
+            if (act->isChecked()) {
+                activeLayers.append(act->data().toString());
+            }
+        }
+        qDebug() << "Custom layer added, emitting mapLayerChanged with layers:" << activeLayers;
+        emit mapLayerChanged(activeLayers.join(","));
     });
-
-    // Search Place action with input box
-    QToolButton* searchPlaceButton = new QToolButton(this);
-    searchPlaceButton->setDefaultAction(searchPlaceAction);
-    searchPlaceButton->setPopupMode(QToolButton::InstantPopup);
-
-    QMenu* searchMenu = new QMenu(this);
-    QWidgetAction* searchAction = new QWidgetAction(this);
-
-    QLineEdit* searchInput = new QLineEdit();
-    searchInput->setPlaceholderText("Enter location...");
-    searchInput->setMinimumWidth(200);
-    connect(searchInput, &QLineEdit::returnPressed, [this, searchInput]() {
-        emit searchPlaceTriggered(searchInput->text());
-        searchInput->clear();
-    });
-
-    searchAction->setDefaultWidget(searchInput);
-    searchMenu->addAction(searchAction);
-    searchPlaceAction->setMenu(searchMenu);
-
-    addWidget(searchPlaceButton);
-
-
 }
-void DesignToolBar::highlightAction(QAction *activeAction)
-{
+void DesignToolBar::highlightAction(QAction *activeAction) {
     QList<QAction*> actions = {
-        viewAction, moveAction, rotateAction,scaleAction,
+        viewAction, moveAction, rotateAction, scaleAction,
         zoomInAction, zoomOutAction,
         gridToggleAction, snappingToggleAction,
         layerSelectAction, measureAreaAction, drawAction,
-        databaseAction,
-        mapSelectLayerAction, searchPlaceAction, selectCenterAction
+        databaseAction, mapSelectLayerAction, searchPlaceAction,
+        selectCenterAction, addCustomMapAction
     };
 
     for (QAction *action : actions) {
         QWidget *btn = widgetForAction(action);
         if (!btn) continue;
-
         if (action == activeAction) {
             btn->setStyleSheet("QToolButton { background-color: #d0e0ff; border: 1px solid #5070ff; border-radius: 4px; }");
         } else {
-            btn->setStyleSheet("");  // reset
+            btn->setStyleSheet("");
         }
     }
 }
 
 void DesignToolBar::onModeChanged(int mode) {
-    // Uncheck all transform actions first
     moveAction->setChecked(false);
     rotateAction->setChecked(false);
     scaleAction->setChecked(false);
 
-    // Check the appropriate action
     switch(mode) {
     case 0: moveAction->setChecked(true); break;
     case 1: rotateAction->setChecked(true); break;

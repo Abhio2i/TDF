@@ -59,6 +59,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
 
     // ================= RUNTIME TOOLBAR CONNECTIONS =================
+
     if (runtimeToolBar && tacticalDisplay && tacticalDisplay->canvas && simulation) {
         connect(runtimeToolBar, &RuntimeToolBar::startTriggered, [=]() {
             tacticalDisplay->canvas->simulation();
@@ -73,10 +74,18 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         });
 
         connect(runtimeToolBar, &RuntimeToolBar::speedChanged, simulation, &Simulation::setSpeed);
+        connect(runtimeToolBar, &RuntimeToolBar::speedChanged, this, [=](int speed) {
+            float moveSpeed = static_cast<float>(speed);
+            for (auto& [id, comp] : simulation->physicsComponent) {
+                if (comp.dynamicModel) {
+                    comp.dynamicModel->setMoveSpeed(moveSpeed);
+                }
+            }
+            qDebug() << "Simulation speed set to:" << speed << "(moveSpeed:" << moveSpeed << ")";
+        });
     } else {
         qWarning() << "Failed to connect RuntimeToolBar signals - nullptr detected";
     }
-
     // ================= CONSOLE VIEW CONNECTION =====================
     // connect(console, &Console::logUpdate, this, [=](std::string log) {
     //     consoleView->appendText(QString::fromStdString(log));
@@ -232,6 +241,10 @@ void RuntimeEditor::setupToolBarConnections()
             tacticalDisplay->canvas, &CanvasWidget::setGridOpacity);
     connect(designToolBar, &DesignToolBar::layerOptionToggled,
             tacticalDisplay->canvas, &CanvasWidget::toggleLayerVisibility);
+
+
+
+
 }
 
 /**

@@ -12,7 +12,7 @@
 #include <core/Hierarchy/Components/networkobject.h>
 #include <core/Hierarchy/Components/meshrenderer2d.h>
 #include <core/Hierarchy/Components/component.h>
-#include <core/Hierarchy/Components/dynamicmodel.h>
+#include <core/Hierarchy/Components/dynamicModel.h>
 #include <core/Hierarchy/Components/mission.h>
 #include <core/Hierarchy/Components/attachedenitities.h>
 

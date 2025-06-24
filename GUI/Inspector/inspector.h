@@ -79,4 +79,4 @@ private:
     QJsonObject copiedVectorData;
 };
 
-#endif // INSPECTOR_H
+#endif

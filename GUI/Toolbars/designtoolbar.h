@@ -1,4 +1,5 @@
 
+
 #ifndef DESIGNTOOLBAR_H
 #define DESIGNTOOLBAR_H
 
@@ -73,6 +74,8 @@ signals:
     void mapLayerChanged(const QString& layer);
 
     void selectCenterTriggered();
+
+    void customMapAdded(const QString &layerName, int zoomMin, int zoomMax, const QString &tileUrl); // New signal
 public slots:
     void onModeChanged(int mode);
 private:
@@ -99,6 +102,7 @@ private:
     QPixmap withWhiteBg(const QString &iconPath);
     QAction* loadJsonAction;
     QAction* saveJsonAction;
+    QAction *addCustomMapAction;
 
     QAction *snapGridSizeXAction;
     QAction *snapGridSizeYAction;

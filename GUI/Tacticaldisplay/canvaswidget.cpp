@@ -339,11 +339,11 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
     painter.translate(canvasOffset);
 
     drawGridLines(painter);
+    drawTrajectory(painter);
     drawMesh(painter);
     drawImage(painter);
     drawSelectionOutline(painter);
     drawCollider(painter);
-    drawTrajectory(painter);
 
     if (isDrawingTrajectory && !currentTrajectory.empty()) {
         painter.save();

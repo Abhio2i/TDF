@@ -2,62 +2,100 @@
 #include <core/InputSystem/inputmanager.h>
 
 DynamicModel::DynamicModel() {
-    controle = false;
+    controle = true;
 }
 
 void DynamicModel::Update(float deltaTime) {
-    if (!controle || !transform || !rigidbody) return;
+    if (!controle || !transform || !rigidbody || !trajectory) return;
 
     // Direction vectors
     Vector forwardDir = transform->forward(); // x-axis (forward)
     Vector upDir = transform->up();           // z-axis (up)
     Vector rightDir = transform->right();     // y-axis (right)
+     FollowTrajectory();
+    // *transform->position = Vector::Lerp(*transform->position,*trajectory->Trajectories[trajectory->current]->position,moveSpeed * 0.1);
+    // // Direction vector from current to target
 
-    // Input mapping
-    float rollInput = 0, pitchInput = 0, yawInput = 0, throttleInput = 0;
-    bool airBrakes = INPUT->isKeyPressed(Qt::Key_Space);
 
-    if (INPUT->isKeyPressed(Qt::Key_W)) pitchInput = 1;  // Nose down
-    if (INPUT->isKeyPressed(Qt::Key_S)) pitchInput = -1;   // Nose up
-    if (INPUT->isKeyPressed(Qt::Key_A)) rollInput = 1;    // Roll left
-    if (INPUT->isKeyPressed(Qt::Key_D)) rollInput = -1;   // Roll right
-    if (INPUT->isKeyPressed(Qt::Key_Q)) yawInput = -1;    // Yaw left
-    if (INPUT->isKeyPressed(Qt::Key_E)) yawInput = 1;     // Yaw right
-    if (INPUT->isKeyPressed(Qt::Key_Shift)) throttleInput = 1;
-    if (INPUT->isKeyPressed(Qt::Key_Control)) throttleInput = -1;
+    // if(trajectory->Trajectories.size()>trajectory->current && Vector::Distance(*transform->position,*trajectory->Trajectories[trajectory->current]->position) < 1){
+    //     trajectory->current +=1;
+    //     trajectory->current = trajectory->current>=trajectory->Trajectories.size()?(trajectory->Trajectories.size()-1):trajectory->current;
+    //     Vector direction = *trajectory->Trajectories[trajectory->current]->position - *transform->position;
 
-    // Clamp inputs
-    rollInput = qBound(-1.0f, rollInput, 1.0f);
-    pitchInput = qBound(-1.0f, pitchInput, 1.0f);
-    yawInput = qBound(-1.0f, yawInput, 1.0f);
-    throttleInput = qBound(-1.0f, throttleInput, 1.0f);
+    //     // Optional normalization
+    //     direction = direction.normalized();
 
-    // Throttle and velocity
-    throttle += throttleInput * deltaTime * 0.5f;
-    throttle = qBound(0.0f, throttle, 1.0f);
-    float speed = throttle * maxEnginePower; // maxSpeed replaces maxEnginePower
+    //     // Calculate rotation angle in degrees
+    //     float angleRad = atan2(direction.y, direction.x);
+    //     float angleDeg = angleRad * (180.0f / M_PI);
 
-    // Set velocity along forward direction
-    *rigidbody->velocity = forwardDir * speed;
-    if (airBrakes) {
-        *rigidbody->velocity *= (1.0f - deltaTime * airBrakesEffect);
+    //     // Apply rotation to face toward target
+    //     *transform->rotation = Vector(0, 0, angleDeg);
+    // }
+    // // // Input mapping
+    // // float rollInput = 0, pitchInput = 0, yawInput = 0, throttleInput = 0;
+    // // bool airBrakes = INPUT->isKeyPressed(Qt::Key_Space);
+
+    // // if (INPUT->isKeyPressed(Qt::Key_W)) pitchInput = 1;  // Nose down
+    // // if (INPUT->isKeyPressed(Qt::Key_S)) pitchInput = -1;   // Nose up
+    // // if (INPUT->isKeyPressed(Qt::Key_A)) rollInput = 1;    // Roll left
+    // // if (INPUT->isKeyPressed(Qt::Key_D)) rollInput = -1;   // Roll right
+    // // if (INPUT->isKeyPressed(Qt::Key_Q)) yawInput = -1;    // Yaw left
+    // // if (INPUT->isKeyPressed(Qt::Key_E)) yawInput = 1;     // Yaw right
+    // // if (INPUT->isKeyPressed(Qt::Key_Shift)) throttleInput = 1;
+    // // if (INPUT->isKeyPressed(Qt::Key_Control)) throttleInput = -1;
+
+    // // // Clamp inputs
+    // // rollInput = qBound(-1.0f, rollInput, 1.0f);
+    // // pitchInput = qBound(-1.0f, pitchInput, 1.0f);
+    // // yawInput = qBound(-1.0f, yawInput, 1.0f);
+    // // throttleInput = qBound(-1.0f, throttleInput, 1.0f);
+
+    // // // Throttle and velocity
+    // // throttle += throttleInput * deltaTime * 0.5f;
+    // // throttle = qBound(0.0f, throttle, 1.0f);
+    // // float speed = throttle * maxEnginePower; // maxSpeed replaces maxEnginePower
+
+    // // // Set velocity along forward direction
+    // // *rigidbody->velocity = forwardDir * speed;
+    // // if (airBrakes) {
+    // //     *rigidbody->velocity *= (1.0f - deltaTime * airBrakesEffect);
+    // // }
+    // // rigidbody->setLinearVelocity(*rigidbody->velocity);
+
+    // // // Define angular velocity in local axes (roll on x, pitch on y, yaw on z)
+    // // Vector localAngularVelocity(
+    // //     rollInput * rotationSpeed,   // Roll (local x-axis, forward)
+    // //     pitchInput * rotationSpeed,  // Pitch (local y-axis, right)
+    // //     yawInput * rotationSpeed     // Yaw (local z-axis, up)
+    // //     );
+    // // // Transform to global axes
+    // // Vector globalAngularVelocity =
+    // //     forwardDir * localAngularVelocity.x +  // Roll contribution
+    // //     rightDir * localAngularVelocity.y +    // Pitch contribution
+    // //     upDir * localAngularVelocity.z;        // Yaw contribution
+    // // rigidbody->setAngularVelocity(globalAngularVelocity);
+    // // // Altitude
+    // // altitude = transform->position->z;
+}
+
+
+
+void DynamicModel::FollowTrajectory() {
+    *transform->position = Vector::Lerp(*transform->position, *trajectory->Trajectories[trajectory->current]->position, moveSpeed * 0.1);
+
+    if(trajectory->Trajectories.size() > trajectory->current && Vector::Distance(*transform->position, *trajectory->Trajectories[trajectory->current]->position) < 1){
+        trajectory->current += 1;
+        trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? (trajectory->Trajectories.size()-1) : trajectory->current;
+        Vector direction = *trajectory->Trajectories[trajectory->current]->position - *transform->position;
+
+        direction = direction.normalized();
+
+        float angleRad = atan2(direction.y, direction.x);
+        float angleDeg = angleRad * (180.0f / M_PI);
+
+        *transform->rotation = Vector(0, 0, angleDeg);
     }
-    rigidbody->setLinearVelocity(*rigidbody->velocity);
-
-    // Define angular velocity in local axes (roll on x, pitch on y, yaw on z)
-    Vector localAngularVelocity(
-        rollInput * rotationSpeed,   // Roll (local x-axis, forward)
-        pitchInput * rotationSpeed,  // Pitch (local y-axis, right)
-        yawInput * rotationSpeed     // Yaw (local z-axis, up)
-        );
-    // Transform to global axes
-    Vector globalAngularVelocity =
-        forwardDir * localAngularVelocity.x +  // Roll contribution
-        rightDir * localAngularVelocity.y +    // Pitch contribution
-        upDir * localAngularVelocity.z;        // Yaw contribution
-    rigidbody->setAngularVelocity(globalAngularVelocity);
-    // Altitude
-    altitude = transform->position->z;
 }
 
 QJsonObject DynamicModel::toJson() const {
@@ -111,4 +149,8 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
         autoRollLevel = obj["autoRollLevel"].toVariant().toDouble();
     if (obj.contains("autoPitchLevel"))
         autoPitchLevel = obj["autoPitchLevel"].toVariant().toDouble();
+}
+
+void DynamicModel::setMoveSpeed(float speed) {
+    moveSpeed = qBound(1.0f, speed, 10.0f);
 }

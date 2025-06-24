@@ -31,6 +31,7 @@ SOURCES += \
     GUI/Overview/overview.cpp \
     GUI/Plugins/pluginwindow.cpp \
     GUI/Sidebar/sidebarwidget.cpp \
+    GUI/Tacticaldisplay/Gis/custommapdialog.cpp \
     GUI/Tacticaldisplay/Gis/gislib.cpp \
     GUI/Tacticaldisplay/Gis/gisnetwork.cpp \
     GUI/Tacticaldisplay/canvaswidget.cpp \
@@ -343,6 +344,7 @@ HEADERS += \
     GUI/Overview/overview.h \
     GUI/Plugins/pluginwindow.h \
     GUI/Sidebar/sidebarwidget.h \
+    GUI/Tacticaldisplay/Gis/custommapdialog.h \
     GUI/Tacticaldisplay/Gis/gislib.h \
     GUI/Tacticaldisplay/Gis/gisnetwork.h \
     GUI/Tacticaldisplay/canvaswidget.h \

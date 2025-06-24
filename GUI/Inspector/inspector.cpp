@@ -650,37 +650,80 @@ bool Inspector::eventFilter(QObject *watched, QEvent *event)
     return QDockWidget::eventFilter(watched, event);
 }
 
-void Inspector::init(QString ID, QString name, QJsonObject obj)
+
+// void Inspector::init(QString ID, QString name, QJsonObject obj)
+// {
+//     ConnectedID = ID;
+//     if (name.compare("Trajectories", Qt::CaseInsensitive) == 0) {
+//         Name = "trajectory";
+
+//     } else {
+//         Name = name.toLower();
+//     }
+//     titleLabel->setText(name);
+//     tableWidget->clearContents();
+//     tableWidget->blockSignals(true);
+//     rowToKeyPath.clear();
+//     customParameterKeys.clear();
+
+//     if (Name == "trajectory" && obj.isEmpty() && hierarchy) {
+//         obj = hierarchy->getComponentData(ID, "trajectory");
+//         qDebug() << "Fetched trajectory data for ID:" << ID << "data:" << obj;
+//     }
+
+//     tableWidget->setRowCount(obj.size());
+
+//     int row = 0;
+//     for (const QString &key : obj.keys()) {
+//         row = addSimpleRow(row, key, obj[key]);
+//     }
+
+//     tableWidget->blockSignals(false);
+//     tableWidget->viewport()->update();
+//     qDebug() << "Initialized Inspector with ID:" << ID << "name:" << Name << "data:" << obj;
+// }
+#include <QDebug>
+#include <QString>
+#include <QJsonObject>
+#include "inspector.h"
+
+void Inspector::init(QString ID, QString name, QJsonObject object)
 {
     ConnectedID = ID;
+    // Handle name normalization for specific cases
     if (name.compare("Trajectories", Qt::CaseInsensitive) == 0) {
-        Name = "trajectory";
+        Name = QString("trajectory");
+    } else if (name.compare("dynamicModel", Qt::CaseInsensitive) == 0) {
+        Name = QString("dynamicModel"); // Keep as dynamicModel
+    } else if (name.compare("meshRenderer2d", Qt::CaseInsensitive) == 0) {
+        Name = QString("meshRenderer2d"); // Keep as meshRenderer2d
     } else {
         Name = name.toLower();
     }
-    titleLabel->setText(name);
-    tableWidget->clearContents();
-    tableWidget->blockSignals(true);
-    rowToKeyPath.clear();
-    customParameterKeys.clear();
+    titleLabel->setText(name); // Set the display name
+    tableWidget->clearContents(); // Clear existing table content
+    tableWidget->blockSignals(true); // Prevent signals during initialization
+    rowToKeyPath.clear(); // Clear row-to-key mappings
+    customParameterKeys.clear(); // Clear custom parameter keys
 
-    if (Name == "trajectory" && obj.isEmpty() && hierarchy) {
-        obj = hierarchy->getComponentData(ID, "trajectory");
-        qDebug() << "Fetched trajectory data for ID:" << ID << "data:" << obj;
+    // Fetch data for trajectory, dynamicModel, or meshRenderer2d if object is empty and hierarchy exists
+    if ((Name == QString("trajectory") || Name == QString("dynamicModel") || Name == QString("meshRenderer2d")) && object.isEmpty() && hierarchy) {
+        QString dataType = Name; // Use Name directly as dataType
+        object = hierarchy->getComponentData(ID, dataType);
+        qDebug() << QString("Fetched %1 data for ID:").arg(dataType) << ID << QString("data:") << object;
     }
 
-    tableWidget->setRowCount(obj.size());
+    tableWidget->setRowCount(object.size()); // Set row count based on object size
 
     int row = 0;
-    for (const QString &key : obj.keys()) {
-        row = addSimpleRow(row, key, obj[key]);
+    for (const QString &key : object.keys()) {
+        row = addSimpleRow(row, key, object[key]); // Populate table rows
     }
 
-    tableWidget->blockSignals(false);
-    tableWidget->viewport()->update();
-    qDebug() << "Initialized Inspector with ID:" << ID << "name:" << Name << "data:" << obj;
+    tableWidget->blockSignals(false); // Re-enable signals
+    tableWidget->viewport()->update(); // Refresh table display
+    qDebug() << QString("Initialized Inspector with ID:") << ID << QString("name:") << Name << QString("data:") << object;
 }
-
 int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value)
 {
     rowToKeyPath[row] = key;

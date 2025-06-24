@@ -8,6 +8,7 @@
 #include "GUI/Inspector/inspector.h"
 #include "GUI/Tacticaldisplay/canvaswidget.h"
 #include "GUI/Tacticaldisplay/tacticaldisplay.h"
+#include "GUI/Toolbars/standardtoolbar.h"
 #include "GUI/Toolbars/designtoolbar.h"
 #include "GUI/Toolbars/runtimetoolbar.h"
 #include "GUI/Toolbars/networktoolbar.h"
@@ -68,6 +69,7 @@ private:
     DesignToolBar *designToolBar;
     RuntimeToolBar *runtimeToolBar;
     NetworkToolbar *networkToolBar;
+     StandardToolBar *standardToolBar;
 
     QList<QDockWidget*> inspectorDocks;
     int inspectorCount = 0;
