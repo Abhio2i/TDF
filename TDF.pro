@@ -296,8 +296,10 @@ SOURCES += \
     core/Hierarchy/hierarchy.cpp \
     core/Hierarchy/profilecategaory.cpp \
     core/InputSystem/inputmanager.cpp \
+    core/Network/client.cpp \
     core/Network/netwoktransport.cpp \
     core/Network/networkmanager.cpp \
+    core/Network/server.cpp \
     core/Plugins/pluginmanager.cpp \
     core/Render/scenerenderer.cpp \
     core/Simulation/simulation.cpp \
@@ -771,8 +773,10 @@ HEADERS += \
     core/Hierarchy/hierarchy.h \
     core/Hierarchy/profilecategaory.h \
     core/InputSystem/inputmanager.h \
+    core/Network/client.h \
     core/Network/netwoktransport.h \
     core/Network/networkmanager.h \
+    core/Network/server.h \
     core/Plugins/pluginmanager.h \
     core/Render/scenerenderer.h \
     core/Simulation/simulation.h \
@@ -793,9 +797,10 @@ HEADERS += \
     core/structure/hierarchy.h \
     core/structure/missioncreator.h \
     core/structure/missionexcuter.h \
-    core/structure/profilecategaory.h \
     core/structure/runtime.h \
     core/structure/scenario.h
+
+win32: LIBS += -lws2_32
 
 FORMS +=
 

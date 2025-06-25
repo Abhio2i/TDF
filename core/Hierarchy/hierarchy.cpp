@@ -102,6 +102,12 @@ Entity* Hierarchy::addEntity(QString parentId,QString EntityName,bool Profile){
     }
 }
 
+
+//=====addentityViaNetwork======
+void Hierarchy::addEntityViaNetwork(QString parentId,QJsonObject obj,bool Profile){
+    addEntityFromJson(parentId,obj,Profile);
+}
+
 Entity* Hierarchy::addEntityFromJson(QString parentId,QJsonObject obj,bool Profile){
     QString EntityName = obj["name"].toString();
     Entity* entity;
@@ -127,6 +133,12 @@ void Hierarchy::removeEntity(QString parentId,QString ID,bool Profile){
 void Hierarchy::renameEntity(QString Id, QString name){
     (*Entities)[Id.toStdString()]->Name = name.toStdString();
     emit entityRenamed(Id,name);
+}
+//==============
+void Hierarchy::addComponent(QString ID,QString componentName){
+    if (Entities->find(ID.toStdString()) != Entities->end()) {
+        (*Entities)[ID.toStdString()]->addComponent(componentName.toStdString());
+    }
 }
 
 QJsonObject Hierarchy::getComponentData(QString ID,QString componentName){
@@ -222,3 +234,10 @@ void Hierarchy::removeComponent(QString entityId, QString componentName)
         emit entityUpdate(entityId); // Notify that the entity has changed
     }
 }
+
+// getcurrentjsonData
+
+void Hierarchy::getCurrentJsonData(){
+    emit getJsonData(toJson());
+}
+

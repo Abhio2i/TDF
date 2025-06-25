@@ -15,4 +15,35 @@ Runtime::Runtime() {
     connect(hierarchy,&Hierarchy::entityPhysicsAdded,simulation,&Simulation::entityAdded);
     connect(hierarchy,&Hierarchy::entityPhysicsRemoved,simulation,&Simulation::entityRemoved);
     connect(hierarchy,&Hierarchy::entityUpdate,simulation,&Simulation::entityUpdate);
+    // NetworkManager connections
+    connect(hierarchy, &Hierarchy::entityAddedPointer,
+            networkManager, &NetworkManager::entityAddedPointer);
+    connect(hierarchy, &Hierarchy::entityAdded,
+            networkManager, &NetworkManager::entityAdded);
+    connect(hierarchy, &Hierarchy::entityRemovedfull,
+            networkManager, &NetworkManager::entityRemoved);
+    connect(hierarchy, &Hierarchy::entityRenamed,
+            networkManager, &NetworkManager::entityRenamed);
+    connect(hierarchy, &Hierarchy::entityUpdate,
+            networkManager, &NetworkManager::entityUpdate);
+
+    connect(hierarchy, &Hierarchy::componentAdded,
+            networkManager, &NetworkManager::componentAdded);
+
+    connect(hierarchy, &Hierarchy::entityMeshAdded,
+            networkManager, &NetworkManager::entityMeshAdded);
+    connect(hierarchy, &Hierarchy::entityMeshRemoved,
+            networkManager, &NetworkManager::entityMeshRemoved);
+
+    connect(hierarchy, &Hierarchy::entityPhysicsAdded,
+            networkManager, &NetworkManager::entityPhysicsAdded);
+    connect(hierarchy, &Hierarchy::entityPhysicsRemoved,
+            networkManager, &NetworkManager::entityPhysicsRemoved);
+
+    connect(networkManager,&NetworkManager::initData,hierarchy,&Hierarchy::fromJson);
+    connect(networkManager,&NetworkManager::getCurrentJsonData,hierarchy,&Hierarchy::getCurrentJsonData);
+    connect(hierarchy,&Hierarchy::getJsonData,networkManager,&NetworkManager::getJsonData);
+    connect(networkManager,&NetworkManager::addEntityFromJson,hierarchy,&Hierarchy::addEntityViaNetwork);
+    connect(networkManager,&NetworkManager::addComponent,hierarchy,&Hierarchy::addComponent);
+    connect(networkManager,&NetworkManager::removeEntity,hierarchy,&Hierarchy::removeEntity);
 }

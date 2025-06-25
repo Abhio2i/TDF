@@ -29,6 +29,8 @@ public:
     void removeFolder(QString parentId,QString ID,bool Profile);
 
     Entity* addEntity(QString parentId,QString EntityName,bool Profile);
+    // // addentityvianetwork
+    void addEntityViaNetwork(QString parentId,QJsonObject obj,bool Profile);
     Entity* addEntityFromJson(QString parentId,QJsonObject obj,bool Profile);
     void removeEntity(QString parentId,QString ID,bool Profile);
 
@@ -39,6 +41,9 @@ public:
 
     QJsonObject toJson();
     void fromJson(const QJsonObject& obj);
+   // //  getcurrentjsondata
+    void getCurrentJsonData();
+    void addComponent(QString Id,QString ComponentName);
 
     QJsonObject getComponentData(QString ID,QString componentName);
     void UpdateComponent(QString ID,QString name,QJsonObject delta);
@@ -65,6 +70,7 @@ signals:
     void profileRemoved(QString ID);
     void folderRemoved(QString ID);
     void entityRemoved(QString ID);
+    void entityRemovedfull(QString parentId,QString ID,bool Profile);
     void componentRemoved(QString parentID,QString componentName);
 
     void profileRenamed(QString Id, QString name);
@@ -79,6 +85,7 @@ signals:
 
 
     void entityUpdate(QString ID);
+    void getJsonData(const QJsonObject& obj);
 };
 
 #endif // HIERARCHY_H

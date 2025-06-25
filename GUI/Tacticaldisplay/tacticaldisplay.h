@@ -89,8 +89,8 @@ public slots:
     void addMesh(QString ID, MeshData meshData);
     void removeMesh(QString ID);
     void selectedMesh(QString ID);
-    void setMapLayers(const QStringList& layerNames); // Changed to support multiple layers
-    void addCustomMap(const QString& layerName, int zoomMin, int zoomMax, const QString& tileUrl); // New slot
+    void setMapLayers(const QStringList& layerNames);
+    void addCustomMap(const QString& layerName, int zoomMin, int zoomMax, const QString& tileUrl);
 
 signals:
     void meshSelected(QString ID);

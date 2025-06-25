@@ -46,6 +46,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     SceneRenderer *renderer = runtime->scenerenderer;
     Simulation *simulation = runtime->simulation;
     Console *console = runtime->console;
+    NetworkManager *networkManager = runtime->networkManager;
     library = runtime->Library;
 
     // Connect hierarchy signals to tactical display
@@ -60,7 +61,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
 
     // ================= RUNTIME TOOLBAR CONNECTIONS =================
 
-    if (runtimeToolBar && tacticalDisplay && tacticalDisplay->canvas && simulation) {
+    if (runtimeToolBar && tacticalDisplay && tacticalDisplay->canvas && simulation ) {
         connect(runtimeToolBar, &RuntimeToolBar::startTriggered, [=]() {
             tacticalDisplay->canvas->simulation();
             simulation->start();
@@ -83,6 +84,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             }
             qDebug() << "Simulation speed set to:" << speed << "(moveSpeed:" << moveSpeed << ")";
         });
+            networkToolBar->setNetworkManager(networkManager);
     } else {
         qWarning() << "Failed to connect RuntimeToolBar signals - nullptr detected";
     }

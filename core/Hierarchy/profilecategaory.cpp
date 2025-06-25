@@ -190,6 +190,7 @@ void ProfileCategaory::removeEntity(std::string EntityID){
     if (parent && parent->Entities) {
         parent->Entities->erase(EntityID);
         emit parent->entityRemoved(QString::fromStdString(EntityID));
+        emit parent->entityRemovedfull(QString::fromStdString(ID),QString::fromStdString(EntityID),false);
     } else {
         Console::error(
             "RunTimeError::" + std::string(__FILE__) + "," +
