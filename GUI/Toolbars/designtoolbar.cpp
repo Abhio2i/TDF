@@ -477,13 +477,10 @@ void DesignToolBar::setupToolBar() {
 
     QVector<QPair<QString, QString>> layers = {
         {"OpenStreetMap", "osm"},
-        {"ArcGIS Imagery", "arcgis"},
         {"OpenTopoMap", "opentopo"},
         {"Carto Light", "carto-light"},
         {"Carto Dark", "carto-dark"},
-        {"Esri Street Map", "Esri Street Map"},
-        {"Esri Topographic", "Esri Topographic Map"},
-        {"Wikimedia Maps", "Wikimedia Maps"}
+        {"World Imagery", "World Imagery"}
     };
 
     QMap<QString, QAction*> layerActions; // Store actions for dynamic updates
@@ -551,6 +548,37 @@ void DesignToolBar::setupToolBar() {
         qDebug() << "Custom layer added, emitting mapLayerChanged with layers:" << activeLayers;
         emit mapLayerChanged(activeLayers.join(","));
     });
+
+
+
+    // Select Center action
+    addAction(selectCenterAction);
+    connect(selectCenterAction, &QAction::triggered, this, [this]() {
+        emit selectCenterTriggered();
+    });
+
+    // Search Place action with input box
+    QToolButton* searchPlaceButton = new QToolButton(this);
+    searchPlaceButton->setDefaultAction(searchPlaceAction);
+    searchPlaceButton->setPopupMode(QToolButton::InstantPopup);
+
+    QMenu* searchMenu = new QMenu(this);
+    QWidgetAction* searchAction = new QWidgetAction(this);
+
+    QLineEdit* searchInput = new QLineEdit();
+    searchInput->setPlaceholderText("Enter location...");
+    searchInput->setMinimumWidth(200);
+    connect(searchInput, &QLineEdit::returnPressed, [this, searchInput]() {
+        emit searchPlaceTriggered(searchInput->text());
+        searchInput->clear();
+    });
+
+    searchAction->setDefaultWidget(searchInput);
+    searchMenu->addAction(searchAction);
+    searchPlaceAction->setMenu(searchMenu);
+
+    addWidget(searchPlaceButton);
+
 }
 void DesignToolBar::highlightAction(QAction *activeAction) {
     QList<QAction*> actions = {

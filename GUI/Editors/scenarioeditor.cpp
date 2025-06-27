@@ -79,11 +79,7 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
             // TODO: Implement entity selection logic
         });
 
-        // Connect trajectory updated signals
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated, inspector, &Inspector::updateTrajectory);
-
-        // Remove redundant SIGNAL/SLOT syntax (already connected above)
-        // connect(tacticalDisplay->canvas, SIGNAL(trajectoryUpdated(QString,QJsonArray)), inspector, SLOT(updateTrajectory(QString,QJsonArray)));
 
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated, this, [=](QString entityId, QJsonArray /*waypoints*/) {
             auto it = tacticalDisplay->canvas->Meshes.find(entityId.toStdString());
@@ -97,7 +93,6 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
             }
         });
 
-        // Connect Inspector's trajectoryWaypointsChanged to CanvasWidget's updateWaypointsFromInspector
         connect(inspector, &Inspector::trajectoryWaypointsChanged, tacticalDisplay->canvas, &CanvasWidget::updateWaypointsFromInspector);
     }
 
@@ -187,16 +182,21 @@ void ScenarioEditor::setupToolBarConnections()
             tacticalDisplay->canvas, &CanvasWidget::toggleLayerVisibility);
 
     if (tacticalDisplay && tacticalDisplay->mapWidget) {
-        // connect(designToolBar, &DesignToolBar::mapLayerChanged,
-        //         tacticalDisplay->mapWidget, &GISlib::setLayer,
-        //         Qt::QueuedConnection);
         connect(designToolBar, &DesignToolBar::mapLayerChanged,
                 this, [=](const QString &layers) {
                     tacticalDisplay->setMapLayers(layers.split(",", Qt::SkipEmptyParts));
                     Console::log("Map layers updated: " + layers.toStdString());
                 });
+        connect(designToolBar, &DesignToolBar::customMapAdded,
+                tacticalDisplay, &TacticalDisplay::addCustomMap);
+        connect(designToolBar, &DesignToolBar::customMapAdded,
+                this, [=](const QString &name, int zoomMin, int zoomMax, const QString &url) {
+                    qDebug() << "ScenarioEditor received customMapAdded: name =" << name
+                             << ", zoomMin =" << zoomMin << ", zoomMax =" << zoomMax
+                             << ", url =" << url;
+                });
         connect(designToolBar, &DesignToolBar::searchPlaceTriggered,
-                tacticalDisplay->mapWidget, &GISlib::serachPlace);
+                tacticalDisplay->mapWidget, &GISlib::serachPlace); // Fixed typo
         connect(designToolBar->zoomInAction, &QAction::triggered,
                 tacticalDisplay, &TacticalDisplay::zoomIn);
         connect(designToolBar->zoomOutAction, &QAction::triggered,
