@@ -8,6 +8,7 @@
 #include <QAction>
 #include <QMenu>
 #include <core/Hierarchy/Components/transform.h>
+#include <GUI/Tacticaldisplay/Gis/layerinformationdialog.h>
 
 
 
@@ -38,6 +39,19 @@ public:
     QAction *mapSelectLayerAction;
     QAction *selectCenterAction;
     QAction *searchPlaceAction;
+    QAction *layerInfoAction; // Ensure this is declared
+
+    struct MapLayer {
+        QString name;
+        QString id;
+        int zoomMin;
+        int zoomMax;
+        QString tileUrl;
+        bool isCustom;
+        qreal opacity;
+        QString resolution;
+        QString type;
+    };
 signals:
     void viewTriggered();
     void moveTriggered();
@@ -75,9 +89,12 @@ signals:
 
     void selectCenterTriggered();
 
+
     void customMapAdded(const QString &layerName, int zoomMin, int zoomMax, const QString &tileUrl); // New signal
 public slots:
     void onModeChanged(int mode);
+
+// void mapLayerNameChanged(const QString &layerNames);
 private:
     QAction *viewAction;
     QAction *moveAction;
@@ -110,7 +127,9 @@ private:
     QAction *snapRotateAction;
     QAction *snapScaleAction;
 
+    QMap<QString, QAction*> layerActions;
 
+QList<LayerInformationDialog::MapLayerInfo> mapLayers; // Store all layers
 
 };
 

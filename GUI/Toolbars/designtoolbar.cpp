@@ -2,6 +2,7 @@
 
 #include "GUI/Toolbars/designtoolbar.h"
 #include "GUI/Tacticaldisplay/Gis/custommapdialog.h"
+#include "GUI/Tacticaldisplay/Gis/layerinformationdialog.h"
 #include <QLineEdit>
 #include <QIcon>
 #include <QDebug>
@@ -41,8 +42,8 @@ DesignToolBar::DesignToolBar(QWidget *parent) : QToolBar(parent) {
     setupToolBar();
 
     QMenu* databaseMenu = new QMenu(this);
-    loadJsonAction = new QAction("📂 Load JSON", this);
-    saveJsonAction = new QAction("💾 Save JSON", this);
+    loadJsonAction = new QAction("Load JSON", this);
+    saveJsonAction = new QAction("Save JSON", this);
     databaseMenu->addAction(loadJsonAction);
     databaseMenu->addAction(saveJsonAction);
     databaseAction->setMenu(databaseMenu);
@@ -54,6 +55,15 @@ DesignToolBar::DesignToolBar(QWidget *parent) : QToolBar(parent) {
 }
 
 void DesignToolBar::createActions() {
+    // Initialize default map layers
+    mapLayers = {
+        { "OpenStreetMap", "osm", 0, 19, "", false, -1.0, "N/A", "Raster" },
+        { "OpenTopoMap", "opentopo", 0, 17, "", false, -1.0, "N/A", "Raster" },
+        { "Carto Light", "carto-light", 0, 20, "", false, -1.0, "N/A", "Raster" },
+        { "Carto Dark", "carto-dark", 0, 20, "", false, -1.0, "N/A", "Raster" },
+        { "World Imagery", "World Imagery", 0, 22, "", false, -1.0, "N/A", "Raster" }
+    };
+
     viewAction = new QAction(QIcon(withWhiteBg(":/icons/images/view.jpg")), tr("View"), this);
     viewAction->setCheckable(true);
     viewAction->setShortcut(QKeySequence(Qt::Key_0));
@@ -260,8 +270,8 @@ void DesignToolBar::createActions() {
         emit databaseTriggered();
     });
 
-    loadJsonAction = new QAction("📂 Load JSON", this);
-    saveJsonAction = new QAction("💾 Save JSON", this);
+    loadJsonAction = new QAction("Load JSON", this);
+    saveJsonAction = new QAction("Save JSON", this);
 
     addCustomMapAction = new QAction("Add Custom Map", this);
     connect(addCustomMapAction, &QAction::triggered, this, [=]() {
@@ -269,13 +279,133 @@ void DesignToolBar::createActions() {
         if (dialog.exec() == QDialog::Accepted) {
             QString mapName = dialog.getMapName().trimmed();
             QString tileUrl = dialog.getTileUrl();
-            int zoomMin = dialog.getZoomMin();
-            int zoomMax = dialog.getZoomMax();
             if (!mapName.isEmpty() && !tileUrl.isEmpty()) {
-                emit customMapAdded(mapName, zoomMin, zoomMax, tileUrl);
+                mapLayers.append({mapName, mapName, dialog.getZoomMin(), dialog.getZoomMax(),
+                                  tileUrl, true, dialog.getOpacity(),
+                                  dialog.getResolution().isEmpty() ? "N/A" : dialog.getResolution(),
+                                  dialog.getType()});
+                emit customMapAdded(mapName, dialog.getZoomMin(), dialog.getZoomMax(), tileUrl);
             }
         }
     });
+
+    layerInfoAction = new QAction(QIcon(withWhiteBg(":/icons/images/info.png")), tr("Layer Information"), this);
+    layerInfoAction->setCheckable(false);
+    connect(layerInfoAction, &QAction::triggered, this, [=]() {
+        LayerInformationDialog dialog(mapLayers, this);
+        connect(&dialog, &LayerInformationDialog::layerEdited, this, [=](int index, const LayerInformationDialog::MapLayerInfo& updatedLayer) {
+            if (index >= 0 && index < mapLayers.size()) {
+                QString oldName = mapLayers[index].name;
+                mapLayers[index] = updatedLayer;
+
+                // Update the layer menu
+                for (QAction* action : layerActions) {
+                    if (action->data().toString() == oldName) {
+                        action->setText(updatedLayer.name);
+                        action->setData(updatedLayer.id);
+                        break;
+                    }
+                }
+
+                // Emit signals to update the map
+                QStringList activeLayers;
+                QStringList activeLayerNames;
+                for (const auto& act : std::as_const(layerActions)) {
+                    if (act->isChecked()) {
+                        activeLayers.append(act->data().toString());
+                        activeLayerNames.append(act->text());
+                    }
+                }
+                qDebug() << "Layer edited, emitting mapLayerChanged with layers:" << activeLayers;
+                emit mapLayerChanged(activeLayers.join(","));
+            }
+        });
+        dialog.exec();
+    });
+
+    // Map Layer Menu Setup
+    StayOpenMenu* mapLayerMenu = new StayOpenMenu(this);
+    mapLayerMenu->setStyleSheet("QMenu::item:checked { background-color: #d0e0ff; }");
+
+    QActionGroup* layerGroup = new QActionGroup(this);
+    layerGroup->setExclusive(false);
+
+    layerActions.clear();
+    for (const auto& layer : mapLayers) {
+        QAction* action = new QAction(layer.name, this);
+        action->setCheckable(true);
+        action->setData(layer.id);
+        if (layer.name == "OpenStreetMap") action->setChecked(true);
+        mapLayerMenu->addAction(action);
+        layerGroup->addAction(action);
+        layerActions[layer.id] = action;
+
+        connect(action, &QAction::triggered, this, [=]() {
+            QStringList activeLayers;
+            for (const auto& act : std::as_const(layerActions)) {
+                if (act->isChecked()) {
+                    activeLayers.append(act->data().toString());
+                }
+            }
+            qDebug() << "Emitting mapLayerChanged with layers:" << activeLayers;
+            emit mapLayerChanged(activeLayers.join(","));
+        });
+    }
+
+    mapLayerMenu->addSeparator();
+    mapLayerMenu->addAction(addCustomMapAction);
+    mapSelectLayerAction->setMenu(mapLayerMenu);
+
+    connect(this, &DesignToolBar::customMapAdded, this, [=](const QString &layerName, int /*zoomMin*/, int /*zoomMax*/, const QString &/*tileUrl*/) mutable {
+        if (layerActions.contains(layerName)) {
+            qDebug() << "Error: Layer name" << layerName << "already exists";
+            return;
+        }
+
+        QAction* action = new QAction(layerName, this);
+        action->setCheckable(true);
+        action->setData(layerName);
+        action->setChecked(true);
+        mapLayerMenu->insertAction(mapLayerMenu->actions().last(), action);
+        layerGroup->addAction(action);
+        layerActions[layerName] = action;
+
+        connect(action, &QAction::triggered, this, [=]() {
+            QStringList activeLayers;
+            for (const auto& act : std::as_const(layerActions)) {
+                if (act->isChecked()) {
+                    activeLayers.append(act->data().toString());
+                }
+            }
+            qDebug() << "Custom layer action triggered, emitting mapLayerChanged with layers:" << activeLayers;
+            emit mapLayerChanged(activeLayers.join(","));
+        });
+
+        QStringList activeLayers;
+        QStringList activeLayerNames;
+        for (const auto& act : std::as_const(layerActions)) {
+            if (act->isChecked()) {
+                activeLayers.append(act->data().toString());
+                activeLayerNames.append(act->text());
+            }
+        }
+        qDebug() << "Custom layer added, emitting mapLayerChanged with layers:" << activeLayers;
+        emit mapLayerChanged(activeLayers.join(","));
+    });
+
+    // Search Place Menu Setup
+    QMenu* searchMenu = new QMenu(this);
+    QWidgetAction* searchAction = new QWidgetAction(this);
+    QLineEdit* searchInput = new QLineEdit();
+    searchInput->setPlaceholderText("Enter location...");
+    searchInput->setMinimumWidth(200);
+    connect(searchInput, &QLineEdit::returnPressed, [this, searchInput]() {
+        emit searchPlaceTriggered(searchInput->text());
+        searchInput->clear();
+    });
+    searchAction->setDefaultWidget(searchInput);
+    searchMenu->addAction(searchAction);
+    searchPlaceAction->setMenu(searchMenu);
 }
 
 void DesignToolBar::setupToolBar() {
@@ -463,123 +593,24 @@ void DesignToolBar::setupToolBar() {
     addSeparator();
     addAction(zoomInAction);
     addAction(zoomOutAction);
+    addAction(layerInfoAction);
+    addAction(selectCenterAction);
 
+    // Add Map Layer button without dropdown arrow
     QToolButton* mapLayerButton = new QToolButton(this);
     mapLayerButton->setDefaultAction(mapSelectLayerAction);
     mapLayerButton->setPopupMode(QToolButton::InstantPopup);
-
-
-    StayOpenMenu* mapLayerMenu = new StayOpenMenu(this);
-    mapLayerMenu->setStyleSheet("QMenu::item:checked { background-color: #d0e0ff; }");
-
-    QActionGroup* layerGroup = new QActionGroup(this);
-    layerGroup->setExclusive(false); // Allow multiple layers to be selected
-
-    QVector<QPair<QString, QString>> layers = {
-        {"OpenStreetMap", "osm"},
-        {"OpenTopoMap", "opentopo"},
-        {"Carto Light", "carto-light"},
-        {"Carto Dark", "carto-dark"},
-        {"World Imagery", "World Imagery"}
-    };
-
-    QMap<QString, QAction*> layerActions; // Store actions for dynamic updates
-    for (const auto& layer : layers) {
-        QAction* action = new QAction(layer.first, this);
-        action->setCheckable(true);
-        action->setData(layer.second);
-        if (layer.first == "OpenStreetMap") action->setChecked(true);
-        mapLayerMenu->addAction(action);
-        layerGroup->addAction(action);
-        layerActions[layer.second] = action;
-
-        connect(action, &QAction::triggered, this, [=]() {
-            QStringList activeLayers;
-            for (const auto& act : qAsConst(layerActions)) {
-                if (act->isChecked()) {
-                    activeLayers.append(act->data().toString());
-                }
-            }
-            qDebug() << "Emitting mapLayerChanged with layers:" << activeLayers;
-            emit mapLayerChanged(activeLayers.join(","));
-        });
-    }
-
-    mapLayerMenu->addSeparator();
-    mapLayerMenu->addAction(addCustomMapAction);
-
-    mapSelectLayerAction->setMenu(mapLayerMenu);
+    mapLayerButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
     addWidget(mapLayerButton);
 
-    // Store layer actions for custom map additions
-    connect(this, &DesignToolBar::customMapAdded, this, [=](const QString &layerName, int zoomMin, int zoomMax, const QString &tileUrl) mutable {
-        // Prevent duplicate layer names
-        if (layerActions.contains(layerName)) {
-            qDebug() << "Error: Layer name" << layerName << "already exists";
-            return;
-        }
-
-        QAction* action = new QAction(layerName, this);
-        action->setCheckable(true);
-        action->setData(layerName);
-        action->setChecked(true); // Activate new layer immediately
-        mapLayerMenu->insertAction(mapLayerMenu->actions().last(), action); // Add before separator
-        layerGroup->addAction(action);
-        layerActions[layerName] = action;
-
-        connect(action, &QAction::triggered, this, [=]() {
-            QStringList activeLayers;
-            for (const auto& act : qAsConst(layerActions)) {
-                if (act->isChecked()) {
-                    activeLayers.append(act->data().toString());
-                }
-            }
-            qDebug() << "Custom layer action triggered, emitting mapLayerChanged with layers:" << activeLayers;
-            emit mapLayerChanged(activeLayers.join(","));
-        });
-
-        // Trigger layer update immediately after adding
-        QStringList activeLayers;
-        for (const auto& act : qAsConst(layerActions)) {
-            if (act->isChecked()) {
-                activeLayers.append(act->data().toString());
-            }
-        }
-        qDebug() << "Custom layer added, emitting mapLayerChanged with layers:" << activeLayers;
-        emit mapLayerChanged(activeLayers.join(","));
-    });
-
-
-
-    // Select Center action
-    addAction(selectCenterAction);
-    connect(selectCenterAction, &QAction::triggered, this, [this]() {
-        emit selectCenterTriggered();
-    });
-
-    // Search Place action with input box
+    // Add Search Place button without dropdown arrow
     QToolButton* searchPlaceButton = new QToolButton(this);
     searchPlaceButton->setDefaultAction(searchPlaceAction);
     searchPlaceButton->setPopupMode(QToolButton::InstantPopup);
-
-    QMenu* searchMenu = new QMenu(this);
-    QWidgetAction* searchAction = new QWidgetAction(this);
-
-    QLineEdit* searchInput = new QLineEdit();
-    searchInput->setPlaceholderText("Enter location...");
-    searchInput->setMinimumWidth(200);
-    connect(searchInput, &QLineEdit::returnPressed, [this, searchInput]() {
-        emit searchPlaceTriggered(searchInput->text());
-        searchInput->clear();
-    });
-
-    searchAction->setDefaultWidget(searchInput);
-    searchMenu->addAction(searchAction);
-    searchPlaceAction->setMenu(searchMenu);
-
+    searchPlaceButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
     addWidget(searchPlaceButton);
-
 }
+
 void DesignToolBar::highlightAction(QAction *activeAction) {
     QList<QAction*> actions = {
         viewAction, moveAction, rotateAction, scaleAction,
@@ -587,7 +618,7 @@ void DesignToolBar::highlightAction(QAction *activeAction) {
         gridToggleAction, snappingToggleAction,
         layerSelectAction, measureAreaAction, drawAction,
         databaseAction, mapSelectLayerAction, searchPlaceAction,
-        selectCenterAction, addCustomMapAction
+        selectCenterAction, addCustomMapAction, layerInfoAction
     };
 
     for (QAction *action : actions) {

@@ -211,7 +211,7 @@ void Inspector::setupUI()
     tableWidget->setStyleSheet(
         "QTableWidget { background-color: black; color: white; border: 1px solid gray; }"
         "QTableWidget::item { border: 1px solid #444; }"
-        "QTableWidget::item:selected { background-color: #555; }"
+        "QTableWidget::item:selected { background-color: lightgray; }"
         );
     tableWidget->setAlternatingRowColors(true);
     tableWidget->setStyleSheet("alternate-background-color: #101010; background-color: #111111;");

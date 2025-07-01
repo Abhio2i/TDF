@@ -44,7 +44,7 @@ void GISlib::addCustomMap(const QString& layerName, int zoomMin, int zoomMax, co
 }
 
 void GISlib::receiveImage(QString url, QByteArray data) {
-    QRegularExpression rx("/(\\d+)/(\\d+)/(\\d+)\\.png$");
+    QRegularExpression rx("/(\\d+)/(\\d+)/(\\d+)\\.png");
     QRegularExpressionMatch match = rx.match(url);
 
     if (!match.hasMatch()) {
@@ -53,55 +53,146 @@ void GISlib::receiveImage(QString url, QByteArray data) {
     }
 
     int z = match.captured(1).toInt();
-    int x = match.captured(2).toInt();
-    int y = match.captured(3).toInt();
-
+    int x, y;
     QString layer;
-    for (auto it = customMaps.constBegin(); it != customMaps.constEnd(); ++it) {
-        QString templateUrl = it.value().tileUrl;
-        templateUrl.replace("{z}", QString::number(z));
-        templateUrl.replace("{x}", QString::number(x));
-        templateUrl.replace("{y}", QString::number(y));
-        if (templateUrl.contains("{s}")) {
-            QString subdomain = getSubdomain(x, y, it.key());
-            templateUrl.replace("{s}", subdomain.isEmpty() ? "a" : subdomain);
-        }
-        if (url == templateUrl) {
-            layer = it.key();
-            break;
-        }
-    }
 
-    if (layer.isEmpty()) {
-        if (url.contains("openstreetmap.org")) layer = "osm";
-        else if (url.contains("arcgisonline.com")) layer = "World Imagery";
-        else if (url.contains("opentopomap.org")) layer = "opentopo";
-        else if (url.contains("cartocdn.com")) layer = url.contains("light_all") ? "carto-light" : "carto-dark";
-        else {
-            qDebug() << "Unknown layer for URL:" << url;
-            return;
+    // Handle ArcGIS (World Imagery) URL format: {z}/{y}/{x}
+    if (url.contains("arcgisonline.com")) {
+        layer = "World Imagery";
+        y = match.captured(2).toInt(); // ArcGIS uses y in second position
+        x = match.captured(3).toInt(); // ArcGIS uses x in third position
+    } else {
+        // Standard {z}/{x}/{y} format
+        x = match.captured(2).toInt();
+        y = match.captured(3).toInt();
+        // Determine layer
+        for (auto it = customMaps.constBegin(); it != customMaps.constEnd(); ++it) {
+            QString templateUrl = it.value().tileUrl;
+            templateUrl.replace("{z}", QString::number(z));
+            templateUrl.replace("{x}", QString::number(x));
+            templateUrl.replace("{y}", QString::number(y));
+            if (url == templateUrl) {
+                layer = it.key();
+                break;
+            }
+        }
+        if (layer.isEmpty()) {
+            if (url.contains("openstreetmap.org")) layer = "osm";
+            else if (url.contains("opentopomap.org")) layer = "opentopo";
+            else if (url.contains("cartocdn.com")) layer = url.contains("light_all") ? "carto-light" : "carto-dark";
+            else {
+                qDebug() << "Unknown layer for URL:" << url;
+                return;
+            }
         }
     }
 
     QString key = getTileKey(layer, z, x, y);
-    qDebug() << "Received tile for key:" << key << ", size:" << data.size() << ", URL:" << url;
+    pendingTileKeys.remove(key);
+    int retries = tileRetries.value(key, 3);
+    tileRetries.remove(key);
+
+    if (data.isEmpty()) {
+        qDebug() << "Empty data for tile" << key << ", retries left:" << retries - 1;
+        if (retries > 0) {
+            tileRetries[key] = retries - 1;
+            pendingTileKeys.insert(key);
+            requestTile(layer, x, y, z, retries - 1);
+        } else {
+            QPixmap pixmap(256, 256);
+            pixmap.fill(Qt::gray);
+            tileCache[key] = pixmap;
+            pendingTiles = qMax(0, pendingTiles - 1);
+            update();
+        }
+        return;
+    }
+
     if (tileCache.size() >= maxCacheSize) {
         tileCache.remove(tileCache.keys().first());
     }
     QImage img;
     if (!img.loadFromData(data)) {
-        qDebug() << "Failed to load image for tile" << key << ", URL:" << url;
-        img = QImage(256, 256, QImage::Format_RGB32);
-        img.fill(Qt::gray);
+        qDebug() << "Failed to load image for tile" << key << ", retries left:" << retries - 1;
+        if (retries > 0) {
+            tileRetries[key] = retries - 1;
+            pendingTileKeys.insert(key);
+            requestTile(layer, x, y, z, retries - 1);
+        } else {
+            QPixmap pixmap(256, 256);
+            pixmap.fill(Qt::gray);
+            tileCache[key] = pixmap;
+            pendingTiles = qMax(0, pendingTiles - 1);
+            update();
+        }
+        return;
     }
-    tileCache[key] = img;
+    QPixmap pixmap = QPixmap::fromImage(img);
+    tileCache[key] = pixmap;
 
     pendingTiles = qMax(0, pendingTiles - 1);
-    if (networkImage.loadFromData(data)) {
-        qDebug() << "Image loaded successfully for rendering";
-        update();
-    }
+    update();
 }
+
+// void GISlib::receiveImage(QString url, QByteArray data) {
+//     QRegularExpression rx("/(\\d+)/(\\d+)/(\\d+)\\.png$");
+//     QRegularExpressionMatch match = rx.match(url);
+
+//     if (!match.hasMatch()) {
+//         qDebug() << "Invalid tile URL format:" << url;
+//         return;
+//     }
+
+//     int z = match.captured(1).toInt();
+//     int x = match.captured(2).toInt();
+//     int y = match.captured(3).toInt();
+
+//     QString layer;
+//     for (auto it = customMaps.constBegin(); it != customMaps.constEnd(); ++it) {
+//         QString templateUrl = it.value().tileUrl;
+//         templateUrl.replace("{z}", QString::number(z));
+//         templateUrl.replace("{x}", QString::number(x));
+//         templateUrl.replace("{y}", QString::number(y));
+//         if (templateUrl.contains("{s}")) {
+//             QString subdomain = getSubdomain(x, y, it.key());
+//             templateUrl.replace("{s}", subdomain.isEmpty() ? "a" : subdomain);
+//         }
+//         if (url == templateUrl) {
+//             layer = it.key();
+//             break;
+//         }
+//     }
+
+//     if (layer.isEmpty()) {
+//         if (url.contains("openstreetmap.org")) layer = "osm";
+//         else if (url.contains("arcgisonline.com")) layer = "World Imagery";
+//         else if (url.contains("opentopomap.org")) layer = "opentopo";
+//         else if (url.contains("cartocdn.com")) layer = url.contains("light_all") ? "carto-light" : "carto-dark";
+//         else {
+//             qDebug() << "Unknown layer for URL:" << url;
+//             return;
+//         }
+//     }
+
+//     QString key = getTileKey(layer, z, x, y);
+//     qDebug() << "Received tile for key:" << key << ", size:" << data.size() << ", URL:" << url;
+//     if (tileCache.size() >= maxCacheSize) {
+//         tileCache.remove(tileCache.keys().first());
+//     }
+//     QImage img;
+//     if (!img.loadFromData(data)) {
+//         qDebug() << "Failed to load image for tile" << key << ", URL:" << url;
+//         img = QImage(256, 256, QImage::Format_RGB32);
+//         img.fill(Qt::gray);
+//     }
+//     tileCache[key] = img;
+
+//     pendingTiles = qMax(0, pendingTiles - 1);
+//     if (networkImage.loadFromData(data)) {
+//         qDebug() << "Image loaded successfully for rendering";
+//         update();
+//     }
+// }
 
 void GISlib::receivePlace(QString url, QByteArray data) {
     QJsonDocument doc = QJsonDocument::fromJson(data);
@@ -208,9 +299,9 @@ QString GISlib::toDMS(double deg, bool isLat) {
         .arg(direction);
 }
 
-void GISlib::paintEvent(QPaintEvent* event) {
-    emit painted(event);
+void GISlib::paintEvent(QPaintEvent *) {
     QPainter painter(this);
+    bool tilesDrawn = false;
     int tileSize = 256;
     int tiles = qPow(2, zoom);
     double centerX = lonToX(centerLon, zoom);
@@ -219,27 +310,44 @@ void GISlib::paintEvent(QPaintEvent* event) {
     int tilesY = std::ceil(height() / tileSize) + 2;
     int startX = qFloor(centerX - tilesX / 2);
     int startY = qFloor(centerY - tilesY / 2);
+    int fallbackCount = 0;
+    const int maxFallbacks = 100;
 
-    bool tilesDrawn = false;
-    qDebug() << "Painting with activeLayers:" << activeLayers << ", centerX:" << centerX << ", centerY:" << centerY;
     for (int i = activeLayers.size() - 1; i >= 0; --i) {
         QString layer = activeLayers[i];
-        qDebug() << "Processing layer:" << layer;
         for (int x = startX; x < startX + tilesX; ++x) {
             for (int y = startY; y < startY + tilesY; ++y) {
                 int wrappedX = (x % tiles + tiles) % tiles;
-                int wrappedY = (y % tiles + tiles) % tiles;
-                QString key = getTileKey(layer, zoom, wrappedX, wrappedY);
-                qDebug() << "Checking tile key:" << key << ", x:" << wrappedX << ", y:" << wrappedY;
-                if (tileCache.contains(key)) {
+                QString key = getTileKey(layer, zoom, wrappedX, y);
+                if (tileCache.contains(key) && !tileCache[key].isNull()) {
                     int dx = (wrappedX - centerX) * tileSize + width() / 2;
-                    int dy = (wrappedY - centerY) * tileSize + height() / 2;
-                    painter.drawImage(dx, dy, tileCache[key]);
+                    int dy = (y - centerY) * tileSize + height() / 2;
+                    painter.drawPixmap(dx, dy, tileCache[key]);
                     tilesDrawn = true;
-                    qDebug() << "Drawn tile for key:" << key << ", dx:" << dx << ", dy:" << dy;
                 } else {
-                    requestTile(layer, wrappedX, wrappedY, zoom); // Correct x, y order
-                    qDebug() << "Requested tile for key:" << key << ", x:" << wrappedX << ", y:" << wrappedY;
+                    if (fallbackCount < maxFallbacks) {
+                        fallbackCount++;
+                        for (int dz = 1; dz <= zoom; ++dz) {
+                            int lowerZoom = zoom - dz;
+                            int lowerTiles = qPow(2, lowerZoom);
+                            int lowerX = wrappedX >> dz;
+                            int lowerY = y >> dz;
+                            QString lowerKey = getTileKey(layer, lowerZoom, lowerX, lowerY);
+                            if (tileCache.contains(lowerKey) && !tileCache[lowerKey].isNull()) {
+                                int scale = 1 << dz;
+                                int dx = (wrappedX - centerX) * tileSize + width() / 2;
+                                int dy = (y - centerY) * tileSize + height() / 2;
+                                QRect targetRect(dx, dy, tileSize, tileSize);
+                                int srcX = (wrappedX % scale) * (tileSize / scale);
+                                int srcY = (y % scale) * (tileSize / scale);
+                                QRect srcRect(srcX, srcY, tileSize / scale, tileSize / scale);
+                                painter.drawPixmap(targetRect, tileCache[lowerKey], srcRect);
+                                tilesDrawn = true;
+                                break;
+                            }
+                        }
+                    }
+                    requestTile(layer, wrappedX, y, zoom);
                 }
             }
         }
@@ -248,7 +356,6 @@ void GISlib::paintEvent(QPaintEvent* event) {
     if (!tilesDrawn) {
         painter.setPen(Qt::white);
         painter.drawText(rect().center(), QString("Loading tiles... (%1 pending)").arg(pendingTiles));
-        qDebug() << "No tiles drawn, pending:" << pendingTiles;
     }
 
     double markerX = lonToX(marker.lon, zoom);
@@ -272,6 +379,125 @@ void GISlib::paintEvent(QPaintEvent* event) {
     painter.setPen(QPen(Qt::red, 2));
     painter.drawPolygon(polygon);
 }
+
+// void GISlib::paintEvent(QPaintEvent *) {
+//     QPainter painter(this);
+//     bool tilesDrawn = false;
+//     int tileSize = 256;
+//     int tiles = qPow(2, zoom);
+//     double centerX = lonToX(centerLon, zoom);
+//     double centerY = latToY(centerLat, zoom);
+//     int tilesX = std::ceil(width() / tileSize) + 2;
+//     int tilesY = std::ceil(height() / tileSize) + 2;
+//     int startX = qFloor(centerX - tilesX / 2);
+//     int startY = qFloor(centerY - tilesY / 2);
+//     int fallbackCount = 0;
+//     const int maxFallbacks = 100;
+
+//     for (int i = activeLayers.size() - 1; i >= 0; --i) {
+//         QString layer = activeLayers[i];
+//         for (int x = startX; x < startX + tilesX; ++x) {
+//             for (int y = startY; y < startY + tilesY; ++y) {
+//                 int wrappedX = (x % tiles + tiles) % tiles;
+//                 QString key = getTileKey(layer, zoom, wrappedX, y);
+//                 if (tileCache.contains(key) && !tileCache[key].isNull()) {
+//                     int dx = (wrappedX - centerX) * tileSize + width() / 2;
+//                     int dy = (y - centerY) * tileSize + height() / 2;
+//                     painter.drawPixmap(dx, dy, tileCache[key]);
+//                     tilesDrawn = true;
+//                 } else {
+//                     if (fallbackCount < maxFallbacks) {
+//                         fallbackCount++;
+//                         for (int dz = 1; dz <= zoom; ++dz) {
+//                             int lowerZoom = zoom - dz;
+//                             int lowerTiles = qPow(2, lowerZoom);
+//                             int lowerX = wrappedX >> dz;
+//                             int lowerY = y >> dz;
+//                             QString lowerKey = getTileKey(layer, lowerZoom, lowerX, lowerY);
+//                             if (tileCache.contains(lowerKey) && !tileCache[lowerKey].isNull()) {
+//                                 int scale = 1 << dz;
+//                                 int dx = (wrappedX - centerX) * tileSize + width() / 2;
+//                                 int dy = (y - centerY) * tileSize + height() / 2;
+//                                 QRect targetRect(dx, dy, tileSize, tileSize);
+//                                 int srcX = (wrappedX % scale) * (tileSize / scale);
+//                                 int srcY = (y % scale) * (tileSize / scale);
+//                                 QRect srcRect(srcX, srcY, tileSize / scale, tileSize / scale);
+//                                 painter.drawPixmap(targetRect, tileCache[lowerKey], srcRect);
+//                                 tilesDrawn = true;
+//                                 break;
+//                             }
+//                         }
+//                     }
+//                     requestTile(layer, wrappedX, y, zoom);
+//                 }
+//             }
+//         }
+//     }
+
+// // void GISlib::paintEvent(QPaintEvent* event) {
+// //     emit painted(event);
+// //     QPainter painter(this);
+// //     int tileSize = 256;
+// //     int tiles = qPow(2, zoom);
+// //     double centerX = lonToX(centerLon, zoom);
+// //     double centerY = latToY(centerLat, zoom);
+// //     int tilesX = std::ceil(width() / tileSize) + 2;
+// //     int tilesY = std::ceil(height() / tileSize) + 2;
+// //     int startX = qFloor(centerX - tilesX / 2);
+// //     int startY = qFloor(centerY - tilesY / 2);
+
+// //     bool tilesDrawn = false;
+// //     qDebug() << "Painting with activeLayers:" << activeLayers << ", centerX:" << centerX << ", centerY:" << centerY;
+// //     for (int i = activeLayers.size() - 1; i >= 0; --i) {
+// //         QString layer = activeLayers[i];
+// //         qDebug() << "Processing layer:" << layer;
+// //         for (int x = startX; x < startX + tilesX; ++x) {
+// //             for (int y = startY; y < startY + tilesY; ++y) {
+// //                 int wrappedX = (x % tiles + tiles) % tiles;
+// //                 int wrappedY = (y % tiles + tiles) % tiles;
+// //                 QString key = getTileKey(layer, zoom, wrappedX, wrappedY);
+// //                 qDebug() << "Checking tile key:" << key << ", x:" << wrappedX << ", y:" << wrappedY;
+// //                 if (tileCache.contains(key)) {
+// //                     int dx = (wrappedX - centerX) * tileSize + width() / 2;
+// //                     int dy = (wrappedY - centerY) * tileSize + height() / 2;
+// //                     painter.drawImage(dx, dy, tileCache[key]);
+// //                     tilesDrawn = true;
+// //                     qDebug() << "Drawn tile for key:" << key << ", dx:" << dx << ", dy:" << dy;
+// //                 } else {
+// //                     requestTile(layer, wrappedX, wrappedY, zoom); // Correct x, y order
+// //                     qDebug() << "Requested tile for key:" << key << ", x:" << wrappedX << ", y:" << wrappedY;
+// //                 }
+// //             }
+// //         }
+// //     }
+
+//     if (!tilesDrawn) {
+//         painter.setPen(Qt::white);
+//         painter.drawText(rect().center(), QString("Loading tiles... (%1 pending)").arg(pendingTiles));
+//         qDebug() << "No tiles drawn, pending:" << pendingTiles;
+//     }
+
+//     double markerX = lonToX(marker.lon, zoom);
+//     double markerY = latToY(marker.lat, zoom);
+//     double dx = (markerX - centerX) * tileSize + width() / 2;
+//     double dy = (markerY - centerY) * tileSize + height() / 2;
+//     painter.setBrush(Qt::red);
+//     painter.setPen(Qt::white);
+//     painter.drawEllipse(QPoint(dx, dy), 5, 5);
+
+//     QPolygonF polygon;
+//     for (const QJsonValue& pointVal : geoOutline) {
+//         QJsonArray coord = pointVal.toArray();
+//         double lon = coord.at(0).toDouble();
+//         double lat = coord.at(1).toDouble();
+//         double px = (lonToX(lon, zoom) - centerX) * tileSize + width() / 2;
+//         double py = (latToY(lat, zoom) - centerY) * tileSize + height() / 2;
+//         polygon << QPointF(px, py);
+//     }
+//     painter.setBrush(QColor(255, 0, 0, 50));
+//     painter.setPen(QPen(Qt::red, 2));
+//     painter.drawPolygon(polygon);
+// }
 
 QString GISlib::getTileKey(const QString& layer, int z, int x, int y) {
     bool flip = (layer == "World Imagery");
@@ -318,38 +544,62 @@ QString GISlib::tileUrl(const QString& layer, int x, int y, int z) {
 }
 
 void GISlib::requestTile(const QString& layer, int x, int y, int z, int retries) {
-    qDebug() << "Requesting tile for layer:" << layer << ", z:" << z << ", x:" << x << ", y:" << y << ", retries:" << retries;
     int tiles = qPow(2, z);
     x = (x % tiles + tiles) % tiles;
-    y = (y % tiles + tiles) % tiles; // Ensure wrapping for y as well
-    if (y < 0 || y >= tiles) {
-        qDebug() << "Tile y out of range:" << y << ", tiles:" << tiles;
-        return;
-    }
+    if (y < 0 || y >= tiles) return;
 
-    if (customMaps.contains(layer.toLower())) {
-        if (z < customMaps[layer.toLower()].zoomMin || z > customMaps[layer.toLower()].zoomMax) {
-            qDebug() << "Zoom level out of range for layer:" << layer;
-            return;
-        }
+    if (customMaps.contains(layer)) {
+        if (z < customMaps[layer].zoomMin || z > customMaps[layer].zoomMax) return;
     }
 
     QString key = getTileKey(layer, z, x, y);
-    qDebug() << "Generated tile key:" << key;
-    if (tileCache.contains(key)) {
-        qDebug() << "Tile already in cache, skipping request";
-        return;
-    }
-    tileCache[key] = QImage();
+    if (tileCache.contains(key) && !tileCache[key].isNull()) return;
+    if (pendingTileKeys.contains(key)) return;
+
+    tileCache[key] = QPixmap();
+    pendingTileKeys.insert(key);
+    tileRetries[key] = retries;
     QString url = tileUrl(layer, x, y, z);
-    if (url.isEmpty()) {
-        qDebug() << "Empty tile URL for layer:" << layer;
-        return;
-    }
+    if (url.isEmpty()) return;
+
+    qDebug() << "Requesting tile for" << layer << ":" << url;
     pendingTiles++;
-    qDebug() << "Requesting tile URL:" << url;
     net->requestImage(QUrl(url));
 }
+
+// void GISlib::requestTile(const QString& layer, int x, int y, int z, int retries) {
+//     qDebug() << "Requesting tile for layer:" << layer << ", z:" << z << ", x:" << x << ", y:" << y << ", retries:" << retries;
+//     int tiles = qPow(2, z);
+//     x = (x % tiles + tiles) % tiles;
+//     y = (y % tiles + tiles) % tiles; // Ensure wrapping for y as well
+//     if (y < 0 || y >= tiles) {
+//         qDebug() << "Tile y out of range:" << y << ", tiles:" << tiles;
+//         return;
+//     }
+
+//     if (customMaps.contains(layer.toLower())) {
+//         if (z < customMaps[layer.toLower()].zoomMin || z > customMaps[layer.toLower()].zoomMax) {
+//             qDebug() << "Zoom level out of range for layer:" << layer;
+//             return;
+//         }
+//     }
+
+//     QString key = getTileKey(layer, z, x, y);
+//     qDebug() << "Generated tile key:" << key;
+//     if (tileCache.contains(key)) {
+//         qDebug() << "Tile already in cache, skipping request";
+//         return;
+//     }
+//     tileCache[key] = QImage();
+//     QString url = tileUrl(layer, x, y, z);
+//     if (url.isEmpty()) {
+//         qDebug() << "Empty tile URL for layer:" << layer;
+//         return;
+//     }
+//     pendingTiles++;
+//     qDebug() << "Requesting tile URL:" << url;
+//     net->requestImage(QUrl(url));
+// }
 
 QString GISlib::getSubdomain(int x, int y, const QString& layer) {
     QStringList subdomains;

@@ -34,6 +34,7 @@ SOURCES += \
     GUI/Tacticaldisplay/Gis/custommapdialog.cpp \
     GUI/Tacticaldisplay/Gis/gislib.cpp \
     GUI/Tacticaldisplay/Gis/gisnetwork.cpp \
+    GUI/Tacticaldisplay/Gis/layerinformationdialog.cpp \
     GUI/Tacticaldisplay/canvaswidget.cpp \
     GUI/Tacticaldisplay/tacticaldisplay.cpp \
     GUI/Toolbars/designtoolbar.cpp \
@@ -349,6 +350,7 @@ HEADERS += \
     GUI/Tacticaldisplay/Gis/custommapdialog.h \
     GUI/Tacticaldisplay/Gis/gislib.h \
     GUI/Tacticaldisplay/Gis/gisnetwork.h \
+    GUI/Tacticaldisplay/Gis/layerinformationdialog.h \
     GUI/Tacticaldisplay/canvaswidget.h \
     GUI/Tacticaldisplay/tacticaldisplay.h \
     GUI/Toolbars/designtoolbar.h \

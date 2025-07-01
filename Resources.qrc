@@ -45,6 +45,7 @@
         <file>images/sync.png</file>
         <file>images/log-file.png</file>
         <file>images/loading-arrow.png</file>
+        <file>images/info.png</file>
     </qresource>
     <qresource prefix="/texture">
         <file>images/Texture/bball.png</file>
