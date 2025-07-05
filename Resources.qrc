@@ -46,6 +46,7 @@
         <file>images/log-file.png</file>
         <file>images/loading-arrow.png</file>
         <file>images/info.png</file>
+        <file>images/replay.png</file>
     </qresource>
     <qresource prefix="/texture">
         <file>images/Texture/bball.png</file>

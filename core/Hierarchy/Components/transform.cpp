@@ -1,21 +1,26 @@
+
+
 #include "transform.h"
 #include <core/Utility/uuid.h>
+#include <math.h>
+// #include "console.h"
+
 Transform::Transform() {
     ID = Uuid::generateShortUniqueID();
-    geocord = new Geocords(); // ✅ Must initialize
-    position = new Vector(0,0,0);
+    Active = true; // Initialize Active
+    geocord = new Geocords();
+    position = new Vector(0, 0, 0);
     rotation = new Vector();
-    size = new Vector(1,1,1);
-
+    size = new Vector(1, 1, 1);
     localPosition = new Vector();
     localRotation = new Vector();
-    localSize = new Vector(1,1,1);
+    localSize = new Vector(1, 1, 1);
+    customParameters = QJsonObject(); // Initialize customParameters
 }
 
 // ===== Unity-like Directional Methods =====
 
 // Forward is X-axis based
-// Forward is x-axis based
 Vector Transform::forward() {
     float yaw = rotation->z * M_PI / 180.0f;   // Yaw around z-axis
     float pitch = rotation->y * M_PI / 180.0f; // Pitch around y-axis
@@ -117,8 +122,7 @@ Vector Transform::inverseTransformDirection(const Vector& worldDir) {
     return Vector(x, y, z);
 }
 
-
-QJsonObject Transform::toJson() const{
+QJsonObject Transform::toJson() const {
     QJsonObject obj;
     obj["id"] = QString::fromStdString(ID);
     obj["active"] = Active;
@@ -129,35 +133,59 @@ QJsonObject Transform::toJson() const{
     obj["localPosition"] = localPosition->toJson();
     obj["localRotation"] = localRotation->toJson();
     obj["localSize"] = localSize->toJson();
+
+    // Add custom parameters
+    for (auto it = customParameters.begin(); it != customParameters.end(); ++it) {
+        obj[it.key()] = it.value();
+    }
+
+    // Console::log("Transform::toJson output: " + QString(QJsonDocument(obj).toJson()).toStdString());
     return obj;
 }
 
-void Transform::fromJson(const QJsonObject &obj)
-{
+void Transform::fromJson(const QJsonObject &obj) {
+    // Console::log("Transform::fromJson input: " + QString(QJsonDocument(obj).toJson()).toStdString());
+
+    // Standard fields
     if (obj.contains("id"))
         ID = obj["id"].toString().toStdString();
-
     if (obj.contains("active"))
         Active = obj["active"].toBool();
-
     if (obj.contains("geocord") && obj["geocord"].isObject())
         geocord->fromJson(obj["geocord"].toObject());
-
     if (obj.contains("position") && obj["position"].isObject())
         position->fromJson(obj["position"].toObject());
-
     if (obj.contains("rotation") && obj["rotation"].isObject())
         rotation->fromJson(obj["rotation"].toObject());
-
     if (obj.contains("size") && obj["size"].isObject())
         size->fromJson(obj["size"].toObject());
-
     if (obj.contains("localPosition") && obj["localPosition"].isObject())
         localPosition->fromJson(obj["localPosition"].toObject());
-
     if (obj.contains("localRotation") && obj["localRotation"].isObject())
         localRotation->fromJson(obj["localRotation"].toObject());
-
     if (obj.contains("localSize") && obj["localSize"].isObject())
         localSize->fromJson(obj["localSize"].toObject());
+
+    // Custom parameters
+    QStringList standardKeys = {"id", "active", "geocord", "position", "rotation", "size",
+                                "localPosition", "localRotation", "localSize"};
+    for (auto it = obj.begin(); it != obj.end(); ++it) {
+        if (!standardKeys.contains(it.key())) {
+            customParameters[it.key()] = it.value();
+        }
+    }
+
+    // Console::log("Transform::fromJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
+}
+
+void Transform::translate(Vector *vector) {
+    // Implementation for translate (not provided in original code)
+}
+
+void Transform::rotate(Vector *vector) {
+    // Implementation for rotate (not provided in original code)
+}
+
+void Transform::scale(Vector *vector) {
+    // Implementation for scale (not provided in original code)
 }

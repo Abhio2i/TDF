@@ -1,3 +1,4 @@
+
 #ifndef COLLIDER_H
 #define COLLIDER_H
 
@@ -23,7 +24,10 @@ public:
     Constants::EntityType type;
     Constants::ColliderType collider;
 
-    QJsonObject toJson()const override;
+    // Add a map to store custom parameters
+    QJsonObject customParameters; // Store custom parameters as key-value pairs
+
+    QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
 signals:
 };

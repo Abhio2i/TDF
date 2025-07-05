@@ -1,3 +1,6 @@
+
+
+
 #ifndef DYNAMICMODEL_H
 #define DYNAMICMODEL_H
 #include <QObject>
@@ -5,6 +8,7 @@
 #include "./transform.h"
 #include "./rigidbody.h"
 #include "./trajectory.h"
+
 class DynamicModel: public QObject, public Component
 {
     Q_OBJECT
@@ -38,9 +42,9 @@ public:
     Transform* transform;
     Rigidbody* rigidbody;
     Trajectory* trajectory;
+    QJsonObject customParameters; // Added to store custom parameters
 
-
-    QJsonObject toJson()const override;
+    QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
 
     void FollowTrajectory();
@@ -48,8 +52,6 @@ public:
 public slots:
     void Update(float deltaTime);
     void setMoveSpeed(float speed);
-
-
 };
 
 #endif // DYNAMICMODEL_H

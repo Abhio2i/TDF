@@ -1,11 +1,12 @@
 
-
 #include "trajectory.h"
-#include "core/Debug/console.h"
 #include <QJsonArray>
-#include <iostream>
+#include <QDebug>
 
 Trajectory::Trajectory() {
+    Active = true; // Initialize Active
+    current = 0;
+    customParameters = QJsonObject(); // Initialize customParameters
     Waypoints* waypoin = new Waypoints();
     waypoin->position = new Vector(0, 0, 0);
     Trajectories.push_back(waypoin);
@@ -45,17 +46,23 @@ QJsonObject Trajectory::toJson() const {
     }
     obj["trajectories"] = trajArray;
 
-    Console::log(obj);
+    // Add custom parameters
+    for (auto it = customParameters.begin(); it != customParameters.end(); ++it) {
+        obj[it.key()] = it.value();
+    }
+
+    qDebug() << "Trajectory::toJson output:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
     return obj;
 }
 
 void Trajectory::fromJson(const QJsonObject& obj) {
+    qDebug() << "Trajectory::fromJson input:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
+
+    // Standard fields
     if (obj.contains("id"))
         ID = obj["id"].toString().toStdString();
-
     if (obj.contains("active"))
         Active = obj["active"].toBool();
-
     if (obj.contains("array") && obj["array"].isArray()) {
         array.clear();
         QJsonArray strArray = obj["array"].toArray();
@@ -65,14 +72,12 @@ void Trajectory::fromJson(const QJsonObject& obj) {
             }
         }
     }
-
     if (obj.contains("trajectories") && obj["trajectories"].isArray()) {
         for (Waypoints* wp : Trajectories) {
             delete wp->position;
             delete wp;
         }
         Trajectories.clear();
-
         QJsonArray trajArray = obj["trajectories"].toArray();
         for (const QJsonValue& wpVal : trajArray) {
             if (wpVal.isObject()) {
@@ -82,11 +87,21 @@ void Trajectory::fromJson(const QJsonObject& obj) {
             }
         }
     }
+
+    // Custom parameters
+    QStringList standardKeys = {"id", "active", "array", "trajectories"};
+    for (auto it = obj.begin(); it != obj.end(); ++it) {
+        if (!standardKeys.contains(it.key())) {
+            customParameters[it.key()] = it.value();
+        }
+    }
+
+    qDebug() << "Trajectory::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);
 }
 
 bool Trajectory::removeTrajectory(size_t index) {
     if (index >= Trajectories.size()) {
-        Console::log("Error: Trajectory index out of bounds");
+        qDebug() << "Error: Trajectory index out of bounds";
         return false;
     }
     delete Trajectories[index]->position;
@@ -98,10 +113,10 @@ bool Trajectory::removeTrajectory(size_t index) {
 void Trajectory::addTrajectory(Waypoints* waypoint) {
     if (waypoint) {
         Trajectories.push_back(waypoint);
-        std::cout << "Trajectory::addTrajectory this=" << this << std::endl;
-        std::cout << "Trajectories size=" << Trajectories.size() << std::endl;
-        std::cout << &Trajectories << ", capacity: " << Trajectories.capacity() << std::endl;
+        qDebug() << "Trajectory::addTrajectory this=" << this;
+        qDebug() << "Trajectories size=" << Trajectories.size();
+        qDebug() << "Trajectories address=" << &Trajectories << ", capacity=" << Trajectories.capacity();
     } else {
-        Console::error("Attempted to add null waypoint to trajectory");
+        qDebug() << "Error: Attempted to add null waypoint to trajectory";
     }
 }

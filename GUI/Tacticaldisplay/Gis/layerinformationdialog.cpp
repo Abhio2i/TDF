@@ -37,7 +37,7 @@ void LayerInformationDialog::setupUi()
     tileUrlLabel = new QLabel(this);
     isCustomLabel = new QLabel(this);
     opacityLabel = new QLabel(this);
-    resolutionLabel = new QLabel(this);
+    // resolutionLabel = new QLabel(this);
     typeLabel = new QLabel(this);
 
     formLayout->addRow("Name:", nameLabel);
@@ -47,7 +47,7 @@ void LayerInformationDialog::setupUi()
     formLayout->addRow("Tile URL:", tileUrlLabel);
     formLayout->addRow("Custom:", isCustomLabel);
     formLayout->addRow("Opacity:", opacityLabel);
-    formLayout->addRow("Resolution:", resolutionLabel);
+    // formLayout->addRow("Resolution:", resolutionLabel);
     formLayout->addRow("Type:", typeLabel);
 
     detailsLayout->addLayout(formLayout);
@@ -85,7 +85,7 @@ void LayerInformationDialog::updateLayerDetails(QListWidgetItem* item)
         tileUrlLabel->setText(layer.isCustom ? layer.tileUrl : "N/A");
         isCustomLabel->setText(layer.isCustom ? "Yes" : "No");
         opacityLabel->setText(layer.opacity >= 0.0 ? QString::number(layer.opacity, 'f', 2) : "N/A");
-        resolutionLabel->setText(layer.resolution.isEmpty() ? "N/A" : layer.resolution);
+        // resolutionLabel->setText(layer.resolution.isEmpty() ? "N/A" : layer.resolution);
         typeLabel->setText(layer.type.isEmpty() ? "N/A" : layer.type);
         editButton->setVisible(layer.isCustom); // Show button only for custom layers
     }
@@ -97,7 +97,7 @@ void LayerInformationDialog::editLayer()
 
     const auto& layer = mapLayers[currentLayerIndex];
     CustomMapDialog dialog(layer.name, layer.tileUrl, layer.zoomMin, layer.zoomMax,
-                           layer.opacity, layer.resolution, layer.type, this);
+                           layer.opacity,  layer.type, this);
     if (dialog.exec() == QDialog::Accepted) {
         QString newName = dialog.getMapName();
         QString newTileUrl = dialog.getTileUrl();
@@ -110,7 +110,7 @@ void LayerInformationDialog::editLayer()
                 newTileUrl,
                 true,
                 dialog.getOpacity(),
-                dialog.getResolution().isEmpty() ? "N/A" : dialog.getResolution(),
+                // dialog.getResolution().isEmpty() ? "N/A" : dialog.getResolution(),
                 dialog.getType()
             };
             mapLayers[currentLayerIndex] = updatedLayer;

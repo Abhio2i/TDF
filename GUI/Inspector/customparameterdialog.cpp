@@ -8,26 +8,22 @@ CustomParameterDialog::CustomParameterDialog(QWidget *parent) : QDialog(parent)
     setWindowTitle("Add Custom Parameter");
     QVBoxLayout *layout = new QVBoxLayout(this);
 
-    // Name input
     QLabel *nameLabel = new QLabel("Parameter Name:", this);
     nameEdit = new QLineEdit(this);
     layout->addWidget(nameLabel);
     layout->addWidget(nameEdit);
 
-    // Type selection
     QLabel *typeLabel = new QLabel("Parameter Type:", this);
     typeCombo = new QComboBox(this);
     typeCombo->addItems({"string", "number", "boolean", "vector", "option", "color", "image"});
     layout->addWidget(typeLabel);
     layout->addWidget(typeCombo);
 
-    // Value input
     QLabel *valueLabel = new QLabel("Parameter Value:", this);
     valueEdit = new QLineEdit(this);
     layout->addWidget(valueLabel);
     layout->addWidget(valueEdit);
 
-    // Buttons
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     QPushButton *okButton = new QPushButton("OK", this);
     QPushButton *cancelButton = new QPushButton("Cancel", this);
@@ -62,13 +58,11 @@ void CustomParameterDialog::validateInput()
     QString type = typeCombo->currentText();
     QString value = valueEdit->text().trimmed();
 
-    // Validate name
     if (name.isEmpty()) {
         QMessageBox::warning(this, "Invalid Input", "Parameter name cannot be empty.");
         return;
     }
 
-    // Validate value based on type
     if (type == "string") {
         if (value.isEmpty()) {
             QMessageBox::warning(this, "Invalid Input", "String value cannot be empty.");

@@ -8,7 +8,7 @@ CustomMapDialog::CustomMapDialog(QWidget *parent) : QDialog(parent) {
 }
 
 CustomMapDialog::CustomMapDialog(const QString &name, const QString &tileUrl, int zoomMin, int zoomMax,
-                                 qreal opacity, const QString &resolution, const QString &type, QWidget *parent)
+                                 qreal opacity, const QString &type, QWidget *parent)
     : QDialog(parent) {
     setWindowTitle("Edit Custom Map");
     setupUi();
@@ -22,7 +22,7 @@ CustomMapDialog::CustomMapDialog(const QString &name, const QString &tileUrl, in
     opacityComboBox->setCurrentText(opacityText);
 
     // Set resolution in ComboBox, no default if "N/A" or empty
-    resolutionComboBox->setCurrentText(resolution == "N/A" || resolution.isEmpty() ? "" : resolution);
+    // resolutionComboBox->setCurrentText(resolution == "N/A" || resolution.isEmpty() ? "" : resolution);
 
     typeComboBox->setCurrentText(type.isEmpty() || type == "N/A" ? "Raster" : type);
 }
@@ -54,11 +54,11 @@ void CustomMapDialog::setupUi() {
     opacityComboBox->setCurrentText("100%");
     formLayout->addRow("Opacity:", opacityComboBox);
 
-    resolutionComboBox = new QComboBox(this);
-    resolutionComboBox->setPlaceholderText("Select Resolution");
-    resolutionComboBox->addItems({"Standard", "High"});
-    resolutionComboBox->setCurrentIndex(-1);
-    formLayout->addRow("Resolution:", resolutionComboBox);
+    // resolutionComboBox = new QComboBox(this);
+    // resolutionComboBox->setPlaceholderText("Select Resolution");
+    // resolutionComboBox->addItems({"Standard", "High"});
+    // resolutionComboBox->setCurrentIndex(-1);
+    // formLayout->addRow("Resolution:", resolutionComboBox);
 
     typeComboBox = new QComboBox(this);
     typeComboBox->addItems({"Raster", "Vector", "Other"});
@@ -98,10 +98,10 @@ qreal CustomMapDialog::getOpacity() const {
     return ok ? opacity : 1.0; // Default to 1.0 if conversion fails
 }
 
-QString CustomMapDialog::getResolution() const {
-    QString resolution = resolutionComboBox->currentText();
-    return resolution.isEmpty() ? "N/A" : resolution;
-}
+// QString CustomMapDialog::getResolution() const {
+//     QString resolution = resolutionComboBox->currentText();
+//     return resolution.isEmpty() ? "N/A" : resolution;
+// }
 
 QString CustomMapDialog::getType() const {
     return typeComboBox->currentText();

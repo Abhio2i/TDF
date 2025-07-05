@@ -77,6 +77,7 @@ private:
     QJsonObject currentVectorData;
     QString currentVectorKey;
     QJsonObject copiedVectorData;
+
 };
 
 #endif

@@ -62,7 +62,12 @@ void RuntimeToolBar::createActions()
         highlightAction(stopAction);
         emit stopTriggered();
     });
-
+replayAction = new QAction(QIcon(withWhiteBg(":/icons/images/replay.png")), tr("Replay"), this);
+replayAction->setCheckable(true);
+connect(replayAction, &QAction::triggered, this, [=]() {
+    highlightAction(replayAction);
+    emit replayTriggered();
+});
     nextStepAction = new QAction(QIcon(withWhiteBg(":/icons/images/step.png")), tr("Next Step"), this);
     nextStepAction->setCheckable(false);
     connect(nextStepAction, &QAction::triggered, this, [=]() {
@@ -80,7 +85,7 @@ void RuntimeToolBar::createActions()
     speedIcon->setIcon(QIcon(withWhiteBg(":/icons/images/speed.png")));
     speedIcon->setToolTip(tr("Adjust Speed"));
     speedIcon->setStyleSheet("QToolButton { border: none; padding: 0px; }");
-    speedIcon->setIconSize(ICON_SIZE);  // Set to same size as other icons
+    speedIcon->setIconSize(ICON_SIZE);
 
     // Create and configure the speed slider
     speedSlider = new QSlider(Qt::Horizontal, this);
@@ -135,6 +140,7 @@ void RuntimeToolBar::setupToolBar()
     addAction(startAction);
     addAction(pauseAction);
     addAction(stopAction);
+    addAction(replayAction);
     addAction(nextStepAction);
 
     // Add spacer and speed control widget
@@ -159,3 +165,5 @@ void RuntimeToolBar::highlightAction(QAction *activeAction)
         }
     }
 }
+
+

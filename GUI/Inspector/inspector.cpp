@@ -1,3 +1,5 @@
+
+
 #include "inspector.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -650,43 +652,6 @@ bool Inspector::eventFilter(QObject *watched, QEvent *event)
     return QDockWidget::eventFilter(watched, event);
 }
 
-
-// void Inspector::init(QString ID, QString name, QJsonObject obj)
-// {
-//     ConnectedID = ID;
-//     if (name.compare("Trajectories", Qt::CaseInsensitive) == 0) {
-//         Name = "trajectory";
-
-//     } else {
-//         Name = name.toLower();
-//     }
-//     titleLabel->setText(name);
-//     tableWidget->clearContents();
-//     tableWidget->blockSignals(true);
-//     rowToKeyPath.clear();
-//     customParameterKeys.clear();
-
-//     if (Name == "trajectory" && obj.isEmpty() && hierarchy) {
-//         obj = hierarchy->getComponentData(ID, "trajectory");
-//         qDebug() << "Fetched trajectory data for ID:" << ID << "data:" << obj;
-//     }
-
-//     tableWidget->setRowCount(obj.size());
-
-//     int row = 0;
-//     for (const QString &key : obj.keys()) {
-//         row = addSimpleRow(row, key, obj[key]);
-//     }
-
-//     tableWidget->blockSignals(false);
-//     tableWidget->viewport()->update();
-//     qDebug() << "Initialized Inspector with ID:" << ID << "name:" << Name << "data:" << obj;
-// }
-#include <QDebug>
-#include <QString>
-#include <QJsonObject>
-#include "inspector.h"
-
 void Inspector::init(QString ID, QString name, QJsonObject object)
 {
     ConnectedID = ID;
@@ -694,36 +659,43 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
     if (name.compare("Trajectories", Qt::CaseInsensitive) == 0) {
         Name = QString("trajectory");
     } else if (name.compare("dynamicModel", Qt::CaseInsensitive) == 0) {
-        Name = QString("dynamicModel"); // Keep as dynamicModel
+        Name = QString("dynamicModel");
     } else if (name.compare("meshRenderer2d", Qt::CaseInsensitive) == 0) {
-        Name = QString("meshRenderer2d"); // Keep as meshRenderer2d
+        Name = QString("meshRenderer2d");
     } else {
         Name = name.toLower();
     }
-    titleLabel->setText(name); // Set the display name
-    tableWidget->clearContents(); // Clear existing table content
-    tableWidget->blockSignals(true); // Prevent signals during initialization
-    rowToKeyPath.clear(); // Clear row-to-key mappings
-    customParameterKeys.clear(); // Clear custom parameter keys
+    titleLabel->setText(name);
+    tableWidget->clearContents();
+    tableWidget->blockSignals(true);
+    rowToKeyPath.clear();
+    customParameterKeys.clear();
 
-    // Fetch data for trajectory, dynamicModel, or meshRenderer2d if object is empty and hierarchy exists
-    if ((Name == QString("trajectory") || Name == QString("dynamicModel") || Name == QString("meshRenderer2d")) && object.isEmpty() && hierarchy) {
-        QString dataType = Name; // Use Name directly as dataType
+    // Fetch data for specific components if object is empty
+    if ((Name == QString("trajectory") || Name == QString("dynamicModel") || Name == QString("meshRenderer2d") || Name == QString("collider")) && object.isEmpty() && hierarchy) {
+        QString dataType = Name;
         object = hierarchy->getComponentData(ID, dataType);
         qDebug() << QString("Fetched %1 data for ID:").arg(dataType) << ID << QString("data:") << object;
     }
 
-    tableWidget->setRowCount(object.size()); // Set row count based on object size
+    // Set row count to include all keys (predefined and custom)
+    tableWidget->setRowCount(object.size());
 
     int row = 0;
     for (const QString &key : object.keys()) {
-        row = addSimpleRow(row, key, object[key]); // Populate table rows
+        row = addSimpleRow(row, key, object[key]);
+        // Track custom parameters
+        if (Name == "collider" && key != "active" && key != "radius" && key != "width" &&
+            key != "length" && key != "height" && key != "collider") {
+            customParameterKeys.insert(key);
+        }
     }
 
-    tableWidget->blockSignals(false); // Re-enable signals
-    tableWidget->viewport()->update(); // Refresh table display
+    tableWidget->blockSignals(false);
+    tableWidget->viewport()->update();
     qDebug() << QString("Initialized Inspector with ID:") << ID << QString("name:") << Name << QString("data:") << object;
 }
+
 int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value)
 {
     rowToKeyPath[row] = key;
@@ -901,7 +873,6 @@ void Inspector::setupValueCell(int row, const QString &fullKey, const QJsonValue
                     copiedVectorData = QJsonObject();
                     QStringList axes = {"x", "y", "z"};
                     bool copiedFromUI = false;
-                    // Try copying from UI first
                     for (QObject *child : vectorWidget->children()) {
                         WheelableLineEdit *line = qobject_cast<WheelableLineEdit *>(child);
                         if (line && axes.contains(line->objectName())) {
@@ -913,7 +884,6 @@ void Inspector::setupValueCell(int row, const QString &fullKey, const QJsonValue
                             }
                         }
                     }
-                    // Fallback to hierarchy if UI copy fails
                     if (!copiedFromUI && hierarchy) {
                         QJsonObject compData = hierarchy->getComponentData(ConnectedID, Name);
                         if (compData.contains(fullKey)) {
@@ -1356,3 +1326,4 @@ void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
     tableWidget->viewport()->update();
     qDebug() << "Updated trajectory UI for entity:" << entityId << "with" << waypoints.size() << "waypoints";
 }
+

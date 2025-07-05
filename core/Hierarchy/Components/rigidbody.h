@@ -1,8 +1,10 @@
+
 #ifndef RIGIDBODY_H
 #define RIGIDBODY_H
 #include "./component.h"
 #include <QObject>
 #include <core/Hierarchy/Struct/vector.h>
+#include <QJsonObject>
 
 class Rigidbody: public QObject, public Component
 {
@@ -28,6 +30,7 @@ public:
 
     Vector *velocity;
     Vector *angularVelocity;
+    QJsonObject customParameters;
 
     void addForce(const Vector& force);
     void addTorque(const Vector& torque);
@@ -36,7 +39,7 @@ public:
     Vector* setLinearVelocity(const Vector& v);
     Vector* setAngularVelocity(const Vector& v);
 
-    QJsonObject toJson()const override;
+    QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
 
 signals:

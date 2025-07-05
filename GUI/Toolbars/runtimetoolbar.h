@@ -19,6 +19,7 @@ signals:
     void stopTriggered();
     void nextStepTriggered();
     void speedChanged(int speed);
+    void replayTriggered();
 
 private:
     QAction *startAction;
@@ -26,7 +27,7 @@ private:
     QAction *stopAction;
     QAction *nextStepAction;
     QSlider *speedSlider;
-
+QAction *replayAction;
     QPixmap withWhiteBg(const QString &iconPath);
     void createActions();
     void setupToolBar();

@@ -1,8 +1,10 @@
+
+
 #ifndef MESHRENDERER2D_H
 #define MESHRENDERER2D_H
 #include "./component.h"
-#include<qobject.h>
-#include<core/Hierarchy/Components/mesh.h>
+#include <QObject>
+#include <core/Hierarchy/Components/mesh.h>
 #include <QJsonObject>
 #include <memory>
 
@@ -19,13 +21,12 @@ public:
 
     QColor* color;
     std::shared_ptr<QColor> color2;
-
+    QJsonObject customParameters; // Added to store custom parameters
 
     std::vector<Mesh*> Meshes;
 
-    QJsonObject toJson()const override;
+    QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
-
 };
 
 #endif // MESHRENDERER2D_H

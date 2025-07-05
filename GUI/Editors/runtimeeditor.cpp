@@ -212,6 +212,42 @@ void RuntimeEditor::onLibraryItemSelected(QVariantMap data) {
 /**
  * @brief Sets up connections between toolbar actions and their handlers
  */
+// void RuntimeEditor::setupToolBarConnections()
+// {
+//     // Get design toolbar and check components
+//     DesignToolBar *designToolBar = findChild<DesignToolBar*>();
+//     if (!designToolBar || !tacticalDisplay || !tacticalDisplay->canvas) {
+//         qWarning() << "Failed to setup toolbar connections - missing components";
+//         return;
+//     }
+
+//     // Connect save action to menu bar
+//     MenuBar *menuBar = qobject_cast<MenuBar*>(this->menuBar());
+//     if (menuBar) {
+//         connect(designToolBar->getSaveAction(), &QAction::triggered,
+//                 menuBar->getSaveAction(), &QAction::trigger);
+//     }
+
+//     // Connect transform mode changes
+//     connect(designToolBar, &DesignToolBar::modeChanged,
+//             this, [=](int mode) {
+//                 tacticalDisplay->canvas->setTransformMode(static_cast<TransformMode>(mode));
+//             });
+
+//     // Connect grid control signals
+//     connect(designToolBar, &DesignToolBar::gridPlaneXToggled,
+//             tacticalDisplay->canvas, &CanvasWidget::setXGridVisible);
+//     connect(designToolBar, &DesignToolBar::gridPlaneYToggled,
+//             tacticalDisplay->canvas, &CanvasWidget::setYGridVisible);
+//     connect(designToolBar, &DesignToolBar::gridOpacityChanged,
+//             tacticalDisplay->canvas, &CanvasWidget::setGridOpacity);
+//     connect(designToolBar, &DesignToolBar::layerOptionToggled,
+//             tacticalDisplay->canvas, &CanvasWidget::toggleLayerVisibility);
+
+
+
+
+// }
 void RuntimeEditor::setupToolBarConnections()
 {
     // Get design toolbar and check components
@@ -244,11 +280,37 @@ void RuntimeEditor::setupToolBarConnections()
     connect(designToolBar, &DesignToolBar::layerOptionToggled,
             tacticalDisplay->canvas, &CanvasWidget::toggleLayerVisibility);
 
-
-
-
+    // Connect map-related signals (search place, zoom, and layer selection)
+    if (tacticalDisplay && tacticalDisplay->mapWidget) {
+        connect(designToolBar, &DesignToolBar::mapLayerChanged,
+                this, [=](const QString &layers) {
+                    tacticalDisplay->setMapLayers(layers.split(",", Qt::SkipEmptyParts));
+                    Console::log("Map layers updated: " + layers.toStdString());
+                });
+        connect(designToolBar, &DesignToolBar::customMapAdded,
+                tacticalDisplay, &TacticalDisplay::addCustomMap);
+        connect(designToolBar, &DesignToolBar::customMapAdded,
+                this, [=](const QString &name, int zoomMin, int zoomMax, const QString &url) {
+                    qDebug() << "RuntimeEditor received customMapAdded: name =" << name
+                             << ", zoomMin =" << zoomMin << ", zoomMax =" << zoomMax
+                             << ", url =" << url;
+                });
+        connect(designToolBar, &DesignToolBar::searchPlaceTriggered,
+                tacticalDisplay->mapWidget, &GISlib::serachPlace); // Assuming GISlib has searchPlace slot
+        connect(designToolBar->zoomInAction, &QAction::triggered,
+                tacticalDisplay, &TacticalDisplay::zoomIn);
+        connect(designToolBar->zoomOutAction, &QAction::triggered,
+                tacticalDisplay, &TacticalDisplay::zoomOut);
+        connect(designToolBar->selectCenterAction, &QAction::triggered, this, [=]() {
+            if (tacticalDisplay && tacticalDisplay->mapWidget) {
+                tacticalDisplay->mapWidget->setCenter(0, 0);
+                Console::log("Map centered at (0, 0)");
+            }
+        });
+    } else {
+        qCritical() << "Map widget not available for layer connections";
+    }
 }
-
 /**
  * @brief Sets up the menu bar
  */
