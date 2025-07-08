@@ -1,5 +1,6 @@
 
 #include "rigidbody.h"
+#include "qjsondocument.h"
 #include <QDebug>
 
 Rigidbody::Rigidbody() {

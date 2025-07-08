@@ -20,7 +20,8 @@ public:
     void setLayers(const QStringList& layerNames);
     void setCenter(double lat, double lon);
     void setZoom(int level);
-    void addCustomMap(const QString& layerName, int zoomMin, int zoomMax, const QString& tileUrl);
+    // void addCustomMap(const QString& layerName, int zoomMin, int zoomMax, const QString& tileUrl);
+    void addCustomMap(const QString& layerName, int zoomMin, int zoomMax, const QString& tileUrl, qreal opacity = 1.0); // Added opacity paramete
     double lonToX(double lon, int zoom);
     double latToY(double lat, int zoom);
 signals:
@@ -40,36 +41,7 @@ private:
     QString getTileKey(const QString& layer, int z, int x, int y);
     void requestTile(const QString& layer, int x, int y, int z, int retries = 3);
 
-// private:
-//     struct Marker {
-//         double lat, lon;
-//         QColor color;
-//     };
-//     struct CustomMap {
-//         int zoomMin;
-//         int zoomMax;
-//         QString tileUrl;
-//     };
-//     bool flipkeyaxis = false;
-//     GISNetwork* net;
-//     QPixmap networkImage;
-//     bool dragging = false;
-//     QStringList activeLayers;
-//     QPoint lastMouse;
-//     Marker marker;
-//     QJsonArray geoOutline;
-//     QList<Marker> markers;
-//     QMap<QString, QImage> tileCache;
-//     QMap<QString, CustomMap> customMaps;
-//     double centerLat, centerLon;
-//     int pendingTiles = 0;
-//     int zoom;
-//     double lonToX(double lon, int zoom);
-//     double latToY(double lat, int zoom);
-//     double xToLon(double x, int zoom);
-//     double yToLat(double y, int zoom);
-//     QString toDMS(double deg, bool isLat);
-//     static constexpr int maxCacheSize = 1000;
+
 
 
 private:
@@ -81,6 +53,7 @@ private:
         int zoomMin;
         int zoomMax;
         QString tileUrl;
+               qreal opacity;
     };
     bool flipkeyaxis = false;
     GISNetwork* net;

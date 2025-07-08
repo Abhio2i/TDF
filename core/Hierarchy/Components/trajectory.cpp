@@ -1,5 +1,6 @@
 
 #include "trajectory.h"
+#include "qjsondocument.h"
 #include <QJsonArray>
 #include <QDebug>
 

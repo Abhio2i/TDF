@@ -14,6 +14,7 @@
 #include <core/Hierarchy/Components/rigidbody.h>
 #include <core/Hierarchy/Components/dynamicmodel.h> // Added for DynamicModel
 #include <unordered_map>
+#include <core/Recorder/recorder.h>
 
 struct PhysicsComponent {
     std::string name;
@@ -28,6 +29,9 @@ class Simulation : public QObject {
 public:
     Simulation();
     ~Simulation();
+
+    Recorder* recorder = nullptr;
+
     std::unordered_map<std::string, PhysicsComponent> physicsComponent;
 
     int SimulationFrameRate;
@@ -47,15 +51,21 @@ public:
     void toJson();
     void fromJson();
 
+    int getRate() const;
     void calculatePhysics();
+
+    void replay(); // newly added overload
+    void replay(const QVector<QJsonObject>& recordedFrames);
 
 private:
     void frame();
+    int rate = 1;
 
 public slots:
     void entityAdded(QString parentID, Entity* entity);
     void entityRemoved(QString ID);
     void entityUpdate(QString ID);
+    void handleReplayFrame(const QJsonObject& frame);
 
 signals:
     void Awake();
@@ -79,6 +89,10 @@ private:
     float speed;
     QElapsedTimer* elapsedTimer;
     qint64 lastTime;
+
+    bool isReplaying = false;
+    int replayIndex = 0;
+    QVector<QJsonObject> replayFrames;
 };
 
 #endif // SIMULATION_H

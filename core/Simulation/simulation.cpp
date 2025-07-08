@@ -16,9 +16,23 @@ Simulation::Simulation() {
     speed = 1;
     isPlay = false;
     complete = false;
+    isReplaying = false;
+    replayIndex = 0;
 
     connect(updateTimer, &QTimer::timeout, this, [=]() {
-        frame();
+        if (isReplaying) {
+            if (replayIndex < replayFrames.size()) {
+                handleReplayFrame(replayFrames[replayIndex]);
+                replayIndex++;
+            } else {
+                isReplaying = false;
+                replayIndex = 0;
+                updateTimer->stop();
+                Console::log("Replay finished");
+            }
+        } else {
+            frame();
+        }
     });
 
     broadphase = new btDbvtBroadphase();
@@ -52,6 +66,35 @@ void Simulation::frame() {
     deltaTime = (currentTime - lastTime) / 1000.0f;
     lastTime = currentTime;
     calculatePhysics();
+
+    QJsonObject frameData;
+    QJsonArray entitiesArray;
+    for (const auto& [id, comp] : physicsComponent) {
+        if (!comp.transform) continue;
+
+        QJsonObject entityFrame;
+        entityFrame["id"] = QString::fromStdString(id);
+        entityFrame["position"] = QJsonObject{
+            {"x", comp.transform->position->x},
+            {"y", comp.transform->position->y},
+            {"z", comp.transform->position->z}
+        };
+        entityFrame["rotation"] = QJsonObject{
+            {"x", comp.transform->rotation->x},
+            {"y", comp.transform->rotation->y},
+            {"z", comp.transform->rotation->z}
+        };
+
+        entitiesArray.append(entityFrame);
+    }
+
+    frameData["entities"] = entitiesArray;
+    frameData["timestamp"] = QDateTime::currentMSecsSinceEpoch();
+
+    if (recorder) {
+        recorder->recordFrame(frameData);
+    }
+
     QTimer::singleShot(0, this, [=]() {
         emit Update();
         emit Render(deltaTime * speed);
@@ -89,6 +132,10 @@ void Simulation::nextStep() {
     frame();
 }
 
+int Simulation::getRate() const {
+    return this->rate;
+}
+
 void Simulation::toJson() {
     QJsonObject obj;
     obj["SimulationFrameRate"] = SimulationFrameRate;
@@ -107,6 +154,56 @@ void Simulation::toJson() {
 void Simulation::fromJson() {
     Console::log("Simulation state deserialized from JSON");
 }
+
+// Start Replay
+void Simulation::replay() {
+    if (recorder) {
+        const QVector<QJsonObject>& frames = recorder->getRecordedFrames();
+        replay(frames);
+    } else {
+        Console::error("No recorder set. Cannot replay.");
+    }
+}
+
+// Public: Replay with provided frames
+void Simulation::replay(const QVector<QJsonObject>& frames) {
+    isReplaying = true;
+    replayFrames = frames;
+    replayIndex = 0;
+    updateTimer->start(1000 / SimulationFrameRate);
+    Console::log("Replay started with frames");
+}
+
+// Slot to handle a replayed frame
+void Simulation::handleReplayFrame(const QJsonObject& frame) {
+    QJsonArray entities = frame["entities"].toArray();
+
+    for (const QJsonValue& val : entities) {
+        QJsonObject entity = val.toObject();
+        QString id = entity["id"].toString();
+
+        auto it = physicsComponent.find(id.toStdString());
+        if (it != physicsComponent.end()) {
+            PhysicsComponent& comp = it->second;
+            if (comp.transform) {
+                QJsonObject pos = entity["position"].toObject();
+                QJsonObject rot = entity["rotation"].toObject();
+
+                comp.transform->position->x = pos["x"].toDouble();
+                comp.transform->position->y = pos["y"].toDouble();
+                comp.transform->position->z = pos["z"].toDouble();
+
+                comp.transform->rotation->x = rot["x"].toDouble();
+                comp.transform->rotation->y = rot["y"].toDouble();
+                comp.transform->rotation->z = rot["z"].toDouble();
+            }
+        }
+    }
+
+    emit Update();
+    emit Render(deltaTime * speed);
+}
+
 
 void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
     Platform* platform = dynamic_cast<Platform*>(entity);
@@ -241,7 +338,7 @@ void Simulation::calculatePhysics() {
     for (auto& [id, comp] : physicsComponent) {
         if (!comp.transform || !comp.rigidbody) continue;
         comp.rigidbody->deltaTime = deltaTime;
-        if (comp.dynamicModel) comp.dynamicModel->Update(deltaTime);
+        if (comp.dynamicModel) comp.dynamicModel->Update(dt);
 
         auto it = bulletBodies.find(id);
         if (it != bulletBodies.end()) {

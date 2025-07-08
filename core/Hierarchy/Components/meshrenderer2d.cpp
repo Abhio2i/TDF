@@ -1,6 +1,7 @@
 
 
 #include "meshrenderer2d.h"
+#include "qjsondocument.h"
 #include <QColor>
 #include <QDebug>
 

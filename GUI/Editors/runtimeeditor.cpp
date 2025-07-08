@@ -17,6 +17,7 @@
 #include <core/Hierarchy//Components/transform.h>
 #include <core/Hierarchy/Components/mesh.h>
 #include <QSplitter>
+#include "qstandardpaths.h"
 
 /**
  * @brief RuntimeEditor constructor
@@ -65,13 +66,48 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         connect(runtimeToolBar, &RuntimeToolBar::startTriggered, [=]() {
             tacticalDisplay->canvas->simulation();
             simulation->start();
-            qDebug() << "Simulation started";
+            runtime->recorder->startRecording();  // Start recording
+            qDebug() << "Simulation started and recording started.";
         });
 
+        //connect the stop botton to handle simulation stop and saved to file
         connect(runtimeToolBar, &RuntimeToolBar::stopTriggered, [=]() {
             tacticalDisplay->canvas->editor();
             simulation->stop();
-            qDebug() << "Simulation stopped";
+            runtime->recorder->stopRecording();     // Stop recording
+            runtime->recorder->recordToJson();      // Save JSON to file
+            qDebug() << "Simulation stopped and recording saved.";
+        });
+
+        // Connect the pause button to handle simulation stop
+        connect(runtimeToolBar, &RuntimeToolBar::pauseTriggered, this, [=]() {
+            simulation->pause();  // Just pause
+            qDebug() << "Simulation paused.";
+        });
+
+        // Connect replay button to load and replay file
+        connect(runtimeToolBar, &RuntimeToolBar::replayTriggered, this, [=]() {
+            simulation->stop();  // Stop the simulation before replay
+            tacticalDisplay->canvas->Render(0.016f);  // Optional: clear or reset rendering
+
+            QString filePath = QFileDialog::getOpenFileName(
+                this,
+                "Select Replay File",
+                QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/recordings",
+                "*.json"
+                );
+
+            if (!filePath.isEmpty() && runtime->recorder->loadFromFile(filePath)) {
+                QVector<QJsonObject> frames = runtime->recorder->getRecordedFrames();
+                if (!frames.isEmpty()) {
+                    simulation->replay(frames);  // Send frames to simulation for replay
+                    qDebug() << "Replay started using file:" << filePath;
+                } else {
+                    qWarning() << "Replay file loaded but contains no frames.";
+                }
+            } else {
+                qWarning() << "Replay cancelled or file failed to load.";
+            }
         });
 
         connect(runtimeToolBar, &RuntimeToolBar::speedChanged, simulation, &Simulation::setSpeed);

@@ -9,6 +9,7 @@
 #include <core/Render/scenerenderer.h>
 #include <core/Network/networkmanager.h>
 #include <core/Debug/console.h>
+#include "core/Recorder/recorder.h"
 
 class Runtime : public QObject  // QObject se inherit kiya
 {
@@ -16,6 +17,8 @@ class Runtime : public QObject  // QObject se inherit kiya
 
 public:
     Runtime();
+    ~Runtime();
+
     ScenarioConfig *scenarioconfig;
     Hierarchy *hierarchy;
     Hierarchy *Library;
@@ -24,9 +27,14 @@ public:
     SceneRenderer *scenerenderer;
     NetworkManager *networkManager;
     Console *console;
+    Recorder *recorder;  // Using external Recorder
+
 signals:
 
 public slots:
+    void handleStart();
+    void handleStop();
+    void handleReplay();
 
 };
 

@@ -17,12 +17,11 @@ CustomMapDialog::CustomMapDialog(const QString &name, const QString &tileUrl, in
     zoomMinSpinBox->setValue(zoomMin);
     zoomMaxSpinBox->setValue(zoomMax);
 
-    // Set opacity in ComboBox
+
     QString opacityText = opacity >= 0.0 ? QString::number(opacity * 100, 'f', 0) + "%" : "100%";
     opacityComboBox->setCurrentText(opacityText);
 
-    // Set resolution in ComboBox, no default if "N/A" or empty
-    // resolutionComboBox->setCurrentText(resolution == "N/A" || resolution.isEmpty() ? "" : resolution);
+
 
     typeComboBox->setCurrentText(type.isEmpty() || type == "N/A" ? "Raster" : type);
 }
@@ -54,11 +53,6 @@ void CustomMapDialog::setupUi() {
     opacityComboBox->setCurrentText("100%");
     formLayout->addRow("Opacity:", opacityComboBox);
 
-    // resolutionComboBox = new QComboBox(this);
-    // resolutionComboBox->setPlaceholderText("Select Resolution");
-    // resolutionComboBox->addItems({"Standard", "High"});
-    // resolutionComboBox->setCurrentIndex(-1);
-    // formLayout->addRow("Resolution:", resolutionComboBox);
 
     typeComboBox = new QComboBox(this);
     typeComboBox->addItems({"Raster", "Vector", "Other"});

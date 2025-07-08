@@ -38,7 +38,7 @@ TacticalDisplay::TacticalDisplay(QWidget *parent) : QWidget(parent) {
     overlayLabel->raise();
 
     connect(mapWidget, &GISlib::mouseCords, this, [=](QString lat, QString lon) {
-        qDebug() << "Received coordinates:" << lat << lon;
+        // qDebug() << "Received coordinates:" << lat << lon;
         overlayLabel->setText(QString("Lat: %1\nLon: %2").arg(lat, lon));
     });
 
@@ -106,11 +106,7 @@ void TacticalDisplay::selectedMesh(QString ID) {
     emit meshSelected(ID);
 }
 
-// void TacticalDisplay::setMapLayers(const QStringList& layerNames) {
-//     if (mapWidget) {
-//         mapWidget->setLayers(layerNames);
-//     }
-// }
+
 void TacticalDisplay::setMapLayers(const QStringList& layerNames) {
     if (mapWidget) {
         qDebug() << "Setting map layers:" << layerNames;
@@ -120,9 +116,10 @@ void TacticalDisplay::setMapLayers(const QStringList& layerNames) {
         qDebug() << "Error: mapWidget is null";
     }
 }
-void TacticalDisplay::addCustomMap(const QString& layerName, int zoomMin, int zoomMax, const QString& tileUrl) {
+
+
+void TacticalDisplay::addCustomMap(const QString& layerName, int zoomMin, int zoomMax, const QString& tileUrl, qreal opacity) {
     if (mapWidget) {
-        mapWidget->addCustomMap(layerName, zoomMin, zoomMax, tileUrl);
+        mapWidget->addCustomMap(layerName, zoomMin, zoomMax, tileUrl, opacity); // Pass opacity
     }
 }
-

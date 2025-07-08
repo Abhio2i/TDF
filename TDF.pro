@@ -302,6 +302,7 @@ SOURCES += \
     core/Network/networkmanager.cpp \
     core/Network/server.cpp \
     core/Plugins/pluginmanager.cpp \
+    core/Recorder/recorder.cpp \
     core/Render/scenerenderer.cpp \
     core/Simulation/simulation.cpp \
     # core/Struct/action.cpp \
@@ -780,6 +781,7 @@ HEADERS += \
     core/Network/networkmanager.h \
     core/Network/server.h \
     core/Plugins/pluginmanager.h \
+    core/Recorder/recorder.h \
     core/Render/scenerenderer.h \
     core/Simulation/simulation.h \
     core/Struct/action.h \

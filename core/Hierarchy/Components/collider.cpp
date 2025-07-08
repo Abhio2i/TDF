@@ -1,6 +1,7 @@
 
 #include "collider.h"
 #include "qjsonarray.h"
+#include "qjsondocument.h"
 #include <QMetaEnum>
 #include <core/Debug/console.h>
 

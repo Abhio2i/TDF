@@ -32,14 +32,7 @@ ProfileCategaory::~ProfileCategaory(){
 
 Folder* ProfileCategaory::addFolder(std::string folderName){
 
-    // if(Folders.count(folderName)){
 
-    //     Console::error(
-    //         "RunTimeError::" + std::string(__FILE__) + "," +
-    //         std::to_string(__LINE__) + " Folder already exists With Same Name"
-    //         );
-    //     return nullptr;
-    // }
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     Folder *folder = new Folder(parent);
     folder->Name = folderName;

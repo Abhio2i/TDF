@@ -14,6 +14,7 @@
 #include "GUI/Toolbars/networktoolbar.h"
 #include "core/Debug/console.h"
 #include "core/Hierarchy/hierarchy.h"
+#include "core/structure/runtime.h"
 #include <QMainWindow>
 #include <QDockWidget>
 
@@ -75,6 +76,8 @@ private:
     int inspectorCount = 0;
     QList<QMetaObject::Connection> inspectorConnections;
     QList<Inspector*> inspectors;
+
+    Runtime *runtime;
 };
 
 #endif // RUNTIMEEDITOR_H

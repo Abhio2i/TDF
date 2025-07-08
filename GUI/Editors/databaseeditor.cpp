@@ -29,13 +29,7 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
     hierarchy = scenario->hierarchy;
     console = scenario->console;
 
-    // // Connect console output
-    // connect(console, &Console::logUpdate, this, [=](std::string log) {
-    //     if (consoleView) {
-    //         consoleView->appendText(QString::fromStdString(log));
-    //     }
-    // });
-    // Set the consoleDock in ConsoleView
+
     consoleView->setConsoleDock(consoleDock);
 
 

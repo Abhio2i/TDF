@@ -1,6 +1,4 @@
-// #include "networkmanager.h"
 
-// NetworkManager::NetworkManager() {}
 #include "networkmanager.h"
 #include <iostream>
 #include <thread>

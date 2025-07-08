@@ -24,7 +24,7 @@ public:
     Vector *localPosition;
     Vector *localRotation;
     Vector *localSize;
-    QJsonObject customParameters; // Added to store custom parameters
+    QJsonObject customParameters;
 
     void translate(Vector *vector);
     void rotate(Vector *vector);

@@ -1,5 +1,6 @@
 
 #include "dynamicmodel.h"
+#include "qjsondocument.h"
 #include <core/InputSystem/inputmanager.h>
 #include <QDebug>
 
@@ -19,7 +20,18 @@ void DynamicModel::Update(float deltaTime) {
 }
 
 void DynamicModel::FollowTrajectory() {
-    *transform->position = Vector::Lerp(*transform->position, *trajectory->Trajectories[trajectory->current]->position, moveSpeed * 0.1);
+    Vector current = *transform->position;
+    Vector target = *trajectory->Trajectories[trajectory->current]->position;
+
+    Vector diff = target - current;
+    float distance = diff.magnitude();
+
+    if (distance > 0.001f) {
+        Vector dir = diff.normalized();
+        current += dir * moveSpeed * 0.1f;
+    }
+    *transform->position = current;
+    //*transform->position = Vector::Lerp(*transform->position, *trajectory->Trajectories[trajectory->current]->position, moveSpeed * 0.1);
 
     if (trajectory->Trajectories.size() > trajectory->current && Vector::Distance(*transform->position, *trajectory->Trajectories[trajectory->current]->position) < 1) {
         trajectory->current += 1;

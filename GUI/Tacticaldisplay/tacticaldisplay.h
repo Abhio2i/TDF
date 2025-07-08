@@ -24,7 +24,8 @@ public slots:
     void removeMesh(QString ID);
     void selectedMesh(QString ID);
     void setMapLayers(const QStringList& layerNames);
-    void addCustomMap(const QString& layerName, int zoomMin, int zoomMax, const QString& tileUrl);
+    // void addCustomMap(const QString& layerName, int zoomMin, int zoomMax, const QString& tileUrl);
+        void addCustomMap(const QString& layerName, int zoomMin, int zoomMax, const QString& tileUrl, qreal opacity = 1.0);
 
 signals:
     void meshSelected(QString ID);

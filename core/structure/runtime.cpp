@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include <QDebug>
 
 Runtime::Runtime() {
     hierarchy = new Hierarchy();
@@ -8,13 +9,18 @@ Runtime::Runtime() {
     networkManager = new NetworkManager();
     console  = Console::internalInstance();
 
+    recorder = new Recorder(hierarchy, simulation);  //  Using external Recorder class
+
+    // Rendering pipeline
     connect(hierarchy,&Hierarchy::entityMeshAdded,scenerenderer,&SceneRenderer::entityAdded);
     connect(hierarchy,&Hierarchy::entityMeshRemoved,scenerenderer,&SceneRenderer::entityRemoved);
     connect(simulation,&Simulation::Render,scenerenderer,&SceneRenderer::Render);
 
+    // Physics system connections
     connect(hierarchy,&Hierarchy::entityPhysicsAdded,simulation,&Simulation::entityAdded);
     connect(hierarchy,&Hierarchy::entityPhysicsRemoved,simulation,&Simulation::entityRemoved);
     connect(hierarchy,&Hierarchy::entityUpdate,simulation,&Simulation::entityUpdate);
+
     // NetworkManager connections
     connect(hierarchy, &Hierarchy::entityAddedPointer,
             networkManager, &NetworkManager::entityAddedPointer);
@@ -46,4 +52,29 @@ Runtime::Runtime() {
     connect(networkManager,&NetworkManager::addEntityFromJson,hierarchy,&Hierarchy::addEntityViaNetwork);
     connect(networkManager,&NetworkManager::addComponent,hierarchy,&Hierarchy::addComponent);
     connect(networkManager,&NetworkManager::removeEntity,hierarchy,&Hierarchy::removeEntity);
+}
+
+Runtime::~Runtime() {
+    delete recorder;
+    // delete missionExcuter;
+    delete console;
+    delete networkManager;
+    delete scenerenderer;
+    delete simulation;
+    delete Library;
+    delete hierarchy;
+}
+
+void Runtime::handleStart() {
+    if (simulation) simulation->start();
+}
+
+void Runtime::handleStop() {
+    if (simulation) simulation->stop();
+}
+
+void Runtime::handleReplay() {
+    if (simulation) {
+        simulation->replay();
+    }
 }

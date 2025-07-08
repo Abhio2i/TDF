@@ -196,7 +196,7 @@ void ScenarioEditor::setupToolBarConnections()
                              << ", url =" << url;
                 });
         connect(designToolBar, &DesignToolBar::searchPlaceTriggered,
-                tacticalDisplay->mapWidget, &GISlib::serachPlace); // Fixed typo
+                tacticalDisplay->mapWidget, &GISlib::serachPlace);
         connect(designToolBar->zoomInAction, &QAction::triggered,
                 tacticalDisplay, &TacticalDisplay::zoomIn);
         connect(designToolBar->zoomOutAction, &QAction::triggered,
