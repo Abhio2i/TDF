@@ -18,9 +18,9 @@ MeshRenderer2D::MeshRenderer2D() {
     mesh->Texture = Texture;
     mesh->lineWidth = 2;
     mesh->closePath = true;
-    mesh->addPoint(new Vector(0, 10, 0));
-    mesh->addPoint(new Vector(10, -10, 0));
-    mesh->addPoint(new Vector(-10, -10, 0));
+    // mesh->addPoint(new Vector(0, 10, 0));
+    // mesh->addPoint(new Vector(10, -10, 0));
+    // mesh->addPoint(new Vector(-10, -10, 0));
     Meshes.push_back(mesh);
 }
 
@@ -28,6 +28,7 @@ QJsonObject MeshRenderer2D::toJson() const {
     QJsonObject obj;
     obj["active"] = Active;
     obj["id"] = QString::fromStdString(ID);
+    obj["type"] = "component";
     QJsonObject colorObj;
     colorObj["type"] = "color";
     colorObj["value"] = color->name();

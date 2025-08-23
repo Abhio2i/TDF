@@ -1,5 +1,7 @@
 
 #include "scenerenderer.h"
+#include "core/Hierarchy/EntityProfiles/fixedpoints.h"
+#include "core/Hierarchy/EntityProfiles/specialzone.h"
 #include <core/Debug/console.h>
 
 SceneRenderer::SceneRenderer() {
@@ -8,23 +10,51 @@ SceneRenderer::SceneRenderer() {
 
 void SceneRenderer::entityAdded(QString /*parentID*/, Entity* entity) {
     Platform* platform = dynamic_cast<Platform*>(entity);
-    if (!platform) {
-        Console::error("Entity is not a Platform");
-        return;
+    if (platform) {
+        if (!platform->transform || !platform->collider || !platform->meshRenderer2d) {
+            Console::error("Required components missing for entity: " + platform->Name);
+            return;
+        }
+        MeshData meshData;
+        meshData.name = QString::fromStdString(platform->Name);
+        meshData.transform = platform->transform;
+        meshData.collider = platform->collider;
+        meshData.trajectory = platform->trajectory;
+        meshData.Meshes = platform->meshRenderer2d->Meshes;
+        emit addMesh(QString::fromStdString(platform->ID), meshData);
+    }
+    Specialzone* zone = dynamic_cast<Specialzone*>(entity);
+    if (zone) {
+        if (!zone->transform || !zone->collider || !zone->meshRenderer2d) {
+            Console::error("Required components missing for entity: " + zone->Name);
+            return;
+        }
+        MeshData meshData;
+        meshData.name = QString::fromStdString(zone->Name);
+        meshData.transform = zone->transform;
+        meshData.collider = zone->collider;
+        meshData.trajectory = nullptr;
+        meshData.Meshes = zone->meshRenderer2d->Meshes;
+        emit addMesh(QString::fromStdString(zone->ID), meshData);
+    }
+    FixedPoints* point = dynamic_cast<FixedPoints*>(entity);
+    if (point) {
+        if (!point->transform || !point->collider || !point->meshRenderer2d) {
+            Console::error("Required components missing for entity: " + point->Name);
+            return;
+        }
+        MeshData meshData;
+        meshData.name = QString::fromStdString(point->Name);
+        meshData.transform = point->transform;
+        meshData.collider = point->collider;
+        meshData.trajectory = nullptr;
+        meshData.Meshes = point->meshRenderer2d->Meshes;
+        emit addMesh(QString::fromStdString(point->ID), meshData);
     }
 
-    if (!platform->transform || !platform->collider || !platform->meshRenderer2d) {
-        Console::error("Required components missing for entity: " + platform->Name);
-        return;
-    }
 
-    MeshData meshData;
-    meshData.name = QString::fromStdString(platform->Name);
-    meshData.transform = platform->transform;
-    meshData.collider = platform->collider;
-    meshData.trajectory = platform->trajectory;
-    meshData.Meshes = platform->meshRenderer2d->Meshes;
-    emit addMesh(QString::fromStdString(platform->ID), meshData);
+
+
 }
 
 void SceneRenderer::entityRemoved(QString ID) {

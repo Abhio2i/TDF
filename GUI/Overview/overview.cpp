@@ -1,8 +1,7 @@
-
 #include "overview.h"
 #include <QVBoxLayout>
 
-Overview::Overview(QWidget *parent)  // Changed to match header
+Overview::Overview(QWidget *parent)
     : QWidget(parent)
 {
     QVBoxLayout *layout = new QVBoxLayout(this);

@@ -1,11 +1,15 @@
 
 #include "dynamicmodel.h"
+#include "core/Hierarchy/EntityProfiles/platform.h"
+#include "core/Hierarchy/Struct/formationposition.h"
 #include "qjsondocument.h"
 #include <core/InputSystem/inputmanager.h>
 #include <QDebug>
+#include <cmath>
 
 DynamicModel::DynamicModel() {
     controle = true;
+    follow = false;
     customParameters = QJsonObject(); // Initialize customParameters
 }
 
@@ -20,6 +24,41 @@ void DynamicModel::Update(float deltaTime) {
 }
 
 void DynamicModel::FollowTrajectory() {
+
+    if (follow) {
+        Vector current = *transform->position;
+
+        // 🎯 Step 1: Base target is followEntity's position
+        Vector target = *followEntity->transform->position;
+
+        // 🎯 Step 2: Apply Offset if formationPosition is available
+        if (formationPosition && formationPosition->Offset) {
+            target += *formationPosition->Offset;
+        }
+
+        // 🔁 Step 3: Move towards target
+        Vector diff = target - current;
+        float distance = diff.magnitude();
+
+        if (distance > 0.001f) {
+            Vector dir = diff.normalized();
+            current += dir * moveSpeed * 0.1f;
+        }
+
+        *transform->position = current;
+
+        // 🔄 Step 4: Update rotation
+        Vector direction = target - current;
+        if (direction.magnitude() > 0.001f) {
+            direction = direction.normalized();
+            float angleRad = atan2(direction.y, direction.x);
+            float angleDeg = angleRad * (180.0f / M_PI);
+            *transform->rotation = Vector(0, 0, angleDeg);
+        }
+
+        return; // Skip trajectory logic
+    }
+    if(trajectory->Trajectories.size()<2) return;
     Vector current = *transform->position;
     Vector target = *trajectory->Trajectories[trajectory->current]->position;
 
@@ -29,6 +68,14 @@ void DynamicModel::FollowTrajectory() {
     if (distance > 0.001f) {
         Vector dir = diff.normalized();
         current += dir * moveSpeed * 0.1f;
+        Vector direction = target - current;
+
+        direction = direction.normalized();
+
+        float angleRad = atan2(direction.y, direction.x);
+        float angleDeg = angleRad * (180.0f / M_PI);
+
+        *transform->rotation = Vector(0, 0, -angleDeg);
     }
     *transform->position = current;
     //*transform->position = Vector::Lerp(*transform->position, *trajectory->Trajectories[trajectory->current]->position, moveSpeed * 0.1);
@@ -36,14 +83,7 @@ void DynamicModel::FollowTrajectory() {
     if (trajectory->Trajectories.size() > trajectory->current && Vector::Distance(*transform->position, *trajectory->Trajectories[trajectory->current]->position) < 1) {
         trajectory->current += 1;
         trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? (trajectory->Trajectories.size()-1) : trajectory->current;
-        Vector direction = *trajectory->Trajectories[trajectory->current]->position - *transform->position;
 
-        direction = direction.normalized();
-
-        float angleRad = atan2(direction.y, direction.x);
-        float angleDeg = angleRad * (180.0f / M_PI);
-
-        *transform->rotation = Vector(0, 0, angleDeg);
     }
 }
 
@@ -64,6 +104,7 @@ QJsonObject DynamicModel::toJson() const {
     obj["bankedTurnEffect"] = bankedTurnEffect;
     obj["autoRollLevel"] = autoRollLevel;
     obj["autoPitchLevel"] = autoPitchLevel;
+     obj["type"] = "component";
 
     // Add custom parameters
     for (auto it = customParameters.begin(); it != customParameters.end(); ++it) {

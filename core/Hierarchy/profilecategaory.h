@@ -15,7 +15,7 @@ public:
     std::string Name;
     bool Active;
     std::string ID;
-
+    Constants::EntityType type;
     std::unordered_map<std::string, Folder*> Folders;
     std::unordered_map<std::string, Entity*> Entities;
 
@@ -26,9 +26,10 @@ public:
     Entity* addEntity(std::string name);
     void addEntityWithObject(Entity *entity);
     void removeEntity(std::string name);
-
+    void setProfileType(Constants::EntityType Type);
     QJsonObject toJson();
     void fromJson(const QJsonObject& obj);
+
 
 };
 

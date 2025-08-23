@@ -8,30 +8,13 @@ Trajectory::Trajectory() {
     Active = true; // Initialize Active
     current = 0;
     customParameters = QJsonObject(); // Initialize customParameters
-    Waypoints* waypoin = new Waypoints();
-    waypoin->position = new Vector(0, 0, 0);
-    Trajectories.push_back(waypoin);
-    Waypoints* waypoin2 = new Waypoints();
-    waypoin2->position = new Vector(20, 30, 0);
-    Trajectories.push_back(waypoin2);
-    Waypoints* waypoin3 = new Waypoints();
-    waypoin3->position = new Vector(40, 60, 0);
-    Trajectories.push_back(waypoin3);
-    Waypoints* waypoin4 = new Waypoints();
-    waypoin4->position = new Vector(80, 20, 0);
-    Trajectories.push_back(waypoin4);
-    Waypoints* waypoin5 = new Waypoints();
-    waypoin5->position = new Vector(100, 40, 0);
-    Trajectories.push_back(waypoin5);
-    Waypoints* waypoin6 = new Waypoints();
-    waypoin6->position = new Vector(120, 0, 0);
-    Trajectories.push_back(waypoin6);
 }
 
 QJsonObject Trajectory::toJson() const {
     QJsonObject obj;
     obj["id"] = QString::fromStdString(ID);
     obj["active"] = Active;
+    obj["type"] = "component";
 
     QJsonArray strArray;
     for (const QJsonObject& s : array) {

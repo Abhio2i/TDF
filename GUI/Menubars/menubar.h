@@ -1,42 +1,97 @@
-/* Header guard section */
+
+
 #ifndef MENUBAR_H
 #define MENUBAR_H
 
-/* Includes section */
 #include <QMenuBar>
 #include <QMenu>
 #include <QAction>
 #include <GUI/Feedback/feedback.h>
 
-/* Class declaration section */
 class MenuBar : public QMenuBar
 {
-    /* Qt meta-object section */
     Q_OBJECT
 
 public:
-    /* Constructor section */
     explicit MenuBar(QWidget *parent = nullptr);
 
-    /* Menu and action accessor section */
     QMenu* getFileMenu();
+    QMenu* getEditMenu();
+    QMenu* getViewMenu();
     QAction* getLoadAction();
+    QAction* getLoadToLibraryAction();
     QAction* getSaveAction();
     QAction* getFeedbackAction();
+    QAction* getNewFileAction();
+    QAction* getRecentProjectAction();
+    QAction* getRunAction();
+    QAction* getExitAction();
+    QAction* getUndoAction();
+    QAction* getRedoAction();
+    QAction* getSelectAllAction();
+    QAction* getDeselectAllAction();
+    QAction* getCutAction();
+    QAction* getCopyAction();
+    QAction* getPasteAction();
+    QAction* getDuplicateAction();
+    QAction* getRenameAction();
+    QAction* getDeleteAction();
+    QAction* getPlayAction();
+    QAction* getPauseAction();
+    QAction* getAdd3DViewAction();
+    QAction* getRemove3DViewAction();
 
 signals:
-    /* Signals section */
     void feedbackTriggered();
+    void newFileTriggered();
+    void recentProjectTriggered();
+    void loadTriggered();
+    void loadToLibraryTriggered();
+    void saveTriggered();
+    void runTriggered();
+    void exitTriggered();
+    void undoTriggered();
+    void redoTriggered();
+    void selectAllTriggered();
+    void deselectAllTriggered();
+    void cutTriggered();
+    void copyTriggered();
+    void pasteTriggered();
+    void duplicateTriggered();
+    void renameTriggered();
+    void deleteTriggered();
+    void playTriggered();
+    void pauseTriggered();
+    void add3DViewTriggered();
+    void remove3DViewTriggered();
 
 private:
-    /* Private members section */
     QMenu* fileMenu;
+    QMenu* editMenu;
+    QMenu* viewMenu;
+    QAction* newFileAction;
+    QAction* recentProjectAction;
     QAction* loadJsonAction;
+    QAction* loadToLibraryAction;
     QAction* saveJsonAction;
+    QAction* runAction;
+    QAction* exitAction;
+    QAction* undoAction;
+    QAction* redoAction;
+    QAction* selectAllAction;
+    QAction* deselectAllAction;
+    QAction* cutAction;
+    QAction* copyAction;
+    QAction* pasteAction;
+    QAction* duplicateAction;
+    QAction* renameAction;
+    QAction* deleteAction;
+    QAction* playAction;
+    QAction* pauseAction;
+    QAction* add3DViewAction;
+    QAction* remove3DViewAction;
     QMenu* feedbackMenu;
-    /* Feedback members section */
     QAction* feedbackAction;
 };
 
-/* End of header guard section */
 #endif // MENUBAR_H

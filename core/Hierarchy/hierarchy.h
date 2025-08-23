@@ -1,5 +1,4 @@
 
-
 #ifndef HIERARCHY_H
 #define HIERARCHY_H
 
@@ -44,12 +43,16 @@ public:
     void fromJson(const QJsonObject& obj);
     void getCurrentJsonData();
     void addComponent(QString Id, QString ComponentName);
+    void attchedIff(QString Id, QString name);
+    void attachSensors(QString ID, QString name);
+    void attachRadios(QString ID, QString name);
+
 
     QJsonObject getComponentData(QString ID, QString componentName);
     void UpdateComponent(QString ID, QString name, QJsonObject delta);
 
     void onParameterChanged(const QString &entityID, const QString &componentName, const QString &key, const QString &parameterType, bool add);
-
+    QJsonArray searchProfile();
     static thread_local Hierarchy* currentContext;
     static void setCurrentContext(Hierarchy* h) {
         currentContext = h;

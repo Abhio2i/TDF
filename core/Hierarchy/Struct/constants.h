@@ -73,7 +73,9 @@ public:
         SpecialZone,
         Weapon,
         IFF,
-        Supply
+        Supply,
+        FixedPoint,
+        Formation
     };
     Q_ENUM(EntityType)
 

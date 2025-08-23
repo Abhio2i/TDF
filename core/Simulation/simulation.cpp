@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <core/Debug/console.h>
 #include <QJsonObject>
+#include <QtMath>
 
 Simulation::Simulation() {
     updateTimer = new QTimer(this);

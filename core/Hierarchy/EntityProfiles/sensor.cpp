@@ -19,8 +19,8 @@ void Sensor::spawn() {
     emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
 }
 
-std::vector<Component*> Sensor::getSupportedComponents() {
-    return std::vector<Component*>{};
+std::vector<std::string>Sensor:: getSupportedComponents() {
+    return std::vector<std::string>{};
 }
 
 void Sensor::addComponent(std::string name) {

@@ -2,6 +2,9 @@
 #ifndef PLATFORM_H
 #define PLATFORM_H
 
+// #include "core/Hierarchy/EntityProfiles/iff.h"
+// #include "core/Hierarchy/EntityProfiles/radio.h"
+// #include "core/Hierarchy/EntityProfiles/sensor.h"
 #include <core/Hierarchy/entity.h>
 #include <QObject>
 #include <QJsonObject>
@@ -12,9 +15,11 @@
 #include <core/Hierarchy/Components/networkobject.h>
 #include <core/Hierarchy/Components/meshrenderer2d.h>
 #include <core/Hierarchy/Components/component.h>
-#include <core/Hierarchy/Components/dynamicModel.h>
+#include <core/Hierarchy/Components/dynamicmodel.h>
 #include <core/Hierarchy/Components/mission.h>
 #include <core/Hierarchy/Components/attachedenitities.h>
+#include <vector>
+
 
 class Platform: public Entity
 {
@@ -33,15 +38,14 @@ public:
     NetworkObject *networkObject = nullptr;
     MeshRenderer2D *meshRenderer2d = nullptr;
     Mission *mission = nullptr;
-    AttachedEnitities *radios = nullptr;
-    AttachedEnitities *weopons = nullptr;
-    AttachedEnitities *radar = nullptr;
+    // Pointers to multiple Radios, Sensors, IFFs
+
     std::unordered_map<std::string, std::function<void()>> componentMap;
     std::unordered_map<std::string, Component> *components = nullptr;
-    std::unordered_map<std::string, AttachedEnitities> *attachedEntities = nullptr;
+
 
     void spawn() override;
-    std::vector<Component*> getSupportedComponents() override;
+    std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;
     void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;

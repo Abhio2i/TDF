@@ -7,6 +7,7 @@
 
 #include <Qt3DRender/QCamera>
 #include <Qt3DExtras/QOrbitCameraController>
+// #include <Qt3DCore/QBuffer>
 #include <Qt3DCore/QBuffer>
 #include <Qt3DCore/QAttribute>
 #include <Qt3DExtras/QPhongMaterial>

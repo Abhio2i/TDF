@@ -1,8 +1,7 @@
 
-
-
 #ifndef CANVASWIDGET_H
 #define CANVASWIDGET_H
+#include "GUI/Tacticaldisplay/Gis/gislib.h"
 #include <QWidget>
 #include <QPainter>
 #include <core/Hierarchy/Struct/vector.h>
@@ -11,6 +10,7 @@
 #include <core/Hierarchy/Components/trajectory.h>
 #include <QMouseEvent>
 #include <QJsonArray>
+#include <QElapsedTimer>
 
 /* MeshEntry structure section */
 struct MeshEntry {
@@ -22,6 +22,7 @@ struct MeshEntry {
     Mesh* mesh;
     Collider* collider;
     Trajectory* trajectory;
+    QString bitmapPath;
 };
 
 /* TransformMode enumeration section */
@@ -30,7 +31,11 @@ enum TransformMode {
     Translate,
     Rotate,
     Scale,
-    DrawTrajectory
+    DrawTrajectory,
+    DrawShape,
+    PlaceBitmap,
+    MeasureDistance
+
 };
 
 /* Class declaration section */
@@ -39,6 +44,7 @@ class CanvasWidget : public QWidget {
 public:
     /* Constructor section */
     CanvasWidget(QWidget *parent = nullptr);
+    GISlib* gislib;
     /* Public members section */
     std::unordered_map<std::string, MeshEntry> Meshes;
     std::string selectedEntityId;
@@ -61,6 +67,21 @@ public:
     void toggleInformation(bool show) { showInformation = show; update(); }
     void toggleFPS(bool show) { showFPS = show; update(); }
     void toggleLayerVisibility(const QString& layer, bool visible);
+    void wheelEvent(QWheelEvent *event) override;
+
+    QString selectedShape;
+    void setShapeDrawingMode(bool enabled, const QString& shapeType = "");
+
+    std::vector<MeshEntry> tempMeshes;
+    void onBitmapImageSelected(const QString& filePath);
+    void onBitmapSelected(const QString& bitmapType);
+
+
+
+    void selectWaypoint(int index);
+    void deselectWaypoint();
+    QJsonObject toJson() const; // Declare serialization function
+    void fromJson(const QJsonObject& json); // Declare deserialization function
 public slots:
     void onGISKeyPressed(QKeyEvent *event) { keyPressEvent(event); }
     void onGISMousePressed(QMouseEvent *event) { mousePressEvent(event); }
@@ -68,6 +89,8 @@ public slots:
     void onGISMouseReleased(QMouseEvent *event) { mouseReleaseEvent(event); }
     void onGISPainted(QPaintEvent *event) { paintEvent(event); }
     void updateWaypointsFromInspector(QString entityId, QJsonArray waypoints);
+    void onDistanceMeasured(double distance, QPointF startPoint, QPointF endPoint);
+
 private:
     void drawGridLines(QPainter& painter);
     void drawEntityInformation(QPainter& painter);
@@ -94,7 +117,17 @@ private:
     bool showInformation = true;
     bool showFPS = true;
     bool isDrawingTrajectory = false;
+    QString selectedBitmapType;
+    bool isPlacingBitmap = false;
     std::vector<Waypoints*> currentTrajectory;
+    std::vector<Vector*> tempPolygonVertices;
+    std::vector<QPointF> tempPolygonCanvasPoints;
+    std::vector<Vector*> tempLineVertices;
+
+    QString getBitmapImagePath(const QString& bitmapType);
+    std::vector<QPointF> tempLineCanvasPoints;
+    int selectedWaypointIndex;
+    bool isDraggingWaypoint;
 protected:
     void keyPressEvent(QKeyEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
@@ -118,5 +151,7 @@ private:
     QPointF canvasOffset = QPointF(0, 0);
     QPoint lastMousePos;
     bool isPanning = false;
+    int findNearestWaypoint(QPointF canvasPos);
+    void updateTrajectoryData();
 };
 #endif // CANVASWIDGET_H

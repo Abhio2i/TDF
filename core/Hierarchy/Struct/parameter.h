@@ -3,6 +3,7 @@
 #define PARAMETER_H
 #include<QObject>
 #include "./constants.h"
+#include <variant>
 class Parameter: public QObject
 {
     Q_OBJECT

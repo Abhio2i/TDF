@@ -1,4 +1,4 @@
-// docktitlemenu.cpp
+
 #include "docktitlemenu.h"
 #include <QEvent>
 #include <QCursor>

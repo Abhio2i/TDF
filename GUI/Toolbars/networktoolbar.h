@@ -1,7 +1,6 @@
 
 #ifndef NETWORKTOOLBAR_H
 #define NETWORKTOOLBAR_H
-
 #include <QToolBar>
 #include <QAction>
 #include <QDialog>
@@ -19,7 +18,6 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QVBoxLayout>
-
 #include <core/Network/networkmanager.h>
 
 
@@ -31,8 +29,6 @@ public:
     explicit NetworkToolbar(QWidget *parent = nullptr);
     ~NetworkToolbar();
     void setNetworkManager(NetworkManager *netmger);
-    //void enableMessageSendingUI(bool enabled); // ✅ Add this
-
     void enableMessageSendingUI();
 private slots:
     void startSession();

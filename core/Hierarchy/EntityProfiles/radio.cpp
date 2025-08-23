@@ -18,8 +18,8 @@ void Radio::spawn() {
     emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
 }
 
-std::vector<Component*> Radio::getSupportedComponents() {
-    return std::vector<Component*>{};
+std::vector<std::string>Radio:: getSupportedComponents(){
+    return std::vector<std::string>{};
 }
 
 void Radio::addComponent(std::string name) {

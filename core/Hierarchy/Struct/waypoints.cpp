@@ -5,6 +5,8 @@ Waypoints::Waypoints() {}
 QJsonObject Waypoints::toJson()const {
     QJsonObject obj;
 
+    obj["speed"] = speed;
+
     if (geocord)
         obj["geocord"] = geocord->toJson();
 
@@ -15,6 +17,10 @@ QJsonObject Waypoints::toJson()const {
 }
 
 void Waypoints::fromJson(const QJsonObject& obj) {
+
+    if (obj.contains("speed"))
+        speed = obj["speed"].toVariant().toDouble();
+
     if (obj.contains("geocord") && obj["geocord"].isObject()) {
         if (!geocord) geocord = new Geocords();
         geocord->fromJson(obj["geocord"].toObject());

@@ -1,6 +1,7 @@
 #ifndef SESSIONMANAGER_H
 #define SESSIONMANAGER_H
 #include <QObject>
+#include <variant>
 
 class SessionManager: public QObject
 {

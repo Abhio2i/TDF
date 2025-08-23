@@ -133,6 +133,7 @@ QJsonObject Transform::toJson() const {
     obj["localPosition"] = localPosition->toJson();
     obj["localRotation"] = localRotation->toJson();
     obj["localSize"] = localSize->toJson();
+    obj["type"] = "component";
 
     // Add custom parameters
     for (auto it = customParameters.begin(); it != customParameters.end(); ++it) {

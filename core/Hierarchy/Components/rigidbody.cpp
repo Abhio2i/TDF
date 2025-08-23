@@ -72,6 +72,7 @@ QJsonObject Rigidbody::toJson() const {
     obj["drag"] = Drag;
     obj["angulardrag"] = angularDrag;
     obj["deltaTime"] = deltaTime;
+     obj["type"] = "component";
 
     if (velocity)
         obj["velocity"] = velocity->toJson();

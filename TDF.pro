@@ -1,4 +1,5 @@
 QT += core gui widgets charts
+QT += core gui widgets xml svg
 # QT       += core gui
 QT += 3dcore 3drender 3dinput 3dextras
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
@@ -11,6 +12,17 @@ DEFINES += BT_USE_SSE_IN_API
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
+INCLUDEPATH += /usr/include/qgis
+INCLUDEPATH += /usr/include/qgis/core
+INCLUDEPATH += /usr/include/qgis/gui
+INCLUDEPATH += /usr/include/qgis/analysis
+
+LIBS += -L/usr/lib \
+    -lqgis_core \
+    -lqgis_gui \
+    -lqgis_analysis \
+    -lproj
+
 
 SOURCES += \
     GUI/Console/consoleview.cpp \
@@ -26,6 +38,11 @@ SOURCES += \
     # GUI/Inspector/customparameterdialog.cpp \
     GUI/Inspector/customparameterdialog.cpp \
     GUI/Inspector/inspector.cpp \
+    GUI/Inspector/template/colortemplate.cpp \
+    GUI/Inspector/template/geocordstemplate.cpp \
+    GUI/Inspector/template/imagetemplate.cpp \
+    GUI/Inspector/template/optiontemplate.cpp \
+    GUI/Inspector/template/vectortemplate.cpp \
     GUI/Menubars/menubar.cpp \
     GUI/Navigation/navigationpage.cpp \
     GUI/Overview/overview.cpp \
@@ -37,12 +54,14 @@ SOURCES += \
     GUI/Tacticaldisplay/Gis/layerinformationdialog.cpp \
     GUI/Tacticaldisplay/canvaswidget.cpp \
     GUI/Tacticaldisplay/tacticaldisplay.cpp \
+    GUI/Testscript/testscriptdialog.cpp \
+    GUI/Testscript/textscriptwidget.cpp \
     GUI/Toolbars/designtoolbar.cpp \
     GUI/Toolbars/networktoolbar.cpp \
     GUI/Toolbars/runtimetoolbar.cpp \
     GUI/Toolbars/standardtoolbar.cpp \
     GUI/docktitlemenu/docktitlemenu.cpp \
-    GUI/scene3dwidget/scene3dwidget.cpp \
+    GUI/mainwindow.cpp \
     bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvh.cpp \
     bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvhBroadphase.cpp \
     bullet/Bullet3Collision/BroadPhaseCollision/b3OverlappingPairCache.cpp \
@@ -267,7 +286,6 @@ SOURCES += \
     core/Hierarchy/Components/collider.cpp \
     core/Hierarchy/Components/component.cpp \
     core/Hierarchy/Components/dynamicmodel.cpp \
-    core/Hierarchy/Components/formation.cpp \
     core/Hierarchy/Components/mesh.cpp \
     core/Hierarchy/Components/meshrenderer2d.cpp \
     core/Hierarchy/Components/mission.cpp \
@@ -276,10 +294,12 @@ SOURCES += \
     core/Hierarchy/Components/trajectory.cpp \
     core/Hierarchy/Components/transform.cpp \
     core/Hierarchy/EntityProfiles/fixedpoints.cpp \
+    core/Hierarchy/EntityProfiles/formation.cpp \
     core/Hierarchy/EntityProfiles/iff.cpp \
     core/Hierarchy/EntityProfiles/platform.cpp \
     core/Hierarchy/EntityProfiles/radio.cpp \
     core/Hierarchy/EntityProfiles/sensor.cpp \
+    core/Hierarchy/EntityProfiles/specialzone.cpp \
     core/Hierarchy/EntityProfiles/weapons.cpp \
     core/Hierarchy/Struct/action.cpp \
     core/Hierarchy/Struct/color.cpp \
@@ -343,6 +363,11 @@ HEADERS += \
     GUI/Inspector/customparameterdialog.h \
     GUI/Inspector/customparameterdialog.h \
     GUI/Inspector/inspector.h \
+    GUI/Inspector/template/colortemplate.h \
+    GUI/Inspector/template/geocordstemplate.h \
+    GUI/Inspector/template/imagetemplate.h \
+    GUI/Inspector/template/optiontemplate.h \
+    GUI/Inspector/template/vectortemplate.h \
     GUI/Menubars/menubar.h \
     GUI/Navigation/navigationpage.h \
     GUI/Overview/overview.h \
@@ -354,12 +379,14 @@ HEADERS += \
     GUI/Tacticaldisplay/Gis/layerinformationdialog.h \
     GUI/Tacticaldisplay/canvaswidget.h \
     GUI/Tacticaldisplay/tacticaldisplay.h \
+    GUI/Testscript/testscriptdialog.h \
+    GUI/Testscript/textscriptwidget.h \
     GUI/Toolbars/designtoolbar.h \
     GUI/Toolbars/networktoolbar.h \
     GUI/Toolbars/runtimetoolbar.h \
     GUI/Toolbars/standardtoolbar.h \
     GUI/docktitlemenu/docktitlemenu.h \
-    GUI/scene3dwidget/scene3dwidget.h \
+    GUI/mainwindow.h \
     bullet/Bullet3Collision/BroadPhaseCollision/b3BroadphaseCallback.h \
     bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvh.h \
     bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvhBroadphase.h \
@@ -726,7 +753,6 @@ HEADERS += \
     core/Components/collider.h \
     core/Components/component.h \
     core/Components/dynamicmodel.h \
-    core/Components/formation.h \
     core/Components/mesh.h \
     core/Components/meshrenderer2d.h \
     core/Components/mission.h \
@@ -746,7 +772,6 @@ HEADERS += \
     core/Hierarchy/Components/collider.h \
     core/Hierarchy/Components/component.h \
     core/Hierarchy/Components/dynamicmodel.h \
-    core/Hierarchy/Components/formation.h \
     core/Hierarchy/Components/mesh.h \
     core/Hierarchy/Components/meshrenderer2d.h \
     core/Hierarchy/Components/mission.h \
@@ -755,10 +780,12 @@ HEADERS += \
     core/Hierarchy/Components/trajectory.h \
     core/Hierarchy/Components/transform.h \
     core/Hierarchy/EntityProfiles/fixedpoints.h \
+    core/Hierarchy/EntityProfiles/formation.h \
     core/Hierarchy/EntityProfiles/iff.h \
     core/Hierarchy/EntityProfiles/platform.h \
     core/Hierarchy/EntityProfiles/radio.h \
     core/Hierarchy/EntityProfiles/sensor.h \
+    core/Hierarchy/EntityProfiles/specialzone.h \
     core/Hierarchy/EntityProfiles/weapons.h \
     core/Hierarchy/Struct/action.h \
     core/Hierarchy/Struct/color.h \
@@ -784,16 +811,6 @@ HEADERS += \
     core/Recorder/recorder.h \
     core/Render/scenerenderer.h \
     core/Simulation/simulation.h \
-    core/Struct/action.h \
-    core/Struct/color.h \
-    core/Struct/condition.h \
-    core/Struct/constants.h \
-    core/Struct/formationposition.h \
-    core/Struct/geocords.h \
-    core/Struct/parameter.h \
-    core/Struct/task.h \
-    core/Struct/vector.h \
-    core/Struct/waypoints.h \
     core/Utility/uuid.h \
     core/structure/database.h \
     core/structure/entity.h \

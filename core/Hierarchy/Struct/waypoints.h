@@ -12,6 +12,7 @@ public:
     Waypoints();
     Geocords *geocord = nullptr;
     Vector *position = nullptr;
+    double speed = 0;
 
     QJsonObject toJson()const;
     void fromJson(const QJsonObject& obj);

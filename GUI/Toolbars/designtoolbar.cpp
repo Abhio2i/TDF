@@ -1,8 +1,8 @@
-
-
 #include "GUI/Toolbars/designtoolbar.h"
 #include "GUI/Tacticaldisplay/Gis/custommapdialog.h"
 #include "GUI/Tacticaldisplay/Gis/layerinformationdialog.h"
+#include "GUI/Tacticaldisplay/canvaswidget.h"
+#include "core/Debug/console.h"
 #include <QLineEdit>
 #include <QIcon>
 #include <QDebug>
@@ -16,6 +16,8 @@
 #include <QWidgetAction>
 #include <QCheckBox>
 #include <QActionGroup>
+#include <QDialog>
+#include <QFileDialog>
 
 QPixmap DesignToolBar::withWhiteBg(const QString &iconPath) {
     QPixmap pixmap(iconPath);
@@ -57,10 +59,6 @@ DesignToolBar::DesignToolBar(QWidget *parent) : QToolBar(parent) {
 void DesignToolBar::createActions() {
     mapLayers = {
         { "OpenStreetMap", "osm", 0, 19, "", false, -1.0, "N/A", "Raster" },
-        { "OpenTopoMap", "opentopo", 0, 17, "", false, -1.0, "N/A", "Raster" },
-        { "Carto Light", "carto-light", 0, 20, "", false, -1.0, "N/A", "Raster" },
-        { "Carto Dark", "carto-dark", 0, 20, "", false, -1.0, "N/A", "Raster" },
-        { "World Imagery", "World Imagery", 0, 22, "", false, -1.0, "N/A", "Raster" }
     };
 
     viewAction = new QAction(QIcon(withWhiteBg(":/icons/images/view.jpg")), tr("View"), this);
@@ -255,12 +253,29 @@ void DesignToolBar::createActions() {
         emit measureAreaTriggered();
     });
 
+    // for measure distance
+    measureDistanceAction = new QAction(QIcon(withWhiteBg(":/icons/images/measurement.png")), tr("Measure Distance"), this);
+    measureDistanceAction->setCheckable(true);
+    connect(measureDistanceAction, &QAction::triggered, this, [=]() {
+        highlightAction(measureDistanceAction);
+        emit measureDistanceTriggered();
+    });
+
     drawAction = new QAction(QIcon(withWhiteBg(":/icons/images/technical-drawing.png")), tr("Draw"), this);
     drawAction->setCheckable(true);
     connect(drawAction, &QAction::triggered, this, [=]() {
         highlightAction(drawAction);
         emit modeChanged(DrawTrajectory);
         emit drawTriggered();
+    });
+
+    // New Edit Trajectory Action
+    editTrajectoryAction = new QAction(QIcon(withWhiteBg(":/icons/images/edit-trajectory.png")), tr("Edit Trajectory"), this);
+    editTrajectoryAction->setCheckable(true);
+    connect(editTrajectoryAction, &QAction::triggered, this, [=]() {
+        highlightAction(editTrajectoryAction);
+        emit modeChanged(DrawTrajectory); // Use same mode as DrawTrajectory
+        emit editTrajectoryTriggered();
     });
 
     databaseAction = new QAction(QIcon(withWhiteBg(":/icons/images/database (1).png")), tr("Database"), this);
@@ -273,7 +288,6 @@ void DesignToolBar::createActions() {
     loadJsonAction = new QAction("Load JSON", this);
     saveJsonAction = new QAction("Save JSON", this);
 
-
     addCustomMapAction = new QAction("Add Custom Map", this);
     connect(addCustomMapAction, &QAction::triggered, this, [=]() {
         CustomMapDialog dialog(this);
@@ -283,7 +297,7 @@ void DesignToolBar::createActions() {
             if (!mapName.isEmpty() && !tileUrl.isEmpty()) {
                 mapLayers.append({mapName, mapName, dialog.getZoomMin(), dialog.getZoomMax(),
                                   tileUrl, true, dialog.getOpacity(), dialog.getType()});
-                emit customMapAdded(mapName, dialog.getZoomMin(), dialog.getZoomMax(), tileUrl, dialog.getOpacity()); // Added opacity
+                emit customMapAdded(mapName, dialog.getZoomMin(), dialog.getZoomMax(), tileUrl, dialog.getOpacity());
             }
         }
     });
@@ -314,12 +328,128 @@ void DesignToolBar::createActions() {
                     }
                 }
                 qDebug() << "Layer edited, emitting mapLayerChanged with layers:" << activeLayers;
-                emit customMapAdded(updatedLayer.name, updatedLayer.zoomMin, updatedLayer.zoomMax, updatedLayer.tileUrl, updatedLayer.opacity); // Added opacity
+                emit customMapAdded(updatedLayer.name, updatedLayer.zoomMin, updatedLayer.zoomMax, updatedLayer.tileUrl, updatedLayer.opacity);
                 emit mapLayerChanged(activeLayers.join(","));
             }
         });
         dialog.exec();
     });
+
+    shapeAction = new QAction(QIcon(withWhiteBg(":/icons/images/shapes.png")), tr("Shape"), this);
+    shapeAction->setCheckable(true);
+    StayOpenMenu* shapeMenu = new StayOpenMenu(this);
+    shapeMenu->setStyleSheet("QMenu::item:checked { background-color: #d0e0ff; }");
+
+    QAction* drawLineAction = new QAction("Draw Line", this);
+    QAction* drawCircleAction = new QAction("Circle", this);
+    QAction* drawRectangleAction = new QAction("Rectangle", this);
+    QAction* drawPolygonAction = new QAction("Polygon", this);
+    QAction* drawPointsAction = new QAction("Points", this);
+    QAction* drawCustomShapesAction = new QAction("Custom Shapes", this);
+
+    drawLineAction->setCheckable(true);
+    drawCircleAction->setCheckable(true);
+    drawRectangleAction->setCheckable(true);
+    drawPolygonAction->setCheckable(true);
+    drawPointsAction->setCheckable(true);
+    drawCustomShapesAction->setCheckable(true);
+
+    shapeMenu->addAction(drawLineAction);
+    shapeMenu->addAction(drawCircleAction);
+    shapeMenu->addAction(drawRectangleAction);
+    shapeMenu->addAction(drawPolygonAction);
+    shapeMenu->addAction(drawPointsAction);
+    shapeMenu->addAction(drawCustomShapesAction);
+
+    shapeAction->setMenu(shapeMenu);
+
+    QActionGroup* shapeGroup = new QActionGroup(this);
+    shapeGroup->setExclusive(true);
+    shapeGroup->addAction(drawLineAction);
+    shapeGroup->addAction(drawCircleAction);
+    shapeGroup->addAction(drawRectangleAction);
+    shapeGroup->addAction(drawPolygonAction);
+    shapeGroup->addAction(drawPointsAction);
+    shapeGroup->addAction(drawCustomShapesAction);
+
+    connect(drawLineAction, &QAction::triggered, this, [=]() {
+        highlightAction(shapeAction);
+        emit shapeSelected("Line");
+    });
+    connect(drawCircleAction, &QAction::triggered, this, [=]() {
+        highlightAction(shapeAction);
+        emit shapeSelected("Circle");
+    });
+    connect(drawRectangleAction, &QAction::triggered, this, [=]() {
+        highlightAction(shapeAction);
+        emit shapeSelected("Rectangle");
+    });
+    connect(drawPolygonAction, &QAction::triggered, this, [=]() {
+        highlightAction(shapeAction);
+        emit shapeSelected("Polygon");
+    });
+    connect(drawPointsAction, &QAction::triggered, this, [=]() {
+        highlightAction(shapeAction);
+        emit shapeSelected("Points");
+    });
+    connect(drawCustomShapesAction, &QAction::triggered, this, [=]() {
+        highlightAction(shapeAction);
+        emit shapeSelected("Custom Shapes");
+    });
+
+    bitmapAction = new QAction(QIcon(withWhiteBg(":/icons/images/photo.png")), tr("Bitmaps"), this);
+    bitmapAction->setCheckable(true);
+    StayOpenMenu* bitmapMenu = new StayOpenMenu(this);
+    bitmapMenu->setStyleSheet("QMenu::item:checked { background-color: #d0e0ff; }");
+
+    QAction* hospitalAction = new QAction(QIcon(withWhiteBg(":/icons/images/hospital.png")), "Hospital", this);
+    QAction* schoolAction = new QAction(QIcon(withWhiteBg(":/icons/images/school.png")), "School", this);
+    QAction* forestAreaAction = new QAction(QIcon(withWhiteBg(":/icons/images/forest-area.png")), "Forest Area", this);
+
+    hospitalAction->setCheckable(true);
+    schoolAction->setCheckable(true);
+    forestAreaAction->setCheckable(true);
+
+    bitmapMenu->addAction(hospitalAction);
+    bitmapMenu->addAction(schoolAction);
+    bitmapMenu->addAction(forestAreaAction);
+
+    bitmapAction->setMenu(bitmapMenu);
+
+    QActionGroup* bitmapGroup = new QActionGroup(this);
+    bitmapGroup->setExclusive(true);
+    bitmapGroup->addAction(hospitalAction);
+    bitmapGroup->addAction(schoolAction);
+    bitmapGroup->addAction(forestAreaAction);
+
+    connect(hospitalAction, &QAction::triggered, this, [=]() {
+        highlightAction(bitmapAction);
+        emit bitmapSelected("Hospital");
+    });
+    connect(schoolAction, &QAction::triggered, this, [=]() {
+        highlightAction(bitmapAction);
+        emit bitmapSelected("School");
+    });
+    connect(forestAreaAction, &QAction::triggered, this, [=]() {
+        highlightAction(bitmapAction);
+        emit bitmapSelected("Forest Area");
+    });
+
+    selectBitmapAction = new QAction(QIcon(withWhiteBg(":/icons/images/picture.png")), tr("Select Bitmap Image"), this);
+    selectBitmapAction->setCheckable(false);
+    connect(selectBitmapAction, &QAction::triggered, this, [=]() {
+        QFileDialog fileDialog(this, tr("Select Bitmap Image"));
+        fileDialog.setFileMode(QFileDialog::ExistingFile);
+        fileDialog.setNameFilter(tr("Images (*.png *.jpg *.jpeg *.bmp)"));
+        if (fileDialog.exec() == QDialog::Accepted) {
+            QString selectedFile = fileDialog.selectedFiles().first();
+            if (!selectedFile.isEmpty()) {
+                emit bitmapImageSelected(selectedFile);
+                highlightAction(selectBitmapAction);
+            }
+        }
+    });
+
     StayOpenMenu* mapLayerMenu = new StayOpenMenu(this);
     mapLayerMenu->setStyleSheet("QMenu::item:checked { background-color: #d0e0ff; }");
 
@@ -392,10 +522,27 @@ void DesignToolBar::createActions() {
     QMenu* searchMenu = new QMenu(this);
     QWidgetAction* searchAction = new QWidgetAction(this);
     QLineEdit* searchInput = new QLineEdit();
-    searchInput->setPlaceholderText("Enter location...");
+    searchInput->setPlaceholderText("Enter location or coordinates (lat,lon)...");
     searchInput->setMinimumWidth(200);
     connect(searchInput, &QLineEdit::returnPressed, [this, searchInput]() {
-        emit searchPlaceTriggered(searchInput->text());
+        QString input = searchInput->text().trimmed();
+
+        QRegExp coordRegex("^[-]?\\d*\\.?\\d+,[-]?\\d*\\.?\\d+$");
+        if (coordRegex.exactMatch(input)) {
+            QStringList coords = input.split(",");
+            bool latOk, lonOk;
+            double lat = coords[0].toDouble(&latOk);
+            double lon = coords[1].toDouble(&lonOk);
+
+            if (latOk && lonOk && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+                emit searchCoordinateTriggered(lat, lon);
+            } else {
+                emit searchPlaceTriggered(input);
+            }
+        } else {
+            emit searchPlaceTriggered(input);
+        }
+
         searchInput->clear();
     });
     searchAction->setDefaultWidget(searchInput);
@@ -584,6 +731,7 @@ void DesignToolBar::setupToolBar() {
 
     addAction(measureAreaAction);
     addAction(drawAction);
+    // addAction(editTrajectoryAction); // Add new action to toolbar
     addAction(databaseAction);
     addSeparator();
     addAction(zoomInAction);
@@ -601,7 +749,30 @@ void DesignToolBar::setupToolBar() {
     searchPlaceButton->setDefaultAction(searchPlaceAction);
     searchPlaceButton->setPopupMode(QToolButton::InstantPopup);
     searchPlaceButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+
     addWidget(searchPlaceButton);
+    QToolButton* shapeButton = new QToolButton(this);
+    shapeButton->setDefaultAction(shapeAction);
+    shapeButton->setPopupMode(QToolButton::InstantPopup);
+    shapeButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(shapeButton);
+
+    QToolButton* bitmapButton = new QToolButton(this);
+    bitmapButton->setDefaultAction(bitmapAction);
+    bitmapButton->setPopupMode(QToolButton::InstantPopup);
+    bitmapButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(bitmapButton);
+
+    QToolButton* selectBitmapButton = new QToolButton(this);
+    selectBitmapButton->setDefaultAction(selectBitmapAction);
+    selectBitmapButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(selectBitmapButton);
+
+    // for measure distance
+    QToolButton* measureDistanceButton = new QToolButton(this);
+    measureDistanceButton->setDefaultAction(measureDistanceAction);
+    measureDistanceButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(measureDistanceButton);
 }
 
 void DesignToolBar::highlightAction(QAction *activeAction) {
@@ -610,8 +781,11 @@ void DesignToolBar::highlightAction(QAction *activeAction) {
         zoomInAction, zoomOutAction,
         gridToggleAction, snappingToggleAction,
         layerSelectAction, measureAreaAction, drawAction,
+        editTrajectoryAction, // Add new action to highlight list
         databaseAction, mapSelectLayerAction, searchPlaceAction,
-        selectCenterAction, addCustomMapAction, layerInfoAction
+        selectCenterAction, addCustomMapAction, layerInfoAction,
+        shapeAction, bitmapAction, selectBitmapAction,
+        measureDistanceAction // Add new action to highlight list
     };
 
     for (QAction *action : actions) {
@@ -621,6 +795,7 @@ void DesignToolBar::highlightAction(QAction *activeAction) {
             btn->setStyleSheet("QToolButton { background-color: #d0e0ff; border: 1px solid #5070ff; border-radius: 4px; }");
         } else {
             btn->setStyleSheet("");
+            action->setChecked(false); // Uncheck all other actions
         }
     }
 }
@@ -631,6 +806,8 @@ void DesignToolBar::onModeChanged(TransformMode mode) {
     rotateAction->setChecked(false);
     scaleAction->setChecked(false);
     drawAction->setChecked(false);
+    editTrajectoryAction->setChecked(false);
+    measureDistanceAction->setChecked(false);
 
     switch(mode) {
     case Panning:
@@ -650,8 +827,25 @@ void DesignToolBar::onModeChanged(TransformMode mode) {
         highlightAction(scaleAction);
         break;
     case DrawTrajectory:
-        drawAction->setChecked(true);
-        highlightAction(drawAction);
+        if (drawAction->isChecked()) {
+            highlightAction(drawAction);
+        } else if (editTrajectoryAction->isChecked()) {
+            highlightAction(editTrajectoryAction);
+        }
         break;
+    case MeasureDistance:
+        measureDistanceAction->setChecked(true);
+        highlightAction(measureDistanceAction);
+        break;
+    }
+}
+
+void DesignToolBar::onMeasureDistanceTriggered() {
+    if (measureDistanceAction->isChecked()) {
+        emit modeChanged(MeasureDistance);
+        Console::log("Measure Distance mode activated");
+    } else {
+        emit modeChanged(Translate);
+        Console::log("Measure Distance mode deactivated");
     }
 }

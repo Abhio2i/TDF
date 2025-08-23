@@ -1,12 +1,8 @@
-
-
 #include "custommapdialog.h"
-
 CustomMapDialog::CustomMapDialog(QWidget *parent) : QDialog(parent) {
     setWindowTitle("Add Custom Map");
     setupUi();
 }
-
 CustomMapDialog::CustomMapDialog(const QString &name, const QString &tileUrl, int zoomMin, int zoomMax,
                                  qreal opacity, const QString &type, QWidget *parent)
     : QDialog(parent) {
@@ -16,13 +12,8 @@ CustomMapDialog::CustomMapDialog(const QString &name, const QString &tileUrl, in
     tileUrlEdit->setText(tileUrl);
     zoomMinSpinBox->setValue(zoomMin);
     zoomMaxSpinBox->setValue(zoomMax);
-
-
     QString opacityText = opacity >= 0.0 ? QString::number(opacity * 100, 'f', 0) + "%" : "100%";
     opacityComboBox->setCurrentText(opacityText);
-
-
-
     typeComboBox->setCurrentText(type.isEmpty() || type == "N/A" ? "Raster" : type);
 }
 
@@ -84,6 +75,8 @@ int CustomMapDialog::getZoomMax() const {
     return zoomMaxSpinBox->value();
 }
 
+
+
 qreal CustomMapDialog::getOpacity() const {
     QString selectedOpacity = opacityComboBox->currentText();
     // Remove '%' and convert to qreal (0.0 to 1.0)
@@ -91,11 +84,6 @@ qreal CustomMapDialog::getOpacity() const {
     qreal opacity = selectedOpacity.remove('%').toDouble(&ok) / 100.0;
     return ok ? opacity : 1.0; // Default to 1.0 if conversion fails
 }
-
-// QString CustomMapDialog::getResolution() const {
-//     QString resolution = resolutionComboBox->currentText();
-//     return resolution.isEmpty() ? "N/A" : resolution;
-// }
 
 QString CustomMapDialog::getType() const {
     return typeComboBox->currentText();

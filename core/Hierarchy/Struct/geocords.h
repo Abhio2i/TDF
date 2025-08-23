@@ -1,7 +1,7 @@
 #ifndef GEOCORDS_H
 #define GEOCORDS_H
 #include <QObject>
-#include "./Vector.h"
+#include "./vector.h"
 #include <QJsonObject>
 class Geocords: public QObject
 {

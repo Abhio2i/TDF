@@ -281,7 +281,7 @@ void NetworkManager::sendJson(const QJsonObject& obj) {
     QString msg = doc.toJson(QJsonDocument::Compact);
     std::string stdMsg = msg.toStdString();
     std::cout << "Log: " << stdMsg << std::endl;
-    qDebug() << "[NetworkManager JSON] Sending:" << stdMsg;
+    // qDebug() << "[NetworkManager JSON] Sending:" << stdMsg;
     QByteArray byteArray = QByteArray::fromStdString(stdMsg);
     QJsonParseError parseError;
     QJsonDocument docs = QJsonDocument::fromJson(byteArray, &parseError);

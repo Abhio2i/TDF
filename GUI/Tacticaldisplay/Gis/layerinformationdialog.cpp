@@ -114,9 +114,9 @@ void LayerInformationDialog::editLayer()
                 dialog.getType()
             };
             mapLayers[currentLayerIndex] = updatedLayer;
-            layerList->item(currentLayerIndex)->setText(newName); // Update list item
-            updateLayerDetails(layerList->item(currentLayerIndex)); // Refresh details
-            emit layerEdited(currentLayerIndex, updatedLayer); // Notify DesignToolBar
+            layerList->item(currentLayerIndex)->setText(newName);
+            updateLayerDetails(layerList->item(currentLayerIndex));
+            emit layerEdited(currentLayerIndex, updatedLayer);
         }
     }
 }

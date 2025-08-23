@@ -19,8 +19,8 @@ void Missile::spawn() {
     emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
 }
 
-std::vector<Component*> Missile::getSupportedComponents() {
-    return std::vector<Component*>{};
+std::vector<std::string> Missile::getSupportedComponents() {
+    return std::vector<std::string>{};
 }
 
 void Missile::addComponent(std::string name) {
@@ -186,8 +186,8 @@ void Gun::spawn() {
     emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
 }
 
-std::vector<Component*> Gun::getSupportedComponents() {
-    return std::vector<Component*>{};
+std::vector<std::string> Gun::getSupportedComponents() {
+    return std::vector<std::string>{};
 }
 
 void Gun::addComponent(std::string name) {
@@ -287,8 +287,8 @@ void Bomb::spawn() {
     emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
 }
 
-std::vector<Component*> Bomb::getSupportedComponents() {
-    return std::vector<Component*>{};
+std::vector<std::string> Bomb::getSupportedComponents() {
+    return std::vector<std::string>{};
 }
 
 void Bomb::addComponent(std::string name) {

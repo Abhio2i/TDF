@@ -1,58 +1,51 @@
 #include "server.h"
 #include <iostream>
-#include <qDebug>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <iostream>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonParseError>
-//#include <QDebug>
-#include <QString>
-Server::Server() : serverSocket(INVALID_SOCKET), running(false) {
+
+#ifdef _WIN32
+#define _WIN32_WINNT 0x0600 // Windows Vista or later for inet_ntop
+#endif
+
+Server::Server() : serverSocket(INVALID_SOCKET_VALUE), running(false) {
+#ifdef _WIN32
     WSADATA wsaData;
-    WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        if (onError) onError("WSAStartup failed. Error: " + std::to_string(WSAGetLastError()));
+    }
+#endif
 }
 
 Server::~Server() {
     stop();
+#ifdef _WIN32
     WSACleanup();
+#endif
 }
-
-void Server::consoleInputHandler() {
-    std::string input;
-    while (true) {
-        std::getline(std::cin, input);
-
-        if (input.empty()) continue;
-
-        if (input.rfind("@", 0) == 0) {
-            // Format: @192.168.0.158 Hello there!
-            size_t spacePos = input.find(' ');
-            if (spacePos != std::string::npos) {
-                std::string ip = input.substr(1, spacePos - 1);
-                std::string msg = input.substr(spacePos + 1);
-                sendToClient(ip, msg);
-            } else {
-                std::cout << "[Usage] @<IP> <message>\n";
-            }
-        } else {
-            broadcast(input, "Server");  // Broadcast to all clients
-        }
-    }
-}
-
 
 std::string getLocalIP() {
     char hostname[256];
-    if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR) return "127.0.0.1";
-    struct hostent* host = gethostbyname(hostname);
-    if (host == nullptr) return "127.0.0.1";
+    if (gethostname(hostname, sizeof(hostname)) == -1) {
+        return "127.0.0.1";
+    }
 
-    struct in_addr addr;
-    memcpy(&addr, host->h_addr_list[0], sizeof(struct in_addr));
-    return inet_ntoa(addr);
+    struct addrinfo hints{}, *res;
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    if (getaddrinfo(hostname, nullptr, &hints, &res) != 0) {
+        return "127.0.0.1";
+    }
+
+    char ipStr[INET_ADDRSTRLEN];
+    struct sockaddr_in* addr = (struct sockaddr_in*)res->ai_addr;
+    if (inet_ntop(AF_INET, &addr->sin_addr, ipStr, INET_ADDRSTRLEN) == nullptr) {
+        freeaddrinfo(res);
+        return "127.0.0.1";
+    }
+
+    freeaddrinfo(res);
+    return ipStr;
 }
+
 bool Server::start(int port) {
     std::lock_guard<std::mutex> lock(stateMutex);
     qDebug() << "[Server] start() called on port:" << port;
@@ -63,112 +56,130 @@ bool Server::start(int port) {
     }
 
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket == INVALID_SOCKET) {
-        if (onError) onError("Failed to create socket. Error: " + std::to_string(WSAGetLastError()));
+    if (serverSocket == INVALID_SOCKET_VALUE) {
+        if (onError) onError("Failed to create socket. Error: " + std::to_string(
+#ifdef _WIN32
+                        WSAGetLastError()
+#else
+                        errno
+#endif
+                        ));
         return false;
     }
 
     int opt = 1;
-    if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt)) == SOCKET_ERROR) {
-        if (onError) onError("setsockopt(SO_REUSEADDR) failed. Error: " + std::to_string(WSAGetLastError()));
-        closesocket(serverSocket);
-        serverSocket = INVALID_SOCKET;
+    if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt)) == SOCKET_ERROR_VALUE) {
+        if (onError) onError("setsockopt(SO_REUSEADDR) failed. Error: " + std::to_string(
+#ifdef _WIN32
+                        WSAGetLastError()
+#else
+                        errno
+#endif
+                        ));
+        CLOSE_SOCKET(serverSocket);
+        serverSocket = INVALID_SOCKET_VALUE;
         return false;
     }
 
+#ifdef _WIN32
     linger so_linger;
     so_linger.l_onoff = 1;
     so_linger.l_linger = 0;
     setsockopt(serverSocket, SOL_SOCKET, SO_LINGER, (char*)&so_linger, sizeof(so_linger));
+#endif
 
     sockaddr_in serverAddr{};
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;
     serverAddr.sin_port = htons(port);
 
-    if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        if (onError) onError("Bind failed. Error: " + std::to_string(WSAGetLastError()));
-        closesocket(serverSocket);
-        serverSocket = INVALID_SOCKET;
+    if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR_VALUE) {
+        if (onError) onError("Bind failed. Error: " + std::to_string(
+#ifdef _WIN32
+                        WSAGetLastError()
+#else
+                        errno
+#endif
+                        ));
+        CLOSE_SOCKET(serverSocket);
+        serverSocket = INVALID_SOCKET_VALUE;
         return false;
     }
 
-    if (listen(serverSocket, SOMAXCONN) == SOCKET_ERROR) {
-        if (onError) onError("Listen failed. Error: " + std::to_string(WSAGetLastError()));
-        closesocket(serverSocket);
-        serverSocket = INVALID_SOCKET;
+    if (listen(serverSocket, SOMAXCONN) == SOCKET_ERROR_VALUE) {
+        if (onError) onError("Listen failed. Error: " + std::to_string(
+#ifdef _WIN32
+                        WSAGetLastError()
+#else
+                        errno
+#endif
+                        ));
+        CLOSE_SOCKET(serverSocket);
+        serverSocket = INVALID_SOCKET_VALUE;
         return false;
     }
 
     running = true;
     if (onStart) onStart();
-
     qDebug() << "[Server] Server successfully started.";
 
     acceptThread = std::thread(&Server::acceptLoop, this);
     acceptThread.detach();
 
     return true;
-
-    if (!running && onError) {
-        onError("Unknown failure: Server did not start.");
-    } else if (!running) {
-        std::cerr << "[Server] Unknown failure without error callback.\n";
-    }
-    return false;
-
 }
-
-
-
 
 void Server::acceptLoop() {
     while (running.load()) {
         sockaddr_in clientAddr{};
-        int clientSize = sizeof(clientAddr);
-        SOCKET clientSock = accept(serverSocket, (sockaddr*)&clientAddr, &clientSize);
-        if (clientSock == INVALID_SOCKET) {
+        socklen_t clientSize = sizeof(clientAddr);
+        SOCKET_TYPE clientSock = accept(serverSocket, (sockaddr*)&clientAddr, &clientSize);
+        if (clientSock == INVALID_SOCKET_VALUE) {
             if (running && onError) {
-                onError("Accept failed. Error: " + std::to_string(WSAGetLastError()));
+                onError("Accept failed. Error: " + std::to_string(
+#ifdef _WIN32
+                            WSAGetLastError()
+#else
+                            errno
+#endif
+                            ));
             }
             continue;
         }
 
         char ipStr[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(clientAddr.sin_addr), ipStr, INET_ADDRSTRLEN);
+        if (inet_ntop(AF_INET, &clientAddr.sin_addr, ipStr, INET_ADDRSTRLEN) == nullptr) {
+            strncpy(ipStr, "unknown", INET_ADDRSTRLEN);
+        }
 
         {
             std::lock_guard<std::mutex> lock(clientMutex);
-            clients[clientSock] = std::string(ipStr);  // ✅ SOCKET -> IP
+            clients[clientSock] = std::string(ipStr);
         }
 
-
         if (onClientConnected) onClientConnected(ipStr);
-
         std::thread(&Server::clientHandlerThread, this, clientSock).detach();
     }
 }
 
-
 void Server::stop() {
     if (!running.load()) return;
-
     running = false;
 
     {
         std::lock_guard<std::mutex> lock(stateMutex);
-        if (serverSocket != INVALID_SOCKET) {
-            shutdown(serverSocket, SD_BOTH);
-            closesocket(serverSocket);
-            serverSocket = INVALID_SOCKET;
+        if (serverSocket != INVALID_SOCKET_VALUE) {
+            shutdown(serverSocket, SHUTDOWN_BOTH);
+            CLOSE_SOCKET(serverSocket);
+            serverSocket = INVALID_SOCKET_VALUE;
         }
     }
 
     {
         std::lock_guard<std::mutex> lock(clientMutex);
         for (auto& [sock, ip] : clients) {
-            shutdown(sock, SD_BOTH);
-            closesocket(sock);
+            shutdown(sock, SHUTDOWN_BOTH);
+            CLOSE_SOCKET(sock);
         }
         clients.clear();
     }
@@ -176,30 +187,25 @@ void Server::stop() {
     if (onStop) onStop();
 }
 
-void Server::clientHandlerThread(SOCKET clientSock) {
+void Server::clientHandlerThread(SOCKET_TYPE clientSock) {
     char buffer[1024];
     std::string clientIP;
 
     {
         std::lock_guard<std::mutex> lock(clientMutex);
-        for (const auto& [sock, ip] : clients) {
-            if (sock == clientSock) {
-                clientIP = ip;
-                break;
-            }
+        auto it = clients.find(clientSock);
+        if (it != clients.end()) {
+            clientIP = it->second;
         }
     }
 
     std::string leftover;
-
     while (running.load()) {
         memset(buffer, 0, sizeof(buffer));
-
         int bytesReceived = recv(clientSock, buffer, sizeof(buffer) - 1, 0);
         if (bytesReceived <= 0) {
             if (onClientDisconnected) onClientDisconnected(clientIP);
-
-            closesocket(clientSock);
+            CLOSE_SOCKET(clientSock);
             {
                 std::lock_guard<std::mutex> lock(clientMutex);
                 clients.erase(clientSock);
@@ -217,14 +223,12 @@ void Server::clientHandlerThread(SOCKET clientSock) {
 
             if (message.empty()) continue;
 
-            qDebug() << "[Server] Received from client"
-                     << QString::fromStdString(clientIP) << ":"
+            qDebug() << "[Server] Received from client" << QString::fromStdString(clientIP) << ":"
                      << QString::fromStdString(message);
 
-            if (onMessageReceived)
-                onMessageReceived(clientIP, message);
+            if (onMessageReceived) onMessageReceived(clientIP, message);
 
-            // 🔽 Handle JSON Message
+            // Handle JSON Message
             QString jsonPart = QString::fromStdString(message);
             QJsonParseError parseError;
             QJsonDocument doc = QJsonDocument::fromJson(jsonPart.toUtf8(), &parseError);
@@ -247,20 +251,11 @@ void Server::clientHandlerThread(SOCKET clientSock) {
                 QString id = obj.value("id").toString();
                 QString name = obj.value("name").toString();
                 QString parentID = obj.value("parentID").toString();
-
-                // qDebug() << "[Server] Parsed entity from client:";
-                // qDebug() << "  Name:" << name;
-                // qDebug() << "  ID:" << id;
-                // qDebug() << "  ParentID:" << parentID;
                 qDebug() << "[Server] Parsed entity:" << name << ", ID:" << id << ", ParentID:" << parentID;
-                    // Optional: Hook into logic
-                    // if (networkManager) networkManager->entityAdded(parentID, id, name);
             }
         }
     }
 }
-
-
 
 void Server::broadcast(const std::string& message, const std::string& sender) {
     std::lock_guard<std::mutex> lock(clientMutex);
@@ -273,27 +268,29 @@ void Server::broadcast(const std::string& message, const std::string& sender) {
             sendToClient(targetIP, "[Private from " + sender + "]: " + realMsg + "\n");
         }
     } else {
-        std::string fullMsg = /*"[From " + sender + "]: " +*/ message + "\n";
+        std::string fullMsg = message + "\n";
         for (const auto& [sock, ip] : clients) {
             send(sock, fullMsg.c_str(), static_cast<int>(fullMsg.length()), 0);
         }
     }
 }
 
-
-
-
 void Server::sendToClient(const std::string& ip, const std::string& message) {
     std::lock_guard<std::mutex> lock(clientMutex);
 
     for (const auto& [sock, storedIP] : clients) {
         if (storedIP == ip) {
-            std::string jsonMessage = R"({"sender":"Server","message":")" + message + R"("})";
-
+            std::string jsonMessage = R"({"sender":"Server","message":")" + message + R"("}\n)";
             int result = send(sock, jsonMessage.c_str(), static_cast<int>(jsonMessage.length()), 0);
-            if (result == SOCKET_ERROR) {
+            if (result == SOCKET_ERROR_VALUE) {
                 std::cerr << "[Server] Failed to send message to " << ip
-                          << ". Error code: " << WSAGetLastError() << "\n";
+                          << ". Error: " << (
+#ifdef _WIN32
+                                 WSAGetLastError()
+#else
+                                 errno
+#endif
+                                 ) << "\n";
             } else {
                 std::cout << "[Server] Sent to " << ip << ": " << message << "\n";
             }
@@ -304,6 +301,24 @@ void Server::sendToClient(const std::string& ip, const std::string& message) {
     std::cerr << "[Server] IP not found: " << ip << "\n";
 }
 
+void Server::consoleInputHandler() {
+    std::string input;
+    while (true) {
+        std::getline(std::cin, input);
 
+        if (input.empty()) continue;
 
-
+        if (input.rfind("@", 0) == 0) {
+            size_t spacePos = input.find(' ');
+            if (spacePos != std::string::npos) {
+                std::string ip = input.substr(1, spacePos - 1);
+                std::string msg = input.substr(spacePos + 1);
+                sendToClient(ip, msg);
+            } else {
+                std::cout << "[Usage] @<IP> <message>\n";
+            }
+        } else {
+            broadcast(input, "Server");
+        }
+    }
+}

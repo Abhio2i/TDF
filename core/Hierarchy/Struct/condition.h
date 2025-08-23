@@ -2,6 +2,7 @@
 #define CONDITION_H
 #include <QObject>
 #include "./constants.h"
+#include <variant>
 
 class Condition: public QObject
 {

@@ -5,6 +5,8 @@
 #include "./vector.h"
 #include "./geocords.h"
 
+
+
 class FormationPosition: public QObject
 {
     Q_OBJECT
@@ -15,8 +17,8 @@ public:
     Vector *Offset;
     Geocords *geoOffset;
 
-    void toJson();
-    void fromJson();
+    QJsonObject toJson();
+    void fromJson(const QJsonObject &obj);
 
 };
 

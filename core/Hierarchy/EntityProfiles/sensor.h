@@ -58,7 +58,7 @@ public:
     std::vector<Detection> detections;
 
     void spawn() override;
-    std::vector<Component*> getSupportedComponents() override;
+    std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;
     void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;

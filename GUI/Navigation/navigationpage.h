@@ -1,25 +1,28 @@
-/* Header guard section */
+
 #ifndef NAVIGATIONPAGE_H
 #define NAVIGATIONPAGE_H
 
-/* Includes section */
 #include <QWidget>
 #include <QPushButton>
+#include <QToolButton>
 
-/* Class declaration section */
-class NavigationPage : public QWidget {
-    /* Qt meta-object section */
+class NavigationPage : public QWidget
+{
     Q_OBJECT
 
 public:
-    /* Constructor section */
     explicit NavigationPage(QWidget *parent = nullptr);
 
+signals:
+    void editorRequested(const QString &editorKey);
+
 private:
-    /* Private methods section */
-    QPushButton* createNavButton(const QString &iconPath, const QString &label, const QString &editorKey);
-    void openEditorWindow(const QString &editorKey);
+    QList<QToolButton*> navButtons;
+    QToolButton* activeButton = nullptr;
+
+    QToolButton* createNavButton(const QString &iconPath, const QString &label, const QString &editorKey);
+
+    void setActiveButton(QToolButton* button);
 };
 
-/* End of header guard section */
 #endif // NAVIGATIONPAGE_H

@@ -49,6 +49,7 @@ QJsonObject Collider::toJson() const {
     obj["width"] = Width;
     obj["length"] = Length;
     obj["height"] = Height;
+     obj["type"] = "component";
 
     QJsonObject colliderObj;
     colliderObj["type"] = "option";

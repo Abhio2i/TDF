@@ -5,7 +5,6 @@
 #include <QString>
 #include <QJsonObject>
 #include <core/Hierarchy/EntityProfiles/platform.h>
-#include <core/Hierarchy/Components/formation.h>
 
 class Hierarchy;
 class Folder: public QObject
@@ -18,11 +17,11 @@ public:
     bool Active;
     std::string ID;
     std::string parentID;
-
+    Constants::EntityType type;
     std::unordered_map<std::string, Folder*> Folders;
     std::unordered_map<std::string, Entity*> Entities;
     Mission *mission;
-    Formation *formation;
+    //Formation *formation;
 
     Folder* addFolder(std::string name);
     void addFolderWithObject(Folder *folder);
@@ -31,9 +30,10 @@ public:
     Entity* addEntity(std::string name);
     void addEntityWithObject(Entity *entity);
     void removeEntity(std::string name);
-
+    void setProfileType(Constants::EntityType Type);
     QJsonObject toJson();
     void fromJson(const QJsonObject& obj);
+
 
 };
 

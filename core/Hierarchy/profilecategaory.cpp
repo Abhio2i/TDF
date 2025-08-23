@@ -1,7 +1,15 @@
 #include "profilecategaory.h"
 #include <core/Debug/console.h>
 #include "core/GlobalRegistry.h"
+#include "core/Hierarchy/EntityProfiles/fixedpoints.h"
+#include "core/Hierarchy/EntityProfiles/formation.h"
+#include "core/Hierarchy/EntityProfiles/iff.h"
 #include "core/Hierarchy/EntityProfiles/platform.h"
+#include "core/Hierarchy/EntityProfiles/radio.h"
+#include "core/Hierarchy/EntityProfiles/sensor.h"
+#include "core/Hierarchy/EntityProfiles/specialzone.h"
+#include "core/Hierarchy/Utils/entityutils.h"
+#include "qjsonarray.h"
 #include <core/Hierarchy/hierarchy.h> // Required for type
 #include <core/Utility/uuid.h>
 
@@ -29,6 +37,10 @@ ProfileCategaory::~ProfileCategaory(){
 
 }
 
+void ProfileCategaory::setProfileType(Constants::EntityType Type){
+    type = Type;
+}
+
 
 Folder* ProfileCategaory::addFolder(std::string folderName){
 
@@ -37,6 +49,7 @@ Folder* ProfileCategaory::addFolder(std::string folderName){
     Folder *folder = new Folder(parent);
     folder->Name = folderName;
     folder->parentID = ID;
+    folder->setProfileType(type);
     Folders.insert({folder->ID, folder});
 
     // Automatically update hierarchy's Folders
@@ -105,9 +118,30 @@ Entity* ProfileCategaory::addEntity(std::string entityName){
     //     return nullptr;
     // }
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-    Entity *entity = new Platform(parent);
+    Entity *entity;
+    if(type == Constants::EntityType::Radio){
+        entity = new Radio(parent);
+    }else
+    if(type == Constants::EntityType::Sensor){
+        entity = new Sensor(parent);
+    }else
+    if(type == Constants::EntityType::FixedPoint){
+        entity = new FixedPoints(parent);
+    }else
+    if(type == Constants::EntityType::Formation){
+        entity = new Formation(parent);
+    }else
+    if(type == Constants::EntityType::SpecialZone){
+        entity = new Specialzone(parent);
+    }else
+    if(type == Constants::EntityType::IFF){
+        entity = new IFF(parent);
+    }else{
+        entity = new Platform(parent);
+    }
     entity->Name = entityName;
     entity->parentID = ID;
+    entity->type = type;
     Entities.insert({entity->ID, entity});
 
     // Automatically update hierarchy's Folders
@@ -218,6 +252,16 @@ QJsonObject ProfileCategaory::toJson() {
     }
     obj["entities"] = entityObj;
 
+    QJsonObject typeObj;
+    typeObj["type"] = "option";
+    QJsonArray optionsArray;
+    for (const QString& opt : entityTypeOptions())
+        optionsArray.append(opt);
+
+    typeObj["options"] = optionsArray;
+    typeObj["value"] = entityTypeToString(type);
+    obj["type"] = typeObj;
+
     return obj;
 }
 
@@ -236,6 +280,7 @@ void ProfileCategaory::fromJson(const QJsonObject& obj)
             QJsonObject folderJson = folderObj[key].toObject();
             Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
             Folder *folder = new Folder(parent);
+            folder->setProfileType(type);
             folder->Name = folderJson["name"].toString().toStdString();
             folder->ID = folderJson["id"].toString().toStdString();
             if (folder) {
@@ -244,14 +289,38 @@ void ProfileCategaory::fromJson(const QJsonObject& obj)
             }
         }
     }
-
+    if (obj.contains("type") && obj["type"].isObject()) {
+        QJsonObject entityObj = obj["type"].toObject();
+        if (entityObj.contains("value"))
+            type = stringToEntityType(entityObj["value"].toString());
+    }
     // Entities
     if (obj.contains("entities") && obj["entities"].isObject()) {
         QJsonObject entityObj = obj["entities"].toObject();
         for (const QString& key : entityObj.keys()) {
             QJsonObject entityJson = entityObj[key].toObject();
             Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-            Entity *entity = new Platform(parent);
+            Entity *entity;
+            if(type == Constants::EntityType::Radio){
+                entity = new Radio(parent);
+            }else
+            if(type == Constants::EntityType::Sensor){
+                entity = new Sensor(parent);
+            }else
+            if(type == Constants::EntityType::FixedPoint){
+                entity = new FixedPoints(parent);
+            }else
+            if(type == Constants::EntityType::Formation){
+                entity = new Formation(parent);
+            }else
+            if(type == Constants::EntityType::SpecialZone){
+                entity = new Specialzone(parent);
+            }else
+            if(type == Constants::EntityType::IFF){
+                entity = new IFF(parent);
+            }else{
+                entity = new Platform(parent);
+            }
             entity->Name = entityJson["name"].toString().toStdString();
             entity->ID = entityJson["id"].toString().toStdString();
             if (entity) {

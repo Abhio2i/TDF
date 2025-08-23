@@ -2,6 +2,7 @@
 #include "consoleview.h"
 #include <QFont>
 #include <QDateTime>
+#include <QTextStream>
 
 ConsoleView::ConsoleView(QWidget *parent) : QWidget(parent)
 {
@@ -17,7 +18,7 @@ ConsoleView::ConsoleView(QWidget *parent) : QWidget(parent)
     debugConsole = new QTextEdit();
     warningConsole = new QTextEdit();
     logConsole = new QTextEdit();
-    generalConsole = new QTextEdit(); // For backward compatibility
+    generalConsole = new QTextEdit();
 
     // Setup consoles
     setupConsoleTabs();
@@ -54,7 +55,7 @@ void ConsoleView::setupConsoleTabs()
         console->setStyleSheet(
             "QTextEdit { "
             "background-color: #1E1E1E; "
-            "color: white; "
+            "color: black; "
             "border: none; "
             "}"
             );
@@ -67,7 +68,7 @@ void ConsoleView::setupConsoleTabs()
     setupConsole(generalConsole);
 
     // Add tabs
-    tabWidget->addTab(generalConsole, "Console");   // Default tab for backward compatibility
+    tabWidget->addTab(generalConsole, "Console");
     tabWidget->addTab(errorConsole, "Error");
     tabWidget->addTab(debugConsole, "Debug");
     tabWidget->addTab(warningConsole, "Warning");
@@ -75,7 +76,7 @@ void ConsoleView::setupConsoleTabs()
 
     // Set tab colors
     tabWidget->setStyleSheet(
-        "QTabBar::tab { color: white; background: #1E1E1E; } "
+        "QTabBar::tab { color: black; background: #1E1E1E; } "
         "QTabBar::tab:selected { background: #2E2E2E; } "
         "QTabWidget::pane { border: none; } "
         );
@@ -85,7 +86,7 @@ void ConsoleView::setupButtons()
 {
     clearButton->setStyleSheet(
         "QPushButton { "
-        "color: white; "
+        "color: black; "
         "border: 1px solid #5A5A5A; "
         "}"
         "QPushButton:hover { background-color: #4A4A4A; }"
@@ -93,7 +94,7 @@ void ConsoleView::setupButtons()
 
     saveButton->setStyleSheet(
         "QPushButton { "
-        "color: white; "
+        "color: black; "
         "border: 1px solid #5A5A5A; "
         "}"
         "QPushButton:hover { background-color: #4A4A4A; }"

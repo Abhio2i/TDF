@@ -10,7 +10,7 @@ class Overview : public QWidget
     Q_OBJECT
 
 public:
-    explicit Overview(QWidget *parent = nullptr);  // Capital 'O'
+    explicit Overview(QWidget *parent = nullptr);
 
 private:
     QLabel *label;

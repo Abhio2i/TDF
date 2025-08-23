@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-    class Missile : public Entity
+class Missile : public Entity
 {
     Q_OBJECT
 public:
@@ -42,7 +42,7 @@ public:
     ControlSystem controlSystem = ControlSystem::Fins;
 
     void spawn() override;
-    std::vector<Component*> getSupportedComponents() override;
+    std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;
     void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;
@@ -78,7 +78,7 @@ public:
     float recoilForce = 0.0f; // kN
 
     void spawn() override;
-    std::vector<Component*> getSupportedComponents() override;
+    std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;
     void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;
@@ -114,7 +114,7 @@ public:
     bool glideCapability = false;
 
     void spawn() override;
-    std::vector<Component*> getSupportedComponents() override;
+    std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;
     void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;

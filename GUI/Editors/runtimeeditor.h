@@ -17,8 +17,11 @@
 #include "core/structure/runtime.h"
 #include <QMainWindow>
 #include <QDockWidget>
+#include "GUI/Menubars/menubar.h"
+#include "GUI/scene3dwidget/scene3dwidget.h"
+#include "GUI/Testscript/textscriptwidget.h"
 
-    class RuntimeEditor : public QMainWindow
+class RuntimeEditor : public QMainWindow
 {
     Q_OBJECT
 
@@ -41,26 +44,27 @@ private:
     void setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures);
     void setupToolBarConnections();
 
-    // core Hierarchy components
+    // Core Hierarchy components
     HierarchyTree *treeView;
     Inspector *inspector;
     Console *console;
 
     // Dock widgets
     QDockWidget *hierarchyDock;
-    QDockWidget *navigationDock;
     QDockWidget *tacticalDisplayDock;
     QDockWidget *consoleDock;
     QDockWidget *inspectorDock;
     QDockWidget *libraryDock;
-    QDockWidget *overviewDock;
     QDockWidget *sidebarDock;
-    QDockWidget *currentBottomDock;
+    QDockWidget *textScriptDock;
 
     // Views
     ConsoleView *consoleView;
     TacticalDisplay *tacticalDisplay;
+    Scene3DWidget *scene3dwidget;
+      TextScriptWidget *textScriptView;
 
+    // Hierarchy and connectors
     HierarchyConnector* m_hierarchyConnector;
     Hierarchy* hierarchy;
     QVariantMap copydata;
@@ -70,11 +74,12 @@ private:
     DesignToolBar *designToolBar;
     RuntimeToolBar *runtimeToolBar;
     NetworkToolbar *networkToolBar;
-     StandardToolBar *standardToolBar;
+    StandardToolBar *standardToolBar;
+    MenuBar *menuBar;
 
+    // Inspector management
     QList<QDockWidget*> inspectorDocks;
     int inspectorCount = 0;
-    QList<QMetaObject::Connection> inspectorConnections;
     QList<Inspector*> inspectors;
 
     Runtime *runtime;

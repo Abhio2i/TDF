@@ -1,20 +1,22 @@
 
 #include "sidebarwidget.h"
 #include <QHBoxLayout>
+#include <QVariant>
 
 SidebarWidget::SidebarWidget(QWidget *parent) : QWidget(parent) {
     buttonGroup = new QButtonGroup(this);
     buttonGroup->setExclusive(true); // Only one button can be checked at a time
 
     QHBoxLayout *layout = new QHBoxLayout(this);
-    layout->setSpacing(5);
-    layout->setContentsMargins(5, 5, 5, 5);
+    layout->setSpacing(1);
+    layout->setContentsMargins(0, 0, 0, 0);
 
     // Create buttons without icons
     QPushButton *missionButton = createSidebarButton("Mission", "Mission");
     QPushButton *libraryButton = createSidebarButton("Library", "Library");
     QPushButton *inspectorButton = createSidebarButton("Inspector", "Inspector");
-    QPushButton *consoleButton = createSidebarButton("Console", "Console");
+    // QPushButton *consoleButton = createSidebarButton("Console", "Console");
+    QPushButton *textScriptButton = createSidebarButton("TextScript", "TextScript");
 
     // Add buttons to layout and button group
     layout->addWidget(missionButton);
@@ -26,8 +28,11 @@ SidebarWidget::SidebarWidget(QWidget *parent) : QWidget(parent) {
     layout->addWidget(inspectorButton);
     buttonGroup->addButton(inspectorButton);
 
-    layout->addWidget(consoleButton);
-    buttonGroup->addButton(consoleButton);
+    // layout->addWidget(consoleButton);
+    // buttonGroup->addButton(consoleButton);
+
+    layout->addWidget(textScriptButton);
+    buttonGroup->addButton(textScriptButton);
 
     setFixedHeight(40);
 }
@@ -35,10 +40,9 @@ SidebarWidget::SidebarWidget(QWidget *parent) : QWidget(parent) {
 QPushButton* SidebarWidget::createSidebarButton(const QString &text, const QString &viewName) {
     QPushButton *button = new QPushButton(text, this);
     button->setCheckable(true);
-    button->setProperty("viewName", viewName);
+    button->setProperty("viewName", QVariant(viewName));
     button->setStyleSheet(
         "QPushButton {"
-        "   padding: 5px;"
         "   border: none;"
         "   background: transparent;"
         "}"
@@ -58,7 +62,6 @@ QPushButton* SidebarWidget::createSidebarButton(const QString &text, const QStri
 }
 
 void SidebarWidget::setActiveButton(const QString &viewName) {
-    // Find and activate the button with matching viewName
     for (QAbstractButton *button : buttonGroup->buttons()) {
         if (button->property("viewName").toString() == viewName) {
             button->setChecked(true);

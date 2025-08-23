@@ -1,4 +1,3 @@
-
 #include "hierarchyconnector.h"
 #include <QToolBar>
 #include <QAction>
@@ -9,6 +8,7 @@
 #include <QDebug>
 #include "GUI/Hierarchytree/contextmenu.h"
 #include "GUI/Menubars/menubar.h"
+#include <QUuid>
 
 HierarchyConnector* HierarchyConnector::m_instance = nullptr;
 
@@ -51,7 +51,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
     // Connect tree view to hierarchy
     connect(treeView->getContextMenu(), &ContextMenu::addProfileRequested,
             hierarchy, &Hierarchy::addProfileCategaory);
-
     connect(treeView->getContextMenu(), &ContextMenu::removeProfileRequested,
             hierarchy, &Hierarchy::removeProfileCategaory);
     connect(treeView->getContextMenu(), &ContextMenu::addFolderRequested,
@@ -59,31 +58,58 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
     connect(treeView->getContextMenu(), &ContextMenu::removeFolderRequested,
             hierarchy, &Hierarchy::removeFolder);
 
+
+
+
     connect(treeView->getContextMenu(), &ContextMenu::addEntityRequested,
             this, [=](QString parentId, QString entityName, bool isProfileParent, QVariantMap components) {
                 qDebug() << "Creating entity:" << entityName;
 
-                // Create entity (Transform will be added automatically)
                 Entity* newEntity = hierarchy->addEntity(parentId, entityName, isProfileParent);
 
-                // Add only non-Transform components that were selected
+                // Add user-specified components (excluding transform and avoiding duplicates)
+                QSet<QString> addedComponents;
+
                 for (const auto& component : components.keys()) {
-                    if (component != "transform" && components[component].toBool()) {
+                    if (components.value(component).toBool() && !addedComponents.contains(component)) {
                         try {
                             newEntity->addComponent(component.toStdString());
-                            qDebug() << "Added component:" << component;
-                        } catch (...) {
-                            qWarning() << "Failed to add component:" << component;
+                            addedComponents.insert(component);
+                            qDebug() << "Added user-specified component:" << component
+                                     << "to entity:" << QString::fromStdString(newEntity->ID);
+                        } catch (const std::exception& e) {
+                            qWarning() << "Failed to add component" << component
+                                       << "to entity:" << e.what();
                         }
                     }
                 }
 
-                qDebug() << "Entity created with ID:" << QString::fromStdString(newEntity->ID);
+                // Ensure transform and rigidbody are tracked to prevent later duplication
+                addedComponents.insert("transform");
+                addedComponents.insert("rigidbody");
+
             });
+
     connect(treeView->getContextMenu(), &ContextMenu::removeEntityRequested,
             hierarchy, &Hierarchy::removeEntity);
     connect(treeView->getContextMenu(), &ContextMenu::removeComponentRequested,
             hierarchy, &Hierarchy::removeComponent);
+
+    connect(treeView->getContextMenu(), &ContextMenu::addComponentRequested, this,
+            [=](QString entityID, QString componentType, QString componentName) {
+
+                if (componentType == "iff") {
+                    hierarchy->attchedIff(entityID, componentName);
+                } else if (componentType == "sensors") {
+                    hierarchy->attachSensors(entityID, componentName);
+                } else if (componentType == "radios") {
+                    hierarchy->attachRadios(entityID, componentName);
+                } else {
+                    qWarning() << "Unsupported component type for addComponentRequested:" << componentType;
+                }
+            });
+
+
     // Connect tactical display if provided
     if (tactical) {
         connect(hierarchy, &Hierarchy::entityRemoved,
@@ -123,65 +149,153 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
     // Connect copy-paste signals
     connect(treeView->getContextMenu(), &ContextMenu::copyItemRequested,
             treeView, &HierarchyTree::copyItemRequested);
-
     connect(treeView->getContextMenu(), &ContextMenu::pasteItemRequested,
             treeView, &HierarchyTree::pasteItemRequested);
 
     connect(treeView, &HierarchyTree::copyItemRequested, this,
             [this, hierarchy](QVariantMap data) {
-                qDebug() << "Copy received - Type:" << data["type"].toString()
-                << "Name:" << data["name"].toString();
+                QString type = data["type"].toString();
+                if (type != "entity") {
+
+                    return;
+                }
                 copydata = data;
                 copySource = hierarchy;
             });
 
-    connect(treeView, &HierarchyTree::pasteItemRequested, this,
-            [this, hierarchy](QVariantMap targetData) {
-                qDebug() << "Paste requested - Target Type:" << targetData["type"].toString()
-                << "Target Name:" << targetData["name"].toString();
 
-                if (copydata.isEmpty()) {
-                    qWarning() << "Cannot paste - nothing copied!";
-                    return;
+    connect(treeView, &HierarchyTree::pasteItemRequested, this, [this, hierarchy](QVariantMap targetData) {
+
+        if (copydata.isEmpty()) {
+            qWarning() << "Cannot paste - nothing copied!";
+            return;
+        }
+
+        if (!copySource) {
+            qWarning() << "Cannot paste - no source hierarchy set!";
+            return;
+        }
+
+        QString type = copydata["type"].toString();
+        QString id = copydata["ID"].toString();
+        QString targetType;
+        if (targetData["type"].type() == QVariant::Map) {
+            QVariantMap typeData = targetData["type"].toMap();
+            if (typeData.contains("type") && typeData["type"].toString() == "option") {
+                targetType = "profile";
+            } else {
+                qWarning() << "Invalid nested type structure in pasteItemRequested:" << targetData["type"];
+                return;
+            }
+        } else {
+            targetType = targetData["type"].toString();
+        }
+        QString targetId = targetData["ID"].toString();
+
+
+
+        if (type != "entity") {
+            qWarning() << "Can only paste entities! Type was:" << type;
+            return;
+        }
+
+        try {
+            auto entityIt = copySource->Entities->find(id.toStdString());
+            if (entityIt == copySource->Entities->end()) {
+                qCritical() << "Entity not found in Entities map for ID:" << id;
+                return;
+            }
+            QJsonObject entityJson = entityIt->second->toJson();
+
+            QString newId = QUuid::createUuid().toString();
+            entityJson["id"] = newId;
+
+            QStringList componentNames;
+            for (auto it = entityJson.begin(); it != entityJson.end(); ++it) {
+                QString key = it.key();
+                if (key != "id" && key != "name" && key != "parent_id" && key != "branch" &&
+                    key != "active" && key != "parameters" && key != "type") {
+                    componentNames << key;
+                }
+            }
+            if (!componentNames.isEmpty()) {
+
+            } else {
+                qWarning() << "No components found in entity JSON for ID:" << id;
+            }
+
+            Entity* newEntity = hierarchy->addEntityFromJson(targetId, entityJson, targetType == "profile");
+            if (newEntity) {
+                for (const QString& compName : componentNames) {
+                    emit hierarchy->componentAdded(QString::fromStdString(newEntity->ID), compName);
+
                 }
 
+            } else {
+                qWarning() << "Failed to create new entity during paste";
+            }
+
+            copydata.clear();
+            copySource = nullptr;
+        } catch (const std::exception& e) {
+            qCritical() << "Paste failed:" << e.what();
+        }
+    });
+
+    // Connect drag-and-drop signals
+    connect(treeView, &HierarchyTree::itemDropped, this, [=](QVariantMap sourceData, QVariantMap targetData) {
+        if (sourceData["type"].toString() == "entity") {
+            QString sourceId = sourceData["ID"].toString();
+            QString targetId = targetData["ID"].toString();
+            bool isProfile = (targetData["type"].toString() == "profile");
+
+            try {
                 if (!copySource) {
-                    qWarning() << "Cannot paste - no source hierarchy set!";
+                    qWarning() << "No copy source available for drop!";
                     return;
                 }
 
-                QString type = copydata["type"].toString();
-                QString id = copydata["ID"].toString();
-                QString targetType = targetData["type"].toString();
-                QString targetId = targetData["ID"].toString();
-
-                if (type != "entity") {
-                    qWarning() << "Can only paste entities!";
+                auto entityIt = copySource->Entities->find(sourceId.toStdString());
+                if (entityIt == copySource->Entities->end()) {
+                    qCritical() << "Entity not found in Entities map for ID:" << sourceId;
                     return;
                 }
+                QJsonObject entityJson = entityIt->second->toJson();
+                qDebug() << "Entity JSON before drop:" << QJsonDocument(entityJson).toJson(QJsonDocument::Compact);
+                QString newId = QUuid::createUuid().toString();
+                entityJson["id"] = newId;
 
-                try {
-                    QJsonObject entityJson = (*copySource->Entities)[id.toStdString()]->toJson();
-
-                    if (targetType == "profile") {
-                        hierarchy->addEntityFromJson(targetId, entityJson, true);
-                        qDebug() << "Entity pasted under profile";
-                    }
-                    else if (targetType == "folder") {
-                        hierarchy->addEntityFromJson(targetId, entityJson, false);
-                        qDebug() << "Entity pasted under folder";
-                    }
-                    else {
-                        qWarning() << "Invalid paste target type:" << targetType;
+                QStringList componentNames;
+                for (auto it = entityJson.begin(); it != entityJson.end(); ++it) {
+                    QString key = it.key();
+                    if (key != "id" && key != "name" && key != "parent_id" && key != "branch" &&
+                        key != "active" && key != "parameters" && key != "type") {
+                        componentNames << key;
                     }
                 }
-                catch (const std::exception& e) {
-                    qCritical() << "Paste failed:" << e.what();
+                if (!componentNames.isEmpty()) {
+
+                } else {
+                    qWarning() << "No components found in entity JSON for ID:" << sourceId;
                 }
-            });
 
+                Entity* newEntity = hierarchy->addEntityFromJson(targetId, entityJson, isProfile);
+                if (newEntity) {
+                    for (const QString& compName : componentNames) {
+                        emit hierarchy->componentAdded(QString::fromStdString(newEntity->ID), compName);
 
+                    }
+
+                } else {
+                    qWarning() << "Failed to create new entity during drop";
+                }
+            } catch (const std::exception& e) {
+                qCritical() << "Failed to drop entity:" << e.what();
+            }
+        }
+    });
 }
+
 
 void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree* libTree)
 {
@@ -189,7 +303,8 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
         qWarning() << "Cannot connect signals - null library or libTree";
         return;
     }
-    // Connect library to tree view
+
+    // Existing connections for profile, folder, etc.
     connect(library, &Hierarchy::profileAdded,
             libTree, &HierarchyTree::profileAdded);
     connect(library, &Hierarchy::folderAdded,
@@ -214,12 +329,34 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
             library, &Hierarchy::addFolder);
     connect(libTree->getContextMenu(), &ContextMenu::removeFolderRequested,
             library, &Hierarchy::removeFolder);
-    connect(libTree->getContextMenu(), &ContextMenu::addEntityRequested,
-            library, &Hierarchy::addEntity);
+
+    // Modified connection for addEntityRequested
+    connect(libTree->getContextMenu(), &ContextMenu::addEntityRequested, this,
+            [=](QString parentId, QString entityName, bool isProfileParent, QVariantMap components) {
+
+                // Create the entity in the Library
+                Entity* newEntity = library->addEntity(parentId, entityName, isProfileParent);
+
+                // Add user-specified components (excluding duplicates)
+                QSet<QString> addedComponents;
+                for (const auto& component : components.keys()) {
+                    if (components.value(component).toBool() && !addedComponents.contains(component)) {
+                        try {
+                            newEntity->addComponent(component.toStdString());
+                            addedComponents.insert(component);
+
+                        } catch (const std::exception& e) {
+                            qWarning() << "Failed to add component" << component
+                                       << "to library entity:" << e.what();
+                        }
+                    }
+                }
+            });
+
     connect(libTree->getContextMenu(), &ContextMenu::removeEntityRequested,
             library, &Hierarchy::removeEntity);
 
-    // Connect rename signals
+    // Existing rename and copy-paste signal connections
     connect(library, &Hierarchy::profileRenamed,
             libTree, &HierarchyTree::profileRenamed);
     connect(library, &Hierarchy::folderRenamed,
@@ -227,7 +364,6 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
     connect(library, &Hierarchy::entityRenamed,
             libTree, &HierarchyTree::entityRenamed);
 
-    // Connect context menu rename signal to library
     connect(libTree->getContextMenu(), &ContextMenu::renameItemRequested,
             [library](QVariantMap data) {
                 QString type = data["type"].toString();
@@ -242,26 +378,34 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
                 }
             });
 
-    // Connect library copy-paste signals
     connect(libTree->getContextMenu(), &ContextMenu::copyItemRequested,
             libTree, &HierarchyTree::copyItemRequested);
-
     connect(libTree->getContextMenu(), &ContextMenu::pasteItemRequested,
             libTree, &HierarchyTree::pasteItemRequested);
 
     connect(libTree, &HierarchyTree::copyItemRequested, this,
             [this, library](QVariantMap data) {
-                qDebug() << "Library copy received - Type:" << data["type"].toString();
+                QString type = data["type"].toString();
+                if (type != "entity") {
+
+                    return;
+                }
+
                 copydata = data;
                 copySource = library;
             });
 
     connect(libTree, &HierarchyTree::pasteItemRequested, this,
             [this, library](QVariantMap targetData) {
-                qDebug() << "Library paste requested";
 
-                if (copydata.isEmpty() || !copySource) {
-                    qWarning() << "Cannot paste - no data or source!";
+
+                if (copydata.isEmpty()) {
+                    qWarning() << "Cannot paste - nothing copied!";
+                    return;
+                }
+
+                if (!copySource) {
+                    qWarning() << "Cannot paste - no source hierarchy set!";
                     return;
                 }
 
@@ -270,59 +414,163 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
                 QString targetType = targetData["type"].toString();
                 QString targetId = targetData["ID"].toString();
 
-                if (type == "entity") {
-                    try {
-                        QJsonObject entityJson = (*copySource->Entities)[id.toStdString()]->toJson();
+                if (type != "entity") {
+                    qWarning() << "Can only paste entities! Type was:" << type;
+                    return;
+                }
 
-                        if (targetType == "profile") {
-                            library->addEntityFromJson(targetId, entityJson, true);
-                        }
-                        else if (targetType == "folder") {
-                            library->addEntityFromJson(targetId, entityJson, false);
+                try {
+                    auto entityIt = copySource->Entities->find(id.toStdString());
+                    if (entityIt == copySource->Entities->end()) {
+                        qCritical() << "Library Entity not found in Entities map for ID:" << id;
+                        return;
+                    }
+                    QJsonObject entityJson = entityIt->second->toJson();
+
+                    QString newId = QUuid::createUuid().toString();
+                    entityJson["id"] = newId;
+
+                    QStringList componentNames;
+                    for (auto it = entityJson.begin(); it != entityJson.end(); ++it) {
+                        QString key = it.key();
+                        if (key != "id" && key != "name" && key != "parent_id" && key != "branch" &&
+                            key != "active" && key != "parameters" && key != "type") {
+                            componentNames << key;
                         }
                     }
-                    catch (...) {
-                        qCritical() << "Failed to paste library entity!";
+                    if (!componentNames.isEmpty()) {
+
+                    } else {
+                        qWarning() << "No components found in library entity JSON for ID:" << id;
                     }
+
+                    Entity* newEntity = library->addEntityFromJson(targetId, entityJson, targetType == "profile");
+                    if (newEntity) {
+                        for (const QString& compName : componentNames) {
+                            emit library->componentAdded(QString::fromStdString(newEntity->ID), compName);
+
+                        }
+
+                    } else {
+                        qWarning() << "Failed to create new entity during paste";
+                    }
+
+                    copydata.clear();
+                    copySource = nullptr;
+                } catch (const std::exception& e) {
+                    qCritical() << "Failed to paste library entity:" << e.what();
                 }
             });
 
+    connect(libTree, &HierarchyTree::itemDropped, this, [=](QVariantMap sourceData, QVariantMap targetData) {
+        if (sourceData["type"].toString() == "entity") {
+            QString sourceId = sourceData["ID"].toString();
+            QString targetId = targetData["ID"].toString();
+            bool isProfile = (targetData["type"].toString() == "profile");
+
+            try {
+                auto entityIt = library->Entities->find(sourceId.toStdString());
+                if (entityIt == library->Entities->end()) {
+                    qCritical() << "Library Entity not found in Entities map for ID:" << sourceId;
+                    return;
+                }
+                QJsonObject entityJson = entityIt->second->toJson();
+
+                QString newId = QUuid::createUuid().toString();
+                entityJson["id"] = newId;
+
+                QStringList componentNames;
+                for (auto it = entityJson.begin(); it != entityJson.end(); ++it) {
+                    QString key = it.key();
+                    if (key != "id" && key != "name" && key != "parent_id" && key != "branch" &&
+                        key != "active" && key != "parameters" && key != "type") {
+                        componentNames << key;
+                    }
+                }
+                if (!componentNames.isEmpty()) {
+
+                } else {
+                    qWarning() << "No components found in library entity JSON for ID:" << sourceId;
+                }
+
+                Entity* newEntity = library->addEntityFromJson(targetId, entityJson, isProfile);
+                if (newEntity) {
+                    for (const QString& compName : componentNames) {
+                        emit library->componentAdded(QString::fromStdString(newEntity->ID), compName);
+
+                    }
+
+                } else {
+                    qWarning() << "Failed to create new entity during drop";
+                }
+            } catch (const std::exception& e) {
+                qCritical() << "Failed to drop library entity:" << e.what();
+            }
+        }
+    });
 }
+
 void HierarchyConnector::initializeLibraryData(Hierarchy* library)
 {
-    qDebug() << "Initializing library data...";
+    if (!library) {
+        return;
+    }
+
     ProfileCategaory* platform = library->addProfileCategaory("Platform");
+    if (!platform) {
+        return;
+    }
+    platform->setProfileType(Constants::EntityType::Platform);
+
     Folder* air = platform->addFolder("Air");
-    air->addEntity("FighterJet");
+    if (!air) {
+        return;
+    }
+
+    Entity* fighterJet = air->addEntity("FighterJet");
+    if (!fighterJet) {
+        return;
+    }
+
+    QStringList components = {"transform"};
+    QSet<QString> addedComponents;
+    for (const QString& comp : components) {
+        try {
+            fighterJet->addComponent(comp.toStdString());
+            addedComponents.insert(comp);
+            emit library->componentAdded(QString::fromStdString(fighterJet->ID), comp);
+        } catch (const std::exception& e) {
+
+        }
+    }
 
 }
+
 void HierarchyConnector::initializeDummyData(Hierarchy* hierarchy)
 {
     ProfileCategaory* platform = hierarchy->addProfileCategaory("Platform");
-    hierarchy->addProfileCategaory("Radio");
-    hierarchy->addProfileCategaory("Sensor");
-    hierarchy->addProfileCategaory("Weapon");
-    hierarchy->addProfileCategaory("IFF");
-    Folder* air = platform->addFolder("Air");
-    air->addFolder("Fighterjet");
-    platform->addFolder("Ground");
-    platform->addFolder("Sea");
-    Entity* aircraft = air->addEntity("Aircraft");
-    aircraft->addComponent("transform");
-    aircraft->addComponent("trajectory");
-    aircraft->addComponent("rigidbody");
-    aircraft->addComponent("dynamicModel");
-    aircraft->addComponent("collider");
-    aircraft->addComponent("meshRenderer2d");
-    // Entity* aircraft = air->addEntity("Aircraft");
+    platform->setProfileType(Constants::EntityType::Platform);
+    hierarchy->addProfileCategaory("SpecialZone")->setProfileType(Constants::EntityType::SpecialZone);
+    hierarchy->addProfileCategaory("Radio")->setProfileType(Constants::EntityType::Radio);
+    hierarchy->addProfileCategaory("Sensor")->setProfileType(Constants::EntityType::Sensor);
+    hierarchy->addProfileCategaory("Weapon")->setProfileType(Constants::EntityType::Weapon);
+    hierarchy->addProfileCategaory("IFF")->setProfileType(Constants::EntityType::IFF);
+    hierarchy->addProfileCategaory("Formation")->setProfileType(Constants::EntityType::Formation);
+    hierarchy->addProfileCategaory("FixedPoints")->setProfileType(Constants::EntityType::FixedPoint);
 }
-void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hierarchy)
+
+
+void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hierarchy, TacticalDisplay* tacticalDisplay)
 {
     MenuBar* menuBar = qobject_cast<MenuBar*>(parent->menuBar());
     if (!menuBar) return;
+
     QAction* loadAction = menuBar->getLoadAction();
+    QAction* loadToLibraryAction = menuBar->getLoadToLibraryAction();
     QAction* saveAction = menuBar->getSaveAction();
-    connect(loadAction, &QAction::triggered, parent, [=]() {
+
+    // Connect "Open File" to load into hierarchy only
+    connect(loadAction, &QAction::triggered, parent, [parent, hierarchy,tacticalDisplay]() {
         QString filePath = QFileDialog::getOpenFileName(parent, "Open JSON", "", "JSON Files (*.json)");
         if (!filePath.isEmpty()) {
             QFile file(filePath);
@@ -332,25 +580,80 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
                 QJsonParseError err;
                 QJsonDocument doc = QJsonDocument::fromJson(data, &err);
                 if (err.error == QJsonParseError::NoError && doc.isObject()) {
-                    hierarchy->fromJson(doc.object());
+                    QJsonObject obj = doc.object();
+                    if (obj.contains("hierarchy")) {
+                        QJsonObject hier = obj["hierarchy"].toObject();
+                        hierarchy->fromJson(hier);
+                    }
+                    if(tacticalDisplay != nullptr){
+                        if(obj.contains("tactical")){
+                            QJsonObject tac = obj["tactical"].toObject();
+                            tacticalDisplay->canvas->fromJson(tac);
+                        }
+                    }
+
+                    //hierarchy->fromJson(doc.object());
+                    qDebug() << "JSON loaded into Hie.contains('hierarchy')rarchy successfully";
                 } else {
-                    QMessageBox::warning(parent, "Error", "Invalid JSON File");
+                    QMessageBox::warning(parent, "Error", QString("Failed to parse JSON: %1").arg(err.errorString()));
                 }
             }
         }
     });
-    connect(saveAction, &QAction::triggered, parent, [=]() {
+
+    // Connect "Open File to Library" to load into library only
+    connect(loadToLibraryAction, &QAction::triggered, HierarchyConnector::instance(), [parent]() {
+        HierarchyConnector::instance()->loadToLibrary(parent);
+    });
+
+    // Connect save action
+    connect(saveAction, &QAction::triggered, parent, [parent, hierarchy,tacticalDisplay]() {
         QString filePath = QFileDialog::getSaveFileName(parent, "Save JSON", "", "JSON Files (*.json)");
         if (!filePath.isEmpty()) {
             QFile file(filePath);
             if (file.open(QIODevice::WriteOnly)) {
-                QJsonDocument doc(hierarchy->toJson());
+                QJsonObject obj;
+                obj["hierarchy"] = hierarchy->toJson();
+                if(tacticalDisplay != nullptr){
+                    obj["tactical"] = tacticalDisplay->canvas->toJson();
+                }
+                //QJsonDocument doc(hierarchy->toJson());
+                QJsonDocument doc(obj);
                 file.write(doc.toJson(QJsonDocument::Indented));
                 file.close();
                 QMessageBox::information(parent, "Saved", "JSON saved successfully");
             }
         }
     });
+}
+
+void HierarchyConnector::loadToLibrary(QMainWindow* parent)
+{
+    if (!parent || !library) {
+        qWarning() << "Cannot load to library - parent or library is null";
+        return;
+    }
+
+    QString filePath = QFileDialog::getOpenFileName(parent, "Open JSON to Library", "", "JSON Files (*.json)");
+    if (!filePath.isEmpty()) {
+        QFile file(filePath);
+        if (file.open(QIODevice::ReadOnly)) {
+            QByteArray data = file.readAll();
+            file.close();
+            QJsonParseError err;
+            QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+            if (err.error == QJsonParseError::NoError && doc.isObject()) {
+                //library->fromJson(doc.object());
+                QJsonObject obj = doc.object();
+                if (obj.contains("hierarchy")) {
+                    QJsonObject hier = obj["hierarchy"].toObject();
+                    library->fromJson(hier);
+                }
+            } else {
+                QMessageBox::warning(parent, "Error", QString("Failed to parse JSON: %1").arg(err.errorString()));
+            }
+        }
+    }
 }
 void HierarchyConnector::handleLibraryToHierarchyDrop(QVariantMap sourceData, QVariantMap targetData)
 {
@@ -359,61 +662,126 @@ void HierarchyConnector::handleLibraryToHierarchyDrop(QVariantMap sourceData, QV
         return;
     }
     QString sourceType = sourceData["type"].toString();
-    QString targetType = targetData["type"].toString();
-    qDebug() << "Drop operation - Source type:" << sourceType << "Target type:" << targetType;
-    // Only allow dropping entities
+    QString targetType;
+    if (targetData["type"].type() == QVariant::Map) {
+        QVariantMap typeData = targetData["type"].toMap();
+        if (typeData.contains("type") && typeData["type"].toString() == "option") {
+            targetType = "profile";
+        } else {
+            qWarning() << "Invalid nested type structure in handleLibraryToHierarchyDrop:" << targetData["type"];
+            return;
+        }
+    } else {
+        targetType = targetData["type"].toString();
+    }
     if (sourceType != "entity") {
         qWarning() << "Invalid drag source - only entities can be dragged (got:" << sourceType << ")";
         return;
     }
-    // Only allow dropping onto profiles or folders
+
     if (targetType != "profile" && targetType != "folder") {
         qWarning() << "Invalid drop target - can only drop on profiles or folders (got:" << targetType << ")";
         return;
     }
     QString sourceId = sourceData["ID"].toString();
     QString targetId = targetData["ID"].toString();
-    qDebug() << "Processing drop - Source ID:" << sourceId << "Target ID:" << targetId;
-    try {
-        QJsonObject entityJson = (*library->Entities)[sourceId.toStdString()]->toJson();
-        qDebug() << "Entity JSON:" << entityJson;
 
-        if (targetType == "profile") {
-            hierarchy->addEntityFromJson(targetId, entityJson, true);
-            qDebug() << "Successfully added entity to profile";
+    try {
+        auto entityIt = library->Entities->find(sourceId.toStdString());
+        if (entityIt == library->Entities->end()) {
+            qCritical() << "Library Entity not found in Entities map for ID:" << sourceId;
+            return;
+        }
+        QJsonObject entityJson = entityIt->second->toJson();
+        QString newId = QUuid::createUuid().toString();
+        entityJson["id"] = newId;
+
+        QStringList componentNames;
+        for (auto it = entityJson.begin(); it != entityJson.end(); ++it) {
+            QString key = it.key();
+            if (key != "id" && key != "name" && key != "parent_id" && key != "branch" &&
+                key != "active" && key != "parameters" && key != "type") {
+                componentNames << key;
+            }
+        }
+        if (!componentNames.isEmpty()) {
+
         } else {
-            hierarchy->addEntityFromJson(targetId, entityJson, false);
-            qDebug() << "Successfully added entity to folder";
+            qWarning() << "No components found in library entity JSON for ID:" << sourceId;
+        }
+
+        Entity* newEntity = hierarchy->addEntityFromJson(targetId, entityJson, targetType == "profile");
+        if (newEntity) {
+            for (const QString& compName : componentNames) {
+                emit hierarchy->componentAdded(QString::fromStdString(newEntity->ID), compName);
+
+            }
+
+        } else {
+            qWarning() << "Failed to create new entity during drop";
         }
     } catch (const std::exception& e) {
         qCritical() << "Drop operation failed:" << e.what();
     }
 }
+
 void HierarchyConnector::handleHierarchyToLibraryDrop(QVariantMap sourceData, QVariantMap targetData)
 {
-    if (!hierarchy || !library) return;
+    if (!hierarchy || !library) {
+        qWarning() << "Invalid hierarchy or library pointers";
+        return;
+    }
 
     QString sourceType = sourceData["type"].toString();
     QString targetType = targetData["type"].toString();
-    // Only allow dragging entities
+
     if (sourceType != "entity") {
-        qDebug() << "Drag source is not an entity - ignoring drop";
+        qWarning() << "Drag source is not an entity - ignoring drop (got:" << sourceType << ")";
         return;
     }
-    // Only allow dropping onto library profiles or folders
+
     if (targetType != "profile" && targetType != "folder") {
-        qDebug() << "Can only drop onto profiles or folders - ignoring drop";
+        qWarning() << "Can only drop onto profiles or folders - ignoring drop (got:" << targetType << ")";
         return;
     }
+
     QString sourceId = sourceData["ID"].toString();
     QString targetId = targetData["ID"].toString();
-    try {
-        QJsonObject entityJson = (*hierarchy->Entities)[sourceId.toStdString()]->toJson();
 
-        if (targetType == "profile") {
-            library->addEntityFromJson(targetId, entityJson, true);
+    try {
+        auto entityIt = hierarchy->Entities->find(sourceId.toStdString());
+        if (entityIt == hierarchy->Entities->end()) {
+            qCritical() << "Hierarchy Entity not found in Entities map for ID:" << sourceId;
+            return;
+        }
+        QJsonObject entityJson = entityIt->second->toJson();
+
+        QString newId = QUuid::createUuid().toString();
+        entityJson["id"] = newId;
+
+        QStringList componentNames;
+        for (auto it = entityJson.begin(); it != entityJson.end(); ++it) {
+            QString key = it.key();
+            if (key != "id" && key != "name" && key != "parent_id" && key != "branch" &&
+                key != "active" && key != "parameters" && key != "type") {
+                componentNames << key;
+            }
+        }
+        if (!componentNames.isEmpty()) {
+
         } else {
-            library->addEntityFromJson(targetId, entityJson, false);
+            qWarning() << "No components found in hierarchy entity JSON for ID:" << sourceId;
+        }
+
+        Entity* newEntity = library->addEntityFromJson(targetId, entityJson, targetType == "profile");
+        if (newEntity) {
+            for (const QString& compName : componentNames) {
+                emit library->componentAdded(QString::fromStdString(newEntity->ID), compName);
+
+            }
+
+        } else {
+            qWarning() << "Failed to create new entity during drop";
         }
     } catch (const std::exception& e) {
         qCritical() << "Hierarchy to Library drop failed:" << e.what();

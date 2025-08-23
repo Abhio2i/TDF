@@ -9,7 +9,8 @@ QString entityTypeToString(Constants::EntityType type) {
     case Constants::EntityType::SpecialZone: return "SpecialZone";
     case Constants::EntityType::Weapon: return "Weapon";
     case Constants::EntityType::IFF: return "IFF";
-    case Constants::EntityType::Supply: return "Supply";
+    case Constants::EntityType::FixedPoint: return "FixedPoint";
+    case Constants::EntityType::Formation: return "Formation";
     default: return "Unknown";
     }
 }
@@ -22,12 +23,41 @@ Constants::EntityType stringToEntityType(const QString& str) {
     if (str == "Weapon") return Constants::EntityType::Weapon;
     if (str == "IFF") return Constants::EntityType::IFF;
     if (str == "Supply") return Constants::EntityType::Supply;
+    if (str == "FixedPoint") return Constants::EntityType::FixedPoint;
+    if (str == "Formation") return Constants::EntityType::Formation;
     return Constants::EntityType::Platform; // default fallback
 }
 
 QStringList entityTypeOptions() {
     QStringList list;
     int index = Constants::staticMetaObject.indexOfEnumerator("EntityType");
+    QMetaEnum metaEnum = Constants::staticMetaObject.enumerator(index);
+    for (int i = 0; i < metaEnum.keyCount(); ++i) {
+        list << QString::fromLatin1(metaEnum.key(i));
+    }
+    return list;
+}
+
+QString formationTypeToString(Constants::FormationType type) {
+    switch (type) {
+    case Constants::FormationType::Line: return "Line";
+    case Constants::FormationType::V: return "V";
+    case Constants::FormationType::Diamond: return "Diamond";
+
+    default: return "Unknown";
+    }
+}
+
+Constants::FormationType stringToFormationType(const QString& str) {
+    if (str == "Line") return Constants::FormationType::Line;
+    if (str == "V") return Constants::FormationType::V;
+    if (str == "Diamond") return Constants::FormationType::Diamond;
+    return Constants::FormationType::Line; // default fallback
+}
+
+QStringList formationTypeOptions() {
+    QStringList list;
+    int index = Constants::staticMetaObject.indexOfEnumerator("FormationType");
     QMetaEnum metaEnum = Constants::staticMetaObject.enumerator(index);
     for (int i = 0; i < metaEnum.keyCount(); ++i) {
         list << QString::fromLatin1(metaEnum.key(i));

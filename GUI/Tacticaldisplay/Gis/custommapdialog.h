@@ -31,8 +31,7 @@ private:
     QLineEdit *tileUrlEdit;
     QSpinBox *zoomMinSpinBox;
     QSpinBox *zoomMaxSpinBox;
-    QComboBox *opacityComboBox; // Changed to QComboBox
-    // QComboBox *resolutionComboBox; // Changed to QComboBox
+    QComboBox *opacityComboBox;
     QComboBox *typeComboBox;
 };
 

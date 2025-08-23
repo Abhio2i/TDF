@@ -14,12 +14,12 @@ public:
     void requestPlace(const QString& query);
 
 signals:
-    void receiveImage(QString url,QByteArray data); // correct spelling
-    void receivePlace(QString url,QByteArray data); // correct spelling
+    void receiveImage(QString url,QByteArray data);
+    void receivePlace(QString url,QByteArray data);
 
 
 private:
-    QNetworkAccessManager manager; // Correct usage
+    QNetworkAccessManager manager;
 };
 
 #endif // GISNETWORK_H

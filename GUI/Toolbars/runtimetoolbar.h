@@ -27,7 +27,7 @@ private:
     QAction *stopAction;
     QAction *nextStepAction;
     QSlider *speedSlider;
-QAction *replayAction;
+    QAction *replayAction;
     QPixmap withWhiteBg(const QString &iconPath);
     void createActions();
     void setupToolBar();

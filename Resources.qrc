@@ -47,6 +47,20 @@
         <file>images/loading-arrow.png</file>
         <file>images/info.png</file>
         <file>images/replay.png</file>
+        <file>images/trajectory.png</file>
+        <file>images/school.png</file>
+        <file>images/hospital.png</file>
+        <file>images/forest-area.png</file>
+        <file>images/shapes.png</file>
+        <file>images/picture.png</file>
+        <file>images/photo.png</file>
+        <file>images/check-mark.png</file>
+        <file>images/add.jpeg</file>
+        <file>images/add.png</file>
+        <file>images/error.png</file>
+        <file>images/success.png</file>
+        <file>images/warning.png</file>
+        <file>images/measurement.png</file>
     </qresource>
     <qresource prefix="/texture">
         <file>images/Texture/bball.png</file>
@@ -59,6 +73,18 @@
         <file>images/Texture/walll.jpg</file>
         <file>images/Texture/water.png</file>
         <file>images/Texture/fighterjet.png</file>
+        <file>images/Texture/marker.png</file>
+        <file>images/Texture/zone.png</file>
+        <file>images/Texture/Frigates-removebg-preview.png</file>
+        <file>images/Texture/Destroyers-removebg-preview.png</file>
+        <file>images/Texture/petroline-removebg-preview.png</file>
+        <file>images/Texture/F16-removebg-preview.png</file>
+        <file>images/Texture/ship.png</file>
+        <file>images/Texture/tank-removebg-preview.png</file>
+        <file>images/Texture/s400-removebg-preview.png</file>
+        <file>images/Texture/transport_vehicles-removebg-preview.png</file>
+        <file>images/Texture/transport_aircrafts-removebg-preview.png</file>
+        <file>images/Texture/Helicopters-removebg-preview.png</file>
     </qresource>
     <qresource prefix="/model/airplane">
         <file>Model/Airplane/11803_Airplane_body_diff.jpg</file>

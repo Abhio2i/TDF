@@ -3,7 +3,6 @@
 #ifndef INSPECTOR_H
 #define INSPECTOR_H
 
-/* Includes section */
 #include <QDockWidget>
 #include <QTableWidget>
 #include <QJsonObject>
@@ -15,9 +14,15 @@
 #include <QListWidget>
 #include <QJsonArray>
 #include "core/Hierarchy/hierarchy.h"
+
+// Forward declarations for template classes
+class ColorTemplate;
+class ImageTemplate;
+class GeocordsTemplate;
+class OptionTemplate;
+class VectorTemplate;
 class CustomParameterDialog;
 
-/* WheelableLineEdit class section */
 class WheelableLineEdit : public QLineEdit {
     Q_OBJECT
 public:
@@ -26,7 +31,6 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
 };
 
-/* Inspector class section */
 class Inspector : public QDockWidget
 {
     Q_OBJECT
@@ -35,6 +39,8 @@ public:
     explicit Inspector(QWidget *parent = nullptr);
     bool eventFilter(QObject *watched, QEvent *event) override;
     void setHierarchy(Hierarchy* h) { hierarchy = h; }
+    static QString formatNumberForUI(double value);
+
 
 public slots:
     void init(QString ID, QString name, QJsonObject obj);
@@ -43,11 +49,10 @@ public slots:
     void updateTrajectory(QString entityId, QJsonArray waypoints);
 
 signals:
-    void foucsEntity(QString ID);
+    void foucsEntity(QString ID); // Note: Typo "foucsEntity" should be "focusEntity"
     void valueChanged(QString ID, QString name, QJsonObject delta);
     void addTabRequested();
     void parameterChanged(QString ID, QString name, QString key, QString parameterType, bool add);
-
     void trajectoryWaypointsChanged(QString entityId, QJsonArray waypoints);
 
 private slots:
@@ -69,15 +74,17 @@ private:
     QJsonObject copiedComponentData;
     QString copiedComponentType;
     Hierarchy* hierarchy = nullptr;
+    QJsonObject copiedVectorData;
 
     void setupUI();
     void setupTitleBar();
     QMenu *createContextMenu();
-
-    QJsonObject currentVectorData;
-    QString currentVectorKey;
-    QJsonObject copiedVectorData;
-
+    void setupBooleanCell(int row, const QString &fullKey, bool value);
+    void setupArrayCell(int row, const QString &fullKey, const QJsonArray &array);
+    void setupStringCell(int row, const QString &fullKey, const QString &value);
+    void setupNumberCell(int row, const QString &fullKey, double value);
+    void setupGenericObjectCell(int row, const QString &fullKey, const QJsonObject &obj);
+    void addParameterRow(const QString &parameterName, int row);
+    QPushButton *createRemoveButton(const QString &parameterName);
 };
-
 #endif

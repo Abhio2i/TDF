@@ -1,4 +1,5 @@
 
+
 #ifndef STANDARDTOOLBAR_H
 #define STANDARDTOOLBAR_H
 
@@ -13,7 +14,11 @@ class StandardToolBar : public QToolBar
 public:
     explicit StandardToolBar(QWidget *parent = nullptr);
     QAction* getAddTrajectoryAction() const { return addTrajectoryAction; }
-    QAction* getSaveAction() const { return saveAction; } // Added getter for saveAction
+    QAction* getSaveAction() const { return saveAction; }
+    QAction* getTestScriptAction() const { return testScriptAction; }
+
+private slots:
+    void onTestScriptTriggered(); // Slot to open the dialog
 
 private:
     QAction *newAction;
@@ -25,6 +30,7 @@ private:
     QAction *undoAction;
     QAction *redoAction;
     QAction *addTrajectoryAction;
+    QAction *testScriptAction;
 
     void createActions();
     QPixmap withWhiteBg(const QString &iconPath);

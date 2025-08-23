@@ -1,4 +1,3 @@
-
 #include "customparameterdialog.h"
 #include <QMessageBox>
 #include <QRegularExpression>

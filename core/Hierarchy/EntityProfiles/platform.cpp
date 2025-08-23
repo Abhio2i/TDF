@@ -1,8 +1,10 @@
 
 
 #include "platform.h"
+#include "core/Hierarchy/EntityProfiles/radio.h"
+#include "core/Hierarchy/EntityProfiles/sensor.h"
+#include "core/Hierarchy/EntityProfiles/iff.h"
 #include "qjsonarray.h"
-#include "qmetaobject.h"
 #include "core/Hierarchy/Utils/entityutils.h"
 #include "core/Hierarchy/Struct/parameter.h"
 #include "core/GlobalRegistry.h"
@@ -15,6 +17,10 @@ Platform::Platform(Hierarchy* h) : Entity(h) {
     par->type = Constants::ParameterType::FLOAT;
     par->value = 1.0f;
     parameters["roll"] = par;
+
+
+
+
 }
 
 void Platform::spawn() {
@@ -23,19 +29,19 @@ void Platform::spawn() {
 
 }
 
-std::vector<Component*> Platform::getSupportedComponents() {
-    std::vector<Component*> supported;
-    if (transform) supported.push_back(transform);
-    if (trajectory) supported.push_back(trajectory);
-    if (rigidbody) supported.push_back(rigidbody);
-    if (dynamicModel) supported.push_back(dynamicModel);
-    if (collider) supported.push_back(collider);
-    if (networkObject) supported.push_back(networkObject);
-    if (meshRenderer2d) supported.push_back(meshRenderer2d);
-    if (mission) supported.push_back(mission);
-    if (radios) supported.push_back(radios);
-    if (weopons) supported.push_back(weopons);
-    if (radar) supported.push_back(radar);
+std::vector<std::string> Platform::getSupportedComponents() {
+    std::vector<std::string> supported;
+    supported.push_back("transform");
+    supported.push_back("trajectory");
+    supported.push_back("rigidbody");
+    supported.push_back("dynamicModel");
+    supported.push_back("collider");
+    supported.push_back("networkObject");
+    supported.push_back("meshRenderer2d");
+    supported.push_back("mission");
+    supported.push_back("radios");
+    supported.push_back("sensors");
+    supported.push_back("iff");
     return supported;
 }
 
@@ -64,9 +70,23 @@ QJsonObject Platform::toJson() const {
     if (dynamicModel) obj["dynamicModel"] = dynamicModel->toJson();
     if (collider) obj["collider"] = collider->toJson();
     if (meshRenderer2d) obj["meshRenderer2d"] = meshRenderer2d->toJson();
-    if (radios) obj["radios"] = radios->toJson();
-    if (weopons) obj["weopons"] = weopons->toJson();
-    if (radar) obj["radar"] = radar->toJson();
+    QJsonArray radioArray;
+    for (Radio* r : radioList) {
+        if (r) radioArray.append(r->toJson());
+    }
+    obj["radios"] = radioArray;
+
+    QJsonArray sensorArray;
+    for (Sensor* s : sensorList) {
+        if (s) sensorArray.append(s->toJson());
+    }
+    obj["sensors"] = sensorArray;
+
+    QJsonArray iffArray;
+    for (IFF* i : iffList) {
+        if (i) iffArray.append(i->toJson());
+    }
+    obj["iffs"] = iffArray;
 
     QJsonObject entityObj;
     entityObj["type"] = "option";
@@ -86,7 +106,7 @@ void Platform::fromJson(const QJsonObject& obj) {
     ID = obj["id"].toString().toStdString();
     parentID = obj["parent_id"].toString().toStdString();
     Active = obj["active"].toBool();
-
+    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (obj.contains("parameters")) {
         QJsonObject parObj = obj["parameters"].toObject();
         if (parObj.contains("value")) { // Fix: Check "value" instead of "array"
@@ -136,80 +156,105 @@ void Platform::fromJson(const QJsonObject& obj) {
         meshRenderer2d->fromJson(obj["meshRenderer2d"].toObject());
     }
 
-    if (obj.contains("radios") && obj["radios"].isObject()) {
-        if (!radios) addComponent("radios");
-        radios->fromJson(obj["radios"].toObject());
+    if (obj.contains("radios") && obj["radios"].isArray()) {
+        QJsonArray arr = obj["radios"].toArray();
+        for (const QJsonValue& val : arr) {
+            Radio* r = new Radio(parent);
+            r->fromJson(val.toObject());
+            radioList.push_back(r);
+        }
+
+        addComponent("radios");
     }
 
-    if (obj.contains("weopons") && obj["weopons"].isObject()) {
-        if (!weopons) addComponent("weopons");
-        weopons->fromJson(obj["weopons"].toObject());
+    if (obj.contains("sensors") && obj["sensors"].isArray()) {
+        QJsonArray arr = obj["sensors"].toArray();
+        for (const QJsonValue& val : arr) {
+            Sensor* s = new Sensor(parent);
+            s->fromJson(val.toObject());
+            sensorList.push_back(s);
+        }
+
+        addComponent("sensors");
     }
 
-    if (obj.contains("radar") && obj["radar"].isObject()) {
-        if (!radar) addComponent("radar");
-        radar->fromJson(obj["radar"].toObject());
+    if (obj.contains("iffs") && obj["iffs"].isArray()) {
+        QJsonArray arr = obj["iffs"].toArray();
+        for (const QJsonValue& val : arr) {
+            IFF* i = new IFF(parent);
+            i->fromJson(val.toObject());
+            iffList.push_back(i);
+        }
+        addComponent( "iff");
+
     }
+
 }
+
+
 void Platform::addComponent(std::string name) {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (name == "transform") {
-        if (!transform) transform = new Transform();
-        emit parent->componentAdded(QString::fromStdString(ID), "transform");
+        if (!transform){
+            transform = new Transform();
+            emit parent->componentAdded(QString::fromStdString(ID), "transform");
+        }
     } else if (name == "trajectory") {
-        if (!trajectory) trajectory = new Trajectory();
-        emit parent->componentAdded(QString::fromStdString(ID), "trajectory");
+        if (!trajectory){
+            trajectory = new Trajectory();
+            emit parent->componentAdded(QString::fromStdString(ID), "trajectory");
+        }
     } else if (name == "rigidbody") {
         if (!rigidbody) {
-            if (!transform) addComponent("transform");
+            if (!transform)
+                addComponent("transform");
             rigidbody = new Rigidbody();
+            emit parent->componentAdded(QString::fromStdString(ID), "rigidbody");
         }
-        emit parent->componentAdded(QString::fromStdString(ID), "rigidbody");
+
     } else if (name == "dynamicModel") {
         if (!dynamicModel) {
-            if (!transform) addComponent("transform");
-            if (!rigidbody) addComponent("rigidbody");
-            if (!collider) addComponent("collider");
-            if (!trajectory) addComponent("trajectory");
+            if (!transform)
+                addComponent("transform");
+            if (!rigidbody)
+                addComponent("rigidbody");
+            if (!collider)
+                addComponent("collider");
+            if (!trajectory)
+                addComponent("trajectory");
             dynamicModel = new DynamicModel();
             dynamicModel->transform = transform;
             dynamicModel->rigidbody = rigidbody;
             dynamicModel->trajectory = trajectory;
+            emit parent->componentAdded(QString::fromStdString(ID), "dynamicModel");
+            emit parent->entityPhysicsAdded(QString::fromStdString(parentID), this);
         }
-        emit parent->componentAdded(QString::fromStdString(ID), "dynamicModel");
-        emit parent->entityPhysicsAdded(QString::fromStdString(parentID), this);
+
     } else if (name == "collider") {
         if (!collider) {
-            if (!transform) addComponent("transform");
+            if (!transform)
+                addComponent("transform");
             collider = new Collider();
+            emit parent->componentAdded(QString::fromStdString(ID), "collider");
         }
-        emit parent->componentAdded(QString::fromStdString(ID), "collider");
+
     } else if (name == "meshRenderer2d") {
         if (!meshRenderer2d) {
-            if (!transform) addComponent("transform");
-            if (!collider) addComponent("collider");
+            if (!transform)
+                addComponent("transform");
+            if (!collider)
+                addComponent("collider");
             meshRenderer2d = new MeshRenderer2D();
+            emit parent->componentAdded(QString::fromStdString(ID), "meshRenderer2d");
+            emit parent->entityMeshAdded(QString::fromStdString(parentID), this);
         }
-        emit parent->componentAdded(QString::fromStdString(ID), "meshRenderer2d");
-        emit parent->entityMeshAdded(QString::fromStdString(parentID), this);
-    } else if (name == "radios") {
-        if (!radios) {
-            if (!transform) addComponent("transform");
-            radios = new AttachedEnitities();
-        }
+
+    }else if (name == "radios") {
         emit parent->componentAdded(QString::fromStdString(ID), "radios");
-    } else if (name == "weopons") {
-        if (!weopons) {
-            if (!transform) addComponent("transform");
-            weopons = new AttachedEnitities();
-        }
-        emit parent->componentAdded(QString::fromStdString(ID), "weopons");
-    } else if (name == "radar") {
-        if (!radar) {
-            if (!transform) addComponent("transform");
-            radar = new AttachedEnitities();
-        }
-        emit parent->componentAdded(QString::fromStdString(ID), "radar");
+    }else if (name == "sensors") {
+        emit parent->componentAdded(QString::fromStdString(ID), "sensors");
+    }else if (name == "iff") {
+        emit parent->componentAdded(QString::fromStdString(ID), "iff");
     }
 }
 
@@ -274,15 +319,48 @@ QJsonObject Platform::getComponent(std::string name) {
     } else if (name == "meshRenderer2d") {
         if (!meshRenderer2d) { Console::error(name + ": not exist"); return QJsonObject(); }
         return meshRenderer2d->toJson();
-    } else if (name == "radios") {
-        if (!radios) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return radios->toJson();
-    } else if (name == "weopons") {
-        if (!weopons) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return weopons->toJson();
-    } else if (name == "radar") {
-        if (!radar) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return radar->toJson();
+    }
+    else if (name == "iff") {
+       //if (iffList) { Console::error(name + ": not exist"); return QJsonObject(); }
+       //return ififfListfs->toJson();
+       QJsonObject obj;
+       obj["id"] = QString::fromStdString(ID);
+       obj["active"] = Active;
+       obj["type"] = "component";
+       QJsonArray iffArray;
+       for (IFF* i : iffList) {
+           if (i) iffArray.append(i->toJson());
+       }
+       obj["iffs"] = iffArray;
+       return obj;
+    }
+    else if (name == "radios") {
+
+        QJsonObject obj;
+        obj["id"] = QString::fromStdString(ID);
+        obj["active"] = Active;
+        obj["type"] = "component";
+        QJsonArray radioArray;
+        for (Radio* r : radioList) {
+            if (r) radioArray.append(r->toJson());
+        }
+        obj["radios"] = radioArray;
+        return obj;
+    }
+
+
+    else if (name == "sensors") {
+
+        QJsonObject obj;
+        obj["id"] = QString::fromStdString(ID);
+        obj["active"] = Active;
+        obj["type"] = "component";
+        QJsonArray sensorArray;
+        for (Sensor* r : sensorList) {
+            if (r) sensorArray.append(r->toJson());
+        }
+        obj["sensors"] = sensorArray;
+        return obj;
     }
     return QJsonObject();
 }
@@ -306,14 +384,6 @@ void Platform::updateComponent(QString name, const QJsonObject& obj) {
     } else if (name == "meshRenderer2d") {
         if (!meshRenderer2d) { Console::error(name.toStdString() + ": not exist"); return; }
         meshRenderer2d->fromJson(obj);
-    } else if (name == "radios") {
-        if (!radios) { Console::error(name.toStdString() + ": not exist"); return; }
-        radios->fromJson(obj);
-    } else if (name == "weopons") {
-        if (!weopons) { Console::error(name.toStdString() + ": not exist"); return; }
-        weopons->fromJson(obj);
-    } else if (name == "radar") {
-        if (!radar) { Console::error(name.toStdString() + ": not exist"); return; }
-        radar->fromJson(obj);
     }
 }
+

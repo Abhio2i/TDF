@@ -2,6 +2,11 @@
 #include "GUI/Hierarchytree/additemdialog.h"
 #include "core/Hierarchy/entity.h"
 #include "core/Hierarchy/EntityProfiles/platform.h"
+#include "core/Hierarchy/EntityProfiles/radio.h"
+#include "core/Hierarchy/EntityProfiles/sensor.h"
+#include "core/Hierarchy/EntityProfiles/fixedpoints.h"
+#include "core/Hierarchy/EntityProfiles/iff.h"
+#include "qvalidator.h"
 #include <QDebug>
 #include <QCheckBox>
 #include <QGroupBox>
@@ -13,12 +18,9 @@
 
 QString demangleComponentName(const std::string& mangledName) {
     QString name = QString::fromStdString(mangledName);
-
-
     while (!name.isEmpty() && name[0].isDigit()) {
         name.remove(0, 1);
     }
-
     return name;
 }
 
@@ -34,16 +36,13 @@ QString toCamelCase(const QString& input) {
 
     // Special handling for "2D" -> "2d"
     for (int i = 1; i < result.size(); ++i) {
-        // If we find "2D" pattern
         if (result[i] == 'D' && i > 0 && result[i-1].isDigit()) {
             result[i] = result[i].toLower();
         }
-        // Regular camelCase handling
         else if (result[i].isUpper() && result[i-1].isLower()) {
             // Keep as is (camelCase)
         }
         else if (result[i].isUpper() && result[i-1].isUpper()) {
-            // Convert to lowercase for abbreviations
             result[i] = result[i].toLower();
         }
     }
@@ -51,11 +50,12 @@ QString toCamelCase(const QString& input) {
     return result;
 }
 
-AddItemDialog::AddItemDialog(DialogType type, QWidget *parent)
-    : QDialog(parent)
+AddItemDialog::AddItemDialog(DialogType type, const QString &specificType, QWidget *parent)
+    : QDialog(parent), specificType(specificType)
 {
     setupUI(type);
 }
+
 
 void AddItemDialog::setupUI(DialogType type)
 {
@@ -70,57 +70,79 @@ void AddItemDialog::setupUI(DialogType type)
     nameLayout->addWidget(nameLineEdit);
     mainLayout->addLayout(nameLayout);
 
-    // Components section
-    QGroupBox *componentsGroup = new QGroupBox("Components", this);
-    QVBoxLayout *componentsLayout = new QVBoxLayout();
-
-    // Create an instance of Entity to get supported components
-    // Entity tempEntity(nullptr);
-    // std::vector<Component*> supportedComponents = tempEntity.getSupportedComponents();
-    std::vector<Component*> supportedComponents = {
-        new Transform(),
-        new MeshRenderer2D(),
-        new DynamicModel(),
-        new Rigidbody(),
-        new Collider()
-    };
-    // Use a map to track unique components by their display name
-    QMap<QString, Component*> uniqueComponents;
-
-    // First pass to identify unique components
-    for (Component* component : supportedComponents) {
-        QString rawName = demangleComponentName(typeid(*component).name());
-        QString displayName = rawName;
-
-        // Only add if we haven't seen this component before
-        if (!uniqueComponents.contains(displayName)) {
-            uniqueComponents.insert(displayName, component);
-        }
+    // Number input (only for EntityType)
+    if (type == EntityType) {
+        QHBoxLayout *numberLayout = new QHBoxLayout();
+        numberLayout->addWidget(new QLabel("Number of Entities:", this));
+        numberLineEdit = new QLineEdit(this);
+        numberLineEdit->setText("1");
+        numberLineEdit->setPlaceholderText("Enter number (default: 1)");
+        QDoubleValidator *validator = new QDoubleValidator(numberLineEdit);
+        validator->setNotation(QDoubleValidator::StandardNotation);
+        numberLineEdit->setValidator(new QIntValidator(1, 10000, this));
+        numberLayout->addWidget(numberLineEdit);
+        mainLayout->addLayout(numberLayout);
     }
 
-    // Second pass to create checkboxes for unique components
-    for (auto it = uniqueComponents.begin(); it != uniqueComponents.end(); ++it) {
-        QString displayName = it.key();
-        QString camelCaseName = toCamelCase(displayName);
 
-        qDebug() << "Adding component to UI:" << displayName;
-        QCheckBox *checkBox = new QCheckBox(displayName, this);
+    // Components section (only for EntityType)
+    if (type == EntityType) {
+        QGroupBox *componentsGroup = new QGroupBox("Components", this);
+        QVBoxLayout *componentsLayout = new QVBoxLayout();
 
-        // Special handling for Transform component
-        if (camelCaseName == "transform") {
-            checkBox->setChecked(true);
-            checkBox->setEnabled(false); // Disable Transform checkbox as it's mandatory
-            qDebug() << "Transform component added (mandatory)";
+        // Create an instance of the appropriate entity based on specificType
+        Entity *entity = nullptr;
+        if (specificType == "Radio") {
+            entity = new Radio(nullptr);
+        } else if (specificType == "Sensor") {
+            entity = new Sensor(nullptr);
+        } else if (specificType == "FixedPoints") {
+            entity = new FixedPoints(nullptr);
+        } else if (specificType == "IFF") {
+            entity = new IFF(nullptr);
+        } else if (specificType == "Formation") {
+            entity = new IFF(nullptr);
         } else {
-            checkBox->setChecked(false); // Default unchecked for other components
+            entity = new Platform(nullptr);
         }
 
-        componentCheckboxes.insert(camelCaseName, checkBox);
-        componentsLayout->addWidget(checkBox);
-    }
+        // Get supported components for the selected entity type
+        std::vector<std::string> supportedComponents = entity->getSupportedComponents();
 
-    componentsGroup->setLayout(componentsLayout);
-    mainLayout->addWidget(componentsGroup);
+        QMap<QString, Component*> uniqueComponents;
+
+        // First pass to identify unique components
+        for (const std::string &component : supportedComponents) {
+            uniqueComponents.insert(demangleComponentName(component), nullptr);
+        }
+
+        // Second pass to create checkboxes for unique components
+        for (auto it = uniqueComponents.begin(); it != uniqueComponents.end(); ++it) {
+            QString displayName = it.key();
+            QString camelCaseName = toCamelCase(displayName);
+
+            qDebug() << "Adding component to UI:" << displayName << "for specificType:" << specificType;
+            QCheckBox *checkBox = new QCheckBox(displayName, this);
+
+            // Special handling for Transform component
+            if (camelCaseName == "transform") {
+                checkBox->setChecked(true);
+                checkBox->setEnabled(false); // Disable Transform checkbox as it's mandatory
+                qDebug() << "Transform component added (mandatory) for specificType:" << specificType;
+            } else {
+                checkBox->setChecked(false); // Default unchecked for other components
+            }
+
+            componentCheckboxes.insert(camelCaseName, checkBox);
+            componentsLayout->addWidget(checkBox);
+        }
+
+        componentsGroup->setLayout(componentsLayout);
+        mainLayout->addWidget(componentsGroup);
+
+        // Clean up the temporary entity
+        delete entity;
+    }
 
     // Dialog buttons
     QDialogButtonBox *buttonBox = new QDialogButtonBox(
@@ -132,9 +154,15 @@ void AddItemDialog::setupUI(DialogType type)
     setLayout(mainLayout);
     setWindowTitle("Add " + itemType);
     resize(300, 300);
+
 }
+
 QString AddItemDialog::getName() const {
     return nameLineEdit->text().trimmed();
+}
+
+int AddItemDialog::getNumber() const {
+    return numberLineEdit->text().trimmed().toInt();
 }
 
 QVariantMap AddItemDialog::getComponents() const {

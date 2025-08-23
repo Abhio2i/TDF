@@ -4,6 +4,7 @@
 #include "core/Hierarchy/EntityProfiles/platform.h"
 #include "core/Hierarchy/EntityProfiles/radio.h"
 #include "core/Hierarchy/EntityProfiles/iff.h"
+#include "core/Hierarchy/EntityProfiles/sensor.h"
 #include <QJsonArray>
 #include <QJsonDocument>
 
@@ -136,6 +137,109 @@ void Hierarchy::addComponent(QString ID, QString componentName)
     }
 }
 
+
+//------------------IFF------------------------
+
+void Hierarchy::attchedIff(QString ID, QString name)
+{
+    if (Entities->find(ID.toStdString()) == Entities->end()) {
+        return;
+    }
+
+    IFF* iff = new IFF(this);
+    iff->Name = name.toStdString();
+    QString iffProfileId;
+
+    bool foundIffProfile = false;
+    for (const auto& [key, profilePtr] : ProfileCategories) {
+        if (profilePtr->type == Constants::EntityType::IFF) {
+            iffProfileId = QString::fromStdString(key);
+            foundIffProfile = true;
+            break;
+        }
+    }
+
+    if (!foundIffProfile) {
+        ProfileCategaory* iffProfile = addProfileCategaory("IFF");
+        iffProfile->setProfileType(Constants::EntityType::IFF);
+        iffProfileId = QString::fromStdString(iffProfile->ID);
+        dictionry[iffProfile->ID] = {iffProfile->ID};
+    }
+
+    Entity* newEntity = addEntityFromJson(iffProfileId, iff->toJson(), true);
+    if (newEntity) {
+        (*Entities)[ID.toStdString()]->addIFF(iff);
+    } else {
+        delete iff;
+    }
+}
+void Hierarchy::attachSensors(QString ID, QString name)
+{
+    if (Entities->find(ID.toStdString()) == Entities->end()) {
+        return;
+    }
+
+    Sensor* sensor = new Sensor(this);
+    sensor->Name = name.toStdString();
+    QString sensorsProfileId;
+
+    bool foundSensorsProfile = false;
+    for (const auto& [key, profilePtr] : ProfileCategories) {
+        if (profilePtr->type == Constants::EntityType::Sensor) {
+            sensorsProfileId = QString::fromStdString(key);
+            foundSensorsProfile = true;
+            break;
+        }
+    }
+
+    if (!foundSensorsProfile) {
+        ProfileCategaory* sensorsProfile = addProfileCategaory("Sensors");
+        sensorsProfile->setProfileType(Constants::EntityType::Sensor);
+        sensorsProfileId = QString::fromStdString(sensorsProfile->ID);
+        dictionry[sensorsProfile->ID] = {sensorsProfile->ID};
+    }
+
+    Entity* newEntity = addEntityFromJson(sensorsProfileId, sensor->toJson(), true);
+    if (newEntity) {
+        (*Entities)[ID.toStdString()]->addSensor(sensor);
+    } else {
+        delete sensor;
+    }
+}
+
+void Hierarchy::attachRadios(QString ID, QString name)
+{
+    if (Entities->find(ID.toStdString()) == Entities->end()) {
+        return;
+    }
+
+    Radio* radio = new Radio(this);
+    radio->Name = name.toStdString();
+    QString radiosProfileId;
+
+    bool foundRadiosProfile = false;
+    for (const auto& [key, profilePtr] : ProfileCategories) {
+        if (profilePtr->type == Constants::EntityType::Radio) {
+            radiosProfileId = QString::fromStdString(key);
+            foundRadiosProfile = true;
+            break;
+        }
+    }
+
+    if (!foundRadiosProfile) {
+        ProfileCategaory* radiosProfile = addProfileCategaory("Radios");
+        radiosProfile->setProfileType(Constants::EntityType::Radio);
+        radiosProfileId = QString::fromStdString(radiosProfile->ID);
+        dictionry[radiosProfile->ID] = {radiosProfile->ID};
+    }
+
+    Entity* newEntity = addEntityFromJson(radiosProfileId, radio->toJson(), true);
+    if (newEntity) {
+        (*Entities)[ID.toStdString()]->addRadio(radio);
+    } else {
+        delete radio;
+    }
+}
 QJsonObject Hierarchy::getComponentData(QString ID, QString componentName)
 {
     if (Entities->find(ID.toStdString()) != Entities->end()) {
@@ -149,12 +253,19 @@ void Hierarchy::UpdateComponent(QString ID, QString componentName, QJsonObject d
     if (Entities->find(ID.toStdString()) != Entities->end()) {
         Entity* entity = (*Entities)[ID.toStdString()];
         QJsonObject currentData = entity->getComponent(componentName.toStdString());
+        if(componentName.contains("_self")){
+            currentData = entity->toJson();
+        }
+
         // Merge delta into current data, preserving existing keys
         QJsonObject mergedData = currentData;
         for (auto it = delta.begin(); it != delta.end(); ++it) {
             mergedData[it.key()] = it.value();
         }
-        entity->updateComponent(componentName, mergedData);
+        if(componentName.contains("_self")){
+            entity->fromJson(delta);
+        }
+         entity->updateComponent(componentName, mergedData);
         emit entityUpdate(ID);
         getCurrentJsonData(); // Emit updated JSON
         Console::log("Hierarchy::UpdateComponent merged data for " + componentName.toStdString() + ": " + QString(QJsonDocument(mergedData).toJson()).toStdString());
@@ -215,42 +326,42 @@ QJsonObject Hierarchy::toJson()
     }
     obj["profileCategories"] = profileCategoriesObj;
 
-    // Serialize Folders
-    if (Folders) {
-        QJsonObject foldersObj;
-        for (const auto& [key, folderPtr] : *Folders) {
-            if (folderPtr) {
-                foldersObj[QString::fromStdString(key)] = QString::fromStdString(folderPtr->Name);
-            }
-        }
-        obj["folders"] = foldersObj;
-    }
+    // // Serialize Folders
+    // if (Folders) {
+    //     QJsonObject foldersObj;
+    //     for (const auto& [key, folderPtr] : *Folders) {
+    //         if (folderPtr) {
+    //             foldersObj[QString::fromStdString(key)] = QString::fromStdString(folderPtr->Name);
+    //         }
+    //     }
+    //     obj["folders"] = foldersObj;
+    // }
 
     // Serialize Entities
-    if (Entities) {
-        QJsonObject entitiesObj;
-        static const QStringList componentNames = {
-            "transform",  // Added transform component
-            "collider",
-            "trajectory",
-            "dynamicModel",
-            "meshRenderer2d"
-        };
-        for (const auto& [key, entityPtr] : *Entities) {
-            if (entityPtr) {
-                QJsonObject entityObj;
-                entityObj["name"] = QString::fromStdString(entityPtr->Name);
-                for (const QString& compName : componentNames) {
-                    QJsonObject compData = entityPtr->getComponent(compName.toStdString());
-                    if (!compData.isEmpty()) {
-                        entityObj[compName] = compData;
-                    }
-                }
-                entitiesObj[QString::fromStdString(key)] = entityObj;
-            }
-        }
-        obj["entities"] = entitiesObj;
-    }
+    // if (Entities) {
+    //     QJsonObject entitiesObj;
+    //     static const QStringList componentNames = {
+    //         "transform",  // Added transform component
+    //         "collider",
+    //         "trajectory",
+    //         "dynamicModel",
+    //         "meshRenderer2d"
+    //     };
+    //     for (const auto& [key, entityPtr] : *Entities) {
+    //         if (entityPtr) {
+    //             QJsonObject entityObj;
+    //             entityObj["name"] = QString::fromStdString(entityPtr->Name);
+    //             for (const QString& compName : componentNames) {
+    //                 QJsonObject compData = entityPtr->getComponent(compName.toStdString());
+    //                 if (!compData.isEmpty()) {
+    //                     entityObj[compName] = compData;
+    //                 }
+    //             }
+    //             entitiesObj[QString::fromStdString(key)] = entityObj;
+    //         }
+    //     }
+    //     obj["entities"] = entitiesObj;
+    // }
 
     Console::log("Hierarchy::toJson output: " + QString(QJsonDocument(obj).toJson()).toStdString());
     return obj;
@@ -286,4 +397,29 @@ void Hierarchy::fromJson(const QJsonObject& obj)
 void Hierarchy::getCurrentJsonData()
 {
     emit getJsonData(toJson());
+}
+
+QJsonArray Hierarchy::searchProfile()
+{
+    QJsonArray profilesArray;
+    for (const auto& [key, profilePtr] : ProfileCategories) {
+        if (profilePtr) {
+            QJsonObject profileObj;
+            profileObj["id"] = QString::fromStdString(key);
+            profileObj["name"] = QString::fromStdString(profilePtr->Name);
+            QJsonArray indexKeys;
+            auto dictIt = dictionry.find(key);
+            if (dictIt != dictionry.end()) {
+                for (const auto& indexKey : dictIt->second) {
+                    indexKeys.append(QString::fromStdString(indexKey));
+                }
+            } else {
+                Console::log("Hierarchy::searchProfile: No indexKeys found for profile " + key);
+            }
+            profileObj["indexKey"] = indexKeys;
+            profilesArray.append(profileObj);
+        }
+    }
+    Console::log("Hierarchy::searchProfile found " + std::to_string(profilesArray.size()) + " profiles");
+    return profilesArray;
 }

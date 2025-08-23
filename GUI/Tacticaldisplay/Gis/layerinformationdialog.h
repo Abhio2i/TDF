@@ -15,7 +15,6 @@ class LayerInformationDialog : public QDialog
     Q_OBJECT
 
 public:
-    // Structure to hold map layer information
     struct MapLayerInfo {
         QString name;
         QString id;
@@ -23,9 +22,9 @@ public:
         int zoomMax = 0;
         QString tileUrl;
         bool isCustom = false;
-        qreal opacity = -1.0; // -1.0 indicates not set (display "N/A")
-        QString resolution = "N/A"; // Default to "N/A" if not specified
-        QString type = ""; // Empty string indicates "N/A"
+        qreal opacity = -1.0;
+        QString resolution = "N/A";
+        QString type = "";
     };
 
     explicit LayerInformationDialog(QList<MapLayerInfo>& layers, QWidget *parent = nullptr);
@@ -39,7 +38,7 @@ private slots:
 
 private:
     void setupUi();
-    QList<MapLayerInfo>& mapLayers; // Reference to allow updates
+    QList<MapLayerInfo>& mapLayers;
     QListWidget* layerList;
     QLabel* nameLabel;
     QLabel* idLabel;

@@ -18,8 +18,8 @@ void IFF::spawn() {
     emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
 }
 
-std::vector<Component*> IFF::getSupportedComponents() {
-    return std::vector<Component*>{};
+std::vector<std::string>IFF:: getSupportedComponents() {
+    return std::vector<std::string>{};
 }
 
 void IFF::addComponent(std::string name) {

@@ -35,6 +35,11 @@ public:
     QAction *selectCenterAction;
     QAction *searchPlaceAction;
     QAction *layerInfoAction;
+    QAction *shapeAction;
+    QAction *bitmapAction;
+    QAction *selectBitmapAction;
+    // QAction *measureDistanceAction; // New action for distance measurement
+    QAction* getMeasureDistanceAction() const { return measureDistanceAction; }
 
     struct MapLayer {
         QString name;
@@ -58,6 +63,7 @@ signals:
     void gridSnappingToggled(bool);
     void layerSelectTriggered();
     void measureAreaTriggered();
+    void measureDistanceTriggered(); // New signal for distance measurement
     void drawTriggered();
     void databaseTriggered();
     void gridPlaneXToggled(bool);
@@ -76,12 +82,17 @@ signals:
     void gridPlaneZOpacityChanged(int value);
     void layerOptionToggled(const QString& option, bool checked);
     void searchPlaceTriggered(const QString& location);
+    void searchCoordinateTriggered(double lat, double lon);
     void mapLayerChanged(const QString& layer);
     void selectCenterTriggered();
-    // void customMapAdded(const QString &layerName, int zoomMin, int zoomMax, const QString &tileUrl);
     void customMapAdded(const QString &layerName, int zoomMin, int zoomMax, const QString &tileUrl, qreal opacity);
+    void shapeSelected(const QString &shape);
+    void bitmapSelected(const QString &bitmap);
+    void bitmapImageSelected(const QString& filePath);
+    void editTrajectoryTriggered();
 public slots:
     void onModeChanged(TransformMode mode);
+    void onMeasureDistanceTriggered();
 private:
     QAction *viewAction;
     QAction *moveAction;
@@ -91,6 +102,7 @@ private:
     QAction *snappingToggleAction;
     QAction *layerSelectAction;
     QAction *measureAreaAction;
+    QAction *measureDistanceAction;
     QAction *drawAction;
     QAction *databaseAction;
     QAction *gridPlaneXAction;
@@ -104,13 +116,14 @@ private:
     QAction *addCustomMapAction;
     QMap<QString, QAction*> layerActions;
     QList<LayerInformationDialog::MapLayerInfo> mapLayers;
-
     void createActions();
     void setupToolBar();
     void highlightAction(QAction *action);
     QPixmap withWhiteBg(const QString &iconPath);
     QAction* loadJsonAction;
     QAction* saveJsonAction;
+    void onSelectBitmapImage();
+    QAction *editTrajectoryAction;
 };
 
 #endif

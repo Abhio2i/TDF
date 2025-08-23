@@ -16,15 +16,15 @@ public:
     explicit CustomParameterDialog(QWidget *parent = nullptr);
     QString getParameterName() const;
     QString getParameterType() const;
-    QString getParameterValue() const; // New getter for value
+    QString getParameterValue() const;
 
 private slots:
-    void validateInput(); // New slot for validation
+    void validateInput();
 
 private:
     QLineEdit *nameEdit;
     QComboBox *typeCombo;
-    QLineEdit *valueEdit; // New field for value input
+    QLineEdit *valueEdit;
 };
 
 #endif // CUSTOMPARAMETERDIALOG_H

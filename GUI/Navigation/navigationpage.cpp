@@ -1,60 +1,96 @@
 #include "navigationpage.h"
-#include "../Editors/databaseeditor.h"
-#include "../Editors/scenarioeditor.h"
-#include "../Editors/runtimeeditor.h"
 #include <QVBoxLayout>
 #include <QIcon>
+#include <QSize>
+#include <QToolButton>
 
-NavigationPage::NavigationPage(QWidget *parent) : QWidget(parent) {
+NavigationPage::NavigationPage(QWidget *parent) : QWidget(parent)
+{
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setAlignment(Qt::AlignTop);
-    mainLayout->setSpacing(5);
-    mainLayout->setContentsMargins(5, 10, 5, 5);
-    mainLayout->addWidget(createNavButton(":/icons/images/database.png", "Database Editor", "database"));
-    mainLayout->addWidget(createNavButton(":/icons/images/stories.png", "Scenario Editor", "scenario"));
-    mainLayout->addWidget(createNavButton(":/icons/images/runtime.png", "Runtime Editor", "runtime"));
+    mainLayout->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
+    mainLayout->setSpacing(10);
+    mainLayout->setContentsMargins(10, 20, 15, 10);
+
+    QToolButton* databaseBtn = createNavButton(":/icons/images/database.png", "Database", "database");
+    mainLayout->addWidget(databaseBtn);  // call separately
+
+    mainLayout->addWidget(createNavButton(":/icons/images/stories.png", "Scenario", "scenario"));
+    mainLayout->addWidget(createNavButton(":/icons/images/runtime.png", "Runtime", "runtime"));
+
+    setActiveButton(databaseBtn);
 }
 
-QPushButton* NavigationPage::createNavButton(const QString &iconPath, const QString &label, const QString &editorKey) {
-    QPushButton *button = new QPushButton(this);
-    button->setFixedHeight(35);
+QToolButton* NavigationPage::createNavButton(const QString &iconPath, const QString &label, const QString &editorKey)
+{
+    QToolButton *button = new QToolButton(this);
+    button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon); // icon above, text below
     button->setIcon(QIcon(iconPath));
-    button->setIconSize(QSize(15, 15));
-
+    button->setIconSize(QSize(20, 20));
     button->setText(label);
+    button->setFixedSize(50, 50); // adjust based on icon size and text
     button->setCursor(Qt::PointingHandCursor);
 
+    navButtons.append(button);
+
     button->setStyleSheet(
-        "QPushButton {"
-        "font-size: 14px;"
-        "text-align: left;"
-        "padding-left: 10px;"
-        "border: 1px solid black;"
+        "QToolButton {"
+        "font-size: 10px;"
+        "border: none;"
         "}"
-        "QPushButton:hover {"
-        "background-color: #e0f0ff;"
+        "QToolButton::icon {"
+        "margin-left: auto;"
+        "margin-right: auto;"
+        "}"
+
+        "QToolButton:hover {"
+        "background-color: #404040;"
+        "border-radius: 5px;"
+        "text-align: center;"
         "}"
         );
 
     connect(button, &QPushButton::clicked, this, [=]() {
-        openEditorWindow(editorKey);
+        setActiveButton(button);
+        emit editorRequested(editorKey);
     });
 
     return button;
 }
 
-void NavigationPage::openEditorWindow(const QString &editorKey) {
-    if (editorKey == "database") {
-        DatabaseEditor *dbEditor = new DatabaseEditor();
-        dbEditor->setAttribute(Qt::WA_DeleteOnClose);
-        dbEditor->show();
-    } else if (editorKey == "scenario") {
-        ScenarioEditor *scEditor = new ScenarioEditor();
-        scEditor->setAttribute(Qt::WA_DeleteOnClose);
-        scEditor->show();
-    } else if (editorKey == "runtime") {
-        RuntimeEditor *rtEditor = new RuntimeEditor();
-        rtEditor->setAttribute(Qt::WA_DeleteOnClose);
-        rtEditor->show();
+void NavigationPage::setActiveButton(QToolButton* button)
+{
+    for (QToolButton* btn : navButtons) {
+        if (btn == button) {
+            btn->setStyleSheet(
+                "QToolButton {"
+                "background-color: #404040;"
+                "font-size: 10px;"
+                "border-radius: 5px;"
+                "color: white;"
+                "}"
+                "QToolButton::icon {"
+                "margin-left: auto;"
+                "margin-right: auto;"
+                "}"
+                );
+            activeButton = btn;
+        } else {
+            btn->setStyleSheet(
+                "QToolButton {"
+                "font-size: 10px;"
+                "border: none;"
+                "}"
+                "QToolButton::icon {"
+                "margin-left: auto;"
+                "margin-right: auto;"
+                "}"
+                "QToolButton:hover {"
+                "background-color: #404040;"
+                "border-radius: 5px;"
+                "text-align: center;"
+                "color: white;"
+                "}"
+                );
+        }
     }
 }

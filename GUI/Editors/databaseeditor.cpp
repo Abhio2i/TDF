@@ -1,9 +1,7 @@
-
 #include "databaseeditor.h"
 #include "GUI/Feedback/feedback.h"
 #include "GUI/Console/consoleview.h"
 #include "GUI/Menubars/menubar.h"
-#include "GUI/Navigation/navigationpage.h"
 #include "GUI/Toolbars/standardtoolbar.h"
 #include <core/structure/scenario.h>
 #include <QDockWidget>
@@ -29,47 +27,47 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
     hierarchy = scenario->hierarchy;
     console = scenario->console;
 
-
     consoleView->setConsoleDock(consoleDock);
-
 
     connect(console, &Console::logUpdate, this, [=](std::string log) {
         if (consoleView) {
             consoleView->appendLog(QString::fromStdString(log));
-            consoleView->appendText(QString::fromStdString(log)); // Also append to Console tab
+            consoleView->appendText(QString::fromStdString(log));
         }
     });
 
     connect(console, &Console::errorUpdate, this, [=](std::string error) {
         if (consoleView) {
             consoleView->appendError(QString::fromStdString(error));
-            consoleView->appendText(QString::fromStdString(error)); // Also append to Console tab
+            consoleView->appendText(QString::fromStdString(error));
         }
     });
 
     connect(console, &Console::warningUpdate, this, [=](std::string warning) {
         if (consoleView) {
             consoleView->appendWarning(QString::fromStdString(warning));
-            consoleView->appendText(QString::fromStdString(warning)); // Also append to Console tab
+            consoleView->appendText(QString::fromStdString(warning));
         }
     });
 
     connect(console, &Console::debugUpdate, this, [=](std::string debug) {
         if (consoleView) {
             consoleView->appendDebug(QString::fromStdString(debug));
-            consoleView->appendText(QString::fromStdString(debug)); // Also append to Console tab
+            consoleView->appendText(QString::fromStdString(debug));
         }
     });
+
     // Initialize hierarchy
     if (hierarchy && treeView) {
         HierarchyConnector::instance()->connectSignals(hierarchy, treeView);
         HierarchyConnector::initializeDummyData(hierarchy);
-        HierarchyConnector::setupFileOperations(this, hierarchy);
+        HierarchyConnector::setupFileOperations(this, hierarchy,nullptr);
     }
 
     // Connect hierarchy tree selection to inspector
     if (treeView && hierarchy) {
         connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
+
             QString type = data["type"].toString();
             QString name = data["name"].toString();
             QString ID = data["parentId"].toString();
@@ -82,7 +80,19 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
                         inspector->init(ID, name, componentData);
                     }
                 }
-                else if (type == "entity") {
+                else
+                if(type == "profile"){
+                    inspector->init(ID, name+"_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
+
+                }else
+                if(type == "folder"){
+                    inspector->init(ID, name+"_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
+
+                }else
+                if(type == "entity"){
+                    inspector->init(data["ID"].toString(), name+"_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
+
+                }else{
                     inspector->init(ID, name, QJsonObject());
                 }
             }
@@ -134,15 +144,6 @@ void DatabaseEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatur
     hierarchyDock->setMinimumWidth(150);
     addDockWidget(Qt::LeftDockWidgetArea, hierarchyDock);
 
-    // Navigation Dock
-    navigationDock = new QDockWidget("Navigation", this);
-    navigationDock->setAllowedAreas(Qt::LeftDockWidgetArea);
-    navigationDock->setFeatures(dockFeatures);
-    NavigationPage *navPage = new NavigationPage(this);
-    navigationDock->setWidget(navPage);
-    navigationDock->setMinimumWidth(150);
-    addDockWidget(Qt::LeftDockWidgetArea, navigationDock);
-
     // Inspector Dock
     inspectorDock = new QDockWidget("Inspector", this);
     inspectorDock->setAllowedAreas(Qt::RightDockWidgetArea);
@@ -162,7 +163,7 @@ void DatabaseEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatur
     addDockWidget(Qt::BottomDockWidgetArea, consoleDock);
 
     // Layout configuration
-    splitDockWidget(hierarchyDock, navigationDock, Qt::Vertical);
+    splitDockWidget(hierarchyDock, inspectorDock, Qt::Horizontal);
     splitDockWidget(inspectorDock, consoleDock, Qt::Vertical);
 
     // Calculate and set initial sizes (30% for hierarchy, 70% for inspector)
@@ -218,7 +219,6 @@ void DatabaseEditor::showFeedbackWindow()
     feedbackWindow->show();
 }
 
-
 DatabaseEditor::~DatabaseEditor()
 {
     // Cleanup
@@ -226,4 +226,3 @@ DatabaseEditor::~DatabaseEditor()
         delete scenario;
     }
 }
-

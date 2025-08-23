@@ -1,4 +1,6 @@
- #include "InputManager.h"
+ #include "inputmanager.h"
+#include <QApplication> // Add this include
+#include <QMouseEvent>  // Ensure this is included for QMouseEvent
 
 InputManager* InputManager::m_instance = nullptr;
 
@@ -53,7 +55,7 @@ bool InputManager::eventFilter(QObject *obj, QEvent *event)
         break;
 
     case QEvent::MouseMove:
-        m_mousePosition = static_cast<QMouseEvent *>(event)->globalPosition().toPoint();
+        m_mousePosition = static_cast<QMouseEvent *>(event)->globalPos();
         break;
 
     default:

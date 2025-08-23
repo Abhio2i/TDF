@@ -1,20 +1,25 @@
 #include "client.h"
 #include <iostream>
-#include <qDebug>
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QJsonParseError>
 
-Client::Client() : clientSocket(INVALID_SOCKET), running(false) {
+#ifdef _WIN32
+#define _WIN32_WINNT 0x0600 // Windows Vista or later for inet_pton
+#endif
+
+Client::Client() : clientSocket(INVALID_SOCKET_VALUE), running(false) {
+#ifdef _WIN32
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        if (onError) onError("WSAStartup failed.");
+        if (onError) onError("WSAStartup failed. Error: " + std::to_string(WSAGetLastError()));
     }
+#endif
 }
 
 Client::~Client() {
     stop();
+#ifdef _WIN32
     WSACleanup();
+#endif
 }
 
 bool Client::connectToServer(const std::string& ip, int port) {
@@ -25,35 +30,58 @@ bool Client::connectToServer(const std::string& ip, int port) {
     }
 
     clientSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (clientSocket == INVALID_SOCKET) {
-        if (onError) onError("Failed to create socket.");
+    if (clientSocket == INVALID_SOCKET_VALUE) {
+        if (onError) onError("Failed to create socket. Error: " + std::to_string(
+#ifdef _WIN32
+                        WSAGetLastError()
+#else
+                        errno
+#endif
+                        ));
         return false;
     }
 
     sockaddr_in serverAddr{};
     serverAddr.sin_family = AF_INET;
-    inet_pton(AF_INET, ip.c_str(), &serverAddr.sin_addr);
     serverAddr.sin_port = htons(port);
 
-    if (connect(clientSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        if (onError) onError("Failed to connect to server.");
-        closesocket(clientSocket);
-        clientSocket = INVALID_SOCKET;
+    // IP address conversion
+    if (inet_pton(AF_INET, ip.c_str(), &serverAddr.sin_addr) <= 0) {
+#ifdef _WIN32
+        serverAddr.sin_addr.s_addr = inet_addr(ip.c_str());
+        if (serverAddr.sin_addr.s_addr == INADDR_NONE) {
+#else
+        if (inet_pton(AF_INET, ip.c_str(), &serverAddr.sin_addr) <= 0) {
+#endif
+            if (onError) onError("Invalid IP address format.");
+            CLOSE_SOCKET(clientSocket);
+            clientSocket = INVALID_SOCKET_VALUE;
+            return false;
+        }
+    }
+
+    if (connect(clientSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR_VALUE) {
+        if (onError) onError("Failed to connect to server. Error: " + std::to_string(
+#ifdef _WIN32
+                        WSAGetLastError()
+#else
+                        errno
+#endif
+                        ));
+        CLOSE_SOCKET(clientSocket);
+        clientSocket = INVALID_SOCKET_VALUE;
         return false;
     }
 
     running = true;
     if (onConnected) onConnected();
 
-    // Run receive logic on detached background thread to avoid blocking UI
     recvThread = std::thread(&Client::receiveThreadFunc, this);
-    recvThread.detach();
-
     return true;
 }
 
 void Client::start() {
-    // Not used in this version
+    // Not used in current implementation, kept for compatibility
 }
 
 void Client::stop() {
@@ -61,14 +89,19 @@ void Client::stop() {
 
     running = false;
 
-    std::lock_guard<std::mutex> lock(socketMutex);
-    if (clientSocket != INVALID_SOCKET) {
-        shutdown(clientSocket, SD_BOTH);
-        closesocket(clientSocket);
-        clientSocket = INVALID_SOCKET;
+    {
+        std::lock_guard<std::mutex> lock(socketMutex);
+        if (clientSocket != INVALID_SOCKET_VALUE) {
+            shutdown(clientSocket, SHUTDOWN_BOTH);
+            CLOSE_SOCKET(clientSocket);
+            clientSocket = INVALID_SOCKET_VALUE;
+        }
     }
 
-    // We can't join a detached thread, but it will exit automatically due to running=false
+    if (recvThread.joinable()) {
+        recvThread.join();
+    }
+
     if (onDisconnected) onDisconnected();
 }
 
@@ -78,12 +111,20 @@ bool Client::isRunning() const {
 
 void Client::sendMessage(const std::string& msg) {
     std::lock_guard<std::mutex> lock(socketMutex);
-    if (running.load() && clientSocket != INVALID_SOCKET) {
-        std::string messageWithNewline = msg + "\n";  // Ensure newline delimiter
-        send(clientSocket, messageWithNewline.c_str(), static_cast<int>(messageWithNewline.size()), 0);
+    if (running.load() && clientSocket != INVALID_SOCKET_VALUE) {
+        std::string messageWithNewline = msg + "\n";
+        int result = send(clientSocket, messageWithNewline.c_str(), static_cast<int>(messageWithNewline.size()), 0);
+        if (result == SOCKET_ERROR_VALUE) {
+            if (onError) onError("Failed to send message. Error: " + std::to_string(
+#ifdef _WIN32
+                            WSAGetLastError()
+#else
+                            errno
+#endif
+                            ));
+        }
     }
 }
-
 
 void Client::receiveThreadFunc() {
     char buffer[1024];
@@ -96,6 +137,14 @@ void Client::receiveThreadFunc() {
         if (bytesReceived <= 0) {
             running = false;
             if (onDisconnected) onDisconnected();
+            {
+                std::lock_guard<std::mutex> lock(socketMutex);
+                if (clientSocket != INVALID_SOCKET_VALUE) {
+                    shutdown(clientSocket, SHUTDOWN_BOTH);
+                    CLOSE_SOCKET(clientSocket);
+                    clientSocket = INVALID_SOCKET_VALUE;
+                }
+            }
             break;
         }
 
@@ -107,29 +156,26 @@ void Client::receiveThreadFunc() {
             std::string message = leftover.substr(0, pos);
             leftover.erase(0, pos + 1);
 
+            if (message.empty()) continue;
+
             if (onMessageReceived) {
-                onMessageReceived(message);  // Existing callback
+                onMessageReceived(message);
             }
             qDebug() << "[Client] Received from server:" << QString::fromStdString(message);
-            //  emit messageReceived(QString::fromStdString(message));  // Only if you define this signal in a QObject class
-
-            //processJsonMessage(message);  // ✅ Handle JSON data
+            processJsonMessage(message);
         }
     }
 }
 
 void Client::processJsonMessage(const std::string& messageStr) {
     QString raw = QString::fromStdString(messageStr).trimmed();
-
-    // Find the first '{' to locate start of JSON
     int jsonStart = raw.indexOf('{');
     if (jsonStart == -1) {
         qDebug() << "[Client] No JSON found in message.";
         return;
     }
 
-    QString jsonString = raw.mid(jsonStart);  // Extract from '{' onward
-
+    QString jsonString = raw.mid(jsonStart);
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(jsonString.toUtf8(), &error);
 
@@ -152,5 +198,3 @@ void Client::processJsonMessage(const std::string& messageStr) {
 
     qDebug() << "[Client] Parsed entity:" << name << ", ID:" << id << ", ParentID:" << parentID;
 }
-
-

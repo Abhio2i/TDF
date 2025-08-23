@@ -1,4 +1,3 @@
-
 #include "contextmenu.h"
 #include "additemdialog.h"
 #include <QInputDialog>
@@ -10,7 +9,6 @@ ContextMenu::ContextMenu(QWidget *parent)
 {
 }
 
-
 void ContextMenu::setupMenu(QTreeWidgetItem *item)
 {
     if (!item) return;
@@ -20,7 +18,24 @@ void ContextMenu::setupMenu(QTreeWidgetItem *item)
     QString ID = storedData["ID"].toString();
     QString parentID = storedData["parentId"].toString();
     QString name = storedData["name"].toString();
-    QString type = storedData["type"].toString();
+    QString type;
+    QString specificType;
+
+    // Check if type is a nested map (for profiles) or a string (for others)
+    if (storedData["type"].type() == QVariant::Map) {
+        QVariantMap typeData = storedData["type"].toMap();
+        if (typeData.contains("type") && typeData["type"].toString() == "option") {
+            type = "profile";
+            specificType = typeData.value("value", "").toString();
+        } else {
+            qWarning() << "Invalid nested type structure in item data:" << storedData["type"];
+            return;
+        }
+    } else {
+        type = storedData["type"].toString();
+    }
+
+    qDebug() << "Setting up context menu for: name=" << name << "type=" << type << "specificType=" << specificType << "ID=" << ID;
 
     if (type == "profile") {
         QAction *rename = addAction("Rename");
@@ -31,17 +46,20 @@ void ContextMenu::setupMenu(QTreeWidgetItem *item)
         QAction *deleteProfile = addAction("Delete Profile");
 
         connect(addFolder, &QAction::triggered, this, [=]() {
-            AddItemDialog dialog(AddItemDialog::Folder, this);
+            AddItemDialog dialog(AddItemDialog::Folder, "", this);
             if (dialog.exec() == QDialog::Accepted && !dialog.getName().isEmpty()) {
                 emit addFolderRequested(ID, dialog.getName(), true, dialog.getComponents());
             }
         });
 
         connect(addEntity, &QAction::triggered, this, [=]() {
-            AddItemDialog dialog(AddItemDialog::EntityType, this);
+            AddItemDialog dialog(AddItemDialog::EntityType, specificType, this);
             if (dialog.exec() == QDialog::Accepted && !dialog.getName().isEmpty()) {
-                bool isProfileParent = (type == "profile");
-                emit addEntityRequested(ID, dialog.getName(), isProfileParent, dialog.getComponents());
+                bool isProfileParent = true;
+                for (int i = 0; i < dialog.getNumber(); i++) {
+                    emit addEntityRequested(ID, dialog.getName()+ QString::number(i), isProfileParent, dialog.getComponents());
+                }
+
             }
         });
 
@@ -62,6 +80,22 @@ void ContextMenu::setupMenu(QTreeWidgetItem *item)
             emit pasteItemRequested(storedData);
         });
 
+        connect(rename, &QAction::triggered, this, [=]() mutable {
+            bool ok;
+            QString newName = QInputDialog::getText(this, "Rename", "Enter New Name:",
+                                                    QLineEdit::Normal, name, &ok);
+            if (ok && !newName.trimmed().isEmpty()) {
+                storedData["name"] = newName;
+                // Update the nested type value if it's a profile
+                if (storedData["type"].type() == QVariant::Map) {
+                    QVariantMap typeData = storedData["type"].toMap();
+                    typeData["value"] = newName;
+                    storedData["type"] = typeData;
+                }
+                emit renameItemRequested(storedData);
+            }
+        });
+
     } else if (type == "folder") {
         QAction *rename = addAction("Rename");
         QAction *paste = addAction("Paste");
@@ -70,16 +104,19 @@ void ContextMenu::setupMenu(QTreeWidgetItem *item)
         QAction *deleteFolder = addAction("Delete Folder");
 
         connect(addFolder, &QAction::triggered, this, [=]() {
-            AddItemDialog dialog(AddItemDialog::Folder, this);
+            AddItemDialog dialog(AddItemDialog::Folder, "", this);
             if (dialog.exec() == QDialog::Accepted && !dialog.getName().isEmpty()) {
                 emit addFolderRequested(ID, dialog.getName(), false, dialog.getComponents());
             }
         });
 
         connect(addEntity, &QAction::triggered, this, [=]() {
-            AddItemDialog dialog(AddItemDialog::EntityType, this);
+            AddItemDialog dialog(AddItemDialog::EntityType, "", this);
             if (dialog.exec() == QDialog::Accepted && !dialog.getName().isEmpty()) {
-                emit addEntityRequested(ID, dialog.getName(), false, dialog.getComponents());
+                // Emit signal for each entity
+                for (int i = 0; i < dialog.getNumber(); i++) {
+                    emit addEntityRequested(ID, dialog.getName()+ QString::number(i), false, dialog.getComponents());
+                }
             }
         });
 
@@ -125,10 +162,28 @@ void ContextMenu::setupMenu(QTreeWidgetItem *item)
         });
 
     } else if (type == "component") {
-        QAction *removeComponent = addAction("Remove");
+        QStringList specialComponents = {"radios", "sensors", "iff"};
+        if (specialComponents.contains(name.toLower())) {
+            QAction *addComponent = addAction("Add");
+            QAction *removeComponent = addAction("Remove");
 
-        connect(removeComponent, &QAction::triggered, this, [=]() {
-            emit removeComponentRequested(parentID, name);
-        });
+            connect(addComponent, &QAction::triggered, this, [=]() {
+                bool ok;
+                QString componentName = QInputDialog::getText(this, "Add Component", "Enter Component Name:",
+                                                              QLineEdit::Normal, name, &ok);
+                if (ok && !componentName.trimmed().isEmpty()) {
+                    emit addComponentRequested(parentID, name.toLower(), componentName);
+                }
+            });
+
+            connect(removeComponent, &QAction::triggered, this, [=]() {
+                emit removeComponentRequested(parentID, name.toLower());
+            });
+        } else {
+            QAction *removeComponent = addAction("Remove");
+            connect(removeComponent, &QAction::triggered, this, [=]() {
+                emit removeComponentRequested(parentID, name);
+            });
+        }
     }
 }

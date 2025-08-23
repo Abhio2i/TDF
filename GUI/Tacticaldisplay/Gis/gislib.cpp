@@ -1,12 +1,15 @@
 
 #include "gislib.h"
 #include "gisnetwork.h"
-#include "qnetworkreply.h"
-#include "qregularexpression.h"
-#include "qjsondocument.h"
-#include "qjsonarray.h"
+#include <QNetworkReply>
+#include <QRegularExpression>
+#include <QJsonDocument>
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QtMath>
+#include <QMessageBox>
+#include <qgscoordinatetransform.h>
+#include <qgsproject.h>
 
 GISlib::GISlib(QWidget *parent) : QWidget(parent) {
     setStyleSheet("background-color: black;");
@@ -15,13 +18,14 @@ GISlib::GISlib(QWidget *parent) : QWidget(parent) {
     setAutoFillBackground(false);
     setUpdatesEnabled(true);
     setMouseTracking(true);
-    update();
     net = new GISNetwork(this);
     connect(net, &GISNetwork::receiveImage, this, &GISlib::receiveImage);
     connect(net, &GISNetwork::receivePlace, this, &GISlib::receivePlace);
-    setLayers(QStringList() << "osm"); // Match first code's default layer
+    setLayers(QStringList() << "osm");
     setCenter(0, 0);
     setZoom(1);
+    setInitialOffset(QPointF(100, -50));
+    currentCrs.createFromString("EPSG:4326"); // Default to Lat/Lon
 }
 
 
@@ -44,6 +48,8 @@ void GISlib::addCustomMap(const QString& layerName, int zoomMin, int zoomMax, co
         update();
     }
 }
+
+
 void GISlib::receiveImage(QString url, QByteArray data) {
     QRegularExpression rx("/(\\d+)/(\\d+)/(\\d+)\\.png");
     QRegularExpressionMatch match = rx.match(url);
@@ -54,19 +60,25 @@ void GISlib::receiveImage(QString url, QByteArray data) {
     }
 
     int z = match.captured(1).toInt();
-    int x, y;
+    int x = match.captured(2).toInt();
+    int y = match.captured(3).toInt();
     QString layer;
 
-    // Handle ArcGIS (World Imagery) URL format: {z}/{y}/{x}
-    if (url.contains("arcgisonline.com")) {
+    // Explicitly handle local OSM tiles first
+    if (url.startsWith("file:///home/o2i/Downloads/OSM/open")) {
+        layer = "osm";
+    } else if (url.contains("openstreetmap.org")) {
+        layer = "osm";
+    } else if (url.contains("opentopomap.org")) {
+        layer = "opentopo";
+    } else if (url.contains("cartocdn.com")) {
+        layer = url.contains("light_all") ? "carto-light" : "carto-dark";
+    } else if (url.contains("arcgisonline.com")) {
         layer = "World Imagery";
-        y = match.captured(2).toInt(); // ArcGIS uses y in second position
-        x = match.captured(3).toInt(); // ArcGIS uses x in third position
+        x = match.captured(3).toInt(); // ArcGIS uses {z}/{y}/{x}
+        y = match.captured(2).toInt();
     } else {
-        // Standard {z}/{x}/{y} format
-        x = match.captured(2).toInt();
-        y = match.captured(3).toInt();
-        // Determine layer
+        // Check custom maps
         for (auto it = customMaps.constBegin(); it != customMaps.constEnd(); ++it) {
             QString templateUrl = it.value().tileUrl;
             templateUrl.replace("{z}", QString::number(z));
@@ -78,13 +90,8 @@ void GISlib::receiveImage(QString url, QByteArray data) {
             }
         }
         if (layer.isEmpty()) {
-            if (url.contains("openstreetmap.org")) layer = "osm";
-            else if (url.contains("opentopomap.org")) layer = "opentopo";
-            else if (url.contains("cartocdn.com")) layer = url.contains("light_all") ? "carto-light" : "carto-dark";
-            else {
-                qDebug() << "Unknown layer for URL:" << url;
-                return;
-            }
+            qDebug() << "Unknown layer for URL:" << url;
+            return;
         }
     }
 
@@ -134,9 +141,30 @@ void GISlib::receiveImage(QString url, QByteArray data) {
     pendingTiles = qMax(0, pendingTiles - 1);
     update();
 }
-
-
-
+void GISlib::setCoordinateSystem(const QString& crsId) {
+    if (crsId == "EPSG:4326") {
+        currentCrs.createFromString("EPSG:4326");
+    } else if (crsId == "UTM_AUTO") {
+        QgsCoordinateReferenceSystem srcCrs("EPSG:4326"); // Use Lat/Lon for center
+        try {
+            double lon = centerLon;
+            int zone = (int)((lon + 180.0) / 6.0) + 1;
+            bool isNorthern = centerLat >= 0;
+            QString epsgCode = QString("EPSG:%1").arg(isNorthern ? 32600 + zone : 32700 + zone);
+            currentCrs.createFromString(epsgCode);
+        } catch (QgsCsException &e) {
+            qDebug() << "Failed to determine UTM zone:" << e.what();
+            currentCrs.createFromString("EPSG:4326"); // Fallback to Lat/Lon
+            QMessageBox::warning(this, "Error", QString("Failed to determine UTM zone: %1").arg(e.what()));
+        }
+    }
+    if (!currentCrs.isValid()) {
+        currentCrs.createFromString("EPSG:4326"); // Fallback
+    }
+    // Trigger coordinate update
+    QPointF mousePos = mapFromGlobal(QCursor::pos());
+    mouseMoveEvent(new QMouseEvent(QEvent::MouseMove, mousePos, Qt::NoButton, Qt::NoButton, Qt::NoModifier));
+}
 void GISlib::receivePlace(QString url, QByteArray data) {
     QJsonDocument doc = QJsonDocument::fromJson(data);
     if (!doc.isArray()) return;
@@ -247,11 +275,11 @@ void GISlib::paintEvent(QPaintEvent *) {
 
     for (int i = activeLayers.size() - 1; i >= 0; --i) {
         QString layer = activeLayers[i];
-        qreal opacity = 1.0; // Default opacity for non-custom layers
+        qreal opacity = 1.0;
         if (customMaps.contains(layer)) {
-            opacity = customMaps[layer].opacity; // Get opacity for custom layer
+            opacity = customMaps[layer].opacity;
         }
-        painter.setOpacity(opacity); // Set opacity for this layer
+        painter.setOpacity(opacity);
         for (int x = startX; x < startX + tilesX; ++x) {
             for (int y = startY; y < startY + tilesY; ++y) {
                 int wrappedX = (x % tiles + tiles) % tiles;
@@ -291,6 +319,31 @@ void GISlib::paintEvent(QPaintEvent *) {
         painter.setOpacity(1.0); // Reset opacity for next layer
     }
 
+    // Draw distance measurement line and label
+    if (measuringDistance && measureStartPoint != QPointF(0, 0)) {
+        painter.setPen(QPen(Qt::yellow, 2, Qt::DashLine));
+        painter.setBrush(Qt::NoBrush);
+        QPointF startCanvas = geoToCanvas(measureStartPoint.y(), measureStartPoint.x());
+        QPointF endCanvas = geoToCanvas(measureEndPoint.y(), measureEndPoint.x());
+        painter.drawLine(startCanvas, endCanvas);
+
+        // Draw start and end points
+        painter.setBrush(Qt::yellow);
+        painter.drawEllipse(startCanvas, 5, 5);
+        painter.drawEllipse(endCanvas, 5, 5);
+
+        // Calculate and display distance in meters and kilometers
+        double distanceMeters = calculateDistance(measureStartPoint, measureEndPoint);
+        double distanceKilometers = distanceMeters / 1000.0; // Convert meters to kilometers
+        QString distanceText = QString("%1 m (%2 km)")
+                                   .arg(distanceMeters, 0, 'f', 2)
+                                   .arg(distanceKilometers, 0, 'f', 2);
+        painter.setPen(Qt::black); // Changed from Qt::white to Qt::black
+        painter.setFont(QFont("Arial", 10));
+        QPointF textPos = (startCanvas + endCanvas) / 2.0;
+        painter.drawText(textPos + QPointF(10, -10), distanceText);
+    }
+
     if (!tilesDrawn) {
         painter.setPen(Qt::white);
         painter.drawText(rect().center(), QString("Loading tiles... (%1 pending)").arg(pendingTiles));
@@ -326,6 +379,16 @@ QString GISlib::getTileKey(const QString& layer, int z, int x, int y) {
 QString GISlib::tileUrl(const QString& layer, int x, int y, int z) {
     qDebug() << "Generating tile URL for layer:" << layer << ", z:" << z << ", x:" << x << ", y:" << y;
     QString lowerLayer = layer.toLower();
+
+    if (lowerLayer == "osm") {
+        // Path to local OSM tiles, same as first code
+        QString osmPath = "/home/o2i/Downloads/OSM/open";
+        QString filePath = QString("file://%1/%2/%3/%4.png").arg(osmPath).arg(z).arg(x).arg(y);
+        qDebug() << "Generated local tile path:" << filePath;
+        flipkeyaxis = false;
+        return filePath;
+    }
+
     if (customMaps.contains(lowerLayer)) {
         qDebug() << "Found custom layer:" << lowerLayer << ", tileUrl =" << customMaps[lowerLayer].tileUrl;
         QString url = customMaps[lowerLayer].tileUrl;
@@ -340,12 +403,11 @@ QString GISlib::tileUrl(const QString& layer, int x, int y, int z) {
         flipkeyaxis = false;
         return url;
     }
+
     QString url;
     QString subdomain = getSubdomain(x, y, layer);
     bool flip = false;
-    if (layer == "osm") {
-        url = QString("http://%1.tile.openstreetmap.org/%2/%3/%4.png").arg(subdomain).arg(z).arg(x).arg(y);
-    } else if (layer == "opentopo") {
+    if (layer == "opentopo") {
         url = QString("https://%1.tile.opentopomap.org/%2/%3/%4.png").arg(subdomain).arg(z).arg(x).arg(y);
     } else if (layer == "carto-light") {
         url = QString("https://%1.basemaps.cartocdn.com/light_all/%2/%3/%4.png").arg(subdomain).arg(z).arg(x).arg(y);
@@ -387,6 +449,34 @@ void GISlib::requestTile(const QString& layer, int x, int y, int z, int retries)
 }
 
 
+QPointF GISlib::geoToCanvas(double lat, double lon) {
+    int tileSize = 256;
+
+    double centerX = lonToX(centerLon, zoom);
+    double centerY = latToY(centerLat, zoom);
+
+    double pointX = lonToX(lon, zoom);
+    double pointY = latToY(lat, zoom);
+
+    double dx = (pointX - centerX) * tileSize + width() / 2;
+    double dy = (pointY - centerY) * tileSize + height() / 2;
+
+    return QPointF(dx, dy);
+}
+
+QPointF GISlib::canvasToGeo(QPointF p) {
+    int tileSize = 256;
+    double centerX = lonToX(centerLon, zoom);
+    double centerY = latToY(centerLat, zoom);
+
+    double tileX = centerX + (p.x() - width() / 2.0) / tileSize;
+    double tileY = centerY + (p.y() - height() / 2.0) / tileSize;
+
+    double lon = xToLon(tileX, zoom);
+    double lat = yToLat(tileY, zoom);
+
+    return QPointF(lon, lat); // lon (x), lat (y) return karein
+}
 
 QString GISlib::getSubdomain(int x, int y, const QString& layer) {
     QStringList subdomains;
@@ -408,12 +498,21 @@ void GISlib::mousePressEvent(QMouseEvent* event) {
         dragging = true;
         lastMouse = event->pos();
     }
+    if (measuringDistance && event->button() == Qt::LeftButton) {
+        measureStartPoint = canvasToGeo(event->pos());
+        measureEndPoint = measureStartPoint; // Initialize end point to start point
+        qDebug() << "Measurement start point set to (lon:" << measureStartPoint.x() << ", lat:" << measureStartPoint.y() << ")";
+        update();
+    }
 }
 
 void GISlib::mouseReleaseEvent(QMouseEvent* event) {
     emit mouseReleased(event);
     if (event->button() == Qt::MiddleButton) {
         dragging = false;
+    }
+    if (measuringDistance && event->button() == Qt::LeftButton) {
+        endDistanceMeasurement();
     }
 }
 
@@ -432,6 +531,13 @@ void GISlib::mouseMoveEvent(QMouseEvent* event) {
         emit centerChanged(centerLat, centerLon);
         update();
     }
+
+    if (measuringDistance) {
+        measureEndPoint = canvasToGeo(event->pos());
+        qDebug() << "Measurement end point updated to (lon:" << measureEndPoint.x() << ", lat:" << measureEndPoint.y() << ")";
+        update();
+    }
+
     double mouseX = event->pos().x();
     double mouseY = event->pos().y();
     double centerX = lonToX(centerLon, zoom);
@@ -442,11 +548,23 @@ void GISlib::mouseMoveEvent(QMouseEvent* event) {
     double tileY = centerY + dy;
     double lon = xToLon(tileX, zoom);
     double lat = yToLat(tileY, zoom);
-    mouseLat = toDMS(lat, true);
-    mouseLon = toDMS(lon, false);
-    emit mouseCords(mouseLat, mouseLon);
-}
 
+    // Transform coordinates to the current CRS
+    QgsCoordinateReferenceSystem srcCrs("EPSG:4326");
+    QgsCoordinateTransform transform(srcCrs, currentCrs, QgsProject::instance());
+    try {
+        QgsPointXY point(lon, lat);
+        QgsPointXY transformedPoint = transform.transform(point);
+        mouseLat = QString::number(transformedPoint.y(), 'f', 6);
+        mouseLon = QString::number(transformedPoint.x(), 'f', 6);
+        emit mouseCords(transformedPoint.y(), transformedPoint.x(), currentCrs.authid());
+    } catch (QgsCsException &e) {
+        qDebug() << "Coordinate transformation error:" << e.what();
+        mouseLat = toDMS(lat, true);
+        mouseLon = toDMS(lon, false);
+        emit mouseCords(lat, lon, "EPSG:4326"); // Fallback
+    }
+}
 void GISlib::keyPressEvent(QKeyEvent* event) {
     emit keyPressed(event);
     if (event->key() == Qt::Key_Plus || event->key() == Qt::Key_Equal) {
@@ -455,3 +573,144 @@ void GISlib::keyPressEvent(QKeyEvent* event) {
         setZoom(zoom - 1);
     }
 }
+
+
+void GISlib::wheelEvents(QWheelEvent *event)
+{
+    if (event->angleDelta().y() > 0) {
+        //Console::log("Scroll up detected");
+        // Zoom in ya koi aur action yahan karo
+
+        setZoom(zoom +1);
+    } else {
+        //Console::log("Scroll down detected");
+        // Zoom out ya koi aur action yahan karo
+        setZoom(zoom -1);
+    }
+
+    if(zoom > 19){
+        setZoom(19);
+    }else
+        if(zoom < 1){
+            setZoom(1);
+        }
+    update();
+}
+void GISlib::setInitialOffset(QPointF offset) {
+    initialOffset = offset;
+    update();
+}
+
+void GISlib::resizeEvent(QResizeEvent* event) {
+    QWidget::resizeEvent(event);
+
+    double tileSize = 256.0;
+    double centerX = lonToX(centerLon, zoom);
+    double centerY = latToY(centerLat, zoom);
+
+    // 🧠 Top-left tile coordinates before resize (considering offset)
+    double topLeftTileX = centerX - (event->oldSize().width() / 2.0 - initialOffset.x()) / tileSize;
+    double topLeftTileY = centerY - (event->oldSize().height() / 2.0 - initialOffset.y()) / tileSize;
+
+    // New center such that same top-left remains
+    double newCenterTileX = topLeftTileX + (event->size().width() / 2.0 - initialOffset.x()) / tileSize;
+    double newCenterTileY = topLeftTileY + (event->size().height() / 2.0 - initialOffset.y()) / tileSize;
+
+    centerLon = xToLon(newCenterTileX, zoom);
+    centerLat = yToLat(newCenterTileY, zoom);
+
+    emit centerChanged(centerLat, centerLon);
+    update();
+}
+
+double GISlib::calculateDistance(QPointF point1, QPointF point2) {
+    // Core: Calculate geodesic distance using Vincenty formula
+    // WGS84 ellipsoid parameters
+    const double a = 6378137.0; // Equatorial radius in meters
+    const double f = 1.0 / 298.257223563; // Flattening
+    const double b = a * (1.0 - f); // Polar radius
+
+    // Core: Convert latitude and longitude to radians
+    double lat1 = point1.y() * M_PI / 180.0;
+    double lon1 = point1.x() * M_PI / 180.0;
+    double lat2 = point2.y() * M_PI / 180.0;
+    double lon2 = point2.x() * M_PI / 180.0;
+
+    // Core: Difference in longitude
+    double L = lon2 - lon1;
+
+    // Core: Reduced latitudes
+    double U1 = atan((1.0 - f) * tan(lat1));
+    double U2 = atan((1.0 - f) * tan(lat2));
+
+    double sinU1 = sin(U1), cosU1 = cos(U1);
+    double sinU2 = sin(U2), cosU2 = cos(U2);
+
+    // Core: Initial approximation of lambda
+    double lambda = L;
+    double lambdaP;
+    int maxIterations = 100;
+    int iter = 0;
+
+    double sinSigma, cosSigma, sigma, cos2Alpha, cos2SigmaM;
+    double C, deltaLambda;
+
+    // Core: Iterative Vincenty calculation
+    do {
+        lambdaP = lambda;
+        sinSigma = sqrt(pow(cosU2 * sin(lambda), 2) +
+                        pow(cosU1 * sinU2 - sinU1 * cosU2 * cos(lambda), 2));
+        cosSigma = sinU1 * sinU2 + cosU1 * cosU2 * cos(lambda);
+        sigma = atan2(sinSigma, cosSigma);
+        double sinAlpha = cosU1 * cosU2 * sin(lambda) / sinSigma;
+        cos2Alpha = 1.0 - sinAlpha * sinAlpha;
+        cos2SigmaM = cosSigma - 2.0 * sinU1 * sinU2 / cos2Alpha;
+
+        // Core: Handle small cos2Alpha to prevent division by zero
+        if (cos2Alpha < 1e-12) cos2Alpha = 0.0;
+        if (cos2Alpha == 0.0) cos2SigmaM = 0.0;
+
+        C = f / 16.0 * cos2Alpha * (4.0 + f * (4.0 - 3.0 * cos2Alpha));
+        lambda = L + (1.0 - C) * f * sinAlpha *
+                         (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1.0 + 2.0 * cos2SigmaM * cos2SigmaM)));
+        iter++;
+    } while (fabs(lambda - lambdaP) > 1e-12 && iter < maxIterations);
+
+    // Core: Check for convergence failure
+    if (iter >= maxIterations) {
+        qDebug() << "Vincenty formula did not converge";
+        return 0.0; // Fallback in case of non-convergence
+    }
+
+    // Core: Final distance calculation
+    double u2 = cos2Alpha * (a * a - b * b) / (b * b);
+    double A = 1.0 + u2 / 16384.0 * (4096.0 + u2 * (-768.0 + u2 * (320.0 - 175.0 * u2)));
+    double B = u2 / 1024.0 * (256.0 + u2 * (-128.0 + u2 * (74.0 - 47.0 * u2)));
+    double deltaSigma = B * sinSigma * (cos2SigmaM + B / 4.0 * (cosSigma * (-1.0 + 2.0 * cos2SigmaM * cos2SigmaM) -
+                                                                B / 6.0 * cos2SigmaM * (-3.0 + 4.0 * sinSigma * sinSigma) *
+                                                                    (-3.0 + 4.0 * cos2SigmaM * cos2SigmaM)));
+
+    double s = b * A * (sigma - deltaSigma); // Distance in meters
+    return s; // Core: Return distance in meters
+}
+
+void GISlib::startDistanceMeasurement() {
+    measuringDistance = true;
+    measureStartPoint = QPointF(0, 0);
+    measureEndPoint = QPointF(0, 0);
+    qDebug() << "Distance measurement started";
+    update();
+}
+
+void GISlib::endDistanceMeasurement() {
+    if (measuringDistance) {
+        double distance = calculateDistance(measureStartPoint, measureEndPoint);
+        emit distanceMeasured(distance, measureStartPoint, measureEndPoint);
+        measuringDistance = false;
+        measureStartPoint = QPointF(0, 0);
+        measureEndPoint = QPointF(0, 0);
+        qDebug() << "Distance measurement ended";
+        update();
+    }
+}
+

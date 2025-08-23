@@ -1,5 +1,6 @@
-#ifndef ScenarioEditor_H
-#define ScenarioEditor_H
+
+#ifndef SCENARIOEDITOR_H
+#define SCENARIOEDITOR_H
 
 #include "GUI/Console/consoleview.h"
 #include "GUI/Hierarchytree/hierarchyconnector.h"
@@ -12,7 +13,8 @@
 #include "core/Debug/console.h"
 #include "core/Hierarchy/hierarchy.h"
 #include <QMainWindow>
-#include "GUI/scene3dwidget/scene3dwidget.h"
+#include "GUI/Menubars/menubar.h"
+#include "GUI/Testscript/textscriptwidget.h"
 
 // Main window class for Scenario Editor
 class ScenarioEditor : public QMainWindow
@@ -48,19 +50,17 @@ private:
 
     // Dock widgets
     QDockWidget *hierarchyDock;
-    QDockWidget *navigationDock;
     QDockWidget *tacticalDisplayDock;
     QDockWidget *consoleDock;
     QDockWidget *inspectorDock;
     QDockWidget *libraryDock;
-    QDockWidget *overviewDock;
     QDockWidget *sidebarDock;
-    QDockWidget *currentBottomDock;
+    QDockWidget *textScriptDock; // For TextScript
 
     // Views
     ConsoleView *consoleView;
     TacticalDisplay *tacticalDisplay;
-    Scene3DWidget *scene3dwidget;
+    TextScriptWidget *textScriptView; // For TextScript
 
     // Hierarchy and connectors
     HierarchyConnector* m_hierarchyConnector;
@@ -71,12 +71,12 @@ private:
     // Toolbars
     DesignToolBar *designToolBar;
     StandardToolBar *standardToolBar;
+    MenuBar *menuBar;
 
     // Inspector management
     QList<QDockWidget*> inspectorDocks;
     int inspectorCount = 0;
-    QList<QMetaObject::Connection> inspectorConnections;
     QList<Inspector*> inspectors;
 };
 
-#endif
+#endif // SCENARIOEDITOR_H

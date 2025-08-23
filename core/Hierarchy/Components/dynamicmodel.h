@@ -8,7 +8,11 @@
 #include "./transform.h"
 #include "./rigidbody.h"
 #include "./trajectory.h"
+#include <cmath>
 
+
+class Platform;
+class FormationPosition;
 class DynamicModel: public QObject, public Component
 {
     Q_OBJECT
@@ -16,6 +20,7 @@ public:
     DynamicModel();
     ComponentType Typo() const override { return ComponentType::DynamicModel; }
     bool controle;
+    bool follow;
     float maxEnginePower = 40;
     float Lift = 0.002f;
     float zeroLiftSpeed = 300;
@@ -44,6 +49,8 @@ public:
     Trajectory* trajectory;
     QJsonObject customParameters; // Added to store custom parameters
 
+    Platform* followEntity;
+    FormationPosition* formationPosition;
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
 
