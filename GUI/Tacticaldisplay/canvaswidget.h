@@ -91,6 +91,11 @@ public slots:
     void updateWaypointsFromInspector(QString entityId, QJsonArray waypoints);
     void onDistanceMeasured(double distance, QPointF startPoint, QPointF endPoint);
 
+public:
+    void dragEnterEvents(QDragEnterEvent *event) ;
+    void dragMoveEvents(QDragMoveEvent *event) ;
+    void dropEvents(QDropEvent *event) ;
+
 private:
     void drawGridLines(QPainter& painter);
     void drawEntityInformation(QPainter& painter);
@@ -128,12 +133,16 @@ private:
     std::vector<QPointF> tempLineCanvasPoints;
     int selectedWaypointIndex;
     bool isDraggingWaypoint;
+
+    bool isPointInPolygon(const QPointF& point, const std::vector<Vector*>& vertices, const QPointF& centroidGeo, GISlib* gislib); // Added declaration
+
 protected:
     void keyPressEvent(QKeyEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+
 signals:
     void selectEntitybyCursor(QString ID);
     void MoveEntity(QString ID);

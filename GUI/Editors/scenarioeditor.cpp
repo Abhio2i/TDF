@@ -17,6 +17,9 @@
 #include <core/structure/runtime.h>
 #include <core/Hierarchy/Components/transform.h>
 #include <core/Hierarchy/Components/mesh.h>
+#include <QJsonDocument>
+#include <QJsonParseError>
+#include <QMessageBox>
 
 ScenarioEditor::ScenarioEditor(QWidget *parent)
     : QMainWindow(parent)
@@ -44,6 +47,8 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     SceneRenderer *renderer = scenario->scenerenderer;
     Console *console = scenario->console;
     library = scenario->Library;
+
+    lastSavedFilePath = "";
 
     HierarchyConnector::instance()->setHierarchy(hierarchy);
     HierarchyConnector::instance()->setLibrary(library);
@@ -458,4 +463,50 @@ void ScenarioEditor::onLibraryItemSelected(QVariantMap /*data*/) {
 ScenarioEditor::~ScenarioEditor()
 {
     // Cleanup managed by Qt's parent-child relationships
+}
+void ScenarioEditor::loadFromJsonFile(const QString &filePath)
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Failed to open JSON file:" << filePath;
+        QMessageBox::warning(this, "Error", QString("Failed to open JSON file: %1").arg(filePath));
+        return;
+    }
+
+    QByteArray data = file.readAll();
+    file.close();
+
+    QJsonParseError err;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+    if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+        qWarning() << "Failed to parse JSON:" << err.errorString();
+        QMessageBox::warning(this, "Error", QString("Failed to parse JSON: %1").arg(err.errorString()));
+        return;
+    }
+
+    QJsonObject obj = doc.object();
+    if (obj.contains("hierarchy")) {
+        QJsonObject hier = obj["hierarchy"].toObject();
+        hierarchy->fromJson(hier);
+        qDebug() << "Hierarchy loaded from file:" << filePath;
+        // Update the tree view to reflect the loaded hierarchy
+        if (treeView && treeView->getTreeWidget()) {
+            treeView->getTreeWidget()->update();
+            qDebug() << "HierarchyTree updated after loading JSON";
+        } else {
+            qWarning() << "Failed to update HierarchyTree: treeView or treeWidget is null";
+        }
+    } else {
+        qWarning() << "JSON file does not contain 'hierarchy' key";
+    }
+
+    if (tacticalDisplay && obj.contains("tactical")) {
+        QJsonObject tac = obj["tactical"].toObject();
+        tacticalDisplay->canvas->fromJson(tac);
+        qDebug() << "TacticalDisplay loaded from file:" << filePath;
+    } else {
+        qWarning() << "JSON file does not contain 'tactical' key or tacticalDisplay is null";
+    }
+
+    lastSavedFilePath = filePath; // Store the loaded file path
 }

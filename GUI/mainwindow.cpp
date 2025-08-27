@@ -64,8 +64,14 @@ void MainWindow::switchEditor(const QString &editorKey)
     if (editorKey == "database") {
         stackedWidget->setCurrentWidget(databaseEditor);
     } else if (editorKey == "scenario") {
+        if (!databaseEditor->lastSavedFilePath.isEmpty()) {
+            scenarioEditor->loadFromJsonFile(databaseEditor->lastSavedFilePath);
+        }
         stackedWidget->setCurrentWidget(scenarioEditor);
     } else if (editorKey == "runtime") {
+        if (!scenarioEditor->lastSavedFilePath.isEmpty()) {
+            runtimeEditor->loadFromJsonFile(scenarioEditor->lastSavedFilePath);
+        }
         stackedWidget->setCurrentWidget(runtimeEditor);
     }
 }

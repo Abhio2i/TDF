@@ -19,7 +19,6 @@ public:
 
 private slots:
     void onTestScriptTriggered(); // Slot to open the dialog
-
 private:
     QAction *newAction;
     QAction *saveAction;

@@ -18,6 +18,7 @@ GISlib::GISlib(QWidget *parent) : QWidget(parent) {
     setAutoFillBackground(false);
     setUpdatesEnabled(true);
     setMouseTracking(true);
+    setAcceptDrops(true);
     net = new GISNetwork(this);
     connect(net, &GISNetwork::receiveImage, this, &GISlib::receiveImage);
     connect(net, &GISNetwork::receivePlace, this, &GISlib::receivePlace);
@@ -28,6 +29,21 @@ GISlib::GISlib(QWidget *parent) : QWidget(parent) {
     currentCrs.createFromString("EPSG:4326"); // Default to Lat/Lon
 }
 
+// `canvaswidget.cpp` mein add karein
+void GISlib::dragEnterEvent(QDragEnterEvent *event)
+{
+    emit dragEnterEvents(event);
+}
+
+void GISlib::dragMoveEvent(QDragMoveEvent *event)
+{
+    emit dragMoveEvents(event);
+}
+
+void GISlib::dropEvent(QDropEvent *event)
+{
+    emit dropEvents(event);
+}
 
 void GISlib::addCustomMap(const QString& layerName, int zoomMin, int zoomMax, const QString& tileUrl, qreal opacity) {
     qDebug() << "Adding custom layer: name =" << layerName << ", zoomMin =" << zoomMin << ", zoomMax =" << zoomMax << ", tileUrl =" << tileUrl << ", opacity =" << opacity;
@@ -65,7 +81,7 @@ void GISlib::receiveImage(QString url, QByteArray data) {
     QString layer;
 
     // Explicitly handle local OSM tiles first
-    if (url.startsWith("file:///home/o2i/Downloads/OSM/open")) {
+    if (url.startsWith("file:///home/vboxuser/Downloads/testOSM")) {
         layer = "osm";
     } else if (url.contains("openstreetmap.org")) {
         layer = "osm";
@@ -382,7 +398,7 @@ QString GISlib::tileUrl(const QString& layer, int x, int y, int z) {
 
     if (lowerLayer == "osm") {
         // Path to local OSM tiles, same as first code
-        QString osmPath = "/home/o2i/Downloads/OSM/open";
+        QString osmPath = "/home/vboxuser/Downloads/testOSM";
         QString filePath = QString("file://%1/%2/%3/%4.png").arg(osmPath).arg(z).arg(x).arg(y);
         qDebug() << "Generated local tile path:" << filePath;
         flipkeyaxis = false;

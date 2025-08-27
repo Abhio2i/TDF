@@ -20,6 +20,7 @@ public:
     QMenu* getViewMenu();
     QAction* getLoadAction();
     QAction* getLoadToLibraryAction();
+    QAction* getSameSaveAction();
     QAction* getSaveAction();
     QAction* getFeedbackAction();
     QAction* getNewFileAction();
@@ -47,6 +48,7 @@ signals:
     void recentProjectTriggered();
     void loadTriggered();
     void loadToLibraryTriggered();
+    void sameSaveTriggered(); // New signal for "Save"
     void saveTriggered();
     void runTriggered();
     void exitTriggered();
@@ -73,6 +75,7 @@ private:
     QAction* recentProjectAction;
     QAction* loadJsonAction;
     QAction* loadToLibraryAction;
+     QAction* sameSaveAction; // New action for "Save"
     QAction* saveJsonAction;
     QAction* runAction;
     QAction* exitAction;

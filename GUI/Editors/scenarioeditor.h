@@ -24,11 +24,13 @@ class ScenarioEditor : public QMainWindow
 public:
     explicit ScenarioEditor(QWidget *parent = nullptr);
     ~ScenarioEditor();
-
+    // void loadFromJsonFile(const QString &filePath); // Add this
+    QString lastSavedFilePath; // Add this
     // Public components
     Hierarchy* library;
     HierarchyTree* libTreeView;
     CanvasWidget* canvas;
+    void loadFromJsonFile(const QString &filePath);
 
 private slots:
     void onItemSelected(QVariantMap data);

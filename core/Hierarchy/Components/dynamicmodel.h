@@ -42,8 +42,11 @@ public:
     float forwardSpeed = 0.0f;
     float enginePower = 0.0f;
     float aeroFactor = 0.0f;
-    float moveSpeed = 0.01;
+    float moveSpeed = 1;
     float rotationSpeed = 1;
+    float angdeg = 1;
+    float start = 0;
+    float time = 0;
     Transform* transform;
     Rigidbody* rigidbody;
     Trajectory* trajectory;
@@ -51,6 +54,7 @@ public:
 
     Platform* followEntity;
     FormationPosition* formationPosition;
+    float lerp(float a, float b, float t);
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
 

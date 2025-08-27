@@ -1,3 +1,4 @@
+
 #include "databaseeditor.h"
 #include "GUI/Feedback/feedback.h"
 #include "GUI/Console/consoleview.h"
@@ -26,6 +27,8 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
     scenario = new Scenario();
     hierarchy = scenario->hierarchy;
     console = scenario->console;
+
+    lastSavedFilePath = "";
 
     consoleView->setConsoleDock(consoleDock);
 
@@ -81,20 +84,20 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
                     }
                 }
                 else
-                if(type == "profile"){
-                    inspector->init(ID, name+"_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
+                    if(type == "profile"){
+                        inspector->init(ID, name+"_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
 
-                }else
-                if(type == "folder"){
-                    inspector->init(ID, name+"_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
+                    }else
+                        if(type == "folder"){
+                            inspector->init(ID, name+"_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
 
-                }else
-                if(type == "entity"){
-                    inspector->init(data["ID"].toString(), name+"_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
+                        }else
+                            if(type == "entity"){
+                                inspector->init(data["ID"].toString(), name+"_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
 
-                }else{
-                    inspector->init(ID, name, QJsonObject());
-                }
+                            }else{
+                                inspector->init(ID, name, QJsonObject());
+                            }
             }
 
             // Ensure inspector is visible when items are selected

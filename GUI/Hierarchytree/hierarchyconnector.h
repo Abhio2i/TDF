@@ -27,6 +27,7 @@ public:
     void setHierarchy(Hierarchy* h) { hierarchy = h; }
     void setLibrary(Hierarchy* lib) { library = lib; }
     void setLibTreeView(HierarchyTree* tree) { libTreeView = tree; }
+    QString getLastSavedFilePath(QMainWindow* parent);
 
 public slots:
     void handleLibraryToHierarchyDrop(QVariantMap sourceData, QVariantMap targetData);

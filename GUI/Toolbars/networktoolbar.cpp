@@ -144,54 +144,54 @@ void NetworkToolbar::createActions()
 {
     startAction = new QAction(QIcon(withWhiteBg(":/icons/images/play.png")), tr("Start"), this);
     startAction->setToolTip("Start a Master or Slave network session (Ctrl+N)");
-    startAction->setShortcut(QKeySequence("Ctrl+N"));
+    //startAction->setShortcut(QKeySequence("Ctrl+N"));
     connect(startAction, &QAction::triggered, this, &NetworkToolbar::startSession);
 
     stopAction = new QAction(QIcon(withWhiteBg(":/icons/images/stop.png")), tr("Stop"), this);
     stopAction->setToolTip("Stop the active network session (Ctrl+Shift+N)");
-    stopAction->setShortcut(QKeySequence("Ctrl+Shift+N"));
+    //stopAction->setShortcut(QKeySequence("Ctrl+Shift+N"));
     stopAction->setEnabled(false);
     connect(stopAction, &QAction::triggered, this, &NetworkToolbar::stopSession);
 
     connectAction = new QAction(QIcon(withWhiteBg(":/icons/images/network.png")), tr("Connect"), this);
     connectAction->setToolTip("Connect to a Slave node (Ctrl+C)");
-    connectAction->setShortcut(QKeySequence("Ctrl+C"));
+    //connectAction->setShortcut(QKeySequence("Ctrl+C"));
     connect(connectAction, &QAction::triggered, this, &NetworkToolbar::connectClient);
 
     disconnectAction = new QAction(QIcon(withWhiteBg(":/icons/images/disconnect.png")), tr("Disconnect"), this);
     disconnectAction->setToolTip("Disconnect a selected Slave node (Ctrl+D)");
-    disconnectAction->setShortcut(QKeySequence("Ctrl+D"));
+    //disconnectAction->setShortcut(QKeySequence("Ctrl+D"));
     disconnectAction->setEnabled(false);
     connect(disconnectAction, &QAction::triggered, this, &NetworkToolbar::disconnectClient);
 
     statusAction = new QAction(QIcon(withWhiteBg(":/icons/images/status-update.png")), tr("Status"), this);
     statusAction->setToolTip("Display real-time network metrics (Ctrl+S)");
-    statusAction->setShortcut(QKeySequence("Ctrl+S"));
+    //statusAction->setShortcut(QKeySequence("Ctrl+S"));
     connect(statusAction, &QAction::triggered, this, &NetworkToolbar::viewNetworkStatus);
 
     packetAction = new QAction(QIcon(withWhiteBg(":/icons/images/packet.png")), tr("Packet Analyzer"), this);
     packetAction->setToolTip("Launch packet capture and analysis (Ctrl+P)");
-    packetAction->setShortcut(QKeySequence("Ctrl+P"));
+    //packetAction->setShortcut(QKeySequence("Ctrl+P"));
     connect(packetAction, &QAction::triggered, this, &NetworkToolbar::openPacketAnalyzer);
 
     testAction = new QAction(QIcon(withWhiteBg(":/icons/images/test.png")), tr("Test"), this);
     testAction->setToolTip("Run TTCN-3 test to validate protocol (Ctrl+T)");
-    testAction->setShortcut(QKeySequence("Ctrl+T"));
+    //testAction->setShortcut(QKeySequence("Ctrl+T"));
     connect(testAction, &QAction::triggered, this, &NetworkToolbar::runProtocolTest);
 
     syncAction = new QAction(QIcon(withWhiteBg(":/icons/images/sync.png")), tr("Sync"), this);
     syncAction->setToolTip("Configure network synchronization settings (Ctrl+Y)");
-    syncAction->setShortcut(QKeySequence("Ctrl+Y"));
+    //syncAction->setShortcut(QKeySequence("Ctrl+Y"));
     connect(syncAction, &QAction::triggered, this, &NetworkToolbar::configureSyncSettings);
 
     logAction = new QAction(QIcon(withWhiteBg(":/icons/images/log-file.png")), tr("Logs"), this);
     logAction->setToolTip("View network-related logs (Ctrl+L)");
-    logAction->setShortcut(QKeySequence("Ctrl+L"));
+    //logAction->setShortcut(QKeySequence("Ctrl+L"));
     connect(logAction, &QAction::triggered, this, &NetworkToolbar::viewLogs);
 
     pduAction = new QAction(QIcon(withWhiteBg(":/icons/images/pdu.png")), tr("PDU"), this);
     pduAction->setToolTip("Create or simulate a sample DIS PDU (Ctrl+M)");
-    pduAction->setShortcut(QKeySequence("Ctrl+M"));
+    //pduAction->setShortcut(QKeySequence("Ctrl+M"));
     connect(pduAction, &QAction::triggered, this, &NetworkToolbar::simulatePDU);
 
 

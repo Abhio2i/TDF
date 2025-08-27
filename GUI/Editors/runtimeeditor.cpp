@@ -17,6 +17,9 @@
 #include <QSplitter>
 #include <QFileDialog>
 #include <QStandardPaths>
+#include <QJsonDocument>
+#include <QJsonParseError>
+#include <QMessageBox>
 
 RuntimeEditor::RuntimeEditor(QWidget *parent)
     : QMainWindow(parent)
@@ -50,6 +53,8 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     NetworkManager *networkManager = runtime->networkManager;
     library = runtime->Library;
 
+    lastSavedFilePath = "";
+
     // Set hierarchy and library in connector
     HierarchyConnector::instance()->setHierarchy(hierarchy);
     HierarchyConnector::instance()->setLibrary(library);
@@ -69,6 +74,8 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
 
     // ================= RUNTIME TOOLBAR CONNECTIONS =================
     if (runtimeToolBar && tacticalDisplay && tacticalDisplay->canvas && simulation) {
+
+        connect(simulation,&Simulation::Render,runtimeToolBar, &RuntimeToolBar::onElapsedTime);
         connect(runtimeToolBar, &RuntimeToolBar::startTriggered, [=]() {
             tacticalDisplay->canvas->simulation();
             simulation->start();
@@ -465,7 +472,7 @@ void RuntimeEditor::setupToolBarConnections()
         qCritical() << "Map widget not available for layer connections";
     }
 
-//=====Gis intigration=============//
+    //=====Gis intigration=============//
 
     connect(designToolBar->getMeasureDistanceAction(), &QAction::triggered,
             this, [=]() {
@@ -557,6 +564,54 @@ void RuntimeEditor::showFeedbackWindow()
     Feedback *feedbackWindow = new Feedback(this);
     feedbackWindow->show();
 }
+
+void RuntimeEditor::loadFromJsonFile(const QString &filePath)
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Failed to open JSON file:" << filePath;
+        QMessageBox::warning(this, "Error", QString("Failed to open JSON file: %1").arg(filePath));
+        return;
+    }
+
+    QByteArray data = file.readAll();
+    file.close();
+
+    QJsonParseError err;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+    if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+        qWarning() << "Failed to parse JSON:" << err.errorString();
+        QMessageBox::warning(this, "Error", QString("Failed to parse JSON: %1").arg(err.errorString()));
+        return;
+    }
+
+    QJsonObject obj = doc.object();
+    if (obj.contains("hierarchy")) {
+        QJsonObject hier = obj["hierarchy"].toObject();
+        hierarchy->fromJson(hier);
+        qDebug() << "Hierarchy loaded from file:" << filePath;
+        // Update the tree view to reflect the loaded hierarchy
+        if (treeView && treeView->getTreeWidget()) {
+            treeView->getTreeWidget()->update();
+            qDebug() << "HierarchyTree updated after loading JSON";
+        } else {
+            qWarning() << "Failed to update HierarchyTree: treeView or treeWidget is null";
+        }
+    } else {
+        qWarning() << "JSON file does not contain 'hierarchy' key";
+    }
+
+    if (tacticalDisplay && obj.contains("tactical")) {
+        QJsonObject tac = obj["tactical"].toObject();
+        tacticalDisplay->canvas->fromJson(tac);
+        qDebug() << "TacticalDisplay loaded from file:" << filePath;
+    } else {
+        qWarning() << "JSON file does not contain 'tactical' key or tacticalDisplay is null";
+    }
+
+    lastSavedFilePath = filePath; // Store the loaded file path
+}
+
 
 RuntimeEditor::~RuntimeEditor()
 {

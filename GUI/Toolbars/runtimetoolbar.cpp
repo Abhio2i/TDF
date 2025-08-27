@@ -10,6 +10,8 @@
 #include <QHBoxLayout>
 #include <QStyle>
 #include <QStyleOptionSlider>
+#include <QTimer>
+#include <QDebug>
 
 // Define a constant icon size
 const QSize ICON_SIZE(24, 24);
@@ -31,6 +33,7 @@ QPixmap RuntimeToolBar::withWhiteBg(const QString &iconPath)
 
 RuntimeToolBar::RuntimeToolBar(QWidget *parent) : QToolBar(parent)
 {
+    elapsedSeconds = 0;
     createActions();
     setupToolBar();
 }
@@ -90,15 +93,27 @@ connect(replayAction, &QAction::triggered, this, [=]() {
     // Create and configure the speed slider
     speedSlider = new QSlider(Qt::Horizontal, this);
     speedSlider->setRange(1, 10);
-    speedSlider->setValue(5);
+    speedSlider->setValue(1);
     speedSlider->setMinimumWidth(100);
     speedSlider->setMaximumWidth(150);
     speedSlider->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     speedSlider->setToolTip(tr("Current Speed: %1").arg(speedSlider->value()));
 
+    timeLabel = new QLabel("00:00:00", this);
+    timeLabel->setStyleSheet("QLabel { font-family: monospace; padding: 0 5px; }");
+    timeLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+
+    timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, this, [=]() {
+        elapsedSeconds++;
+        updateTimeDisplay();
+    });
+
     // Add widgets to speed control layout
     speedLayout->addWidget(speedIcon);
     speedLayout->addWidget(speedSlider);
+    speedLayout->addWidget(timeLabel);
     speedControlWidget->setLayout(speedLayout);
 
     // Connect value changed signal with proper tooltip display
@@ -166,4 +181,21 @@ void RuntimeToolBar::highlightAction(QAction *activeAction)
     }
 }
 
+void RuntimeToolBar::onElapsedTime(float time){
+    elapsedSeconds += time;
+    updateTimeDisplay();
+}
 
+void RuntimeToolBar::updateTimeDisplay()
+{
+    int totalSeconds = static_cast<int>(elapsedSeconds);
+    int hours = totalSeconds / 3600;
+    int minutes = (totalSeconds % 3600) / 60;
+    int seconds = totalSeconds % 60;
+
+    timeLabel->setText(QString("%1:%2:%3")
+                           .arg(hours, 2, 10, QChar('0'))
+                           .arg(minutes, 2, 10, QChar('0'))
+                           .arg(seconds, 2, 10, QChar('0')));
+
+}

@@ -39,21 +39,21 @@ StandardToolBar::StandardToolBar(QWidget *parent)
 void StandardToolBar::createActions()
 {
     newAction = new QAction(QIcon(withWhiteBg(":/icons/images/new-document.png")), tr("New"), this);
-    newAction->setShortcut(QKeySequence::New);
+    //newAction->setShortcut(QKeySequence::New);
 
     saveAction = new QAction(QIcon(withWhiteBg(":/icons/images/floppy-disk.png")), tr("SaveAction"), this);
-    saveAction->setShortcut(QKeySequence::Save);
+    //saveAction->setShortcut(QKeySequence::Save);
 
     saveAllAction = new QAction(QIcon(withWhiteBg(":/icons/images/floppy-disk.png")), tr("Save All"), this);
 
     cutAction = new QAction(QIcon(withWhiteBg(":/icons/images/cut.png")), tr("Cut"), this);
-    cutAction->setShortcut(QKeySequence::Cut);
+    //cutAction->setShortcut(QKeySequence::Cut);
 
     copyAction = new QAction(QIcon(withWhiteBg(":/icons/images/copy.png")), tr("Copy"), this);
-    copyAction->setShortcut(QKeySequence::Copy);
+    //copyAction->setShortcut(QKeySequence::Copy);
 
     pasteAction = new QAction(QIcon(withWhiteBg(":/icons/images/paste.png")), tr("Paste"), this);
-    pasteAction->setShortcut(QKeySequence::Paste);
+    //pasteAction->setShortcut(QKeySequence::Paste);
 
     undoAction = new QAction(QIcon(withWhiteBg(":/icons/images/undo.png")), tr("Undo"), this);
     undoAction->setShortcut(QKeySequence::Undo);

@@ -36,9 +36,12 @@ public:
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
-
+protected:
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dragMoveEvent(QDragMoveEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
 signals:
-void mouseCords(double lat, double lon, const QString& crsId);
+    void mouseCords(double lat, double lon, const QString& crsId);
     void centerChanged(double lat, double lon);
     void zoomChanged(int zoom);
     void keyPressed(QKeyEvent *event);
@@ -47,6 +50,9 @@ void mouseCords(double lat, double lon, const QString& crsId);
     void mouseReleased(QMouseEvent *event);
     void painted(QPaintEvent *event);
     void distanceMeasured(double distance, QPointF startPoint, QPointF endPoint);
+    void dragEnterEvents(QDragEnterEvent *event);
+    void dragMoveEvents(QDragMoveEvent *event) ;
+    void dropEvents(QDropEvent *event);
 
 private:
     QString getSubdomain(int x, int y, const QString& layer);

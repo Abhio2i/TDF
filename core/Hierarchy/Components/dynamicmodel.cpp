@@ -10,6 +10,7 @@
 DynamicModel::DynamicModel() {
     controle = true;
     follow = false;
+    moveSpeed = 1;
     customParameters = QJsonObject(); // Initialize customParameters
 }
 
@@ -20,7 +21,12 @@ void DynamicModel::Update(float deltaTime) {
     Vector forwardDir = transform->forward(); // x-axis (forward)
     Vector upDir = transform->up();           // z-axis (up)
     Vector rightDir = transform->right();     // y-axis (right)
-    FollowTrajectory();
+    time += deltaTime;
+    //qDebug() << time;
+    if(start<time)
+    {
+        FollowTrajectory();
+    }
 }
 
 void DynamicModel::FollowTrajectory() {
@@ -74,9 +80,11 @@ void DynamicModel::FollowTrajectory() {
 
         float angleRad = atan2(direction.y, direction.x);
         float angleDeg = angleRad * (180.0f / M_PI);
+        angdeg = lerp(angdeg,angleDeg,moveSpeed * 0.05f);
 
-        *transform->rotation = Vector(0, 0, -angleDeg);
+        *transform->rotation = Vector(0, 0, -angdeg);
     }
+
     *transform->position = current;
     //*transform->position = Vector::Lerp(*transform->position, *trajectory->Trajectories[trajectory->current]->position, moveSpeed * 0.1);
 
@@ -87,6 +95,10 @@ void DynamicModel::FollowTrajectory() {
     }
 }
 
+float DynamicModel::lerp(float a, float b, float t){
+    return a + (b - a) * t;
+}
+
 QJsonObject DynamicModel::toJson() const {
     QJsonObject obj;
     obj["controle"] = controle;
@@ -94,6 +106,7 @@ QJsonObject DynamicModel::toJson() const {
     obj["Lift"] = Lift;
     obj["zeroLiftSpeed"] = zeroLiftSpeed;
     obj["moveSpeed"] = moveSpeed;
+    obj["start"] = start;
     obj["rotationSpeed"] = rotationSpeed;
     obj["dragIncreaseFactor"] = dragIncreaseFactor;
     obj["aerodynamicEffect"] = aerodynamicEffect;
@@ -129,6 +142,8 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
         zeroLiftSpeed = obj["zeroLiftSpeed"].toVariant().toDouble();
     if (obj.contains("moveSpeed"))
         moveSpeed = obj["moveSpeed"].toVariant().toDouble();
+    if (obj.contains("start"))
+        start = obj["start"].toVariant().toDouble();
     if (obj.contains("rotationSpeed"))
         rotationSpeed = obj["rotationSpeed"].toVariant().toDouble();
     if (obj.contains("dragIncreaseFactor"))

@@ -31,6 +31,8 @@ public:
     Hierarchy* library;
     HierarchyTree* libTreeView;
     CanvasWidget* canvas;
+    void loadFromJsonFile(const QString &filePath); // Add this
+    QString lastSavedFilePath; // Add this
 
 private slots:
     void onItemSelected(QVariantMap data);

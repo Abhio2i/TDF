@@ -18,6 +18,7 @@ class DatabaseEditor : public QMainWindow
 public:
     explicit DatabaseEditor(QWidget *parent = nullptr);
     ~DatabaseEditor();
+    QString lastSavedFilePath;
 
 private slots:
     void addInspectorTab();

@@ -5,6 +5,7 @@
 #include <QToolBar>
 #include <QAction>
 #include <QSlider>
+#include <QLabel>
 
 class RuntimeToolBar : public QToolBar
 {
@@ -21,6 +22,8 @@ signals:
     void speedChanged(int speed);
     void replayTriggered();
 
+public:
+    void onElapsedTime(float time);
 private:
     QAction *startAction;
     QAction *pauseAction;
@@ -28,10 +31,14 @@ private:
     QAction *nextStepAction;
     QSlider *speedSlider;
     QAction *replayAction;
+    QLabel *timeLabel;
+    QTimer *timer;
+    float elapsedSeconds;
     QPixmap withWhiteBg(const QString &iconPath);
     void createActions();
     void setupToolBar();
     void highlightAction(QAction *action);
+    void updateTimeDisplay();
 };
 
 #endif

@@ -1,3 +1,4 @@
+
 #include "menubar.h"
 MenuBar::MenuBar(QWidget *parent) : QMenuBar(parent)
 {
@@ -5,18 +6,33 @@ MenuBar::MenuBar(QWidget *parent) : QMenuBar(parent)
     fileMenu = addMenu("File");
 
     newFileAction = new QAction("New File", this);
+    newFileAction->setShortcut(QKeySequence("Ctrl+N"));
+
     recentProjectAction = new QAction("Recent Project", this);
+
     loadJsonAction = new QAction("Open File", this);
-  loadToLibraryAction = new QAction("Open File to Library", this);
+    loadJsonAction->setShortcut(QKeySequence("Ctrl+O"));
+
+    loadToLibraryAction = new QAction("Open File to Library", this);
+
+    sameSaveAction = new QAction("Save", this);
+    sameSaveAction->setShortcut(QKeySequence("Ctrl+S"));
+
     saveJsonAction = new QAction("Save As", this);
+    saveJsonAction->setShortcut(QKeySequence("Ctrl+Shift+S"));
+
     runAction = new QAction("Run", this);
+    runAction->setShortcut(QKeySequence("F5"));
+
     exitAction = new QAction("Exit", this);
+    exitAction->setShortcut(QKeySequence("Ctrl+Q"));
 
     fileMenu->addAction(newFileAction);
     fileMenu->addAction(recentProjectAction);
     fileMenu->addSeparator();
     fileMenu->addAction(loadJsonAction);
     fileMenu->addAction(loadToLibraryAction);
+     fileMenu->addAction(sameSaveAction);
     fileMenu->addAction(saveJsonAction);
     fileMenu->addSeparator();
     fileMenu->addAction(runAction);
@@ -26,17 +42,40 @@ MenuBar::MenuBar(QWidget *parent) : QMenuBar(parent)
     editMenu = addMenu("Edit");
 
     undoAction = new QAction("Undo", this);
+    undoAction->setShortcut(QKeySequence("Ctrl+Z"));
+
     redoAction = new QAction("Redo", this);
+    redoAction->setShortcut(QKeySequence("Ctrl+Y"));
+
     selectAllAction = new QAction("Select All", this);
+    selectAllAction->setShortcut(QKeySequence("Ctrl+A"));
+
     deselectAllAction = new QAction("Deselect All", this);
+    deselectAllAction->setShortcut(QKeySequence("Ctrl+Shift+A"));
+
     cutAction = new QAction("Cut", this);
+    cutAction->setShortcut(QKeySequence("Ctrl+X"));
+
     copyAction = new QAction("Copy", this);
+    copyAction->setShortcut(QKeySequence("Ctrl+C"));
+
     pasteAction = new QAction("Paste", this);
+    pasteAction->setShortcut(QKeySequence("Ctrl+V"));
+
     duplicateAction = new QAction("Duplicate", this);
+    duplicateAction->setShortcut(QKeySequence("Ctrl+D"));
+
     renameAction = new QAction("Rename", this);
+    renameAction->setShortcut(QKeySequence("F2"));
+
     deleteAction = new QAction("Delete", this);
+    deleteAction->setShortcut(QKeySequence("Del"));
+
     playAction = new QAction("Play", this);
+    playAction->setShortcut(QKeySequence("Space"));
+
     pauseAction = new QAction("Pause", this);
+    pauseAction->setShortcut(QKeySequence("Ctrl+P"));
 
     editMenu->addAction(undoAction);
     editMenu->addAction(redoAction);
@@ -58,7 +97,12 @@ MenuBar::MenuBar(QWidget *parent) : QMenuBar(parent)
     // View menu
     viewMenu = addMenu("View");
     add3DViewAction = new QAction("Add 3D View", this);
+    add3DViewAction->setShortcut(QKeySequence("Ctrl+3"));
+
     remove3DViewAction = new QAction("Remove 3D View", this);
+    remove3DViewAction->setShortcut(QKeySequence("Ctrl+Shift+3"));
+
+
     viewMenu->addAction(add3DViewAction);
     viewMenu->addAction(remove3DViewAction);
 
@@ -73,6 +117,7 @@ MenuBar::MenuBar(QWidget *parent) : QMenuBar(parent)
     connect(recentProjectAction, &QAction::triggered, this, &MenuBar::recentProjectTriggered);
     connect(loadJsonAction, &QAction::triggered, this, &MenuBar::loadTriggered);
     connect(loadToLibraryAction, &QAction::triggered, this, &MenuBar::loadToLibraryTriggered);
+     connect(sameSaveAction, &QAction::triggered, this, &MenuBar::sameSaveTriggered);
     connect(saveJsonAction, &QAction::triggered, this, &MenuBar::saveTriggered);
     connect(runAction, &QAction::triggered, this, &MenuBar::runTriggered);
     connect(exitAction, &QAction::triggered, this, &MenuBar::exitTriggered);
@@ -97,6 +142,7 @@ QMenu* MenuBar::getEditMenu() { return editMenu; }
 QMenu* MenuBar::getViewMenu() { return viewMenu; }
 QAction* MenuBar::getLoadAction() { return loadJsonAction; }
 QAction* MenuBar::getLoadToLibraryAction() { return loadToLibraryAction; }
+QAction* MenuBar::getSameSaveAction() { return sameSaveAction; }
 QAction* MenuBar::getSaveAction() { return saveJsonAction; }
 QAction* MenuBar::getFeedbackAction() { return feedbackAction; }
 QAction* MenuBar::getNewFileAction() { return newFileAction; }

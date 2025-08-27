@@ -100,6 +100,9 @@ TacticalDisplay::TacticalDisplay(QWidget *parent) : QWidget(parent) {
     connect(mapWidget, &GISlib::mouseMoved, canvas, &CanvasWidget::onGISMouseMoved);
     connect(mapWidget, &GISlib::mouseReleased, canvas, &CanvasWidget::onGISMouseReleased);
     connect(mapWidget, &GISlib::painted, canvas, &CanvasWidget::onGISPainted);
+    connect(mapWidget, &GISlib::dragEnterEvents, canvas, &CanvasWidget::dragEnterEvents);
+    connect(mapWidget, &GISlib::dragMoveEvents, canvas, &CanvasWidget::dragMoveEvents);
+    connect(mapWidget, &GISlib::dropEvents, canvas, &CanvasWidget::dropEvents);
     splitter->addWidget(mapCanvasContainer);
 
     splitter->setStretchFactor(0, 3);
