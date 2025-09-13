@@ -25,6 +25,7 @@
 
 const QSize ICON_SIZE(24, 24);
 
+
 QPixmap RuntimeToolBar::withWhiteBg(const QString &iconPath)
 {
     QPixmap pixmap(iconPath);
@@ -124,7 +125,7 @@ void RuntimeToolBar::createActions()
         emit loggerTriggered();
         QDialog *loggerDialog = new QDialog(this);
         loggerDialog->setWindowTitle(tr("Logger Control"));
-        loggerDialog->setAttribute(Qt::WA_DeleteOnClose); // Ensure dialog is deleted when closed
+        loggerDialog->setAttribute(Qt::WA_DeleteOnClose);
         QGridLayout *mainLayout = new QGridLayout(loggerDialog);
 
         // Left side: Event types
@@ -154,7 +155,7 @@ void RuntimeToolBar::createActions()
         QListWidget *recordingsList = new QListWidget(loggerDialog);
         recordingsList->setSelectionMode(QAbstractItemView::SingleSelection);
         QPushButton *replayButton = new QPushButton(tr("Replay Selected"), loggerDialog);
-        replayButton->setEnabled(false); // Disabled until a recording is selected
+        replayButton->setEnabled(false);
 
         // Populate recordings list
         QString recordingsDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/recordings";
@@ -233,7 +234,7 @@ void RuntimeToolBar::createActions()
             emit eventTypesSelected(eventTypes);
         });
 
-        loggerDialog->show(); // Non-modal window
+        loggerDialog->show();
     });
 
     QWidget *speedControlWidget = new QWidget(this);

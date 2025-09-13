@@ -56,6 +56,7 @@ SOURCES += \
     GUI/Tacticaldisplay/Gis/layerinformationdialog.cpp \
     GUI/Tacticaldisplay/canvaswidget.cpp \
     GUI/Tacticaldisplay/tacticaldisplay.cpp \
+    GUI/Testscript/angelscripthighlighter.cpp \
     GUI/Testscript/testscriptdialog.cpp \
     GUI/Testscript/textscriptwidget.cpp \
     GUI/Timing/graphwidgettime.cpp \
@@ -386,6 +387,7 @@ HEADERS += \
     GUI/Tacticaldisplay/Gis/layerinformationdialog.h \
     GUI/Tacticaldisplay/canvaswidget.h \
     GUI/Tacticaldisplay/tacticaldisplay.h \
+    GUI/Testscript/angelscripthighlighter.h \
     GUI/Testscript/testscriptdialog.h \
     GUI/Testscript/textscriptwidget.h \
     GUI/Timing/graphwidgettime.h \

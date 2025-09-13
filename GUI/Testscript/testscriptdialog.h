@@ -1,5 +1,7 @@
+
 #ifndef TESTSCRIPTDIALOG_H
 #define TESTSCRIPTDIALOG_H
+#include "GUI/Testscript/angelscripthighlighter.h"
 #include <QWidget>
 #include <QTextEdit>
 #include <QPushButton>
@@ -11,6 +13,9 @@
 #include <QDir>
 #include <QMessageBox>
 #include <QCoreApplication>
+#include <QCompleter>
+#include <QStringListModel>
+#include <QPainter>
 
 class TestScriptDialog : public QWidget
 {
@@ -18,6 +23,18 @@ class TestScriptDialog : public QWidget
 public:
     explicit TestScriptDialog(QWidget *parent = nullptr, bool editMode = false, const QString &filePath = QString());
     ~TestScriptDialog();
+
+    class LineNumberArea : public QWidget
+    {
+    public:
+        LineNumberArea(QTextEdit *editor);
+        int lineNumberAreaWidth() const;
+    protected:
+        void paintEvent(QPaintEvent *event) override;
+    private:
+        QTextEdit *codeEditor;
+    };
+
 signals:
     void runScriptstring(QString code);
     void closed();
@@ -28,8 +45,14 @@ private slots:
     void onCancelButtonClicked();
     void onScriptPathChanged();
     void onScriptNameChanged(const QString &text);
+    void insertCompletion(const QString &completion);
+    void handleTextChanged();
+    void updateLineNumberArea();
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
 private:
     QTextEdit *codeEditor;
+    LineNumberArea *lineNumberArea;
     QPushButton *runButton;
     QPushButton *browseButton;
     QPushButton *okButton;
@@ -42,5 +65,8 @@ private:
     QLabel *scriptPathLabel;
     QString editFilePath;
     bool isEditMode;
+    AngelScriptHighlighter *highlighter;
+    QCompleter *completer;
+    QStringListModel *wordListModel;
 };
 #endif // TESTSCRIPTDIALOG_H
