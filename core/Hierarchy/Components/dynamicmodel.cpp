@@ -48,7 +48,7 @@ void DynamicModel::FollowTrajectory() {
 
         if (distance > 0.001f) {
             Vector dir = diff.normalized();
-            current += dir * moveSpeed * 0.1f;
+            current += dir * moveSpeed * 0.01f;
         }
 
         *transform->position = current;
@@ -67,13 +67,12 @@ void DynamicModel::FollowTrajectory() {
     if(trajectory->Trajectories.size()<2) return;
     Vector current = *transform->position;
     Vector target = *trajectory->Trajectories[trajectory->current]->position;
-
     Vector diff = target - current;
     float distance = diff.magnitude();
-
+    if((trajectory->Trajectories.size()-1) == trajectory->current && distance <0.05f ) return;
     if (distance > 0.001f) {
         Vector dir = diff.normalized();
-        current += dir * moveSpeed * 0.1f;
+        current += dir * moveSpeed * 0.01f;
         Vector direction = target - current;
 
         direction = direction.normalized();
@@ -90,7 +89,9 @@ void DynamicModel::FollowTrajectory() {
 
     if (trajectory->Trajectories.size() > trajectory->current && Vector::Distance(*transform->position, *trajectory->Trajectories[trajectory->current]->position) < 1) {
         trajectory->current += 1;
-        trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? (trajectory->Trajectories.size()-1) : trajectory->current;
+        //trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? (trajectory->Trajectories.size()-1) : trajectory->current;
+        trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? 0: trajectory->current;
+
 
     }
 }
@@ -124,12 +125,12 @@ QJsonObject DynamicModel::toJson() const {
         obj[it.key()] = it.value();
     }
 
-    qDebug() << "DynamicModel::toJson output:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
+    //qDebug() << "DynamicModel::toJson output:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
     return obj;
 }
 
 void DynamicModel::fromJson(const QJsonObject& obj) {
-    qDebug() << "DynamicModel::fromJson input:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
+    //qDebug() << "DynamicModel::fromJson input:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
 
     // Standard fields
     if (obj.contains("controle"))
@@ -178,7 +179,7 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
         }
     }
 
-    qDebug() << "DynamicModel::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);
+    //qDebug() << "DynamicModel::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);
 }
 
 void DynamicModel::setMoveSpeed(float speed) {

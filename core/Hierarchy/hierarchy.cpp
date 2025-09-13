@@ -1,7 +1,6 @@
 
 #include "hierarchy.h"
 #include "core/Debug/console.h"
-#include "core/Hierarchy/EntityProfiles/platform.h"
 #include "core/Hierarchy/EntityProfiles/radio.h"
 #include "core/Hierarchy/EntityProfiles/iff.h"
 #include "core/Hierarchy/EntityProfiles/sensor.h"
@@ -173,6 +172,8 @@ void Hierarchy::attchedIff(QString ID, QString name)
         delete iff;
     }
 }
+
+
 void Hierarchy::attachSensors(QString ID, QString name)
 {
     if (Entities->find(ID.toStdString()) == Entities->end()) {
@@ -240,6 +241,7 @@ void Hierarchy::attachRadios(QString ID, QString name)
         delete radio;
     }
 }
+
 QJsonObject Hierarchy::getComponentData(QString ID, QString componentName)
 {
     if (Entities->find(ID.toStdString()) != Entities->end()) {
@@ -363,7 +365,7 @@ QJsonObject Hierarchy::toJson()
     //     obj["entities"] = entitiesObj;
     // }
 
-    Console::log("Hierarchy::toJson output: " + QString(QJsonDocument(obj).toJson()).toStdString());
+    //Console::log("Hierarchy::toJson output: " + QString(QJsonDocument(obj).toJson()).toStdString());
     return obj;
 }
 

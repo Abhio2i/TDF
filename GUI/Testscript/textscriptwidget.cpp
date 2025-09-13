@@ -1,4 +1,3 @@
-
 #include "textscriptwidget.h"
 #include "GUI/Testscript/testscriptdialog.h"
 #include <QVBoxLayout>
@@ -11,6 +10,7 @@
 #include <QLabel>
 #include <QFile>
 #include <QTextStream>
+#include <QCoreApplication>
 #include "core/Debug/console.h"
 
 TextScriptItemWidget::TextScriptItemWidget(const QString &fileName, const QString &filePath, QWidget *parent)
@@ -42,7 +42,7 @@ TextScriptItemWidget::TextScriptItemWidget(const QString &fileName, const QStrin
     pauseButton->setIcon(QIcon(":/icons/images/pause.png"));
     pauseButton->setFixedSize(24, 24);
     pauseButton->setToolTip("Pause Script");
-    playButton->setStyleSheet(
+    pauseButton->setStyleSheet(
         "QPushButton {"
         "   border: none;"
         "   background: transparent;"
@@ -118,7 +118,10 @@ TextScriptWidget::TextScriptWidget(QWidget *parent) : QWidget(parent) {
         Console::log("Add icon loaded successfully for :/icons/images/add.png");
     }
 
-    loadScriptFiles("/home/arti_rajpoot/Downloads/TDF_with coordinate");
+    // Use relative path for /Testscript
+    QString projectDir = QCoreApplication::applicationDirPath() + "/../..";
+    QString testScriptPath = QDir(projectDir).absoluteFilePath("Testscript");
+    loadScriptFiles(testScriptPath);
 }
 
 void TextScriptWidget::loadScriptFiles(const QString &directoryPath) {
@@ -316,15 +319,23 @@ void TextScriptWidget::handleRemoveAction() {
     }
 }
 
-void TextScriptWidget::handleAddScriptButtonClicked() {
-    TestScriptDialog *dialog = new TestScriptDialog(this, false); // Add mode
-    if (dialog->exec() == QDialog::Accepted) {
-        loadScriptFiles("/home/arti_rajpoot/Downloads/TDF_with coordinate");
-        Console::log("New script added, reloading script files");
-    }
+void TextScriptWidget::handleAddScriptButtonClicked()
+{
+    QString projectDir = QCoreApplication::applicationDirPath() + "/../..";
+    QString testScriptPath = QDir(projectDir).absoluteFilePath("Testscript");
+
+    TestScriptDialog *window = new TestScriptDialog(this, false); // Add mode
+    connect(window, &TestScriptDialog::runScriptstring, this, &TextScriptWidget::runScriptstring);
+    connect(window, &TestScriptDialog::closed, this, [=]() {
+        loadScriptFiles(testScriptPath);
+        Console::log("New script added or canceled, reloading script files from: " + testScriptPath.toStdString());
+        window->deleteLater();
+    });
+    window->show();
 }
 
-void TextScriptWidget::handleEditAction() {
+void TextScriptWidget::handleEditAction()
+{
     QString filePath = fileListWidget->property("selectedFilePath").toString();
     if (filePath.isEmpty()) {
         Console::error("No file selected for editing");
@@ -332,9 +343,15 @@ void TextScriptWidget::handleEditAction() {
         return;
     }
 
-    TestScriptDialog *dialog = new TestScriptDialog(this, true, filePath); // Edit mode
-    if (dialog->exec() == QDialog::Accepted) {
-        loadScriptFiles("/home/arti_rajpoot/Downloads/TDF_with coordinate");
-        Console::log("Script edited and saved, reloading script files: " + filePath.toStdString());
-    }
+    QString projectDir = QCoreApplication::applicationDirPath() + "/../..";
+    QString testScriptPath = QDir(projectDir).absoluteFilePath("Testscript");
+
+    TestScriptDialog *window = new TestScriptDialog(this, true, filePath); // Edit mode
+    connect(window, &TestScriptDialog::runScriptstring, this, &TextScriptWidget::runScriptstring);
+    connect(window, &TestScriptDialog::closed, this, [=]() {
+        loadScriptFiles(testScriptPath);
+        Console::log("Script edited and saved or canceled, reloading script files: " + filePath.toStdString());
+        window->deleteLater();
+    });
+    window->show();
 }

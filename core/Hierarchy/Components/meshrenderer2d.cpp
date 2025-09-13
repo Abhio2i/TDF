@@ -49,12 +49,12 @@ QJsonObject MeshRenderer2D::toJson() const {
         obj[it.key()] = it.value();
     }
 
-    qDebug() << "MeshRenderer2D::toJson output:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
+    //qDebug() << "MeshRenderer2D::toJson output:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
     return obj;
 }
 
 void MeshRenderer2D::fromJson(const QJsonObject& obj) {
-    qDebug() << "MeshRenderer2D::fromJson input:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
+    //qDebug() << "MeshRenderer2D::fromJson input:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
 
     // Standard fields
     if (obj.contains("active"))
@@ -92,5 +92,5 @@ void MeshRenderer2D::fromJson(const QJsonObject& obj) {
         }
     }
 
-    qDebug() << "MeshRenderer2D::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);
+    //qDebug() << "MeshRenderer2D::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);
 }

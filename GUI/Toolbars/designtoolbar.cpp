@@ -1,3 +1,4 @@
+
 #include "GUI/Toolbars/designtoolbar.h"
 #include "GUI/Tacticaldisplay/Gis/custommapdialog.h"
 #include "GUI/Tacticaldisplay/Gis/layerinformationdialog.h"
@@ -58,8 +59,8 @@ DesignToolBar::DesignToolBar(QWidget *parent) : QToolBar(parent) {
 
 void DesignToolBar::createActions() {
     mapLayers = {
-        { "OpenStreetMap", "osm", 0, 19, "", false, -1.0, "N/A", "Raster" },
-    };
+                 { "OpenStreetMap", "osm", 0, 19, "", false, -1.0, "N/A", "Raster" },
+                 };
 
     viewAction = new QAction(QIcon(withWhiteBg(":/icons/images/view.jpg")), tr("View"), this);
     viewAction->setCheckable(true);
@@ -246,12 +247,12 @@ void DesignToolBar::createActions() {
         emit layerOptionToggled("Image", checked);
     });
 
-    measureAreaAction = new QAction(QIcon(withWhiteBg(":/icons/images/area.png")), tr("Measure Area"), this);
-    measureAreaAction->setCheckable(true);
-    connect(measureAreaAction, &QAction::triggered, this, [=]() {
-        highlightAction(measureAreaAction);
-        emit measureAreaTriggered();
-    });
+    // measureAreaAction = new QAction(QIcon(withWhiteBg(":/icons/images/area.png")), tr("Measure Area"), this);
+    // measureAreaAction->setCheckable(true);
+    // connect(measureAreaAction, &QAction::triggered, this, [=]() {
+    //     highlightAction(measureAreaAction);
+    //     emit measureAreaTriggered();
+    // });
 
     // for measure distance
     measureDistanceAction = new QAction(QIcon(withWhiteBg(":/icons/images/measurement.png")), tr("Measure Distance"), this);
@@ -260,16 +261,22 @@ void DesignToolBar::createActions() {
         highlightAction(measureDistanceAction);
         emit measureDistanceTriggered();
     });
+    presetLayersAction = new QAction(QIcon(withWhiteBg(":/icons/images/preset.png")), tr("Preset Layers"), this);
+    presetLayersAction->setCheckable(true);
+    StayOpenMenu* presetLayersMenu = new StayOpenMenu(this);
+    presetLayersMenu->setStyleSheet("QMenu::item:checked { background-color: #d0e0ff; }");
 
-    drawAction = new QAction(QIcon(withWhiteBg(":/icons/images/technical-drawing.png")), tr("Draw"), this);
-    drawAction->setCheckable(true);
-    connect(drawAction, &QAction::triggered, this, [=]() {
-        highlightAction(drawAction);
-        emit modeChanged(DrawTrajectory);
-        emit drawTriggered();
+    QAction* airbaseAction = new QAction("Airbase", this);
+    airbaseAction->setCheckable(true);
+    presetLayersMenu->addAction(airbaseAction);
+    presetLayersAction->setMenu(presetLayersMenu);
+
+    connect(airbaseAction, &QAction::triggered, this, [=](bool checked) {
+        highlightAction(presetLayersAction);
+        emit presetLayerSelected("Airbase");
     });
 
-    // New Edit Trajectory Action
+
     editTrajectoryAction = new QAction(QIcon(withWhiteBg(":/icons/images/edit-trajectory.png")), tr("Edit Trajectory"), this);
     editTrajectoryAction->setCheckable(true);
     connect(editTrajectoryAction, &QAction::triggered, this, [=]() {
@@ -729,15 +736,13 @@ void DesignToolBar::setupToolBar() {
 
     addWidget(layerContainer);
 
-    addAction(measureAreaAction);
-    addAction(drawAction);
-    // addAction(editTrajectoryAction); // Add new action to toolbar
     addAction(databaseAction);
     addSeparator();
     addAction(zoomInAction);
     addAction(zoomOutAction);
     addAction(layerInfoAction);
     addAction(selectCenterAction);
+
 
     QToolButton* mapLayerButton = new QToolButton(this);
     mapLayerButton->setDefaultAction(mapSelectLayerAction);
@@ -773,6 +778,12 @@ void DesignToolBar::setupToolBar() {
     measureDistanceButton->setDefaultAction(measureDistanceAction);
     measureDistanceButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
     addWidget(measureDistanceButton);
+
+    QToolButton* presetLayersButton = new QToolButton(this);
+    presetLayersButton->setDefaultAction(presetLayersAction);
+    presetLayersButton->setPopupMode(QToolButton::InstantPopup);
+    presetLayersButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(presetLayersButton);
 }
 
 void DesignToolBar::highlightAction(QAction *activeAction) {
@@ -780,12 +791,12 @@ void DesignToolBar::highlightAction(QAction *activeAction) {
         viewAction, moveAction, rotateAction, scaleAction,
         zoomInAction, zoomOutAction,
         gridToggleAction, snappingToggleAction,
-        layerSelectAction, measureAreaAction, drawAction,
-        editTrajectoryAction, // Add new action to highlight list
+        layerSelectAction,
+        editTrajectoryAction,
         databaseAction, mapSelectLayerAction, searchPlaceAction,
         selectCenterAction, addCustomMapAction, layerInfoAction,
         shapeAction, bitmapAction, selectBitmapAction,
-        measureDistanceAction // Add new action to highlight list
+        measureDistanceAction, presetLayersAction
     };
 
     for (QAction *action : actions) {
@@ -800,15 +811,14 @@ void DesignToolBar::highlightAction(QAction *activeAction) {
     }
 }
 
+
 void DesignToolBar::onModeChanged(TransformMode mode) {
     viewAction->setChecked(false);
     moveAction->setChecked(false);
     rotateAction->setChecked(false);
     scaleAction->setChecked(false);
-    drawAction->setChecked(false);
     editTrajectoryAction->setChecked(false);
     measureDistanceAction->setChecked(false);
-
     switch(mode) {
     case Panning:
         viewAction->setChecked(true);
@@ -827,11 +837,8 @@ void DesignToolBar::onModeChanged(TransformMode mode) {
         highlightAction(scaleAction);
         break;
     case DrawTrajectory:
-        if (drawAction->isChecked()) {
-            highlightAction(drawAction);
-        } else if (editTrajectoryAction->isChecked()) {
-            highlightAction(editTrajectoryAction);
-        }
+        editTrajectoryAction->setChecked(true);
+        highlightAction(editTrajectoryAction);
         break;
     case MeasureDistance:
         measureDistanceAction->setChecked(true);

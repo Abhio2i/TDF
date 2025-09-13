@@ -65,8 +65,8 @@ QJsonObject Collider::toJson() const {
         obj[it.key()] = it.value();
     }
 
-    Console::log("Collider::toJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
-    Console::log("Collider::toJson output: " + QString(QJsonDocument(obj).toJson()).toStdString());
+    //Console::log("Collider::toJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
+    //Console::log("Collider::toJson output: " + QString(QJsonDocument(obj).toJson()).toStdString());
     return obj;
 }
 
@@ -94,5 +94,5 @@ void Collider::fromJson(const QJsonObject& obj) {
             customParameters[it.key()] = it.value();
         }
     }
-    Console::log("Collider::fromJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
+    //Console::log("Collider::fromJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
 }

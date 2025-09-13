@@ -35,12 +35,12 @@ QJsonObject Trajectory::toJson() const {
         obj[it.key()] = it.value();
     }
 
-    qDebug() << "Trajectory::toJson output:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
+    //qDebug() << "Trajectory::toJson output:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
     return obj;
 }
 
 void Trajectory::fromJson(const QJsonObject& obj) {
-    qDebug() << "Trajectory::fromJson input:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
+    //qDebug() << "Trajectory::fromJson input:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
 
     // Standard fields
     if (obj.contains("id"))
@@ -80,7 +80,7 @@ void Trajectory::fromJson(const QJsonObject& obj) {
         }
     }
 
-    qDebug() << "Trajectory::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);
+    //qDebug() << "Trajectory::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);
 }
 
 bool Trajectory::removeTrajectory(size_t index) {

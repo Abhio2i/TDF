@@ -10,6 +10,7 @@
 #include <core/Network/networkmanager.h>
 #include <core/Debug/console.h>
 #include "core/Recorder/recorder.h"
+#include "core/ScriptEngine/scriptengine.h"
 
 class Runtime : public QObject  // QObject se inherit kiya
 {
@@ -25,6 +26,7 @@ public:
     SessionManager *sessionManager;
     Simulation *simulation;
     SceneRenderer *scenerenderer;
+    ScriptEngine *scriptengine;
     NetworkManager *networkManager;
     Console *console;
     Recorder *recorder;  // Using external Recorder

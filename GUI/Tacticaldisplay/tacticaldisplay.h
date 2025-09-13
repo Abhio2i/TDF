@@ -12,6 +12,7 @@
 #include "GUI/scene3dwidget/scene3dwidget.h"
 #include "GUI/Tacticaldisplay/Gis/gislib.h"
 #include "QStackedWidget"
+
 class QComboBox;
 class QLabel;
 

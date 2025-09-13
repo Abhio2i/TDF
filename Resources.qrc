@@ -61,6 +61,11 @@
         <file>images/success.png</file>
         <file>images/warning.png</file>
         <file>images/measurement.png</file>
+        <file>images/timing.png</file>
+        <file>images/airbase.png</file>
+        <file>images/preset.png</file>
+        <file>images/star.png</file>
+        <file>images/audit.png</file>
     </qresource>
     <qresource prefix="/texture">
         <file>images/Texture/bball.png</file>

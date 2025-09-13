@@ -10,10 +10,13 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QPushButton>
-#include <algorithm> // Added for std::min and std::max
+#include <algorithm>
 #include <QMimeData>
+#include <QInputDialog>
+#include <string>
+
 CanvasWidget::CanvasWidget(QWidget *parent) : QWidget(parent) {
-    // Existing initialization...
+    gislib = new GISlib();
     setMinimumSize(300, 300);
     setAttribute(Qt::WA_TranslucentBackground);
     setWindowFlags(Qt::FramelessWindowHint);
@@ -27,6 +30,8 @@ CanvasWidget::CanvasWidget(QWidget *parent) : QWidget(parent) {
     fpsTimer.start();
     selectedWaypointIndex = -1;
     isDraggingWaypoint = false;
+    selectedHandleIndex = -1;
+    isResizingShape = false;
     QTimer* fpsUpdateTimer = new QTimer(this);
     connect(fpsUpdateTimer, &QTimer::timeout, this, [this]() {
         fps = frameCount;
@@ -35,9 +40,12 @@ CanvasWidget::CanvasWidget(QWidget *parent) : QWidget(parent) {
     connect(gislib, &GISlib::distanceMeasured, this, &CanvasWidget::onDistanceMeasured);
     fpsUpdateTimer->start(100);
     update();
+    // for preset layer
+    airbasePixmap = QPixmap(airbaseIconPath);
+    if (airbasePixmap.isNull()) {
+        Console::error("Failed to load airbase icon: " + airbaseIconPath.toStdString());
+    }
 }
-
-
 
 void CanvasWidget::selectWaypoint(int index) {
     if (index >= 0 && index < (int)currentTrajectory.size()) {
@@ -48,6 +56,7 @@ void CanvasWidget::selectWaypoint(int index) {
         deselectWaypoint();
     }
 }
+
 void CanvasWidget::Render(float /*deltatime*/) {
     angle += 2.0f;
     if (angle >= 360.0f) angle = 0;
@@ -59,7 +68,7 @@ void CanvasWidget::simulation() {
     Console::log("Simulation mode enabled");
 }
 
-// `canvaswidget.cpp` mein add karein
+
 void CanvasWidget::dragEnterEvents(QDragEnterEvent *event)
 {
     if (event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist")) {
@@ -106,12 +115,8 @@ void CanvasWidget::dropEvents(QDropEvent *event)
                 qDebug() << "Entity dropped at:" << geoPos;
                 update(); // Canvas ko redraw karne ke liye
 
-
             }
         }
-
-
-
         event->acceptProposedAction();
     } else {
         event->ignore();
@@ -138,12 +143,17 @@ void CanvasWidget::setTransformMode(TransformMode mode) {
                 setTrajectoryDrawingMode(false);
             }
         }
+        if (mode != EditShape) {
+            editingShapeId = ""; // Reset editing state
+            selectedHandleIndex = -1;
+            isResizingShape = false;
+            resizeHandles.clear();
+        }
         setCursor(Qt::ArrowCursor);
         Console::log("Transform mode set to: " + std::to_string(mode));
     }
+    update();
 }
-
-
 
 void CanvasWidget::setTrajectoryDrawingMode(bool enabled) {
     isDrawingTrajectory = enabled;
@@ -189,7 +199,6 @@ void CanvasWidget::setTrajectoryDrawingMode(bool enabled) {
     update();
 }
 
-
 void CanvasWidget::saveTrajectory() {
     Console::log("saveTrajectory called");
     if (!isDrawingTrajectory) {
@@ -200,29 +209,21 @@ void CanvasWidget::saveTrajectory() {
         Console::error("No entity selected for trajectory");
         return;
     }
-
-    Console::log("Attempting to save trajectory for entity: " + selectedEntityId);
-
     auto it = Meshes.find(selectedEntityId);
     if (it == Meshes.end()) {
         Console::error("Selected entity not found in Meshes: " + selectedEntityId);
         return;
     }
-
     MeshEntry& entry = it->second;
     if (!entry.trajectory) {
         entry.trajectory = new Trajectory();
         entry.trajectory->ID = selectedEntityId;
     }
-
-    // Clear existing trajectory waypoints
     for (Waypoints* wp : entry.trajectory->Trajectories) {
         delete wp->position;
         delete wp;
     }
     entry.trajectory->Trajectories.clear();
-
-    // Save current trajectory waypoints
     for (Waypoints* waypoint : currentTrajectory) {
         Waypoints* newWaypoint = new Waypoints();
         newWaypoint->position = new Vector(waypoint->position->x, waypoint->position->y, waypoint->position->z);
@@ -247,7 +248,6 @@ void CanvasWidget::saveTrajectory() {
     emit trajectoryUpdated(QString::fromStdString(selectedEntityId), waypointsArray);
     Console::log("Emitted trajectoryUpdated signal for entity: " + selectedEntityId);
 }
-
 
 void CanvasWidget::updateWaypointsFromInspector(QString entityId, QJsonArray waypoints) {
     Console::log("updateWaypointsFromInspector called for entity: " + entityId.toStdString() +
@@ -310,7 +310,6 @@ void CanvasWidget::updateWaypointsFromInspector(QString entityId, QJsonArray way
                  " with " + std::to_string(entry.trajectory->Trajectories.size()) + " waypoints");
 }
 
-
 void CanvasWidget::wheelEvent(QWheelEvent *event)
 {
     if (event->angleDelta().y() > 0) {
@@ -329,7 +328,6 @@ void CanvasWidget::wheelEvent(QWheelEvent *event)
         }
     update();
 }
-
 void CanvasWidget::handleMousePress(QMouseEvent *event) {
     if (event->button() == Qt::MiddleButton) {
         isPanning = true;
@@ -339,6 +337,67 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
         return;
     }
     if (event->button() == Qt::LeftButton) {
+        if (event->type() == QEvent::MouseButtonDblClick) {
+            // Detect double-click to show context menu for adding text
+            QMenu contextMenu(this);
+            QAction* addTextAction = contextMenu.addAction("Add Text");
+            connect(addTextAction, &QAction::triggered, this, [=]() {
+                // Prompt user for text input using QInputDialog
+                bool ok;
+                QString text = QInputDialog::getText(this, "Add Text", "Enter text:", QLineEdit::Normal, "", &ok);
+                if (ok && !text.isEmpty()) {
+                    // Create a new MeshEntry for the text
+                    static int textCounter = 0;
+                    MeshEntry entry;
+                    entry.name = QString("TempText_%1").arg(textCounter++);
+                    QPointF geoPos = gislib->canvasToGeo(event->pos());
+                    entry.position = new Vector(geoPos.x(), geoPos.y(), 0);
+                    entry.rotation = new Vector(0, 0, 0);
+                    entry.size = new Vector(1.0f, 1.0f, 1.0f);
+                    entry.velocity = new Vector(0, 0, 0);
+                    entry.trajectory = nullptr;
+                    entry.collider = nullptr;
+                    entry.bitmapPath = "";
+                    entry.text = text; // Store the user-provided text
+                    entry.mesh = new Mesh();
+                    if (!entry.mesh) {
+                        Console::error("Failed to allocate Mesh for text");
+                        return;
+                    }
+                    entry.mesh->color = new QColor(Qt::black); // Set default text color
+                    entry.mesh->lineWidth = 1;
+                    entry.mesh->closePath = false;
+                    tempMeshes.push_back(entry); // Add text entry to tempMeshes
+                    Console::log("Added text '" + text.toStdString() + "' at (lon: " + std::to_string(geoPos.x()) + ", lat: " + std::to_string(geoPos.y()) + ")");
+                    update();
+                }
+            });
+            contextMenu.exec(event->globalPos());
+            return;
+        }
+        if (currentMode == EditShape && !editingShapeId.isEmpty()) {
+            const qreal handleTolerance = 10.0f;
+            selectedHandleIndex = -1;
+            for (size_t i = 0; i < resizeHandles.size(); ++i) {
+                if (QVector2D(event->pos() - resizeHandles[i]).length() < handleTolerance) {
+                    selectedHandleIndex = i;
+                    isResizingShape = true;
+                    dragStartPos = event->pos();
+                    Console::log("Selected resize handle index: " + std::to_string(i));
+                    update();
+                    return;
+                }
+            }
+            currentMode = Translate;
+            editingShapeId = "";
+            selectedHandleIndex = -1;
+            isResizingShape = false;
+            resizeHandles.clear();
+            setCursor(Qt::ArrowCursor);
+            Console::log("Exited EditShape mode: No handle clicked");
+            update();
+            return;
+        }
         if (currentMode == PlaceBitmap && !selectedBitmapType.isEmpty()) {
             QPointF geoPos = gislib->canvasToGeo(event->pos());
             QString bitmapPath = getBitmapImagePath(selectedBitmapType);
@@ -346,7 +405,6 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                 Console::error("No bitmap path found for type: " + selectedBitmapType.toStdString());
                 return;
             }
-
             static int bitmapCounter = 0;
             MeshEntry entry;
             entry.name = QString("TempBitmap_%1").arg(bitmapCounter++);
@@ -357,7 +415,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
             entry.trajectory = nullptr;
             entry.collider = nullptr;
             entry.bitmapPath = bitmapPath;
-
+            entry.text = "";
             entry.mesh = new Mesh();
             if (!entry.mesh) {
                 Console::error("Error: Failed to allocate Mesh for bitmap");
@@ -366,9 +424,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
             entry.mesh->color = new QColor(Qt::white);
             entry.mesh->lineWidth = 1;
             entry.mesh->closePath = false;
-
             tempMeshes.push_back(entry);
-
             QString logMsg = QString("Placed bitmap %1 at (lon: %2, lat: %3)")
                                  .arg(entry.name)
                                  .arg(geoPos.x())
@@ -381,259 +437,16 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
             update();
             return;
         }
-
         if (currentMode == MeasureDistance) {
             return;
         }
-
         if (currentMode == DrawShape) {
-            QPointF geoPos = gislib->canvasToGeo(event->pos());
-            Console::log("Click position: (lon: " + std::to_string(geoPos.x()) +
-                         ", lat: " + std::to_string(geoPos.y()) + ")");
-            QPointF canvasPos = gislib->geoToCanvas(geoPos.y(), geoPos.x());
-            Console::log("Canvas position: (x: " + std::to_string(canvasPos.x()) +
-                         ", y: " + std::to_string(canvasPos.y()) + ")");
-            if (selectedShape == "Rectangle") {
-                MeshEntry entry;
-                entry.name = "TempRectangle";
-                entry.position = new Vector(geoPos.x(), geoPos.y(), 0); // Store geo coords
-                entry.rotation = new Vector(0, 0, 0);
-                entry.size = new Vector(7.0, 7.0, 1); // Increased size in geo coords (lon, lat)
-                entry.velocity = new Vector(0, 0, 0);
-                entry.trajectory = nullptr;
-                entry.collider = nullptr;
-
-                entry.mesh = new Mesh();
-                if (!entry.mesh) {
-                    Console::log("Error: Failed to allocate Mesh");
-                    return;
-                }
-                entry.mesh->color = new QColor(Qt::red);
-                if (!entry.mesh->color) {
-                    Console::log("Error: Failed to allocate QColor");
-                    delete entry.mesh;
-                    return;
-                }
-                entry.mesh->lineWidth = 2;
-                entry.mesh->closePath = true;
-
-                // Define rectangle vertices with larger dimensions in geo coords
-                float halfWidth = 0.01f; // 0.01 degrees longitude (~1.11 km at equator)
-                float halfHeight = 0.005f; // 0.005 degrees latitude (~0.555 km)
-                entry.mesh->polygen = {
-                    new Vector(-halfWidth, -halfHeight, 0), // Bottom-left
-                    new Vector(halfWidth, -halfHeight, 0),  // Bottom-right
-                    new Vector(halfWidth, halfHeight, 0),   // Top-right
-                    new Vector(-halfWidth, halfHeight, 0)   // Top-left
-                };
-
-                tempMeshes.push_back(entry);
-
-                Console::log("Created temporary rectangle at (lon: " + std::to_string(geoPos.x()) +
-                             ", lat: " + std::to_string(geoPos.y()) + ")");
-                update();
-                return;
-            } else if (selectedShape == "Polygon") {
-                if (event->type() == QEvent::MouseButtonDblClick && tempPolygonVertices.size() >= 3) {
-                    MeshEntry entry;
-                    entry.name = "TempPolygon";
-                    float avgX = 0, avgY = 0;
-                    for (const Vector* v : tempPolygonVertices) {
-                        avgX += v->x;
-                        avgY += v->y;
-                    }
-                    avgX /= tempPolygonVertices.size();
-                    avgY /= tempPolygonVertices.size();
-                    entry.position = new Vector(avgX, avgY, 0);
-                    entry.rotation = new Vector(0, 0, 0);
-                    entry.size = new Vector(1.0f, 1.0f, 1.0f);
-                    entry.velocity = new Vector(0, 0, 0);
-                    entry.trajectory = nullptr;
-                    entry.collider = nullptr;
-
-                    entry.mesh = new Mesh();
-                    if (!entry.mesh) {
-                        Console::log("Error: Failed to allocate Mesh");
-                        return;
-                    }
-                    entry.mesh->color = new QColor(Qt::red);
-                    if (!entry.mesh->color) {
-                        Console::log("Error: Failed to allocate QColor");
-                        delete entry.mesh;
-                        return;
-                    }
-                    entry.mesh->lineWidth = 2;
-                    entry.mesh->closePath = true;
-
-                    for (Vector* v : tempPolygonVertices) {
-                        entry.mesh->polygen.push_back(new Vector(v->x - avgX, v->y - avgY, 0));
-                    }
-
-                    tempMeshes.push_back(entry);
-
-                    for (Vector* v : tempPolygonVertices) {
-                        delete v;
-                    }
-                    tempPolygonVertices.clear();
-                    tempPolygonCanvasPoints.clear();
-
-                    Console::log("Created temporary polygon with " + std::to_string(entry.mesh->polygen.size()) + " vertices");
-                    update();
-                    return;
-                } else if (event->type() == QEvent::MouseButtonPress) {
-                    if (tempPolygonVertices.empty()) {
-                        Console::log("Starting new polygon at (lon: " + std::to_string(geoPos.x()) +
-                                     ", lat: " + std::to_string(geoPos.y()) + ")");
-                    }
-                    tempPolygonVertices.push_back(new Vector(geoPos.x(), geoPos.y(), 0));
-                    tempPolygonCanvasPoints.push_back(canvasPos);
-                    Console::log("Added polygon vertex at (lon: " + std::to_string(geoPos.x()) +
-                                 ", lat: " + std::to_string(geoPos.y()) + ")");
-                    update();
-                    return;
-                }
-            } else if (selectedShape == "Line") {
-                if (event->type() == QEvent::MouseButtonDblClick && tempLineVertices.size() >= 2) {
-                    static int polylineCounter = 0;
-                    MeshEntry entry;
-                    entry.name = QString("TempPolyline_%1").arg(polylineCounter++);
-                    float avgX = 0, avgY = 0;
-                    for (const Vector* v : tempLineVertices) {
-                        avgX += v->x;
-                        avgY += v->y;
-                    }
-                    avgX /= tempLineVertices.size();
-                    avgY /= tempLineVertices.size();
-                    entry.position = new Vector(avgX, avgY, 0);
-                    entry.rotation = new Vector(0, 0, 0);
-                    entry.size = new Vector(1.0, 1.0, 1);
-                    entry.velocity = new Vector(0, 0, 0);
-                    entry.trajectory = nullptr;
-                    entry.collider = nullptr;
-
-                    entry.mesh = new Mesh();
-                    if (!entry.mesh) {
-                        Console::log("Error: Failed to allocate Mesh");
-                        return;
-                    }
-                    entry.mesh->color = new QColor(Qt::red);
-                    if (!entry.mesh->color) {
-                        Console::log("Error: Failed to allocate QColor");
-                        delete entry.mesh;
-                        return;
-                    }
-                    entry.mesh->lineWidth = 2;
-                    entry.mesh->closePath = false;
-
-                    for (Vector* v : tempLineVertices) {
-                        entry.mesh->polygen.push_back(new Vector(v->x - avgX, v->y - avgY, 0));
-                    }
-
-                    tempMeshes.push_back(entry);
-
-                    for (Vector* v : tempLineVertices) {
-                        delete v;
-                    }
-                    tempLineVertices.clear();
-                    tempLineCanvasPoints.clear();
-
-                    QString logMsg = QString("Created temporary polyline %1 with %2 vertices")
-                                         .arg(entry.name)
-                                         .arg(entry.mesh->polygen.size());
-                    Console::log(logMsg.toStdString());
-                    update();
-                    return;
-                } else if (event->type() == QEvent::MouseButtonPress) {
-                    if (tempLineVertices.empty()) {
-                        Console::log("Starting new polyline at (lon: " + std::to_string(geoPos.x()) +
-                                     ", lat: " + std::to_string(geoPos.y()) + ")");
-                    }
-                    tempLineVertices.push_back(new Vector(geoPos.x(), geoPos.y(), 0));
-                    tempLineCanvasPoints.push_back(canvasPos);
-                    Console::log("Added polyline vertex at (lon: " + std::to_string(geoPos.x()) +
-                                 ", lat: " + std::to_string(geoPos.y()) + ")");
-                    update();
-                    return;
-                }
-            } else if (selectedShape == "Circle") {
-                static int circleCounter = 0;
-                MeshEntry entry;
-                entry.name = QString("TempCircle_%1").arg(circleCounter++);
-                entry.position = new Vector(geoPos.x(), geoPos.y(), 0);
-                entry.rotation = new Vector(0, 0, 0);
-                entry.size = new Vector(8, 8, 1);
-                entry.velocity = new Vector(0, 0, 0);
-                entry.trajectory = nullptr;
-                entry.collider = nullptr;
-
-                entry.mesh = new Mesh();
-                if (!entry.mesh) {
-                    Console::log("Error: Failed to allocate Mesh");
-                    return;
-                }
-                entry.mesh->color = new QColor(Qt::red);
-                if (!entry.mesh->color) {
-                    Console::log("Error: Failed to allocate QColor");
-                    delete entry.mesh;
-                    return;
-                }
-                entry.mesh->lineWidth = 2;
-                entry.mesh->closePath = true;
-
-                entry.mesh->polygen.push_back(new Vector(geoPos.x(), geoPos.y(), 0));
-
-                tempMeshes.push_back(entry);
-
-                QString logMsg = QString("Created temporary circle %1 at (lon: %2, lat: %3) with geo radius: %4")
-                                     .arg(entry.name)
-                                     .arg(geoPos.x())
-                                     .arg(geoPos.y())
-                                     .arg(entry.size->x);
-                Console::log(logMsg.toStdString());
-                update();
-                return;
-            } else if (selectedShape == "Points") {
-                static int pointCounter = 0;
-                MeshEntry entry;
-                entry.name = QString("TempPoint_%1").arg(pointCounter++);
-                entry.position = new Vector(geoPos.x(), geoPos.y(), 0);
-                entry.rotation = new Vector(0, 0, 0);
-                entry.size = new Vector(0, 0, 1);
-                entry.velocity = new Vector(0, 0, 0);
-                entry.trajectory = nullptr;
-                entry.collider = nullptr;
-
-                entry.mesh = new Mesh();
-                if (!entry.mesh) {
-                    Console::log("Error: Failed to allocate Mesh");
-                    return;
-                }
-                entry.mesh->color = new QColor(Qt::red);
-                if (!entry.mesh->color) {
-                    Console::log("Error: Failed to allocate QColor");
-                    delete entry.mesh;
-                    return;
-                }
-                entry.mesh->lineWidth = 1;
-                entry.mesh->closePath = true;
-
-                entry.mesh->polygen.push_back(new Vector(geoPos.x(), geoPos.y(), 0));
-
-                tempMeshes.push_back(entry);
-
-                QString logMsg = QString("Created temporary point %1 at (lon: %2, lat: %3)")
-                                     .arg(entry.name)
-                                     .arg(geoPos.x())
-                                     .arg(geoPos.y());
-                Console::log(logMsg.toStdString());
-                update();
-                return;
-            }
+            handleShapeDrawing(event);
+            return;
         }
         if (currentMode == DrawTrajectory && isDrawingTrajectory && !selectedEntityId.empty()) {
             QPointF geoPos = gislib->canvasToGeo(event->pos());
             int nearestIndex = findNearestWaypoint(event->pos());
-
             if (nearestIndex >= 0) {
                 selectWaypoint(nearestIndex);
                 isDraggingWaypoint = true;
@@ -649,6 +462,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
             }
             update();
             return;
+
         }
         if (!selectedEntityId.empty()) {
             auto it = Meshes.find(selectedEntityId);
@@ -656,7 +470,6 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                 auto& entry = it->second;
                 QPointF basePos = gislib->geoToCanvas(entry.position->y, entry.position->x);
                 const float handleTolerance = 15.0f;
-
                 if (currentMode == Translate) {
                     QPointF xAxisHandle = basePos + QPointF(50, 0);
                     QPointF yAxisHandle = basePos + QPointF(0, 50);
@@ -684,19 +497,19 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                         return;
                     }
                 } else if (currentMode == Scale) {
-                    QRectF xHandleRect(basePos.x() + 45, basePos.y() - 5, 10, 10);
-                    QRectF yHandleRect(basePos.x() - 5, basePos.y() + 45, 10, 10);
-                    if (xHandleRect.contains(event->pos())) {
+                    QPointF xScaleHandle = basePos + QPointF(50, 0);
+                    QPointF yScaleHandle = basePos + QPointF(0, 50);
+                    if (QVector2D(event->pos() - xScaleHandle).length() < handleTolerance) {
                         activeDragAxis = "scale-x";
                         dragStartPos = event->pos();
-                        Console::log("Gizmo X-axis selected for scaling.");
+                        Console::log("Gizmo X-axis selected for scaling entity: " + selectedEntityId);
                         update();
                         return;
                     }
-                    if (yHandleRect.contains(event->pos())) {
+                    if (QVector2D(event->pos() - yScaleHandle).length() < handleTolerance) {
                         activeDragAxis = "scale-y";
                         dragStartPos = event->pos();
-                        Console::log("Gizmo Y-axis selected for scaling.");
+                        Console::log("Gizmo Y-axis selected for scaling entity: " + selectedEntityId);
                         update();
                         return;
                     }
@@ -726,157 +539,510 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
             update();
         }
     }
-
     if (event->button() == Qt::RightButton) {
-        // Helper function to calculate distance from a point to a line segment
-        auto isPointNearLineSegment = [](const QPointF& p, const QPointF& v1, const QPointF& v2, qreal tolerance) -> bool {
-            // Vector from v1 to v2
-            QPointF vec = v2 - v1;
-            // Vector from v1 to point p
-            QPointF vp = p - v1;
-            // Length of the segment squared
-            qreal lenSquared = vec.x() * vec.x() + vec.y() * vec.y();
-            if (lenSquared < 1e-6) { // Handle case where v1 == v2
-                return QVector2D(p - v1).length() < tolerance;
-            }
-            // Projection of vp onto vec
-            qreal t = std::max<qreal>(0.0, std::min<qreal>(1.0, (vp.x() * vec.x() + vp.y() * vec.y()) / lenSquared));
-            // Closest point on the segment
-            QPointF projection = v1 + t * vec;
-            // Distance from p to the closest point
-            return QVector2D(p - projection).length() < tolerance;
-        };
-
-        // Handle right-click for trajectory waypoints
-        if (currentMode == DrawTrajectory && isDrawingTrajectory) {
-            int nearestIndex = findNearestWaypoint(event->pos());
-            if (nearestIndex >= 0) {
-                selectWaypoint(nearestIndex);
-                QMenu contextMenu(this);
-                QAction* deleteAction = contextMenu.addAction("Delete Waypoint");
-                connect(deleteAction, &QAction::triggered, this, [=]() {
-                    if (selectedWaypointIndex >= 0 && selectedWaypointIndex < (int)currentTrajectory.size()) {
-                        QMessageBox confirmationDialog(this);
-                        confirmationDialog.setWindowTitle("Confirm Delete");
-                        confirmationDialog.setText("Are you sure you want to delete this waypoint?");
-                        confirmationDialog.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                        confirmationDialog.setDefaultButton(QMessageBox::No);
-                        QPalette palette = confirmationDialog.palette();
-                        palette.setColor(QPalette::ButtonText, Qt::white);
-                        palette.setColor(QPalette::Button, QColor("#333333"));
-                        palette.setColor(QPalette::Window, QColor("#222222"));
-                        palette.setColor(QPalette::WindowText, Qt::white);
-                        confirmationDialog.setPalette(palette);
-                        QList<QPushButton*> buttons = confirmationDialog.findChildren<QPushButton*>();
-                        for (QPushButton* button : buttons) {
-                            button->setStyleSheet("color: white; background-color: #333333; border: 1px solid #555555; padding: 5px;");
-                            Console::log("Applied stylesheet to button: " + button->text().toStdString());
-                        }
-                        QMessageBox::StandardButton reply = static_cast<QMessageBox::StandardButton>(confirmationDialog.exec());
-                        if (reply == QMessageBox::Yes) {
-                            delete currentTrajectory[selectedWaypointIndex]->position;
-                            delete currentTrajectory[selectedWaypointIndex];
-                            currentTrajectory.erase(currentTrajectory.begin() + selectedWaypointIndex);
-                            deselectWaypoint();
-                            updateTrajectoryData();
-                            Console::log("Deleted waypoint at index: " + std::to_string(nearestIndex));
-                            update();
-                        }
-                    }
-                });
-                contextMenu.exec(event->globalPos());
-                return;
-            }
-        }
-
-        // Handle right-click for shapes in tempMeshes
-        QPointF geoPos = gislib->canvasToGeo(event->pos());
-        const qreal tolerance = 20.0; // Tolerance for clicking on shapes (in pixels)
-        for (auto it = tempMeshes.begin(); it != tempMeshes.end(); ++it) {
-            const MeshEntry& entry = *it;
-            QPointF entityPos = gislib->geoToCanvas(entry.position->y, entry.position->x);
-            bool isHit = false;
-
-            if (entry.name.startsWith("TempPolygon")) {
-                // Use point-in-polygon test for polygons
-                isHit = isPointInPolygon(event->pos(), entry.mesh->polygen, QPointF(entry.position->x, entry.position->y), gislib);
-            } else if (entry.name.startsWith("TempPolyline")) {
-                // Check proximity to polyline segments
-                for (size_t i = 0; i < entry.mesh->polygen.size() - 1; ++i) {
-                    QPointF v1 = gislib->geoToCanvas(entry.mesh->polygen[i]->y + entry.position->y, entry.mesh->polygen[i]->x + entry.position->x);
-                    QPointF v2 = gislib->geoToCanvas(entry.mesh->polygen[i + 1]->y + entry.position->y, entry.mesh->polygen[i + 1]->x + entry.position->x);
-                    if (isPointNearLineSegment(event->pos(), v1, v2, tolerance)) {
-                        isHit = true;
-                        break;
-                    }
-                }
-            } else {
-                // Existing logic for other shapes
-                qreal w, h;
-                if (entry.name.startsWith("TempCircle")) {
-                    w = h = entry.size->x * 25; // Circle radius in canvas coordinates
-                } else {
-                    w = entry.size->x * 25; // Adjust for canvas scaling
-                    h = entry.size->y * 25;
-                }
-                isHit = (QVector2D(event->pos() - entityPos).length() < tolerance ||
-                         (entry.name.startsWith("TempRectangle") &&
-                          event->pos().x() >= entityPos.x() - w / 2 &&
-                          event->pos().x() <= entityPos.x() + w / 2 &&
-                          event->pos().y() >= entityPos.y() - h / 2 &&
-                          event->pos().y() <= entityPos.y() + h / 2));
-            }
-
-            if (isHit) {
-                QMenu contextMenu(this);
-                QAction* deleteAction = contextMenu.addAction("Delete Shape");
-                connect(deleteAction, &QAction::triggered, this, [=]() {
-                    QMessageBox confirmationDialog(this);
-                    confirmationDialog.setWindowTitle("Confirm Delete");
-                    confirmationDialog.setText("Are you sure you want to delete this shape?");
-                    confirmationDialog.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                    confirmationDialog.setDefaultButton(QMessageBox::No);
-                    QPalette palette = confirmationDialog.palette();
-                    palette.setColor(QPalette::ButtonText, Qt::white);
-                    palette.setColor(QPalette::Button, QColor("#333333"));
-                    palette.setColor(QPalette::Window, QColor("#222222"));
-                    palette.setColor(QPalette::WindowText, Qt::white);
-                    confirmationDialog.setPalette(palette);
-                    QList<QPushButton*> buttons = confirmationDialog.findChildren<QPushButton*>();
-                    for (QPushButton* button : buttons) {
-                        button->setStyleSheet("color: white; background-color: #333333; border: 1px solid #555555; padding: 5px;");
-                        Console::log("Applied stylesheet to button: " + button->text().toStdString());
-                    }
-                    QMessageBox::StandardButton reply = static_cast<QMessageBox::StandardButton>(confirmationDialog.exec());
-                    if (reply == QMessageBox::Yes) {
-                        delete entry.position;
-                        delete entry.rotation;
-                        delete entry.size;
-                        delete entry.velocity;
-                        if (entry.mesh) {
-                            for (Vector* v : entry.mesh->polygen) {
-                                delete v;
-                            }
-                            delete entry.mesh->color;
-                            delete entry.mesh;
-                        }
-                        delete entry.collider;
-                        delete entry.trajectory;
-                        tempMeshes.erase(it);
-                        Console::log("Deleted shape: " + entry.name.toStdString());
-                        update();
-                    }
-                });
-                contextMenu.exec(event->globalPos());
-                return;
-            }
-        }
+        handleRightClick(event);
+        return;
     }
-
     update();
 }
 
+//=============HnadleShapeDrawing=======================
+void CanvasWidget::handleShapeDrawing(QMouseEvent *event) {
+    QPointF geoPos = gislib->canvasToGeo(event->pos());
+    Console::log("Click position: (lon: " + std::to_string(geoPos.x()) +
+                 ", lat: " + std::to_string(geoPos.y()) + ")");
+    QPointF canvasPos = gislib->geoToCanvas(geoPos.y(), geoPos.x());
+    Console::log("Canvas position: (x: " + std::to_string(canvasPos.x()) +
+                 ", y: " + std::to_string(canvasPos.y()) + ")");
+    if (selectedShape == "Rectangle") {
+        MeshEntry entry;
+        entry.name = "TempRectangle";
+        entry.position = new Vector(geoPos.x(), geoPos.y(), 0);
+        entry.rotation = new Vector(0, 0, 0);
+        entry.size = new Vector(7.0, 7.0, 1);
+        entry.velocity = new Vector(0, 0, 0);
+        entry.trajectory = nullptr;
+        entry.collider = nullptr;
+
+        entry.mesh = new Mesh();
+        if (!entry.mesh) {
+            Console::log("Error: Failed to allocate Mesh");
+            return;
+        }
+        entry.mesh->color = new QColor(Qt::red);
+        if (!entry.mesh->color) {
+            Console::log("Error: Failed to allocate QColor");
+            delete entry.mesh;
+            return;
+        }
+        entry.mesh->lineWidth = 2;
+        entry.mesh->closePath = true;
+
+        float halfWidth = 0.01f;
+        float halfHeight = 0.005f;
+        entry.mesh->polygen = {
+            new Vector(-halfWidth, -halfHeight, 0),
+            new Vector(halfWidth, -halfHeight, 0),
+            new Vector(halfWidth, halfHeight, 0),
+            new Vector(-halfWidth, halfHeight, 0)
+        };
+
+        tempMeshes.push_back(entry);
+
+        Console::log("Created temporary rectangle at (lon: " + std::to_string(geoPos.x()) +
+                     ", lat: " + std::to_string(geoPos.y()) + ")");
+        update();
+        return;
+    } else if (selectedShape == "Polygon") {
+        if (event->type() == QEvent::MouseButtonDblClick && tempPolygonVertices.size() >= 3) {
+            MeshEntry entry;
+            entry.name = "TempPolygon";
+            float avgX = 0, avgY = 0;
+            for (const Vector* v : tempPolygonVertices) {
+                avgX += v->x;
+                avgY += v->y;
+            }
+            avgX /= tempPolygonVertices.size();
+            avgY /= tempPolygonVertices.size();
+            entry.position = new Vector(avgX, avgY, 0);
+            entry.rotation = new Vector(0, 0, 0);
+            entry.size = new Vector(1.0f, 1.0f, 1.0f);
+            entry.velocity = new Vector(0, 0, 0);
+            entry.trajectory = nullptr;
+            entry.collider = nullptr;
+
+            entry.mesh = new Mesh();
+            if (!entry.mesh) {
+                Console::log("Error: Failed to allocate Mesh");
+                return;
+            }
+            entry.mesh->color = new QColor(Qt::red);
+            if (!entry.mesh->color) {
+                Console::log("Error: Failed to allocate QColor");
+                delete entry.mesh;
+                return;
+            }
+            entry.mesh->lineWidth = 2;
+            entry.mesh->closePath = true;
+
+            for (Vector* v : tempPolygonVertices) {
+                entry.mesh->polygen.push_back(new Vector(v->x - avgX, v->y - avgY, 0));
+            }
+
+            tempMeshes.push_back(entry);
+
+            for (Vector* v : tempPolygonVertices) {
+                delete v;
+            }
+            tempPolygonVertices.clear();
+            tempPolygonCanvasPoints.clear();
+
+            Console::log("Created temporary polygon with " + std::to_string(entry.mesh->polygen.size()) + " vertices");
+            update();
+            return;
+        } else if (event->type() == QEvent::MouseButtonPress) {
+            if (tempPolygonVertices.empty()) {
+                Console::log("Starting new polygon at (lon: " + std::to_string(geoPos.x()) +
+                             ", lat: " + std::to_string(geoPos.y()) + ")");
+            }
+            tempPolygonVertices.push_back(new Vector(geoPos.x(), geoPos.y(), 0));
+            tempPolygonCanvasPoints.push_back(canvasPos);
+            Console::log("Added polygon vertex at (lon: " + std::to_string(geoPos.x()) +
+                         ", lat: " + std::to_string(geoPos.y()) + ")");
+            update();
+            return;
+        }
+    } else if (selectedShape == "Line") {
+        if (event->type() == QEvent::MouseButtonDblClick && tempLineVertices.size() >= 2) {
+            static int polylineCounter = 0;
+            MeshEntry entry;
+            entry.name = QString("TempPolyline_%1").arg(polylineCounter++);
+            float avgX = 0, avgY = 0;
+            for (const Vector* v : tempLineVertices) {
+                avgX += v->x;
+                avgY += v->y;
+            }
+            avgX /= tempLineVertices.size();
+            avgY /= tempLineVertices.size();
+            entry.position = new Vector(avgX, avgY, 0);
+            entry.rotation = new Vector(0, 0, 0);
+            entry.size = new Vector(1.0, 1.0, 1);
+            entry.velocity = new Vector(0, 0, 0);
+            entry.trajectory = nullptr;
+            entry.collider = nullptr;
+
+            entry.mesh = new Mesh();
+            if (!entry.mesh) {
+                Console::log("Error: Failed to allocate Mesh");
+                return;
+            }
+            entry.mesh->color = new QColor(Qt::red);
+            if (!entry.mesh->color) {
+                Console::log("Error: Failed to allocate QColor");
+                delete entry.mesh;
+                return;
+            }
+            entry.mesh->lineWidth = 2;
+            entry.mesh->closePath = false;
+
+            for (Vector* v : tempLineVertices) {
+                entry.mesh->polygen.push_back(new Vector(v->x - avgX, v->y - avgY, 0));
+            }
+
+            tempMeshes.push_back(entry);
+
+            for (Vector* v : tempLineVertices) {
+                delete v;
+            }
+            tempLineVertices.clear();
+            tempLineCanvasPoints.clear();
+
+            QString logMsg = QString("Created temporary polyline %1 with %2 vertices")
+                                 .arg(entry.name)
+                                 .arg(entry.mesh->polygen.size());
+            Console::log(logMsg.toStdString());
+            update();
+            return;
+        } else if (event->type() == QEvent::MouseButtonPress) {
+            if (tempLineVertices.empty()) {
+                Console::log("Starting new polyline at (lon: " + std::to_string(geoPos.x()) +
+                             ", lat: " + std::to_string(geoPos.y()) + ")");
+            }
+            tempLineVertices.push_back(new Vector(geoPos.x(), geoPos.y(), 0));
+            tempLineCanvasPoints.push_back(canvasPos);
+            Console::log("Added polyline vertex at (lon: " + std::to_string(geoPos.x()) +
+                         ", lat: " + std::to_string(geoPos.y()) + ")");
+            update();
+            return;
+        }
+    } else if (selectedShape == "Circle") {
+        static int circleCounter = 0;
+        MeshEntry entry;
+        entry.name = QString("TempCircle_%1").arg(circleCounter++);
+        entry.position = new Vector(geoPos.x(), geoPos.y(), 0);
+        entry.rotation = new Vector(0, 0, 0);
+        entry.size = new Vector(8, 8, 1);
+        entry.velocity = new Vector(0, 0, 0);
+        entry.trajectory = nullptr;
+        entry.collider = nullptr;
+
+        entry.mesh = new Mesh();
+        if (!entry.mesh) {
+            Console::log("Error: Failed to allocate Mesh");
+            return;
+        }
+        entry.mesh->color = new QColor(Qt::red);
+        if (!entry.mesh->color) {
+            Console::log("Error: Failed to allocate QColor");
+            delete entry.mesh;
+            return;
+        }
+        entry.mesh->lineWidth = 2;
+        entry.mesh->closePath = true;
+
+        entry.mesh->polygen.push_back(new Vector(geoPos.x(), geoPos.y(), 0));
+
+        tempMeshes.push_back(entry);
+
+        QString logMsg = QString("Created temporary circle %1 at (lon: %2, lat: %3) with geo radius: %4")
+                             .arg(entry.name)
+                             .arg(geoPos.x())
+                             .arg(geoPos.y())
+                             .arg(entry.size->x);
+        Console::log(logMsg.toStdString());
+        update();
+        return;
+    } else if (selectedShape == "Points") {
+        static int pointCounter = 0;
+        MeshEntry entry;
+        entry.name = QString("TempPoint_%1").arg(pointCounter++);
+        entry.position = new Vector(geoPos.x(), geoPos.y(), 0);
+        entry.rotation = new Vector(0, 0, 0);
+        entry.size = new Vector(0, 0, 1);
+        entry.velocity = new Vector(0, 0, 0);
+        entry.trajectory = nullptr;
+        entry.collider = nullptr;
+
+        entry.mesh = new Mesh();
+        if (!entry.mesh) {
+            Console::log("Error: Failed to allocate Mesh");
+            return;
+        }
+        entry.mesh->color = new QColor(Qt::red);
+        if (!entry.mesh->color) {
+            Console::log("Error: Failed to allocate QColor");
+            delete entry.mesh;
+            return;
+        }
+        entry.mesh->lineWidth = 1;
+        entry.mesh->closePath = true;
+
+        entry.mesh->polygen.push_back(new Vector(geoPos.x(), geoPos.y(), 0));
+
+        tempMeshes.push_back(entry);
+
+        QString logMsg = QString("Created temporary point %1 at (lon: %2, lat: %3)")
+                             .arg(entry.name)
+                             .arg(geoPos.x())
+                             .arg(geoPos.y());
+        Console::log(logMsg.toStdString());
+        update();
+        return;
+    }
+}
+
+static bool isPointNearLineSegment(const QPointF& p, const QPointF& v1, const QPointF& v2, qreal tolerance) {
+    QPointF vec = v2 - v1;
+    QPointF vp = p - v1;
+    qreal lenSquared = vec.x() * vec.x() + vec.y() * vec.y();
+    if (lenSquared < 1e-6) {
+        return QVector2D(p - v1).length() < tolerance;
+    }
+    qreal t = std::max<qreal>(0.0, std::min<qreal>(1.0, (vp.x() * vec.x() + vp.y() * vec.y()) / lenSquared));
+    QPointF projection = v1 + t * vec;
+    return QVector2D(p - projection).length() < tolerance;
+}
+
+void CanvasWidget::handleRightClick(QMouseEvent *event) {
+    // First try handling trajectory right-click
+    if (currentMode == DrawTrajectory && isDrawingTrajectory) {
+        handleTrajectoryRightClick(event);
+        return;
+    }
+    handleShapeRightClick(event);
+    update();
+}
+
+void CanvasWidget::handleTrajectoryRightClick(QMouseEvent *event) {
+    int nearestIndex = findNearestWaypoint(event->pos());
+    if (nearestIndex >= 0) {
+        selectWaypoint(nearestIndex);
+        QMenu contextMenu(this);
+        QAction* deleteAction = contextMenu.addAction("Delete Waypoint");
+        connect(deleteAction, &QAction::triggered, this, [=]() {
+            if (selectedWaypointIndex >= 0 && selectedWaypointIndex < (int)currentTrajectory.size()) {
+                QMessageBox confirmationDialog(this);
+                confirmationDialog.setWindowTitle("Confirm Delete");
+                confirmationDialog.setText("Are you sure you want to delete this waypoint?");
+                confirmationDialog.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                confirmationDialog.setDefaultButton(QMessageBox::No);
+                QPalette palette = confirmationDialog.palette();
+                palette.setColor(QPalette::ButtonText, Qt::white);
+                palette.setColor(QPalette::Button, QColor("#333333"));
+                palette.setColor(QPalette::Window, QColor("#222222"));
+                palette.setColor(QPalette::WindowText, Qt::white);
+                confirmationDialog.setPalette(palette);
+                QList<QPushButton*> buttons = confirmationDialog.findChildren<QPushButton*>();
+                for (QPushButton* button : buttons) {
+                    button->setStyleSheet("color: white; background-color: #333333; border: 1px solid #555555; padding: 5px;");
+                    Console::log("Applied stylesheet to button: " + button->text().toStdString());
+                }
+                QMessageBox::StandardButton reply = static_cast<QMessageBox::StandardButton>(confirmationDialog.exec());
+                if (reply == QMessageBox::Yes) {
+                    delete currentTrajectory[selectedWaypointIndex]->position;
+                    delete currentTrajectory[selectedWaypointIndex];
+                    currentTrajectory.erase(currentTrajectory.begin() + selectedWaypointIndex);
+                    deselectWaypoint();
+                    updateTrajectoryData();
+                    Console::log("Deleted waypoint at index: " + std::to_string(nearestIndex));
+                    update();
+                }
+            }
+        });
+        contextMenu.exec(event->globalPos());
+    }
+}
+
+
+void CanvasWidget::handleShapeRightClick(QMouseEvent *event) {
+    QPointF geoPos = gislib->canvasToGeo(event->pos());
+    const qreal tolerance = 20.0;
+    for (auto it = tempMeshes.begin(); it != tempMeshes.end(); ++it) {
+        MeshEntry& entry = *it;
+        if (!entry.position || (!entry.mesh && entry.text.isEmpty())) {
+            Console::error("Invalid MeshEntry data for " + entry.name.toStdString());
+            continue;
+        }
+        QPointF entityPos = gislib->geoToCanvas(entry.position->y, entry.position->x);
+        bool isHit = false;
+
+        // Check if the right-click is on a text entry
+        if (entry.name.startsWith("TempText")) {
+            QFont font("Arial", 12, QFont::Bold); // Use same font as rendering for hit detection
+            QFontMetrics fm(font);
+            QRect textRect = fm.boundingRect(entry.text); // Get bounding rectangle of text
+            textRect.moveTo(entityPos.x(), entityPos.y()); // Position rectangle at text location
+            isHit = textRect.contains(event->pos()); // Check if click is within text bounds
+            // Log hit detection for text
+            if (isHit) {
+                Console::log(std::string("Right-click detected on text: ") + entry.text.toStdString() +
+                             std::string(" at (x: ") + std::to_string(entityPos.x()) +
+                             std::string(", y: ") + std::to_string(entityPos.y()) + ")");
+            }
+        } else if (entry.name.startsWith("TempPolygon")) {
+            isHit = isPointInPolygon(event->pos(), entry.mesh->polygen, QPointF(entry.position->x, entry.position->y), gislib);
+        } else if (entry.name.startsWith("TempPolyline")) {
+            for (size_t i = 0; i < entry.mesh->polygen.size() - 1; ++i) {
+                QPointF v1 = gislib->geoToCanvas(entry.mesh->polygen[i]->y + entry.position->y, entry.mesh->polygen[i]->x + entry.position->x);
+                QPointF v2 = gislib->geoToCanvas(entry.mesh->polygen[i + 1]->y + entry.position->y, entry.mesh->polygen[i + 1]->x + entry.position->x);
+                if (isPointNearLineSegment(event->pos(), v1, v2, tolerance)) {
+                    isHit = true;
+                    break;
+                }
+            }
+        } else {
+            qreal w, h;
+            if (entry.name.startsWith("TempCircle")) {
+                w = h = entry.size->x * 25;
+            } else if (entry.name.startsWith("TempRectangle")) {
+                w = entry.size->x * 25;
+                h = entry.size->y * 25;
+            } else if (!entry.bitmapPath.isEmpty()) {
+                // Handle bitmap or bitmap image
+                w = entry.size->x * 25;
+                h = entry.size->y * 25;
+            } else {
+                continue; // Skip invalid entries
+            }
+            isHit = (QVector2D(event->pos() - entityPos).length() < tolerance ||
+                     ((entry.name.startsWith("TempRectangle") || !entry.bitmapPath.isEmpty()) &&
+                      event->pos().x() >= entityPos.x() - w / 2 &&
+                      event->pos().x() <= entityPos.x() + w / 2 &&
+                      event->pos().y() >= entityPos.y() - h / 2 &&
+                      event->pos().y() <= entityPos.y() + h / 2));
+        }
+
+        if (isHit) {
+            QMenu contextMenu(this);
+            // Add edit option for shapes only (not text or bitmaps)
+            if (entry.name.startsWith("TempPolyline") ||
+                entry.name.startsWith("TempCircle") ||
+                entry.name.startsWith("TempRectangle") ||
+                entry.name.startsWith("TempPolygon")) {
+                QAction* editAction = contextMenu.addAction("Edit Shape");
+                connect(editAction, &QAction::triggered, this, [=]() {
+                    editingShapeId = entry.name;
+                    currentMode = EditShape;
+                    selectedHandleIndex = -1;
+                    isResizingShape = false;
+                    resizeHandles.clear();
+                    if (entry.name.startsWith("TempRectangle")) {
+                        float w = entry.size->x * 25;
+                        float h = entry.size->y * 25;
+                        resizeHandles = {
+                            entityPos + QPointF(-w/2, -h/2),
+                            entityPos + QPointF(w/2, -h/2),
+                            entityPos + QPointF(w/2, h/2),
+                            entityPos + QPointF(-w/2, h/2)
+                        };
+                    } else if (entry.name.startsWith("TempCircle")) {
+                        float r = entry.size->x * 25;
+                        resizeHandles = { entityPos + QPointF(r, 0) };
+                    } else if (entry.name.startsWith("TempPolygon") || entry.name.startsWith("TempPolyline")) {
+                        resizeHandles.clear();
+                        for (Vector* v : entry.mesh->polygen) {
+                            if (!v) {
+                                Console::error("Null vertex in polygen for " + entry.name.toStdString());
+                                continue;
+                            }
+                            QPointF vCanvas = gislib->geoToCanvas(v->y + entry.position->y, v->x + entry.position->x);
+                            resizeHandles.push_back(vCanvas);
+                        }
+                    }
+                    // Log the editing action for shapes
+                    Console::log(std::string("Editing shape: ") + entry.name.toStdString());
+                    update();
+                });
+            }
+
+            QAction* deleteAction = contextMenu.addAction(
+                entry.name.startsWith("TempPolyline") ||
+                        entry.name.startsWith("TempCircle") ||
+                        entry.name.startsWith("TempRectangle") ||
+                        entry.name.startsWith("TempPolygon") ? "Delete Shape" :
+                    entry.name.startsWith("TempText") ? "Delete Text" : "Delete Bitmap"
+                );
+            connect(deleteAction, &QAction::triggered, this, [=]() {
+                // Show confirmation dialog before deleting
+                QMessageBox confirmationDialog(this);
+                confirmationDialog.setWindowTitle("Confirm Delete");
+
+                QString entityType = entry.name.startsWith("TempText") ? "text" :
+                                         (entry.name.startsWith("TempPolyline") ||
+                                          entry.name.startsWith("TempCircle") ||
+                                          entry.name.startsWith("TempRectangle") ||
+                                          entry.name.startsWith("TempPolygon")) ? "shape" : "bitmap";
+                confirmationDialog.setText(QString("Are you sure you want to delete this %1?").arg(entityType));
+                confirmationDialog.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                confirmationDialog.setDefaultButton(QMessageBox::No);
+                QPalette palette = confirmationDialog.palette();
+                palette.setColor(QPalette::ButtonText, Qt::white);
+                palette.setColor(QPalette::Button, QColor("#333333"));
+                palette.setColor(QPalette::Window, QColor("#222222"));
+                palette.setColor(QPalette::WindowText, Qt::white);
+                confirmationDialog.setPalette(palette);
+                QList<QPushButton*> buttons = confirmationDialog.findChildren<QPushButton*>();
+                for (QPushButton* button : buttons) {
+                    // Log stylesheet application for dialog buttons
+                    Console::log(std::string("Applied stylesheet to button: ") + button->text().toStdString());
+                    button->setStyleSheet("color: white; background-color: #333333; border: 1px solid #555555; padding: 5px;");
+                }
+                QMessageBox::StandardButton reply = static_cast<QMessageBox::StandardButton>(confirmationDialog.exec());
+                if (reply == QMessageBox::Yes) {
+                    // Clean up MeshEntry resources and remove from tempMeshes
+                    delete entry.position;
+                    delete entry.rotation;
+                    delete entry.size;
+                    delete entry.velocity;
+                    if (entry.mesh) {
+                        for (Vector* v : entry.mesh->polygen) {
+                            delete v;
+                        }
+                        delete entry.mesh->color;
+                        delete entry.mesh;
+                    }
+                    delete entry.collider;
+                    delete entry.trajectory;
+                    tempMeshes.erase(it);
+                    // Log the deletion of shape, bitmap, or text
+                    Console::log(std::string("Deleted ") +
+                                 (entry.name.startsWith("TempText") ? "text: " :
+                                      entry.name.startsWith("TempPolyline") ||
+                                          entry.name.startsWith("TempCircle") ||
+                                          entry.name.startsWith("TempRectangle") ||
+                                          entry.name.startsWith("TempPolygon") ? "shape: " : "bitmap: ") +
+                                 entry.name.toStdString());
+                    update();
+                }
+            });
+            contextMenu.exec(event->globalPos());
+            return;
+        }
+    }
+}
+
+bool CanvasWidget::isPointInPolygon(const QPointF& point, const std::vector<Vector*>& vertices, const QPointF& centroidGeo, GISlib* gislib) {
+    int i, j, n = vertices.size();
+    bool inside = false;
+    for (i = 0, j = n - 1; i < n; j = i++) {
+        // Convert vertices from geo coordinates (relative to centroid) to canvas coordinates
+        QPointF vi = gislib->geoToCanvas(vertices[i]->y + centroidGeo.y(), vertices[i]->x + centroidGeo.x());
+        QPointF vj = gislib->geoToCanvas(vertices[j]->y + centroidGeo.y(), vertices[j]->x + centroidGeo.x());
+        // Ray-casting algorithm
+        if (((vi.y() > point.y()) != (vj.y() > point.y())) &&
+            (point.x() < (vj.x() - vi.x()) * (point.y() - vi.y()) / (vj.y() - vi.y()) + vi.x())) {
+            inside = !inside;
+        }
+    }
+    return inside;
+}
+
+
 void CanvasWidget::handleMouseMove(QMouseEvent *event) {
+    if (!gislib) {
+        Console::error("GISlib is not initialized");
+        return;
+    }
     if (isPanning) {
         QPoint delta = event->pos() - lastMousePos;
         canvasOffset += delta;
@@ -884,28 +1050,110 @@ void CanvasWidget::handleMouseMove(QMouseEvent *event) {
         update();
         return;
     }
-
     if (currentMode == MeasureDistance) {
-        // Let GISlib handle the mouse move for distance measurement
         return;
     }
+    if (currentMode == EditShape && isResizingShape && selectedHandleIndex >= 0 && !editingShapeId.isEmpty()) {
+        for (auto& entry : tempMeshes) {
+            if (entry.name == editingShapeId) {
+                if (!entry.position || !entry.size || !entry.mesh) {
+                    Console::error("Invalid MeshEntry data for " + editingShapeId.toStdString());
+                    return;
+                }
+                QPointF newPos = event->pos();
+                QPointF geoPos = gislib->canvasToGeo(newPos);
+                QPointF centerCanvas = gislib->geoToCanvas(entry.position->y, entry.position->x);
+                if (entry.name.startsWith("TempRectangle")) {
+                    float w = entry.size->x * 25;
+                    float h = entry.size->y * 25;
+                    QPointF delta = newPos - dragStartPos;
+                    float newWidth = w;
+                    float newHeight = h;
+                    if (selectedHandleIndex == 0) { // Top-left
+                        newWidth -= delta.x();
+                        newHeight -= delta.y();
+                        entry.position->x += delta.x() / 50.0f;
+                        entry.position->y += delta.y() / 50.0f;
+                    } else if (selectedHandleIndex == 1) {
+                        newWidth += delta.x();
+                        newHeight -= delta.y();
+                        entry.position->y += delta.y() / 50.0f;
+                    } else if (selectedHandleIndex == 2) {
+                        newWidth += delta.x();
+                        newHeight += delta.y();
+                    } else if (selectedHandleIndex == 3) {
+                        newWidth -= delta.x();
+                        newHeight += delta.y();
+                        entry.position->x += delta.x() / 50.0f;
+                    }
+                    newWidth = std::max(1.0f, newWidth / 25.0f);
+                    newHeight = std::max(1.0f, newHeight / 25.0f);
+                    entry.size->x = newWidth;
+                    entry.size->y = newHeight;
+                    entry.mesh->polygen.clear();
+                    float halfWidth = newWidth * 0.01f;
+                    float halfHeight = newHeight * 0.005f;
+                    entry.mesh->polygen = {
+                        new Vector(-halfWidth, -halfHeight, 0),
+                        new Vector(halfWidth, -halfHeight, 0),
+                        new Vector(halfWidth, halfHeight, 0),
+                        new Vector(-halfWidth, halfHeight, 0)
+                    };
+                    resizeHandles = {
+                        centerCanvas + QPointF(-newWidth*25/2, -newHeight*25/2),
+                        centerCanvas + QPointF(newWidth*25/2, -newHeight*25/2),
+                        centerCanvas + QPointF(newWidth*25/2, newHeight*25/2),
+                        centerCanvas + QPointF(-newWidth*25/2, newHeight*25/2)
+                    };
 
+                } else if (entry.name.startsWith("TempCircle")) {
+                    float newRadius = QVector2D(newPos - centerCanvas).length() / 25.0f;
+                    newRadius = std::max(1.0f, newRadius);
+                    entry.size->x = newRadius;
+                    entry.size->y = newRadius;
+                    resizeHandles = { centerCanvas + QPointF(newRadius*25, 0) };
+                } else if (entry.name.startsWith("TempPolygon") || entry.name.startsWith("TempPolyline")) {
+                    if (selectedHandleIndex < (int)entry.mesh->polygen.size()) {
+                        Vector* vertex = entry.mesh->polygen[selectedHandleIndex];
+                        if (!vertex) {
+
+                            Console::error("Null vertex at index " + std::to_string(selectedHandleIndex));
+                            return;
+                        }
+
+                        vertex->x = geoPos.x() - entry.position->x;
+                        vertex->y = geoPos.y() - entry.position->y;
+
+                        resizeHandles[selectedHandleIndex] = newPos;
+
+                    } else {
+
+                        Console::error("Invalid vertex index: " + std::to_string(selectedHandleIndex));
+                    }
+                }
+                dragStartPos = newPos;
+                update();
+                return;
+            }
+        }
+        return;
+    }
     if (isDrawingTrajectory && isDraggingWaypoint && selectedWaypointIndex >= 0 &&
         selectedWaypointIndex < (int)currentTrajectory.size()) {
-        // Move the selected waypoint
         QPointF geoPos = gislib->canvasToGeo(event->pos());
         Waypoints* wp = currentTrajectory[selectedWaypointIndex];
         wp->position->x = geoPos.x();
         wp->position->y = geoPos.y();
-        Console::log("Moved waypoint " + std::to_string(selectedWaypointIndex) +
-                     " to (" + std::to_string(geoPos.x()) + ", " + std::to_string(geoPos.y()) + ")");
-        updateTrajectoryData();
         update();
         return;
     }
     if (Meshes.find(selectedEntityId) == Meshes.end()) return;
 
     auto& entry = Meshes[selectedEntityId];
+    if (!entry.position || !entry.size || !entry.rotation) {
+        Console::error("Invalid MeshEntry data for " + selectedEntityId);
+        return;
+    }
     QPointF delta = event->pos() - dragStartPos;
 
     float dx = event->pos().x() - entry.position->x - canvasOffset.x();
@@ -920,66 +1168,54 @@ void CanvasWidget::handleMouseMove(QMouseEvent *event) {
     }
 
     if (!selectedEntityId.empty() && !activeDragAxis.isEmpty()) {
-        auto& entry = Meshes[selectedEntityId];
-
         if (currentMode == Translate) {
-            // Nayi mouse position ko geographical coordinates mein convert karein
             QPointF newGeoPos = gislib->canvasToGeo(event->pos());
-
-            // Pichli position ke geo coordinates
             QPointF oldGeoPos = gislib->canvasToGeo(dragStartPos);
-
-            // Delta calculate karein
             double deltaLon = newGeoPos.x() - oldGeoPos.x();
             double deltaLat = newGeoPos.y() - oldGeoPos.y();
-
-            // Sirf active axis ke anusaar position update karein
             if (activeDragAxis == "x") {
-                entry.position->x += deltaLon; // Longitude
+                entry.position->x += deltaLon;
             } else if (activeDragAxis == "y") {
-                entry.position->y += deltaLat; // Latitude
+                entry.position->y += deltaLat;
+            } else if (activeDragAxis == "both") {
+                entry.position->x += deltaLon;
+                entry.position->y += deltaLat;
             }
-
-
         } else if (currentMode == Rotate) {
             QPointF basePos = gislib->geoToCanvas(entry.position->y, entry.position->x);
-            // Center se purane aur naye mouse position tak ka angle calculate karein
             qreal angle_new = qAtan2(event->pos().y() - basePos.y(), event->pos().x() - basePos.x());
             qreal angle_old = qAtan2(dragStartPos.y() - basePos.y(), dragStartPos.x() - basePos.x());
-            // Angle delta ko degrees mein convert karke add karein
             entry.rotation->z -= qRadiansToDegrees(angle_new - angle_old);
-
         } else if (currentMode == Scale) {
             QPointF basePos = gislib->geoToCanvas(entry.position->y, entry.position->x);
             qreal dist_new = QVector2D(event->pos() - basePos).length();
             qreal dist_old = QVector2D(dragStartPos - basePos).length();
             qreal scaleFactor = dist_new / dist_old;
-
             if (activeDragAxis == "x") {
                 entry.size->x *= scaleFactor;
             } else if (activeDragAxis == "y") {
                 entry.size->y *= scaleFactor;
+            } else if (activeDragAxis == "both") {
+                entry.size->x *= scaleFactor;
+                entry.size->y *= scaleFactor;
             }
         }
-
         dragStartPos = event->pos();
         update();
     }
 }
-
 void CanvasWidget::handleMouseRelease(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
         activeDragAxis = "";
         isDraggingWaypoint = false;
+        isResizingShape = false;
+        selectedHandleIndex = -1;
         selectEntity = false;
-        updateTrajectoryData(); // Ensure final position is saved
+        updateTrajectoryData();
     }
-
     if (currentMode == MeasureDistance) {
-        // Let GISlib handle the mouse release for distance measurement
         return;
     }
-
     if (event->button() == Qt::MiddleButton) {
         isPanning = false;
         setCursor(Qt::ArrowCursor);
@@ -990,8 +1226,149 @@ void CanvasWidget::handleMouseRelease(QMouseEvent *event) {
 
 void CanvasWidget::handleKeyPress(QKeyEvent *event) {
     Console::log("Key pressed: " + std::to_string(event->key()));
-
-    if (event->key() == Qt::Key_5) {
+    if (event->key() == Qt::Key_Escape) {
+        if (currentMode == EditShape) {
+            currentMode = Translate;
+            editingShapeId = "";
+            selectedHandleIndex = -1;
+            isResizingShape = false;
+            resizeHandles.clear();
+            setCursor(Qt::ArrowCursor);
+            Console::log("Exited EditShape mode");
+            update();
+            return;
+        }
+        if (currentMode == DrawTrajectory) {
+            Console::log("Calling saveTrajectory");
+            saveTrajectory();
+            setTrajectoryDrawingMode(false);
+            deselectWaypoint();
+        } else if (currentMode == DrawShape) {
+            if (selectedShape == "Polygon" && tempPolygonVertices.size() >= 3) {
+                MeshEntry entry;
+                entry.name = "TempPolygon";
+                float avgX = 0, avgY = 0;
+                for (const Vector* v : tempPolygonVertices) {
+                    avgX += v->x;
+                    avgY += v->y;
+                }
+                avgX /= tempPolygonVertices.size();
+                avgY /= tempPolygonVertices.size();
+                entry.position = new Vector(avgX, avgY, 0);
+                entry.rotation = new Vector(0, 0, 0);
+                float minX = std::numeric_limits<float>::max();
+                float maxX = std::numeric_limits<float>::lowest();
+                float minY = std::numeric_limits<float>::max();
+                float maxY = std::numeric_limits<float>::lowest();
+                for (const Vector* v : tempPolygonVertices) {
+                    minX = std::min(minX, v->x);
+                    maxX = std::max(maxX, v->x);
+                    minY = std::min(minY, v->y);
+                    maxY = std::max(maxY, v->y);
+                }
+                entry.size = new Vector(1.0f, 1.0f, 1.0f);
+                entry.velocity = new Vector(0, 0, 0);
+                entry.trajectory = nullptr;
+                entry.collider = nullptr;
+                entry.mesh = new Mesh();
+                if (!entry.mesh) {
+                    Console::log("Error: Failed to allocate Mesh");
+                    return;
+                }
+                entry.mesh->color = new QColor(Qt::red);
+                if (!entry.mesh->color) {
+                    Console::log("Error: Failed to allocate QColor");
+                    delete entry.mesh;
+                    return;
+                }
+                entry.mesh->lineWidth = 2;
+                entry.mesh->closePath = true;
+                for (Vector* v : tempPolygonVertices) {
+                    entry.mesh->polygen.push_back(new Vector(v->x - avgX, v->y - avgY, 0));
+                }
+                tempMeshes.push_back(entry);
+                for (Vector* v : tempPolygonVertices) {
+                    delete v;
+                }
+                tempPolygonVertices.clear();
+                tempPolygonCanvasPoints.clear();
+                QString logMsg = QString("Finalized polygon with %1 vertices via Escape key, centroid: (x: %2, y: %3)")
+                                     .arg(entry.mesh->polygen.size())
+                                     .arg(avgX)
+                                     .arg(avgY);
+                Console::log(logMsg.toStdString());
+                setShapeDrawingMode(false, "");
+                update();
+            } else if (selectedShape == "Line" && tempLineVertices.size() >= 2) {
+                static int polylineCounter = 0;
+                MeshEntry entry;
+                entry.name = QString("TempPolyline_%1").arg(polylineCounter++);
+                float avgX = 0, avgY = 0;
+                for (const Vector* v : tempLineVertices) {
+                    avgX += v->x;
+                    avgY += v->y;
+                }
+                avgX /= tempLineVertices.size();
+                avgY /= tempLineVertices.size();
+                entry.position = new Vector(avgX, avgY, 0);
+                entry.rotation = new Vector(0, 0, 0);
+                entry.size = new Vector(1.0f, 1.0f, 1.0f);
+                entry.velocity = new Vector(0, 0, 0);
+                entry.trajectory = nullptr;
+                entry.collider = nullptr;
+                entry.mesh = new Mesh();
+                if (!entry.mesh) {
+                    Console::log("Error: Failed to allocate Mesh");
+                    return;
+                }
+                entry.mesh->color = new QColor(Qt::red);
+                if (!entry.mesh->color) {
+                    Console::log("Error: Failed to allocate QColor");
+                    delete entry.mesh;
+                    return;
+                }
+                entry.mesh->lineWidth = 2;
+                entry.mesh->closePath = false;
+                for (Vector* v : tempLineVertices) {
+                    entry.mesh->polygen.push_back(new Vector(v->x - avgX, v->y - avgY, 0));
+                }
+                tempMeshes.push_back(entry);
+                for (Vector* v : tempLineVertices) {
+                    delete v;
+                }
+                tempLineVertices.clear();
+                tempLineCanvasPoints.clear();
+                QString logMsg = QString("Finalized polyline %1 with %2 vertices via Escape key")
+                                     .arg(entry.name)
+                                     .arg(entry.mesh->polygen.size());
+                Console::log(logMsg.toStdString());
+                setShapeDrawingMode(false, "");
+                update();
+            } else if (selectedShape == "Polygon" || selectedShape == "Line") {
+                for (Vector* v : tempPolygonVertices) {
+                    delete v;
+                }
+                tempPolygonVertices.clear();
+                tempPolygonCanvasPoints.clear();
+                for (Vector* v : tempLineVertices) {
+                    delete v;
+                }
+                tempLineVertices.clear();
+                tempLineCanvasPoints.clear();
+                setShapeDrawingMode(false, "");
+                Console::log("Shape drawing cancelled due to insufficient vertices");
+                update();
+            } else if (currentMode == PlaceBitmap) {
+                isPlacingBitmap = false;
+                selectedBitmapType = "";
+                setTransformMode(Translate);
+                Console::log("Exited PlaceBitmap mode");
+            } else if (currentMode == MeasureDistance) {
+                setTransformMode(Translate);
+                Console::log("Exited MeasureDistance mode");
+            }
+        }
+    } else if (event->key() == Qt::Key_5) {
         setTransformMode(MeasureDistance);
         Console::log("Mode set to MeasureDistance");
     } else if (event->key() == Qt::Key_1) {
@@ -1006,159 +1383,6 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
     } else if (event->key() == Qt::Key_4) {
         simulate = !simulate;
         Console::log("Simulation mode: " + std::string(simulate ? "enabled" : "disabled"));
-    } else if (event->key() == Qt::Key_Escape) {
-        Console::log("Escape key pressed, currentMode: " + std::to_string(currentMode));
-        if (currentMode == DrawTrajectory) {
-            Console::log("Calling saveTrajectory");
-            saveTrajectory();
-            setTrajectoryDrawingMode(false);
-            deselectWaypoint();
-        } else if (currentMode == DrawShape) {
-            if (selectedShape == "Polygon" && tempPolygonVertices.size() >= 3) {
-                // Finalize polygon
-                MeshEntry entry;
-                entry.name = "TempPolygon";
-                // Calculate centroid for position
-                float avgX = 0, avgY = 0;
-                for (const Vector* v : tempPolygonVertices) {
-                    avgX += v->x;
-                    avgY += v->y;
-                }
-                avgX /= tempPolygonVertices.size();
-                avgY /= tempPolygonVertices.size();
-                entry.position = new Vector(avgX, avgY, 0);
-                entry.rotation = new Vector(0, 0, 0);
-                // Calculate bounding box for size
-                float minX = std::numeric_limits<float>::max();
-                float maxX = std::numeric_limits<float>::lowest();
-                float minY = std::numeric_limits<float>::max();
-                float maxY = std::numeric_limits<float>::lowest();
-                for (const Vector* v : tempPolygonVertices) {
-                    minX = std::min(minX, v->x);
-                    maxX = std::max(maxX, v->x);
-                    minY = std::min(minY, v->y);
-                    maxY = std::max(maxY, v->y);
-                }
-                // Set size to 1 to avoid scaling in drawMesh
-                entry.size = new Vector(1.0f, 1.0f, 1.0f); // Use 1 to preserve geo coordinates
-                entry.velocity = new Vector(0, 0, 0);
-                entry.trajectory = nullptr;
-                entry.collider = nullptr;
-
-                entry.mesh = new Mesh();
-                if (!entry.mesh) {
-                    Console::log("Error: Failed to allocate Mesh");
-                    return;
-                }
-                entry.mesh->color = new QColor(Qt::red);
-                if (!entry.mesh->color) {
-                    Console::log("Error: Failed to allocate QColor");
-                    delete entry.mesh;
-                    return;
-                }
-                entry.mesh->lineWidth = 2;
-                entry.mesh->closePath = true;
-
-                // Store vertices in geo coordinates relative to centroid
-                for (Vector* v : tempPolygonVertices) {
-                    entry.mesh->polygen.push_back(new Vector(v->x - avgX, v->y - avgY, 0));
-                }
-
-                tempMeshes.push_back(entry);
-
-                // Clean up temporary vertices
-                for (Vector* v : tempPolygonVertices) {
-                    delete v;
-                }
-                tempPolygonVertices.clear();
-                tempPolygonCanvasPoints.clear();
-
-                QString logMsg = QString("Finalized polygon with %1 vertices via Escape key, centroid: (x: %2, y: %3)")
-                                     .arg(entry.mesh->polygen.size())
-                                     .arg(avgX)
-                                     .arg(avgY);
-                Console::log(logMsg.toStdString());
-                setShapeDrawingMode(false, "");
-                update();
-            } else if (selectedShape == "Line" && tempLineVertices.size() >= 2) {
-                // Finalize line
-                static int polylineCounter = 0;
-                MeshEntry entry;
-                entry.name = QString("TempPolyline_%1").arg(polylineCounter++);
-                float avgX = 0, avgY = 0;
-                for (const Vector* v : tempLineVertices) {
-                    avgX += v->x;
-                    avgY += v->y;
-                }
-                avgX /= tempLineVertices.size();
-                avgY /= tempLineVertices.size();
-                entry.position = new Vector(avgX, avgY, 0);
-                entry.rotation = new Vector(0, 0, 0);
-                // Set size to 1 to avoid scaling
-                entry.size = new Vector(1.0f, 1.0f, 1.0f);
-                entry.velocity = new Vector(0, 0, 0);
-                entry.trajectory = nullptr;
-                entry.collider = nullptr;
-
-                entry.mesh = new Mesh();
-                if (!entry.mesh) {
-                    Console::log("Error: Failed to allocate Mesh");
-                    return;
-                }
-                entry.mesh->color = new QColor(Qt::red);
-                if (!entry.mesh->color) {
-                    Console::log("Error: Failed to allocate QColor");
-                    delete entry.mesh;
-                    return;
-                }
-                entry.mesh->lineWidth = 2;
-                entry.mesh->closePath = false;
-
-                for (Vector* v : tempLineVertices) {
-                    entry.mesh->polygen.push_back(new Vector(v->x - avgX, v->y - avgY, 0));
-                }
-
-                tempMeshes.push_back(entry);
-
-                for (Vector* v : tempLineVertices) {
-                    delete v;
-                }
-                tempLineVertices.clear();
-                tempLineCanvasPoints.clear();
-
-                QString logMsg = QString("Finalized polyline %1 with %2 vertices via Escape key")
-                                     .arg(entry.name)
-                                     .arg(entry.mesh->polygen.size());
-                Console::log(logMsg.toStdString());
-                setShapeDrawingMode(false, "");
-                update();
-            } else if (selectedShape == "Polygon" || selectedShape == "Line") {
-                // If not enough vertices, just clear and exit drawing mode
-                for (Vector* v : tempPolygonVertices) {
-                    delete v;
-                }
-                tempPolygonVertices.clear();
-                tempPolygonCanvasPoints.clear();
-
-                for (Vector* v : tempLineVertices) {
-                    delete v;
-                }
-                tempLineVertices.clear();
-                tempLineCanvasPoints.clear();
-
-                setShapeDrawingMode(false, "");
-                Console::log("Shape drawing cancelled due to insufficient vertices");
-                update();
-            } else if (currentMode == PlaceBitmap) {
-                isPlacingBitmap = false;
-                selectedBitmapType = "";
-                setTransformMode(Translate);
-                Console::log("Exited PlaceBitmap mode");
-            } else if (currentMode == MeasureDistance) {
-                setTransformMode(Translate);
-                Console::log("Exited MeasureDistance mode");
-            }
-        }
     } else if (event->key() == Qt::Key_Delete && currentMode == DrawTrajectory &&
                selectedWaypointIndex >= 0 && selectedWaypointIndex < (int)currentTrajectory.size()) {
         delete currentTrajectory[selectedWaypointIndex]->position;
@@ -1171,7 +1395,6 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
     } else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
         if (currentMode == DrawShape && (!tempPolygonCanvasPoints.empty() || !tempLineCanvasPoints.empty())) {
             if (selectedShape == "Polygon" && tempPolygonVertices.size() >= 3) {
-                // Finalize polygon (same as Escape)
                 MeshEntry entry;
                 entry.name = "TempPolygon";
                 float avgX = 0, avgY = 0;
@@ -1197,7 +1420,6 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
                 entry.velocity = new Vector(0, 0, 0);
                 entry.trajectory = nullptr;
                 entry.collider = nullptr;
-
                 entry.mesh = new Mesh();
                 if (!entry.mesh) {
                     Console::log("Error: Failed to allocate Mesh");
@@ -1211,19 +1433,15 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
                 }
                 entry.mesh->lineWidth = 2;
                 entry.mesh->closePath = true;
-
                 for (Vector* v : tempPolygonVertices) {
                     entry.mesh->polygen.push_back(new Vector(v->x - avgX, v->y - avgY, 0));
                 }
-
                 tempMeshes.push_back(entry);
-
                 for (Vector* v : tempPolygonVertices) {
                     delete v;
                 }
                 tempPolygonVertices.clear();
                 tempPolygonCanvasPoints.clear();
-
                 QString logMsg = QString("Finalized polygon with %1 vertices via Enter key, centroid: (x: %2, y: %3)")
                                      .arg(entry.mesh->polygen.size())
                                      .arg(avgX)
@@ -1232,7 +1450,6 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
                 setShapeDrawingMode(false, "");
                 update();
             } else if (selectedShape == "Line" && tempLineVertices.size() >= 2) {
-                // Finalize line (same as Escape)
                 static int polylineCounter = 0;
                 MeshEntry entry;
                 entry.name = QString("TempPolyline_%1").arg(polylineCounter++);
@@ -1249,7 +1466,6 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
                 entry.velocity = new Vector(0, 0, 0);
                 entry.trajectory = nullptr;
                 entry.collider = nullptr;
-
                 entry.mesh = new Mesh();
                 if (!entry.mesh) {
                     Console::log("Error: Failed to allocate Mesh");
@@ -1263,19 +1479,15 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
                 }
                 entry.mesh->lineWidth = 2;
                 entry.mesh->closePath = false;
-
                 for (Vector* v : tempLineVertices) {
                     entry.mesh->polygen.push_back(new Vector(v->x - avgX, v->y - avgY, 0));
                 }
-
                 tempMeshes.push_back(entry);
-
                 for (Vector* v : tempLineVertices) {
                     delete v;
                 }
                 tempLineVertices.clear();
                 tempLineCanvasPoints.clear();
-
                 QString logMsg = QString("Finalized polyline %1 with %2 vertices via Enter key")
                                      .arg(entry.name)
                                      .arg(entry.mesh->polygen.size());
@@ -1285,9 +1497,9 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
             }
         }
     }
-
     update();
 }
+
 void CanvasWidget::handlePaint(QPaintEvent *event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -1297,6 +1509,8 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
     drawImage(painter);
     drawSelectionOutline(painter);
     drawCollider(painter);
+    drawAirbases(painter);// for preset layer
+
 
     if (isDrawingTrajectory && !currentTrajectory.empty()) {
         painter.save();
@@ -1309,7 +1523,7 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
             QPointF screenPos = gislib->geoToCanvas(waypoint->position->y, waypoint->position->x);
             polyline << screenPos;
             painter.setBrush(Qt::magenta);
-            int pointSize = (i == selectedWaypointIndex) ? 6 : 4; // Larger size for selected waypoint
+            int pointSize = (i == selectedWaypointIndex) ? 6 : 4;
             QPen pointPen = (i == selectedWaypointIndex) ? QPen(Qt::yellow, 2) : QPen(Qt::magenta, 1);
             painter.setPen(pointPen);
             painter.drawEllipse(screenPos, pointSize, pointSize);
@@ -1322,12 +1536,29 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
         painter.restore();
     }
 
+    // Draw resize handles in EditShape mode
+    if (currentMode == EditShape && !editingShapeId.isEmpty()) {
+        painter.save();
+        painter.setPen(QPen(Qt::blue, 2));
+        painter.setBrush(Qt::blue);
+        for (size_t i = 0; i < resizeHandles.size(); ++i) {
+            painter.drawRect(QRectF(resizeHandles[i] - QPointF(4, 4), QSizeF(8, 8)));
+            if (i == selectedHandleIndex) {
+                painter.setPen(QPen(Qt::yellow, 2));
+                painter.drawRect(QRectF(resizeHandles[i] - QPointF(5, 5), QSizeF(10, 10)));
+                painter.setPen(QPen(Qt::blue, 2));
+            }
+        }
+        painter.restore();
+    }
+
     drawSceneInformation(painter);
     drawEntityInformation(painter);
     drawTransformGizmo(painter);
 
     frameCount++;
 }
+
 void CanvasWidget::keyPressEvent(QKeyEvent *event) {
     handleKeyPress(event);
 }
@@ -1435,8 +1666,8 @@ void CanvasWidget::drawGridLines(QPainter& painter) {
 
 
 void CanvasWidget::drawSceneInformation(QPainter& painter) {
-    painter.save(); // Painter state save karein
-    painter.resetTransform(); // Transform reset karein taaki drawing screen coordinates mein ho
+    painter.save();
+    painter.resetTransform();
 
     QFont font("Arial", 10, QFont::Bold);
     painter.setFont(font);
@@ -1444,19 +1675,18 @@ void CanvasWidget::drawSceneInformation(QPainter& painter) {
 
     if (showInformation) {
         QString modeText = QString(" %1").arg(simulate ? "Simulation" : "Editor");
-        // FIX: canvasOffset hataya gaya, fixed screen coordinates ka upyog kiya
+
         painter.drawText(QPointF(width() - 100, 20), modeText);
     }
 
     if (showFPS) {
         QString fpsText = QString("FPS: %1").arg(fps*10);
-        // FIX: canvasOffset hataya gaya
+
         painter.drawText(QPointF(10, 20), fpsText);
     }
 
-    painter.restore(); // Painter state restore karein
+    painter.restore();
 }
-
 
 void CanvasWidget::drawEntityInformation(QPainter& painter) {
     if (!showInformation || simulate || selectedEntityId.empty()) return;
@@ -1469,11 +1699,11 @@ void CanvasWidget::drawEntityInformation(QPainter& painter) {
     QString name = it->second.name;
     auto& pos = it->second.position;
     QString text;
-    // Position ko behtar format mein dikhayein
+
     if (currentMode == Translate || currentMode == DrawTrajectory) {
         text = QString("pos: lon %1, lat %2")
-        .arg(pos->x, 0, 'f', 4) // Longitude
-            .arg(pos->y, 0, 'f', 4); // Latitude
+                   .arg(pos->x, 0, 'f', 4) // Longitude
+                   .arg(pos->y, 0, 'f', 4); // Latitude
     } else if (currentMode == Rotate) {
         auto& rot = Meshes[selectedEntityId].rotation;
         text = QString("rot: x %1, y %2, z %3")
@@ -1504,7 +1734,6 @@ void CanvasWidget::drawEntityInformation(QPainter& painter) {
     painter.restore();
 }
 
-
 void CanvasWidget::drawTransformGizmo(QPainter& painter) {
     if (simulate || currentMode == DrawTrajectory || selectedEntityId.empty()) return;
     auto it = Meshes.find(selectedEntityId);
@@ -1512,16 +1741,16 @@ void CanvasWidget::drawTransformGizmo(QPainter& painter) {
 
     auto& entry = it->second;
 
-    // Entity ki geographical position ko screen position (pixels) mein badlein
+
     QPointF base = gislib->geoToCanvas(entry.position->y, entry.position->x);
 
-    // Gizmo handles ki screen positions
+
     QPointF xAxisHandlePos = base + QPointF(50, 0);
     QPointF yAxisHandlePos = base + QPointF(0, 50);
 
-    // Baaki ka code (drawing logic) waisa hi rahega, lekin ab 'base' screen coordinates mein hai
+
     if (currentMode == Translate) {
-        // Active axis ke hisaab se handle ko mota (thicker) dikhayein
+
         painter.setPen(QPen(Qt::blue, (activeDragAxis == "x") ? 4 : 2));
         painter.drawLine(base, xAxisHandlePos);
         painter.setPen(QPen(Qt::green, (activeDragAxis == "y") ? 4 : 2));
@@ -1531,16 +1760,16 @@ void CanvasWidget::drawTransformGizmo(QPainter& painter) {
         painter.setBrush(Qt::NoBrush);
         painter.drawEllipse(base, 40, 40);
         float radius = 40;
-        // Rotation angle entry se lein
+
         float rad = qDegreesToRadians(-entry.rotation->z);
         QPointF endpoint(base.x() + radius * cos(rad), base.y() - radius * sin(rad));
         painter.drawLine(base, endpoint);
     } else if (currentMode == Scale) {
         painter.setPen(QPen(Qt::red, 2));
         painter.setBrush(Qt::red);
-        painter.drawRect(QRectF(base + QPointF(45, -3), QSizeF(10, 6))); // X-axis handle
+        painter.drawRect(QRectF(base + QPointF(45, -3), QSizeF(10, 6)));
         painter.setBrush(Qt::green);
-        painter.drawRect(QRectF(base + QPointF(-3, 45), QSizeF(6, 10))); // Y-axis handle
+        painter.drawRect(QRectF(base + QPointF(-3, 45), QSizeF(6, 10)));
     }
 }
 
@@ -1602,11 +1831,9 @@ void CanvasWidget::drawCollider(QPainter& painter) {
 
 void CanvasWidget::drawMesh(QPainter& painter) {
     if (!showMesh) {
-        Console::log("Mesh rendering disabled");
         return;
     }
     if (!painter.isActive()) {
-        Console::log("Painter is not active, skipping mesh rendering");
         return;
     }
 
@@ -1614,6 +1841,18 @@ void CanvasWidget::drawMesh(QPainter& painter) {
         Mesh* mesh = entry.mesh;
         if (!mesh || !mesh->color) {
             Console::log("Warning: Invalid mesh or color in tempMeshes for " + entry.name.toStdString());
+            continue;
+        }
+
+        // Render text for TempText entries
+        if (entry.name.startsWith("TempText") && !entry.text.isEmpty()) {
+            QPointF canvasPos = gislib->geoToCanvas(entry.position->y, entry.position->x);
+            painter.save();
+            QFont font("Arial", 12, QFont::Bold);
+            painter.setFont(font);
+            painter.setPen(*mesh->color);
+            painter.drawText(canvasPos, entry.text);
+            painter.restore();
             continue;
         }
 
@@ -1632,18 +1871,12 @@ void CanvasWidget::drawMesh(QPainter& painter) {
                 painter.rotate(entry.rotation->z);
                 painter.drawPixmap(QPointF(-scaled.width() / 2.0f, -scaled.height() / 2.0f), scaled);
                 painter.restore();
-                QString logMsg = QString("Rendering bitmap %1 at canvas position: (x: %2, y: %3)")
-                                     .arg(entry.name)
-                                     .arg(canvasPos.x())
-                                     .arg(canvasPos.y());
-                Console::log(logMsg.toStdString());
             } else {
                 Console::log("Error: Failed to load bitmap image at path: " + entry.bitmapPath.toStdString());
             }
             continue;
         }
 
-        // Handle points
         if (entry.name.startsWith("TempPoint")) {
             if (mesh->polygen.empty()) {
                 Console::log("Warning: Point mesh has no position for " + entry.name.toStdString());
@@ -1655,11 +1888,6 @@ void CanvasWidget::drawMesh(QPainter& painter) {
                 continue;
             }
             QPointF canvasPoint = gislib->geoToCanvas(point->y, point->x);
-            QString logMsg = QString("Rendering point %1 at canvas position: (x: %2, y: %3)")
-                                 .arg(entry.name)
-                                 .arg(canvasPoint.x())
-                                 .arg(canvasPoint.y());
-            Console::log(logMsg.toStdString());
             painter.setPen(QPen(*mesh->color, mesh->lineWidth, Qt::SolidLine));
             painter.setBrush(*mesh->color);
             painter.drawEllipse(canvasPoint, 3, 3);
@@ -1678,11 +1906,6 @@ void CanvasWidget::drawMesh(QPainter& painter) {
                 continue;
             }
             QPointF canvasCenter = gislib->geoToCanvas(center->y, center->x);
-            QString logMsg = QString("Rendering circle %1 at canvas position: (x: %2, y: %3)")
-                                 .arg(entry.name)
-                                 .arg(canvasCenter.x())
-                                 .arg(canvasCenter.y());
-            Console::log(logMsg.toStdString());
             QPointF radiusPointGeo(center->x + entry.size->x, center->y);
             QPointF radiusPointCanvas = gislib->geoToCanvas(radiusPointGeo.y(), radiusPointGeo.x());
             float canvasRadius = sqrt(pow(radiusPointCanvas.x() - canvasCenter.x(), 2) +
@@ -1690,12 +1913,9 @@ void CanvasWidget::drawMesh(QPainter& painter) {
             if (canvasRadius > 0 && canvasRadius < 10000) {
                 painter.setPen(QPen(*mesh->color, mesh->lineWidth, Qt::SolidLine));
                 painter.setBrush(QColor(255, 0, 0, 50));
-                logMsg = QString("Drawing circle %1 with radius: %2")
-                             .arg(entry.name)
-                             .arg(canvasRadius);
-                Console::log(logMsg.toStdString());
                 painter.drawEllipse(canvasCenter, canvasRadius, canvasRadius);
             } else {
+
                 Console::log("Warning: Circle radius " + std::to_string(canvasRadius) + " is invalid or too large for " + entry.name.toStdString());
             }
             continue;
@@ -1704,11 +1924,6 @@ void CanvasWidget::drawMesh(QPainter& painter) {
         // Handle rectangles, polylines, and polygons
         QPolygonF polygon;
         QPointF canvasPos = gislib->geoToCanvas(entry.position->y, entry.position->x);
-        QString logMsg = QString("Rendering %1 at canvas position: (x: %2, y: %3)")
-                             .arg(entry.name)
-                             .arg(canvasPos.x())
-                             .arg(canvasPos.y());
-        Console::log(logMsg.toStdString());
         float angle = qDegreesToRadians(entry.rotation->z);
         float cosA = cos(angle);
         float sinA = sin(angle);
@@ -1717,16 +1932,13 @@ void CanvasWidget::drawMesh(QPainter& painter) {
                 Console::log("Warning: Null point in mesh for " + entry.name.toStdString());
                 continue;
             }
-            // Convert geo coordinates (relative to centroid) to canvas coordinates
             float geoX = point->x;
             float geoY = point->y;
             if (entry.name.startsWith("TempRectangle")) {
-                // Apply size scaling for rectangles
-                geoX *= entry.size->x / 0.02f; // Normalize based on initial size
+                geoX *= entry.size->x / 0.02f;
                 geoY *= entry.size->y / 0.01f;
             }
             QPointF canvasPoint = gislib->geoToCanvas(geoY + entry.position->y, geoX + entry.position->x);
-            // Apply rotation
             float x = canvasPoint.x() - canvasPos.x();
             float y = canvasPoint.y() - canvasPos.y();
             float rotatedX = x * cosA - y * sinA;
@@ -1734,48 +1946,29 @@ void CanvasWidget::drawMesh(QPainter& painter) {
             float finalX = canvasPos.x() + rotatedX;
             float finalY = canvasPos.y() + rotatedY;
             polygon << QPointF(finalX, finalY);
-            logMsg = QString("%1 point %2: (x: %3, y: %4)")
-                         .arg(entry.name)
-                         .arg(entry.name.startsWith("TempPolygon") ? "Polygon" : entry.name.startsWith("TempRectangle") ? "Rectangle" : "Polyline")
-                         .arg(finalX)
-                         .arg(finalY);
-            Console::log(logMsg.toStdString());
+
         }
         if (polygon.isEmpty()) {
+
             Console::log("Warning: Polygon/Polyline/Rectangle is empty, cannot draw for " + entry.name.toStdString());
             continue;
         }
         painter.setPen(QPen(*mesh->color, mesh->lineWidth, Qt::SolidLine));
         if (entry.name.startsWith("TempPolygon") || entry.name.startsWith("TempRectangle")) {
             painter.setBrush(QColor(255, 0, 0, 50));
-            logMsg = QString("Drawing %1 %2 with %3 vertices, color: red, lineWidth: %4")
-                         .arg(entry.name.startsWith("TempPolygon") ? "polygon" : "rectangle")
-                         .arg(entry.name)
-                         .arg(polygon.size())
-                         .arg(mesh->lineWidth);
-            Console::log(logMsg.toStdString());
             painter.drawPolygon(polygon);
         } else {
             painter.setBrush(Qt::NoBrush);
-            logMsg = QString("Drawing polyline %1 with %2 vertices, color: red, lineWidth: %3")
-                         .arg(entry.name)
-                         .arg(polygon.size())
-                         .arg(mesh->lineWidth);
-            Console::log(logMsg.toStdString());
             painter.drawPolyline(polygon);
         }
     }
 
-    // Draw preview of polygon being created
     if (!tempPolygonVertices.empty()) {
         QPolygonF previewPolygon;
         for (const Vector* vertex : tempPolygonVertices) {
             QPointF canvasPoint = gislib->geoToCanvas(vertex->y, vertex->x);
             previewPolygon << canvasPoint;
-            QString logMsg = QString("Preview polygon point: (x: %1, y: %2)")
-                                 .arg(canvasPoint.x())
-                                 .arg(canvasPoint.y());
-            Console::log(logMsg.toStdString());
+
         }
         painter.setPen(QPen(Qt::red, 2, Qt::DashLine));
         painter.setBrush(QColor(255, 0, 0, 50));
@@ -1787,20 +1980,16 @@ void CanvasWidget::drawMesh(QPainter& painter) {
         }
         if (previewPolygon.size() >= 3) {
             painter.drawPolygon(previewPolygon);
-            Console::log("Drawing preview polygon with " + std::to_string(previewPolygon.size()) + " vertices");
+
         }
     }
 
-    // Draw preview of polyline being created
     if (!tempLineVertices.empty()) {
         QPolygonF previewLine;
         for (const Vector* vertex : tempLineVertices) {
             QPointF canvasPoint = gislib->geoToCanvas(vertex->y, vertex->x);
             previewLine << canvasPoint;
-            QString logMsg = QString("Preview polyline point: (x: %1, y: %2)")
-                                 .arg(canvasPoint.x())
-                                 .arg(canvasPoint.y());
-            Console::log(logMsg.toStdString());
+
         }
         painter.setPen(QPen(Qt::red, 2, Qt::DashLine));
         painter.setBrush(Qt::NoBrush);
@@ -1811,12 +2000,10 @@ void CanvasWidget::drawMesh(QPainter& painter) {
             for (const QPointF& point : previewLine) {
                 painter.drawEllipse(point, 3, 3);
             }
-            Console::log("Drawing preview polyline with " + std::to_string(previewLine.size()) + " vertices");
+
         }
     }
 }
-
-
 void CanvasWidget::drawImage(QPainter& painter) {
     for (auto& [id, entry] : Meshes) {
         Mesh* mesh = entry.mesh;
@@ -1842,12 +2029,11 @@ void CanvasWidget::drawImage(QPainter& painter) {
     }
 }
 
-
 void CanvasWidget::drawTrajectory(QPainter& painter) {
     for (const auto& [id, entry] : Meshes) {
         // Skip if trajectory is null or not active
         if (!entry.trajectory || !entry.trajectory->Active || entry.trajectory->Trajectories.empty()) {
-            //Console::log("Skipping trajectory draw for entity: " + id + " (trajectory null, inactive, or empty)");
+
             continue;
         }
 
@@ -1898,7 +2084,6 @@ void CanvasWidget::toggleLayerVisibility(const QString& layer, bool visible) {
     update();
 }
 
-
 void CanvasWidget::setShapeDrawingMode(bool enabled, const QString& shapeType) {
     isDrawingTrajectory = false;
     selectedShape = shapeType;
@@ -1944,7 +2129,6 @@ void CanvasWidget::setShapeDrawingMode(bool enabled, const QString& shapeType) {
     update();
 }
 
-
 void CanvasWidget::onBitmapImageSelected(const QString& filePath) {
     static int bitmapCounter = 0;
     MeshEntry entry;
@@ -1978,6 +2162,7 @@ void CanvasWidget::onBitmapImageSelected(const QString& filePath) {
 
     update();
 }
+
 QString CanvasWidget::getBitmapImagePath(const QString& bitmapType) {
     QMap<QString, QString> bitmapMap = {
         {"Hospital", ":/icons/images/hospital.png"},
@@ -2002,7 +2187,6 @@ void CanvasWidget::deselectWaypoint() {
     Console::log("Deselected waypoint");
     update();
 }
-
 
 int CanvasWidget::findNearestWaypoint(QPointF canvasPos) {
     const float tolerance = 10.0f; // Pixel tolerance for selecting a waypoint
@@ -2048,13 +2232,13 @@ void CanvasWidget::updateTrajectoryData() {
 }
 
 
+
 QJsonObject CanvasWidget::toJson() const {
     QJsonObject json;
 
     json["selectedBitmapType"] = selectedBitmapType;
     json["isPlacingBitmap"] = isPlacingBitmap;
 
-    // Serialize tempPolygonVertices
     QJsonArray polygonVerticesArray;
     for (const Vector* vertex : tempPolygonVertices) {
         QJsonObject vObj;
@@ -2065,7 +2249,6 @@ QJsonObject CanvasWidget::toJson() const {
     }
     json["tempPolygonVertices"] = polygonVerticesArray;
 
-    // Serialize tempPolygonCanvasPoints
     QJsonArray polygonCanvasPointsArray;
     for (const QPointF& point : tempPolygonCanvasPoints) {
         QJsonObject pObj;
@@ -2075,7 +2258,6 @@ QJsonObject CanvasWidget::toJson() const {
     }
     json["tempPolygonCanvasPoints"] = polygonCanvasPointsArray;
 
-    // Serialize tempLineVertices
     QJsonArray lineVerticesArray;
     for (const Vector* vertex : tempLineVertices) {
         QJsonObject vObj;
@@ -2086,7 +2268,6 @@ QJsonObject CanvasWidget::toJson() const {
     }
     json["tempLineVertices"] = lineVerticesArray;
 
-    // Serialize tempLineCanvasPoints
     QJsonArray lineCanvasPointsArray;
     for (const QPointF& point : tempLineCanvasPoints) {
         QJsonObject pObj;
@@ -2096,46 +2277,40 @@ QJsonObject CanvasWidget::toJson() const {
     }
     json["tempLineCanvasPoints"] = lineCanvasPointsArray;
 
-    // Serialize tempMeshes (includes Rectangle, Circle, Point, and Bitmap)
     QJsonArray tempMeshesArray;
     for (const MeshEntry& entry : tempMeshes) {
         QJsonObject meshObj;
         meshObj["name"] = entry.name;
+        meshObj["text"] = entry.text; // Serialize the text field for TempText entr
 
-        // Serialize position
         QJsonObject posObj;
         posObj["x"] = entry.position->x;
         posObj["y"] = entry.position->y;
         posObj["z"] = entry.position->z;
         meshObj["position"] = posObj;
 
-        // Serialize rotation
         QJsonObject rotObj;
         rotObj["x"] = entry.rotation->x;
         rotObj["y"] = entry.rotation->y;
         rotObj["z"] = entry.rotation->z;
         meshObj["rotation"] = rotObj;
 
-        // Serialize size
         QJsonObject sizeObj;
         sizeObj["x"] = entry.size->x;
         sizeObj["y"] = entry.size->y;
         sizeObj["z"] = entry.size->z;
         meshObj["size"] = sizeObj;
 
-        // Serialize velocity
         QJsonObject velObj;
         velObj["x"] = entry.velocity->x;
         velObj["y"] = entry.velocity->y;
         velObj["z"] = entry.velocity->z;
         meshObj["velocity"] = velObj;
 
-        // Serialize bitmapPath if present
         if (!entry.bitmapPath.isEmpty()) {
             meshObj["bitmapPath"] = entry.bitmapPath;
         }
 
-        // Serialize mesh data
         if (entry.mesh) {
             QJsonObject meshData;
             meshData["lineWidth"] = entry.mesh->lineWidth;
@@ -2164,11 +2339,23 @@ QJsonObject CanvasWidget::toJson() const {
     }
     json["tempMeshes"] = tempMeshesArray;
 
+    // use airbase layer data by waris
+    json["showAirbases"] = showAirbases;
+    QJsonArray airbasesArray;
+    for (const auto& pos : airbasePositions) {
+        QJsonObject airbase;
+        airbase["lon"] = pos.first;
+        airbase["lat"] = pos.second;
+        airbasesArray.append(airbase);
+    }
+    json["airbasePositions"] = airbasesArray;
+
     return json;
 }
 
+
+
 void CanvasWidget::fromJson(const QJsonObject& json) {
-    // Clear existing data
     for (Waypoints* wp : currentTrajectory) {
         delete wp->position;
         delete wp;
@@ -2187,7 +2374,6 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
     tempLineVertices.clear();
     tempLineCanvasPoints.clear();
 
-    // Clear tempMeshes
     for (MeshEntry& entry : tempMeshes) {
         delete entry.position;
         delete entry.rotation;
@@ -2205,7 +2391,26 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
     }
     tempMeshes.clear();
 
-    // Deserialize selectedBitmapType and isPlacingBitmap
+    // use for save data in json for airbase
+    airbasePositions.clear();
+    showAirbases = false;
+
+    // Restore airbase layer data
+    if (json.contains("showAirbases")) {
+        showAirbases = json["showAirbases"].toBool();
+    }
+    if (json.contains("airbasePositions") && json["airbasePositions"].isArray()) {
+        QJsonArray airbasesArray = json["airbasePositions"].toArray();
+        for (const QJsonValue& value : airbasesArray) {
+            if (value.isObject()) {
+                QJsonObject airbase = value.toObject();
+                double lon = airbase["lon"].toDouble();
+                double lat = airbase["lat"].toDouble();
+                airbasePositions.emplace_back(lon, lat);
+            }
+        }
+    }
+
     if (json.contains("selectedBitmapType")) {
         selectedBitmapType = json["selectedBitmapType"].toString();
     }
@@ -2214,7 +2419,6 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
         isPlacingBitmap = json["isPlacingBitmap"].toBool();
     }
 
-    // Deserialize tempPolygonVertices
     if (json.contains("tempPolygonVertices") && json["tempPolygonVertices"].isArray()) {
         QJsonArray verticesArray = json["tempPolygonVertices"].toArray();
         for (const QJsonValue& val : verticesArray) {
@@ -2227,7 +2431,6 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
         }
     }
 
-    // Deserialize tempPolygonCanvasPoints
     if (json.contains("tempPolygonCanvasPoints") && json["tempPolygonCanvasPoints"].isArray()) {
         QJsonArray pointsArray = json["tempPolygonCanvasPoints"].toArray();
         for (const QJsonValue& val : pointsArray) {
@@ -2239,7 +2442,6 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
         }
     }
 
-    // Deserialize tempLineVertices
     if (json.contains("tempLineVertices") && json["tempLineVertices"].isArray()) {
         QJsonArray verticesArray = json["tempLineVertices"].toArray();
         for (const QJsonValue& val : verticesArray) {
@@ -2252,7 +2454,6 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
         }
     }
 
-    // Deserialize tempLineCanvasPoints
     if (json.contains("tempLineCanvasPoints") && json["tempLineCanvasPoints"].isArray()) {
         QJsonArray pointsArray = json["tempLineCanvasPoints"].toArray();
         for (const QJsonValue& val : pointsArray) {
@@ -2264,7 +2465,6 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
         }
     }
 
-    // Deserialize tempMeshes
     if (json.contains("tempMeshes") && json["tempMeshes"].isArray()) {
         QJsonArray tempMeshesArray = json["tempMeshes"].toArray();
         for (const QJsonValue& val : tempMeshesArray) {
@@ -2272,8 +2472,8 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
             MeshEntry entry;
 
             entry.name = meshObj["name"].toString();
+            entry.text = meshObj["text"].toString(); // Deserialize text field for TempText entries
 
-            // Deserialize position
             if (meshObj.contains("position")) {
                 QJsonObject posObj = meshObj["position"].toObject();
                 entry.position = new Vector(
@@ -2285,7 +2485,6 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
                 entry.position = new Vector(0, 0, 0);
             }
 
-            // Deserialize rotation
             if (meshObj.contains("rotation")) {
                 QJsonObject rotObj = meshObj["rotation"].toObject();
                 entry.rotation = new Vector(
@@ -2297,7 +2496,6 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
                 entry.rotation = new Vector(0, 0, 0);
             }
 
-            // Deserialize size
             if (meshObj.contains("size")) {
                 QJsonObject sizeObj = meshObj["size"].toObject();
                 entry.size = new Vector(
@@ -2309,7 +2507,6 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
                 entry.size = new Vector(1, 1, 1);
             }
 
-            // Deserialize velocity
             if (meshObj.contains("velocity")) {
                 QJsonObject velObj = meshObj["velocity"].toObject();
                 entry.velocity = new Vector(
@@ -2321,12 +2518,10 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
                 entry.velocity = new Vector(0, 0, 0);
             }
 
-            // Deserialize bitmapPath
             if (meshObj.contains("bitmapPath")) {
                 entry.bitmapPath = meshObj["bitmapPath"].toString();
             }
 
-            // Deserialize mesh data
             if (meshObj.contains("mesh")) {
                 QJsonObject meshData = meshObj["mesh"].toObject();
                 entry.mesh = new Mesh();
@@ -2381,18 +2576,77 @@ void CanvasWidget::onDistanceMeasured(double distance, QPointF startPoint, QPoin
     QMessageBox::information(this, "Distance Measured", msg);
 }
 
-bool CanvasWidget::isPointInPolygon(const QPointF& point, const std::vector<Vector*>& vertices, const QPointF& centroidGeo, GISlib* gislib) {
-    int i, j, n = vertices.size();
-    bool inside = false;
-    for (i = 0, j = n - 1; i < n; j = i++) {
-        // Convert vertices from geo coordinates (relative to centroid) to canvas coordinates
-        QPointF vi = gislib->geoToCanvas(vertices[i]->y + centroidGeo.y(), vertices[i]->x + centroidGeo.x());
-        QPointF vj = gislib->geoToCanvas(vertices[j]->y + centroidGeo.y(), vertices[j]->x + centroidGeo.x());
-        // Ray-casting algorithm
-        if (((vi.y() > point.y()) != (vj.y() > point.y())) &&
-            (point.x() < (vj.x() - vi.x()) * (point.y() - vi.y()) / (vj.y() - vi.y()) + vi.x())) {
-            inside = !inside;
+// preset layers for airbase by waris
+void CanvasWidget::onPresetLayerSelected(const QString& preset) {
+    if (preset == "Airbase") {
+        if (!showAirbases) {
+            loadAirbaseData();
+            showAirbases = true;
+            Console::log("Airbase layer enabled: Rendering " + std::to_string(airbasePositions.size()) + " airbases");
+        } else {
+            showAirbases = false;
+            Console::log("Airbase layer disabled");
         }
+        update();
     }
-    return inside;
+}
+
+// preset layers for airbase by waris
+void CanvasWidget::loadAirbaseData() {
+    if (!airbasePositions.empty()) return;  // Already loaded
+
+    // Static data from sources [web:0, web:2, web:5, web:8]
+    airbasePositions = {
+        {77.4301, 28.7172},  // Hindon
+        {76.7770, 30.3020},  // Ambala
+        {75.3800, 31.5400},  // Adampur
+        {70.0420, 22.5270},  // Jamnagar
+        {73.0219, 26.2842},  // Jodhpur
+        {78.1670, 26.2530},  // Gwalior
+        {78.0133, 27.1556},  // Agra
+        {79.4200, 28.3670},  // Bareilly
+        {74.9830, 33.8830},  // Awantipur
+        {77.6270, 34.0827},  // Leh
+        {74.7833, 34.0833},  // Srinagar
+        {73.9200, 18.5800},  // Pune
+        {77.1500, 10.6750},  // Sulur
+        {76.9167, 8.4833},   // Thiruvananthapuram
+        {94.4670, 26.6170},  // Jorhat
+        {87.2830, 22.1500},  // Kalaikunda
+        {88.3500, 22.7500},  // Barrackpore
+        {89.3500, 26.7500},  // Hasimara
+        {92.8167, 9.1500},   // Car Nicobar
+        {70.0420, 22.5270},   // Jamnagar (example duplicate)
+
+        // Pakistan Airbases [web:1, web:3]
+        {73.0992, 33.6027},  // PAF Base Mushaf, Sargodha, Punjab
+        {71.9789, 33.8730},  // PAF Base Minhas, Kamra, Punjab
+        {73.0500, 31.3667},  // PAF Base Rafiqui, Shorkot, Punjab
+        {71.5200, 33.9667},  // PAF Base Peshawar, Khyber Pakhtunkhwa
+        {67.0333, 24.8936},  // PAF Base Masroor, Karachi, Sindh
+        {72.2667, 30.1833},  // PAF Base Multan, Punjab
+        {74.4036, 31.6119},  // PAF Base Lahore, Punjab
+        {70.8967, 30.2033},  // PAF Base Dera Ghazi Khan, Punjab
+        {66.9375, 25.2764},  // PAF Base Samungli, Quetta, Balochistan
+        {69.2667, 28.9667}   // PAF Base Shahbaz, Jacobabad, Sindh
+    };
+    Console::log("Loaded " + std::to_string(airbasePositions.size()) + " Indian and Pakistan airbases");
+}
+
+// preset layers for airbase by waris
+void CanvasWidget::drawAirbases(QPainter& painter) {
+    if (!showAirbases || airbasePositions.empty() || airbasePixmap.isNull()) {
+        return;
+    }
+    painter.save();
+    const int iconSize = 20;
+    QPixmap scaledIcon = airbasePixmap.scaled(iconSize, iconSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    for (const auto& pos : airbasePositions) {
+        double lon = pos.first;
+        double lat = pos.second;
+        QPointF canvasPos = gislib->geoToCanvas(lat, lon);
+        painter.drawPixmap(QPointF(canvasPos.x() - iconSize / 2.0, canvasPos.y() - iconSize / 2.0), scaledIcon);
+    }
+    painter.restore();
+    Console::log("Rendered " + std::to_string(airbasePositions.size()) + " airbase icons");
 }

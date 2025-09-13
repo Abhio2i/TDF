@@ -45,6 +45,7 @@ void GISlib::dropEvent(QDropEvent *event)
     emit dropEvents(event);
 }
 
+
 void GISlib::addCustomMap(const QString& layerName, int zoomMin, int zoomMax, const QString& tileUrl, qreal opacity) {
     qDebug() << "Adding custom layer: name =" << layerName << ", zoomMin =" << zoomMin << ", zoomMax =" << zoomMax << ", tileUrl =" << tileUrl << ", opacity =" << opacity;
     if (layerName.isEmpty() || tileUrl.isEmpty()) {
@@ -66,6 +67,7 @@ void GISlib::addCustomMap(const QString& layerName, int zoomMin, int zoomMax, co
 }
 
 
+
 void GISlib::receiveImage(QString url, QByteArray data) {
     QRegularExpression rx("/(\\d+)/(\\d+)/(\\d+)\\.png");
     QRegularExpressionMatch match = rx.match(url);
@@ -81,7 +83,7 @@ void GISlib::receiveImage(QString url, QByteArray data) {
     QString layer;
 
     // Explicitly handle local OSM tiles first
-    if (url.startsWith("file:///home/vboxuser/Downloads/testOSM")) {
+    if (url.startsWith("file:///home/arti_rajpoot/Downloads/testOSM")) {
         layer = "osm";
     } else if (url.contains("openstreetmap.org")) {
         layer = "osm";
@@ -157,6 +159,8 @@ void GISlib::receiveImage(QString url, QByteArray data) {
     pendingTiles = qMax(0, pendingTiles - 1);
     update();
 }
+
+
 void GISlib::setCoordinateSystem(const QString& crsId) {
     if (crsId == "EPSG:4326") {
         currentCrs.createFromString("EPSG:4326");
@@ -181,6 +185,7 @@ void GISlib::setCoordinateSystem(const QString& crsId) {
     QPointF mousePos = mapFromGlobal(QCursor::pos());
     mouseMoveEvent(new QMouseEvent(QEvent::MouseMove, mousePos, Qt::NoButton, Qt::NoButton, Qt::NoModifier));
 }
+
 void GISlib::receivePlace(QString url, QByteArray data) {
     QJsonDocument doc = QJsonDocument::fromJson(data);
     if (!doc.isArray()) return;
@@ -398,7 +403,7 @@ QString GISlib::tileUrl(const QString& layer, int x, int y, int z) {
 
     if (lowerLayer == "osm") {
         // Path to local OSM tiles, same as first code
-        QString osmPath = "/home/vboxuser/Downloads/testOSM";
+        QString osmPath = "/home/arti_rajpoot/Downloads/testOSM";
         QString filePath = QString("file://%1/%2/%3/%4.png").arg(osmPath).arg(z).arg(x).arg(y);
         qDebug() << "Generated local tile path:" << filePath;
         flipkeyaxis = false;
@@ -480,6 +485,7 @@ QPointF GISlib::geoToCanvas(double lat, double lon) {
     return QPointF(dx, dy);
 }
 
+
 QPointF GISlib::canvasToGeo(QPointF p) {
     int tileSize = 256;
     double centerX = lonToX(centerLon, zoom);
@@ -516,7 +522,7 @@ void GISlib::mousePressEvent(QMouseEvent* event) {
     }
     if (measuringDistance && event->button() == Qt::LeftButton) {
         measureStartPoint = canvasToGeo(event->pos());
-        measureEndPoint = measureStartPoint; // Initialize end point to start point
+        measureEndPoint = measureStartPoint;
         qDebug() << "Measurement start point set to (lon:" << measureStartPoint.x() << ", lat:" << measureStartPoint.y() << ")";
         update();
     }
@@ -578,7 +584,7 @@ void GISlib::mouseMoveEvent(QMouseEvent* event) {
         qDebug() << "Coordinate transformation error:" << e.what();
         mouseLat = toDMS(lat, true);
         mouseLon = toDMS(lon, false);
-        emit mouseCords(lat, lon, "EPSG:4326"); // Fallback
+        emit mouseCords(lat, lon, "EPSG:4326");
     }
 }
 void GISlib::keyPressEvent(QKeyEvent* event) {
@@ -594,13 +600,11 @@ void GISlib::keyPressEvent(QKeyEvent* event) {
 void GISlib::wheelEvents(QWheelEvent *event)
 {
     if (event->angleDelta().y() > 0) {
-        //Console::log("Scroll up detected");
-        // Zoom in ya koi aur action yahan karo
+
 
         setZoom(zoom +1);
     } else {
-        //Console::log("Scroll down detected");
-        // Zoom out ya koi aur action yahan karo
+
         setZoom(zoom -1);
     }
 
@@ -640,8 +644,7 @@ void GISlib::resizeEvent(QResizeEvent* event) {
 }
 
 double GISlib::calculateDistance(QPointF point1, QPointF point2) {
-    // Core: Calculate geodesic distance using Vincenty formula
-    // WGS84 ellipsoid parameters
+
     const double a = 6378137.0; // Equatorial radius in meters
     const double f = 1.0 / 298.257223563; // Flattening
     const double b = a * (1.0 - f); // Polar radius
@@ -729,4 +732,3 @@ void GISlib::endDistanceMeasurement() {
         update();
     }
 }
-

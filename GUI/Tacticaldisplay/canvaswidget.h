@@ -1,4 +1,3 @@
-
 #ifndef CANVASWIDGET_H
 #define CANVASWIDGET_H
 #include "GUI/Tacticaldisplay/Gis/gislib.h"
@@ -23,6 +22,7 @@ struct MeshEntry {
     Collider* collider;
     Trajectory* trajectory;
     QString bitmapPath;
+    QString text;
 };
 
 /* TransformMode enumeration section */
@@ -34,8 +34,8 @@ enum TransformMode {
     DrawTrajectory,
     DrawShape,
     PlaceBitmap,
-    MeasureDistance
-
+    MeasureDistance,
+    EditShape
 };
 
 /* Class declaration section */
@@ -75,13 +75,10 @@ public:
     std::vector<MeshEntry> tempMeshes;
     void onBitmapImageSelected(const QString& filePath);
     void onBitmapSelected(const QString& bitmapType);
-
-
-
     void selectWaypoint(int index);
     void deselectWaypoint();
-    QJsonObject toJson() const; // Declare serialization function
-    void fromJson(const QJsonObject& json); // Declare deserialization function
+    QJsonObject toJson() const;
+    void fromJson(const QJsonObject& json);
 public slots:
     void onGISKeyPressed(QKeyEvent *event) { keyPressEvent(event); }
     void onGISMousePressed(QMouseEvent *event) { mousePressEvent(event); }
@@ -90,6 +87,7 @@ public slots:
     void onGISPainted(QPaintEvent *event) { paintEvent(event); }
     void updateWaypointsFromInspector(QString entityId, QJsonArray waypoints);
     void onDistanceMeasured(double distance, QPointF startPoint, QPointF endPoint);
+    void onPresetLayerSelected(const QString& preset);
 
 public:
     void dragEnterEvents(QDragEnterEvent *event) ;
@@ -128,13 +126,27 @@ private:
     std::vector<Vector*> tempPolygonVertices;
     std::vector<QPointF> tempPolygonCanvasPoints;
     std::vector<Vector*> tempLineVertices;
-
     QString getBitmapImagePath(const QString& bitmapType);
     std::vector<QPointF> tempLineCanvasPoints;
     int selectedWaypointIndex;
     bool isDraggingWaypoint;
-
+    QString editingShapeId;
+    int selectedHandleIndex;
+    bool isResizingShape;
+    std::vector<QPointF> resizeHandles;
     bool isPointInPolygon(const QPointF& point, const std::vector<Vector*>& vertices, const QPointF& centroidGeo, GISlib* gislib); // Added declaration
+    void handleRightClick(QMouseEvent *event);
+    void handleShapeDrawing(QMouseEvent *event);
+    void handleTrajectoryRightClick(QMouseEvent *event);
+    void handleShapeRightClick(QMouseEvent *event);
+    // for presetlayes
+    std::vector<std::pair<double, double>> airbasePositions;  // lon, lat pairs
+    bool showAirbases = false;  // Toggle flag
+    QString airbaseIconPath = ":/icons/images/airbase.png";
+    QPixmap airbasePixmap;  // Cached pixmap for efficiency
+
+    void loadAirbaseData();  // Load static/dynamic data
+    void drawAirbases(QPainter& painter);  // New drawing method
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
@@ -147,6 +159,7 @@ signals:
     void selectEntitybyCursor(QString ID);
     void MoveEntity(QString ID);
     void trajectoryUpdated(QString entityId, QJsonArray waypoints);
+    void airbaseLayerToggled(bool visible);
 private:
     bool selectEntity;
     QTimer *updateTimer;

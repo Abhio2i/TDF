@@ -2,8 +2,6 @@
 
 #ifndef CONSOLEVIEW_H
 #define CONSOLEVIEW_H
-
-// Include necessary Qt header files
 #include <QWidget>
 #include <QTextEdit>
 #include <QVBoxLayout>

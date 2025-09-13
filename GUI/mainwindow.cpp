@@ -6,7 +6,7 @@
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
     setWindowTitle("Editor Application");
-    resize(1400, 1000);
+    resize(1900, 1000);
 
     setupUI();
 }

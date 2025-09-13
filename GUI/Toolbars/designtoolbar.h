@@ -1,4 +1,5 @@
 
+
 #ifndef DESIGNTOOLBAR_H
 #define DESIGNTOOLBAR_H
 
@@ -38,7 +39,7 @@ public:
     QAction *shapeAction;
     QAction *bitmapAction;
     QAction *selectBitmapAction;
-    // QAction *measureDistanceAction; // New action for distance measurement
+    QAction *presetLayersAction;
     QAction* getMeasureDistanceAction() const { return measureDistanceAction; }
 
     struct MapLayer {
@@ -62,9 +63,7 @@ signals:
     void gridVisibilityToggled(bool);
     void gridSnappingToggled(bool);
     void layerSelectTriggered();
-    void measureAreaTriggered();
-    void measureDistanceTriggered(); // New signal for distance measurement
-    void drawTriggered();
+    void measureDistanceTriggered();
     void databaseTriggered();
     void gridPlaneXToggled(bool);
     void gridPlaneYToggled(bool);
@@ -90,6 +89,7 @@ signals:
     void bitmapSelected(const QString &bitmap);
     void bitmapImageSelected(const QString& filePath);
     void editTrajectoryTriggered();
+    void presetLayerSelected(const QString &preset);
 public slots:
     void onModeChanged(TransformMode mode);
     void onMeasureDistanceTriggered();
@@ -101,9 +101,9 @@ private:
     QAction *gridToggleAction;
     QAction *snappingToggleAction;
     QAction *layerSelectAction;
-    QAction *measureAreaAction;
+
     QAction *measureDistanceAction;
-    QAction *drawAction;
+
     QAction *databaseAction;
     QAction *gridPlaneXAction;
     QAction *gridPlaneYAction;

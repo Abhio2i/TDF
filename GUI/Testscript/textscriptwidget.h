@@ -31,6 +31,7 @@ public:
     explicit TextScriptWidget(QWidget *parent = nullptr);
 
 signals:
+    void runScriptstring(QString code);
     void runScript(const QString &filePath);
     void pauseScript(const QString &filePath);
     void renameScript(const QString &filePath, const QString &newName);

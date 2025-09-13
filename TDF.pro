@@ -5,6 +5,8 @@ QT += 3dcore 3drender 3dinput 3dextras
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++17
+INCLUDEPATH += $$PWD/angelscript/include
+LIBS += -L$$PWD/angelscript/lib -langelscript
 INCLUDEPATH += $$PWD/bullet
 DEFINES += BT_NO_SIMD_OPERATOR
 DEFINES += BT_USE_SSE
@@ -56,12 +58,16 @@ SOURCES += \
     GUI/Tacticaldisplay/tacticaldisplay.cpp \
     GUI/Testscript/testscriptdialog.cpp \
     GUI/Testscript/textscriptwidget.cpp \
+    GUI/Timing/graphwidgettime.cpp \
+    GUI/Timing/timingdialog.cpp \
     GUI/Toolbars/designtoolbar.cpp \
     GUI/Toolbars/networktoolbar.cpp \
     GUI/Toolbars/runtimetoolbar.cpp \
     GUI/Toolbars/standardtoolbar.cpp \
     GUI/docktitlemenu/docktitlemenu.cpp \
     GUI/mainwindow.cpp \
+    GUI/measuredistance/measuredistancedialog.cpp \
+    angelscript/add_on/scriptstdstring/scriptstdstring.cpp \
     bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvh.cpp \
     bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvhBroadphase.cpp \
     bullet/Bullet3Collision/BroadPhaseCollision/b3OverlappingPairCache.cpp \
@@ -324,6 +330,7 @@ SOURCES += \
     core/Plugins/pluginmanager.cpp \
     core/Recorder/recorder.cpp \
     core/Render/scenerenderer.cpp \
+    core/ScriptEngine/scriptengine.cpp \
     core/Simulation/simulation.cpp \
     # core/Struct/action.cpp \
     # core/Struct/color.cpp \
@@ -381,12 +388,16 @@ HEADERS += \
     GUI/Tacticaldisplay/tacticaldisplay.h \
     GUI/Testscript/testscriptdialog.h \
     GUI/Testscript/textscriptwidget.h \
+    GUI/Timing/graphwidgettime.h \
+    GUI/Timing/timingdialog.h \
     GUI/Toolbars/designtoolbar.h \
     GUI/Toolbars/networktoolbar.h \
     GUI/Toolbars/runtimetoolbar.h \
     GUI/Toolbars/standardtoolbar.h \
     GUI/docktitlemenu/docktitlemenu.h \
     GUI/mainwindow.h \
+    GUI/measuredistance/measuredistancedialog.h \
+    angelscript/add_on/scriptstdstring/scriptstdstring.h \
     bullet/Bullet3Collision/BroadPhaseCollision/b3BroadphaseCallback.h \
     bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvh.h \
     bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvhBroadphase.h \
@@ -810,6 +821,7 @@ HEADERS += \
     core/Plugins/pluginmanager.h \
     core/Recorder/recorder.h \
     core/Render/scenerenderer.h \
+    core/ScriptEngine/scriptengine.h \
     core/Simulation/simulation.h \
     core/Utility/uuid.h \
     core/structure/database.h \
@@ -834,6 +846,8 @@ RESOURCES += \
     Resources.qrc
 
 DISTFILES += \
+    Testscript/dghy.as \
+    Testscript/er23re2.as \
     bullet/Bullet3Collision/CMakeLists.txt \
     bullet/Bullet3Collision/premake4.lua \
     bullet/Bullet3Common/CMakeLists.txt \

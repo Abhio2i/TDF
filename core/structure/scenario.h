@@ -1,6 +1,7 @@
 #ifndef SCENARIO_H
 #define SCENARIO_H
 
+#include "core/ScriptEngine/scriptengine.h"
 #include <QObject>
 #include <core/Config/scenarioconfig.h>
 #include <core/Hierarchy/hierarchy.h>
@@ -21,6 +22,7 @@ public:
     Hierarchy *Library;
     SessionManager *sessionManager;
     SceneRenderer *scenerenderer;
+    ScriptEngine *scriptengine;
     Console *console;
 signals:
     //void scenarioStarted();  // Signal define kiya

@@ -1,5 +1,3 @@
-
-
 #include "layerinformationdialog.h"
 #include "GUI/Tacticaldisplay/Gis/custommapdialog.h"
 
@@ -27,9 +25,7 @@ void LayerInformationDialog::setupUi()
     // Right side: Layer details
     QWidget* detailsWidget = new QWidget(this);
     QVBoxLayout* detailsLayout = new QVBoxLayout(detailsWidget);
-
     QFormLayout* formLayout = new QFormLayout();
-
     nameLabel = new QLabel(this);
     idLabel = new QLabel(this);
     zoomMinLabel = new QLabel(this);
@@ -47,7 +43,6 @@ void LayerInformationDialog::setupUi()
     formLayout->addRow("Tile URL:", tileUrlLabel);
     formLayout->addRow("Custom:", isCustomLabel);
     formLayout->addRow("Opacity:", opacityLabel);
-    // formLayout->addRow("Resolution:", resolutionLabel);
     formLayout->addRow("Type:", typeLabel);
 
     detailsLayout->addLayout(formLayout);
@@ -87,7 +82,7 @@ void LayerInformationDialog::updateLayerDetails(QListWidgetItem* item)
         opacityLabel->setText(layer.opacity >= 0.0 ? QString::number(layer.opacity, 'f', 2) : "N/A");
         // resolutionLabel->setText(layer.resolution.isEmpty() ? "N/A" : layer.resolution);
         typeLabel->setText(layer.type.isEmpty() ? "N/A" : layer.type);
-        editButton->setVisible(layer.isCustom); // Show button only for custom layers
+        editButton->setVisible(layer.isCustom);
     }
 }
 
@@ -104,13 +99,12 @@ void LayerInformationDialog::editLayer()
         if (!newName.isEmpty() && !newTileUrl.isEmpty()) {
             MapLayerInfo updatedLayer = {
                 newName,
-                newName, // ID same as name for custom layers
+                newName,
                 dialog.getZoomMin(),
                 dialog.getZoomMax(),
                 newTileUrl,
                 true,
                 dialog.getOpacity(),
-                // dialog.getResolution().isEmpty() ? "N/A" : dialog.getResolution(),
                 dialog.getType()
             };
             mapLayers[currentLayerIndex] = updatedLayer;

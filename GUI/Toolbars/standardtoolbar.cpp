@@ -15,7 +15,7 @@ StandardToolBar::StandardToolBar(QWidget *parent)
 
     createActions();
 
-    // Add actions to the toolbar
+
     addAction(newAction);
     addAction(saveAction);
     addAction(saveAllAction);
@@ -28,9 +28,7 @@ StandardToolBar::StandardToolBar(QWidget *parent)
     addAction(redoAction);
     addSeparator();
     addAction(addTrajectoryAction);
-    // addAction(testScriptAction);
 
-    // Connect testScriptAction to open the dialog
     connect(testScriptAction, &QAction::triggered, this, &StandardToolBar::onTestScriptTriggered);
 
     Console::log("StandardToolBar initialized with addTrajectoryAction and testScriptAction");
@@ -39,21 +37,21 @@ StandardToolBar::StandardToolBar(QWidget *parent)
 void StandardToolBar::createActions()
 {
     newAction = new QAction(QIcon(withWhiteBg(":/icons/images/new-document.png")), tr("New"), this);
-    //newAction->setShortcut(QKeySequence::New);
+
 
     saveAction = new QAction(QIcon(withWhiteBg(":/icons/images/floppy-disk.png")), tr("SaveAction"), this);
-    //saveAction->setShortcut(QKeySequence::Save);
+
 
     saveAllAction = new QAction(QIcon(withWhiteBg(":/icons/images/floppy-disk.png")), tr("Save All"), this);
 
     cutAction = new QAction(QIcon(withWhiteBg(":/icons/images/cut.png")), tr("Cut"), this);
-    //cutAction->setShortcut(QKeySequence::Cut);
+
 
     copyAction = new QAction(QIcon(withWhiteBg(":/icons/images/copy.png")), tr("Copy"), this);
-    //copyAction->setShortcut(QKeySequence::Copy);
+
 
     pasteAction = new QAction(QIcon(withWhiteBg(":/icons/images/paste.png")), tr("Paste"), this);
-    //pasteAction->setShortcut(QKeySequence::Paste);
+
 
     undoAction = new QAction(QIcon(withWhiteBg(":/icons/images/undo.png")), tr("Undo"), this);
     undoAction->setShortcut(QKeySequence::Undo);
@@ -64,7 +62,7 @@ void StandardToolBar::createActions()
     addTrajectoryAction = new QAction(QIcon(withWhiteBg(":/icons/images/trajectory.png")), tr("Add Trajectory"), this);
     addTrajectoryAction->setEnabled(false);
 
-    // Verify trajectory icon
+
     if (addTrajectoryAction->icon().isNull()) {
         Console::error("Failed to load trajectory icon from :/icons/images/trajectory.png");
     } else {
@@ -74,21 +72,24 @@ void StandardToolBar::createActions()
     testScriptAction = new QAction(QIcon(withWhiteBg(":/icons/images/test.png")), tr("Test Script"), this);
     testScriptAction->setEnabled(true);
 
-    // Verify test script icon
+
     if (testScriptAction->icon().isNull()) {
-        Console::error("Failed to load test script icon from :/icons/images/test.png");
+
     } else {
-        Console::log("Test script icon loaded successfully");
+
     }
 }
 
+
 void StandardToolBar::onTestScriptTriggered()
 {
-    Console::log("Opening TestScriptDialog");
-    TestScriptDialog *dialog = new TestScriptDialog(this);
-    dialog->exec(); // Changed from show() to exec() for modal dialog
-}
 
+    TestScriptDialog *window = new TestScriptDialog(this);
+    connect(window, &TestScriptDialog::closed, this, [=]() {
+        window->deleteLater();
+    });
+    window->show();
+}
 QPixmap StandardToolBar::withWhiteBg(const QString &iconPath)
 {
     QPixmap pixmap(iconPath);

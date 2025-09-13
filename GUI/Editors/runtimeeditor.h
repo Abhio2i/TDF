@@ -1,7 +1,5 @@
-
 #ifndef RUNTIMEEDITOR_H
 #define RUNTIMEEDITOR_H
-
 #include "GUI/Console/consoleview.h"
 #include "GUI/Hierarchytree/hierarchyconnector.h"
 #include "GUI/Hierarchytree/hierarchytree.h"
@@ -20,37 +18,35 @@
 #include "GUI/Menubars/menubar.h"
 #include "GUI/scene3dwidget/scene3dwidget.h"
 #include "GUI/Testscript/textscriptwidget.h"
+#include "GUI/Timing/graphwidgettime.h"
+#include <QTabWidget>
 
 class RuntimeEditor : public QMainWindow
 {
     Q_OBJECT
-
 public:
     explicit RuntimeEditor(QWidget *parent = nullptr);
     ~RuntimeEditor();
     Hierarchy* library;
     HierarchyTree* libTreeView;
     CanvasWidget* canvas;
-    void loadFromJsonFile(const QString &filePath); // Add this
-    QString lastSavedFilePath; // Add this
-
+    void loadFromJsonFile(const QString &filePath);
+    QString lastSavedFilePath;
+    QString getTimingJsonData() const; // Added declaration
 private slots:
     void onItemSelected(QVariantMap data);
     void onLibraryItemSelected(QVariantMap data);
     void addInspectorTab();
     void showFeedbackWindow();
-
 private:
     void setupMenuBar();
     void setupToolBars();
     void setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures);
     void setupToolBarConnections();
-
     // Core Hierarchy components
     HierarchyTree *treeView;
     Inspector *inspector;
     Console *console;
-
     // Dock widgets
     QDockWidget *hierarchyDock;
     QDockWidget *tacticalDisplayDock;
@@ -59,32 +55,27 @@ private:
     QDockWidget *libraryDock;
     QDockWidget *sidebarDock;
     QDockWidget *textScriptDock;
-
     // Views
     ConsoleView *consoleView;
     TacticalDisplay *tacticalDisplay;
     Scene3DWidget *scene3dwidget;
-      TextScriptWidget *textScriptView;
-
+    TextScriptWidget *textScriptView;
+    GraphWidgetTime *timingGraphWidget;
     // Hierarchy and connectors
     HierarchyConnector* m_hierarchyConnector;
     Hierarchy* hierarchy;
     QVariantMap copydata;
     Hierarchy* copyhirarchy = nullptr;
-
     // Toolbars
     DesignToolBar *designToolBar;
     RuntimeToolBar *runtimeToolBar;
     NetworkToolbar *networkToolBar;
     StandardToolBar *standardToolBar;
     MenuBar *menuBar;
-
     // Inspector management
     QList<QDockWidget*> inspectorDocks;
     int inspectorCount = 0;
     QList<Inspector*> inspectors;
-
     Runtime *runtime;
 };
-
 #endif // RUNTIMEEDITOR_H

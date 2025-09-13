@@ -6,10 +6,12 @@ Runtime::Runtime() {
     Library = new Hierarchy();
     scenerenderer = new SceneRenderer();
     simulation = new Simulation();
+    scriptengine = new ScriptEngine();
     networkManager = new NetworkManager();
     console  = Console::internalInstance();
+    recorder = new Recorder(hierarchy, simulation);
 
-    recorder = new Recorder(hierarchy, simulation);  //  Using external Recorder class
+
 
     // Rendering pipeline
     connect(hierarchy,&Hierarchy::entityMeshAdded,scenerenderer,&SceneRenderer::entityAdded);

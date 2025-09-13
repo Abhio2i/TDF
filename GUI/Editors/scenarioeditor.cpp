@@ -20,6 +20,7 @@
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QMessageBox>
+#include <GUI/measuredistance/measuredistancedialog.h>
 
 ScenarioEditor::ScenarioEditor(QWidget *parent)
     : QMainWindow(parent)
@@ -46,9 +47,12 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     hierarchy = scenario->hierarchy;
     SceneRenderer *renderer = scenario->scenerenderer;
     Console *console = scenario->console;
+    ScriptEngine *scriptengine = scenario->scriptengine;
     library = scenario->Library;
 
     lastSavedFilePath = "";
+    scenario->scriptengine->setHierarchy(hierarchy,treeView,renderer);
+    connect(textScriptView,&TextScriptWidget::runScriptstring,scriptengine,&ScriptEngine::loadAndCompileScript);
 
     HierarchyConnector::instance()->setHierarchy(hierarchy);
     HierarchyConnector::instance()->setLibrary(library);
@@ -208,6 +212,9 @@ void ScenarioEditor::setupToolBarConnections()
             tacticalDisplay->canvas, &CanvasWidget::toggleLayerVisibility);
     connect(designToolBar, &DesignToolBar::bitmapImageSelected,
             tacticalDisplay->canvas, &CanvasWidget::onBitmapImageSelected);
+    // for preset
+    connect(designToolBar, &DesignToolBar::presetLayerSelected,
+            tacticalDisplay->canvas, &CanvasWidget::onPresetLayerSelected);
     connect(designToolBar, &DesignToolBar::bitmapSelected,
             this, [=](const QString &fileName) {
                 tacticalDisplay->canvas->onBitmapSelected(fileName);
@@ -250,13 +257,21 @@ void ScenarioEditor::setupToolBarConnections()
                 Console::log("Add Trajectory action triggered");
             });
 
+
+
     connect(designToolBar->getMeasureDistanceAction(), &QAction::triggered,
             this, [=]() {
                 bool isChecked = designToolBar->getMeasureDistanceAction()->isChecked();
                 tacticalDisplay->canvas->setTransformMode(isChecked ? MeasureDistance : Translate);
                 Console::log(isChecked ? "Measure Distance mode enabled" : "Measure Distance mode disabled");
+                if (isChecked) {
+                    MeasureDistanceDialog *measureDialog = new MeasureDistanceDialog(this);
+                    measureDialog->setAttribute(Qt::WA_DeleteOnClose);
+                    // Add test measurement with separate x, y coordinates
+                    measureDialog->addMeasurement(82.6172, -82.3558, 141.421); // Test data
+                    measureDialog->show();
+                }
             });
-
 }
 
 void ScenarioEditor::setupMenuBar()
@@ -265,6 +280,7 @@ void ScenarioEditor::setupMenuBar()
     setMenuBar(menuBar);
     connect(menuBar, &MenuBar::feedbackTriggered, this, &ScenarioEditor::showFeedbackWindow);
 }
+
 
 void ScenarioEditor::setupToolBars()
 {

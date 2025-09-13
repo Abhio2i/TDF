@@ -84,12 +84,12 @@ QJsonObject Rigidbody::toJson() const {
         obj[it.key()] = it.value();
     }
 
-    qDebug() << "Rigidbody::toJson output:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
+    //qDebug() << "Rigidbody::toJson output:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
     return obj;
 }
 
 void Rigidbody::fromJson(const QJsonObject& obj) {
-    qDebug() << "Rigidbody::fromJson input:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
+    //qDebug() << "Rigidbody::fromJson input:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
 
     // Standard fields
     if (obj.contains("active"))
@@ -141,5 +141,5 @@ void Rigidbody::fromJson(const QJsonObject& obj) {
         }
     }
 
-    qDebug() << "Rigidbody::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);
+    //qDebug() << "Rigidbody::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);
 }
