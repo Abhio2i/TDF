@@ -10,14 +10,16 @@
 #include <QMouseEvent>
 #include <QJsonArray>
 #include <QElapsedTimer>
+#include <Qt3DCore/QTransform>
 
 /* MeshEntry structure section */
 struct MeshEntry {
     QString name;
-    Vector* position;
-    Vector* rotation;
-    Vector* velocity;
-    Vector* size;
+    Qt3DCore::QTransform* transform;
+    QVector3D* position;
+    QQuaternion* rotation;
+    QVector3D* velocity;
+    QVector3D* size;
     Mesh* mesh;
     Collider* collider;
     Trajectory* trajectory;
@@ -104,7 +106,6 @@ private:
     void drawMesh(QPainter& painter);
     void drawImage(QPainter& painter);
     void drawTrajectory(QPainter& painter);
-    void applyGravityAndBounce(float deltaTime);
     void handleMousePress(QMouseEvent *event);
     void handleMouseMove(QMouseEvent *event);
     void handleMouseRelease(QMouseEvent *event);

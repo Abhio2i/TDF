@@ -29,6 +29,23 @@ void Platform::spawn() {
 
 }
 
+void Platform::addParam(std::string key,std::string value){
+    customParameters[QString::fromStdString(key)] = QString::fromStdString(value);
+}
+
+void Platform::editParam(std::string key,std::string value){
+    customParameters[QString::fromStdString(key)] = QString::fromStdString(value);
+}
+
+std::string Platform::getParam(std::string key){
+    return customParameters[QString::fromStdString(key)].toString().toStdString();
+}
+
+void Platform::removeParam(std::string key){
+    customParameters.remove(QString::fromStdString(key));
+}
+
+
 std::vector<std::string> Platform::getSupportedComponents() {
     std::vector<std::string> supported;
     supported.push_back("transform");
@@ -97,11 +114,18 @@ QJsonObject Platform::toJson() const {
     entityObj["options"] = optionsArray;
     entityObj["value"] = entityTypeToString(type);
     obj["type"] = entityObj;
+
+    // Include custom parameters
+    for (auto it = customParameters.begin(); it != customParameters.end(); ++it) {
+        obj[it.key()] = it.value();
+    }
+
     return obj;
 }
 
 
 void Platform::fromJson(const QJsonObject& obj) {
+
     Name = obj["name"].toString().toStdString();
     ID = obj["id"].toString().toStdString();
     parentID = obj["parent_id"].toString().toStdString();
@@ -187,6 +211,28 @@ void Platform::fromJson(const QJsonObject& obj) {
         }
         addComponent( "iff");
 
+    }
+
+    // Merge custom parameters
+    for (auto it = obj.begin(); it != obj.end(); ++it) {
+        if (it.key() != "name" &&
+            it.key() != "id" &&
+            it.key() != "parent_id" &&
+            it.key() != "active" &&
+            it.key() != "parameters" &&
+            it.key() != "type" &&
+            it.key() != "transform" &&
+            it.key() != "trajectory" &&
+            it.key() != "rigidbody" &&
+            it.key() != "dynamicModel" &&
+            it.key() != "collider" &&
+            it.key() != "meshRenderer2d" &&
+            it.key() != "radios" &&
+            it.key() != "sensors" &&
+            it.key() != "iffs" &&
+            it.key() != "parent_id") {
+            customParameters[it.key()] = it.value();
+        }
     }
 
 }

@@ -43,6 +43,10 @@ public:
     std::unordered_map<std::string, std::function<void()>> componentMap;
     std::unordered_map<std::string, Component> *components = nullptr;
 
+    void addParam(std::string key,std::string value);
+    void editParam(std::string key,std::string value);
+    std::string getParam(std::string key);
+    void removeParam(std::string key);
 
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
@@ -50,7 +54,7 @@ public:
     void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;
     void updateComponent(QString name, const QJsonObject& obj) override;
-
+    QJsonObject customParameters; // Added to store custom parameters
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
 };

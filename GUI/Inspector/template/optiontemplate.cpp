@@ -18,7 +18,7 @@ void OptionTemplate::setupOptionCell(int row, const QString &fullKey, const QJso
     if (index != -1)
         combo->setCurrentIndex(index);
 
-
+    // Style the QComboBox to set text color to white
     combo->setStyleSheet("QComboBox { background: #333; border: 1px solid #555; border-radius: 3px; color: white; padding: 2px; }"
                          "QComboBox::drop-down { border: none; }"
                          "QComboBox QAbstractItemView { background: #333; color: white; selection-background-color: #555; }");

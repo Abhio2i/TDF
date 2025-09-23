@@ -68,6 +68,8 @@ SOURCES += \
     GUI/docktitlemenu/docktitlemenu.cpp \
     GUI/mainwindow.cpp \
     GUI/measuredistance/measuredistancedialog.cpp \
+    GUI/scene3dwidget/scene3dwidget.cpp \
+    angelscript/add_on/scriptarray/scriptarray.cpp \
     angelscript/add_on/scriptstdstring/scriptstdstring.cpp \
     bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvh.cpp \
     bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvhBroadphase.cpp \
@@ -399,6 +401,8 @@ HEADERS += \
     GUI/docktitlemenu/docktitlemenu.h \
     GUI/mainwindow.h \
     GUI/measuredistance/measuredistancedialog.h \
+    GUI/scene3dwidget/scene3dwidget.h \
+    angelscript/add_on/scriptarray/scriptarray.h \
     angelscript/add_on/scriptstdstring/scriptstdstring.h \
     bullet/Bullet3Collision/BroadPhaseCollision/b3BroadphaseCallback.h \
     bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvh.h \

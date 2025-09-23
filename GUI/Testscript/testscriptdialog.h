@@ -9,7 +9,6 @@
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QLabel>
 #include <QDir>
 #include <QMessageBox>
 #include <QCoreApplication>
@@ -39,8 +38,9 @@ signals:
     void runScriptstring(QString code);
     void closed();
 private slots:
+    void onNewScriptButtonClicked();
     void onRunButtonClicked();
-    void onBrowseButtonClicked();
+    void onLoadScriptButtonClicked();
     void onOkButtonClicked();
     void onCancelButtonClicked();
     void onScriptPathChanged();
@@ -48,23 +48,23 @@ private slots:
     void insertCompletion(const QString &completion);
     void handleTextChanged();
     void updateLineNumberArea();
+
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 private:
     QTextEdit *codeEditor;
     LineNumberArea *lineNumberArea;
     QPushButton *runButton;
-    QPushButton *browseButton;
+    QPushButton *loadScriptButton;
     QPushButton *okButton;
     QPushButton *cancelButton;
+    QPushButton *newScriptButton;
     QComboBox *scriptNameCombo;
     QComboBox *scriptTypeCombo;
     QLineEdit *scriptPathEdit;
-    QLabel *scriptNameLabel;
-    QLabel *scriptTypeLabel;
-    QLabel *scriptPathLabel;
     QString editFilePath;
     bool isEditMode;
+    bool isNewScript; // Tracks if New Script button was clicked
     AngelScriptHighlighter *highlighter;
     QCompleter *completer;
     QStringListModel *wordListModel;

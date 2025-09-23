@@ -6,11 +6,13 @@
 #include <QDebug>
 #include <string>
 #include <QObject>
-
+#include <QVector3D>
+#include "core/Hierarchy/entity.h"
 
 #include <cmath>
 #include <cstdlib>
-
+#include <angelscript/add_on/scriptarray/scriptarray.h>  // make sure included
+#include "core/Hierarchy/hierarchy.h"
     // Random number generator
 static float Math_Random()
 {
@@ -67,44 +69,84 @@ void Print(const std::string &msg)
 
 ProfileCategaory* ScriptEngine::addProfiles(const std::string &name)
 {
-    qDebug() << "Hierarchy object address from script engine OUTR:" << this;//hierarchy;
-    if (hierarchy){
-        ProfileCategaory* Profile = hierarchy->addProfileCategaory(QString::fromStdString(name));
-        Profile->setProfileType(Constants::EntityType::Platform);
-        return Profile;
+    if (!hierarchy) {
+        qDebug() << "[ERROR] Hierarchy not set in ScriptEngine::addProfiles!";
+        return nullptr;
     }
-    return nullptr;
+
+    ProfileCategaory* profile = hierarchy->addProfileCategaory(QString::fromStdString(name));
+    if (!profile) {
+        qDebug() << "[ERROR] Failed to create ProfileCategaory!";
+        return nullptr;
+    }
+
+    profile->setProfileType(Constants::EntityType::Platform);
+    qDebug() << "[OK] Created Profile:" << QString::fromStdString(name);
+    return profile;
 }
 
-Folder* ScriptEngine::addFolder(const std::string &Id,const std::string &name,bool &profile)
+Folder* ScriptEngine::addFolder(const std::string &Id, const std::string &name, bool &profile)
 {
-    qDebug() << "Hierarchy object address from script engine OUTR:" << this;//hierarchy;
-    if (hierarchy){
-        return hierarchy->addFolder(QString::fromStdString(Id),QString::fromStdString(name),profile);
+    if (!hierarchy) {
+        qDebug() << "[ERROR] Hierarchy not set in ScriptEngine::addFolder!";
+        return nullptr;
     }
-    return nullptr;
+
+    Folder* folder = hierarchy->addFolder(QString::fromStdString(Id),
+                                          QString::fromStdString(name),
+                                          profile);
+    if (!folder) {
+        qDebug() << "[ERROR] Failed to create Folder under ID:" << QString::fromStdString(Id);
+        return nullptr;
+    }
+
+    qDebug() << "[OK] Created Folder:" << QString::fromStdString(name);
+    return folder;
 }
 
-Platform* ScriptEngine::addEntity(const std::string &Id,const std::string &name, bool &profile)
+
+Platform* ScriptEngine::addEntity(const std::string &Id, const std::string &name, bool &profile)
 {
-    qDebug() << "Hierarchy object address from script engine OUTR:" << this;//hierarchy;
-    if (hierarchy){
-        Platform* entity = static_cast<Platform*>(hierarchy->addEntity(QString::fromStdString(Id),QString::fromStdString(name),profile));
-        // hierarchy->addComponent(QString::fromStdString(entity->ID),"transform");
-        hierarchy->addComponent(QString::fromStdString(entity->ID),"dynamicModel");
-        hierarchy->addComponent(QString::fromStdString(entity->ID),"meshRenderer2d");
-        return entity;
+    if (!hierarchy) {
+        qDebug() << "[ERROR] Hierarchy not set in ScriptEngine::addEntity!";
+        return nullptr;
     }
-    return nullptr;
+
+    Entity* rawEntity = hierarchy->addEntity(QString::fromStdString(Id),
+                                             QString::fromStdString(name),
+                                             profile);
+    if (!rawEntity) {
+        qDebug() << "[ERROR] Failed to create Entity under ID:" << QString::fromStdString(Id);
+        return nullptr;
+    }
+
+    Platform* entity = static_cast<Platform*>(rawEntity);
+    hierarchy->addComponent(QString::fromStdString(entity->ID), "dynamicModel");
+    hierarchy->addComponent(QString::fromStdString(entity->ID), "meshRenderer2d");
+    hierarchy->addComponent(QString::fromStdString(entity->ID), "trajectory");
+
+    qDebug() << "[OK] Created Entity:" << QString::fromStdString(name);
+    return entity;
 }
 
-void ScriptEngine::addComponent(const std::string &Id,const std::string &name)
+void ScriptEngine::addComponent(const std::string &Id, const std::string &name)
 {
-    qDebug() << "Hierarchy object address from script engine OUTR:" << this;//hierarchy;
-    if (hierarchy){
-        hierarchy->addComponent(QString::fromStdString(Id),QString::fromStdString(name));
+    if (!hierarchy) {
+        qDebug() << "[ERROR] Hierarchy not set in ScriptEngine::addComponent!";
+        return;
     }
+
+    if (Id.empty() || name.empty()) {
+        qDebug() << "[ERROR] Invalid arguments in addComponent (Id or name empty)";
+        return;
+    }
+
+    hierarchy->addComponent(QString::fromStdString(Id), QString::fromStdString(name));
+    qDebug() << "[OK] Added Component:" << QString::fromStdString(name)
+             << "to Entity ID:" << QString::fromStdString(Id);
 }
+
+
 
 // scriptengine.cpp
 void ScriptEngine::ScriptSleep(int milliseconds)
@@ -120,6 +162,240 @@ void ScriptEngine::renderscene(){
         emit render->Render(0.01);
     }
 }
+
+// Get a single entity by ID from AngelScript
+Entity* ScriptEngine::getEntityById(const std::string &id)
+{
+    if (!hierarchy || !hierarchy->Entities) {
+        qDebug() << "[ERROR] Hierarchy not initialized!";
+        return nullptr;
+    }
+
+    // ✅ Master key access: use unordered_map directly
+    auto it = hierarchy->Entities->find(id);
+    if (it != hierarchy->Entities->end()) {
+        Entity* ent = it->second;
+        qDebug() << "[OK] getEntityById found Entity:" << QString::fromStdString(ent->Name)
+                 << "for ID:" << QString::fromStdString(id);
+        return ent;
+    }
+
+    qDebug() << "[WARN] getEntityById: No entity found for ID:" << QString::fromStdString(id);
+    return nullptr;
+}
+#include <sstream>   // for std::ostringstream
+
+// Return all entities filtered by type
+CScriptArray* ScriptEngine::findEntitiesByType(int typeId) {
+    if (!hierarchy || !hierarchy->Entities) return nullptr;
+
+    // Create array<Entity@> type for AngelScript
+    asITypeInfo* arrayEntityType = engine->GetTypeInfoByDecl("array<Entity@>");
+    if (!arrayEntityType) return nullptr;
+
+    CScriptArray* (*CreateArray)(asITypeInfo*, asUINT) = &CScriptArray::Create;
+    CScriptArray* arr = CreateArray(arrayEntityType, 0);
+
+    std::ostringstream names;
+    size_t count = 0;
+
+    for (auto& pair : *(hierarchy->Entities)) {
+        Entity* ent = pair.second;
+        if (ent && ent->type == typeId) {
+            arr->InsertLast(&ent);
+            if (count > 0) names << ", ";
+            names << "\"" << ent->Name << "\"";   // ✅ Use correct field
+            count++;
+        }
+    }
+
+    // Map int → type string
+    std::string typeName = "Unknown";
+    switch (typeId) {
+    case 0: typeName = "Platform"; break;
+    case 1: typeName = "Radio"; break;
+    case 2: typeName = "Sensor"; break;
+    case 3: typeName = "SpecialZone"; break;
+    case 4: typeName = "Weapon"; break;
+    case 5: typeName = "IFF"; break;
+    case 6: typeName = "Supply"; break;
+    case 7: typeName = "FixedPoint"; break;
+    case 8: typeName = "Formation"; break;
+    }
+
+    // Pretty print log
+    if (count == 0) {
+        qDebug() << "[EntityFinder] No entities of this type";
+    } else if (count == 1) {
+        qDebug().noquote() << QString("[EntityFinder] Found 1 entity named %1 of \"%2\" Type")
+        .arg(QString::fromStdString(names.str()))
+            .arg(QString::fromStdString(typeName));
+    } else {
+        qDebug().noquote() << QString("[EntityFinder] Found %1 entities named %2 of \"%3\" Type")
+        .arg((int)count)
+            .arg(QString::fromStdString(names.str()))
+            .arg(QString::fromStdString(typeName));
+    }
+
+    return arr;
+}
+
+
+// Return all entity pointers
+CScriptArray* ScriptEngine::getAllEntities() {
+    if (!hierarchy || !hierarchy->Entities) return nullptr;
+
+    asITypeInfo* arrayEntityType = engine->GetTypeInfoByDecl("array<Entity@>");
+    if (!arrayEntityType) return nullptr;
+
+    CScriptArray* (*CreateArray)(asITypeInfo*, asUINT) = &CScriptArray::Create;
+    CScriptArray* arr = CreateArray(arrayEntityType, 0);
+
+    for (auto& pair : *(hierarchy->Entities)) {
+        Entity* ent = pair.second;
+        arr->InsertLast(&ent);
+    }
+
+    qDebug() << "[OK] getAllEntities returned" << arr->GetSize() << "entities.";
+    return arr;
+}
+
+// Return all IDs as strings
+CScriptArray* ScriptEngine::getAllEntityIds() {
+    if (!hierarchy || !hierarchy->Entities) return nullptr;
+
+    asITypeInfo* arrayStringType = engine->GetTypeInfoByDecl("array<string>");
+    if (!arrayStringType) return nullptr;
+
+    CScriptArray* (*CreateArray)(asITypeInfo*, asUINT) = &CScriptArray::Create;
+    CScriptArray* arr = CreateArray(arrayStringType, 0);
+
+    for (auto& pair : *(hierarchy->Entities)) {
+        std::string id = pair.first;
+        arr->InsertLast(&id);
+    }
+
+    qDebug() << "[OK] getAllEntityIds returned" << arr->GetSize() << "IDs.";
+    return arr;
+}
+// ------------------ Rename Entity Wrapper for AngelScript ------------------
+// Usage in AS: renameEntity("12345", "F16_Falcon");
+// This will rename the entity and update the UI automatically.
+void ScriptEngine::renameEntity(const std::string& id, const std::string& newName)
+{
+    if (!hierarchy) {
+        qDebug() << "[ERROR] Hierarchy not initialized!";
+        return;
+    }
+
+    // ✅ Use existing master key function to get entity
+    Entity* ent = getEntityById(id);
+    if (!ent) {
+        qDebug() << "[WARN] renameEntity: Entity not found for ID:" << QString::fromStdString(id);
+        return;
+    }
+
+    // Rename entity
+    QString oldName = QString::fromStdString(ent->Name);
+    ent->Name = newName; // Update name
+
+    // Reflect change on UI using Hierarchy signals
+    if (hierarchy->Entities->find(id) != hierarchy->Entities->end()) {
+        emit hierarchy->entityRenamed(QString::fromStdString(id), QString::fromStdString(newName));
+    }
+
+    qDebug() << "[OK] renameEntity: Entity renamed from"
+             << oldName << "to" << QString::fromStdString(newName);
+}
+void ScriptEngine::renameProfile(const std::string& profileID, const std::string& newName)
+{
+    if (!hierarchy) {
+        qDebug() << "[ERROR] Hierarchy not initialized!";
+        return;
+    }
+
+    // Check if profile exists in the map
+    auto it = hierarchy->ProfileCategories.find(profileID);
+    if (it == hierarchy->ProfileCategories.end()) {
+        qDebug() << "[WARN] renameProfile: No profile found for ID:"
+                 << QString::fromStdString(profileID);
+        return;
+    }
+
+    // Call Hierarchy rename function
+    hierarchy->renameProfileCategaory(QString::fromStdString(profileID),
+                                      QString::fromStdString(newName));
+
+    qDebug() << "[OK] renameProfile: Profile"
+             << QString::fromStdString(profileID)
+             << "renamed to"
+             << QString::fromStdString(newName);
+}
+
+void ScriptEngine::removeEntity(const std::string& parentId, const std::string& entityID)
+{
+    if (!hierarchy) {
+        qDebug() << "[ERROR] Hierarchy not initialized!";
+        return;
+    }
+
+    // Call Hierarchy's removeEntity using parentId (folder ID)
+    hierarchy->removeEntity(QString::fromStdString(parentId),
+                            QString::fromStdString(entityID),
+                            false); // Profile flag false for entity removal
+
+    qDebug() << "[OK] removeEntity: Entity"
+             << QString::fromStdString(entityID)
+             << "under parent"
+             << QString::fromStdString(parentId)
+             << "removed successfully.";
+}
+
+// ScriptEngine.cpp
+void ScriptEngine::removeProfile(const std::string& profileID)
+{
+    if (!hierarchy) {
+        qDebug() << "[ERROR] Hierarchy not initialized!";
+        return;
+    }
+
+    // Direct call to Hierarchy
+    hierarchy->removeProfileCategaory(QString::fromStdString(profileID));
+
+    qDebug() << "[OK] removeProfile: Profile"
+             << QString::fromStdString(profileID)
+             << "removed successfully.";
+}
+void ScriptEngine::removeFolder(const std::string& parentId, const std::string& folderID)
+{
+    if (!hierarchy) {
+        qDebug() << "[ERROR] Hierarchy not initialized!";
+        return;
+    }
+
+    // Call Hierarchy's removeFolder directly
+    hierarchy->removeFolder(QString::fromStdString(parentId),
+                            QString::fromStdString(folderID),
+                            false); // Profile flag false for removal
+
+    qDebug() << "[OK] removeFolder: Folder"
+             << QString::fromStdString(folderID)
+             << "under parent"
+             << QString::fromStdString(parentId)
+             << "removed successfully.";
+}
+void ScriptEngine::renameFolder(const std::string& folderID, const std::string& newName)
+{
+    Q_ASSERT(hierarchy && "Hierarchy must be initialized before renaming a folder");
+
+    hierarchy->renameFolder(QString::fromStdString(folderID), QString::fromStdString(newName));
+
+    qDebug() << "[OK] renameFolder: Folder"
+             << QString::fromStdString(folderID)
+             << "renamed to:"
+             << QString::fromStdString(newName);
+}
+
 
 ScriptEngine::ScriptEngine()
 {
@@ -165,15 +441,65 @@ ScriptEngine::ScriptEngine()
     s = engine->RegisterObjectProperty("MyObj", "float y", asOFFSET(MyObj, y)); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("MyObj", "void moveBy(float dx, float dy)", asMETHOD(MyObj, moveBy), asCALL_THISCALL); Q_ASSERT(s >= 0);
 
-    s = engine->RegisterObjectType("Vector", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
-    s = engine->RegisterObjectProperty("Vector", "float x", asOFFSET(Vector, x)); Q_ASSERT(s >= 0);
-    s = engine->RegisterObjectProperty("Vector", "float y", asOFFSET(Vector, y)); Q_ASSERT(s >= 0);
-    s = engine->RegisterObjectProperty("Vector", "float z", asOFFSET(Vector, z)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectType("QVector3D", sizeof(QVector3D), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_CDA); Q_ASSERT(s >= 0);
+    // 3. Register the property accessors (getters and setters)
+    // Note: RegisterObjectMethod is used for both. The const keyword is important!
+    s = engine->RegisterObjectMethod("QVector3D", "float x() const", asMETHOD(QVector3D, x), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("QVector3D", "void setX(float)", asMETHOD(QVector3D, setX), asCALL_THISCALL); Q_ASSERT(s >= 0);
 
+    s = engine->RegisterObjectMethod("QVector3D", "float y() const", asMETHOD(QVector3D, y), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("QVector3D", "void setY(float)", asMETHOD(QVector3D, setY), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    s = engine->RegisterObjectMethod("QVector3D", "float z() const", asMETHOD(QVector3D, z), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("QVector3D", "void setZ(float)", asMETHOD(QVector3D, setZ), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+
+    s = engine->RegisterObjectType("QQuaternion", sizeof(QQuaternion), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_CDA); Q_ASSERT(s >= 0);
+    // Register methods for QQuaternion (you can add more as needed)
+    s = engine->RegisterObjectMethod("QQuaternion", "QVector3D toEulerAngles()", asMETHOD(QQuaternion, toEulerAngles), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("QQuaternion", "void setX(float)", asMETHOD(QQuaternion, setX), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("QQuaternion", "void setY(float)", asMETHOD(QQuaternion, setY), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("QQuaternion", "void setZ(float)", asMETHOD(QQuaternion, setZ), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    //s = engine->RegisterObjectMethod("QQuaternion", "QQuaternion@ fromEulerAngles(const QVector3D& in)", asFUNCTIONPR(QQuaternion::fromEulerAngles, (const QVector3D&), QQuaternion), asCALL_CDECL); Q_ASSERT(s >= 0);
+
+
+    s = engine->RegisterObjectType("QTransform", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("QTransform", "QVector3D translation()", asMETHOD(Qt3DCore::QTransform, translation), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("QTransform", "void setTranslation(const QVector3D &in)", asMETHOD(Qt3DCore::QTransform, setTranslation), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("QTransform", "QQuaternion rotation()", asMETHOD(Qt3DCore::QTransform, rotation), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("QTransform", "void setRotation(const QQuaternion &in)", asMETHOD(Qt3DCore::QTransform, setRotation), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("QTransform", "QVector3D scale3D()", asMETHOD(Qt3DCore::QTransform, scale3D), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("QTransform", "void setScale3D(const QVector3D &in)", asMETHOD(Qt3DCore::QTransform, setScale3D), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    // 2. Register the Transform class as a reference-counted type
     s = engine->RegisterObjectType("Transform", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
-    s = engine->RegisterObjectProperty("Transform", "Vector@ position", asOFFSET(Transform, position)); Q_ASSERT(s >= 0);
-    s = engine->RegisterObjectProperty("Transform", "Vector@ rotation", asOFFSET(Transform, rotation)); Q_ASSERT(s >= 0);
-    s = engine->RegisterObjectProperty("Transform", "Vector@ size", asOFFSET(Transform, size)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("Transform", "QTransform@ matrix", asOFFSET(Transform, matrix)); Q_ASSERT(s >= 0);
+    // // Register the getter and setter methods
+    s = engine->RegisterObjectMethod("Transform", "QVector3D translation()", asMETHOD(Transform, translation), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Transform", "void setTranslation(const QVector3D& in)", asMETHOD(Transform, setTranslation), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Transform", "void addTranslation(const QVector3D& in)", asMETHOD(Transform, addTranslation), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    s = engine->RegisterObjectMethod("Transform", "QQuaternion rotation() const", asMETHOD(Transform, rotation), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Transform", "void setRotation(const QQuaternion& in)", asMETHOD(Transform, setRotation), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    s = engine->RegisterObjectMethod("Transform", "QVector3D scale3D() const", asMETHOD(Transform, scale3D), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Transform", "void setScale3D(const QVector3D& in)", asMETHOD(Transform, setScale3D), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    s = engine->RegisterObjectMethod("Transform", "QVector3D toEulerAngles() const", asMETHOD(Transform, toEulerAngles), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Transform", "void setFromEulerAngles(const QVector3D& in)", asMETHOD(Transform, setFromEulerAngles), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    s = engine->RegisterObjectMethod("Transform", "QVector3D forward()", asMETHOD(Transform, forward), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Transform", "QVector3D up()", asMETHOD(Transform, up), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Transform", "QVector3D right()", asMETHOD(Transform, right), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Transform", "QVector3D back()", asMETHOD(Transform, back), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Transform", "QVector3D left()", asMETHOD(Transform, left), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Transform", "QVector3D down()", asMETHOD(Transform, down), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    s = engine->RegisterObjectMethod("Transform", "QVector3D TransformDirection(const QVector3D& in)", asMETHOD(Transform, TransformDirection), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Transform", "QVector3D inverseTransformDirection(const QVector3D& in)", asMETHOD(Transform, inverseTransformDirection), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    s = engine->RegisterObjectType("Trajectory", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Trajectory", "void addWaypoint(float,float,float)", asMETHOD(Trajectory, addWaypoint), asCALL_THISCALL); Q_ASSERT(s >= 0);
 
     s = engine->RegisterObjectType("ProfileCategaory", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectProperty("ProfileCategaory", "string id", asOFFSET(ProfileCategaory, ID)); Q_ASSERT(s >= 0);
@@ -187,6 +513,11 @@ ScriptEngine::ScriptEngine()
     s = engine->RegisterObjectProperty("Platform", "string id", asOFFSET(Entity, ID)); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectProperty("Platform", "string name", asOFFSET(Entity, Name)); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectProperty("Platform", "Transform@ transform", asOFFSET(Platform, transform)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("Platform", "Trajectory@ trajectory", asOFFSET(Platform, trajectory)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Platform", "void addParam(const string &in,const string &in)", asMETHOD(Platform, addParam), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Platform", "void editParam(const string &in,const string &in)", asMETHOD(Platform, editParam), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Platform", "string getParam(const string &in)", asMETHOD(Platform, getParam), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Platform", "void removeParam(const string &in)", asMETHOD(Platform, removeParam), asCALL_THISCALL); Q_ASSERT(s >= 0);
 
 
     s = engine->RegisterObjectType("ScriptEngine", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
@@ -196,6 +527,47 @@ ScriptEngine::ScriptEngine()
     s = engine->RegisterObjectMethod("ScriptEngine", "Platform@ addEntity(const string &in,const string &in, const bool &in)", asMETHOD(ScriptEngine, addEntity), asCALL_THISCALL); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("ScriptEngine", "Folder@ addFolder(const string &in,const string &in, const bool &in)", asMETHOD(ScriptEngine, addFolder), asCALL_THISCALL); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("ScriptEngine", "void addComponent(const string &in,const string &in)", asMETHOD(ScriptEngine, addComponent), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    s = engine->RegisterObjectType("Entity", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("Entity", "string id", asOFFSET(Entity, ID)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("Entity", "string name", asOFFSET(Entity, Name)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("Entity", "string parentId", asOFFSET(Entity, parentID)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("Entity", "bool Active", asOFFSET(Entity, Active)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Entity", "void addComponent(const string &in)", asMETHOD(Entity, addComponent), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("Entity", "void removeComponent(const string &in)", asMETHOD(Entity, removeComponent), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    // === 4️⃣ Register ScriptArray add-on AFTER all ref types ===
+    RegisterScriptArray(engine, true); // true = array of references
+    arrayEntityType = engine->GetTypeInfoByDecl("array<Entity@>");
+    Q_ASSERT(arrayEntityType != nullptr);
+
+    qDebug() << "[OK] Registered array<Entity@> type successfully";
+
+        // ------------------ AngelScript Binding for renameEntity ------------------
+    s = engine->RegisterObjectMethod("ScriptEngine","void renameEntity(const string &in, const string &in)",asMETHOD(ScriptEngine, renameEntity),asCALL_THISCALL);Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("ScriptEngine", "Entity@ getEntityById(const string &in)",asMETHOD(ScriptEngine, getEntityById), asCALL_THISCALL);Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("ScriptEngine","array<Entity@>@ findEntitiesByType(int)",asMETHOD(ScriptEngine, findEntitiesByType),asCALL_THISCALL);assert(s >= 0);Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("ScriptEngine","array<string>@ getAllEntityIds()",asMETHOD(ScriptEngine, getAllEntityIds),asCALL_THISCALL);Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("ScriptEngine","array<Entity@>@ getAllEntities()",asMETHOD(ScriptEngine, getAllEntities),asCALL_THISCALL);Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("ScriptEngine","void removeEntity(const string &in)",asMETHOD(ScriptEngine, removeEntity),asCALL_THISCALL);Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("ScriptEngine","void removeProfile(const string &in)",asMETHOD(ScriptEngine, removeProfile),asCALL_THISCALL);Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("ScriptEngine","void removeFolder(const string &in, const string &in)",asMETHOD(ScriptEngine, removeFolder),asCALL_THISCALL);Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("ScriptEngine","void removeEntity(const string &in, const string &in)",asMETHOD(ScriptEngine, removeEntity),asCALL_THISCALL);Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("ScriptEngine","void renameProfile(const string &in, const string &in)",asMETHOD(ScriptEngine, renameProfile),asCALL_THISCALL);Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("ScriptEngine","void renameFolder(const string &in, const string &in)",asMETHOD(ScriptEngine, renameFolder),asCALL_THISCALL);Q_ASSERT(s >= 0);
+
+    // In ScriptEngine::bindToAngelScript()
+
+    // --- Add Parameter to Existing Entity ---
+    // s = engine->RegisterObjectMethod(
+    //     "ScriptEngine",
+    //     "void addParameterToEntity(const string &in, const string &in, int, const string &in)",
+    //     asMETHOD(ScriptEngine, addParameterToEntity),
+    //     asCALL_THISCALL
+    //     );
+    // Q_ASSERT(s >= 0);
+
+
 
     e = new MyObj();
     e->x = 10;
@@ -213,7 +585,7 @@ ScriptEngine::ScriptEngine()
     mod = engine->GetModule("MyModule", asGM_ALWAYS_CREATE);
     // mod->AddScriptSection("script", script);
 
-    // int r = mod->Build();
+    // int s = mod->Build();
     // if (r < 0) {
     //     qDebug() << "Failed to compile script";
     //     return;
@@ -270,13 +642,14 @@ bool ScriptEngine::loadAndCompileScript(QString scriptContent)
     mod = engine->GetModule("MyModule", asGM_ALWAYS_CREATE);
     mod->AddScriptSection("script", scriptContent.toUtf8().data());
 
-    int r = mod->Build();
-    if (r < 0) {
+    int s = mod->Build();
+    if (s < 0) {
         qDebug() << "Failed to compile script!";
         return false;
     }
 
     func = mod->GetFunctionByName("main");
+
     if (!func) {
         qDebug() << "Function main() not found!";
         return false;
@@ -295,7 +668,7 @@ bool ScriptEngine::loadAndCompileScript(QString scriptContent)
 
     // ctx->Prepare(func);
     // ctx->SetArgObject(0, this);
-    // int r = ctx->Execute();
+    // int s = ctx->Execute();
     // if (r != asEXECUTION_FINISHED) {
     //     qDebug() << "Script execution failed!";
     // } else {

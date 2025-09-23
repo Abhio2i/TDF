@@ -4,7 +4,7 @@
 #include <QLineEdit>
 #include <QDoubleValidator>
 #include <QLabel>
-#include "GUI/Inspector/inspector.h"
+#include "GUI/Inspector/inspector.h" // For formatNumberForUI
 
 GeocordsTemplate::GeocordsTemplate(QWidget *parent) : QWidget(parent) {}
 
@@ -38,7 +38,7 @@ void GeocordsTemplate::setupGeocordsCell(int row, const QString &fullKey, const 
 
     // Style input fields and labels
     QString inputStyle = "QLineEdit { background: #333; border: 1px solid #555; border-radius: 3px; color: white; }";
-    QString labelStyle = "QLabel { color: white; min-width: 40px; }";
+    QString labelStyle = "QLabel { color: white; min-width: 40px; }"; // Fixed width for alignment
     latEdit->setStyleSheet(inputStyle);
     lonEdit->setStyleSheet(inputStyle);
     altEdit->setStyleSheet(inputStyle);
@@ -99,7 +99,7 @@ void GeocordsTemplate::setupGeocordsCell(int row, const QString &fullKey, const 
     connect(altEdit, &QLineEdit::editingFinished, this, updateValue);
     connect(headEdit, &QLineEdit::editingFinished, this, updateValue);
 
-
+    // Set row height and add widget to table
     tableWidget->setRowHeight(row, ROW_HEIGHT * 4);
     tableWidget->setCellWidget(row, 1, this);
 }

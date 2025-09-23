@@ -25,6 +25,7 @@ public:
     // Function declarations
     bool removeTrajectory(size_t index);
     void addTrajectory(Waypoints* waypoint);
+    void addWaypoint(float x,float y, float z);
 };
 
 #endif // TRAJECTORY_H

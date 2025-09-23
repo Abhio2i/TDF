@@ -81,9 +81,14 @@ void GISlib::receiveImage(QString url, QByteArray data) {
     int x = match.captured(2).toInt();
     int y = match.captured(3).toInt();
     QString layer;
+    // Get the app directory
+    QString appDir = QCoreApplication::applicationDirPath();
+    QString osmPath = QDir(appDir).filePath("testOSM");
+
+
 
     // Explicitly handle local OSM tiles first
-    if (url.startsWith("file:///home/arti_rajpoot/Downloads/testOSM")) {
+    if (url.startsWith(QUrl::fromLocalFile(osmPath).toString()/*"file:///home/vboxuser/Downloads/testOSM"*/)) {
         layer = "osm";
     } else if (url.contains("openstreetmap.org")) {
         layer = "osm";
@@ -403,7 +408,9 @@ QString GISlib::tileUrl(const QString& layer, int x, int y, int z) {
 
     if (lowerLayer == "osm") {
         // Path to local OSM tiles, same as first code
-        QString osmPath = "/home/arti_rajpoot/Downloads/testOSM";
+        QString appDir = QCoreApplication::applicationDirPath();
+        QString osmPath = QDir(appDir).filePath("testOSM");
+        //QString osmPath = "/home/vboxuser/Downloads/testOSM";
         QString filePath = QString("file://%1/%2/%3/%4.png").arg(osmPath).arg(z).arg(x).arg(y);
         qDebug() << "Generated local tile path:" << filePath;
         flipkeyaxis = false;

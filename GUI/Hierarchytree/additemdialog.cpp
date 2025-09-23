@@ -130,7 +130,7 @@ void AddItemDialog::setupUI(DialogType type)
                 checkBox->setEnabled(false); // Disable Transform checkbox as it's mandatory
                 qDebug() << "Transform component added (mandatory) for specificType:" << specificType;
             } else {
-                checkBox->setChecked(false); // Default unchecked for other components
+                checkBox->setChecked(true); // Default unchecked for other components
             }
 
             componentCheckboxes.insert(camelCaseName, checkBox);

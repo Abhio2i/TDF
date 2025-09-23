@@ -17,6 +17,12 @@ public:
     bool isKeyPressed(Qt::Key key) const;
     bool isMouseButtonPressed(Qt::MouseButton button) const;
     QPoint getMousePosition() const;
+    // New static methods for aircraft control inputs
+    static float getThrottleInput();
+    static float getPitchInput();
+    static float getRollInput();
+    static float getYawInput();
+    static bool getAirBrakes();
 
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;

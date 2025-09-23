@@ -108,9 +108,11 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
 
     if (tacticalDisplay && tacticalDisplay->canvas) {
         connect(renderer, &SceneRenderer::Render, tacticalDisplay->canvas, &CanvasWidget::Render);
+        connect(renderer, &SceneRenderer::Render, tacticalDisplay->scene3dwidget, &Scene3DWidget::updateEntities);
     }
 
     connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
+    connect(inspector, &Inspector::valueChanged, this, [=]{ renderer->Render(0.01f);});
 
     HierarchyConnector::instance()->connectSignals(hierarchy, treeView, tacticalDisplay, inspector);
     HierarchyConnector::instance()->connectLibrarySignals(library, libTreeView);

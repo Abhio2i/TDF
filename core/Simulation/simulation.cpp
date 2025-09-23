@@ -76,14 +76,14 @@ void Simulation::frame() {
         QJsonObject entityFrame;
         entityFrame["id"] = QString::fromStdString(id);
         entityFrame["position"] = QJsonObject{
-            {"x", comp.transform->position->x},
-            {"y", comp.transform->position->y},
-            {"z", comp.transform->position->z}
+            {"x", comp.transform->matrix->translation().x()},
+            {"y", comp.transform->matrix->translation().y()},
+            {"z", comp.transform->matrix->translation().z()}
         };
         entityFrame["rotation"] = QJsonObject{
-            {"x", comp.transform->rotation->x},
-            {"y", comp.transform->rotation->y},
-            {"z", comp.transform->rotation->z}
+            {"x", comp.transform->toEulerAngles().x()},
+            {"y", comp.transform->toEulerAngles().y()},
+            {"z", comp.transform->toEulerAngles().z()}
         };
 
         entitiesArray.append(entityFrame);
@@ -190,13 +190,13 @@ void Simulation::handleReplayFrame(const QJsonObject& frame) {
                 QJsonObject pos = entity["position"].toObject();
                 QJsonObject rot = entity["rotation"].toObject();
 
-                comp.transform->position->x = pos["x"].toDouble();
-                comp.transform->position->y = pos["y"].toDouble();
-                comp.transform->position->z = pos["z"].toDouble();
+                comp.transform->matrix->translation().setX(pos["x"].toDouble());
+                comp.transform->matrix->translation().setY(pos["y"].toDouble());
+                comp.transform->matrix->translation().setZ(pos["z"].toDouble());
 
-                comp.transform->rotation->x = rot["x"].toDouble();
-                comp.transform->rotation->y = rot["y"].toDouble();
-                comp.transform->rotation->z = rot["z"].toDouble();
+                comp.transform->toEulerAngles().setX(rot["x"].toDouble());
+                comp.transform->toEulerAngles().setY(rot["y"].toDouble());
+                comp.transform->toEulerAngles().setZ(rot["z"].toDouble());
             }
         }
     }
@@ -228,25 +228,25 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
         if (platform->collider && platform->collider->collider == Constants::ColliderType::Box) {
             shape = new btBoxShape(btVector3(1, 1, 1));
             shape->setLocalScaling(btVector3(
-                platform->transform->size->x * platform->collider->Width * 0.5f,
-                platform->transform->size->y * platform->collider->Length * 0.5f,
-                platform->transform->size->z * platform->collider->Height * 0.5f));
+                platform->transform->matrix->scale3D().x() * platform->collider->Width * 0.5f,
+                platform->transform->matrix->scale3D().y() * platform->collider->Length * 0.5f,
+                platform->transform->matrix->scale3D().z() * platform->collider->Height * 0.5f));
         } else if (platform->collider && platform->collider->collider == Constants::ColliderType::Sphere) {
-            shape = new btSphereShape(platform->collider->Radius * platform->transform->size->magnitude());
+            shape = new btSphereShape(platform->collider->Radius * platform->transform->matrix->scale3D().length());
         }
 
         if (shape) {
             btTransform transform;
             transform.setIdentity();
             transform.setOrigin(btVector3(
-                platform->transform->position->x,
-                platform->transform->position->y,
-                platform->transform->position->z));
+                platform->transform->matrix->translation().x(),
+                platform->transform->matrix->translation().y(),
+                platform->transform->matrix->translation().z()));
             btQuaternion quat;
             quat.setEulerZYX(
-                qDegreesToRadians(platform->transform->rotation->z),
-                qDegreesToRadians(platform->transform->rotation->y),
-                qDegreesToRadians(platform->transform->rotation->x));
+                qDegreesToRadians(platform->transform->toEulerAngles().z()),
+                qDegreesToRadians(platform->transform->toEulerAngles().y()),
+                qDegreesToRadians(platform->transform->toEulerAngles().x()));
             transform.setRotation(quat);
 
             float mass = platform->rigidbody->Mass;
@@ -361,9 +361,9 @@ void Simulation::calculatePhysics() {
 
             if (comp.collider) {
                 body->getCollisionShape()->setLocalScaling(btVector3(
-                    comp.transform->size->x * comp.collider->Width * 0.5f,
-                    comp.transform->size->y * comp.collider->Length * 0.5f,
-                    comp.transform->size->z * comp.collider->Height * 0.5f));
+                    comp.transform->matrix->scale3D().x() * comp.collider->Width * 0.5f,
+                    comp.transform->matrix->scale3D().y() * comp.collider->Length * 0.5f,
+                    comp.transform->matrix->scale3D().z() * comp.collider->Height * 0.5f));
             }
 
             if (comp.rigidbody->Gravity) {
@@ -419,24 +419,24 @@ void Simulation::entityUpdate(QString ID) {
         body->getMotionState()->getWorldTransform(trans);
 
         trans.setOrigin(btVector3(
-            comp.transform->position->x,
-            comp.transform->position->y,
-            comp.transform->position->z));
+            comp.transform->matrix->translation().x(),
+            comp.transform->matrix->translation().y(),
+            comp.transform->matrix->translation().z()));
 
         btQuaternion quat;
         quat.setEulerZYX(
-            qDegreesToRadians(comp.transform->rotation->z),
-            qDegreesToRadians(comp.transform->rotation->y),
-            qDegreesToRadians(comp.transform->rotation->x));
+            qDegreesToRadians(comp.transform->toEulerAngles().z()),
+            qDegreesToRadians(comp.transform->toEulerAngles().y()),
+            qDegreesToRadians(comp.transform->toEulerAngles().x()));
         trans.setRotation(quat);
 
         body->setWorldTransform(trans);
 
         if (comp.collider) {
             body->getCollisionShape()->setLocalScaling(btVector3(
-                comp.transform->size->x * comp.collider->Width * 0.5f,
-                comp.transform->size->y * comp.collider->Length * 0.5f,
-                comp.transform->size->z * comp.collider->Height * 0.5f));
+                comp.transform->matrix->scale3D().x() * comp.collider->Width * 0.5f,
+                comp.transform->matrix->scale3D().y() * comp.collider->Length * 0.5f,
+                comp.transform->matrix->scale3D().z() * comp.collider->Height * 0.5f));
         }
 
         comp.rigidbody->velocity->x = body->getLinearVelocity().x();

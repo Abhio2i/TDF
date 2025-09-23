@@ -1,5 +1,7 @@
 #include "canvaswidget.h"
 #include "qjsondocument.h"
+#include "qquaternion.h"
+#include "qvector3d.h"
 #include <QTimer>
 #include <QDebug>
 #include <QMouseEvent>
@@ -88,7 +90,7 @@ void CanvasWidget::dragMoveEvents(QDragMoveEvent *event)
 }
 
 void CanvasWidget::dropEvents(QDropEvent *event)
-{
+{   qDebug()<<"i am working";
     const QMimeData *mimeData = event->mimeData();
     if (mimeData->hasFormat("application/x-qabstractitemmodeldatalist")) {
         QByteArray encoded = mimeData->data("application/x-qabstractitemmodeldatalist");
@@ -110,8 +112,9 @@ void CanvasWidget::dropEvents(QDropEvent *event)
                 QPoint dropPos = event->pos();
                 QPointF geoPos = gislib->canvasToGeo(dropPos);
                 auto& entry = Meshes[customData["ID"].toString().toStdString()];
-                entry.position->x = geoPos.x();
-                entry.position->y = geoPos.y();
+                entry.transform->setTranslation(QVector3D(geoPos.y(),0,geoPos.x()));
+                entry.position->setZ(geoPos.x());
+                entry.position->setX(geoPos.y());
                 qDebug() << "Entity dropped at:" << geoPos;
                 update(); // Canvas ko redraw karne ke liye
 
@@ -351,10 +354,10 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                     MeshEntry entry;
                     entry.name = QString("TempText_%1").arg(textCounter++);
                     QPointF geoPos = gislib->canvasToGeo(event->pos());
-                    entry.position = new Vector(geoPos.x(), geoPos.y(), 0);
-                    entry.rotation = new Vector(0, 0, 0);
-                    entry.size = new Vector(1.0f, 1.0f, 1.0f);
-                    entry.velocity = new Vector(0, 0, 0);
+                    entry.position = new QVector3D(geoPos.x(), geoPos.y(), 0);
+                    entry.rotation = new QQuaternion();
+                    entry.size = new QVector3D(1.0f, 1.0f, 1.0f);
+                    entry.velocity = new QVector3D(0, 0, 0);
                     entry.trajectory = nullptr;
                     entry.collider = nullptr;
                     entry.bitmapPath = "";
@@ -408,10 +411,10 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
             static int bitmapCounter = 0;
             MeshEntry entry;
             entry.name = QString("TempBitmap_%1").arg(bitmapCounter++);
-            entry.position = new Vector(geoPos.x(), geoPos.y(), 0);
-            entry.rotation = new Vector(0, 0, 0);
-            entry.size = new Vector(4.0, 4.0, 1);
-            entry.velocity = new Vector(0, 0, 0);
+            entry.position = new QVector3D(geoPos.x(), geoPos.y(), 0);
+            entry.rotation = new QQuaternion();
+            entry.size = new QVector3D(4.0, 4.0, 1);
+            entry.velocity = new QVector3D(0, 0, 0);
             entry.trajectory = nullptr;
             entry.collider = nullptr;
             entry.bitmapPath = bitmapPath;
@@ -453,11 +456,11 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                 Console::log("Selected existing waypoint at index: " + std::to_string(nearestIndex));
             } else {
                 Waypoints* waypoint = new Waypoints();
-                waypoint->position = new Vector(geoPos.x(), geoPos.y(), 0);
+                waypoint->position = new Vector(geoPos.y(), 0 ,geoPos.x());
                 currentTrajectory.push_back(waypoint);
                 selectWaypoint(currentTrajectory.size() - 1);
-                Console::log("Added new waypoint at (lon: " + std::to_string(waypoint->position->x) +
-                             ", lat: " + std::to_string(waypoint->position->y) + ")");
+                Console::log("Added new waypoint at (lon: " + std::to_string(waypoint->position->z) +
+                             ", lat: " + std::to_string(waypoint->position->x) + ")");
                 updateTrajectoryData();
             }
             update();
@@ -468,7 +471,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
             auto it = Meshes.find(selectedEntityId);
             if (it != Meshes.end()) {
                 auto& entry = it->second;
-                QPointF basePos = gislib->geoToCanvas(entry.position->y, entry.position->x);
+                QPointF basePos = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
                 const float handleTolerance = 15.0f;
                 if (currentMode == Translate) {
                     QPointF xAxisHandle = basePos + QPointF(50, 0);
@@ -477,6 +480,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                         activeDragAxis = "x";
                         dragStartPos = event->pos();
                         Console::log("Dragging X-axis of entity: " + selectedEntityId);
+                        emit MoveEntity(QString::fromStdString(selectedEntityId));
                         update();
                         return;
                     }
@@ -484,6 +488,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                         activeDragAxis = "y";
                         dragStartPos = event->pos();
                         Console::log("Dragging Y-axis of entity: " + selectedEntityId);
+                        emit MoveEntity(QString::fromStdString(selectedEntityId));
                         update();
                         return;
                     }
@@ -493,6 +498,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                         activeDragAxis = "rotate";
                         dragStartPos = event->pos();
                         Console::log("Gizmo selected for rotation.");
+                        emit MoveEntity(QString::fromStdString(selectedEntityId));
                         update();
                         return;
                     }
@@ -503,6 +509,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                         activeDragAxis = "scale-x";
                         dragStartPos = event->pos();
                         Console::log("Gizmo X-axis selected for scaling entity: " + selectedEntityId);
+                        emit MoveEntity(QString::fromStdString(selectedEntityId));
                         update();
                         return;
                     }
@@ -510,6 +517,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                         activeDragAxis = "scale-y";
                         dragStartPos = event->pos();
                         Console::log("Gizmo Y-axis selected for scaling entity: " + selectedEntityId);
+                        emit MoveEntity(QString::fromStdString(selectedEntityId));
                         update();
                         return;
                     }
@@ -518,7 +526,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
         }
         bool entityWasClicked = false;
         for (auto& [id, entry] : Meshes) {
-            QPointF entityPos = gislib->geoToCanvas(entry.position->y, entry.position->x);
+            QPointF entityPos = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
             if (QVector2D(event->pos() - entityPos).length() < 20.0f) {
                 if (selectedEntityId != id) {
                     selectedEntityId = id;
@@ -557,10 +565,10 @@ void CanvasWidget::handleShapeDrawing(QMouseEvent *event) {
     if (selectedShape == "Rectangle") {
         MeshEntry entry;
         entry.name = "TempRectangle";
-        entry.position = new Vector(geoPos.x(), geoPos.y(), 0);
-        entry.rotation = new Vector(0, 0, 0);
-        entry.size = new Vector(7.0, 7.0, 1);
-        entry.velocity = new Vector(0, 0, 0);
+        entry.position = new QVector3D(geoPos.x(), geoPos.y(), 0);
+        entry.rotation = new QQuaternion();
+        entry.size = new QVector3D(7.0, 7.0, 1);
+        entry.velocity = new QVector3D(0, 0, 0);
         entry.trajectory = nullptr;
         entry.collider = nullptr;
 
@@ -604,10 +612,10 @@ void CanvasWidget::handleShapeDrawing(QMouseEvent *event) {
             }
             avgX /= tempPolygonVertices.size();
             avgY /= tempPolygonVertices.size();
-            entry.position = new Vector(avgX, avgY, 0);
-            entry.rotation = new Vector(0, 0, 0);
-            entry.size = new Vector(1.0f, 1.0f, 1.0f);
-            entry.velocity = new Vector(0, 0, 0);
+            entry.position = new QVector3D(avgX, avgY, 0);
+            entry.rotation = new QQuaternion();
+            entry.size = new QVector3D(1.0f, 1.0f, 1.0f);
+            entry.velocity = new QVector3D(0, 0, 0);
             entry.trajectory = nullptr;
             entry.collider = nullptr;
 
@@ -664,10 +672,10 @@ void CanvasWidget::handleShapeDrawing(QMouseEvent *event) {
             }
             avgX /= tempLineVertices.size();
             avgY /= tempLineVertices.size();
-            entry.position = new Vector(avgX, avgY, 0);
-            entry.rotation = new Vector(0, 0, 0);
-            entry.size = new Vector(1.0, 1.0, 1);
-            entry.velocity = new Vector(0, 0, 0);
+            entry.position = new QVector3D(avgX, avgY, 0);
+            entry.rotation = new QQuaternion();
+            entry.size = new QVector3D(1.0, 1.0, 1);
+            entry.velocity = new QVector3D(0, 0, 0);
             entry.trajectory = nullptr;
             entry.collider = nullptr;
 
@@ -719,10 +727,10 @@ void CanvasWidget::handleShapeDrawing(QMouseEvent *event) {
         static int circleCounter = 0;
         MeshEntry entry;
         entry.name = QString("TempCircle_%1").arg(circleCounter++);
-        entry.position = new Vector(geoPos.x(), geoPos.y(), 0);
-        entry.rotation = new Vector(0, 0, 0);
-        entry.size = new Vector(8, 8, 1);
-        entry.velocity = new Vector(0, 0, 0);
+        entry.position = new QVector3D(geoPos.x(), geoPos.y(), 0);
+        entry.rotation = new QQuaternion();
+        entry.size = new QVector3D(8, 8, 1);
+        entry.velocity = new QVector3D(0, 0, 0);
         entry.trajectory = nullptr;
         entry.collider = nullptr;
 
@@ -748,7 +756,7 @@ void CanvasWidget::handleShapeDrawing(QMouseEvent *event) {
                              .arg(entry.name)
                              .arg(geoPos.x())
                              .arg(geoPos.y())
-                             .arg(entry.size->x);
+                             .arg(entry.size->x());
         Console::log(logMsg.toStdString());
         update();
         return;
@@ -756,10 +764,10 @@ void CanvasWidget::handleShapeDrawing(QMouseEvent *event) {
         static int pointCounter = 0;
         MeshEntry entry;
         entry.name = QString("TempPoint_%1").arg(pointCounter++);
-        entry.position = new Vector(geoPos.x(), geoPos.y(), 0);
-        entry.rotation = new Vector(0, 0, 0);
-        entry.size = new Vector(0, 0, 1);
-        entry.velocity = new Vector(0, 0, 0);
+        entry.position = new QVector3D(geoPos.x(), geoPos.y(), 0);
+        entry.rotation = new QQuaternion();
+        entry.size = new QVector3D(0, 0, 1);
+        entry.velocity = new QVector3D(0, 0, 0);
         entry.trajectory = nullptr;
         entry.collider = nullptr;
 
@@ -863,7 +871,7 @@ void CanvasWidget::handleShapeRightClick(QMouseEvent *event) {
             Console::error("Invalid MeshEntry data for " + entry.name.toStdString());
             continue;
         }
-        QPointF entityPos = gislib->geoToCanvas(entry.position->y, entry.position->x);
+        QPointF entityPos = gislib->geoToCanvas(entry.position->y(), entry.position->x());
         bool isHit = false;
 
         // Check if the right-click is on a text entry
@@ -880,11 +888,11 @@ void CanvasWidget::handleShapeRightClick(QMouseEvent *event) {
                              std::string(", y: ") + std::to_string(entityPos.y()) + ")");
             }
         } else if (entry.name.startsWith("TempPolygon")) {
-            isHit = isPointInPolygon(event->pos(), entry.mesh->polygen, QPointF(entry.position->x, entry.position->y), gislib);
+            isHit = isPointInPolygon(event->pos(), entry.mesh->polygen, QPointF(entry.position->x(), entry.position->y()), gislib);
         } else if (entry.name.startsWith("TempPolyline")) {
             for (size_t i = 0; i < entry.mesh->polygen.size() - 1; ++i) {
-                QPointF v1 = gislib->geoToCanvas(entry.mesh->polygen[i]->y + entry.position->y, entry.mesh->polygen[i]->x + entry.position->x);
-                QPointF v2 = gislib->geoToCanvas(entry.mesh->polygen[i + 1]->y + entry.position->y, entry.mesh->polygen[i + 1]->x + entry.position->x);
+                QPointF v1 = gislib->geoToCanvas(entry.mesh->polygen[i]->y + entry.position->y(), entry.mesh->polygen[i]->x + entry.position->x());
+                QPointF v2 = gislib->geoToCanvas(entry.mesh->polygen[i + 1]->y + entry.position->y(), entry.mesh->polygen[i + 1]->x + entry.position->x());
                 if (isPointNearLineSegment(event->pos(), v1, v2, tolerance)) {
                     isHit = true;
                     break;
@@ -893,14 +901,14 @@ void CanvasWidget::handleShapeRightClick(QMouseEvent *event) {
         } else {
             qreal w, h;
             if (entry.name.startsWith("TempCircle")) {
-                w = h = entry.size->x * 25;
+                w = h = entry.size->x() * 25;
             } else if (entry.name.startsWith("TempRectangle")) {
-                w = entry.size->x * 25;
-                h = entry.size->y * 25;
+                w = entry.size->x() * 25;
+                h = entry.size->y() * 25;
             } else if (!entry.bitmapPath.isEmpty()) {
                 // Handle bitmap or bitmap image
-                w = entry.size->x * 25;
-                h = entry.size->y * 25;
+                w = entry.size->x() * 25;
+                h = entry.size->y() * 25;
             } else {
                 continue; // Skip invalid entries
             }
@@ -927,8 +935,8 @@ void CanvasWidget::handleShapeRightClick(QMouseEvent *event) {
                     isResizingShape = false;
                     resizeHandles.clear();
                     if (entry.name.startsWith("TempRectangle")) {
-                        float w = entry.size->x * 25;
-                        float h = entry.size->y * 25;
+                        float w = entry.size->x() * 25;
+                        float h = entry.size->y() * 25;
                         resizeHandles = {
                             entityPos + QPointF(-w/2, -h/2),
                             entityPos + QPointF(w/2, -h/2),
@@ -936,7 +944,7 @@ void CanvasWidget::handleShapeRightClick(QMouseEvent *event) {
                             entityPos + QPointF(-w/2, h/2)
                         };
                     } else if (entry.name.startsWith("TempCircle")) {
-                        float r = entry.size->x * 25;
+                        float r = entry.size->x() * 25;
                         resizeHandles = { entityPos + QPointF(r, 0) };
                     } else if (entry.name.startsWith("TempPolygon") || entry.name.startsWith("TempPolyline")) {
                         resizeHandles.clear();
@@ -945,7 +953,7 @@ void CanvasWidget::handleShapeRightClick(QMouseEvent *event) {
                                 Console::error("Null vertex in polygen for " + entry.name.toStdString());
                                 continue;
                             }
-                            QPointF vCanvas = gislib->geoToCanvas(v->y + entry.position->y, v->x + entry.position->x);
+                            QPointF vCanvas = gislib->geoToCanvas(v->y + entry.position->y(), v->x + entry.position->x());
                             resizeHandles.push_back(vCanvas);
                         }
                     }
@@ -1062,34 +1070,34 @@ void CanvasWidget::handleMouseMove(QMouseEvent *event) {
                 }
                 QPointF newPos = event->pos();
                 QPointF geoPos = gislib->canvasToGeo(newPos);
-                QPointF centerCanvas = gislib->geoToCanvas(entry.position->y, entry.position->x);
+                QPointF centerCanvas = gislib->geoToCanvas(entry.position->y(), entry.position->x());
                 if (entry.name.startsWith("TempRectangle")) {
-                    float w = entry.size->x * 25;
-                    float h = entry.size->y * 25;
+                    float w = entry.size->x() * 25;
+                    float h = entry.size->y() * 25;
                     QPointF delta = newPos - dragStartPos;
                     float newWidth = w;
                     float newHeight = h;
                     if (selectedHandleIndex == 0) { // Top-left
                         newWidth -= delta.x();
                         newHeight -= delta.y();
-                        entry.position->x += delta.x() / 50.0f;
-                        entry.position->y += delta.y() / 50.0f;
+                        entry.position->setX(entry.position->x() + delta.x() / 50.0f);
+                        entry.position->setY(entry.position->y() + delta.y() / 50.0f);
                     } else if (selectedHandleIndex == 1) {
                         newWidth += delta.x();
                         newHeight -= delta.y();
-                        entry.position->y += delta.y() / 50.0f;
+                        entry.position->setY(entry.position->y() + delta.y() / 50.0f);
                     } else if (selectedHandleIndex == 2) {
                         newWidth += delta.x();
                         newHeight += delta.y();
                     } else if (selectedHandleIndex == 3) {
                         newWidth -= delta.x();
                         newHeight += delta.y();
-                        entry.position->x += delta.x() / 50.0f;
+                        entry.position->setX(entry.position->x() + delta.x() / 50.0f);
                     }
                     newWidth = std::max(1.0f, newWidth / 25.0f);
                     newHeight = std::max(1.0f, newHeight / 25.0f);
-                    entry.size->x = newWidth;
-                    entry.size->y = newHeight;
+                    entry.size->setX(newWidth);
+                    entry.size->setY(newHeight);
                     entry.mesh->polygen.clear();
                     float halfWidth = newWidth * 0.01f;
                     float halfHeight = newHeight * 0.005f;
@@ -1109,8 +1117,8 @@ void CanvasWidget::handleMouseMove(QMouseEvent *event) {
                 } else if (entry.name.startsWith("TempCircle")) {
                     float newRadius = QVector2D(newPos - centerCanvas).length() / 25.0f;
                     newRadius = std::max(1.0f, newRadius);
-                    entry.size->x = newRadius;
-                    entry.size->y = newRadius;
+                    entry.size->setX(newRadius);
+                    entry.size->setY(newRadius);
                     resizeHandles = { centerCanvas + QPointF(newRadius*25, 0) };
                 } else if (entry.name.startsWith("TempPolygon") || entry.name.startsWith("TempPolyline")) {
                     if (selectedHandleIndex < (int)entry.mesh->polygen.size()) {
@@ -1121,8 +1129,8 @@ void CanvasWidget::handleMouseMove(QMouseEvent *event) {
                             return;
                         }
 
-                        vertex->x = geoPos.x() - entry.position->x;
-                        vertex->y = geoPos.y() - entry.position->y;
+                        vertex->x = geoPos.x() - entry.position->x();
+                        vertex->y = geoPos.y() - entry.position->y();
 
                         resizeHandles[selectedHandleIndex] = newPos;
 
@@ -1142,8 +1150,8 @@ void CanvasWidget::handleMouseMove(QMouseEvent *event) {
         selectedWaypointIndex < (int)currentTrajectory.size()) {
         QPointF geoPos = gislib->canvasToGeo(event->pos());
         Waypoints* wp = currentTrajectory[selectedWaypointIndex];
-        wp->position->x = geoPos.x();
-        wp->position->y = geoPos.y();
+        wp->position->z = geoPos.x();
+        wp->position->x = geoPos.y();
         update();
         return;
     }
@@ -1156,49 +1164,66 @@ void CanvasWidget::handleMouseMove(QMouseEvent *event) {
     }
     QPointF delta = event->pos() - dragStartPos;
 
-    float dx = event->pos().x() - entry.position->x - canvasOffset.x();
-    float dy = event->pos().y() - entry.position->y - canvasOffset.y();
+    float dx = event->pos().x() - entry.transform->translation().z() - canvasOffset.x();
+    float dy = event->pos().y() - entry.transform->translation().x() - canvasOffset.y();
 
     if (qAbs(dx) < 10 && qAbs(dy) < 10) {
-        activeDragAxis = "both";
+        //activeDragAxis = "both";
     } else if (qAbs(dx - 50) < 25 && qAbs(dy) < 10) {
-        activeDragAxis = "x";
+        //activeDragAxis = "x";
     } else if (qAbs(dy - 50) < 25 && qAbs(dx) < 10) {
-        activeDragAxis = "y";
+        //activeDragAxis = "y";
     }
-
+    //qDebug()<< dx <<","<<dy<<","<<activeDragAxis<<","<<canvasOffset.x()<<","<<canvasOffset.y()<<","<<entry.transform->translation().z()<<","<<entry.transform->translation().x()<<","<<event->pos();
     if (!selectedEntityId.empty() && !activeDragAxis.isEmpty()) {
         if (currentMode == Translate) {
             QPointF newGeoPos = gislib->canvasToGeo(event->pos());
-            QPointF oldGeoPos = gislib->canvasToGeo(dragStartPos);
-            double deltaLon = newGeoPos.x() - oldGeoPos.x();
-            double deltaLat = newGeoPos.y() - oldGeoPos.y();
+            // QPointF oldGeoPos = gislib->canvasToGeo(dragStartPos);
+            // double deltaLon = newGeoPos.x() - oldGeoPos.x();
+            // double deltaLat = newGeoPos.y() - oldGeoPos.y();
+            //qDebug()<< dx <<","<<dy<<","<<activeDragAxis<<","<<newGeoPos<<","<<oldGeoPos;
+
             if (activeDragAxis == "x") {
-                entry.position->x += deltaLon;
+                QVector3D po(0,0,newGeoPos.x());
+                entry.transform->setTranslation(po);
+                //qDebug()<<"wor";
             } else if (activeDragAxis == "y") {
-                entry.position->y += deltaLat;
+                QVector3D po(newGeoPos.y(),0,0);
+                entry.transform->setTranslation(po);
             } else if (activeDragAxis == "both") {
-                entry.position->x += deltaLon;
-                entry.position->y += deltaLat;
+                QVector3D po(newGeoPos.y(),0,newGeoPos.x());
+                entry.transform->setTranslation(po);
             }
+            emit MoveEntity(QString::fromStdString(selectedEntityId));
         } else if (currentMode == Rotate) {
-            QPointF basePos = gislib->geoToCanvas(entry.position->y, entry.position->x);
+            QPointF basePos = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
             qreal angle_new = qAtan2(event->pos().y() - basePos.y(), event->pos().x() - basePos.x());
             qreal angle_old = qAtan2(dragStartPos.y() - basePos.y(), dragStartPos.x() - basePos.x());
-            entry.rotation->z -= qRadiansToDegrees(angle_new - angle_old);
+            float angle_change = qRadiansToDegrees(angle_new - angle_old);
+            //QQuaternion rotation_delta = QQuaternion::fromAxisAndAngle(-angle_change, 0.0f, 0.0f, 1.0f);
+            //qDebug() << entry.rotation->z()-(angle_new - angle_old);
+            qDebug()<<angle_change;
+            entry.transform->setRotation(QQuaternion::fromEulerAngles(QVector3D(0,entry.transform->rotation().toEulerAngles().y()-angle_change,0)));
+            //entry.transform->rotation().fromEulerAngles(QVector3D(0,entry.transform->rotation().toEulerAngles().y()+(angle_new - angle_old),0));
+            //entry.rotation->setY(entry.rotation->y()+(angle_new - angle_old));
+            emit MoveEntity(QString::fromStdString(selectedEntityId));
         } else if (currentMode == Scale) {
-            QPointF basePos = gislib->geoToCanvas(entry.position->y, entry.position->x);
+            QPointF basePos = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
             qreal dist_new = QVector2D(event->pos() - basePos).length();
             qreal dist_old = QVector2D(dragStartPos - basePos).length();
             qreal scaleFactor = dist_new / dist_old;
             if (activeDragAxis == "x") {
-                entry.size->x *= scaleFactor;
+                QVector3D sc(0,0,entry.transform->scale3D().z() * scaleFactor);
+                entry.transform->setScale3D(sc);
+                //entry.transform->scale3D().setZ(entry.transform->scale3D().z() * scaleFactor);
             } else if (activeDragAxis == "y") {
-                entry.size->y *= scaleFactor;
+                QVector3D sc(entry.transform->scale3D().x() * scaleFactor,0,0);
+                entry.transform->setScale3D(sc);
             } else if (activeDragAxis == "both") {
-                entry.size->x *= scaleFactor;
-                entry.size->y *= scaleFactor;
+                QVector3D sc(entry.transform->scale3D().x() * scaleFactor,0,entry.transform->scale3D().z() * scaleFactor);
+                entry.transform->setScale3D(sc);
             }
+            emit MoveEntity(QString::fromStdString(selectedEntityId));
         }
         dragStartPos = event->pos();
         update();
@@ -1254,8 +1279,8 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
                 }
                 avgX /= tempPolygonVertices.size();
                 avgY /= tempPolygonVertices.size();
-                entry.position = new Vector(avgX, avgY, 0);
-                entry.rotation = new Vector(0, 0, 0);
+                entry.position = new QVector3D(avgX, avgY, 0);
+                entry.rotation = new QQuaternion();
                 float minX = std::numeric_limits<float>::max();
                 float maxX = std::numeric_limits<float>::lowest();
                 float minY = std::numeric_limits<float>::max();
@@ -1266,8 +1291,8 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
                     minY = std::min(minY, v->y);
                     maxY = std::max(maxY, v->y);
                 }
-                entry.size = new Vector(1.0f, 1.0f, 1.0f);
-                entry.velocity = new Vector(0, 0, 0);
+                entry.size = new QVector3D(1.0f, 1.0f, 1.0f);
+                entry.velocity = new QVector3D(0, 0, 0);
                 entry.trajectory = nullptr;
                 entry.collider = nullptr;
                 entry.mesh = new Mesh();
@@ -1310,10 +1335,10 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
                 }
                 avgX /= tempLineVertices.size();
                 avgY /= tempLineVertices.size();
-                entry.position = new Vector(avgX, avgY, 0);
-                entry.rotation = new Vector(0, 0, 0);
-                entry.size = new Vector(1.0f, 1.0f, 1.0f);
-                entry.velocity = new Vector(0, 0, 0);
+                entry.position = new QVector3D(avgX, avgY, 0);
+                entry.rotation = new QQuaternion();
+                entry.size = new QVector3D(1.0f, 1.0f, 1.0f);
+                entry.velocity = new QVector3D(0, 0, 0);
                 entry.trajectory = nullptr;
                 entry.collider = nullptr;
                 entry.mesh = new Mesh();
@@ -1404,8 +1429,8 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
                 }
                 avgX /= tempPolygonVertices.size();
                 avgY /= tempPolygonVertices.size();
-                entry.position = new Vector(avgX, avgY, 0);
-                entry.rotation = new Vector(0, 0, 0);
+                entry.position = new QVector3D(avgX, avgY, 0);
+                entry.rotation = new QQuaternion();
                 float minX = std::numeric_limits<float>::max();
                 float maxX = std::numeric_limits<float>::lowest();
                 float minY = std::numeric_limits<float>::max();
@@ -1416,8 +1441,8 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
                     minY = std::min(minY, v->y);
                     maxY = std::max(maxY, v->y);
                 }
-                entry.size = new Vector(1.0f, 1.0f, 1.0f);
-                entry.velocity = new Vector(0, 0, 0);
+                entry.size = new QVector3D(1.0f, 1.0f, 1.0f);
+                entry.velocity = new QVector3D(0, 0, 0);
                 entry.trajectory = nullptr;
                 entry.collider = nullptr;
                 entry.mesh = new Mesh();
@@ -1460,10 +1485,10 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
                 }
                 avgX /= tempLineVertices.size();
                 avgY /= tempLineVertices.size();
-                entry.position = new Vector(avgX, avgY, 0);
-                entry.rotation = new Vector(0, 0, 0);
-                entry.size = new Vector(1.0f, 1.0f, 1.0f);
-                entry.velocity = new Vector(0, 0, 0);
+                entry.position = new QVector3D(avgX, avgY, 0);
+                entry.rotation = new QQuaternion();
+                entry.size = new QVector3D(1.0f, 1.0f, 1.0f);
+                entry.velocity = new QVector3D(0, 0, 0);
                 entry.trajectory = nullptr;
                 entry.collider = nullptr;
                 entry.mesh = new Mesh();
@@ -1520,7 +1545,7 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
         QPolygonF polyline;
         for (size_t i = 0; i < currentTrajectory.size(); ++i) {
             Waypoints* waypoint = currentTrajectory[i];
-            QPointF screenPos = gislib->geoToCanvas(waypoint->position->y, waypoint->position->x);
+            QPointF screenPos = gislib->geoToCanvas(waypoint->position->x, waypoint->position->z);
             polyline << screenPos;
             painter.setBrush(Qt::magenta);
             int pointSize = (i == selectedWaypointIndex) ? 6 : 4;
@@ -1579,74 +1604,6 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event) {
     handleMouseRelease(event);
 }
 
-bool isColliding(const MeshEntry& a, const MeshEntry& b) {
-    float ax = a.position->x, ay = a.position->y;
-    float aw = a.size->x * 25, ah = a.size->y * 25;
-
-    float bx = b.position->x, by = b.position->y;
-    float bw = b.size->x * 25, bh = b.size->y * 25;
-
-    return (std::abs(ax - bx) < (aw + bw) / 2.0f) &&
-           (std::abs(ay - by) < (ah + bh) / 2.0f);
-}
-
-void CanvasWidget::applyGravityAndBounce(float deltaTime) {
-    const float gravity = 1980.0f;
-    const float bounceFactor = 0.9f;
-
-    for (auto& [id, entry] : Meshes) {
-        if (!entry.position || !entry.velocity || !entry.size) continue;
-
-        entry.velocity->y += gravity * deltaTime;
-        entry.position->x += entry.velocity->x * deltaTime;
-        entry.position->y += entry.velocity->y * deltaTime;
-
-        float w = entry.size->x * 25;
-        float h = entry.size->y * 25;
-
-        float bottom = entry.position->y + h / 2.0f;
-        if (bottom >= height()) {
-            entry.position->y = height() - h / 2.0f;
-            entry.velocity->y = -entry.velocity->y * bounceFactor;
-            if (qAbs(entry.velocity->y) < 10.0f) entry.velocity->y = 0.0f;
-        }
-
-        float top = entry.position->y - h / 2.0f;
-        if (top <= 0) {
-            entry.position->y = h / 2.0f;
-            entry.velocity->y = -entry.velocity->y * bounceFactor;
-        }
-
-        float left = entry.position->x - w / 2.0f;
-        if (left <= 0) {
-            entry.position->x = w / 2.0f;
-            entry.velocity->x = -entry.velocity->x * bounceFactor;
-        }
-
-        float right = entry.position->x + w / 2.0f;
-        if (right >= width()) {
-            entry.position->x = width() - w / 2.0f;
-            entry.velocity->x = -entry.velocity->x * bounceFactor;
-        }
-    }
-
-    std::vector<std::string> ids;
-    for (const auto& [id, _] : Meshes) {
-        ids.push_back(id);
-    }
-
-    for (size_t i = 0; i < ids.size(); ++i) {
-        for (size_t j = i + 1; j < ids.size(); ++j) {
-            MeshEntry& a = Meshes[ids[i]];
-            MeshEntry& b = Meshes[ids[j]];
-
-            if (isColliding(a, b)) {
-                std::swap(a.velocity->x, b.velocity->x);
-                std::swap(a.velocity->y, b.velocity->y);
-            }
-        }
-    }
-}
 
 void CanvasWidget::drawGridLines(QPainter& painter) {
     int alpha = (gridOpacity * 255) / 100;
@@ -1702,20 +1659,20 @@ void CanvasWidget::drawEntityInformation(QPainter& painter) {
 
     if (currentMode == Translate || currentMode == DrawTrajectory) {
         text = QString("pos: lon %1, lat %2")
-                   .arg(pos->x, 0, 'f', 4) // Longitude
-                   .arg(pos->y, 0, 'f', 4); // Latitude
+                   .arg(pos->x(), 0, 'f', 4) // Longitude
+                   .arg(pos->y(), 0, 'f', 4); // Latitude
     } else if (currentMode == Rotate) {
         auto& rot = Meshes[selectedEntityId].rotation;
         text = QString("rot: x %1, y %2, z %3")
-                   .arg(rot->x)
-                   .arg(rot->y)
-                   .arg(rot->z);
+                   .arg(rot->toEulerAngles().x())
+                   .arg(rot->toEulerAngles().y())
+                   .arg(rot->toEulerAngles().z());
     } else if (currentMode == Scale) {
         auto& size = Meshes[selectedEntityId].size;
         text = QString("size: x %1, y %2, z %3")
-                   .arg(size->x)
-                   .arg(size->y)
-                   .arg(size->z);
+                   .arg(size->x())
+                   .arg(size->y())
+                   .arg(size->z());
     }
     if (currentMode == DrawTrajectory) {
         text += QString(" | Waypoints: %1").arg(currentTrajectory.size());
@@ -1742,7 +1699,7 @@ void CanvasWidget::drawTransformGizmo(QPainter& painter) {
     auto& entry = it->second;
 
 
-    QPointF base = gislib->geoToCanvas(entry.position->y, entry.position->x);
+    QPointF base = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
 
 
     QPointF xAxisHandlePos = base + QPointF(50, 0);
@@ -1761,7 +1718,7 @@ void CanvasWidget::drawTransformGizmo(QPainter& painter) {
         painter.drawEllipse(base, 40, 40);
         float radius = 40;
 
-        float rad = qDegreesToRadians(-entry.rotation->z);
+        float rad = qDegreesToRadians(-entry.transform->rotation().toEulerAngles().z());
         QPointF endpoint(base.x() + radius * cos(rad), base.y() - radius * sin(rad));
         painter.drawLine(base, endpoint);
     } else if (currentMode == Scale) {
@@ -1782,9 +1739,9 @@ void CanvasWidget::drawSelectionOutline(QPainter& painter) {
     auto& pos = entry.position;
     auto& size = entry.size;
 
-    float w = size->x * 25;
-    float h = size->y * 25;
-    QRectF outlineRect(pos->x - w / 2.0f, pos->y - h / 2.0f, w, h);
+    float w = size->z() * 25;
+    float h = size->x() * 25;
+    QRectF outlineRect(pos->z() - w / 2.0f, pos->x() - h / 2.0f, w, h);
 
     QPen pen(Qt::yellow);
     pen.setWidth(2);
@@ -1800,7 +1757,7 @@ void CanvasWidget::drawCollider(QPainter& painter) {
         if (!entry.collider || !entry.position) continue;
 
         painter.save();
-        painter.translate(entry.position->x, entry.position->y);
+        painter.translate(entry.position->z(), entry.position->x());
 
         QPen pen(Qt::cyan);
         pen.setStyle(Qt::DashDotLine);
@@ -1811,7 +1768,7 @@ void CanvasWidget::drawCollider(QPainter& painter) {
         using ColliderType = Constants::ColliderType;
         switch (entry.collider->collider) {
         case ColliderType::Sphere:
-            painter.drawEllipse(QPointF(0, 0), entry.collider->Radius * entry.size->magnitude(), entry.collider->Radius * entry.size->magnitude());
+            painter.drawEllipse(QPointF(0, 0), entry.collider->Radius * entry.size->length(), entry.collider->Radius * entry.size->length());
             break;
         case ColliderType::Box:
             painter.drawRect(QRectF(-entry.collider->Width/2, -entry.collider->Height/2,
@@ -1846,7 +1803,7 @@ void CanvasWidget::drawMesh(QPainter& painter) {
 
         // Render text for TempText entries
         if (entry.name.startsWith("TempText") && !entry.text.isEmpty()) {
-            QPointF canvasPos = gislib->geoToCanvas(entry.position->y, entry.position->x);
+            QPointF canvasPos = gislib->geoToCanvas(entry.position->y(), entry.position->x());
             painter.save();
             QFont font("Arial", 12, QFont::Bold);
             painter.setFont(font);
@@ -1860,15 +1817,15 @@ void CanvasWidget::drawMesh(QPainter& painter) {
         if (!entry.bitmapPath.isEmpty()) {
             QPixmap img(entry.bitmapPath);
             if (!img.isNull()) {
-                QPointF canvasPos = gislib->geoToCanvas(entry.position->y, entry.position->x);
-                QPointF sizePointGeo(entry.position->x + entry.size->x, entry.position->y + entry.size->y);
+                QPointF canvasPos = gislib->geoToCanvas(entry.position->y(), entry.position->x());
+                QPointF sizePointGeo(entry.position->x() + entry.size->x(), entry.position->y() + entry.size->y());
                 QPointF sizePointCanvas = gislib->geoToCanvas(sizePointGeo.y(), sizePointGeo.x());
                 float canvasWidth = qAbs(sizePointCanvas.x() - canvasPos.x()) * 2;
                 float canvasHeight = qAbs(sizePointCanvas.y() - canvasPos.y()) * 2;
                 QPixmap scaled = img.scaled(canvasWidth, canvasHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation);
                 painter.save();
                 painter.translate(canvasPos);
-                painter.rotate(entry.rotation->z);
+                painter.rotate(entry.rotation->z()*(180/3.14159265359));
                 painter.drawPixmap(QPointF(-scaled.width() / 2.0f, -scaled.height() / 2.0f), scaled);
                 painter.restore();
             } else {
@@ -1906,7 +1863,7 @@ void CanvasWidget::drawMesh(QPainter& painter) {
                 continue;
             }
             QPointF canvasCenter = gislib->geoToCanvas(center->y, center->x);
-            QPointF radiusPointGeo(center->x + entry.size->x, center->y);
+            QPointF radiusPointGeo(center->x + entry.size->x(), center->y);
             QPointF radiusPointCanvas = gislib->geoToCanvas(radiusPointGeo.y(), radiusPointGeo.x());
             float canvasRadius = sqrt(pow(radiusPointCanvas.x() - canvasCenter.x(), 2) +
                                       pow(radiusPointCanvas.y() - canvasCenter.y(), 2));
@@ -1923,8 +1880,8 @@ void CanvasWidget::drawMesh(QPainter& painter) {
 
         // Handle rectangles, polylines, and polygons
         QPolygonF polygon;
-        QPointF canvasPos = gislib->geoToCanvas(entry.position->y, entry.position->x);
-        float angle = qDegreesToRadians(entry.rotation->z);
+        QPointF canvasPos = gislib->geoToCanvas(entry.position->y(), entry.position->x());
+        float angle = qDegreesToRadians(entry.rotation->z()*(180/3.14159265359));
         float cosA = cos(angle);
         float sinA = sin(angle);
         for (Vector* point : mesh->polygen) {
@@ -1935,10 +1892,10 @@ void CanvasWidget::drawMesh(QPainter& painter) {
             float geoX = point->x;
             float geoY = point->y;
             if (entry.name.startsWith("TempRectangle")) {
-                geoX *= entry.size->x / 0.02f;
-                geoY *= entry.size->y / 0.01f;
+                geoX *= entry.size->x() / 0.02f;
+                geoY *= entry.size->y() / 0.01f;
             }
-            QPointF canvasPoint = gislib->geoToCanvas(geoY + entry.position->y, geoX + entry.position->x);
+            QPointF canvasPoint = gislib->geoToCanvas(geoY + entry.position->y(), geoX + entry.position->x());
             float x = canvasPoint.x() - canvasPos.x();
             float y = canvasPoint.y() - canvasPos.y();
             float rotatedX = x * cosA - y * sinA;
@@ -2004,6 +1961,7 @@ void CanvasWidget::drawMesh(QPainter& painter) {
         }
     }
 }
+
 void CanvasWidget::drawImage(QPainter& painter) {
     for (auto& [id, entry] : Meshes) {
         Mesh* mesh = entry.mesh;
@@ -2011,16 +1969,16 @@ void CanvasWidget::drawImage(QPainter& painter) {
 
         QPixmap img(mesh->Sprite->data());
         if (!img.isNull()) {
-            QPixmap scaled = img.scaled(entry.size->x * 50, entry.size->y * 50,
+            QPixmap scaled = img.scaled(entry.transform->scale3D().z() * 50, entry.transform->scale3D().x() * 50,
                                         Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-            QPointF point = gislib->geoToCanvas(entry.position->y, entry.position->x);
+            QPointF point = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
             float x = point.x();
             float y = point.y();
-            float angle = entry.rotation->z;
+            float angle = entry.transform->rotation().toEulerAngles().y();
 
             painter.save();
             painter.translate(x, y);
-            painter.rotate(angle);
+            painter.rotate(-angle);
             painter.drawPixmap(QPointF(-scaled.width() / 2.0f, -scaled.height() / 2.0f), scaled);
             painter.restore();
         } else {
@@ -2049,7 +2007,7 @@ void CanvasWidget::drawTrajectory(QPainter& painter) {
                 Console::log("Warning: Null waypoint or position in trajectory for entity: " + id);
                 continue;
             }
-            QPointF point = gislib->geoToCanvas(waypoint->position->y, waypoint->position->x);
+            QPointF point = gislib->geoToCanvas(waypoint->position->x, waypoint->position->z);
             polyline << point;
             painter.setBrush(Qt::cyan);
             painter.drawEllipse(point, 3, 3);
@@ -2059,8 +2017,7 @@ void CanvasWidget::drawTrajectory(QPainter& painter) {
         // Draw polyline only if there are multiple waypoints
         if (polyline.size() > 1) {
             painter.drawPolyline(polyline);
-            Console::log("Drawing trajectory for entity: " + id + " with " +
-                         std::to_string(polyline.size()) + " waypoints");
+            //Console::log("Drawing trajectory for entity: " + id + " with " +std::to_string(polyline.size()) + " waypoints");
         } else {
             Console::log("Not enough waypoints to draw trajectory for entity: " + id);
         }
@@ -2135,10 +2092,10 @@ void CanvasWidget::onBitmapImageSelected(const QString& filePath) {
     entry.name = QString("TempBitmap_%1").arg(bitmapCounter++);
     QPointF centerCanvas(width() / 2.0f, height() / 2.0f);
     QPointF geoPos = gislib->canvasToGeo(centerCanvas);
-    entry.position = new Vector(geoPos.x(), geoPos.y(), 0);
-    entry.rotation = new Vector(0, 0, 0);
-    entry.size = new Vector(7.1, 7.1, 1);
-    entry.velocity = new Vector(0, 0, 0);
+    entry.position = new QVector3D(geoPos.x(), geoPos.y(), 0);
+    entry.rotation = new QQuaternion();
+    entry.size = new QVector3D(7.1, 7.1, 1);
+    entry.velocity = new QVector3D(0, 0, 0);
     entry.trajectory = nullptr;
     entry.collider = nullptr;
     entry.bitmapPath = filePath;
@@ -2195,7 +2152,7 @@ int CanvasWidget::findNearestWaypoint(QPointF canvasPos) {
 
     for (size_t i = 0; i < currentTrajectory.size(); ++i) {
         Waypoints* wp = currentTrajectory[i];
-        QPointF wpCanvas = gislib->geoToCanvas(wp->position->y, wp->position->x);
+        QPointF wpCanvas = gislib->geoToCanvas(wp->position->x, wp->position->z);
         float distance = QVector2D(canvasPos - wpCanvas).length();
         if (distance < tolerance && distance < minDistance) {
             minDistance = distance;
@@ -2230,8 +2187,6 @@ void CanvasWidget::updateTrajectoryData() {
     QJsonDocument doc(waypointsArray);
 
 }
-
-
 
 QJsonObject CanvasWidget::toJson() const {
     QJsonObject json;
@@ -2284,27 +2239,27 @@ QJsonObject CanvasWidget::toJson() const {
         meshObj["text"] = entry.text; // Serialize the text field for TempText entr
 
         QJsonObject posObj;
-        posObj["x"] = entry.position->x;
-        posObj["y"] = entry.position->y;
-        posObj["z"] = entry.position->z;
+        posObj["x"] = entry.position->x();
+        posObj["y"] = entry.position->y();
+        posObj["z"] = entry.position->z();
         meshObj["position"] = posObj;
 
         QJsonObject rotObj;
-        rotObj["x"] = entry.rotation->x;
-        rotObj["y"] = entry.rotation->y;
-        rotObj["z"] = entry.rotation->z;
+        rotObj["x"] = entry.rotation->x();
+        rotObj["y"] = entry.rotation->y();
+        rotObj["z"] = entry.rotation->z();
         meshObj["rotation"] = rotObj;
 
         QJsonObject sizeObj;
-        sizeObj["x"] = entry.size->x;
-        sizeObj["y"] = entry.size->y;
-        sizeObj["z"] = entry.size->z;
+        sizeObj["x"] = entry.size->x();
+        sizeObj["y"] = entry.size->y();
+        sizeObj["z"] = entry.size->z();
         meshObj["size"] = sizeObj;
 
         QJsonObject velObj;
-        velObj["x"] = entry.velocity->x;
-        velObj["y"] = entry.velocity->y;
-        velObj["z"] = entry.velocity->z;
+        velObj["x"] = entry.velocity->x();
+        velObj["y"] = entry.velocity->y();
+        velObj["z"] = entry.velocity->z();
         meshObj["velocity"] = velObj;
 
         if (!entry.bitmapPath.isEmpty()) {
@@ -2352,8 +2307,6 @@ QJsonObject CanvasWidget::toJson() const {
 
     return json;
 }
-
-
 
 void CanvasWidget::fromJson(const QJsonObject& json) {
     for (Waypoints* wp : currentTrajectory) {
@@ -2476,46 +2429,46 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
 
             if (meshObj.contains("position")) {
                 QJsonObject posObj = meshObj["position"].toObject();
-                entry.position = new Vector(
+                entry.position = new QVector3D(
                     posObj["x"].toDouble(),
                     posObj["y"].toDouble(),
                     posObj["z"].toDouble()
                     );
             } else {
-                entry.position = new Vector(0, 0, 0);
+                entry.position = new QVector3D(0, 0, 0);
             }
 
             if (meshObj.contains("rotation")) {
                 QJsonObject rotObj = meshObj["rotation"].toObject();
-                entry.rotation = new Vector(
+                entry.rotation = new QQuaternion(QQuaternion::fromEulerAngles(
                     rotObj["x"].toDouble(),
                     rotObj["y"].toDouble(),
                     rotObj["z"].toDouble()
-                    );
+                    ));
             } else {
-                entry.rotation = new Vector(0, 0, 0);
+                entry.rotation = new QQuaternion();
             }
 
             if (meshObj.contains("size")) {
                 QJsonObject sizeObj = meshObj["size"].toObject();
-                entry.size = new Vector(
+                entry.size = new QVector3D(
                     sizeObj["x"].toDouble(),
                     sizeObj["y"].toDouble(),
                     sizeObj["z"].toDouble()
                     );
             } else {
-                entry.size = new Vector(1, 1, 1);
+                entry.size = new QVector3D(1, 1, 1);
             }
 
             if (meshObj.contains("velocity")) {
                 QJsonObject velObj = meshObj["velocity"].toObject();
-                entry.velocity = new Vector(
+                entry.velocity = new QVector3D(
                     velObj["x"].toDouble(),
                     velObj["y"].toDouble(),
                     velObj["z"].toDouble()
                     );
             } else {
-                entry.velocity = new Vector(0, 0, 0);
+                entry.velocity = new QVector3D(0, 0, 0);
             }
 
             if (meshObj.contains("bitmapPath")) {

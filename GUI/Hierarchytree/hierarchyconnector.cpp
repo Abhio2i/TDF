@@ -601,12 +601,14 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
                 obj["hierarchy"] = hierarchy->toJson();
                 if (tacticalDisplay != nullptr) {
                     obj["tactical"] = tacticalDisplay->canvas->toJson();
+                }else{
+                    obj["tactical"] = QJsonObject();
                 }
                 QJsonDocument doc(obj);
                 file.write(doc.toJson(QJsonDocument::Indented));
                 file.close();
                 //QMessageBox::information(parent, "Saved", "JSON saved successfully");
-                qDebug() << "JSON saved successfully";
+                qDebug() << "JSON saved successfuly`11223";
                 if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(parent)) {
                     dbEditor->lastSavedFilePath = filePath;
                     qDebug() << "DatabaseEditor lastSavedFilePath set to:" << filePath;
@@ -634,23 +636,49 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
             return;
         }
 
+    //     QFile file(filePath);
+    //     if (file.open(QIODevice::WriteOnly)) {
+    //         QJsonObject obj;
+    //         obj["hierarchy"] = hierarchy->toJson();
+    //         if (tacticalDisplay != nullptr) {
+    //             obj["tactical"] = tacticalDisplay->canvas->toJson();
+    //         }else{
+    //             obj["tactical"] = QJsonObject();
+    //         }
+    //         QJsonDocument doc(obj);
+    //         file.write(doc.toJson(QJsonDocument::Indented));
+    //         file.close();
+    //         //QMessageBox::information(parent, "Saved", "JSON saved successfully to " + filePath);
+    //         qDebug() << "JSON saved to existing path:" << filePath;
+    //     } else {
+    //         qWarning() << "Failed to open file for writing:" << filePath;
+    //         QMessageBox::warning(parent, "Error", QString("Failed to save JSON: %1").arg(file.errorString()));
+    //     }
+    // });
+
+
         QFile file(filePath);
-        if (file.open(QIODevice::WriteOnly)) {
-            QJsonObject obj;
-            obj["hierarchy"] = hierarchy->toJson();
-            if (tacticalDisplay != nullptr) {
-                obj["tactical"] = tacticalDisplay->canvas->toJson();
-            }
-            QJsonDocument doc(obj);
-            file.write(doc.toJson(QJsonDocument::Indented));
-            file.close();
-            //QMessageBox::information(parent, "Saved", "JSON saved successfully to " + filePath);
-            qDebug() << "JSON saved to existing path:" << filePath;
-        } else {
-            qWarning() << "Failed to open file for writing:" << filePath;
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+            qWarning() << "Failed to open file for writing:" << file.errorString();
             QMessageBox::warning(parent, "Error", QString("Failed to save JSON: %1").arg(file.errorString()));
+            return;
         }
-    });
+
+        QJsonObject obj;
+        obj["hierarchy"] = hierarchy->toJson();
+        obj["tactical"] = tacticalDisplay ? tacticalDisplay->canvas->toJson() : QJsonObject();
+
+        QJsonDocument doc(obj);
+        qint64 bytesWritten = file.write(doc.toJson(QJsonDocument::Indented));
+        file.close();
+
+        if (bytesWritten == -1) {
+            qWarning() << "Failed to write JSON to file";
+        } else {
+            qDebug() << "JSON saved successfully to:" << filePath;
+        }
+
+         });
 }
 
 void HierarchyConnector::loadToLibrary(QMainWindow* parent)

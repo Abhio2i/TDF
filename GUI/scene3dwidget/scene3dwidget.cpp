@@ -1,6 +1,7 @@
 #include "scene3dwidget.h"
 #include "qcheckbox.h"
 #include "qlabel.h"
+#include "qmath.h"
 #include "qpushbutton.h"
 #include "qslider.h"
 #include "qtimer.h"
@@ -8,8 +9,8 @@
 #include <Qt3DRender/QCamera>
 #include <Qt3DExtras/QOrbitCameraController>
 // #include <Qt3DCore/QBuffer>
-#include <Qt3DCore/QBuffer>
-#include <Qt3DCore/QAttribute>
+// #include <Qt3DCore/QBuffer>
+// #include <Qt3DCore/QAttribute>
 #include <Qt3DExtras/QPhongMaterial>
 #include <Qt3DExtras/QPlaneMesh>
 #include <Qt3DRender/QDirectionalLight>
@@ -24,6 +25,7 @@
 #include <Qt3DExtras/QPlaneGeometry>
 #include <Qt3DRender/QObjectPicker>
 #include <Qt3DRender/QPickEvent>
+#include <cmath>
 #include <qcolordialog.h>
 #include <Qt3DRender/QMesh>
 #include <Qt3DCore/QTransform>
@@ -38,7 +40,7 @@ Scene3DWidget::Scene3DWidget(QWidget *parent)
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
-    // 🧁 Top UI bar
+    //Top UI bar
     QHBoxLayout *topBar = new QHBoxLayout();
     auto *colorButton = new QPushButton("Change Background Color");
     auto *modeBox = new QComboBox();
@@ -59,7 +61,7 @@ Scene3DWidget::Scene3DWidget(QWidget *parent)
 
     topBar->addStretch(); // Push to left
 
-    // // 🖼️ 3D View container
+    // //3D View container
     // QWidget *container = QWidget::createWindowContainer(view, this);
     // container->setMinimumSize(300, 300);
     // In Scene3DWidget constructor
@@ -155,7 +157,7 @@ bool Scene3DWidget::eventFilter(QObject *watched, QEvent *event)
     if (event->type() == QEvent::MouseMove) {
         QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
 
-        // 🎯 Right Button → Rotate (like Unity)
+        // Right Button → Rotate (like Unity)
         if (rightMousePressed) {
             QPoint delta = mouseEvent->pos() - lastMousePos;
             lastMousePos = mouseEvent->pos();
@@ -169,7 +171,7 @@ bool Scene3DWidget::eventFilter(QObject *watched, QEvent *event)
             return true;
         }
 
-        // 🎯 Middle Button → Pan
+        //  Middle Button → Pan
         if (middleMousePressed) {
             QPoint delta = mouseEvent->pos() - lastMiddlePos;
             lastMiddlePos = mouseEvent->pos();
@@ -239,7 +241,7 @@ void Scene3DWidget::keyReleaseEvent(QKeyEvent *event)
 Qt3DCore::QEntity *Scene3DWidget::createScene()
 {
     rootEntity = new Qt3DCore::QEntity();
-    // ✅ Grid call here
+    //Grid call here
     //createGridLines(rootEntity, 40, 1);  // 40x40 grid, 1 unit spacing
 
     // Camera
@@ -294,13 +296,13 @@ Qt3DCore::QEntity *Scene3DWidget::createScene()
 
     auto *modelEntity = new Qt3DCore::QEntity(rootEntity);
 
-    // 🛠️ Mesh loader
+    //Mesh loader
     auto *mesh = new Qt3DRender::QMesh(modelEntity);
     mesh->setSource(QUrl::fromLocalFile(":/model/airplane/Model/Airplane/11803_Airplane_v1_l1.obj")); // .obj file
 
     modelEntity->addComponent(mesh);
 
-    // 🎨 Material banate hai
+    //Material banate hai
     auto *texture2 = new Qt3DRender::QTexture2D();
     auto *image2 = new Qt3DRender::QTextureImage();
     image2->setSource(QUrl::fromLocalFile(":/model/airplane/Model/Airplane/11803_Airplane_body_diff.jpg")); // image path
@@ -313,7 +315,7 @@ Qt3DCore::QEntity *Scene3DWidget::createScene()
 
     modelEntity->addComponent(material);
 
-    // 🧿 Optional: Transform
+    //Optional: Transform
     auto *transform = new Qt3DCore::QTransform();
     transform->setScale(0.001f);
     transform->setTranslation(QVector3D(0, 2, 0));
@@ -344,24 +346,24 @@ Qt3DCore::QEntity* Scene3DWidget::createGridLines(Qt3DCore::QEntity *parent, int
 
     QByteArray vertexData(reinterpret_cast<const char*>(vertices.constData()), vertices.size() * sizeof(QVector3D));
 
-    auto *buffer = new Qt3DCore::QBuffer();
-    buffer->setUsage(Qt3DCore::QBuffer::StaticDraw); // Correct usage
-    buffer->setData(vertexData);
+    // auto *buffer = new Qt3DCore::QBuffer();
+    // buffer->setUsage(Qt3DCore::QBuffer::StaticDraw); // Correct usage
+    // buffer->setData(vertexData);
 
-    auto *positionAttr = new Qt3DCore::QAttribute();
-    positionAttr->setName(Qt3DCore::QAttribute::defaultPositionAttributeName());
-    positionAttr->setVertexBaseType(Qt3DCore::QAttribute::Float);
-    positionAttr->setVertexSize(3);
-    positionAttr->setAttributeType(Qt3DCore::QAttribute::VertexAttribute);
-    positionAttr->setBuffer(buffer);
-    positionAttr->setByteStride(3 * sizeof(float));
-    positionAttr->setCount(vertices.size());
+    // auto *positionAttr = new Qt3DCore::QAttribute();
+    // positionAttr->setName(Qt3DCore::QAttribute::defaultPositionAttributeName());
+    // positionAttr->setVertexBaseType(Qt3DCore::QAttribute::Float);
+    // positionAttr->setVertexSize(3);
+    // positionAttr->setAttributeType(Qt3DCore::QAttribute::VertexAttribute);
+    // positionAttr->setBuffer(buffer);
+    // positionAttr->setByteStride(3 * sizeof(float));
+    // positionAttr->setCount(vertices.size());
 
-    auto *geometry = new Qt3DCore::QGeometry();
-    geometry->addAttribute(positionAttr);
+    // auto *geometry = new Qt3DCore::QGeometry();
+    // geometry->addAttribute(positionAttr);
 
     auto *renderer = new Qt3DRender::QGeometryRenderer();
-    renderer->setGeometry(geometry);
+   //renderer->setGeometry(geometry);
     renderer->setPrimitiveType(Qt3DRender::QGeometryRenderer::Lines);
 
     // Material (Phong doesn't support lines well)
@@ -393,13 +395,14 @@ void Scene3DWidget::addEntity(QString ID, Mesh3dEntry entry)
     entity->addComponent(renderer);
 
     // Transform
-    auto *transform = new Qt3DCore::QTransform();
-    transform->setTranslation(QVector3D(-entry.position->x/1, entry.position->z/1, entry.position->y/1));
-    transform->setScale3D(QVector3D(entry.size->x, entry.size->z, entry.size->y));
-    transform->setRotationX(entry.rotation->x);
-    transform->setRotationY(-entry.rotation->z);
-    transform->setRotationZ(entry.rotation->y);
-    entity->addComponent(transform);
+    // auto *transform = new Qt3DCore::QTransform();
+    // transform->setTranslation(QVector3D(entry.position->x()/1, entry.position->y()/1, entry.position->z()/1));
+    // transform->setScale3D(QVector3D(entry.size->x(), entry.size->y(), entry.size->z()));
+    // transform->setRotationX(qRadiansToDegrees(entry.rotation->x()));
+    // transform->setRotationY(qRadiansToDegrees(entry.rotation->y()));
+    // transform->setRotationZ(qRadiansToDegrees(entry.rotation->z()));
+    entity->addComponent(entry.transform);
+
 
     // Material
     QString texturePath = ":/texture/images/Texture/waall.jpg";
@@ -414,7 +417,7 @@ void Scene3DWidget::addEntity(QString ID, Mesh3dEntry entry)
         auto *image = new Qt3DRender::QTextureImage();
         image->setSource(QUrl::fromLocalFile(texturePath));
         texture->addTextureImage(image);
-        textureCache[texturePath] = texture; // ✅ Save in cache
+        textureCache[texturePath] = texture; //Save in cache
     }
 
 
@@ -440,7 +443,7 @@ void Scene3DWidget::addEntity(QString ID, Mesh3dEntry entry)
         // Yaha hum selection handle karenge
         qDebug() << "Clicked Entity ID:" << QString::fromStdString(key);
         emit selectEntityByCursor(ID);
-        selectedEntity(QString::fromStdString(key));  // ✅ Tumhara existing selectEntity function
+        selectedEntity(QString::fromStdString(key));  //Tumhara existing selectEntity function
     });
 
 
@@ -541,22 +544,22 @@ void Scene3DWidget::updateEntities()
             continue;
         }
 
-        // 🔁 Update Transform
+        //Update Transform
         auto transforms = entity->componentsOfType<Qt3DCore::QTransform>();
         if (!transforms.isEmpty()) {
             auto *transform = transforms[0];
             if (transform && entry.position && entry.rotation && entry.size) {
-                transform->setTranslation(QVector3D(-entry.position->x/1, entry.position->z/1, entry.position->y/1));
-                transform->setScale3D(QVector3D(entry.size->x, entry.size->z, entry.size->y));
-                transform->setRotationX(entry.rotation->x);
-                transform->setRotationY(-entry.rotation->z);
-                transform->setRotationZ(entry.rotation->y);
+                // transform->setTranslation(QVector3D(entry.position->x()/1, entry.position->y()/1, entry.position->z()/1));
+                // transform->setScale3D(QVector3D(entry.size->x(), entry.size->y(), entry.size->z()));
+                // transform->setRotationX(qRadiansToDegrees(entry.rotation->x()));
+                // transform->setRotationY(qRadiansToDegrees(entry.rotation->y()));
+                // transform->setRotationZ(qRadiansToDegrees(entry.rotation->z()));
             }
         } else {
             qWarning() << "❗ Transform missing for key:" << QString::fromStdString(key);
         }
 
-        // 🎨 Update Material
+        //Update Material
         auto materials = entity->componentsOfType<Qt3DExtras::QPhongMaterial>();
         if (!materials.isEmpty()) {
             auto *mat = materials[0];
@@ -566,7 +569,7 @@ void Scene3DWidget::updateEntities()
         }
     }
 
-    //qDebug() << "✅ Updated all entities via Mesh3dEntry map.";
+    //qDebug() << "Updated all entities via Mesh3dEntry map.";
 }
 
 void Scene3DWidget::MoveEntity(QString ID)
@@ -593,12 +596,12 @@ void Scene3DWidget::MoveEntity(QString ID)
         Qt3DCore::QTransform* transform = transforms[0];
 
         if (transform && entry.position && entry.rotation && entry.size) {
-            transform->setTranslation(QVector3D(-entry.position->x/1, entry.position->z/1, entry.position->y/1));
-            transform->setScale3D(QVector3D(entry.size->x, entry.size->z, entry.size->y));
-            transform->setRotationX(entry.rotation->x);
-            transform->setRotationY(-entry.rotation->z);
-            transform->setRotationZ(entry.rotation->y);
-            //qDebug() << "✅ Moved entity:" << ID;
+            // transform->setTranslation(QVector3D(entry.position->x()/1, entry.position->y()/1, entry.position->z()/1));
+            // transform->setScale3D(QVector3D(entry.size->x(), entry.size->y(), entry.size->z()));
+            // transform->setRotationX(qRadiansToDegrees(entry.rotation->x()));
+            // transform->setRotationY(qRadiansToDegrees(entry.rotation->y()));
+            // transform->setRotationZ(qRadiansToDegrees(entry.rotation->z()));
+            //qDebug() << "Moved entity:" << ID;
         }
     } else {
         qWarning() << "MoveEntity failed. No transform component found for:" << ID;
@@ -681,7 +684,7 @@ void Scene3DWidget::updateCamera()
 
 
     camera->setPosition(position);
-    camera->setViewCenter(position + forward); // 🔁 maintain direction
+    camera->setViewCenter(position + forward); // maintain direction
 }
 
 void Scene3DWidget::updateCameraRotation()

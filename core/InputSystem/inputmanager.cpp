@@ -64,3 +64,45 @@ bool InputManager::eventFilter(QObject *obj, QEvent *event)
 
     return QObject::eventFilter(obj, event);
 }
+
+// New implementations for aircraft control inputs
+float InputManager::getThrottleInput() {
+    if (instance()->isKeyPressed(Qt::Key_W)) {
+        return 1.0f;
+    }
+    return 0.0f;
+}
+
+float InputManager::getPitchInput() {
+    if (instance()->isKeyPressed(Qt::Key_K)) { // Key for Pitch Up
+        return 1.0f;
+    }
+    if (instance()->isKeyPressed(Qt::Key_I)) { // Key for Pitch Down
+        return -1.0f;
+    }
+    return 0.0f;
+}
+
+float InputManager::getRollInput() {
+    if (instance()->isKeyPressed(Qt::Key_D)) { // Key for Roll Right
+        return 1.0f;
+    }
+    if (instance()->isKeyPressed(Qt::Key_A)) { // Key for Roll Left
+        return -1.0f;
+    }
+    return 0.0f;
+}
+
+float InputManager::getYawInput() {
+    if (instance()->isKeyPressed(Qt::Key_L)) { // Key for Yaw Right
+        return 1.0f;
+    }
+    if (instance()->isKeyPressed(Qt::Key_J)) { // Key for Yaw Left
+        return -1.0f;
+    }
+    return 0.0f;
+}
+
+bool InputManager::getAirBrakes() {
+    return instance()->isKeyPressed(Qt::Key_S);
+}

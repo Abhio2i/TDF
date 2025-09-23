@@ -21,7 +21,7 @@ public:
     ComponentType Typo() const override { return ComponentType::DynamicModel; }
     bool controle;
     bool follow;
-    float maxEnginePower = 40;
+    float maxEnginePower = 10;
     float Lift = 0.002f;
     float zeroLiftSpeed = 300;
     float throttle = 0.0f;
@@ -29,7 +29,7 @@ public:
     bool airBrakes = false;
 
     float dragIncreaseFactor = 0.001f;
-    float aerodynamicEffect = 0.02f;
+    float aerodynamicEffect = 1.0f;
     float airBrakesEffect = 3.0f;
     float rollEffect = 1.0f;
     float pitchEffect = 1.0f;
@@ -47,6 +47,12 @@ public:
     float angdeg = 1;
     float start = 0;
     float time = 0;
+
+    // New member variables for 6-DoF simulation without Rigidbody
+    QVector3D velocity;
+    QVector3D angularVelocity;
+    float mass = 1.0f; // Add mass for realistic physics calculations
+
     Transform* transform;
     Rigidbody* rigidbody;
     Trajectory* trajectory;

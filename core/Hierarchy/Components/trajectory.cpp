@@ -83,6 +83,12 @@ void Trajectory::fromJson(const QJsonObject& obj) {
     //qDebug() << "Trajectory::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);
 }
 
+void Trajectory::addWaypoint(float x,float y, float z){
+    Waypoints* newWaypoint = new Waypoints();
+    newWaypoint->position = new Vector(x, y, z);
+    addTrajectory(newWaypoint);
+}
+
 bool Trajectory::removeTrajectory(size_t index) {
     if (index >= Trajectories.size()) {
         qDebug() << "Error: Trajectory index out of bounds";
