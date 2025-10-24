@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     return a.exec();
 }
 
-//  jkedbjehbdhje
+
 
 // #include <QApplication>
 // #include "GUI/Panel/ewdisplay.h"
