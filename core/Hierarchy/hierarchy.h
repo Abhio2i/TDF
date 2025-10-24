@@ -27,10 +27,12 @@ public:
     void removeProfileCategaory(QString ID);
 
     Folder* addFolder(QString parentId, QString FolderName, bool Profile);
+    void addFolderViaNetwork(QString parentId,QString ID,QString FolderName,bool Profile);
     void removeFolder(QString parentId, QString ID, bool Profile);
+    void removeFolderViaNetwork(QString ID);
 
     Entity* addEntity(QString parentId, QString EntityName, bool Profile);
-    void addEntityViaNetwork(QString parentId, QJsonObject obj, bool Profile);
+    void addEntityViaNetwork(QString parentId,QString ID,QString EntityName,bool Profile);
     Entity* addEntityFromJson(QString parentId, QJsonObject obj, bool Profile);
     void removeEntity(QString parentId, QString ID, bool Profile);
 
@@ -89,6 +91,7 @@ signals:
     void entityPhysicsRemoved(QString ID);
 
     void entityUpdate(QString ID);
+    void entityComponentUpdate(QString ID, QString name, QJsonObject delta);
     void getJsonData(const QJsonObject& obj);
 };
 

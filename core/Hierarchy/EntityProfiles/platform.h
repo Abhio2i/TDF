@@ -48,6 +48,8 @@ public:
     std::string getParam(std::string key);
     void removeParam(std::string key);
 
+    void update();
+
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;

@@ -67,12 +67,31 @@ Folder* Hierarchy::addFolder(QString parentId, QString FolderName, bool Profile)
     }
 }
 
+void Hierarchy::addFolderViaNetwork(QString parentId, QString ID, QString FolderName, bool Profile)
+{
+    if (Profile && ProfileCategories.count(parentId.toStdString()) == 1) {
+        ProfileCategories[parentId.toStdString()]->addFolder(FolderName.toStdString(),ID.toStdString());
+    } else {
+        (*Folders)[parentId.toStdString()]->addFolder(FolderName.toStdString(),ID.toStdString());
+    }
+}
+
+
 void Hierarchy::removeFolder(QString parentId, QString ID, bool Profile)
 {
-    if (Profile || ProfileCategories.count(parentId.toStdString())) {
+    if (ProfileCategories.count(parentId.toStdString())) {
         ProfileCategories[parentId.toStdString()]->removeFolder(ID.toStdString());
     } else {
         (*Folders)[parentId.toStdString()]->removeFolder(ID.toStdString());
+    }
+}
+
+void Hierarchy::removeFolderViaNetwork(QString ID){
+    std::string parentId = (*Folders)[ID.toStdString()]->parentID;
+    if (ProfileCategories.count(parentId)) {
+        ProfileCategories[parentId]->removeFolder(ID.toStdString());
+    } else {
+        (*Folders)[parentId]->removeFolder(ID.toStdString());
     }
 }
 
@@ -91,9 +110,13 @@ Entity* Hierarchy::addEntity(QString parentId, QString EntityName, bool Profile)
     }
 }
 
-void Hierarchy::addEntityViaNetwork(QString parentId, QJsonObject obj, bool Profile)
+void Hierarchy::addEntityViaNetwork(QString parentId, QString ID, QString EntityName, bool Profile)
 {
-    addEntityFromJson(parentId, obj, Profile);
+    if (Profile && ProfileCategories.count(parentId.toStdString()) == 1) {
+        ProfileCategories[parentId.toStdString()]->addEntity(EntityName.toStdString(),ID.toStdString());
+    } else {
+        (*Folders)[parentId.toStdString()]->addEntity(EntityName.toStdString(),ID.toStdString());
+    }
 }
 
 Entity* Hierarchy::addEntityFromJson(QString parentId, QJsonObject obj, bool Profile)
@@ -113,7 +136,7 @@ Entity* Hierarchy::addEntityFromJson(QString parentId, QJsonObject obj, bool Pro
 
 void Hierarchy::removeEntity(QString parentId, QString ID, bool Profile)
 {
-    if (Profile || ProfileCategories.count(parentId.toStdString())) {
+    if (ProfileCategories.count(parentId.toStdString())) {
         ProfileCategories[parentId.toStdString()]->removeEntity(ID.toStdString());
     } else {
         (*Folders)[parentId.toStdString()]->removeEntity(ID.toStdString());
@@ -128,10 +151,11 @@ void Hierarchy::renameEntity(QString Id, QString name)
 
 void Hierarchy::addComponent(QString ID, QString componentName)
 {
+    int i = Entities->count(ID.toStdString());
     if (Entities->find(ID.toStdString()) != Entities->end()) {
         (*Entities)[ID.toStdString()]->addComponent(componentName.toStdString());
-        emit componentAdded(ID, componentName);
-        getCurrentJsonData(); // Emit updated JSON
+        //emit componentAdded(ID, componentName);
+        //getCurrentJsonData(); // Emit updated JSON
         Console::log("Hierarchy::addComponent emitted getJsonData for " + ID.toStdString() + ", component: " + componentName.toStdString());
     }
 }
@@ -180,8 +204,8 @@ void Hierarchy::attachSensors(QString ID, QString name)
         return;
     }
 
-    Sensor* sensor = new Sensor(this);
-    sensor->Name = name.toStdString();
+    // Sensor* sensor = new Sensor(this);
+    // sensor->Name = name.toStdString();
     QString sensorsProfileId;
 
     bool foundSensorsProfile = false;
@@ -200,13 +224,16 @@ void Hierarchy::attachSensors(QString ID, QString name)
         dictionry[sensorsProfile->ID] = {sensorsProfile->ID};
     }
 
-    Entity* newEntity = addEntityFromJson(sensorsProfileId, sensor->toJson(), true);
-    if (newEntity) {
+    Entity* entity = addEntity(sensorsProfileId, name, true);
+    Sensor* sensor = dynamic_cast<Sensor*>(entity);
+    sensor->Name = name.toStdString();
+    if (sensor) {
         (*Entities)[ID.toStdString()]->addSensor(sensor);
     } else {
         delete sensor;
     }
 }
+
 
 void Hierarchy::attachRadios(QString ID, QString name)
 {
@@ -269,7 +296,8 @@ void Hierarchy::UpdateComponent(QString ID, QString componentName, QJsonObject d
         }
          entity->updateComponent(componentName, mergedData);
         emit entityUpdate(ID);
-        getCurrentJsonData(); // Emit updated JSON
+        emit entityComponentUpdate(ID,componentName,delta);
+        //getCurrentJsonData(); // Emit updated JSON
         Console::log("Hierarchy::UpdateComponent merged data for " + componentName.toStdString() + ": " + QString(QJsonDocument(mergedData).toJson()).toStdString());
         Console::log("Hierarchy::UpdateComponent emitted getJsonData for " + ID.toStdString());
     } else {
@@ -297,7 +325,7 @@ void Hierarchy::onParameterChanged(const QString &entityID, const QString &compo
             }
         }
         emit entityUpdate(entityID);
-        getCurrentJsonData(); // Emit updated JSON
+        //getCurrentJsonData(); // Emit updated JSON
         Console::log("Hierarchy::onParameterChanged emitted getJsonData for " + entityID.toStdString());
     } else {
         Console::log("Entity not found: " + entityID.toStdString());
@@ -310,7 +338,7 @@ void Hierarchy::removeComponent(QString entityId, QString componentName)
         (*Entities)[entityId.toStdString()]->removeComponent(componentName.toStdString());
         emit componentRemoved(entityId, componentName);
         emit entityUpdate(entityId);
-        getCurrentJsonData(); // Emit updated JSON
+        //getCurrentJsonData(); // Emit updated JSON
         Console::log("Hierarchy::removeComponent emitted getJsonData for " + entityId.toStdString() + ", component: " + componentName.toStdString());
     }
 }

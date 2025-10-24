@@ -15,3 +15,18 @@ int main(int argc, char *argv[])
 
     return a.exec();
 }
+
+
+
+// #include <QApplication>
+// #include "GUI/Panel/ewdisplay.h"
+
+// int main(int argc, char *argv[])
+// {
+//     QApplication app(argc, argv);
+//     EWDisplay radar;
+//     radar.show();
+//     radar.raise();
+//     radar.activateWindow();
+//     return app.exec();
+// }

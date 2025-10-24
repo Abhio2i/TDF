@@ -135,6 +135,7 @@ void HierarchyTree::profileAdded(QString ID, QString profileName) {
     category->setFlags(category->flags() & ~Qt::ItemIsDragEnabled);
     qDebug() << "Profile added to tree: ID=" << ID << "Name=" << profileName << "Data=" << data;
 }
+
 void HierarchyTree::folderAdded(QString parentID, QString ID, QString folderName) {
     QTreeWidgetItem *folder = new QTreeWidgetItem(Items[parentID]);
     folder->setText(0, folderName);
@@ -204,6 +205,7 @@ void HierarchyTree::folderRemoved(QString ID) {
         qWarning() << "Cannot remove folder: ID" << ID << "not found in Items";
     }
 }
+
 
 void HierarchyTree::entityRemoved(QString ID) {
     if (Items.contains(ID)) {

@@ -1,3 +1,4 @@
+
 #ifndef RUNTIMEEDITOR_H
 #define RUNTIMEEDITOR_H
 #include "GUI/Console/consoleview.h"
@@ -19,7 +20,11 @@
 #include "GUI/scene3dwidget/scene3dwidget.h"
 #include "GUI/Testscript/textscriptwidget.h"
 #include "GUI/Timing/graphwidgettime.h"
+#include "GUI/Panel/radardisplay.h"
+#include "GUI/Panel/ewdisplay.h"
+#include "GUI/Logger/loggerdialog.h" // ADDED: Include LoggerDialog
 #include <QTabWidget>
+#include <QStatusBar>
 
 class RuntimeEditor : public QMainWindow
 {
@@ -32,22 +37,29 @@ public:
     CanvasWidget* canvas;
     void loadFromJsonFile(const QString &filePath);
     QString lastSavedFilePath;
-    QString getTimingJsonData() const; // Added declaration
+    QString getTimingJsonData() const;
+        bool hasUnsavedChanges = false;
+
+          void clearUnsavedChanges();
 private slots:
     void onItemSelected(QVariantMap data);
     void onLibraryItemSelected(QVariantMap data);
     void addInspectorTab();
     void showFeedbackWindow();
+    void markUnsavedChanges();
+    void toggleRadarDisplay();
+void toggleLoggerDisplay(bool checked); // ADDED___Logger
+
+signals:
+    void unsavedChangesChanged(bool hasChanges);
 private:
     void setupMenuBar();
     void setupToolBars();
     void setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures);
     void setupToolBarConnections();
-    // Core Hierarchy components
     HierarchyTree *treeView;
     Inspector *inspector;
     Console *console;
-    // Dock widgets
     QDockWidget *hierarchyDock;
     QDockWidget *tacticalDisplayDock;
     QDockWidget *consoleDock;
@@ -55,27 +67,39 @@ private:
     QDockWidget *libraryDock;
     QDockWidget *sidebarDock;
     QDockWidget *textScriptDock;
-    // Views
     ConsoleView *consoleView;
+    QDockWidget *displayDock;
     TacticalDisplay *tacticalDisplay;
     Scene3DWidget *scene3dwidget;
     TextScriptWidget *textScriptView;
     GraphWidgetTime *timingGraphWidget;
-    // Hierarchy and connectors
     HierarchyConnector* m_hierarchyConnector;
     Hierarchy* hierarchy;
     QVariantMap copydata;
     Hierarchy* copyhirarchy = nullptr;
-    // Toolbars
     DesignToolBar *designToolBar;
     RuntimeToolBar *runtimeToolBar;
     NetworkToolbar *networkToolBar;
     StandardToolBar *standardToolBar;
     MenuBar *menuBar;
-    // Inspector management
     QList<QDockWidget*> inspectorDocks;
     int inspectorCount = 0;
     QList<Inspector*> inspectors;
     Runtime *runtime;
+    RadarDisplay *radarDisplayUI;
+    Simulation *simulation;
+    void setupStatusBar();
+    void updateStatusBar(const QString &message);
+    QStatusBar *statusBar;
+
+    QWidget *displayWindow;
+    QTabWidget *displayTabs;
+
+    EWDisplay *ewDisplayUI;
+QDockWidget *loggerDock; // ADDED: Dock widget for LoggerDialog
+LoggerDialog *loggerDialog; // ADDED: LoggerDialog instance
+QDateTime recordingStartTime; // Added for recording timestamp
+QTimer *recordingTimer;       // Added for updating recording duration
+
 };
 #endif // RUNTIMEEDITOR_H

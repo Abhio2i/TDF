@@ -81,15 +81,33 @@ MeasureDistanceDialog::MeasureDistanceDialog(QWidget *parent)
     connect(unitComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MeasureDistanceDialog::onUnitChanged);
     setLayout(mainLayout);
 }
-void MeasureDistanceDialog::addMeasurement(double x, double y, double distance)
-{
+
+void MeasureDistanceDialog::addMeasurement(double x, double y, double distance) {
     if (distance < 0) {
         QMessageBox::warning(this, "Invalid Distance", "Distance cannot be negative.");
         return;
     }
     measurements.append({x, y, distance});
-    updateMeasurementDisplay();
+    double factor = getConversionFactor(currentUnit);
+    double convertedDistance = distance * factor;
+    QString itemText = QString("%1 %2 %3")
+                           .arg(x, 10, 'f', 4)
+                           .arg(y, 10, 'f', 4)
+                           .arg(convertedDistance, 10, 'f', 3);
+    segmentsList->addItem(itemText);
+    updateTotalDistance();
 }
+
+void MeasureDistanceDialog::updateTotalDistance() {
+    double total = 0.0;
+    double factor = getConversionFactor(currentUnit);
+    QString unitStr = getUnitString(currentUnit);
+    for (const auto &measurement : measurements) {
+        total += measurement.distance;
+    }
+    totalDistanceEdit->setText(QString::number(total * factor, 'f', 3) + " " + unitStr);
+}
+
 void MeasureDistanceDialog::clearMeasurements()
 {
     segmentsList->clear();
@@ -97,8 +115,7 @@ void MeasureDistanceDialog::clearMeasurements()
     totalDistanceEdit->setText("0.000 " + getUnitString(currentUnit));
     emit newMeasurementRequested();
 }
-void MeasureDistanceDialog::updateMeasurementDisplay()
-{
+void MeasureDistanceDialog::updateMeasurementDisplay() {
     segmentsList->clear();
     double total = 0.0;
     double factor = getConversionFactor(currentUnit);
@@ -107,13 +124,14 @@ void MeasureDistanceDialog::updateMeasurementDisplay()
         double convertedDistance = measurement.distance * factor;
         total += measurement.distance;
         QString itemText = QString("%1 %2 %3")
-                               .arg(measurement.x, 10, 'f', 4) // 10 chars for x
-                               .arg(measurement.y, 10, 'f', 4) // 10 chars for y
-                               .arg(convertedDistance, 10, 'f', 3); // 10 chars for distance
+                               .arg(measurement.x, 10, 'f', 4)
+                               .arg(measurement.y, 10, 'f', 4)
+                               .arg(convertedDistance, 10, 'f', 3);
         segmentsList->addItem(itemText);
     }
     totalDistanceEdit->setText(QString::number(total * factor, 'f', 3) + " " + unitStr);
 }
+
 bool MeasureDistanceDialog::isEllipsoidal() const
 {
     return ellipsoidalRadio->isChecked();
@@ -177,3 +195,13 @@ void MeasureDistanceDialog::onUnitChanged(int index)
     emit unitChanged(unitComboBox->currentText());
     updateMeasurementDisplay();
 }
+
+double MeasureDistanceDialog::getCurrentConversionFactor() const {
+    return getConversionFactor(currentUnit);
+}
+
+QString MeasureDistanceDialog::getCurrentUnitString() const {
+    return getUnitString(currentUnit);
+}
+
+

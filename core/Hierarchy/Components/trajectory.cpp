@@ -16,11 +16,11 @@ QJsonObject Trajectory::toJson() const {
     obj["active"] = Active;
     obj["type"] = "component";
 
-    QJsonArray strArray;
-    for (const QJsonObject& s : array) {
-        strArray.append(s);
-    }
-    obj["array"] = strArray;
+    // QJsonArray strArray;
+    // for (const QJsonObject& s : array) {
+    //     strArray.append(s);
+    // }
+    // obj["array"] = strArray;
 
     QJsonArray trajArray;
     for (const Waypoints* waypoint : Trajectories) {
@@ -47,15 +47,15 @@ void Trajectory::fromJson(const QJsonObject& obj) {
         ID = obj["id"].toString().toStdString();
     if (obj.contains("active"))
         Active = obj["active"].toBool();
-    if (obj.contains("array") && obj["array"].isArray()) {
-        array.clear();
-        QJsonArray strArray = obj["array"].toArray();
-        for (const QJsonValue& val : strArray) {
-            if (val.isObject()) {
-                array.push_back(val.toObject());
-            }
-        }
-    }
+    // if (obj.contains("array") && obj["array"].isArray()) {
+    //     array.clear();
+    //     QJsonArray strArray = obj["array"].toArray();
+    //     for (const QJsonValue& val : strArray) {
+    //         if (val.isObject()) {
+    //             array.push_back(val.toObject());
+    //         }
+    //     }
+    // }
     if (obj.contains("trajectories") && obj["trajectories"].isArray()) {
         for (Waypoints* wp : Trajectories) {
             delete wp->position;

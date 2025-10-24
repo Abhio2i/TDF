@@ -2,16 +2,14 @@
 #define NETWORKMANAGER_H
 
 #include <QObject>
-#include <memory>
 #include <unordered_map>
 #include <string>
 #include <atomic>
 
 #include "core/Hierarchy/profilecategaory.h"
-#include "core/Network/netwoktransport.h"
-#include "core/Network/server.h"
-#include "core/Network/client.h"
-
+#include "core/Network/networktransport.h"
+#include <core/Hierarchy/hierarchy.h> // <-- Add or confirm this line
+// or whatever the correct path is, e.g., #include "hierarchy.h"
 class NetworkManager : public QObject {
     Q_OBJECT
 
@@ -20,10 +18,11 @@ public:
 
     // Server controls
     Q_INVOKABLE bool startServer(int port);
-    Q_INVOKABLE void sendServerMessage(const QString& msg);
-    Q_INVOKABLE void sendClientMessage(const QString& message);
+    // Q_INVOKABLE void sendServerMessage(const QString& msg);
+    // Q_INVOKABLE void sendClientMessage(const QString& message);
 
-    bool initServer(int port);
+    void setHierarchy(Hierarchy* h) { hierarchy = h; }
+    void init(const QString& ip, int port);
     bool stopServer();
 
     // Client controls
@@ -31,8 +30,11 @@ public:
     bool startClient();                           // << now uses stored IP/port
     bool stopClient();
 
+    void onMessaageRecevied(QString message);
+    void onConnect();
+    void onNewConnction();
     // Global network access
-    NetwokTransport* networkTransport;
+    NetworkTransport* networkTransport;
     std::unordered_map<std::string, std::string>* connectedClients;
 
     // Serialization
@@ -64,20 +66,24 @@ public:
     void entityMeshRemoved(QString ID);
     void entityPhysicsAdded(QString ID, Entity* entity);
     void entityPhysicsRemoved(QString ID);
+    void entityComponentsUpdate(QString ID, QString componentName, QJsonObject delta);
 
     void entityUpdate(QString ID);
     void getJsonData(const QJsonObject& obj);
 signals:
-    //     void messageReceived(QString ip,Qstring message);
-    void addEntity(QString parentId,QString EntityName,bool Profile);
+    void addFolder(QString parentId,QString ID,QString FolderName,bool Profile);
+    void addEntity(QString parentId,QString ID,QString EntityName,bool Profile);
     void addEntityFromJson(QString parentId,QJsonObject obj,bool Profile);
     void addComponent(QString Id,QString ComponentName);
     void removeEntity(QString parentId,QString ID,bool Profile);
+    void removeFolder(QString ID);
+    void entityComponentUpdate(QString ID, QString name, QJsonObject delta);
     void getCurrentJsonData();
     void initData(const QJsonObject& obj);
+    void updateScene(float deltaTime);
 private:
-    static std::unique_ptr<Server> ser;
-    static std::unique_ptr<Client> cli;
+    // static std::unique_ptr<Server> ser;
+    // static std::unique_ptr<Client> cli;
     static std::atomic<bool> serverRunning;
     static std::atomic<bool> clientRunning;
 
@@ -85,6 +91,8 @@ private:
     QString clientIp;
     int clientPort;
     void sendJson(const QJsonObject& obj);
+    NetworkTransport* network;
+    Hierarchy* hierarchy = nullptr;
 };
 
 #endif

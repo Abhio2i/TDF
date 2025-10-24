@@ -1,5 +1,6 @@
 QT += core gui widgets charts
 QT += core gui widgets xml svg
+QT += websockets
 # QT       += core gui
 QT += 3dcore 3drender 3dinput 3dextras
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
@@ -45,9 +46,12 @@ SOURCES += \
     GUI/Inspector/template/imagetemplate.cpp \
     GUI/Inspector/template/optiontemplate.cpp \
     GUI/Inspector/template/vectortemplate.cpp \
+    GUI/Logger/loggerdialog.cpp \
     GUI/Menubars/menubar.cpp \
     GUI/Navigation/navigationpage.cpp \
     GUI/Overview/overview.cpp \
+    GUI/Panel/ewdisplay.cpp \
+    GUI/Panel/radardisplay.cpp \
     GUI/Plugins/pluginwindow.cpp \
     GUI/Sidebar/sidebarwidget.cpp \
     GUI/Tacticaldisplay/Gis/custommapdialog.cpp \
@@ -326,10 +330,8 @@ SOURCES += \
     core/Hierarchy/hierarchy.cpp \
     core/Hierarchy/profilecategaory.cpp \
     core/InputSystem/inputmanager.cpp \
-    core/Network/client.cpp \
-    core/Network/netwoktransport.cpp \
     core/Network/networkmanager.cpp \
-    core/Network/server.cpp \
+    core/Network/networktransport.cpp \
     core/Plugins/pluginmanager.cpp \
     core/Recorder/recorder.cpp \
     core/Render/scenerenderer.cpp \
@@ -378,9 +380,12 @@ HEADERS += \
     GUI/Inspector/template/imagetemplate.h \
     GUI/Inspector/template/optiontemplate.h \
     GUI/Inspector/template/vectortemplate.h \
+    GUI/Logger/loggerdialog.h \
     GUI/Menubars/menubar.h \
     GUI/Navigation/navigationpage.h \
     GUI/Overview/overview.h \
+    GUI/Panel/ewdisplay.h \
+    GUI/Panel/radardisplay.h \
     GUI/Plugins/pluginwindow.h \
     GUI/Sidebar/sidebarwidget.h \
     GUI/Tacticaldisplay/Gis/custommapdialog.h \
@@ -820,10 +825,8 @@ HEADERS += \
     core/Hierarchy/hierarchy.h \
     core/Hierarchy/profilecategaory.h \
     core/InputSystem/inputmanager.h \
-    core/Network/client.h \
-    core/Network/netwoktransport.h \
     core/Network/networkmanager.h \
-    core/Network/server.h \
+    core/Network/networktransport.h \
     core/Plugins/pluginmanager.h \
     core/Recorder/recorder.h \
     core/Render/scenerenderer.h \
@@ -852,6 +855,8 @@ RESOURCES += \
     Resources.qrc
 
 DISTFILES += \
+    GUI/GUI/Editors/runtimeeditor.zip \
+    GUI/GUI/Panel.zip \
     Testscript/dghy.as \
     Testscript/er23re2.as \
     bullet/Bullet3Collision/CMakeLists.txt \

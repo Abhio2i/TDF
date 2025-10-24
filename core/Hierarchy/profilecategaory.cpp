@@ -42,14 +42,15 @@ void ProfileCategaory::setProfileType(Constants::EntityType Type){
 }
 
 
-Folder* ProfileCategaory::addFolder(std::string folderName){
-
-
+Folder* ProfileCategaory::addFolder(std::string folderName, std::string iD){
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     Folder *folder = new Folder(parent);
     folder->Name = folderName;
     folder->parentID = ID;
     folder->setProfileType(type);
+    if(!iD.empty()){
+        folder->ID = iD;
+    }
     Folders.insert({folder->ID, folder});
 
     // Automatically update hierarchy's Folders
@@ -108,7 +109,7 @@ void ProfileCategaory::removeFolder(std::string folderID){
     }
 }
 
-Entity* ProfileCategaory::addEntity(std::string entityName){
+Entity* ProfileCategaory::addEntity(std::string entityName, std::string iD){
     // if(Entities.count(entityName)){
 
     //     Console::error(
@@ -142,8 +143,10 @@ Entity* ProfileCategaory::addEntity(std::string entityName){
     entity->Name = entityName;
     entity->parentID = ID;
     entity->type = type;
+    if(!iD.empty()){
+        entity->ID = iD;
+    }
     Entities.insert({entity->ID, entity});
-
     // Automatically update hierarchy's Folders
     if (parent && parent->Entities) {
         parent->Entities->insert({entity->ID, entity});

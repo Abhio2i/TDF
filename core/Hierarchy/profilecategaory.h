@@ -19,11 +19,11 @@ public:
     std::unordered_map<std::string, Folder*> Folders;
     std::unordered_map<std::string, Entity*> Entities;
 
-    Folder* addFolder(std::string name);
+    Folder* addFolder(std::string name, std::string iD = "");
     void addFolderWithObject(Folder *folder);
     void removeFolder(std::string name);
 
-    Entity* addEntity(std::string name);
+    Entity* addEntity(std::string name, std::string iD = "");
     void addEntityWithObject(Entity *entity);
     void removeEntity(std::string name);
     void setProfileType(Constants::EntityType Type);

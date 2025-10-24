@@ -40,7 +40,9 @@ public:
     bool eventFilter(QObject *watched, QEvent *event) override;
     void setHierarchy(Hierarchy* h) { hierarchy = h; }
     static QString formatNumberForUI(double value);
+    void setLocked(bool locked);
 
+    bool isLocked() const; // Add declaration for isLocked
 
 public slots:
     void init(QString ID, QString name, QJsonObject obj);
@@ -75,7 +77,7 @@ private:
     QString copiedComponentType;
     Hierarchy* hierarchy = nullptr;
     QJsonObject copiedVectorData;
-
+    bool m_locked; // Ensure this member exists
     void setupUI();
     void setupTitleBar();
     QMenu *createContextMenu();

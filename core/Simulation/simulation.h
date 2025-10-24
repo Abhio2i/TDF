@@ -18,6 +18,7 @@
 
 struct PhysicsComponent {
     std::string name;
+    Platform *entity;
     Transform *transform;
     DynamicModel *dynamicModel;
     Rigidbody *rigidbody;

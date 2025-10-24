@@ -17,6 +17,7 @@
 #include <QPainter>
 #include <QScrollBar>
 #include <QPalette>
+#include <QAbstractTextDocumentLayout>
 
 TestScriptDialog::LineNumberArea::LineNumberArea(QTextEdit *editor) : QWidget(editor), codeEditor(editor)
 {
@@ -42,19 +43,31 @@ void TestScriptDialog::LineNumberArea::paintEvent(QPaintEvent *event)
     painter.fillRect(event->rect(), QColor(30, 30, 30));
     painter.setFont(codeEditor->font());
     painter.setPen(QColor(150, 150, 150));
-    int lineHeight = codeEditor->fontMetrics().height();
-    int blockCount = codeEditor->document()->blockCount();
-    QTextCursor cursor = codeEditor->textCursor();
-    int scrollOffset = codeEditor->verticalScrollBar()->value();
-    for (int i = 0; i < blockCount; ++i) {
-        int y = i * lineHeight - scrollOffset * lineHeight;
-        if (y + lineHeight < event->rect().top() || y > event->rect().bottom())
-            continue;
-        QString number = QString::number(i + 1);
-        painter.drawText(0, y, width(), lineHeight, Qt::AlignRight | Qt::AlignVCenter, number);
+
+    QTextDocument *doc = codeEditor->document();
+    QTextBlock block = doc->begin();
+    int top = codeEditor->viewport()->rect().top();
+    int bottom = codeEditor->viewport()->rect().bottom();
+    int lineNumber = 1;
+
+    while (block.isValid()) {
+        // Get the block's bounding rectangle
+        QRectF blockRect = doc->documentLayout()->blockBoundingRect(block);
+        // Map block's top position to viewport coordinates
+        QTextCursor cursor(block);
+        QRect cursorRect = codeEditor->cursorRect(cursor);
+        int blockTop = cursorRect.top();
+
+        // Check if the block is in the visible area
+        if (blockTop + blockRect.height() >= top && blockTop <= bottom) {
+            QString number = QString::number(lineNumber);
+            painter.drawText(0, blockTop, width(), blockRect.height(), Qt::AlignRight | Qt::AlignVCenter, number);
+        }
+
+        block = block.next();
+        ++lineNumber;
     }
 }
-
 TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString &filePath)
     : QWidget(parent), editFilePath(filePath), isEditMode(editMode), isNewScript(false)
 {
@@ -218,7 +231,7 @@ TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString
     bottomLayout->addLayout(editorLayout);
     Console::log("Code editor with line numbers created");
 
-    okButton = new QPushButton(tr("OK"), this);
+    okButton = new QPushButton(tr("Save"), this);
     okButton->setEnabled(!editMode);
     cancelButton = new QPushButton(tr("Cancel"), this);
     QHBoxLayout *buttonLayout = new QHBoxLayout();

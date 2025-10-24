@@ -4,6 +4,7 @@
 #include "GUI/Tacticaldisplay/Gis/layerinformationdialog.h"
 #include "GUI/Tacticaldisplay/canvaswidget.h"
 #include "core/Debug/console.h"
+// #include "GUI/Panel/radardisplay.h"
 #include <QLineEdit>
 #include <QIcon>
 #include <QDebug>
@@ -19,6 +20,8 @@
 #include <QActionGroup>
 #include <QDialog>
 #include <QFileDialog>
+#include <qgsvectorlayer.h>
+#include <qgsproject.h>
 
 QPixmap DesignToolBar::withWhiteBg(const QString &iconPath) {
     QPixmap pixmap(iconPath);
@@ -44,22 +47,15 @@ DesignToolBar::DesignToolBar(QWidget *parent) : QToolBar(parent) {
     createActions();
     setupToolBar();
 
-    QMenu* databaseMenu = new QMenu(this);
-    loadJsonAction = new QAction("Load JSON", this);
-    saveJsonAction = new QAction("Save JSON", this);
-    databaseMenu->addAction(loadJsonAction);
-    databaseMenu->addAction(saveJsonAction);
-    databaseAction->setMenu(databaseMenu);
 
-    QToolButton* dbButton = dynamic_cast<QToolButton*>(widgetForAction(databaseAction));
-    if (dbButton) {
-        dbButton->setPopupMode(QToolButton::InstantPopup);
-    }
 }
 
 void DesignToolBar::createActions() {
     mapLayers = {
-                 { "OpenStreetMap", "osm", 0, 19, "", false, -1.0, "N/A", "Raster" },
+        // { name, id, zoomMin, zoomMax, tileUrl, isCustom, opacity, attribution, type }
+        { "OpenStreetMap", "osm", 0, 9, "", false, 1.0, "N/A", "Raster" },
+        { "Satellite Map", "satellite", 0, 9, "", true, 1.0, "N/A", "Raster" },
+        { "Tarrine Map", "tarrine", 0, 9, "", true, 1.0, "N/A", "Raster" }
                  };
 
     viewAction = new QAction(QIcon(withWhiteBg(":/icons/images/view.jpg")), tr("View"), this);
@@ -247,13 +243,6 @@ void DesignToolBar::createActions() {
         emit layerOptionToggled("Image", checked);
     });
 
-    // measureAreaAction = new QAction(QIcon(withWhiteBg(":/icons/images/area.png")), tr("Measure Area"), this);
-    // measureAreaAction->setCheckable(true);
-    // connect(measureAreaAction, &QAction::triggered, this, [=]() {
-    //     highlightAction(measureAreaAction);
-    //     emit measureAreaTriggered();
-    // });
-
     // for measure distance
     measureDistanceAction = new QAction(QIcon(withWhiteBg(":/icons/images/measurement.png")), tr("Measure Distance"), this);
     measureDistanceAction->setCheckable(true);
@@ -261,6 +250,19 @@ void DesignToolBar::createActions() {
         highlightAction(measureDistanceAction);
         emit measureDistanceTriggered();
     });
+
+    // Import GeoJSON Action
+    importGeoJsonAction = new QAction(QIcon(withWhiteBg(":/icons/images/qgislayer.png")), tr("Import GeoJSON"), this);
+    importGeoJsonAction->setCheckable(false);
+    connect(importGeoJsonAction, &QAction::triggered, this, &DesignToolBar::importGeoJson);
+
+    // NEW: GeoJSON Layers Menu
+    geoJsonLayersAction = new QAction(QIcon(withWhiteBg(":/icons/images/geojson-layers.png")), tr("GeoJSON Layers"), this);
+    geoJsonLayersAction->setCheckable(true);
+    StayOpenMenu* geoJsonMenu = new StayOpenMenu(this);
+    geoJsonMenu->setStyleSheet("QMenu::item:checked { background-color: #d0e0ff; }");
+    geoJsonLayersAction->setMenu(geoJsonMenu);
+
     presetLayersAction = new QAction(QIcon(withWhiteBg(":/icons/images/preset.png")), tr("Preset Layers"), this);
     presetLayersAction->setCheckable(true);
     StayOpenMenu* presetLayersMenu = new StayOpenMenu(this);
@@ -285,15 +287,29 @@ void DesignToolBar::createActions() {
         emit editTrajectoryTriggered();
     });
 
-    databaseAction = new QAction(QIcon(withWhiteBg(":/icons/images/database (1).png")), tr("Database"), this);
-    databaseAction->setCheckable(true);
-    connect(databaseAction, &QAction::triggered, this, [=]() {
-        highlightAction(databaseAction);
-        emit databaseTriggered();
-    });
 
-    loadJsonAction = new QAction("Load JSON", this);
-    saveJsonAction = new QAction("Save JSON", this);
+    // databaseAction = new QAction(QIcon(withWhiteBg(":/icons/images/database (1).png")), tr("Database"), this);
+    // databaseAction->setCheckable(true);
+
+    // connect(databaseAction, &QAction::triggered, this, [=]() {
+    //     highlightAction(databaseAction);
+    //     emit databaseTriggered(); // Existing signal
+
+    //     // // Open RadarDisplay UI as dialog
+    //     // RadarDisplay *RadarDisplayUI = new RadarDisplay(nullptr);
+    //     // RadarDisplayUI->setAttribute(Qt::WA_DeleteOnClose, true);
+    //     // RadarDisplayUI->setWindowTitle("Radar Display");
+
+    //     // // ✅ Proper dialog flags (title bar + cut + move)
+    //     // RadarDisplayUI->setWindowFlags(Qt::Dialog |
+    //     //                                Qt::WindowTitleHint |
+    //     //                                Qt::WindowCloseButtonHint |
+    //     //                                Qt::WindowMinMaxButtonsHint |
+    //     //                                Qt::WindowSystemMenuHint);
+
+    //     // RadarDisplayUI->resize(800, 600);
+    //     // RadarDisplayUI->show(); // non-modal dialog (parallel use allowed)
+    // });
 
     addCustomMapAction = new QAction("Add Custom Map", this);
     connect(addCustomMapAction, &QAction::triggered, this, [=]() {
@@ -483,6 +499,11 @@ void DesignToolBar::createActions() {
             qDebug() << "Emitting mapLayerChanged with layers:" << activeLayers;
             emit mapLayerChanged(activeLayers.join(","));
         });
+
+        // Emit customMapAdded for custom maps (Satellite and Tarrine) to register them in GISlib
+        if (layer.isCustom) {
+            emit customMapAdded(layer.name, layer.zoomMin, layer.zoomMax, layer.tileUrl, layer.opacity);
+        }
     }
 
     mapLayerMenu->addSeparator();
@@ -542,7 +563,9 @@ void DesignToolBar::createActions() {
             double lon = coords[1].toDouble(&lonOk);
 
             if (latOk && lonOk && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-                emit searchCoordinateTriggered(lat, lon);
+                // Coordinate search use karein instead of place search
+                emit searchCoordinatesTriggered(lat, lon);
+                // emit searchCoordinateTriggered(lat, lon); // Purana signal
             } else {
                 emit searchPlaceTriggered(input);
             }
@@ -736,7 +759,7 @@ void DesignToolBar::setupToolBar() {
 
     addWidget(layerContainer);
 
-    addAction(databaseAction);
+    // addAction(databaseAction);
     addSeparator();
     addAction(zoomInAction);
     addAction(zoomOutAction);
@@ -749,6 +772,19 @@ void DesignToolBar::setupToolBar() {
     mapLayerButton->setPopupMode(QToolButton::InstantPopup);
     mapLayerButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
     addWidget(mapLayerButton);
+
+    // Import GeoJSON Button
+    QToolButton* importGeoJsonButton = new QToolButton(this);
+    importGeoJsonButton->setDefaultAction(importGeoJsonAction);
+    importGeoJsonButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(importGeoJsonButton);
+
+    // NEW: GeoJSON Layers Button
+    QToolButton* geoJsonLayersButton = new QToolButton(this);
+    geoJsonLayersButton->setDefaultAction(geoJsonLayersAction);
+    geoJsonLayersButton->setPopupMode(QToolButton::InstantPopup);
+    geoJsonLayersButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(geoJsonLayersButton);
 
     QToolButton* searchPlaceButton = new QToolButton(this);
     searchPlaceButton->setDefaultAction(searchPlaceAction);
@@ -793,10 +829,11 @@ void DesignToolBar::highlightAction(QAction *activeAction) {
         gridToggleAction, snappingToggleAction,
         layerSelectAction,
         editTrajectoryAction,
-        databaseAction, mapSelectLayerAction, searchPlaceAction,
+        mapSelectLayerAction, searchPlaceAction,
         selectCenterAction, addCustomMapAction, layerInfoAction,
         shapeAction, bitmapAction, selectBitmapAction,
-        measureDistanceAction, presetLayersAction
+        measureDistanceAction, presetLayersAction,
+        importGeoJsonAction, geoJsonLayersAction  // NEW: Add to list
     };
 
     for (QAction *action : actions) {
@@ -852,7 +889,48 @@ void DesignToolBar::onMeasureDistanceTriggered() {
         emit modeChanged(MeasureDistance);
         Console::log("Measure Distance mode activated");
     } else {
-        emit modeChanged(Translate);
+        emit modeChanged(Translate); // Revert to Translate when unchecked
         Console::log("Measure Distance mode deactivated");
     }
+}
+
+// for geojson function
+void DesignToolBar::importGeoJson() {
+    // Open file dialog to select GeoJSON file
+    QString filePath = QFileDialog::getOpenFileName(this,
+                                                    "Import GeoJSON Layer",
+                                                    "",
+                                                    "GeoJSON Files (*.geojson *.json *.geojsonl *.topojson)");
+
+    if (filePath.isEmpty()) {
+        return; // User canceled
+    }
+
+    highlightAction(importGeoJsonAction);
+
+    // Emit the signal with file path
+    emit importGeoJsonTriggered(filePath);
+
+    Console::log("GeoJSON import initiated: " + filePath.toStdString());
+}
+/* New slot added in DesignToolBar.cpp */
+void DesignToolBar::onGeoJsonLayerAdded(const QString &layerName) {
+    if (geoJsonLayerActions.contains(layerName)) {
+        qDebug() << "GeoJSON layer" << layerName << "already exists in menu";
+        return;
+    }
+
+    QAction* action = new QAction(layerName, this);
+    action->setCheckable(true);
+    action->setChecked(true);  // Visible by default
+
+    geoJsonLayersAction->menu()->addAction(action);
+    geoJsonLayerActions[layerName] = action;
+
+    connect(action, &QAction::triggered, this, [=](bool checked) {
+        emit geoJsonLayerToggled(layerName, checked);
+        qDebug() << "Toggled GeoJSON layer" << layerName << "to" << (checked ? "visible" : "hidden");
+    });
+
+    qDebug() << "Added GeoJSON layer to menu:" << layerName;
 }

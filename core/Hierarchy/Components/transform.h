@@ -48,6 +48,9 @@ public:
     QVector3D inverseTransformDirection(const QVector3D& worldDir);
     QVector3D TransformDirection(const QVector3D& localDir);
 
+    QVector3D inverseTransformVector(const QVector3D& worldVec);
+    QVector3D inverseTransformPoint(const QVector3D& worldPos);
+
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
 };

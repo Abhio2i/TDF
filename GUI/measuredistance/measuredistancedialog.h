@@ -13,6 +13,8 @@ public:
     void addMeasurement(double x, double y, double distance);
     void clearMeasurements();
     bool isEllipsoidal() const;
+    double getCurrentConversionFactor() const;
+    QString getCurrentUnitString() const;
 signals:
     void measurementTypeChanged(bool isEllipsoidal);
     void newMeasurementRequested();
@@ -33,6 +35,7 @@ private:
     Unit currentUnit = Meters;
     double getConversionFactor(Unit unit) const;
     QString getUnitString(Unit unit) const;
+    void updateTotalDistance();
 private slots:
     void updateMeasurementDisplay();
     void onMeasurementTypeChanged();

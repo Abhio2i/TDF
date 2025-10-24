@@ -19,9 +19,19 @@ Platform::Platform(Hierarchy* h) : Entity(h) {
     parameters["roll"] = par;
 
 
-
-
 }
+
+void Platform::update(){
+    //qDebug()<<"update";
+    for (Sensor* s : sensorList) {
+        if (s) {
+            s->scan(ID,transform);
+            s->ewscan(ID,transform);
+           // qDebug()<<"found sensor";
+        }
+    }
+}
+
 
 void Platform::spawn() {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
@@ -239,7 +249,7 @@ void Platform::fromJson(const QJsonObject& obj) {
 
 
 void Platform::addComponent(std::string name) {
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (name == "transform") {
         if (!transform){
             transform = new Transform();

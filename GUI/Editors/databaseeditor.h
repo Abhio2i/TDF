@@ -10,6 +10,8 @@
 #include "core/structure/scenario.h"
 #include "qdockwidget.h"
 #include <QMainWindow>
+#include <QTabWidget>
+#include <QStatusBar>
 
 class DatabaseEditor : public QMainWindow
 {
@@ -19,10 +21,15 @@ public:
     explicit DatabaseEditor(QWidget *parent = nullptr);
     ~DatabaseEditor();
     QString lastSavedFilePath;
-
+    void markUnsavedChanges();
+    void clearUnsavedChanges();
+    bool hasUnsavedChanges = false;
 private slots:
     void addInspectorTab();
     void showFeedbackWindow();
+
+signals:
+    void unsavedChangesChanged(bool hasChanges);
 
 private:
     void setupMenuBar();
@@ -49,6 +56,9 @@ private:
     QList<QDockWidget*> inspectorDocks;
     QList<Inspector*> inspectors;
     int inspectorCount = 0;
+    void setupStatusBar();
+    void updateStatusBar(const QString &message);
+    QStatusBar *statusBar;
 };
 
 #endif // DATABASEEDITOR_H

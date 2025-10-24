@@ -1,3 +1,4 @@
+
 #include "hierarchyconnector.h"
 #include <QToolBar>
 #include <QAction>
@@ -6,6 +7,7 @@
 #include <QJsonParseError>
 #include <QMessageBox>
 #include <QDebug>
+#include <QStandardPaths>
 #include "GUI/Hierarchytree/contextmenu.h"
 #include "GUI/Menubars/menubar.h"
 #include <QUuid>
@@ -13,9 +15,10 @@
 #include "GUI/Editors/scenarioeditor.h"
 #include "GUI/Editors/runtimeeditor.h"
 
+
 HierarchyConnector* HierarchyConnector::m_instance = nullptr;
 
-HierarchyConnector::HierarchyConnector(QObject* parent) : QObject(parent) {}
+HierarchyConnector::HierarchyConnector(QObject* parent) : QObject(parent), hierarchy(nullptr), library(nullptr), libTreeView(nullptr) {}
 
 HierarchyConnector* HierarchyConnector::instance()
 {
@@ -99,7 +102,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
                 // Ensure transform and rigidbody are tracked to prevent later duplication
                 addedComponents.insert("transform");
                 addedComponents.insert("rigidbody");
-
             });
 
     connect(treeView->getContextMenu(), &ContextMenu::removeEntityRequested,
@@ -142,7 +144,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
 
     // Connect context menu rename signal to hierarchy
     connect(treeView->getContextMenu(), &ContextMenu::renameItemRequested,
-            [hierarchy](QVariantMap data) {
+            hierarchy, [=](QVariantMap data) {
                 QString type = data["type"].toString();
                 QString id = data["ID"].toString();
                 QString name = data["name"].toString();
@@ -211,7 +213,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
                 return;
             }
             QJsonObject entityJson = entityIt->second->toJson();
-
             QString newId = QUuid::createUuid().toString();
             entityJson["id"] = newId;
 
@@ -222,10 +223,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
                     key != "active" && key != "parameters" && key != "type") {
                     componentNames << key;
                 }
-            }
-            if (!componentNames.isEmpty()) {
-            } else {
-                qWarning() << "No components found in entity JSON for ID:" << id;
             }
 
             Entity* newEntity = hierarchy->addEntityFromJson(targetId, entityJson, targetType == "profile");
@@ -263,7 +260,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
                     return;
                 }
                 QJsonObject entityJson = entityIt->second->toJson();
-                qDebug() << "Entity JSON before drop:" << QJsonDocument(entityJson).toJson(QJsonDocument::Compact);
                 QString newId = QUuid::createUuid().toString();
                 entityJson["id"] = newId;
 
@@ -274,10 +270,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
                         key != "active" && key != "parameters" && key != "type") {
                         componentNames << key;
                     }
-                }
-                if (!componentNames.isEmpty()) {
-                } else {
-                    qWarning() << "No components found in entity JSON for ID:" << sourceId;
                 }
 
                 Entity* newEntity = hierarchy->addEntityFromJson(targetId, entityJson, isProfile);
@@ -294,6 +286,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
         }
     });
 }
+
 
 void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree* libTree)
 {
@@ -356,7 +349,7 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
             libTree, &HierarchyTree::entityRenamed);
 
     connect(libTree->getContextMenu(), &ContextMenu::renameItemRequested,
-            [library](QVariantMap data) {
+            library, [=](QVariantMap data) {
                 QString type = data["type"].toString();
                 QString id = data["ID"].toString();
                 QString name = data["name"].toString();
@@ -424,10 +417,6 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
                             componentNames << key;
                         }
                     }
-                    if (!componentNames.isEmpty()) {
-                    } else {
-                        qWarning() << "No components found in library entity JSON for ID:" << id;
-                    }
 
                     Entity* newEntity = library->addEntityFromJson(targetId, entityJson, targetType == "profile");
                     if (newEntity) {
@@ -468,10 +457,6 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
                         key != "active" && key != "parameters" && key != "type") {
                         componentNames << key;
                     }
-                }
-                if (!componentNames.isEmpty()) {
-                } else {
-                    qWarning() << "No components found in library entity JSON for ID:" << sourceId;
                 }
 
                 Entity* newEntity = library->addEntityFromJson(targetId, entityJson, isProfile);
@@ -539,16 +524,19 @@ void HierarchyConnector::initializeDummyData(Hierarchy* hierarchy)
 void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hierarchy, TacticalDisplay* tacticalDisplay)
 {
     MenuBar* menuBar = qobject_cast<MenuBar*>(parent->menuBar());
-    if (!menuBar) return;
+    if (!menuBar) {
+        qWarning() << "MenuBar not found for file operations setup";
+        return;
+    }
 
     QAction* loadAction = menuBar->getLoadAction();
     QAction* loadToLibraryAction = menuBar->getLoadToLibraryAction();
     QAction* saveAction = menuBar->getSaveAction();
-    QAction* sameSaveAction = menuBar->getSameSaveAction(); // Get new "Save" action
+    QAction* sameSaveAction = menuBar->getSameSaveAction();
 
     // Connect "Open File" to load into hierarchy only
-    connect(loadAction, &QAction::triggered, parent, [parent, hierarchy, tacticalDisplay]() {
-        QString filePath = QFileDialog::getOpenFileName(parent, "Open JSON", "", "JSON Files (*.json)");
+    connect(loadAction, &QAction::triggered, this, [=]() {
+        QString filePath = QFileDialog::getOpenFileName(parent, "Open JSON", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), "JSON Files (*.json)");
         if (!filePath.isEmpty()) {
             QFile file(filePath);
             if (file.open(QIODevice::ReadOnly)) {
@@ -571,12 +559,15 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
                     qDebug() << "JSON loaded into Hierarchy successfully";
                     if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(parent)) {
                         dbEditor->lastSavedFilePath = filePath;
+                        dbEditor->clearUnsavedChanges(); // Reset unsaved changes on load
                         qDebug() << "DatabaseEditor lastSavedFilePath set to:" << filePath;
                     } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(parent)) {
                         scEditor->lastSavedFilePath = filePath;
+                        scEditor->clearUnsavedChanges(); // Reset unsaved changes on load
                         qDebug() << "ScenarioEditor lastSavedFilePath set to:" << filePath;
                     } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(parent)) {
                         rtEditor->lastSavedFilePath = filePath;
+                        rtEditor->clearUnsavedChanges(); // Reset unsaved changes on load
                         qDebug() << "RuntimeEditor lastSavedFilePath set to:" << filePath;
                     }
                 } else {
@@ -587,13 +578,13 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
     });
 
     // Connect "Open File to Library" to load into library only
-    connect(loadToLibraryAction, &QAction::triggered, HierarchyConnector::instance(), [parent]() {
-        HierarchyConnector::instance()->loadToLibrary(parent);
+    connect(loadToLibraryAction, &QAction::triggered, this, [=]() {
+        this->loadToLibrary(parent); // Explicitly use this
     });
 
     // Connect "Save As" action
-    connect(saveAction, &QAction::triggered, parent, [parent, hierarchy, tacticalDisplay]() {
-        QString filePath = QFileDialog::getSaveFileName(parent, "Save JSON", "", "JSON Files (*.json)");
+    connect(saveAction, &QAction::triggered, this, [=]() {
+        QString filePath = QFileDialog::getSaveFileName(parent, "Save JSON", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), "JSON Files (*.json)");
         if (!filePath.isEmpty()) {
             QFile file(filePath);
             if (file.open(QIODevice::WriteOnly)) {
@@ -601,22 +592,24 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
                 obj["hierarchy"] = hierarchy->toJson();
                 if (tacticalDisplay != nullptr) {
                     obj["tactical"] = tacticalDisplay->canvas->toJson();
-                }else{
+                } else {
                     obj["tactical"] = QJsonObject();
                 }
                 QJsonDocument doc(obj);
                 file.write(doc.toJson(QJsonDocument::Indented));
                 file.close();
-                //QMessageBox::information(parent, "Saved", "JSON saved successfully");
-                qDebug() << "JSON saved successfuly`11223";
+                qDebug() << "JSON saved successfully";
                 if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(parent)) {
                     dbEditor->lastSavedFilePath = filePath;
+                    dbEditor->clearUnsavedChanges(); // Clear unsaved changes
                     qDebug() << "DatabaseEditor lastSavedFilePath set to:" << filePath;
                 } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(parent)) {
                     scEditor->lastSavedFilePath = filePath;
+                    scEditor->clearUnsavedChanges(); // Clear unsaved changes
                     qDebug() << "ScenarioEditor lastSavedFilePath set to:" << filePath;
                 } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(parent)) {
                     rtEditor->lastSavedFilePath = filePath;
+                    rtEditor->clearUnsavedChanges(); // Clear unsaved changes
                     qDebug() << "RuntimeEditor lastSavedFilePath set to:" << filePath;
                 }
             } else {
@@ -627,35 +620,14 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
     });
 
     // Connect "Save" action
-    connect(sameSaveAction, &QAction::triggered, parent, [parent, hierarchy, tacticalDisplay, saveAction]() {
-        QString filePath = HierarchyConnector::instance()->getLastSavedFilePath(parent);
+    connect(sameSaveAction, &QAction::triggered, this, [=]() {
+        QString filePath = this->getLastSavedFilePath(parent); // Explicitly use this
         if (filePath.isEmpty()) {
             // If no previous save path, fall back to "Save As"
             qDebug() << "No last saved file path, falling back to Save As";
             emit saveAction->triggered(); // Trigger Save As action
             return;
         }
-
-    //     QFile file(filePath);
-    //     if (file.open(QIODevice::WriteOnly)) {
-    //         QJsonObject obj;
-    //         obj["hierarchy"] = hierarchy->toJson();
-    //         if (tacticalDisplay != nullptr) {
-    //             obj["tactical"] = tacticalDisplay->canvas->toJson();
-    //         }else{
-    //             obj["tactical"] = QJsonObject();
-    //         }
-    //         QJsonDocument doc(obj);
-    //         file.write(doc.toJson(QJsonDocument::Indented));
-    //         file.close();
-    //         //QMessageBox::information(parent, "Saved", "JSON saved successfully to " + filePath);
-    //         qDebug() << "JSON saved to existing path:" << filePath;
-    //     } else {
-    //         qWarning() << "Failed to open file for writing:" << filePath;
-    //         QMessageBox::warning(parent, "Error", QString("Failed to save JSON: %1").arg(file.errorString()));
-    //     }
-    // });
-
 
         QFile file(filePath);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
@@ -674,40 +646,78 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
 
         if (bytesWritten == -1) {
             qWarning() << "Failed to write JSON to file";
+            QMessageBox::warning(parent, "Error", "Failed to write JSON to file");
         } else {
             qDebug() << "JSON saved successfully to:" << filePath;
+            if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(parent)) {
+                dbEditor->clearUnsavedChanges(); // Clear unsaved changes
+                qDebug() << "DatabaseEditor unsaved changes cleared";
+            } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(parent)) {
+                scEditor->clearUnsavedChanges(); // Clear unsaved changes
+                qDebug() << "ScenarioEditor unsaved changes cleared";
+            } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(parent)) {
+                rtEditor->clearUnsavedChanges(); // Clear unsaved changes
+                qDebug() << "RuntimeEditor unsaved changes cleared";
+            }
         }
-
-         });
+    });
 }
 
-void HierarchyConnector::loadToLibrary(QMainWindow* parent)
-{
-    if (!parent || !library) {
-        qWarning() << "Cannot load to library - parent or library is null";
+
+void HierarchyConnector::loadToLibrary(QMainWindow* parent) {
+    if (!parent) {
+        qWarning() << "Cannot load to library - parent is null";
         return;
     }
 
-    QString filePath = QFileDialog::getOpenFileName(parent, "Open JSON to Library", "", "JSON Files (*.json)");
-    if (!filePath.isEmpty()) {
-        QFile file(filePath);
-        if (file.open(QIODevice::ReadOnly)) {
-            QByteArray data = file.readAll();
-            file.close();
-            QJsonParseError err;
-            QJsonDocument doc = QJsonDocument::fromJson(data, &err);
-            if (err.error == QJsonParseError::NoError && doc.isObject()) {
-                QJsonObject obj = doc.object();
-                if (obj.contains("hierarchy")) {
-                    QJsonObject hier = obj["hierarchy"].toObject();
-                    library->fromJson(hier);
-                }
-            } else {
-                QMessageBox::warning(parent, "Error", QString("Failed to parse JSON: %1").arg(err.errorString()));
-            }
+    Hierarchy* targetLibrary = nullptr;
+    if (ScenarioEditor* se = qobject_cast<ScenarioEditor*>(parent)) {
+        targetLibrary = se->library;
+    } else if (RuntimeEditor* re = qobject_cast<RuntimeEditor*>(parent)) {
+        targetLibrary = re->library;
+    }
+
+    if (!targetLibrary) {
+        qWarning() << "Cannot load to library - unsupported parent type";
+        return;
+    }
+
+    QString filePath = QFileDialog::getOpenFileName(parent, "Open JSON to Library", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), "JSON Files (*.json)");
+    if (filePath.isEmpty()) {
+        return;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(parent, "Error", QString("Failed to open file: %1").arg(file.errorString()));
+        return;
+    }
+
+    QByteArray data = file.readAll();
+    file.close();
+
+    QJsonParseError err;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+    if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+        QMessageBox::warning(parent, "Error", QString("Failed to parse JSON: %1").arg(err.errorString()));
+        return;
+    }
+
+    QJsonObject obj = doc.object();
+    if (obj.contains("hierarchy")) {
+        QJsonObject hier = obj["hierarchy"].toObject();
+        targetLibrary->fromJson(hier);
+        // Optionally: Force refresh the library tree view if not automatically updating
+        if (libTreeView) {
+            libTreeView->getTreeWidget()->update();  // Or call a rebuild method if exists
         }
+        qDebug() << "JSON loaded into target library successfully";
+    } else {
+        QMessageBox::warning(parent, "Error", "JSON does not contain 'hierarchy' key");
     }
 }
+
+
 
 void HierarchyConnector::handleLibraryToHierarchyDrop(QVariantMap sourceData, QVariantMap targetData)
 {
@@ -757,10 +767,6 @@ void HierarchyConnector::handleLibraryToHierarchyDrop(QVariantMap sourceData, QV
                 key != "active" && key != "parameters" && key != "type") {
                 componentNames << key;
             }
-        }
-        if (!componentNames.isEmpty()) {
-        } else {
-            qWarning() << "No components found in library entity JSON for ID:" << sourceId;
         }
 
         Entity* newEntity = hierarchy->addEntityFromJson(targetId, entityJson, targetType == "profile");
@@ -817,10 +823,6 @@ void HierarchyConnector::handleHierarchyToLibraryDrop(QVariantMap sourceData, QV
                 componentNames << key;
             }
         }
-        if (!componentNames.isEmpty()) {
-        } else {
-            qWarning() << "No components found in hierarchy entity JSON for ID:" << sourceId;
-        }
 
         Entity* newEntity = library->addEntityFromJson(targetId, entityJson, targetType == "profile");
         if (newEntity) {
@@ -833,4 +835,222 @@ void HierarchyConnector::handleHierarchyToLibraryDrop(QVariantMap sourceData, QV
     } catch (const std::exception& e) {
         qCritical() << "Hierarchy to Library drop failed:" << e.what();
     }
+}
+QJsonObject HierarchyConnector::getFeedbackData(Hierarchy* hierarchy)
+{
+    QJsonObject feedbackData;
+
+    if (!hierarchy) {
+        qWarning() << "Hierarchy is null, cannot generate feedback data";
+        return feedbackData;
+    }
+
+    try {
+        // System Overview Data
+        QJsonObject overviewData;
+        overviewData["systemStatus"] = "System: ONLINE  Sim: RUNNING  RTC: 2025-10-15";
+        overviewData["uptime"] = "Uptime: 02:15:30";
+        overviewData["feedbackEvents"] = "Accumulated Feedback Events: 156";
+        overviewData["cpuUsage"] = 65;
+
+        // Calculate entities count
+        int mainEntities = 0;
+        for (const auto& [id, e] : *hierarchy->Entities) {
+            if (hierarchy->ProfileCategories.find(e->parentID) == hierarchy->ProfileCategories.end()) {
+                mainEntities++;
+            }
+        }
+        overviewData["entities"] = mainEntities;
+
+        feedbackData["overview"] = overviewData;
+
+        // Storage Data
+        QJsonObject storageData;
+        storageData["mongoDb"] = "MongoDB: 2.4 GB";
+        storageData["logs"] = "Logs: 1.1 GB";
+        storageData["scenarios"] = "Scenarios: 0.8 GB";
+        storageData["totalStorage"] = "Total: 4.3 GB";
+        feedbackData["storage"] = storageData;
+
+        // Sensors Data
+        QJsonObject sensorsData;
+        QJsonArray sensorList;
+
+        for (const auto& [id, e] : *hierarchy->Entities) {
+            QJsonObject entityJson = e->toJson();
+            if (entityJson.contains("sensors")) {
+                QJsonArray sensors = entityJson["sensors"].toArray();
+                for (const auto& sensorValue : sensors) {
+                    QJsonObject sensor = sensorValue.toObject();
+                    QJsonObject sensorItem;
+                    sensorItem["type"] = sensor.contains("name") ? sensor["name"].toString() : "Unknown";
+                    sensorItem["status"] = sensor.contains("status") ? sensor["status"].toString() : "Unknown";
+                    sensorList.append(sensorItem);
+
+                    // Set radar feedback if available
+                    if (sensor.contains("type") && sensor["type"].toString() == "RADAR") {
+                        sensorsData["radarFeedback"] = "RADAR: " + sensor["status"].toString();
+                    }
+                }
+            }
+        }
+
+        sensorsData["sensorList"] = sensorList;
+        sensorsData["iffFeedback"] = "IFF: Active";
+        feedbackData["sensors"] = sensorsData;
+
+        // Radio Data
+        QJsonObject radioData;
+        radioData["radioSystem"] = "Radio System: UHF/VHF";
+        radioData["frequency"] = "Frequency: 243.0 MHz";
+        radioData["signalStrength"] = "Signal Strength: 85%";
+        feedbackData["radio"] = radioData;
+
+        // Network Data
+        QJsonObject networkData;
+        networkData["connectivity"] = "Connectivity: Stable";
+        networkData["bandwidth"] = "Bandwidth Usage: 45%";
+        networkData["latency"] = "Latency: 25ms";
+        feedbackData["network"] = networkData;
+
+        // Logs Data
+        feedbackData["logs"] = "System logs loaded successfully\nRTC: 2025-10-15 10:30:00\nSimulation running normally";
+
+        // Canvas Interactions Data
+        QJsonArray interactions;
+        // Yahan aap canvas interactions add kar sakte hain
+        QJsonObject interaction1;
+        interaction1["time"] = "10:25:30";
+        interaction1["id"] = "Entity_001";
+        interaction1["geoCoords"] = "35.6895, 139.6917";
+        interaction1["fixedPoints"] = "FP1, FP2, FP3";
+        interactions.append(interaction1);
+
+        feedbackData["interactions"] = interactions;
+
+        // Entity Data (for combo boxes)
+        QJsonObject entityData;
+        int totalEntities = 0;
+        int activeEntities = 0;
+        QJsonArray entityList;
+
+        for (const auto& [id, e] : *hierarchy->Entities) {
+            if (hierarchy->ProfileCategories.find(e->parentID) != hierarchy->ProfileCategories.end()) {
+                continue; // Skip profile entities
+            }
+
+            QJsonObject entityJson = e->toJson();
+            totalEntities++;
+
+            bool isActive = entityJson.contains("active") && entityJson["active"].toBool();
+            if (isActive) activeEntities++;
+
+            QJsonObject entityItem;
+            entityItem["id"] = QString::fromStdString(id);
+            entityItem["name"] = QString::fromStdString(e->Name);
+            entityItem["active"] = isActive;
+            entityList.append(entityItem);
+        }
+
+        entityData["total"] = totalEntities;
+        entityData["active"] = activeEntities;
+        entityData["entities"] = entityList;
+        feedbackData["entities"] = entityData;
+
+        // IFF Data
+        QJsonObject iffData;
+        int totalIffs = 0;
+        int activeIffs = 0;
+        QJsonArray iffList;
+
+        for (const auto& [mainId, mainE] : *hierarchy->Entities) {
+            if (hierarchy->ProfileCategories.find(mainE->parentID) != hierarchy->ProfileCategories.end()) {
+                continue;
+            }
+
+            QJsonObject entityJson = mainE->toJson();
+            if (entityJson.contains("iffList")) {
+                QJsonArray iffArray = entityJson["iffList"].toArray();
+                for (const auto& iffValue : iffArray) {
+                    QJsonObject iffJson = iffValue.toObject();
+                    totalIffs++;
+
+                    QString mode = iffJson.contains("operationalMode") ? iffJson["operationalMode"].toString() : "";
+                    if (mode == "Active") activeIffs++;
+
+                    QJsonObject iffItem;
+                    iffItem["id"] = iffJson.contains("ID") ? iffJson["ID"].toString() : "";
+                    iffItem["name"] = iffJson.contains("Name") ? iffJson["Name"].toString() : "Unknown";
+                    iffItem["parentEntity"] = QString::fromStdString(mainE->Name);
+                    iffItem["mode"] = mode;
+                    iffList.append(iffItem);
+                }
+            }
+        }
+
+        iffData["total"] = totalIffs;
+        iffData["active"] = activeIffs;
+        iffData["iffs"] = iffList;
+        feedbackData["iffs"] = iffData;
+
+        // FixedPoint Data
+        QJsonObject fixedPointData;
+        int totalFixedPoints = 0;
+        int activeFixedPoints = 0;
+        QJsonArray fixedPointList;
+
+        for (const auto& [id, e] : *hierarchy->Entities) {
+            QJsonObject entityJson = e->toJson();
+            if (entityJson.contains("type") && entityJson["type"].toString() == "FixedPoint") {
+                totalFixedPoints++;
+
+                bool isActive = entityJson.contains("active") && entityJson["active"].toBool();
+                if (isActive) activeFixedPoints++;
+
+                QJsonObject fpItem;
+                fpItem["id"] = QString::fromStdString(id);
+                fpItem["name"] = QString::fromStdString(e->Name);
+                fpItem["active"] = isActive;
+                fixedPointList.append(fpItem);
+            }
+        }
+
+        fixedPointData["total"] = totalFixedPoints;
+        fixedPointData["active"] = activeFixedPoints;
+        fixedPointData["fixedPoints"] = fixedPointList;
+        feedbackData["fixedPoints"] = fixedPointData;
+
+        // Weapon Data
+        QJsonObject weaponData;
+        int totalWeapons = 0;
+        int activeWeapons = 0;
+        QJsonArray weaponList;
+
+        for (const auto& [id, e] : *hierarchy->Entities) {
+            QJsonObject entityJson = e->toJson();
+            if (entityJson.contains("weaponType")) {
+                totalWeapons++;
+
+                bool isActive = entityJson.contains("active") && entityJson["active"].toBool();
+                if (isActive) activeWeapons++;
+
+                QJsonObject weaponItem;
+                weaponItem["id"] = QString::fromStdString(id);
+                weaponItem["name"] = QString::fromStdString(e->Name);
+                weaponItem["active"] = isActive;
+                weaponItem["type"] = entityJson["weaponType"].toString();
+                weaponList.append(weaponItem);
+            }
+        }
+
+        weaponData["total"] = totalWeapons;
+        weaponData["active"] = activeWeapons;
+        weaponData["weapons"] = weaponList;
+        feedbackData["weapons"] = weaponData;
+
+    } catch (const std::exception& e) {
+        qCritical() << "Error generating feedback data:" << e.what();
+    }
+
+    return feedbackData;
 }

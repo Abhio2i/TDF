@@ -6,6 +6,7 @@
 #include <QSlider>
 #include <QLabel>
 #include "GUI/Timing/timingdialog.h"
+#include "GUI/Logger/loggerdialog.h" // ADDED: Include LoggerDialog
 
 class RuntimeToolBar : public QToolBar
 {
@@ -21,11 +22,12 @@ signals:
     void replayTriggered();
     void bookmarkTriggered();
     void bookmarkCommentSubmitted(QString comment);
-    void loggerTriggered();
+      void loggerTriggered(bool checked); // CHANGED: Added bool parameter
     void startRecording();
     void stopRecording();
     void replayRecording(const QString &filePath);
     void eventTypesSelected(QStringList eventTypes);
+    void radarDisplayToggled();
 public:
     void onElapsedTime(float time);
 private:
@@ -34,10 +36,11 @@ private:
     QAction *stopAction;
     QAction *nextStepAction;
     QAction *bookmarkAction;
-    QSlider *speedSlider;
     QAction *replayAction;
     QAction *timingAction;
     QAction *loggerAction;
+    QAction *radarToggleAction;
+    QSlider *speedSlider;
     QLabel *timeLabel;
     QTimer *timer;
     float elapsedSeconds;
@@ -49,3 +52,4 @@ private:
     void updateTimeDisplay();
 };
 #endif // RUNTIMETOOLBAR_H
+

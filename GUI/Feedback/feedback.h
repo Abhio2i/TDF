@@ -2,6 +2,7 @@
 #ifndef FEEDBACK_H
 #define FEEDBACK_H
 
+#include "core/Hierarchy/hierarchy.h"
 #include <QMainWindow>
 #include <QLabel>
 #include <QProgressBar>
@@ -22,6 +23,7 @@
 #include <QScrollArea>
 #include <QTimer>
 #include <QFile>
+
 
 // Custom widget for drawing simple graphs (unchanged)
 class CustomGraphWidget : public QWidget
@@ -107,10 +109,18 @@ class Feedback : public QMainWindow
 public:
     Feedback(QWidget *parent = nullptr);
     ~Feedback();
+    Hierarchy *h;
+    void loadDashboardData(const QString& jsonData);
 
 private slots:
     void onSidebarItemClicked(QListWidgetItem *item);
     void onDetailsButtonClicked();
+    void onEntityComboChanged(const QString &text);
+    void onIffComboChanged(const QString &text);
+    void onFormationComboChanged(const QString &text); // New slot for Formation dropdown
+    void onFixedPointComboChanged(const QString &text); // New slot for FixedPoint dropdown
+    void onWeaponComboChanged(const QString &text); // New slot for Weapon dropdown
+
 
 private:
     void setupUi();
@@ -122,7 +132,11 @@ private:
     void setupLogsWidget();
     void setupCanvasWidget();
     void setupEntityWidget();
-    void loadDashboardData(const QString& jsonData);
+    void setupIffWidget();
+    void setupFormationWidget();
+    void setupFixedPointWidget();
+    void setupWeaponWidget();
+     // void loadDashboardData(const QString& jsonData);
 
     // Sidebar
     QListWidget *sidebar;
@@ -139,6 +153,10 @@ private:
     QWidget *logsWidget;
     QWidget *canvasWidget;
     QWidget *entityWidget;
+    QWidget *iffWidget;
+    QWidget *formationWidget;
+    QWidget *fixedPointWidget;
+    QWidget *weaponWidget;
 
     // Shared UI elements
     QLabel *systemLabel;
@@ -191,12 +209,55 @@ private:
     QPushButton *detailsButton;
     QWidget *detailedViewWidget;
     QLabel *detailedViewHeader;
-    QLabel *detailedViewDetailsLabel;
+    QTextEdit *detailedViewTextEdit;
     QTextEdit *detailedViewLogsTextEdit;
     QTableWidget *interactionFreqTable;
     QScrollArea *entityScrollArea;
     QScrollArea *scrollArea;
+
+    // IFF Section UI Elements
+    QFrame *iffFrame;
+    QLabel *totalIffsLabel;
+    QLabel *activeIffsLabel;
+    QComboBox *selectIffCombo;
+    QWidget *iffDetailedViewWidget;
+    QTextEdit *iffDetailedViewTextEdit;
+
+    // Formation Section UI Elements
+    QFrame *formationFrame;
+    QLabel *totalFormationsLabel;
+    QLabel *activeFormationsLabel;
+    QComboBox *selectFormationCombo;
+    QWidget *formationDetailedViewWidget;
+    QTextEdit *formationDetailedViewTextEdit;
+
+    // FixedPoint Section UI Elements
+    QFrame *fixedPointFrame;
+    QLabel *totalFixedPointsLabel;
+    QLabel *activeFixedPointsLabel;
+    QComboBox *selectFixedPointCombo;
+    QWidget *fixedPointDetailedViewWidget;
+    QTextEdit *fixedPointDetailedViewTextEdit;
+
+    // Weapon Section UI Elements
+    QFrame *weaponFrame;
+    QLabel *totalWeaponsLabel;
+    QLabel *activeWeaponsLabel;
+    QComboBox *selectWeaponCombo;
+    QWidget *weaponDetailedViewWidget;
+    QTextEdit *weaponDetailedViewTextEdit;
+
+    QComboBox *selectSensorCombo;
+    QComboBox *selectRadioCombo;
+    QLabel *totalSensorsLabel;
+    QLabel *activeSensorsLabel;
+    QLabel *totalRadiosLabel;
+    QLabel *activeRadiosLabel;
+    QWidget *sensorDetailedViewWidget;
+    QTextEdit *sensorDetailedViewTextEdit;
+    QWidget *radioDetailedViewWidget;
+    QTextEdit *radioDetailedViewTextEdit;
+
 };
 
 #endif // FEEDBACK_H
-

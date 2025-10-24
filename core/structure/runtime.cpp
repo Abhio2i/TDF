@@ -2,8 +2,9 @@
 #include <QDebug>
 
 Runtime::Runtime() {
-    hierarchy = new Hierarchy();
     Library = new Hierarchy();
+    hierarchy = new Hierarchy();
+
     scenerenderer = new SceneRenderer();
     simulation = new Simulation();
     scriptengine = new ScriptEngine();
@@ -24,6 +25,13 @@ Runtime::Runtime() {
     connect(hierarchy,&Hierarchy::entityUpdate,simulation,&Simulation::entityUpdate);
 
     // NetworkManager connections
+    networkManager->setHierarchy(hierarchy);
+
+    connect(hierarchy, &Hierarchy::folderAdded,
+            networkManager, &NetworkManager::folderAdded);
+    connect(hierarchy, &Hierarchy::folderRemoved,
+            networkManager, &NetworkManager::folderRemoved);
+
     connect(hierarchy, &Hierarchy::entityAddedPointer,
             networkManager, &NetworkManager::entityAddedPointer);
     connect(hierarchy, &Hierarchy::entityAdded,
@@ -38,6 +46,9 @@ Runtime::Runtime() {
     connect(hierarchy, &Hierarchy::componentAdded,
             networkManager, &NetworkManager::componentAdded);
 
+    connect(hierarchy, &Hierarchy::entityComponentUpdate,
+            networkManager, &NetworkManager::entityComponentsUpdate);
+
     connect(hierarchy, &Hierarchy::entityMeshAdded,
             networkManager, &NetworkManager::entityMeshAdded);
     connect(hierarchy, &Hierarchy::entityMeshRemoved,
@@ -48,12 +59,19 @@ Runtime::Runtime() {
     connect(hierarchy, &Hierarchy::entityPhysicsRemoved,
             networkManager, &NetworkManager::entityPhysicsRemoved);
 
+    connect(simulation, &Simulation::Update,
+            networkManager, &NetworkManager::UpdateClient);
+
     connect(networkManager,&NetworkManager::initData,hierarchy,&Hierarchy::fromJson);
     connect(networkManager,&NetworkManager::getCurrentJsonData,hierarchy,&Hierarchy::getCurrentJsonData);
     connect(hierarchy,&Hierarchy::getJsonData,networkManager,&NetworkManager::getJsonData);
-    connect(networkManager,&NetworkManager::addEntityFromJson,hierarchy,&Hierarchy::addEntityViaNetwork);
+    connect(networkManager,&NetworkManager::addFolder,hierarchy,&Hierarchy::addFolderViaNetwork);
+    connect(networkManager,&NetworkManager::removeFolder,hierarchy,&Hierarchy::removeFolderViaNetwork);
+    connect(networkManager,&NetworkManager::addEntity,hierarchy,&Hierarchy::addEntityViaNetwork);
     connect(networkManager,&NetworkManager::addComponent,hierarchy,&Hierarchy::addComponent);
+    connect(networkManager,&NetworkManager::entityComponentUpdate,hierarchy,&Hierarchy::UpdateComponent);
     connect(networkManager,&NetworkManager::removeEntity,hierarchy,&Hierarchy::removeEntity);
+    connect(networkManager,&NetworkManager::updateScene,scenerenderer,&SceneRenderer::Render);
 }
 
 Runtime::~Runtime() {

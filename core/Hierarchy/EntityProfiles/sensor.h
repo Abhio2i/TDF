@@ -9,7 +9,19 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <string>
+#include <unordered_set>
 #include <vector>
+
+struct Target{
+    Platform *entity;
+    float radius;
+    float angle;
+    float speed;
+    float direction;
+    float altitude;
+    float lat;
+    float lon;
+};
 
 class Sensor : public Entity
 {
@@ -49,13 +61,21 @@ public:
     float beamWidth = 0.0f; // degrees
     float antennaGain = 0.0f; // dBi
     float detectionCapabilities = 0.0f; // Quality Score or Signal Processing Strength
-    float maxDetectionAngle = 0.0f; // degrees
-    float range = 0.0f; // km or meters
+    float maxDetectionAngle = 60.0f; // degrees
+    float range = 100.0f; // km or meters
+    float ewrange = 100.0f; // km or meters
     float refreshRate = 0.0f; // Hz
     float noiseFigure = 0.0f; // dB
     bool clutterRejection = false;
     bool eccmCapability = false;
     std::vector<Detection> detections;
+    std::unordered_set<Platform*> detects;
+    QVector<Target> targets;
+    std::unordered_set<Platform*> ewdetects;
+    QVector<Target> ewtargets;
+    void scan(std::string id, Transform *source);
+    void ewscan(std::string id , Transform *source);
+    bool detectCheck(QVector3D localPos);
 
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;

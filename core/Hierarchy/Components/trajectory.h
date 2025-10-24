@@ -14,7 +14,7 @@ public:
     ComponentType Typo() const override { return ComponentType::Trajectory; }
     bool Active;
     std::string ID;
-    std::vector<QJsonObject> array;
+    // std::vector<QJsonObject> array;
     std::vector<Waypoints*> Trajectories;
     int current = 0;
     QJsonObject customParameters; // Added to store custom parameters

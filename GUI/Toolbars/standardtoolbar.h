@@ -18,7 +18,7 @@ public:
     QAction* getTestScriptAction() const { return testScriptAction; }
 
 private slots:
-    void onTestScriptTriggered(); // Slot to open the dialog
+    void onTestScriptTriggered();
 private:
     QAction *newAction;
     QAction *saveAction;

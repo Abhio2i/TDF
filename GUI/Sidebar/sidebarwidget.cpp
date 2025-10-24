@@ -12,15 +12,15 @@ SidebarWidget::SidebarWidget(QWidget *parent) : QWidget(parent) {
     layout->setContentsMargins(0, 0, 0, 0);
 
     // Create buttons without icons
-    QPushButton *missionButton = createSidebarButton("Mission", "Mission");
+    QPushButton *sensorsButton = createSidebarButton("Sensors", "Sensors");
     QPushButton *libraryButton = createSidebarButton("Library", "Library");
     QPushButton *inspectorButton = createSidebarButton("Inspector", "Inspector");
     // QPushButton *consoleButton = createSidebarButton("Console", "Console");
     QPushButton *textScriptButton = createSidebarButton("TextScript", "TextScript");
 
     // Add buttons to layout and button group
-    layout->addWidget(missionButton);
-    buttonGroup->addButton(missionButton);
+    layout->addWidget(sensorsButton);
+    buttonGroup->addButton(sensorsButton);
 
     layout->addWidget(libraryButton);
     buttonGroup->addButton(libraryButton);

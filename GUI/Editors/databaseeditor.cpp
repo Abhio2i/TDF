@@ -7,13 +7,14 @@
 #include <core/structure/scenario.h>
 #include <QDockWidget>
 #include <QSplitter>
+#include <QMenuBar>
+#include <QApplication>
 
 DatabaseEditor::DatabaseEditor(QWidget *parent)
     : QMainWindow(parent)
 {
     setWindowTitle("Database Editor");
     resize(1100, 600);
-
     QDockWidget::DockWidgetFeatures dockFeatures =
         QDockWidget::DockWidgetClosable |
         QDockWidget::DockWidgetMovable |
@@ -22,12 +23,10 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
     setupMenuBar();
     setupToolBars();
     setupDockWidgets(dockFeatures);
-
-    // Initialize core components
+setupStatusBar();
     scenario = new Scenario();
     hierarchy = scenario->hierarchy;
     console = scenario->console;
-
     lastSavedFilePath = "";
 
     consoleView->setConsoleDock(consoleDock);
@@ -38,21 +37,18 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
             consoleView->appendText(QString::fromStdString(log));
         }
     });
-
     connect(console, &Console::errorUpdate, this, [=](std::string error) {
         if (consoleView) {
             consoleView->appendError(QString::fromStdString(error));
             consoleView->appendText(QString::fromStdString(error));
         }
     });
-
     connect(console, &Console::warningUpdate, this, [=](std::string warning) {
         if (consoleView) {
             consoleView->appendWarning(QString::fromStdString(warning));
             consoleView->appendText(QString::fromStdString(warning));
         }
     });
-
     connect(console, &Console::debugUpdate, this, [=](std::string debug) {
         if (consoleView) {
             consoleView->appendDebug(QString::fromStdString(debug));
@@ -60,47 +56,60 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
         }
     });
 
-    // Initialize hierarchy
+    connect(hierarchy, &Hierarchy::profileAdded, this, &DatabaseEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::folderAdded, this, &DatabaseEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::entityAdded, this, &DatabaseEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::componentAdded, this, &DatabaseEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::profileRemoved, this, &DatabaseEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::folderRemoved, this, &DatabaseEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::entityRemoved, this, &DatabaseEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::componentRemoved, this, &DatabaseEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::profileRenamed, this, &DatabaseEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::folderRenamed, this, &DatabaseEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::entityRenamed, this, &DatabaseEditor::markUnsavedChanges);
+    connect(inspector, &Inspector::valueChanged, this, &DatabaseEditor::markUnsavedChanges);
+
     if (hierarchy && treeView) {
         HierarchyConnector::instance()->connectSignals(hierarchy, treeView);
-        HierarchyConnector::initializeDummyData(hierarchy);
-        HierarchyConnector::setupFileOperations(this, hierarchy,nullptr);
+        HierarchyConnector::instance()->initializeDummyData(hierarchy);
+        HierarchyConnector::instance()->setupFileOperations(this, hierarchy, nullptr);
     }
 
-    // Connect hierarchy tree selection to inspector
     if (treeView && hierarchy) {
         connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
-
-            QString type = data["type"].toString();
+            QString type;
+            if (data["type"].type() == QVariant::Map) {
+                QVariantMap typeData = data["type"].toMap();
+                if (typeData.contains("type") && typeData["type"].toString() == "option") {
+                    type = "profile";
+                } else {
+                    qWarning() << "Invalid nested type structure in itemSelected:" << data["type"];
+                    return;
+                }
+            } else {
+                type = data["type"].toString();
+            }
             QString name = data["name"].toString();
             QString ID = data["parentId"].toString();
-
-            // Update all inspectors with selected item data
             for (Inspector* inspector : inspectors) {
+                // if (inspector->isLocked()) {
+                //     continue;
+                // }
                 if (type == "component") {
                     QJsonObject componentData = hierarchy->getComponentData(ID, name);
                     if (!componentData.isEmpty()) {
                         inspector->init(ID, name, componentData);
                     }
+                } else if (type == "profile") {
+                    inspector->init(ID, name + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
+                } else if (type == "folder") {
+                    inspector->init(ID, name + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
+                } else if (type == "entity") {
+                    inspector->init(data["ID"].toString(), name + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
+                } else {
+                    inspector->init(ID, name, QJsonObject());
                 }
-                else
-                    if(type == "profile"){
-                        inspector->init(ID, name+"_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
-
-                    }else
-                        if(type == "folder"){
-                            inspector->init(ID, name+"_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
-
-                        }else
-                            if(type == "entity"){
-                                inspector->init(data["ID"].toString(), name+"_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
-
-                            }else{
-                                inspector->init(ID, name, QJsonObject());
-                            }
             }
-
-            // Ensure inspector is visible when items are selected
             if (!inspectorDock->isVisible()) {
                 addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
                 inspectorDock->show();
@@ -108,25 +117,30 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
         });
     }
 
-    // Connect inspector changes
     if (inspector && hierarchy) {
         connect(inspector, &Inspector::valueChanged,
                 hierarchy, &Hierarchy::UpdateComponent);
     }
 
-    // Setup inspector tab management
     connect(inspector, &Inspector::addTabRequested, this, &DatabaseEditor::addInspectorTab);
     inspectorDocks.append(inspectorDock);
     inspectors.append(inspector);
     inspector->setHierarchy(hierarchy);
+
+    MenuBar* menuBar = qobject_cast<MenuBar*>(this->menuBar());
+    if (menuBar) {
+        connect(menuBar->getSaveAction(), &QAction::triggered, this, &DatabaseEditor::clearUnsavedChanges);
+        connect(menuBar->getSameSaveAction(), &QAction::triggered, this, &DatabaseEditor::clearUnsavedChanges);
+    } else {
+        qWarning() << "Failed to cast menuBar to MenuBar in DatabaseEditor";
+    }
+    connect(menuBar, &MenuBar::exitTriggered, qApp, &QApplication::quit);
 }
 
 void DatabaseEditor::setupMenuBar()
 {
     MenuBar *menuBar = new MenuBar(this);
     setMenuBar(menuBar);
-
-    // Connect the feedbackTriggered signal to the showFeedbackWindow slot
     connect(menuBar, &MenuBar::feedbackTriggered, this, &DatabaseEditor::showFeedbackWindow);
 }
 
@@ -138,7 +152,6 @@ void DatabaseEditor::setupToolBars()
 
 void DatabaseEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures)
 {
-    // Hierarchy Dock
     hierarchyDock = new QDockWidget("Editor", this);
     hierarchyDock->setAllowedAreas(Qt::LeftDockWidgetArea);
     hierarchyDock->setFeatures(dockFeatures);
@@ -147,7 +160,6 @@ void DatabaseEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatur
     hierarchyDock->setMinimumWidth(150);
     addDockWidget(Qt::LeftDockWidgetArea, hierarchyDock);
 
-    // Inspector Dock
     inspectorDock = new QDockWidget("Inspector", this);
     inspectorDock->setAllowedAreas(Qt::RightDockWidgetArea);
     inspectorDock->setFeatures(dockFeatures);
@@ -156,7 +168,6 @@ void DatabaseEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatur
     inspectorDock->setMinimumWidth(200);
     addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
 
-    // Console Dock
     consoleDock = new QDockWidget("", this);
     consoleDock->setAllowedAreas(Qt::BottomDockWidgetArea);
     consoleDock->setFeatures(dockFeatures);
@@ -165,51 +176,38 @@ void DatabaseEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatur
     consoleDock->setMinimumHeight(100);
     addDockWidget(Qt::BottomDockWidgetArea, consoleDock);
 
-    // Layout configuration
     splitDockWidget(hierarchyDock, inspectorDock, Qt::Horizontal);
     splitDockWidget(inspectorDock, consoleDock, Qt::Vertical);
 
-    // Calculate and set initial sizes (30% for hierarchy, 70% for inspector)
     int totalWidth = width();
     int hierarchyWidth = static_cast<int>(totalWidth * 0.3);
     int inspectorWidth = totalWidth - hierarchyWidth;
-
-    // Resize the docks
     resizeDocks({hierarchyDock, inspectorDock}, {hierarchyWidth, inspectorWidth}, Qt::Horizontal);
     resizeDocks({consoleDock}, {150}, Qt::Vertical);
 }
 
 void DatabaseEditor::addInspectorTab()
 {
-    // Create new dock widget
     QDockWidget *newInspectorDock = new QDockWidget("Inspector " + QString::number(++inspectorCount), this);
     newInspectorDock->setAllowedAreas(Qt::RightDockWidgetArea);
     newInspectorDock->setFeatures(QDockWidget::DockWidgetClosable |
                                   QDockWidget::DockWidgetMovable |
                                   QDockWidget::DockWidgetFloatable);
-
-    // Create new inspector
     Inspector *newInspector = new Inspector(newInspectorDock);
     newInspectorDock->setWidget(newInspector);
-
-    // Track new inspector
     inspectorDocks.append(newInspectorDock);
     inspectors.append(newInspector);
-
-    // Connect signals
     connect(newInspector, &Inspector::valueChanged,
             hierarchy, &Hierarchy::UpdateComponent);
+    connect(newInspector, &Inspector::valueChanged,
+            this, &DatabaseEditor::markUnsavedChanges);
     connect(newInspector, &Inspector::addTabRequested,
             this, &DatabaseEditor::addInspectorTab);
-
-    // Position new inspector
     if (inspectorDock->isVisible()) {
         splitDockWidget(inspectorDock, newInspectorDock, Qt::Horizontal);
     } else {
         addDockWidget(Qt::RightDockWidgetArea, newInspectorDock);
     }
-
-    // Handle cleanup
     connect(newInspectorDock, &QDockWidget::destroyed, this, [=]() {
         inspectorDocks.removeOne(newInspectorDock);
         inspectors.removeOne(newInspector);
@@ -218,14 +216,45 @@ void DatabaseEditor::addInspectorTab()
 
 void DatabaseEditor::showFeedbackWindow()
 {
+    // Feedback *feedbackWindow = new Feedback(this);
+    // feedbackWindow->show();
     Feedback *feedbackWindow = new Feedback(this);
+    feedbackWindow->h = hierarchy;
+    feedbackWindow->loadDashboardData("{}");
     feedbackWindow->show();
 }
 
 DatabaseEditor::~DatabaseEditor()
 {
-    // Cleanup
     if (scenario) {
         delete scenario;
+    }
+}
+
+void DatabaseEditor::markUnsavedChanges()
+{
+    if (!hasUnsavedChanges) {
+        hasUnsavedChanges = true;
+        emit unsavedChangesChanged(true);
+        setWindowTitle("Database Editor *");
+    }
+}
+
+void DatabaseEditor::clearUnsavedChanges()
+{
+    if (hasUnsavedChanges) {
+        hasUnsavedChanges = false;
+        emit unsavedChangesChanged(false);
+        setWindowTitle("Database Editor");
+    }
+}
+void DatabaseEditor::setupStatusBar() {
+    statusBar = new QStatusBar(this);
+    setStatusBar(statusBar);
+    statusBar->showMessage("Ready");
+}
+void DatabaseEditor::updateStatusBar(const QString &message) {
+    if (statusBar) {
+        statusBar->showMessage(message);
     }
 }

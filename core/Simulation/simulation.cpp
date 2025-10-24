@@ -10,7 +10,7 @@ Simulation::Simulation() {
     elapsedTimer = new QElapsedTimer();
     elapsedTimer->start();
     lastTime = elapsedTimer->elapsed();
-    SimulationFrameRate = 260;
+    SimulationFrameRate = 60;
     PhysicsUpdateFrameRate = 60;
     UIUpdateFrameRate = 30;
     Gravity = new Vector(0, 0, -3.81f);
@@ -215,6 +215,7 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
 
     PhysicsComponent component;
     component.name = platform->Name;
+    component.entity = platform;
     component.transform = platform->transform;
     component.rigidbody = platform->rigidbody;
     component.collider = platform->collider;
@@ -340,6 +341,7 @@ void Simulation::calculatePhysics() {
         if (!comp.transform || !comp.rigidbody) continue;
         comp.rigidbody->deltaTime = deltaTime;
         if (comp.dynamicModel) comp.dynamicModel->Update(dt);
+        if (comp.entity) comp.entity->update();
 
         auto it = bulletBodies.find(id);
         if (it != bulletBodies.end()) {

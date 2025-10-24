@@ -17,14 +17,9 @@
 #include <QDialog>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QCheckBox>
-#include <QListWidget>
-#include <QStandardPaths>
-#include <QDir>
 #include <GUI/Timing/timingdialog.h>
 
 const QSize ICON_SIZE(24, 24);
-
 
 QPixmap RuntimeToolBar::withWhiteBg(const QString &iconPath)
 {
@@ -119,122 +114,23 @@ void RuntimeToolBar::createActions()
         timingDialog->show();
     });
 
-    loggerAction = new QAction(QIcon(withWhiteBg(":/icons/images/audit.png")), tr("Logger"), this);
-    loggerAction->setCheckable(false);
-    connect(loggerAction, &QAction::triggered, this, [this]() {
-        emit loggerTriggered();
-        QDialog *loggerDialog = new QDialog(this);
-        loggerDialog->setWindowTitle(tr("Logger Control"));
-        loggerDialog->setAttribute(Qt::WA_DeleteOnClose);
-        QGridLayout *mainLayout = new QGridLayout(loggerDialog);
+loggerAction = new QAction(QIcon(withWhiteBg(":/icons/images/audit.png")), tr("Logger"), this);
+loggerAction->setCheckable(true);
+loggerAction->setObjectName("loggerAction");
+connect(loggerAction, &QAction::triggered, this, [this](bool checked) {
+    emit loggerTriggered(checked); // Emit with checked state
+    highlightAction(checked ? loggerAction : nullptr);
+});
 
-        // Left side: Event types
-        QVBoxLayout *eventLayout = new QVBoxLayout();
-        QLabel *eventLabel = new QLabel(tr("Select Events to Record:"), loggerDialog);
-        QCheckBox *actionsCheckBox = new QCheckBox(tr("Actions"), loggerDialog);
-        QCheckBox *waypointsCheckBox = new QCheckBox(tr("Waypoints"), loggerDialog);
-        QCheckBox *engagementsCheckBox = new QCheckBox(tr("Engagements"), loggerDialog);
-        actionsCheckBox->setChecked(true);
-        waypointsCheckBox->setChecked(true);
-        engagementsCheckBox->setChecked(true);
-        eventLayout->addWidget(eventLabel);
-        eventLayout->addWidget(actionsCheckBox);
-        eventLayout->addWidget(waypointsCheckBox);
-        eventLayout->addWidget(engagementsCheckBox);
-        eventLayout->addStretch();
 
-        // Right side: Recording controls
-        QVBoxLayout *controlLayout = new QVBoxLayout();
-        QPushButton *startRecordingButton = new QPushButton(tr("Start Recording"), loggerDialog);
-        QPushButton *stopRecordingButton = new QPushButton(tr("Stop Recording"), loggerDialog);
-        QLabel *statusLabel = new QLabel(tr("No recording active"), loggerDialog);
-        statusLabel->setStyleSheet("QLabel { font-family: monospace; padding: 5px; }");
-
-        // Recording list and replay
-        QLabel *recordingsLabel = new QLabel(tr("Available Recordings:"), loggerDialog);
-        QListWidget *recordingsList = new QListWidget(loggerDialog);
-        recordingsList->setSelectionMode(QAbstractItemView::SingleSelection);
-        QPushButton *replayButton = new QPushButton(tr("Replay Selected"), loggerDialog);
-        replayButton->setEnabled(false);
-
-        // Populate recordings list
-        QString recordingsDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/recordings";
-        QDir dir(recordingsDir);
-        if (!dir.exists()) {
-            dir.mkpath(".");
-        }
-        QStringList filters;
-        filters << "*.json";
-        QStringList recordingFiles = dir.entryList(filters, QDir::Files, QDir::Time);
-        for (const QString &file : recordingFiles) {
-            recordingsList->addItem(file);
-        }
-
-        controlLayout->addWidget(startRecordingButton);
-        controlLayout->addWidget(stopRecordingButton);
-        controlLayout->addWidget(statusLabel);
-        controlLayout->addWidget(recordingsLabel);
-        controlLayout->addWidget(recordingsList);
-        controlLayout->addWidget(replayButton);
-        controlLayout->addStretch();
-
-        // Add layouts to grid
-        mainLayout->addLayout(eventLayout, 0, 0);
-        mainLayout->addLayout(controlLayout, 0, 1);
-        loggerDialog->setLayout(mainLayout);
-
-        // Connect buttons to signals
-        connect(startRecordingButton, &QPushButton::clicked, this, [this, statusLabel]() {
-            emit startRecording();
-            statusLabel->setText(tr("Recording active..."));
-        });
-        connect(stopRecordingButton, &QPushButton::clicked, this, [this, statusLabel, recordingsList, recordingsDir]() {
-            emit stopRecording();
-            statusLabel->setText(tr("Recording completed"));
-            // Refresh recordings list
-            recordingsList->clear();
-            QStringList filters;
-            filters << "*.json";
-            QStringList recordingFiles = QDir(recordingsDir).entryList(filters, QDir::Files, QDir::Time);
-            for (const QString &file : recordingFiles) {
-                recordingsList->addItem(file);
-            }
-        });
-        connect(recordingsList, &QListWidget::itemSelectionChanged, this, [replayButton, recordingsList]() {
-            replayButton->setEnabled(recordingsList->selectedItems().count() > 0);
-        });
-        connect(replayButton, &QPushButton::clicked, this, [this, recordingsList, recordingsDir]() {
-            if (recordingsList->selectedItems().count() > 0) {
-                QString selectedFile = recordingsList->selectedItems().first()->text();
-                QString filePath = recordingsDir + "/" + selectedFile;
-                emit replayRecording(filePath);
-            }
-        });
-
-        // Connect checkboxes to emit event types
-        connect(actionsCheckBox, &QCheckBox::stateChanged, this, [this, actionsCheckBox, waypointsCheckBox, engagementsCheckBox]() {
-            QStringList eventTypes;
-            if (actionsCheckBox->isChecked()) eventTypes << "Actions";
-            if (waypointsCheckBox->isChecked()) eventTypes << "Waypoints";
-            if (engagementsCheckBox->isChecked()) eventTypes << "Engagements";
-            emit eventTypesSelected(eventTypes);
-        });
-        connect(waypointsCheckBox, &QCheckBox::stateChanged, this, [this, actionsCheckBox, waypointsCheckBox, engagementsCheckBox]() {
-            QStringList eventTypes;
-            if (actionsCheckBox->isChecked()) eventTypes << "Actions";
-            if (waypointsCheckBox->isChecked()) eventTypes << "Waypoints";
-            if (engagementsCheckBox->isChecked()) eventTypes << "Engagements";
-            emit eventTypesSelected(eventTypes);
-        });
-        connect(engagementsCheckBox, &QCheckBox::stateChanged, this, [this, actionsCheckBox, waypointsCheckBox, engagementsCheckBox]() {
-            QStringList eventTypes;
-            if (actionsCheckBox->isChecked()) eventTypes << "Actions";
-            if (waypointsCheckBox->isChecked()) eventTypes << "Waypoints";
-            if (engagementsCheckBox->isChecked()) eventTypes << "Engagements";
-            emit eventTypesSelected(eventTypes);
-        });
-
-        loggerDialog->show();
+    // New action for toggling RadarDisplay (initially unchecked)
+    radarToggleAction = new QAction(QIcon(withWhiteBg(":/icons/images/database (1).png")), tr("Toggle Radar Display"), this);
+    radarToggleAction->setObjectName("radarToggleAction");
+    radarToggleAction->setCheckable(true);
+    radarToggleAction->setChecked(false); // Initially unchecked (RadarDisplay hidden)
+    connect(radarToggleAction, &QAction::triggered, this, [=](bool checked) {
+        qDebug() << "RadarDisplay toggle triggered, checked:" << checked;
+        emit radarDisplayToggled();
     });
 
     QWidget *speedControlWidget = new QWidget(this);
@@ -283,7 +179,6 @@ void RuntimeToolBar::createActions()
     });
     speedSlider->setAttribute(Qt::WA_AlwaysShowToolTips);
 }
-
 void RuntimeToolBar::setupToolBar()
 {
     QToolButton* btn;
@@ -300,6 +195,7 @@ void RuntimeToolBar::setupToolBar()
     addAction(bookmarkAction);
     addAction(timingAction);
     addAction(loggerAction);
+    addAction(radarToggleAction); // Add radar toggle action
     addSeparator();
     addWidget(speedSlider->parentWidget());
     addSeparator();
@@ -307,7 +203,7 @@ void RuntimeToolBar::setupToolBar()
 
 void RuntimeToolBar::highlightAction(QAction *activeAction)
 {
-    QList<QAction*> actions = { startAction, pauseAction, stopAction, replayAction };
+    QList<QAction*> actions = { startAction, pauseAction, stopAction, replayAction, loggerAction, radarToggleAction };
     for (QAction *action : actions) {
         QWidget *btn = widgetForAction(action);
         if (!btn) continue;

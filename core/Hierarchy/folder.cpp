@@ -41,7 +41,7 @@ void Folder::setProfileType(Constants::EntityType Type){
     type = Type;
 }
 
-Folder* Folder::addFolder(std::string folderName){
+Folder* Folder::addFolder(std::string folderName, std::string iD){
     // if(Folders.count(folderName)){
 
     //     Console::error(
@@ -55,6 +55,9 @@ Folder* Folder::addFolder(std::string folderName){
     folder->Name = folderName;
     folder->parentID = ID;
     folder->setProfileType(type);
+    if(!iD.empty()){
+        folder->ID = iD;
+    }
     Folders.insert({folder->ID, folder});
 
     // Automatically update hierarchy's Folders
@@ -115,7 +118,7 @@ void Folder::removeFolder(std::string folderID){
     }
 }
 
-Entity* Folder::addEntity(std::string entityName){
+Entity* Folder::addEntity(std::string entityName, std::string iD){
     // if(Entities.count(entityName)){
 
     //     Console::error(
@@ -149,6 +152,9 @@ Entity* Folder::addEntity(std::string entityName){
     entity->Name = entityName;
     entity->parentID = ID;
     entity->type = type;
+    if(!iD.empty()){
+        entity->ID = iD;
+    }
     Entities.insert({entity->ID, entity});
 
 

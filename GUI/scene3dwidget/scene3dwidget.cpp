@@ -515,7 +515,7 @@ void Scene3DWidget::selectedEntity(QString ID)
     if (entry.originalMaterial)
         entity->removeComponent(entry.originalMaterial);
 
-    // ⚡ Reuse or create the shared highlight
+    //  Reuse or create the shared highlight
     if (!sharedHighlightMaterial) {
         sharedHighlightMaterial = new Qt3DExtras::QPhongMaterial();
         sharedHighlightMaterial->setAmbient(Qt::yellow);

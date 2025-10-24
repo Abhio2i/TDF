@@ -1,24 +1,28 @@
 
 #include "networkmanager.h"
+#include "qjsonarray.h"
 #include <iostream>
-#include <thread>
 #include <QHostAddress>
 #include <QHostInfo>
 #include <QNetworkInterface>
-#include <QJsonObject>>
+#include <QJsonObject>//>
 #include <QJsonDocument>
 #include <QFile>
 #include <QDebug>
 
-std::unique_ptr<Server> NetworkManager::ser = nullptr;
-std::unique_ptr<Client> NetworkManager::cli = nullptr;
+// std::unique_ptr<Server> NetworkManager::ser = nullptr;
+// std::unique_ptr<Client> NetworkManager::cli = nullptr;
 std::atomic<bool> NetworkManager::serverRunning{false};
 std::atomic<bool> NetworkManager::clientRunning{false};
 
-// Static control for one-time input thread
-static std::once_flag inputThreadStarted;
 
-NetworkManager::NetworkManager(QObject* parent) : QObject(parent) {}
+NetworkManager::NetworkManager(QObject* parent) : QObject(parent) {
+
+    network = new NetworkTransport();
+    connect(network,&NetworkTransport::onConnect,this,&NetworkManager::onConnect);
+    connect(network,&NetworkTransport::onNewConnection,this,&NetworkManager::onNewConnction);
+    connect(network,&NetworkTransport::onReceivedMessage,this,&NetworkManager::onMessaageRecevied);
+}
 
 QString getLocalIP() {
     for (const QHostAddress& addr : QNetworkInterface::allAddresses()) {
@@ -27,128 +31,33 @@ QString getLocalIP() {
     }
     return QHostAddress(QHostAddress::LocalHost).toString();
 }
-bool NetworkManager::initServer(int port) {
-    qDebug() << "[NetworkManager] initServer called";
 
-    if (!ser) {
-        ser = std::make_unique<Server>();
-
-        ser->onStart = [port]() {
-            std::cout << "[Server] Listening on port " << port << "\n";
-            serverRunning = true;
-        };
-        ser->onStop = []() {
-            std::cout << "[Server] Stopped.\n";
-            serverRunning = false;
-        };
-        ser->onError = [](const std::string& err) {
-            std::cerr << "[Server] Error: " << err << "\n";
-        };
-
-        // ✅ Welcome message logic placed inside the callback
-        ser->onClientConnected = [this](const std::string& ip) {
-            std::cout << "[Server] Connected: " << ip << "\n";
-
-            if (NetworkManager::ser && serverRunning) {
-                std::string welcomeMsg = "Welcome from server!";
-                emit this->getCurrentJsonData();
-                //  NetworkManager::ser->sendToClient(ip, welcomeMsg);  // only to this client
-
-                // Broadcast to all clients including this one
-                // NetworkManager::ser->broadcast("hello to all", "SERVER");
-
-                qDebug() << "[Server] Sent welcome message to" << QString::fromStdString(ip);
-            }
-        };
-
-
-
-        ser->onClientDisconnected = [](const std::string& ip) {
-            std::cout << "[Server] Disconnected: " << ip << "\n";
-        };
-        ser->onMessageReceived = [](const std::string& ip, const std::string& msg) {
-            std::cout << "[" << ip << "] " << msg << "\n";
-
-        };
-
-        qDebug() << "[NetworkManager] Server object created successfully.";
-        return true;
-    }
-
-    qDebug() << "[NetworkManager] Server object already exists.";
-    return false;
+void NetworkManager::init(const QString& ip, int port){
+    network->init(ip,port);
 }
 
-
 bool NetworkManager::startServer(int port) {
-    if (serverRunning) {
-        std::cerr << "[Server] Already running!\n";
-        return false;
-    }
-
-    qDebug() << "[NetworkManager] Attempting to start server on port" << port;
-
-    if (!ser || !ser->start(port)) {
-        std::cerr << "[Server] Start failed. Attempting restart...\n";
-        ser.reset();
-        initServer(port);
-
-        if (!ser || !ser->start(port)) {
-            std::cerr << "[Server] Restart attempt failed.\n";
-            return false;
-        }
-    }
-
-    serverRunning = true;
-
-    // Start input thread only once
-    std::call_once(inputThreadStarted, []() {
-        std::thread([] {
-            if (NetworkManager::ser)
-                NetworkManager::ser->consoleInputHandler();
-        }).detach();
-    });
-
-
+    network->start(true);
     return true;
 }
 
-Q_INVOKABLE void NetworkManager::sendServerMessage(const QString& message) {
-    if (ser && serverRunning && !message.trimmed().isEmpty()) {
-        ser->broadcast(message.toStdString(), "SERVER");
-    }
+void NetworkManager::onNewConnction(){
+
 }
 
-bool NetworkManager::stopServer() {
-    if (ser) {
-        ser->stop();
-        return true;
-    }
-    return false;
+void NetworkManager::onConnect(){
+    network->sendMessage("give me");
 }
 
-bool NetworkManager::initClient(const QString& ip, int port) {
-    qDebug() << "[NetworkManager] initClient called with IP:" << ip << "Port:" << port;
+void NetworkManager::onMessaageRecevied(QString message) {
 
-    if (!cli) {
-        cli = std::make_unique<Client>();
+    if(message.contains("give me")){
+        emit getCurrentJsonData();
+        return;
+    }
+            qDebug() << "[Client] Message received:" << message;
 
-        cli->onConnected = []() {
-            qDebug() << "[Client] Connected.";
-            clientRunning = true;
-        };
-        cli->onDisconnected = []() {
-            qDebug() << "[Client] Disconnected.";
-            clientRunning = false;
-        };
-        cli->onError = [](const std::string& err) {
-            qWarning() << "[Client] Error:" << QString::fromStdString(err);
-        };
-        cli->onMessageReceived = [this](const std::string& msg) {
-            std::cout << "[Server] " << msg << "\n";
-            qDebug() << "[Client] Message received:" << QString::fromStdString(msg);
-
-            QByteArray byteArray = QByteArray::fromStdString(msg);
+            QByteArray byteArray = QByteArray::fromStdString(message.toStdString());
             QJsonParseError parseError;
             QJsonDocument doc = QJsonDocument::fromJson(byteArray, &parseError);
 
@@ -161,112 +70,107 @@ bool NetworkManager::initClient(const QString& ip, int port) {
                 QString role = obj.value("role").toString();
                 QString type = obj.value("type").toString();
                 qDebug() <<"work2";
-                if (role == "init" && type == "data") {
-                    emit initData(obj); // Only pass expected 3 arguments
+            if (role == "init" && type == "data") {
+                emit initData(obj); // Only pass expected 3 arguments
 
-                }else
-                    if(role == "add" && type == "entitys") {
-                        QString parentID = obj.value("parentID").toString();
-                        QString name = obj.value("name").toString();
-                        qDebug() <<"work";
-                        emit addEntity(parentID, name, false);  // Only pass expected 3 arguments
+            }else
+            if(role == "add" && type == "folder") {
+                QString parentID = obj.value("parentID").toString();
+                QString ID = obj.value("id").toString();
+                QString name = obj.value("name").toString();
+                qDebug() <<"work";
+                emit addFolder(parentID,ID, name, true);  // Only pass expected 3 arguments
+            }else
+            if(role == "remove" && type == "folder") {
+                QString Id = obj.value("id").toString();
+                qDebug() <<"work remove entity";
+                emit removeFolder(Id);  // Only pass expected 3 arguments
+            }else
+            if(role == "add" && type == "entity") {
+                QString parentID = obj.value("parentID").toString();
+                QString ID = obj.value("id").toString();
+                QString name = obj.value("name").toString();
+                qDebug() <<"work";
+                emit addEntity(parentID,ID, name, true);  // Only pass expected 3 arguments
 
-                    }else
-                        if(role == "add" && type == "entityJson") {
-                            QString parentID = obj.value("parentID").toString();
-                            QString name = obj.value("name").toString();
-                            qDebug() <<"work entityjson";
-                            emit addEntityFromJson(parentID, obj, false);  // Only pass expected 3 arguments
-                        }else
-                            if(role == "add" && type == "component") {
-                                QString Id = obj.value("Id").toString();
-                                QString name = obj.value("name").toString();
-                                qDebug() <<"work component";
-                                emit addComponent(Id, name);  // Only pass expected 3 arguments
-                            }else
-                                if(role == "remove" && type == "entity") {
-                                    QString Id = obj.value("Id").toString();
-                                    QString parentId = obj.value("parentId").toString();
-                                    bool profile = obj.value("Profile").toBool();
-                                    qDebug() <<"work remove entity";
-                                    emit removeEntity(parentId,Id, profile);  // Only pass expected 3 arguments
+            }else
+            if(role == "add" && type == "entityJson") {
+                QString parentID = obj.value("parentID").toString();
+                QString name = obj.value("name").toString();
+                qDebug() <<"work entityjson";
+                emit addEntityFromJson(parentID, obj, false);  // Only pass expected 3 arguments
+            }else
+            if(role == "add" && type == "component") {
+                QString Id = obj.value("id").toString();
+                QString name = obj.value("name").toString();
+                qDebug() <<"work component";
+                emit addComponent(Id, name);  // Only pass expected 3 arguments
+            }else
+            if(role == "update" && type == "component") {
+                QString Id = obj.value("id").toString();
+                QString name = obj.value("name").toString();
+                QJsonObject delta = obj.value("delta").toObject();
+                qDebug() <<"work component";
+                emit entityComponentUpdate(Id, name, delta);  // Only pass expected 3 arguments
+            }else
+            if(role == "remove" && type == "entity") {
+                QString Id = obj.value("id").toString();
+                QString parentId = obj.value("parentId").toString();
+                bool profile = obj.value("Profile").toBool();
+                qDebug() <<"work remove entity";
+                emit removeEntity(parentId,Id, profile);  // Only pass expected 3 arguments
+            }else
+            if(role == "update" && type == "frame") {
+                QJsonObject delta = obj.value("delta").toObject();
+                for (auto it = delta.begin(); it != delta.end(); ++it)
+                {
+                    QString entityID = it.key();
+                    QJsonValue positionValue = it.value();
+
+                    if (!positionValue.isArray()) {
+                            qWarning() << "Position data for entity" << entityID << "is not an array.";
+                            continue;
+                        }
+
+                    QJsonArray positionArray = positionValue.toArray();
+
+                    if (positionArray.size() < 3) {
+                        qWarning() << "Position array for entity" << entityID << "does not have 3 components (x, y, z).";
+                        continue;
+                    }
+                QVector3D newPos(
+                    (float)positionArray.at(0).toDouble(), // X
+                    (float)positionArray.at(1).toDouble(), // Y
+                    (float)positionArray.at(2).toDouble()  // Z
+                    );
+                QVector3D rot(0,(float)positionArray.at(3).toDouble(),0);
+
+                auto entityMap = hierarchy->Entities;
+                if (entityMap->count(entityID.toStdString())) {
+                            Entity* entity = entityMap->at(entityID.toStdString());
+                            Platform* platform = dynamic_cast<Platform*>(entity);
+                            if (platform) {
+                                if (platform->transform) {
+                                    platform->transform->setTranslation(newPos);
+                                    platform->transform->setFromEulerAngles(rot);
+                                } else {
+                                    qWarning() << "Platform" << entityID << "is missing a Transform component.";
                                 }
-            }
-        };
-
-    }
-
-    clientIp = ip;
-    clientPort = port;
-    return true;
-}
-
-
-bool NetworkManager::startClient() {
-    qDebug() << "[NetworkManager] Attempting to start client to"
-             << clientIp << ":" << clientPort;
-
-    if (clientRunning) {
-        qWarning() << "[Client] Already running!";
-        return false;
-    }
-
-    if (!cli) {
-        qWarning() << "[Client] Client not initialized.";
-        return false;
-    }
-
-    // Attempt to connect
-    if (!cli->connectToServer(clientIp.toStdString(), clientPort)) {
-        qWarning() << "[Client] Connection failed.";
-        return false;
-    }
-
-    // Wait a short moment for the connection flag to be updated (if needed)
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    if (clientRunning) {
-        //cli->sendMessage("Hello from Qt client!\n");
-        qDebug() << "[Client] Sent test message to server.";
-    } else {
-        qWarning() << "[Client] Connected flag not set yet.";
-    }
-
-    // Start input thread for client
-    std::call_once(inputThreadStarted, []() {
-        std::thread([] {
-            std::string line;
-            while (std::getline(std::cin, line)) {
-                if (!line.empty()) {
-                    if (NetworkManager::ser && NetworkManager::serverRunning) {
-                        NetworkManager::ser->broadcast(line, "SERVER");
-                    } else if (NetworkManager::cli && NetworkManager::clientRunning) {
-                        NetworkManager::cli->sendMessage(line);
-                    } else {
-                        std::cerr << "[InputThread] No valid client/server running.\n";
+                            }
+                        } else {
+                            //qWarning() << "Entity with ID" << entityID << "not found in hierarchy.";
+                        }
                     }
                 }
-            }
-        }).detach();
-    });
+            if(!network->isServer())emit updateScene(0.01f);
 
+        }
+
+}
+
+bool NetworkManager::startClient() {
+    network->start();
     return true;
-}
-
-
-bool NetworkManager::stopClient() {
-    qDebug() << "[NetworkManager] Stopping client...";
-    if (cli) {
-        cli->stop();
-        return true;
-    }
-    return false;
-}
-
-void NetworkManager::sendClientMessage(const QString& message) {
-    if (cli && clientRunning && !message.trimmed().isEmpty()) {
-        cli->sendMessage(message.toStdString());
-    }
 }
 
 void NetworkManager::getJsonData(const QJsonObject& obj){
@@ -277,26 +181,13 @@ void NetworkManager::getJsonData(const QJsonObject& obj){
 }
 
 void NetworkManager::sendJson(const QJsonObject& obj) {
+    if(!network->isServer()) return;
     QJsonDocument doc(obj);
     QString msg = doc.toJson(QJsonDocument::Compact);
     std::string stdMsg = msg.toStdString();
     std::cout << "Log: " << stdMsg << std::endl;
-    // qDebug() << "[NetworkManager JSON] Sending:" << stdMsg;
-    QByteArray byteArray = QByteArray::fromStdString(stdMsg);
-    QJsonParseError parseError;
-    QJsonDocument docs = QJsonDocument::fromJson(byteArray, &parseError);
-
-    if (docs.isNull() || !docs.isObject()) {
-        qDebug() << "[Client] Failed to parse JSON:" << parseError.errorString();
-
-    }else{
-        qDebug() << "successfull";
-    }
-    if (serverRunning && ser) {
-        ser->broadcast(stdMsg, "Server");
-    } else if (clientRunning && cli) {
-        //cli->sendMessage(stdMsg + "\n");  // Add newline to separate messages
-    }
+    //qDebug() << "[NetworkManager JSON] Sending:" << &stdMsg;
+    network->sendMessage(msg);
 }
 
 
@@ -339,8 +230,39 @@ void NetworkManager::toJson() {
     }
 }
 void NetworkManager::UpdateClient(){
-    emit this->getCurrentJsonData();
+    if(!network->isServer()) return;
+    QJsonObject msg;
+    msg["role"] = "update"; // Corrected typo: "upate" -> "update"
+    msg["type"] = "frame";
+
+    QJsonObject delta;
+    for (auto& [key, entity] : *hierarchy->Entities)
+    {
+        Platform* platform = dynamic_cast<Platform*>(entity);
+        if (platform) {
+            QVector3D pos = platform->transform->translation();
+
+            // --- FIX: Use QJsonArray for the position coordinates ---
+            QJsonArray positionArray;
+            positionArray.append(pos.x());
+            positionArray.append(pos.y());
+            positionArray.append(pos.z());
+            positionArray.append(platform->transform->toEulerAngles().y());
+
+            delta[QString::fromStdString(key)] = positionArray;
+        }
+    }
+    msg["delta"] = delta;
+    QJsonDocument doc(msg);
+    QString msgs = doc.toJson(QJsonDocument::Compact);
+    std::string stdMsg = msgs.toStdString();
+    std::cout << "Log: " << stdMsg << std::endl;
+    //qDebug() << "[NetworkManager JSON] Sending:" << &stdMsg;
+    network->sendUDPMessage(msgs);
+
+    //emit this->getCurrentJsonData();
 }
+
 void NetworkManager::fromJson() {
     QFile file("network_state.json");
     if (!file.open(QIODevice::ReadOnly)) return;
@@ -360,7 +282,7 @@ void NetworkManager::entityAddedPointer(QString parentID, Entity* entity) {
     msg["role"] = "add";
     msg["type"] = "entityJson";
     msg["parentID"] = parentID;
-    //sendJson(msg);
+    sendJson(msg);
 }
 
 void NetworkManager::profileAdded(QString ID, QString profileName) {
@@ -369,8 +291,8 @@ void NetworkManager::profileAdded(QString ID, QString profileName) {
     msg["type"] = "profile";
     msg["id"] = ID;
     msg["name"] = profileName;
-    //sendJson(msg);
-    emit this->getCurrentJsonData();
+    sendJson(msg);
+    //emit this->getCurrentJsonData();
 }
 
 void NetworkManager::folderAdded(QString parentID, QString ID, QString folderName) {
@@ -380,8 +302,8 @@ void NetworkManager::folderAdded(QString parentID, QString ID, QString folderNam
     msg["id"] = ID;
     msg["parentID"] = parentID;
     msg["name"] = folderName;
-    //sendJson(msg);
-    emit this->getCurrentJsonData();
+    sendJson(msg);
+    //emit this->getCurrentJsonData();
 }
 
 void NetworkManager::entityAdded(QString parentID, QString ID, QString entityName) {
@@ -391,18 +313,29 @@ void NetworkManager::entityAdded(QString parentID, QString ID, QString entityNam
     msg["id"] = ID;
     msg["parentID"] = parentID;
     msg["name"] = entityName;
-    //sendJson(msg);
-    emit this->getCurrentJsonData();
+    sendJson(msg);
+    //emit this->getCurrentJsonData();
 }
 
 void NetworkManager::componentAdded(QString Id, QString componentName) {
     QJsonObject msg;
     msg["role"] = "add";
     msg["type"] = "component";
-    msg["Id"] = Id;
+    msg["id"] = Id;
     msg["name"] = componentName;
     sendJson(msg);
     //emit this->getCurrentJsonData();
+}
+
+void NetworkManager::entityComponentsUpdate(QString ID, QString componentName, QJsonObject delta)
+{
+    QJsonObject msg;
+    msg["role"] = "update";
+    msg["type"] = "component";
+    msg["id"] = ID;
+    msg["delta"] = delta;
+    msg["name"] = componentName;
+    sendJson(msg);
 }
 
 void NetworkManager::profileRemoved(QString ID) {
@@ -410,8 +343,8 @@ void NetworkManager::profileRemoved(QString ID) {
     msg["role"] = "remove";
     msg["type"] = "profile";
     msg["id"] = ID;
-    //sendJson(msg);
-    emit this->getCurrentJsonData();
+    sendJson(msg);
+    //emit this->getCurrentJsonData();
 }
 
 void NetworkManager::folderRemoved(QString ID) {
@@ -419,19 +352,19 @@ void NetworkManager::folderRemoved(QString ID) {
     msg["role"] = "remove";
     msg["type"] = "folder";
     msg["id"] = ID;
-    //sendJson(msg);
-    emit this->getCurrentJsonData();
+    sendJson(msg);
+    //emit this->getCurrentJsonData();
 }
 
 void NetworkManager::entityRemoved(QString parentId,QString ID,bool Profile) {
     QJsonObject msg;
     msg["role"] = "remove";
     msg["type"] = "entity";
-    msg["Id"] = ID;
+    msg["id"] = ID;
     msg["parentId"] = parentId;
     msg["Profile"] = Profile;
     sendJson(msg);
-    emit this->getCurrentJsonData();
+    //emit this->getCurrentJsonData();
 }
 
 void NetworkManager::componentRemoved(QString parentID, QString componentName) {
@@ -440,7 +373,7 @@ void NetworkManager::componentRemoved(QString parentID, QString componentName) {
     msg["type"] = "component";
     msg["parentID"] = parentID;
     msg["name"] = componentName;
-    //sendJson(msg);
+    sendJson(msg);
     //emit this->getCurrentJsonData();
 }
 
@@ -450,7 +383,7 @@ void NetworkManager::profileRenamed(QString ID, QString name) {
     msg["type"] = "profile";
     msg["id"] = ID;
     msg["newName"] = name;
-    //sendJson(msg);
+    sendJson(msg);
     //emit this->getCurrentJsonData();
 }
 
@@ -470,7 +403,7 @@ void NetworkManager::entityRenamed(QString ID, QString name) {
     msg["type"] = "entity";
     msg["id"] = ID;
     msg["newName"] = name;
-    //sendJson(msg);
+    sendJson(msg);
     //emit this->getCurrentJsonData();
 }
 
@@ -479,7 +412,7 @@ void NetworkManager::entityMeshAdded(QString ID, Entity*) {
     msg["role"] = "add";
     msg["type"] = "mesh";
     msg["entityID"] = ID;
-    //sendJson(msg);
+    sendJson(msg);
 }
 
 void NetworkManager::entityMeshRemoved(QString ID) {
@@ -487,7 +420,7 @@ void NetworkManager::entityMeshRemoved(QString ID) {
     msg["role"] = "remove";
     msg["type"] = "mesh";
     msg["entityID"] = ID;
-    //sendJson(msg);
+    sendJson(msg);
 }
 
 void NetworkManager::entityPhysicsAdded(QString ID, Entity*) {
@@ -495,7 +428,7 @@ void NetworkManager::entityPhysicsAdded(QString ID, Entity*) {
     msg["role"] = "add";
     msg["type"] = "physics";
     msg["entityID"] = ID;
-    //sendJson(msg);
+    sendJson(msg);
 }
 
 void NetworkManager::entityPhysicsRemoved(QString ID) {
@@ -503,7 +436,7 @@ void NetworkManager::entityPhysicsRemoved(QString ID) {
     msg["role"] = "remove";
     msg["type"] = "physics";
     msg["entityID"] = ID;
-    //sendJson(msg);
+    sendJson(msg);
 }
 
 void NetworkManager::entityUpdate(QString ID) {
@@ -511,7 +444,7 @@ void NetworkManager::entityUpdate(QString ID) {
     msg["role"] = "update";
     msg["type"] = "entity";
     msg["id"] = ID;
-    //sendJson(msg);
+    sendJson(msg);
     //emit this->getCurrentJsonData();
 }
 

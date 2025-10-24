@@ -25,7 +25,7 @@ public:
     QAction* getFeedbackAction();
     QAction* getNewFileAction();
     QAction* getRecentProjectAction();
-    QAction* getRunAction();
+    // QAction* getRunAction();
     QAction* getExitAction();
     QAction* getUndoAction();
     QAction* getRedoAction();
@@ -48,9 +48,9 @@ signals:
     void recentProjectTriggered();
     void loadTriggered();
     void loadToLibraryTriggered();
-    void sameSaveTriggered(); // New signal for "Save"
+    void sameSaveTriggered();
     void saveTriggered();
-    void runTriggered();
+    // void runTriggered();
     void exitTriggered();
     void undoTriggered();
     void redoTriggered();
@@ -75,9 +75,9 @@ private:
     QAction* recentProjectAction;
     QAction* loadJsonAction;
     QAction* loadToLibraryAction;
-     QAction* sameSaveAction; // New action for "Save"
+     QAction* sameSaveAction;
     QAction* saveJsonAction;
-    QAction* runAction;
+    // QAction* runAction;
     QAction* exitAction;
     QAction* undoAction;
     QAction* redoAction;

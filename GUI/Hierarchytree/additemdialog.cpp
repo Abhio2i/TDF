@@ -6,7 +6,6 @@
 #include "core/Hierarchy/EntityProfiles/sensor.h"
 #include "core/Hierarchy/EntityProfiles/fixedpoints.h"
 #include "core/Hierarchy/EntityProfiles/iff.h"
-#include "qvalidator.h"
 #include <QDebug>
 #include <QCheckBox>
 #include <QGroupBox>
@@ -15,7 +14,9 @@
 #include <QDialogButtonBox>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QValidator>
 
+// Helper function to demangle component names
 QString demangleComponentName(const std::string& mangledName) {
     QString name = QString::fromStdString(mangledName);
     while (!name.isEmpty() && name[0].isDigit()) {
@@ -24,17 +25,13 @@ QString demangleComponentName(const std::string& mangledName) {
     return name;
 }
 
+// Helper function to convert to camelCase
 QString toCamelCase(const QString& input) {
     if (input.isEmpty()) return input;
-
     QString result = input;
-
-    // First character to lowercase
     if (!result.isEmpty()) {
         result[0] = result[0].toLower();
     }
-
-    // Special handling for "2D" -> "2d"
     for (int i = 1; i < result.size(); ++i) {
         if (result[i] == 'D' && i > 0 && result[i-1].isDigit()) {
             result[i] = result[i].toLower();
@@ -46,8 +43,12 @@ QString toCamelCase(const QString& input) {
             result[i] = result[i].toLower();
         }
     }
-
     return result;
+}
+
+// Helper function to get default name (plain itemType without numbering)
+QString getDefaultName(AddItemDialog::DialogType type) {
+    return (type == AddItemDialog::EntityType) ? "Entity" : "Folder";
 }
 
 AddItemDialog::AddItemDialog(DialogType type, const QString &specificType, QWidget *parent)
@@ -55,7 +56,6 @@ AddItemDialog::AddItemDialog(DialogType type, const QString &specificType, QWidg
 {
     setupUI(type);
 }
-
 
 void AddItemDialog::setupUI(DialogType type)
 {
@@ -66,7 +66,12 @@ void AddItemDialog::setupUI(DialogType type)
     QString itemType = (type == EntityType) ? "Entity" : "Folder";
     nameLayout->addWidget(new QLabel(itemType + " Name:", this));
     nameLineEdit = new QLineEdit(this);
+
+    // Set default name (plain itemType)
+    QString defaultName = getDefaultName(type);
+    nameLineEdit->setText(defaultName);
     nameLineEdit->setPlaceholderText("Enter " + itemType + " name");
+
     nameLayout->addWidget(nameLineEdit);
     mainLayout->addLayout(nameLayout);
 
@@ -77,13 +82,11 @@ void AddItemDialog::setupUI(DialogType type)
         numberLineEdit = new QLineEdit(this);
         numberLineEdit->setText("1");
         numberLineEdit->setPlaceholderText("Enter number (default: 1)");
-        QDoubleValidator *validator = new QDoubleValidator(numberLineEdit);
-        validator->setNotation(QDoubleValidator::StandardNotation);
-        numberLineEdit->setValidator(new QIntValidator(1, 10000, this));
-        numberLayout->addWidget(numberLineEdit);
+        QIntValidator *validator = new QIntValidator(1, 10000, this);
+        numberLineEdit->setValidator(validator);
+        numberLayout->addWidget(numberLineEdit); // Fixed: Add numberLineEdit
         mainLayout->addLayout(numberLayout);
     }
-
 
     // Components section (only for EntityType)
     if (type == EntityType) {
@@ -92,55 +95,42 @@ void AddItemDialog::setupUI(DialogType type)
 
         // Create an instance of the appropriate entity based on specificType
         Entity *entity = nullptr;
-        if (specificType == "Radio") {
+        QString effectiveType = specificType.isEmpty() ? "Entity" : specificType;
+        if (effectiveType == "Radio") {
             entity = new Radio(nullptr);
-        } else if (specificType == "Sensor") {
+        } else if (effectiveType == "Sensor") {
             entity = new Sensor(nullptr);
-        } else if (specificType == "FixedPoints") {
+        } else if (effectiveType == "FixedPoints") {
             entity = new FixedPoints(nullptr);
-        } else if (specificType == "IFF") {
-            entity = new IFF(nullptr);
-        } else if (specificType == "Formation") {
+        } else if (effectiveType == "IFF" || effectiveType == "Formation") {
             entity = new IFF(nullptr);
         } else {
-            entity = new Platform(nullptr);
+            entity = new Platform(nullptr); // Fallback to Platform for components
         }
 
         // Get supported components for the selected entity type
         std::vector<std::string> supportedComponents = entity->getSupportedComponents();
-
         QMap<QString, Component*> uniqueComponents;
-
-        // First pass to identify unique components
         for (const std::string &component : supportedComponents) {
             uniqueComponents.insert(demangleComponentName(component), nullptr);
         }
-
-        // Second pass to create checkboxes for unique components
         for (auto it = uniqueComponents.begin(); it != uniqueComponents.end(); ++it) {
             QString displayName = it.key();
             QString camelCaseName = toCamelCase(displayName);
-
-            qDebug() << "Adding component to UI:" << displayName << "for specificType:" << specificType;
+            qDebug() << "Adding component to UI:" << displayName << "for specificType:" << effectiveType;
             QCheckBox *checkBox = new QCheckBox(displayName, this);
-
-            // Special handling for Transform component
             if (camelCaseName == "transform") {
                 checkBox->setChecked(true);
                 checkBox->setEnabled(false); // Disable Transform checkbox as it's mandatory
-                qDebug() << "Transform component added (mandatory) for specificType:" << specificType;
+                qDebug() << "Transform component added (mandatory) for specificType:" << effectiveType;
             } else {
-                checkBox->setChecked(true); // Default unchecked for other components
+                checkBox->setChecked(true); // Default checked for other components
             }
-
             componentCheckboxes.insert(camelCaseName, checkBox);
             componentsLayout->addWidget(checkBox);
         }
-
         componentsGroup->setLayout(componentsLayout);
         mainLayout->addWidget(componentsGroup);
-
-        // Clean up the temporary entity
         delete entity;
     }
 
@@ -149,12 +139,10 @@ void AddItemDialog::setupUI(DialogType type)
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-
     mainLayout->addWidget(buttonBox);
     setLayout(mainLayout);
     setWindowTitle("Add " + itemType);
     resize(300, 300);
-
 }
 
 QString AddItemDialog::getName() const {
@@ -172,4 +160,3 @@ QVariantMap AddItemDialog::getComponents() const {
     }
     return components;
 }
-

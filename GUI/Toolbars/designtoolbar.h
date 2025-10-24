@@ -41,6 +41,9 @@ public:
     QAction *selectBitmapAction;
     QAction *presetLayersAction;
     QAction* getMeasureDistanceAction() const { return measureDistanceAction; }
+    // geojson function
+    QAction *importGeoJsonAction;
+    QAction *geoJsonLayersAction;  // NEW: Action for GeoJSON layers menu
 
     struct MapLayer {
         QString name;
@@ -64,7 +67,7 @@ signals:
     void gridSnappingToggled(bool);
     void layerSelectTriggered();
     void measureDistanceTriggered();
-    void databaseTriggered();
+    // void databaseTriggered();
     void gridPlaneXToggled(bool);
     void gridPlaneYToggled(bool);
     void gridPlaneZToggled(bool);
@@ -90,9 +93,20 @@ signals:
     void bitmapImageSelected(const QString& filePath);
     void editTrajectoryTriggered();
     void presetLayerSelected(const QString &preset);
+    // geojson function
+    void importGeoJsonTriggered(const QString &filePath);
+    void geoJsonLayerToggled(const QString &layerName, bool visible);  // NEW: Signal for toggling GeoJSON layer
+       void searchCoordinatesTriggered(double latitude, double longitude); // New signal
 public slots:
     void onModeChanged(TransformMode mode);
     void onMeasureDistanceTriggered();
+    void onGeoJsonLayerAdded(const QString &layerName);  // NEW: Slot to add layer to menu
+
+
+    // for geojson function
+private slots:
+    void importGeoJson();
+
 private:
     QAction *viewAction;
     QAction *moveAction;
@@ -104,7 +118,7 @@ private:
 
     QAction *measureDistanceAction;
 
-    QAction *databaseAction;
+    // QAction *databaseAction;
     QAction *gridPlaneXAction;
     QAction *gridPlaneYAction;
     QAction *gridPlaneZAction;
@@ -124,6 +138,7 @@ private:
     QAction* saveJsonAction;
     void onSelectBitmapImage();
     QAction *editTrajectoryAction;
+    QMap<QString, QAction*> geoJsonLayerActions;  // NEW: Map for GeoJSON layer actions
 };
 
 #endif

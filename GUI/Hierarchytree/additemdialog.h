@@ -21,6 +21,7 @@ public:
         EntityType,
         Folder
     };
+
     int getNumber() const;
     QStringList getNames() const;
     explicit AddItemDialog(DialogType type, const QString &specificType = "", QWidget *parent = nullptr);
@@ -29,6 +30,7 @@ public:
     static QMap<QString, bool> defaultComponents();
 
 private:
+
     void setupUI(DialogType type);
     QLineEdit *nameLineEdit;
     QLineEdit* numberLineEdit;

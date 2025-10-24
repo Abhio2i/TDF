@@ -201,7 +201,7 @@ void NetworkToolbar::createActions()
 }
 void NetworkToolbar::updateNetwork(){
     qDebug() << " iam working";
-    networkManager->UpdateClient();
+    //networkManager->UpdateClient();
 }
 
 void NetworkToolbar::setupDialog(QDialog *dialog, const QString &title)
@@ -264,11 +264,12 @@ void NetworkToolbar::startSession()
         qDebug() << "[UI] Trying to start on port:" << selectedPort;
 
         if (typeCombo->currentText() == "Master") {
-            networkManager->initServer(selectedPort);
+            networkManager->init(selectedIP,selectedPort);
             // enableMessageSendingUI();
             success = networkManager->startServer(selectedPort);
         } else {
-            networkManager->initClient(selectedIP, selectedPort);
+           // networkManager->initClient(selectedIP, selectedPort);
+            networkManager->init(selectedIP,selectedPort);
             success = networkManager->startClient();
         }
 
@@ -309,7 +310,7 @@ void NetworkToolbar::enableMessageSendingUI() {
     connect(sendButton, &QPushButton::clicked, this, [this, inputField]() {
         QString msg = inputField->text().trimmed();
         if (!msg.isEmpty()) {
-            networkManager->sendServerMessage(msg);
+           // networkManager->sendServerMessage(msg);
             inputField->clear();
         }
     });

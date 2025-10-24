@@ -15,6 +15,7 @@ Transform::Transform() {
     matrix = new Qt3DCore::QTransform();
 
     customParameters = QJsonObject();
+    setTranslation(QVector3D(28.7041,0,77.1025));
 }
 
 // ===== Unity-like Directional Methods (using QQuaternion) =====
@@ -60,6 +61,29 @@ QVector3D Transform::inverseTransformDirection(const QVector3D& worldDir) {
 QVector3D Transform::TransformDirection(const QVector3D& localDir) {
     return matrix->rotation().rotatedVector(localDir);
 }
+
+/**
+ * @brief Transforms a vector from World Space to Local Space.
+ * Vector transformation includes only rotation (and scaling, if implemented), not translation.
+ * This is functionally the same as inverseTransformDirection.
+ */
+QVector3D Transform::inverseTransformVector(const QVector3D& worldVec) {
+    // Vectors (like velocity or force) are only affected by rotation, not position/translation.
+    return matrix->rotation().inverted().rotatedVector(worldVec);
+}
+
+/**
+ * @brief Transforms a position (Point) from World Space to Local Space.
+ * Position transformation includes both rotation and translation.
+ */
+QVector3D Transform::inverseTransformPoint(const QVector3D& worldPos) {
+    // 1. First, apply the inverse of translation (subtract the world position).
+    QVector3D relativePosition = worldPos - matrix->translation();
+
+    // 2. Then, apply the inverse of rotation.
+    return matrix->rotation().inverted().rotatedVector(relativePosition);
+}
+
 // ===== Other Methods =====
 
 void Transform::setTranslation(const QVector3D& vector) {
