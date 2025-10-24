@@ -82,28 +82,28 @@ void RuntimeToolBar::createActions()
         emit nextStepTriggered();
     });
 
-    bookmarkAction = new QAction(QIcon(withWhiteBg(":/icons/images/star.png")), tr("Bookmark"), this);
-    bookmarkAction->setCheckable(false);
-    connect(bookmarkAction, &QAction::triggered, this, [this]() {
-        emit bookmarkTriggered();
-        QDialog *bookmarkDialog = new QDialog(this);
-        bookmarkDialog->setWindowTitle(tr("Add Bookmark Comment"));
-        QVBoxLayout *layout = new QVBoxLayout(bookmarkDialog);
-        QLineEdit *commentInput = new QLineEdit(bookmarkDialog);
-        commentInput->setPlaceholderText(tr("Enter your comment"));
-        QPushButton *okButton = new QPushButton(tr("OK"), bookmarkDialog);
-        layout->addWidget(commentInput);
-        layout->addWidget(okButton);
-        bookmarkDialog->setLayout(layout);
-        connect(okButton, &QPushButton::clicked, this, [this, commentInput, bookmarkDialog]() {
-            QString comment = commentInput->text().trimmed();
-            if (!comment.isEmpty()) {
-                emit bookmarkCommentSubmitted(comment);
-            }
-            bookmarkDialog->accept();
-        });
-        bookmarkDialog->exec();
-    });
+    // bookmarkAction = new QAction(QIcon(withWhiteBg(":/icons/images/star.png")), tr("Bookmark"), this);
+    // bookmarkAction->setCheckable(false);
+    // connect(bookmarkAction, &QAction::triggered, this, [this]() {
+    //     emit bookmarkTriggered();
+    //     QDialog *bookmarkDialog = new QDialog(this);
+    //     bookmarkDialog->setWindowTitle(tr("Add Bookmark Comment"));
+    //     QVBoxLayout *layout = new QVBoxLayout(bookmarkDialog);
+    //     QLineEdit *commentInput = new QLineEdit(bookmarkDialog);
+    //     commentInput->setPlaceholderText(tr("Enter your comment"));
+    //     QPushButton *okButton = new QPushButton(tr("OK"), bookmarkDialog);
+    //     layout->addWidget(commentInput);
+    //     layout->addWidget(okButton);
+    //     bookmarkDialog->setLayout(layout);
+    //     connect(okButton, &QPushButton::clicked, this, [this, commentInput, bookmarkDialog]() {
+    //         QString comment = commentInput->text().trimmed();
+    //         if (!comment.isEmpty()) {
+    //             emit bookmarkCommentSubmitted(comment);
+    //         }
+    //         bookmarkDialog->accept();
+    //     });
+    //     bookmarkDialog->exec();
+    // });
 
     timingAction = new QAction(QIcon(withWhiteBg(":/icons/images/timing.png")), tr("Timing Info"), this);
     timingAction->setCheckable(false);
@@ -192,7 +192,7 @@ void RuntimeToolBar::setupToolBar()
     addAction(stopAction);
     addAction(replayAction);
     addAction(nextStepAction);
-    addAction(bookmarkAction);
+    // addAction(bookmarkAction);
     addAction(timingAction);
     addAction(loggerAction);
     addAction(radarToggleAction); // Add radar toggle action

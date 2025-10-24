@@ -68,6 +68,7 @@
         <file>images/audit.png</file>
         <file>images/qgislayer.png</file>
         <file>images/geojson-layers.png</file>
+        <file>images/check-box.png</file>
     </qresource>
     <qresource prefix="/texture">
         <file>images/Texture/bball.png</file>

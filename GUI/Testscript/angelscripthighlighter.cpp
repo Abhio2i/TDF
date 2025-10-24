@@ -1,11 +1,17 @@
-#include "angelscripthighlighter.h"
+/* ========================================================================= */
+/* File: angelscripthighlighter.cpp                                       */
+/* Purpose: Implements syntax highlighter for AngelScript code             */
+/* ========================================================================= */
 
+#include "angelscripthighlighter.h"                // For AngelScript highlighter class
+
+// %%% Constructor %%%
+/* Initialize syntax highlighter for AngelScript */
 AngelScriptHighlighter::AngelScriptHighlighter(QTextDocument *parent)
     : QSyntaxHighlighter(parent)
 {
     HighlightingRule rule;
-
-    // Keywords
+    // Configure keywords
     keywordFormat.setForeground(QColor("#165da6"));
     keywordFormat.setFontWeight(QFont::Bold);
     QStringList keywordPatterns;
@@ -18,44 +24,42 @@ AngelScriptHighlighter::AngelScriptHighlighter(QTextDocument *parent)
                     << "\\bfalse\\b" << "\\bnull\\b" << "\\bnew\\b" << "\\bdelete\\b"
                     << "\\bget\\b" << "\\bset\\b" << "\\bprivate\\b" << "\\bpublic\\b"
                     << "\\bprotected\\b" << "\\bimport\\b" << "\\bmixin\\b" << "\\bshared\\b";
+    // Add keyword rules
     foreach (const QString &pattern, keywordPatterns) {
         rule.pattern = QRegularExpression(pattern);
         rule.format = keywordFormat;
         highlightingRules.append(rule);
     }
-
-    // Quotations (Strings)
+    // Configure string literals
     quotationFormat.setForeground(QColor("#7e3b1a"));
     rule.pattern = QRegularExpression("\"[^\\\"]*\"");
     rule.format = quotationFormat;
     highlightingRules.append(rule);
-
-    // Rule for single-quoted strings
+    // Configure single-quoted strings
     rule.pattern = QRegularExpression("'[^\\']*'");
-    rule.format = quotationFormat; // You can use the same format for both
+    rule.format = quotationFormat;
     highlightingRules.append(rule);
-
-    // Single-line comments
+    // Configure single-line comments
     singleLineCommentFormat.setForeground(QColor("#336f4c"));
     rule.pattern = QRegularExpression("//[^\n]*");
     rule.format = singleLineCommentFormat;
     highlightingRules.append(rule);
-
-    // Functions
+    // Configure function names
     functionFormat.setForeground(QColor("#737326"));
     rule.pattern = QRegularExpression("\\b[A-Za-z0-9_]+(?=\\()");
     rule.format = functionFormat;
     highlightingRules.append(rule);
-
-    // Multi-line comments
+    // Configure multi-line comments
     multiLineCommentFormat.setForeground(QColor("#336f4c"));
     commentStartExpression = QRegularExpression("/\\*");
     commentEndExpression = QRegularExpression("\\*/");
 }
 
+// %%% Highlighting %%%
+/* Apply syntax highlighting to a text block */
 void AngelScriptHighlighter::highlightBlock(const QString &text)
 {
-    // Apply highlighting rules
+    // Apply single-line highlighting rules
     for (const HighlightingRule &rule : highlightingRules) {
         QRegularExpressionMatchIterator matchIterator = rule.pattern.globalMatch(text);
         while (matchIterator.hasNext()) {
@@ -63,8 +67,7 @@ void AngelScriptHighlighter::highlightBlock(const QString &text)
             setFormat(match.capturedStart(), match.capturedLength(), rule.format);
         }
     }
-
-    // Apply multi-line comment rule
+    // Handle multi-line comments
     setCurrentBlockState(0);
     int startIndex = 0;
     if (previousBlockState() != 1) {

@@ -1,46 +1,51 @@
+/* ========================================================================= */
+/* File: sidebarwidget.cpp                                                */
+/* Purpose: Implements sidebar widget with buttons for view selection       */
+/* ========================================================================= */
 
-#include "sidebarwidget.h"
-#include <QHBoxLayout>
-#include <QVariant>
+#include "sidebarwidget.h"                         // For sidebar widget class
+#include <QHBoxLayout>                             // For horizontal layout
+#include <QVariant>                                // For button properties
 
-SidebarWidget::SidebarWidget(QWidget *parent) : QWidget(parent) {
+// %%% Constructor %%%
+/* Initialize sidebar widget with buttons */
+SidebarWidget::SidebarWidget(QWidget *parent)
+    : QWidget(parent)
+{
+    // Create button group for exclusive selection
     buttonGroup = new QButtonGroup(this);
-    buttonGroup->setExclusive(true); // Only one button can be checked at a time
-
+    buttonGroup->setExclusive(true);
+    // Set up main layout
     QHBoxLayout *layout = new QHBoxLayout(this);
     layout->setSpacing(1);
     layout->setContentsMargins(0, 0, 0, 0);
-
-    // Create buttons without icons
+    // Create sidebar buttons
     QPushButton *sensorsButton = createSidebarButton("Sensors", "Sensors");
     QPushButton *libraryButton = createSidebarButton("Library", "Library");
     QPushButton *inspectorButton = createSidebarButton("Inspector", "Inspector");
-    // QPushButton *consoleButton = createSidebarButton("Console", "Console");
     QPushButton *textScriptButton = createSidebarButton("TextScript", "TextScript");
-
-    // Add buttons to layout and button group
+    // Add buttons to layout and group
     layout->addWidget(sensorsButton);
     buttonGroup->addButton(sensorsButton);
-
     layout->addWidget(libraryButton);
     buttonGroup->addButton(libraryButton);
-
     layout->addWidget(inspectorButton);
     buttonGroup->addButton(inspectorButton);
-
-    // layout->addWidget(consoleButton);
-    // buttonGroup->addButton(consoleButton);
-
     layout->addWidget(textScriptButton);
     buttonGroup->addButton(textScriptButton);
-
+    // Set fixed height
     setFixedHeight(40);
 }
 
-QPushButton* SidebarWidget::createSidebarButton(const QString &text, const QString &viewName) {
+// %%% Button Creation %%%
+/* Create a sidebar button with specified text and view name */
+QPushButton* SidebarWidget::createSidebarButton(const QString &text, const QString &viewName)
+{
+    // Create button
     QPushButton *button = new QPushButton(text, this);
     button->setCheckable(true);
     button->setProperty("viewName", QVariant(viewName));
+    // Set button stylesheet
     button->setStyleSheet(
         "QPushButton {"
         "   border: none;"
@@ -53,15 +58,18 @@ QPushButton* SidebarWidget::createSidebarButton(const QString &text, const QStri
         "QPushButton:hover {"
         "   background-color: #404040;"
         "}");
-
+    // Connect button click to view selection signal
     connect(button, &QPushButton::clicked, this, [this, button]() {
         emit viewSelected(button->property("viewName").toString());
     });
-
     return button;
 }
 
-void SidebarWidget::setActiveButton(const QString &viewName) {
+// %%% Button State Management %%%
+/* Set active button by view name */
+void SidebarWidget::setActiveButton(const QString &viewName)
+{
+    // Iterate through buttons to find and check matching view
     for (QAbstractButton *button : buttonGroup->buttons()) {
         if (button->property("viewName").toString() == viewName) {
             button->setChecked(true);

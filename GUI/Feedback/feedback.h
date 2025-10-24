@@ -1,50 +1,59 @@
+/* ========================================================================= */
+/* File: feedback.h                                                         */
+/* Purpose: Defines the feedback window and custom graph widget              */
+/* ========================================================================= */
 
 #ifndef FEEDBACK_H
 #define FEEDBACK_H
 
-#include "core/Hierarchy/hierarchy.h"
-#include <QMainWindow>
-#include <QLabel>
-#include <QProgressBar>
-#include <QTableWidget>
-#include <QTextEdit>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QWidget>
-#include <QPainter>
-#include <QPainterPath>
-#include <QComboBox>
-#include <QListWidget>
-#include <QStackedWidget>
-#include <QPushButton>
-#include <QScrollArea>
-#include <QTimer>
-#include <QFile>
+#include "core/Hierarchy/hierarchy.h"              // For hierarchy data structure
+#include <QMainWindow>                             // For main window base class
+#include <QLabel>                                  // For label widgets
+#include <QProgressBar>                            // For progress bar widget
+#include <QTableWidget>                            // For table widget
+#include <QTextEdit>                               // For text edit widget
+#include <QVBoxLayout>                             // For vertical layout
+#include <QHBoxLayout>                             // For horizontal layout
+#include <QJsonDocument>                           // For JSON document handling
+#include <QJsonObject>                             // For JSON object handling
+#include <QJsonArray>                              // For JSON array handling
+#include <QWidget>                                 // For base widget class
+#include <QPainter>                                // For painting operations
+#include <QPainterPath>                            // For painter path
+#include <QComboBox>                               // For combo box widget
+#include <QListWidget>                             // For list widget
+#include <QStackedWidget>                          // For stacked widget
+#include <QPushButton>                             // For push button widget
+#include <QScrollArea>                             // For scroll area widget
+#include <QTimer>                                  // For timer functionality
+#include <QFile>                                   // For file operations
 
-
-// Custom widget for drawing simple graphs (unchanged)
+// %%% CustomGraphWidget Class %%%
+/* Custom widget for drawing graphs */
 class CustomGraphWidget : public QWidget
 {
     Q_OBJECT
 public:
+    // Enum for graph types
     enum GraphType { Bar, Line, Pie };
+    // Initialize graph widget
     CustomGraphWidget(GraphType type, QWidget *parent = nullptr) : QWidget(parent), m_graphType(type) {}
 
+    // Set data for graph
     void setData(const QList<qreal> &data, const QStringList &labels = QStringList()) {
         m_data = data;
         m_labels = labels;
         update();
     }
 
+    // Set data for line graph
     void setLineData(const QList<QList<qreal>> &linesData) {
         m_linesData = linesData;
         update();
     }
 
 protected:
+    // Handle paint events
     void paintEvent(QPaintEvent *) override {
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing);
@@ -96,166 +105,281 @@ protected:
     }
 
 private:
+    // Graph type
     GraphType m_graphType;
+    // Data for graph
     QList<qreal> m_data;
+    // Labels for graph
     QStringList m_labels;
+    // Data for line graph
     QList<QList<qreal>> m_linesData;
 };
 
+// %%% Feedback Class %%%
+/* Main window for feedback dashboard */
 class Feedback : public QMainWindow
 {
     Q_OBJECT
 
 public:
+    // Initialize feedback window
     Feedback(QWidget *parent = nullptr);
+    // Clean up resources
     ~Feedback();
+    // Hierarchy data structure
     Hierarchy *h;
+    // Load dashboard data from JSON
     void loadDashboardData(const QString& jsonData);
 
 private slots:
+    // Handle sidebar item click
     void onSidebarItemClicked(QListWidgetItem *item);
+    // Handle details button click
     void onDetailsButtonClicked();
+    // Handle entity combo change
     void onEntityComboChanged(const QString &text);
+    // Handle IFF combo change
     void onIffComboChanged(const QString &text);
-    void onFormationComboChanged(const QString &text); // New slot for Formation dropdown
-    void onFixedPointComboChanged(const QString &text); // New slot for FixedPoint dropdown
-    void onWeaponComboChanged(const QString &text); // New slot for Weapon dropdown
-
+    // Handle formation combo change
+    void onFormationComboChanged(const QString &text);
+    // Handle fixed point combo change
+    void onFixedPointComboChanged(const QString &text);
+    // Handle weapon combo change
+    void onWeaponComboChanged(const QString &text);
 
 private:
+    // %%% UI Setup Methods %%%
+    // Configure UI components
     void setupUi();
+    // Setup overview widget
     void setupOverviewWidget();
+    // Setup storage widget
     void setupStorageWidget();
+    // Setup sensors widget
     void setupSensorsWidget();
+    // Setup radio widget
     void setupRadioWidget();
+    // Setup network widget
     void setupNetworkWidget();
+    // Setup logs widget
     void setupLogsWidget();
+    // Setup canvas widget
     void setupCanvasWidget();
+    // Setup entity widget
     void setupEntityWidget();
+    // Setup IFF widget
     void setupIffWidget();
+    // Setup formation widget
     void setupFormationWidget();
+    // Setup fixed point widget
     void setupFixedPointWidget();
+    // Setup weapon widget
     void setupWeaponWidget();
-     // void loadDashboardData(const QString& jsonData);
 
-    // Sidebar
+    // %%% Sidebar %%%
+    // Sidebar list widget
     QListWidget *sidebar;
 
+    // %%% Content Stack %%%
     // Stacked widget for content
     QStackedWidget *contentStack;
 
-    // Widgets for each section
+    // %%% Section Widgets %%%
+    // Overview widget
     QWidget *overviewWidget;
+    // Storage widget
     QWidget *storageWidget;
+    // Sensors widget
     QWidget *sensorsWidget;
+    // Radio widget
     QWidget *radioWidget;
+    // Network widget
     QWidget *networkWidget;
+    // Logs widget
     QWidget *logsWidget;
+    // Canvas widget
     QWidget *canvasWidget;
+    // Entity widget
     QWidget *entityWidget;
+    // IFF widget
     QWidget *iffWidget;
+    // Formation widget
     QWidget *formationWidget;
+    // Fixed point widget
     QWidget *fixedPointWidget;
+    // Weapon widget
     QWidget *weaponWidget;
 
-    // Shared UI elements
+    // %%% Shared UI Elements %%%
+    // System status label
     QLabel *systemLabel;
+    // Simulation label
     QLabel *simLabel;
+    // RTC label
     QLabel *rtcLabel;
+    // Filter label
     QLabel *filterLabel;
+    // Time range combo box
     QComboBox *timeRangeCombo;
+    // Sensor type combo box
     QComboBox *sensorTypeCombo;
+    // Entity ID combo box
     QComboBox *entityIdCombo;
+    // Uptime label
     QLabel *uptimeLabel;
+    // Entities count label
     QLabel *entitiesLabel;
+    // Feedback events label
     QLabel *feedbackEventsLabel;
+    // System status label
     QLabel *systemStatusLabel;
+    // CPU usage progress bar
     QProgressBar *cpuProgressBar;
+    // Sensor data table
     QTableWidget *sensorTable;
+    // Interactions table
     QTableWidget *interactionsTable;
+    // Logs text edit
     QTextEdit *logsTextEdit;
 
+    // %%% Graph Widgets %%%
+    // Storage chart widget
     CustomGraphWidget *storageChart;
+    // RTC logs chart widget
     CustomGraphWidget *rtcLogsChart;
+    // MongoDB label
     QLabel *mongoDbLabel;
+    // Logs label
     QLabel *logsLabel;
+    // Scenarios label
     QLabel *scenariosLabel;
+    // Total label
     QLabel *totalLabel;
-
-    // Section Headers
-    QLabel *overviewHeader;
-    QLabel *interactionsHeader;
-    QLabel *storageHeader;
-    QLabel *rtcLogsHeader;
+    // Sensor chart widget
     CustomGraphWidget *sensorChart;
+    // Radar feedback label
     QLabel *radarFeedbackLabel;
+    // IFF feedback label
     QLabel *iffFeedbackLabel;
 
-    // Radio Section Labels
+    // %%% Radio Section %%%
+    // Radio system label
     QLabel *radioSystemLabel;
+    // Frequency label
     QLabel *frequencyLabel;
+    // Signal strength label
     QLabel *signalStrengthLabel;
 
-    // Network Section Labels
+    // %%% Network Section %%%
+    // Connectivity label
     QLabel *connectivityLabel;
+    // Bandwidth label
     QLabel *bandwidthLabel;
+    // Latency label
     QLabel *latencyLabel;
 
-    // Entity Section UI Elements
+    // %%% Entity Section %%%
+    // Entity frame
     QFrame *entityFrame;
+    // Total entities label
     QLabel *totalEntitiesLabel;
+    // Active entities label
     QLabel *activeEntitiesLabel;
+    // Entity selection combo
     QComboBox *selectEntityCombo;
+    // Details button
     QPushButton *detailsButton;
+    // Detailed view widget
     QWidget *detailedViewWidget;
+    // Detailed view header
     QLabel *detailedViewHeader;
+    // Detailed view text edit
     QTextEdit *detailedViewTextEdit;
+    // Detailed view logs text edit
     QTextEdit *detailedViewLogsTextEdit;
+    // Interaction frequency table
     QTableWidget *interactionFreqTable;
+    // Entity scroll area
     QScrollArea *entityScrollArea;
+    // General scroll area
     QScrollArea *scrollArea;
 
-    // IFF Section UI Elements
+    // %%% IFF Section %%%
+    // IFF frame
     QFrame *iffFrame;
+    // Total IFFs label
     QLabel *totalIffsLabel;
+    // Active IFFs label
     QLabel *activeIffsLabel;
+    // IFF selection combo
     QComboBox *selectIffCombo;
+    // IFF detailed view widget
     QWidget *iffDetailedViewWidget;
+    // IFF detailed view text edit
     QTextEdit *iffDetailedViewTextEdit;
 
-    // Formation Section UI Elements
+    // %%% Formation Section %%%
+    // Formation frame
     QFrame *formationFrame;
+    // Total formations label
     QLabel *totalFormationsLabel;
+    // Active formations label
     QLabel *activeFormationsLabel;
+    // Formation selection combo
     QComboBox *selectFormationCombo;
+    // Formation detailed view widget
     QWidget *formationDetailedViewWidget;
+    // Formation detailed view text edit
     QTextEdit *formationDetailedViewTextEdit;
 
-    // FixedPoint Section UI Elements
+    // %%% Fixed Point Section %%%
+    // Fixed point frame
     QFrame *fixedPointFrame;
+    // Total fixed points label
     QLabel *totalFixedPointsLabel;
+    // Active fixed points label
     QLabel *activeFixedPointsLabel;
+    // Fixed point selection combo
     QComboBox *selectFixedPointCombo;
+    // Fixed point detailed view widget
     QWidget *fixedPointDetailedViewWidget;
+    // Fixed point detailed view text edit
     QTextEdit *fixedPointDetailedViewTextEdit;
 
-    // Weapon Section UI Elements
+    // %%% Weapon Section %%%
+    // Weapon frame
     QFrame *weaponFrame;
+    // Total weapons label
     QLabel *totalWeaponsLabel;
+    // Active weapons label
     QLabel *activeWeaponsLabel;
+    // Weapon selection combo
     QComboBox *selectWeaponCombo;
+    // Weapon detailed view widget
     QWidget *weaponDetailedViewWidget;
+    // Weapon detailed view text edit
     QTextEdit *weaponDetailedViewTextEdit;
 
+    // %%% Sensor and Radio Section %%%
+    // Sensor selection combo
     QComboBox *selectSensorCombo;
+    // Radio selection combo
     QComboBox *selectRadioCombo;
+    // Total sensors label
     QLabel *totalSensorsLabel;
+    // Active sensors label
     QLabel *activeSensorsLabel;
+    // Total radios label
     QLabel *totalRadiosLabel;
+    // Active radios label
     QLabel *activeRadiosLabel;
+    // Sensor detailed view widget
     QWidget *sensorDetailedViewWidget;
+    // Sensor detailed view text edit
     QTextEdit *sensorDetailedViewTextEdit;
+    // Radio detailed view widget
     QWidget *radioDetailedViewWidget;
+    // Radio detailed view text edit
     QTextEdit *radioDetailedViewTextEdit;
 
 };

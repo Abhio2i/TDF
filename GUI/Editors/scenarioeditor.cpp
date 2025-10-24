@@ -1,46 +1,58 @@
+/* ========================================================================= */
+/* File: scenarioeditor.cpp                                                 */
+/* Purpose: Implements scenario editor with hierarchy and tactical display   */
+/* ========================================================================= */
 
-#include "GUI/Editors/scenarioeditor.h"
-#include "GUI/Menubars/menubar.h"
-#include "GUI/Sidebar/sidebarwidget.h"
-#include "GUI/Tacticaldisplay/tacticaldisplay.h"
-#include "GUI/Feedback/feedback.h"
-#include <QFile>
-#include <QTextStream>
-#include <QDebug>
-#include <QListWidget>
-#include <QDockWidget>
-#include <QSplitter>
-#include <core/structure/scenario.h>
-#include "GUI/Tacticaldisplay/canvaswidget.h"
-#include "GUI/Toolbars/standardtoolbar.h"
-#include <core/Render/scenerenderer.h>
-#include <core/structure/runtime.h>
-#include <core/Hierarchy/Components/transform.h>
-#include <core/Hierarchy/Components/mesh.h>
-#include <QJsonDocument>
-#include <QJsonParseError>
-#include <QMessageBox>
-#include <GUI/measuredistance/measuredistancedialog.h>
-#include <QApplication>
+#include "GUI/Editors/scenarioeditor.h"            // For scenario editor class
+#include "GUI/Menubars/menubar.h"                 // For menu bar
+#include "GUI/Sidebar/sidebarwidget.h"             // For sidebar widget
+#include "GUI/Tacticaldisplay/tacticaldisplay.h"   // For tactical display
+#include "GUI/Feedback/feedback.h"                // For feedback window
+#include <QFile>                                  // For file operations
+#include <QTextStream>                            // For text streaming
+#include <QDebug>                                 // For debug output
+#include <QListWidget>                            // For list widget
+#include <QDockWidget>                            // For dock widget
+#include <QSplitter>                              // For splitter widget
+#include <core/structure/scenario.h>              // For scenario structure
+#include "GUI/Tacticaldisplay/canvaswidget.h"      // For canvas widget
+#include "GUI/Toolbars/standardtoolbar.h"         // For standard toolbar
+#include <core/Render/scenerenderer.h>            // For scene renderer
+#include <core/structure/runtime.h>               // For runtime structure
+#include <core/Hierarchy/Components/transform.h>  // For transform component
+#include <core/Hierarchy/Components/mesh.h>       // For mesh component
+#include <QJsonDocument>                          // For JSON document handling
+#include <QJsonParseError>                        // For JSON parse errors
+#include <QMessageBox>                            // For message box
+#include <GUI/measuredistance/measuredistancedialog.h> // For measure distance dialog
+#include <QApplication>                           // For application instance
 
+// %%% Constructor %%%
+/* Initialize scenario editor */
 ScenarioEditor::ScenarioEditor(QWidget *parent)
     : QMainWindow(parent)
 {
+    // Set window title
     setWindowTitle("Scenario Editor");
+    // Set window size
     resize(1100, 600);
+    // Define dock widget features
     QDockWidget::DockWidgetFeatures dockFeatures =
         QDockWidget::DockWidgetClosable |
         QDockWidget::DockWidgetMovable |
         QDockWidget::DockWidgetFloatable;
+    // Initialize text script dock
     textScriptDock = new QDockWidget("Text Script", this);
     textScriptView = new TextScriptWidget(this);
     textScriptDock->setWidget(textScriptView);
     qDebug() << "textScriptDock initialized:" << textScriptDock << ", textScriptView:" << textScriptView;
+    // Setup UI components
     setupMenuBar();
     connect(menuBar, &MenuBar::exitTriggered, qApp, &QApplication::quit);
     setupToolBars();
     setupDockWidgets(dockFeatures);
     setupStatusBar();
+    // Initialize scenario
     Scenario *scenario = new Scenario();
     hierarchy = scenario->hierarchy;
     SceneRenderer *renderer = scenario->scenerenderer;
@@ -48,11 +60,13 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     scriptengine = scenario->scriptengine;
     library = scenario->Library;
     lastSavedFilePath = "";
+    // Setup script engine
     scenario->scriptengine->setHierarchy(hierarchy, treeView, renderer);
     connect(textScriptView, &TextScriptWidget::runScriptstring, scriptengine, &ScriptEngine::loadAndCompileScript);
     HierarchyConnector::instance()->setHierarchy(hierarchy);
     HierarchyConnector::instance()->setLibrary(library);
     HierarchyConnector::instance()->setLibTreeView(libTreeView);
+    // Connect console signals
     connect(console, &Console::logUpdate, this, [=](std::string log) {
         if (consoleView) {
             consoleView->appendLog(QString::fromStdString(log));
@@ -77,12 +91,14 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
             consoleView->appendText(QString::fromStdString(debug));
         }
     });
+    // Connect tactical display signals
     if (tacticalDisplay && tacticalDisplay->canvas) {
-        // set canvas for the script engine
+        // Set canvas for script engine
         if (tacticalDisplay && tacticalDisplay->canvas) {
             scriptengine->setCanvas(tacticalDisplay->canvas);
             qDebug() << "ScriptEngine canvas set successfully!";
         }
+        // Connect trajectory signals
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated, inspector, &Inspector::updateTrajectory);
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated, this, [=](QString entityId, QJsonArray /*waypoints*/) {
             auto it = tacticalDisplay->canvas->Meshes.find(entityId.toStdString());
@@ -98,19 +114,23 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
         });
         connect(inspector, &Inspector::trajectoryWaypointsChanged, tacticalDisplay->canvas, &CanvasWidget::updateWaypointsFromInspector);
     }
+    // Connect renderer signals
     connect(renderer, &SceneRenderer::addMesh, tacticalDisplay, &TacticalDisplay::addMesh);
     connect(hierarchy, &Hierarchy::entityRemoved, tacticalDisplay, &TacticalDisplay::removeMesh);
     if (tacticalDisplay && tacticalDisplay->canvas) {
         connect(renderer, &SceneRenderer::Render, tacticalDisplay->canvas, &CanvasWidget::Render);
         connect(renderer, &SceneRenderer::Render, tacticalDisplay->scene3dwidget, &Scene3DWidget::updateEntities);
     }
+    // Connect inspector signals
     connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
     connect(inspector, &Inspector::valueChanged, this, [=]{ renderer->Render(0.01f); markUnsavedChanges(); });
+    // Connect hierarchy signals
     HierarchyConnector::instance()->connectSignals(hierarchy, treeView, tacticalDisplay, inspector);
     HierarchyConnector::instance()->connectLibrarySignals(library, libTreeView);
     HierarchyConnector::instance()->initializeDummyData(hierarchy);
     HierarchyConnector::instance()->initializeLibraryData(library);
     HierarchyConnector::instance()->setupFileOperations(this, hierarchy, tacticalDisplay);
+    // Connect item drop signals
     connect(libTreeView, &HierarchyTree::itemDropped, this, [=](QVariantMap sourceData, QVariantMap targetData) {
         HierarchyConnector::instance()->handleLibraryToHierarchyDrop(sourceData, targetData);
         markUnsavedChanges();
@@ -119,10 +139,12 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
         HierarchyConnector::instance()->handleHierarchyToLibraryDrop(sourceData, targetData);
         markUnsavedChanges();
     });
+    // Connect canvas signals
     if (tacticalDisplay && tacticalDisplay->canvas) {
         connect(tacticalDisplay->canvas, &CanvasWidget::selectEntitybyCursor,
                 treeView, &HierarchyTree::selectEntityById);
     }
+    // Connect tree view item selection
     connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
         QString type;
         if (data["type"].type() == QVariant::Map) {
@@ -172,12 +194,14 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
             Console::log("Non-entity selected, addTrajectoryAction disabled");
         }
     });
+    // Connect inspector tab signals
     connect(inspector, &Inspector::addTabRequested, this, &ScenarioEditor::addInspectorTab);
     inspectorDocks.append(inspectorDock);
     inspectors.append(inspector);
     inspector->setHierarchy(hierarchy);
+    // Setup toolbar connections
     setupToolBarConnections();
-    // Connect hierarchy signals to mark unsaved changes
+    // Connect hierarchy signals for unsaved changes
     connect(hierarchy, &Hierarchy::profileAdded, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::folderAdded, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::entityAdded, this, &ScenarioEditor::markUnsavedChanges);
@@ -191,51 +215,66 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     connect(hierarchy, &Hierarchy::entityRenamed, this, &ScenarioEditor::markUnsavedChanges);
 }
 
+/* Setup toolbars */
 void ScenarioEditor::setupToolBars()
 {
+    // Add standard toolbar
     standardToolBar = new StandardToolBar(this);
     addToolBar(Qt::TopToolBarArea, standardToolBar);
     addToolBarBreak(Qt::TopToolBarArea);
+    // Add design toolbar
     designToolBar = new DesignToolBar(this);
     addToolBar(Qt::TopToolBarArea, designToolBar);
+    // Connect save action
     if (menuBar && standardToolBar) {
         connect(standardToolBar->getSaveAction(), &QAction::triggered,
                 menuBar->getSaveAction(), &QAction::trigger);
     }
-     connect(menuBar, &MenuBar::feedbackTriggered, this, &ScenarioEditor::showFeedbackWindow);
+    // Connect feedback trigger
+    connect(menuBar, &MenuBar::feedbackTriggered, this, &ScenarioEditor::showFeedbackWindow);
 }
 
+/* Setup toolbar connections */
 void ScenarioEditor::setupToolBarConnections()
 {
+    // Find design toolbar
     DesignToolBar *designToolBar = findChild<DesignToolBar*>();
+    // Check for null components
     if (!designToolBar || !tacticalDisplay || !tacticalDisplay->canvas) {
         qWarning() << "Toolbar connection setup failed - required components missing";
         return;
     }
+    // Connect save action
     if (menuBar) {
         connect(standardToolBar->getSaveAction(), &QAction::triggered,
                 menuBar->getSaveAction(), &QAction::trigger);
     }
+    // Connect transform mode
     connect(designToolBar, &DesignToolBar::modeChanged,
             this, [=](int mode) {
                 tacticalDisplay->canvas->setTransformMode(static_cast<TransformMode>(mode));
             });
+    // Connect shape selection
     connect(designToolBar, &DesignToolBar::shapeSelected,
             this, [=](const QString &shape) {
                 tacticalDisplay->canvas->setShapeDrawingMode(true, shape);
                 Console::log("Shape selected: " + shape.toStdString());
             });
+    // Connect grid visibility
     connect(designToolBar, &DesignToolBar::gridPlaneXToggled,
             tacticalDisplay->canvas, &CanvasWidget::setXGridVisible);
     connect(designToolBar, &DesignToolBar::gridPlaneYToggled,
             tacticalDisplay->canvas, &CanvasWidget::setYGridVisible);
+    // Connect grid opacity
     connect(designToolBar, &DesignToolBar::gridOpacityChanged,
             this, [=](int opacity) {
                 tacticalDisplay->canvas->setGridOpacity(opacity);
                 Console::log("Grid opacity changed to: " + std::to_string(opacity));
             });
+    // Connect layer visibility
     connect(designToolBar, &DesignToolBar::layerOptionToggled,
             tacticalDisplay->canvas, &CanvasWidget::toggleLayerVisibility);
+    // Connect bitmap selection
     connect(designToolBar, &DesignToolBar::bitmapImageSelected,
             tacticalDisplay->canvas, &CanvasWidget::onBitmapImageSelected);
     connect(designToolBar, &DesignToolBar::presetLayerSelected,
@@ -245,6 +284,7 @@ void ScenarioEditor::setupToolBarConnections()
                 tacticalDisplay->canvas->onBitmapSelected(fileName);
                 Console::log("Bitmap selected: " + fileName.toStdString());
             });
+    // Connect map layer changes
     if (tacticalDisplay && tacticalDisplay->mapWidget) {
         connect(designToolBar, &DesignToolBar::mapLayerChanged,
                 this, [=](const QString &layers) {
@@ -262,7 +302,7 @@ void ScenarioEditor::setupToolBarConnections()
         connect(designToolBar, &DesignToolBar::searchPlaceTriggered,
                 tacticalDisplay->mapWidget, &GISlib::serachPlace);
         connect(designToolBar, &DesignToolBar::searchCoordinatesTriggered,
-                tacticalDisplay->mapWidget, &GISlib::searchByCoordinates); // New coordinate search
+                tacticalDisplay->mapWidget, &GISlib::searchByCoordinates);
         connect(designToolBar->zoomInAction, &QAction::triggered,
                 tacticalDisplay, &TacticalDisplay::zoomIn);
         connect(designToolBar->zoomOutAction, &QAction::triggered,
@@ -276,61 +316,71 @@ void ScenarioEditor::setupToolBarConnections()
     } else {
         qCritical() << "Map widget not available for layer connections";
     }
+    // Connect trajectory action
     connect(standardToolBar->getAddTrajectoryAction(), &QAction::triggered,
             this, [=]() {
                 tacticalDisplay->canvas->setTrajectoryDrawingMode(true);
                 Console::log("Add Trajectory action triggered");
             });
-
-    // gor geojson function
+    // Connect GeoJSON signals
     connect(designToolBar, &DesignToolBar::importGeoJsonTriggered,
             tacticalDisplay->canvas, &CanvasWidget::importGeoJsonLayer);
-    // NEW: Connections for GeoJSON layers menu
     connect(tacticalDisplay->canvas, &CanvasWidget::geoJsonLayerAdded,
             designToolBar, &DesignToolBar::onGeoJsonLayerAdded);
     connect(designToolBar, &DesignToolBar::geoJsonLayerToggled,
             tacticalDisplay->canvas, &CanvasWidget::onGeoJsonLayerToggled);
-    // measure distance
+    // Connect measure distance
     connect(designToolBar->getMeasureDistanceAction(), &QAction::triggered, tacticalDisplay->canvas, [=]() {
         bool isChecked = designToolBar->getMeasureDistanceAction()->isChecked();
         tacticalDisplay->canvas->setTransformMode(isChecked ? MeasureDistance : Translate);
     });
 }
 
+/* Setup menu bar */
 void ScenarioEditor::setupMenuBar()
 {
+    // Create and set menu bar
     menuBar = new MenuBar(this);
     setMenuBar(menuBar);
-     connect(menuBar, &MenuBar::feedbackTriggered, this, &ScenarioEditor::showFeedbackWindow);
+    // Connect feedback trigger
+    connect(menuBar, &MenuBar::feedbackTriggered, this, &ScenarioEditor::showFeedbackWindow);
 }
 
+/* Setup dock widgets */
 void ScenarioEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures)
 {
+    // Setup main splitter
     QSplitter *mainSplitter = new QSplitter(Qt::Horizontal, this);
     setCentralWidget(mainSplitter);
+    // Setup hierarchy dock
     hierarchyDock = new QDockWidget("Editor", this);
     hierarchyDock->setFeatures(dockFeatures);
     hierarchyDock->setAllowedAreas(Qt::LeftDockWidgetArea);
     treeView = new HierarchyTree(this);
     hierarchyDock->setWidget(treeView);
     hierarchyDock->setMinimumWidth(100);
+    // Setup right splitter
     QSplitter *rightSplitter = new QSplitter(Qt::Horizontal, this);
+    // Setup tactical splitter
     QSplitter *tacticalSplitter = new QSplitter(Qt::Vertical, this);
+    // Setup tactical display dock
     tacticalDisplayDock = new QDockWidget("Tactical Display", this);
     tacticalDisplayDock->setFeatures(dockFeatures);
     tacticalDisplayDock->setAllowedAreas(Qt::RightDockWidgetArea);
     tacticalDisplay = new TacticalDisplay(this);
     tacticalDisplayDock->setWidget(tacticalDisplay);
-
     tacticalDisplayDock->setMinimumWidth(200);
+    // Setup console dock
     consoleDock = new QDockWidget("", this);
     consoleDock->setFeatures(dockFeatures);
     consoleDock->setAllowedAreas(Qt::BottomDockWidgetArea);
     consoleView = new ConsoleView(this);
     consoleDock->setWidget(consoleView);
     consoleDock->setMinimumHeight(100);
+    // Setup splitters
     tacticalSplitter->addWidget(tacticalDisplayDock);
     tacticalSplitter->addWidget(consoleDock);
+    // Setup sidebar dock
     sidebarDock = new QDockWidget("", this);
     sidebarDock->setFeatures(dockFeatures);
     sidebarDock->setAllowedAreas(Qt::RightDockWidgetArea);
@@ -343,12 +393,14 @@ void ScenarioEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatur
     rightSplitter->addWidget(sidebarDock);
     mainSplitter->addWidget(hierarchyDock);
     mainSplitter->addWidget(rightSplitter);
+    // Set splitter sizes
     QTimer::singleShot(0, this, [=]() {
         int totalWidth = width();
         mainSplitter->setSizes(QList<int>() << totalWidth * 0.20 << totalWidth * 0.80);
         rightSplitter->setSizes(QList<int>() << totalWidth * 0.60 << totalWidth * 0.20);
     });
     tacticalSplitter->setSizes(QList<int>() << height() * 0.9 << height() * 0.1);
+    // Setup library dock
     libraryDock = new QDockWidget("Library", this);
     libraryDock->setFeatures(dockFeatures);
     libraryDock->setAllowedAreas(Qt::RightDockWidgetArea);
@@ -356,6 +408,7 @@ void ScenarioEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatur
     libraryDock->setWidget(libTreeView);
     libraryDock->setMinimumWidth(200);
     libraryDock->hide();
+    // Setup inspector dock
     inspectorDock = new QDockWidget("Inspector", this);
     inspectorDock->setFeatures(dockFeatures);
     inspectorDock->setAllowedAreas(Qt::RightDockWidgetArea);
@@ -366,11 +419,13 @@ void ScenarioEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatur
     addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
     splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
     inspectorDock->show();
+    // Setup text script dock
     textScriptDock->setFeatures(dockFeatures);
     textScriptDock->setAllowedAreas(Qt::RightDockWidgetArea);
     textScriptDock->setMinimumWidth(200);
     addDockWidget(Qt::RightDockWidgetArea, textScriptDock);
     textScriptDock->hide();
+    // Connect sidebar view selection
     connect(sidebar, &SidebarWidget::viewSelected, this, [this](const QString &viewName) {
         qDebug() << "Sidebar viewSelected emitted, viewName:" << viewName;
         if (viewName == "Inspector") {
@@ -413,8 +468,10 @@ void ScenarioEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatur
     });
 }
 
+/* Add new inspector tab */
 void ScenarioEditor::addInspectorTab()
 {
+    // Create new inspector dock
     QDockWidget *newInspectorDock = new QDockWidget("Inspector " + QString::number(++inspectorCount), this);
     newInspectorDock->setAllowedAreas(Qt::RightDockWidgetArea);
     newInspectorDock->setFeatures(QDockWidget::DockWidgetClosable |
@@ -424,54 +481,63 @@ void ScenarioEditor::addInspectorTab()
     newInspectorDock->setWidget(newInspector);
     inspectorDocks.append(newInspectorDock);
     inspectors.append(newInspector);
+    // Connect inspector signals
     connect(newInspector, &Inspector::valueChanged,
             hierarchy, &Hierarchy::UpdateComponent);
     connect(newInspector, &Inspector::addTabRequested,
             this, &ScenarioEditor::addInspectorTab);
+    // Add or split dock
     if (inspectorDock->isVisible()) {
         splitDockWidget(inspectorDock, newInspectorDock, Qt::Horizontal);
     } else {
         addDockWidget(Qt::RightDockWidgetArea, newInspectorDock);
     }
+    // Handle dock destruction
     connect(newInspectorDock, &QDockWidget::destroyed, this, [=]() {
         inspectorDocks.removeOne(newInspectorDock);
         inspectors.removeOne(newInspector);
     });
 }
 
+/* Show feedback window */
 void ScenarioEditor::showFeedbackWindow()
 {
-    // Feedback *feedbackWindow = new Feedback(this);
-    // feedbackWindow->show();
+    // Create and show feedback window
     Feedback *feedbackWindow = new Feedback(this);
     feedbackWindow->h = hierarchy;
     feedbackWindow->loadDashboardData("{}");
     feedbackWindow->show();
 }
 
+/* Handle item selection */
 void ScenarioEditor::onItemSelected(QVariantMap /*data*/)
 {
     // TODO: Implement item selection logic
 }
 
+/* Handle library item selection */
 void ScenarioEditor::onLibraryItemSelected(QVariantMap /*data*/)
 {
     // TODO: Implement library item selection logic
 }
 
+/* Destructor */
 ScenarioEditor::~ScenarioEditor()
 {
     // Cleanup managed by Qt's parent-child relationships
 }
 
+/* Load data from JSON file */
 void ScenarioEditor::loadFromJsonFile(const QString &filePath)
 {
+    // Open JSON file
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "Failed to open JSON file:" << filePath;
         QMessageBox::warning(this, "Error", QString("Failed to open JSON file: %1").arg(filePath));
         return;
     }
+    // Read and parse JSON
     QByteArray data = file.readAll();
     file.close();
     QJsonParseError err;
@@ -481,6 +547,7 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
         QMessageBox::warning(this, "Error", QString("Failed to parse JSON: %1").arg(err.errorString()));
         return;
     }
+    // Load hierarchy data
     QJsonObject obj = doc.object();
     if (obj.contains("hierarchy")) {
         QJsonObject hier = obj["hierarchy"].toObject();
@@ -495,6 +562,7 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
     } else {
         qWarning() << "JSON file does not contain 'hierarchy' key";
     }
+    // Load tactical display data
     if (tacticalDisplay && obj.contains("tactical")) {
         QJsonObject tac = obj["tactical"].toObject();
         tacticalDisplay->canvas->fromJson(tac);
@@ -506,8 +574,10 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
     clearUnsavedChanges();
 }
 
+/* Mark unsaved changes */
 void ScenarioEditor::markUnsavedChanges()
 {
+    // Update unsaved changes state
     if (!hasUnsavedChanges) {
         hasUnsavedChanges = true;
         emit unsavedChangesChanged(true);
@@ -515,8 +585,10 @@ void ScenarioEditor::markUnsavedChanges()
     }
 }
 
+/* Clear unsaved changes */
 void ScenarioEditor::clearUnsavedChanges()
 {
+    // Reset unsaved changes state
     if (hasUnsavedChanges) {
         hasUnsavedChanges = false;
         emit unsavedChangesChanged(false);
@@ -524,33 +596,43 @@ void ScenarioEditor::clearUnsavedChanges()
     }
 }
 
-void ScenarioEditor::setupStatusBar() {
+/* Setup status bar */
+void ScenarioEditor::setupStatusBar()
+{
+    // Create and set status bar
     statusBar = new QStatusBar(this);
     setStatusBar(statusBar);
     statusBar->showMessage("Ready");
 }
-void ScenarioEditor::updateStatusBar(const QString &message) {
+
+/* Update status bar message */
+void ScenarioEditor::updateStatusBar(const QString &message)
+{
+    // Update status bar
     if (statusBar) {
         statusBar->showMessage(message);
     }
 }
+
+/* Commented-out feedback window implementation */
 // void ScenarioEditor::showFeedbackWindow()
 // {
+//     // Create feedback window
 //     Feedback *feedbackWindow = new Feedback(this);
-
-//     // Hierarchy se data lekar feedback window ko pass karen
+//
+//     // Load hierarchy data for feedback
 //     if (hierarchy) {
 //         QJsonObject feedbackData = HierarchyConnector::instance()->getFeedbackData(hierarchy);
 //         QJsonDocument doc(feedbackData);
 //         QString jsonString = doc.toJson(QJsonDocument::Compact);
-
+//
 //         feedbackWindow->loadDashboardData(jsonString);
 //         qDebug() << "Feedback window loaded with hierarchy data";
 //     } else {
 //         qWarning() << "No hierarchy available for feedback window";
 //         feedbackWindow->loadDashboardData("{}");
 //     }
-
+//
 //     feedbackWindow->show();
 //     qDebug() << "Feedback window shown";
 // }

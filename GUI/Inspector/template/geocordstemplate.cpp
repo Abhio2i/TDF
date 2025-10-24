@@ -1,16 +1,28 @@
+/* ========================================================================= */
+/* File: geocordstemplate.cpp                                               */
+/* Purpose: Implements geocoordinates input widget for inspector table       */
+/* ========================================================================= */
 
-#include "geocordstemplate.h"
-#include <QHBoxLayout>
-#include <QLineEdit>
-#include <QDoubleValidator>
-#include <QLabel>
-#include "GUI/Inspector/inspector.h" // For formatNumberForUI
+#include "geocordstemplate.h"                      // For geocoordinates template class
+#include <QHBoxLayout>                             // For horizontal layout
+#include <QLineEdit>                               // For input fields
+#include <QDoubleValidator>                        // For double validation
+#include <QLabel>                                  // For labels
+#include "GUI/Inspector/inspector.h"               // For formatNumberForUI
 
-GeocordsTemplate::GeocordsTemplate(QWidget *parent) : QWidget(parent) {}
+// %%% Constructor %%%
+/* Initialize geocoordinates template widget */
+GeocordsTemplate::GeocordsTemplate(QWidget *parent)
+    : QWidget(parent)
+{
+    // No additional initialization needed
+}
 
+// %%% Setup Geocords Cell %%%
+/* Setup geocoordinates input cell in table */
 void GeocordsTemplate::setupGeocordsCell(int row, const QString &fullKey, const QJsonObject &obj, QTableWidget *tableWidget)
 {
-    // Create main layout for geocord fields
+    // Create main vertical layout
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(2, 2, 2, 2);
     mainLayout->setSpacing(2);
@@ -21,7 +33,7 @@ void GeocordsTemplate::setupGeocordsCell(int row, const QString &fullKey, const 
     QLineEdit *altEdit = new QLineEdit(this);
     QLineEdit *headEdit = new QLineEdit(this);
 
-    // Set validators for double values
+    // Set double validator
     QDoubleValidator *validator = new QDoubleValidator(this);
     validator->setNotation(QDoubleValidator::StandardNotation);
     validator->setDecimals(6);
@@ -30,7 +42,7 @@ void GeocordsTemplate::setupGeocordsCell(int row, const QString &fullKey, const 
     altEdit->setValidator(validator);
     headEdit->setValidator(validator);
 
-    // Set initial values from JSON object
+    // Set initial values from JSON
     latEdit->setText(Inspector::formatNumberForUI(obj.value("latitude").toDouble(0.0)));
     lonEdit->setText(Inspector::formatNumberForUI(obj.value("longitude").toDouble(0.0)));
     altEdit->setText(Inspector::formatNumberForUI(obj.value("altitude").toDouble(0.0)));
@@ -38,13 +50,13 @@ void GeocordsTemplate::setupGeocordsCell(int row, const QString &fullKey, const 
 
     // Style input fields and labels
     QString inputStyle = "QLineEdit { background: #333; border: 1px solid #555; border-radius: 3px; color: white; }";
-    QString labelStyle = "QLabel { color: white; min-width: 40px; }"; // Fixed width for alignment
+    QString labelStyle = "QLabel { color: white; min-width: 40px; }";
     latEdit->setStyleSheet(inputStyle);
     lonEdit->setStyleSheet(inputStyle);
     altEdit->setStyleSheet(inputStyle);
     headEdit->setStyleSheet(inputStyle);
 
-    // Create labels and layouts for each field
+    // Create labels
     QLabel *latLabel = new QLabel("Lat:", this);
     QLabel *lonLabel = new QLabel("Lon:", this);
     QLabel *altLabel = new QLabel("Alt:", this);
@@ -54,6 +66,7 @@ void GeocordsTemplate::setupGeocordsCell(int row, const QString &fullKey, const 
     altLabel->setStyleSheet(labelStyle);
     headLabel->setStyleSheet(labelStyle);
 
+    // Create horizontal layouts for each field
     QHBoxLayout *latLayout = new QHBoxLayout();
     latLayout->addWidget(latLabel);
     latLayout->addWidget(latEdit);
@@ -81,7 +94,7 @@ void GeocordsTemplate::setupGeocordsCell(int row, const QString &fullKey, const 
     mainLayout->addLayout(headLayout);
     mainLayout->addStretch();
 
-    // Connect editingFinished signals to emit valueChanged
+    // Connect editing finished signals
     auto updateValue = [=]() {
         QJsonObject delta;
         QJsonObject geocordObj;

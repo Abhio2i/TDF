@@ -1,47 +1,60 @@
+/* ========================================================================= */
+/* File: loggerdialog.h                                                     */
+/* Purpose: Defines dialog and widget for logging and timeline visualization */
+/* ========================================================================= */
 
 #ifndef LOGGERDIALOG_H
 #define LOGGERDIALOG_H
 
-#include <QDialog>
-#include <QCheckBox>
-#include <QLabel>
-#include <QListWidget>
-#include <QPushButton>
-#include <QVBoxLayout>
-#include <QGridLayout>
-#include <QStandardPaths>
-#include <QDir>
-#include <QToolButton>
-#include <QPainter>
-#include <QWidget>
-#include <QDateTime>
+#include <QDialog>                                // For dialog base class
+#include <QCheckBox>                              // For checkbox widget
+#include <QLabel>                                 // For label widget
+#include <QListWidget>                            // For list widget
+#include <QPushButton>                            // For push button widget
+#include <QVBoxLayout>                            // For vertical layout
+#include <QGridLayout>                            // For grid layout
+#include <QStandardPaths>                         // For standard paths
+#include <QDir>                                   // For directory handling
+#include <QToolButton>                            // For tool button widget
+#include <QPainter>                               // For painting operations
+#include <QWidget>                                // For widget base class
+#include <QDateTime>                              // For date and time handling
 
+// %%% TimelineWidget Class %%%
+/* Widget for visualizing recording timeline */
 class TimelineWidget : public QWidget
 {
     Q_OBJECT
+
 public:
+    // Initialize timeline widget
     explicit TimelineWidget(QWidget *parent = nullptr) : QWidget(parent) {
         setMinimumHeight(50);
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     }
+    // Set recording start time
     void setRecordingStartTime(const QDateTime &startTime) {
         recordingStartTime = startTime;
         update();
     }
+    // Set recording duration
     void setRecordingDuration(qint64 durationMs) {
         recordingDurationMs = durationMs;
         update();
     }
+    // Add bookmark with note and timestamp
     void addBookmark(const QString &note, qint64 timestampMs) {
         bookmarks.append({note, timestampMs});
         update();
     }
+    // Clear all bookmarks
     void clearBookmarks() {
         bookmarks.clear();
         update();
     }
 
 protected:
+    // Handle paint events
     void paintEvent(QPaintEvent *event) override {
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing);
@@ -81,41 +94,72 @@ protected:
     }
 
 private:
+    // %%% Data Members %%%
+    // Recording start time
     QDateTime recordingStartTime;
+    // Recording duration in milliseconds
     qint64 recordingDurationMs = 0;
-    QList<QPair<QString, qint64>> bookmarks; // {note, timestampMs}
+    // List of bookmarks (note, timestamp)
+    QList<QPair<QString, qint64>> bookmarks;
 };
 
+// %%% LoggerDialog Class %%%
+/* Dialog for managing logging operations */
 class LoggerDialog : public QDialog
 {
     Q_OBJECT
+
 public:
+    // Initialize logger dialog
     explicit LoggerDialog(QWidget *parent = nullptr);
+    // Update recording duration
     void updateRecordingDuration(qint64 durationMs);
+    // Add bookmark with timestamp
     void addBookmarkWithTimestamp(const QString &note, qint64 timestampMs);
 
 signals:
+    // Signal start recording
     void startRecording();
+    // Signal stop recording
     void stopRecording();
+    // Signal replay recording
     void replayRecording(const QString &filePath);
+    // Signal event types selected
     void eventTypesSelected(QStringList eventTypes);
+    // Signal bookmark added
     void bookmarkAdded(const QString &bookmarkNote);
+    // Signal timestamp toggle
     void timestampToggled(bool enabled);
 
 private:
+    // %%% UI Setup Methods %%%
+    // Configure UI components
     void setupUi();
+    // Update recordings list
     void updateRecordingsList();
 
+    // %%% UI Components %%%
+    // Actions checkbox
     QCheckBox *actionsCheckBox;
+    // Waypoints checkbox
     QCheckBox *waypointsCheckBox;
+    // Engagements checkbox
     QCheckBox *engagementsCheckBox;
+    // Timestamp checkbox
     QCheckBox *timestampCheckBox;
+    // Status label (commented)
     // QLabel *statusLabel;
+    // Recordings list widget
     QListWidget *recordingsList;
+    // Replay button
     QPushButton *replayButton;
+    // Bookmark button
     QToolButton *bookmarkButton;
+    // Recordings directory path
     QString recordingsDir;
+    // Timeline widget
     TimelineWidget *timelineWidget;
+    // Recording start time
     QDateTime recordingStartTime;
 };
 

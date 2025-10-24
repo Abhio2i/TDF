@@ -1,8 +1,19 @@
+/* ========================================================================= */
+/* File: menubar.cpp                                                      */
+/* Purpose: Implements menu bar with file, edit, view, and feedback menus   */
+/* ========================================================================= */
 
-#include "menubar.h"
-MenuBar::MenuBar(QWidget *parent) : QMenuBar(parent)
+#include "menubar.h"                               // For menu bar class
+#include <QMenu>                                   // For menu creation
+#include <QAction>                                 // For menu actions
+#include <QKeySequence>                            // For keyboard shortcuts
+
+// %%% Constructor %%%
+/* Initialize menu bar with actions */
+MenuBar::MenuBar(QWidget *parent)
+    : QMenuBar(parent)
 {
-    // File menu
+    // Create file menu
     fileMenu = addMenu("File");
     newFileAction = new QAction("New File", this);
     newFileAction->setShortcut(QKeySequence("Ctrl+N"));
@@ -28,7 +39,8 @@ MenuBar::MenuBar(QWidget *parent) : QMenuBar(parent)
     fileMenu->addSeparator();
     // fileMenu->addAction(runAction);
     fileMenu->addAction(exitAction);
-    // Edit menu
+
+    // Create edit menu
     editMenu = addMenu("Edit");
     undoAction = new QAction("Undo", this);
     undoAction->setShortcut(QKeySequence("Ctrl+Z"));
@@ -70,7 +82,8 @@ MenuBar::MenuBar(QWidget *parent) : QMenuBar(parent)
     editMenu->addSeparator();
     editMenu->addAction(playAction);
     editMenu->addAction(pauseAction);
-    // View menu
+
+    // Create view menu
     viewMenu = addMenu("View");
     add3DViewAction = new QAction("Add 3D View", this);
     add3DViewAction->setShortcut(QKeySequence("Ctrl+3"));
@@ -78,10 +91,12 @@ MenuBar::MenuBar(QWidget *parent) : QMenuBar(parent)
     remove3DViewAction->setShortcut(QKeySequence("Ctrl+Shift+3"));
     viewMenu->addAction(add3DViewAction);
     viewMenu->addAction(remove3DViewAction);
-    // Feedback menu
+
+    // Create feedback menu
     feedbackMenu = addMenu("Feedback");
     feedbackAction = new QAction("Open Feedback Page", this);
     feedbackMenu->addAction(feedbackAction);
+
     // Connect actions to signals
     connect(feedbackAction, &QAction::triggered, this, &MenuBar::feedbackTriggered);
     connect(newFileAction, &QAction::triggered, this, &MenuBar::newFileTriggered);
@@ -91,7 +106,6 @@ MenuBar::MenuBar(QWidget *parent) : QMenuBar(parent)
     connect(sameSaveAction, &QAction::triggered, this, &MenuBar::sameSaveTriggered);
     connect(saveJsonAction, &QAction::triggered, this, &MenuBar::saveTriggered);
     // connect(runAction, &QAction::triggered, this, &MenuBar::runTriggered);
-
     connect(exitAction, &QAction::triggered, this, &MenuBar::exitTriggered);
     connect(undoAction, &QAction::triggered, this, &MenuBar::undoTriggered);
     connect(redoAction, &QAction::triggered, this, &MenuBar::redoTriggered);
@@ -108,28 +122,148 @@ MenuBar::MenuBar(QWidget *parent) : QMenuBar(parent)
     connect(add3DViewAction, &QAction::triggered, this, &MenuBar::add3DViewTriggered);
     connect(remove3DViewAction, &QAction::triggered, this, &MenuBar::remove3DViewTriggered);
 }
-QMenu* MenuBar::getFileMenu() { return fileMenu; }
-QMenu* MenuBar::getEditMenu() { return editMenu; }
-QMenu* MenuBar::getViewMenu() { return viewMenu; }
-QAction* MenuBar::getLoadAction() { return loadJsonAction; }
-QAction* MenuBar::getLoadToLibraryAction() { return loadToLibraryAction; }
-QAction* MenuBar::getSameSaveAction() { return sameSaveAction; }
-QAction* MenuBar::getSaveAction() { return saveJsonAction; }
-QAction* MenuBar::getFeedbackAction() { return feedbackAction; }
-QAction* MenuBar::getNewFileAction() { return newFileAction; }
-QAction* MenuBar::getRecentProjectAction() { return recentProjectAction; }
-// QAction* MenuBar::getRunAction() { return runAction; }
-QAction* MenuBar::getExitAction() { return exitAction; }
-QAction* MenuBar::getUndoAction() { return undoAction; }
-QAction* MenuBar::getRedoAction() { return redoAction; }
-QAction* MenuBar::getSelectAllAction() { return selectAllAction; }
-QAction* MenuBar::getDeselectAllAction() { return deselectAllAction; }
-QAction* MenuBar::getCutAction() { return cutAction; }
-QAction* MenuBar::getCopyAction() { return copyAction; }
-QAction* MenuBar::getPasteAction() { return pasteAction; }
-QAction* MenuBar::getDuplicateAction() { return duplicateAction; }
-QAction* MenuBar::getRenameAction() { return renameAction; }
-QAction* MenuBar::getDeleteAction() { return deleteAction; }
-QAction* MenuBar::getPlayAction() { return playAction; }
-QAction* MenuBar::getPauseAction() { return pauseAction; }
-QAction* MenuBar::getAdd3DViewAction() { return add3DViewAction; }
+
+// %%% Getter Methods %%%
+/* Get file menu */
+QMenu* MenuBar::getFileMenu()
+{
+    return fileMenu;
+}
+
+/* Get edit menu */
+QMenu* MenuBar::getEditMenu()
+{
+    return editMenu;
+}
+
+/* Get view menu */
+QMenu* MenuBar::getViewMenu()
+{
+    return viewMenu;
+}
+
+/* Get load action */
+QAction* MenuBar::getLoadAction()
+{
+    return loadJsonAction;
+}
+
+/* Get load to library action */
+QAction* MenuBar::getLoadToLibraryAction()
+{
+    return loadToLibraryAction;
+}
+
+/* Get save action */
+QAction* MenuBar::getSameSaveAction()
+{
+    return sameSaveAction;
+}
+
+/* Get save as action */
+QAction* MenuBar::getSaveAction()
+{
+    return saveJsonAction;
+}
+
+/* Get feedback action */
+QAction* MenuBar::getFeedbackAction()
+{
+    return feedbackAction;
+}
+
+/* Get new file action */
+QAction* MenuBar::getNewFileAction()
+{
+    return newFileAction;
+}
+
+/* Get recent project action */
+QAction* MenuBar::getRecentProjectAction()
+{
+    return recentProjectAction;
+}
+
+/* Get exit action */
+QAction* MenuBar::getExitAction()
+{
+    return exitAction;
+}
+
+/* Get undo action */
+QAction* MenuBar::getUndoAction()
+{
+    return undoAction;
+}
+
+/* Get redo action */
+QAction* MenuBar::getRedoAction()
+{
+    return redoAction;
+}
+
+/* Get select all action */
+QAction* MenuBar::getSelectAllAction()
+{
+    return selectAllAction;
+}
+
+/* Get deselect all action */
+QAction* MenuBar::getDeselectAllAction()
+{
+    return deselectAllAction;
+}
+
+/* Get cut action */
+QAction* MenuBar::getCutAction()
+{
+    return cutAction;
+}
+
+/* Get copy action */
+QAction* MenuBar::getCopyAction()
+{
+    return copyAction;
+}
+
+/* Get paste action */
+QAction* MenuBar::getPasteAction()
+{
+    return pasteAction;
+}
+
+/* Get duplicate action */
+QAction* MenuBar::getDuplicateAction()
+{
+    return duplicateAction;
+}
+
+/* Get rename action */
+QAction* MenuBar::getRenameAction()
+{
+    return renameAction;
+}
+
+/* Get delete action */
+QAction* MenuBar::getDeleteAction()
+{
+    return deleteAction;
+}
+
+/* Get play action */
+QAction* MenuBar::getPlayAction()
+{
+    return playAction;
+}
+
+/* Get pause action */
+QAction* MenuBar::getPauseAction()
+{
+    return pauseAction;
+}
+
+/* Get add 3D view action */
+QAction* MenuBar::getAdd3DViewAction()
+{
+    return add3DViewAction;
+}

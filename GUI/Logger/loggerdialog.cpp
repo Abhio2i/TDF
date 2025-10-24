@@ -1,85 +1,65 @@
+/* ========================================================================= */
+/* File: loggerdialog.cpp                                                  */
+/* Purpose: Implements dialog for controlling logging and recording         */
+/* ========================================================================= */
 
-#include "loggerdialog.h"
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QDialogButtonBox>
-#include <QFormLayout>
-#include <QLineEdit>
-#include <QPushButton>
+#include "loggerdialog.h"                          // For logger dialog class
+#include <QFileDialog>                             // For file dialog
+#include <QMessageBox>                             // For warning messages
+#include <QDialogButtonBox>                        // For dialog buttons
+#include <QFormLayout>                             // For form layout
+#include <QLineEdit>                               // For input fields
+#include <QPushButton>                             // For buttons
+#include <QStandardPaths>                          // For standard paths
+#include <QDir>                                    // For directory operations
+#include <QToolButton>                             // For toolbar buttons
+#include <QCheckBox>                               // For checkboxes
+#include <QLabel>                                  // For labels
+#include <QListWidget>                             // For list widget
+#include <QVBoxLayout>                             // For vertical layout
+#include <QHBoxLayout>                             // For horizontal layout
 
-LoggerDialog::LoggerDialog(QWidget *parent) : QDialog(parent)
+// %%% Constructor %%%
+/* Initialize logger dialog */
+LoggerDialog::LoggerDialog(QWidget *parent)
+    : QDialog(parent)
 {
+    // Set window title and attributes
     setWindowTitle(tr("Logger Control"));
     setAttribute(Qt::WA_DeleteOnClose);
+    // Set recordings directory
     recordingsDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/recordings";
+    // Set minimum dialog size
     setMinimumSize(400, 550);
+    // Setup UI components
     setupUi();
-
+    // Apply stylesheet
     setStyleSheet(R"(
-        QDialog {
-            background-color: #f5f6fa;
-            font-family: 'Segoe UI', Arial, sans-serif;
-        }
-        QToolButton {
-            background-color: #ffffff;
-            border: 1px solid #dcdcdc;
-            border-radius: 4px;
-            padding: 5px;
-        }
-        QToolButton:hover {
-            background-color: #e0e0e0;
-        }
-        QPushButton {
-            background-color: #0078d4;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-        QPushButton:hover {
-            background-color: #005ba1;
-        }
-        QPushButton:disabled {
-            background-color: #a0a0a0;
-        }
-        QCheckBox {
-            font-size: 14px;
-            padding: 5px;
-        }
-        QLabel {
-            font-size: 14px;
-            color: #333333;
-        }
-        QListWidget {
-            border: 1px solid #dcdcdc;
-            border-radius: 4px;
-            background-color: #ffffff;
-            padding: 5px;
-        }
-        QFrame {
-            background-color: #ffffff;
-            border: 1px solid #dcdcdc;
-            border-radius: 4px;
-            padding: 10px;
-        }
-        QPushButton#recordingActive {
-            background-color: #55efc4;
-            color: #2c3e50;
-        }
-        QPushButton#recordingActive:hover {
-            background-color: #00bc8c;
-        }
+        QDialog { background-color: #f5f6fa; font-family: 'Segoe UI', Arial, sans-serif; }
+        QToolButton { background-color: #ffffff; border: 1px solid #dcdcdc; border-radius: 4px; padding: 5px; }
+        QToolButton:hover { background-color: #e0e0e0; }
+        QPushButton { background-color: #0078d4; color: white; border: none; border-radius: 4px; padding: 8px 16px; font-size: 14px; }
+        QPushButton:hover { background-color: #005ba1; }
+        QPushButton:disabled { background-color: #a0a0a0; }
+        QCheckBox { font-size: 14px; padding: 5px; }
+        QLabel { font-size: 14px; color: #333333; }
+        QListWidget { border: 1px solid #dcdcdc; border-radius: 4px; background-color: #ffffff; padding: 5px; }
+        QFrame { background-color: #ffffff; border: 1px solid #dcdcdc; border-radius: 4px; padding: 10px; }
+        QPushButton#recordingActive { background-color: #55efc4; color: #2c3e50; }
+        QPushButton#recordingActive:hover { background-color: #00bc8c; }
     )");
 }
 
+// %%% UI Setup %%%
+/* Setup dialog UI */
 void LoggerDialog::setupUi()
 {
+    // Create main layout
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(10);
     mainLayout->setContentsMargins(15, 15, 15, 15);
 
-    // Top toolbar for bookmark and timestamp
+    // Setup top toolbar
     QHBoxLayout *topLayout = new QHBoxLayout();
     bookmarkButton = new QToolButton(this);
     bookmarkButton->setIcon(QIcon(":/icons/images/star.png"));
@@ -92,7 +72,7 @@ void LoggerDialog::setupUi()
     topLayout->addStretch();
     mainLayout->addLayout(topLayout);
 
-    // Event selection frame
+    // Setup event selection frame
     QFrame *eventFrame = new QFrame(this);
     QVBoxLayout *eventLayout = new QVBoxLayout(eventFrame);
     eventLayout->setSpacing(8);
@@ -111,20 +91,20 @@ void LoggerDialog::setupUi()
     eventLayout->addStretch();
     mainLayout->addWidget(eventFrame);
 
-    // Control frame
+    // Setup control frame
     QFrame *controlFrame = new QFrame(this);
     QVBoxLayout *controlLayout = new QVBoxLayout(controlFrame);
     controlLayout->setSpacing(8);
     QPushButton *startRecordingButton = new QPushButton(QIcon(":/icons/images/play.png"), tr("Start Recording"), this);
     startRecordingButton->setObjectName("startRecordingButton");
     QPushButton *stopRecordingButton = new QPushButton(QIcon(":/icons/images/stop.png"), tr("Stop Recording"), this);
-    stopRecordingButton->setEnabled(false); // Disable Stop button by default
+    stopRecordingButton->setEnabled(false);
 
-    // Timeline widget
+    // Setup timeline widget
     timelineWidget = new TimelineWidget(this);
     timelineWidget->setVisible(timestampCheckBox->isChecked());
 
-    // Recordings label and list
+    // Setup recordings list
     QLabel *recordingsLabel = new QLabel(tr("Recordings"), this);
     recordingsLabel->setStyleSheet("font-weight: bold; font-size: 16px; color: #2c3e50;");
     recordingsList = new QListWidget(this);
@@ -132,6 +112,7 @@ void LoggerDialog::setupUi()
     replayButton = new QPushButton(QIcon(":/icons/images/replay.png"), tr("Replay Selected"), this);
     replayButton->setEnabled(false);
 
+    // Initialize recordings directory
     QDir dir(recordingsDir);
     if (!dir.exists()) {
         dir.mkpath(".");
@@ -148,10 +129,10 @@ void LoggerDialog::setupUi()
     controlLayout->addStretch();
     mainLayout->addWidget(controlFrame);
 
-    // Stretch to push content up
+    // Add stretch to layout
     mainLayout->addStretch();
 
-    // Connections
+    // Connect start recording button
     connect(startRecordingButton, &QPushButton::clicked, this, [this, startRecordingButton, stopRecordingButton]() {
         recordingStartTime = QDateTime::currentDateTime();
         timelineWidget->setRecordingStartTime(recordingStartTime);
@@ -165,8 +146,9 @@ void LoggerDialog::setupUi()
         stopRecordingButton->setEnabled(true);
     });
 
+    // Connect stop recording button
     connect(stopRecordingButton, &QPushButton::clicked, this, [this, startRecordingButton, stopRecordingButton]() {
-        if (recordingStartTime.isValid()) { // Check if recording is active
+        if (recordingStartTime.isValid()) {
             emit stopRecording();
             startRecordingButton->setText(tr("Start Recording"));
             startRecordingButton->setObjectName("startRecordingButton");
@@ -179,10 +161,12 @@ void LoggerDialog::setupUi()
         }
     });
 
+    // Connect recordings list selection
     connect(recordingsList, &QListWidget::itemSelectionChanged, this, [this]() {
         replayButton->setEnabled(recordingsList->selectedItems().count() > 0);
     });
 
+    // Connect replay button
     connect(replayButton, &QPushButton::clicked, this, [this, startRecordingButton]() {
         if (recordingsList->selectedItems().count() > 0) {
             QString selectedFile = recordingsList->selectedItems().first()->text();
@@ -194,6 +178,7 @@ void LoggerDialog::setupUi()
         }
     });
 
+    // Connect event checkboxes
     connect(actionsCheckBox, &QCheckBox::stateChanged, this, [this]() {
         QStringList eventTypes;
         if (actionsCheckBox->isChecked()) eventTypes << "Actions";
@@ -218,6 +203,7 @@ void LoggerDialog::setupUi()
         emit eventTypesSelected(eventTypes);
     });
 
+    // Connect bookmark button
     connect(bookmarkButton, &QToolButton::clicked, this, [this]() {
         QDialog bookmarkDialog(this);
         bookmarkDialog.setWindowTitle(tr("Add Bookmark"));
@@ -231,6 +217,7 @@ void LoggerDialog::setupUi()
         dialogLayout->addWidget(okButton);
         dialogLayout->addStretch();
 
+        // Connect bookmark dialog OK button
         connect(okButton, &QPushButton::clicked, &bookmarkDialog, [this, &bookmarkDialog, bookmarkEdit]() {
             if (!bookmarkEdit->text().isEmpty()) {
                 QString bookmarkNote = bookmarkEdit->text();
@@ -248,6 +235,7 @@ void LoggerDialog::setupUi()
         bookmarkDialog.exec();
     });
 
+    // Connect timestamp checkbox
     connect(timestampCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
         bool enabled = (state == Qt::Checked);
         emit timestampToggled(enabled);
@@ -259,27 +247,36 @@ void LoggerDialog::setupUi()
     });
 }
 
+// %%% Utility Methods %%%
+/* Update recordings list */
 void LoggerDialog::updateRecordingsList()
 {
+    // Clear list
     recordingsList->clear();
     QStringList filters;
     filters << "*.json";
+    // Get JSON files in recordings directory
     QStringList recordingFiles = QDir(recordingsDir).entryList(filters, QDir::Files, QDir::Time);
+    // Add files to list
     for (const QString &file : recordingFiles) {
         QListWidgetItem *item = new QListWidgetItem(QIcon(":/icons/images/file.png"), file, recordingsList);
         item->setToolTip(file);
     }
 }
 
+/* Update recording duration */
 void LoggerDialog::updateRecordingDuration(qint64 durationMs)
 {
+    // Update timeline if timestamp enabled
     if (timestampCheckBox->isChecked()) {
         timelineWidget->setRecordingDuration(durationMs);
     }
 }
 
+/* Add bookmark with timestamp */
 void LoggerDialog::addBookmarkWithTimestamp(const QString &note, qint64 timestampMs)
 {
+    // Add bookmark to timeline if timestamp enabled
     if (timestampCheckBox->isChecked()) {
         timelineWidget->addBookmark(note, timestampMs);
     }

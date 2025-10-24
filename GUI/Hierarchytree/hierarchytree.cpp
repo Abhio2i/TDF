@@ -1,22 +1,29 @@
-#include "hierarchytree.h"
-#include <QDebug>
-#include <QIcon>
-#include <QInputDialog>
-#include <QContextMenuEvent>
-#include <QVBoxLayout>
-#include <QMouseEvent>
-#include <QMimeData>
-#include <QDrag>
-#include <QDragEnterEvent>
-#include <QDragMoveEvent>
-#include <QDropEvent>
-#include <GUI/Hierarchytree/contextmenu.h>
-#include <QMimeData>
-#include <QApplication>
+/* ========================================================================= */
+/* File: hierarchytree.cpp                                                  */
+/* Purpose: Implements hierarchy tree widget with drag-and-drop support      */
+/* ========================================================================= */
 
+#include "hierarchytree.h"                         // For hierarchy tree class
+#include <QDebug>                                  // For debug output
+#include <QIcon>                                   // For icons
+#include <QInputDialog>                            // For input dialog
+#include <QContextMenuEvent>                       // For context menu events
+#include <QVBoxLayout>                             // For vertical layout
+#include <QMouseEvent>                             // For mouse events
+#include <QMimeData>                               // For MIME data handling
+#include <QDrag>                                   // For drag operations
+#include <QDragEnterEvent>                         // For drag enter events
+#include <QDragMoveEvent>                          // For drag move events
+#include <QDropEvent>                              // For drop events
+#include <GUI/Hierarchytree/contextmenu.h>         // For context menu
+#include <QApplication>                            // For application instance
+
+// %%% Constructor %%%
+/* Initialize hierarchy tree widget */
 HierarchyTree::HierarchyTree(QWidget *parent)
     : QWidget(parent)
 {
+    // Create tree widget
     tree = new QTreeWidget(this);
     tree->setHeaderLabel("Hierarchy");
     tree->setEditTriggers(QAbstractItemView::DoubleClicked);
@@ -31,8 +38,7 @@ HierarchyTree::HierarchyTree(QWidget *parent)
     tree->setDropIndicatorShown(true);
     tree->setDefaultDropAction(Qt::CopyAction);
 
-
-
+    // Connect item clicked signal
     connect(tree, &QTreeWidget::itemClicked, this, [=](QTreeWidgetItem* item, int column) {
         Q_UNUSED(column);
         QVariantMap data = item->data(0, Qt::UserRole).toMap();
@@ -49,7 +55,6 @@ HierarchyTree::HierarchyTree(QWidget *parent)
         } else {
             type = data["type"].toString();
         }
-
         if (type == "component") {
             data["entityID"] = data["parentId"];
             QString componentName = data["name"].toString();
@@ -65,6 +70,7 @@ HierarchyTree::HierarchyTree(QWidget *parent)
                  << "entityID=" << data["entityID"] << "componentName=" << data["componentName"];
     });
 
+    // Connect item pressed signal
     connect(tree, &QTreeWidget::itemPressed, this, [=](QTreeWidgetItem *item, int col) {
         Q_UNUSED(col);
         QVariantMap storedData = item->data(0, Qt::UserRole).toMap();
@@ -80,7 +86,6 @@ HierarchyTree::HierarchyTree(QWidget *parent)
         } else {
             type = storedData["type"].toString();
         }
-
         if (type == "entity") {
             qDebug() << "Emitting copyItemRequested: type=" << type
                      << "name=" << storedData["name"].toString()
@@ -93,10 +98,12 @@ HierarchyTree::HierarchyTree(QWidget *parent)
         }
     });
 
+    // Setup layout
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(tree);
     setLayout(layout);
 
+    // Initialize context menu
     contextMenu = new ContextMenu(this);
     connect(tree, &QTreeWidget::customContextMenuRequested,
             this, &HierarchyTree::showContextMenu);
@@ -104,23 +111,32 @@ HierarchyTree::HierarchyTree(QWidget *parent)
             this, &HierarchyTree::componentRemoved);
 }
 
+/* Destructor */
 HierarchyTree::~HierarchyTree()
 {
+    // Delete context menu
     delete contextMenu;
-    // tree is deleted automatically as a child of this widget
+    // Tree widget is deleted automatically as a child
 }
 
-QTreeWidget* HierarchyTree::getTreeWidget() {
+/* Get tree widget */
+QTreeWidget* HierarchyTree::getTreeWidget()
+{
+    // Return tree widget
     return tree;
 }
 
-
-void HierarchyTree::profileAdded(QString ID, QString profileName) {
+// %%% Tree Item Management %%%
+/* Add profile to tree */
+void HierarchyTree::profileAdded(QString ID, QString profileName)
+{
+    // Create profile item
     QTreeWidgetItem *category = new QTreeWidgetItem(tree);
     category->setText(0, profileName);
     category->setIcon(0, QIcon(":/icons/images/category.png"));
     Items.insert(ID, category);
 
+    // Set item data
     QVariantMap data;
     data["ID"] = ID;
     data["parentId"] = "";
@@ -136,12 +152,16 @@ void HierarchyTree::profileAdded(QString ID, QString profileName) {
     qDebug() << "Profile added to tree: ID=" << ID << "Name=" << profileName << "Data=" << data;
 }
 
-void HierarchyTree::folderAdded(QString parentID, QString ID, QString folderName) {
+/* Add folder to tree */
+void HierarchyTree::folderAdded(QString parentID, QString ID, QString folderName)
+{
+    // Create folder item
     QTreeWidgetItem *folder = new QTreeWidgetItem(Items[parentID]);
     folder->setText(0, folderName);
     folder->setIcon(0, QIcon(":/icons/images/folder.png"));
     Items.insert(ID, folder);
 
+    // Set item data
     QVariantMap data;
     data["ID"] = ID;
     data["parentId"] = parentID;
@@ -152,12 +172,16 @@ void HierarchyTree::folderAdded(QString parentID, QString ID, QString folderName
     qDebug() << "Folder added to tree: ID=" << ID << "Name=" << folderName << "ParentID=" << parentID;
 }
 
-void HierarchyTree::entityAdded(QString parentID, QString ID, QString entityName) {
+/* Add entity to tree */
+void HierarchyTree::entityAdded(QString parentID, QString ID, QString entityName)
+{
+    // Create entity item
     QTreeWidgetItem *entity = new QTreeWidgetItem(Items[parentID]);
     entity->setText(0, entityName);
     entity->setIcon(0, QIcon(":/icons/images/entity.png"));
     Items.insert(ID, entity);
 
+    // Set item data
     QVariantMap data;
     data["ID"] = ID;
     data["parentId"] = parentID;
@@ -168,14 +192,19 @@ void HierarchyTree::entityAdded(QString parentID, QString ID, QString entityName
     qDebug() << "Entity added to tree: ID=" << ID << "Name=" << entityName << "ParentID=" << parentID;
 }
 
-void HierarchyTree::componentAdded(QString parentID, QString componentName) {
+/* Add component to tree */
+void HierarchyTree::componentAdded(QString parentID, QString componentName)
+{
+    // Validate parent ID
     if (!Items.contains(parentID)) {
         qWarning() << "Cannot add component: Parent ID" << parentID << "not found in Items";
         return;
     }
+    // Create component item
     QTreeWidgetItem *component = new QTreeWidgetItem(Items[parentID]);
     component->setText(0, componentName);
     component->setIcon(0, QIcon(":/icons/images/component.png"));
+    // Set item data
     QVariantMap data;
     data["ID"] = "";
     data["parentId"] = parentID;
@@ -185,7 +214,10 @@ void HierarchyTree::componentAdded(QString parentID, QString componentName) {
     qDebug() << "Component added to tree: Name=" << componentName << "ParentID=" << parentID;
 }
 
-void HierarchyTree::profileRemoved(QString ID) {
+/* Remove profile from tree */
+void HierarchyTree::profileRemoved(QString ID)
+{
+    // Check if profile exists
     if (Items.contains(ID)) {
         delete Items[ID];
         Items.remove(ID);
@@ -195,8 +227,10 @@ void HierarchyTree::profileRemoved(QString ID) {
     }
 }
 
-
-void HierarchyTree::folderRemoved(QString ID) {
+/* Remove folder from tree */
+void HierarchyTree::folderRemoved(QString ID)
+{
+    // Check if folder exists
     if (Items.contains(ID)) {
         delete Items[ID];
         Items.remove(ID);
@@ -206,8 +240,10 @@ void HierarchyTree::folderRemoved(QString ID) {
     }
 }
 
-
-void HierarchyTree::entityRemoved(QString ID) {
+/* Remove entity from tree */
+void HierarchyTree::entityRemoved(QString ID)
+{
+    // Check if entity exists
     if (Items.contains(ID)) {
         delete Items[ID];
         Items.remove(ID);
@@ -217,7 +253,10 @@ void HierarchyTree::entityRemoved(QString ID) {
     }
 }
 
-void HierarchyTree::profileRenamed(QString ID, QString name) {
+/* Rename profile in tree */
+void HierarchyTree::profileRenamed(QString ID, QString name)
+{
+    // Check if profile exists
     if (Items.contains(ID)) {
         Items[ID]->setText(0, name);
         qDebug() << "Profile renamed in tree: ID=" << ID << "New Name=" << name;
@@ -226,7 +265,10 @@ void HierarchyTree::profileRenamed(QString ID, QString name) {
     }
 }
 
-void HierarchyTree::folderRenamed(QString ID, QString name) {
+/* Rename folder in tree */
+void HierarchyTree::folderRenamed(QString ID, QString name)
+{
+    // Check if folder exists
     if (Items.contains(ID)) {
         Items[ID]->setText(0, name);
         qDebug() << "Folder renamed in tree: ID=" << ID << "New Name=" << name;
@@ -235,7 +277,10 @@ void HierarchyTree::folderRenamed(QString ID, QString name) {
     }
 }
 
-void HierarchyTree::entityRenamed(QString ID, QString name) {
+/* Rename entity in tree */
+void HierarchyTree::entityRenamed(QString ID, QString name)
+{
+    // Check if entity exists
     if (Items.contains(ID)) {
         Items[ID]->setText(0, name);
         qDebug() << "Entity renamed in tree: ID=" << ID << "New Name=" << name;
@@ -244,22 +289,22 @@ void HierarchyTree::entityRenamed(QString ID, QString name) {
     }
 }
 
-
-void HierarchyTree::showContextMenu(const QPoint &pos) {
+/* Show context menu */
+void HierarchyTree::showContextMenu(const QPoint &pos)
+{
+    // Get item at position
     QTreeWidgetItem *item = tree->itemAt(pos);
     if (item) {
         QVariantMap data = item->data(0, Qt::UserRole).toMap();
         QString itemType = data["type"].toString();
         QString specificType = "";
-
-
         if (data.contains("type") && data["type"].type() == QVariant::Map) {
             QVariantMap typeData = data["type"].toMap();
             if (typeData.contains("value")) {
                 specificType = typeData["value"].toString();
             }
         }
-
+        // Setup and show context menu
         contextMenu->setupMenu(item);
         contextMenu->exec(tree->viewport()->mapToGlobal(pos));
     } else {
@@ -267,12 +312,17 @@ void HierarchyTree::showContextMenu(const QPoint &pos) {
     }
 }
 
-void HierarchyTree::contextMenuEvent(QContextMenuEvent *event) {
+/* Handle context menu event */
+void HierarchyTree::contextMenuEvent(QContextMenuEvent *event)
+{
+    // Show context menu at event position
     showContextMenu(event->pos());
 }
 
+/* Handle drag enter event */
 void HierarchyTree::dragEnterEvent(QDragEnterEvent *event)
 {
+    // Accept drag if MIME data is entity
     if (event->mimeData()->hasFormat("application/x-entity-data")) {
         event->acceptProposedAction();
     } else {
@@ -280,9 +330,10 @@ void HierarchyTree::dragEnterEvent(QDragEnterEvent *event)
     }
 }
 
-
+/* Handle drag move event */
 void HierarchyTree::dragMoveEvent(QDragMoveEvent *event)
 {
+    // Check MIME data
     if (event->mimeData()->hasFormat("application/x-entity-data")) {
         QTreeWidgetItem *item = tree->itemAt(event->pos());
         if (item) {
@@ -300,6 +351,7 @@ void HierarchyTree::dragMoveEvent(QDragMoveEvent *event)
             } else {
                 type = data["type"].toString();
             }
+            // Accept if target is profile or folder
             if (type == "profile" || type == "folder") {
                 event->acceptProposedAction();
                 return;
@@ -309,20 +361,21 @@ void HierarchyTree::dragMoveEvent(QDragMoveEvent *event)
     event->ignore();
 }
 
-
+/* Handle drop event */
 void HierarchyTree::dropEvent(QDropEvent *event)
 {
+    // Validate MIME data
     if (!event->mimeData()->hasFormat("application/x-entity-data")) {
         event->ignore();
         return;
     }
-
+    // Get target item
     QTreeWidgetItem *targetItem = tree->itemAt(event->pos());
     if (!targetItem) {
         event->ignore();
         return;
     }
-
+    // Get target data
     QVariantMap targetData = targetItem->data(0, Qt::UserRole).toMap();
     QString targetType;
     if (targetData["type"].type() == QVariant::Map) {
@@ -337,29 +390,30 @@ void HierarchyTree::dropEvent(QDropEvent *event)
     } else {
         targetType = targetData["type"].toString();
     }
-
+    // Validate target type
     if (targetType != "profile" && targetType != "folder") {
         event->ignore();
         return;
     }
-
+    // Read source data
     QByteArray itemData = event->mimeData()->data("application/x-entity-data");
     QDataStream stream(&itemData, QIODevice::ReadOnly);
-
     QVariantMap sourceData;
     stream >> sourceData;
-
+    // Validate source type
     if (sourceData["type"].toString() != "entity") {
         event->ignore();
         return;
     }
-
+    // Emit drop signal
     emit itemDropped(sourceData, targetData);
     event->acceptProposedAction();
 }
 
+/* Remove component from tree */
 void HierarchyTree::componentRemoved(QString entityID, QString componentName)
 {
+    // Check if entity exists
     if (Items.contains(entityID)) {
         QTreeWidgetItem *entityItem = Items[entityID];
         for (int i = 0; i < entityItem->childCount(); ++i) {
@@ -374,13 +428,18 @@ void HierarchyTree::componentRemoved(QString entityID, QString componentName)
     } else {
         qWarning() << "Cannot remove component: Entity ID" << entityID << "not found in Items";
     }
+    // Emit remove component signal
     emit removeComponentRequested(entityID, componentName);
 }
-void HierarchyTree::selectEntityById(const QString& entityId) {
+
+/* Select entity by ID */
+void HierarchyTree::selectEntityById(const QString& entityId)
+{
+    // Check if entity exists
     if (Items.contains(entityId)) {
         QTreeWidgetItem* item = Items[entityId];
-        tree->setCurrentItem(item); // Select the item in the tree
-        tree->scrollToItem(item);   // Ensure the item is visible
+        tree->setCurrentItem(item); // Select item
+        tree->scrollToItem(item);   // Scroll to item
         qDebug() << "Selected entity in tree: ID=" << entityId;
     } else {
         qWarning() << "Cannot select entity: ID" << entityId << "not found in Items";
