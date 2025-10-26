@@ -289,6 +289,22 @@ private:
     bool handleUserImageSelection(QMouseEvent *event);  // Handle user image selection
     void handleUserImageDragging(QMouseEvent *event);  // Handle user image dragging
     void stopUserImageDragging();  // Stop user image dragging
+
+    bool   isRotating = false;          // are we rotating a temp object?
+    QString rotatingId;                 // id of the object being rotated
+    QPoint  rotateStartPos;             // mouse pos when rotation started
+    qreal   rotateStartAngle = 0.0;     // initial rotation of the object (degrees)
+    static qreal angleBetweenPoints(const QPointF &center, const QPointF &p1, const QPointF &p2);
+    void drawRotationHandle(QPainter &painter, const MeshEntry &entry);
+    QPointF rotateCenter;           // <-- ADD THIS
+    qreal initialMouseAngle = 0.0; // <-- ADD THIS
+    QString rotatingBitmapId;           // For bitmap rotation
+    QPointF rotateHandleCenter;         // Handle center (canvas)
+    QPointF rotateHandleStartPos;       // Mouse start
+    qreal initialBitmapAngle = 0.0;     // For smooth rotation
+    bool isRotatingBitmap = false;
+    QString activeRotateId;  // NEW: Tracks which shape is in rotate mode
+
 };
 
 #endif // CANVASWIDGET_H

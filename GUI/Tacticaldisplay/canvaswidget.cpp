@@ -390,6 +390,56 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
         }
     }
 
+    if (currentMode == Translate && !activeRotateId.isEmpty()) {
+        const qreal tolerance = 20.0;
+
+        for (auto& entry : tempMeshes) {
+            if (entry.name != activeRotateId) continue;
+            if (!entry.position || !entry.size || !entry.mesh) continue;
+
+            QPointF center = gislib->geoToCanvas(entry.position->y(), entry.position->x());
+
+            QRectF boundingBox;
+            if (entry.name.startsWith("TempCircle")) {
+                float r = entry.size->x() * 25.0f;
+                boundingBox = QRectF(center.x() - r, center.y() - r, r*2, r*2);
+            }
+            else if (entry.name.startsWith("TempRectangle") || !entry.bitmapPath.isEmpty()) {
+                float w = entry.size->x() * 25.0f;
+                float h = entry.size->y() * 25.0f;
+                boundingBox = QRectF(center.x() - w/2, center.y() - h/2, w, h);
+            }
+            else if (entry.name.startsWith("TempPolygon") || entry.name.startsWith("TempPolyline")) {
+                QPolygonF poly;
+                for (const Vector* v : entry.mesh->polygen) {
+                    QPointF geo(v->x + entry.position->x(), v->y + entry.position->y());
+                    QPointF canvas = gislib->geoToCanvas(geo.y(), geo.x());
+                    poly << canvas;
+                }
+                if (poly.isEmpty()) continue;
+                boundingBox = poly.boundingRect();
+            }
+            else continue;
+
+            QPointF handle = boundingBox.bottomRight() + QPointF(10, 10);
+
+            if (QVector2D(event->pos() - handle).length() < tolerance) {
+                isRotatingBitmap = true;
+                rotatingBitmapId = entry.name;
+                rotateHandleCenter = center;
+                rotateHandleStartPos = event->pos();
+
+                qreal dx = event->pos().x() - center.x();
+                qreal dy = event->pos().y() - center.y();
+                initialBitmapAngle = std::atan2(dy, dx);
+
+                setCursor(Qt::PointingHandCursor);
+                Console::log("Rotation handle clicked: " + entry.name.toStdString());
+                return;
+            }
+        }
+    }
+
     if (currentMode == MeasureDistance && event->button() == Qt::LeftButton) {
         QPointF geo = gislib->canvasToGeo(event->pos());
         measurePoints.append(geo);
@@ -1070,9 +1120,104 @@ void CanvasWidget::handleShapeRightClick(QMouseEvent *event) {
             closestIt = it;  // Capture the iterator
         }
     }
-    if (!closestShapeId.isEmpty() && closestEntry && closestIt != tempMeshes.end()) {  // Added check for valid iterator
+    //     if (!closestShapeId.isEmpty() && closestEntry && closestIt != tempMeshes.end()) {  // Added check for valid iterator
+    //         QMenu contextMenu(this);
+    //         contextMenu.setStyleSheet(
+    //             "QMenu { background-color: white; color: black; border: 1px solid #cccccc; }"
+    //             "QMenu::item { background-color: white; color: black; padding: 5px 20px; }"
+    //             "QMenu::item:selected { background-color: #0078d7; color: white; }"
+    //             );
+    //         // Add edit option for shapes and bitmaps
+    //         if (closestShapeId.startsWith("TempPolyline") ||
+    //             closestShapeId.startsWith("TempCircle") ||
+    //             closestShapeId.startsWith("TempRectangle") ||
+    //             closestShapeId.startsWith("TempPolygon") ||
+    //             !closestEntry->bitmapPath.isEmpty()) {
+    //             QAction* editAction = contextMenu.addAction("Edit");
+    //             connect(editAction, &QAction::triggered, this, [=]() {
+    //                 currentMode = EditShape;
+    //                 editingShapeId = closestShapeId;
+    //                 setCursor(Qt::SizeAllCursor);
+    //                 resizeHandles.clear();
+    //                 if (closestShapeId.startsWith("TempRectangle") || !closestEntry->bitmapPath.isEmpty()) {
+    //                     float w = closestEntry->size->x() * 25;
+    //                     float h = closestEntry->size->y() * 25;
+    //                     QPointF centerCanvas = gislib->geoToCanvas(closestEntry->position->y(), closestEntry->position->x());
+    //                     resizeHandles = {
+    //                         centerCanvas + QPointF(-w/2, -h/2),
+    //                         centerCanvas + QPointF(w/2, -h/2),
+    //                         centerCanvas + QPointF(w/2, h/2),
+    //                         centerCanvas + QPointF(-w/2, h/2)
+    //                     };
+    //                 } else if (closestShapeId.startsWith("TempCircle")) {
+    //                     QPointF centerCanvas = gislib->geoToCanvas(closestEntry->position->y(), closestEntry->position->x());
+    //                     resizeHandles = { centerCanvas + QPointF(closestEntry->size->x() * 25, 0) };
+    //                 } else if (closestShapeId.startsWith("TempPolygon") || closestShapeId.startsWith("TempPolyline")) {
+    //                     for (Vector* v : closestEntry->mesh->polygen) {
+    //                         QPointF canvasPoint = gislib->geoToCanvas(v->y + closestEntry->position->y(), v->x + closestEntry->position->x());
+    //                         resizeHandles.push_back(canvasPoint);
+    //                     }
+    //                 }
+    //                 Console::log("Entered EditShape mode for: " + closestShapeId.toStdString());
+    //                 update();
+    //             });
+    //         }
+    //         QAction* rotateAction = contextMenu.addAction("Rotate");
+    //         connect(rotateAction, &QAction::triggered, this, [=]() {
+    //             activeRotateId = closestShapeId;
+    //             Console::log("Rotate mode entered for: " + closestShapeId.toStdString());
+    //             update();
+    //         });
+    //         QAction* deleteAction = contextMenu.addAction(
+    //             closestShapeId.startsWith("TempPolyline") ||
+    //                     closestShapeId.startsWith("TempCircle") ||
+    //                     closestShapeId.startsWith("TempRectangle") ||
+    //                     closestShapeId.startsWith("TempPolygon") ||
+    //                     closestShapeId.startsWith("TempPoint") ? "Delete Shape" :
+    //                 closestShapeId.startsWith("TempText") ? "Delete Text" :
+    //                 "Delete Bitmap"
+    //             );
+    //         connect(deleteAction, &QAction::triggered, this, [=]() {
+    //             // Delete immediately without confirmation dialog
+    //             delete closestEntry->position;
+    //             delete closestEntry->rotation;
+    //             delete closestEntry->size;
+    //             delete closestEntry->velocity;
+    //             if (closestEntry->mesh) {
+    //                 for (Vector* v : closestEntry->mesh->polygen) {
+    //                     delete v;
+    //                 }
+    //                 delete closestEntry->mesh->color;
+    //                 delete closestEntry->mesh;
+    //             }
+    //             delete closestEntry->collider;
+    //             delete closestEntry->trajectory;
+    //             // Erase using the stored iterator instead of looping by name
+    //             tempMeshes.erase(closestIt);
+    //             Console::log(std::string("Deleted ") +
+    //                          (closestShapeId.startsWith("TempText") ? "text: " :
+    //                               closestShapeId.startsWith("TempPolyline") ||
+    //                                   closestShapeId.startsWith("TempCircle") ||
+    //                                   closestShapeId.startsWith("TempRectangle") ||
+    //                                   closestShapeId.startsWith("TempPolygon") ||
+    //                                   closestShapeId.startsWith("TempPoint") ? "shape: " :
+    //                               "bitmap: ") +
+    //                          closestShapeId.toStdString());
+    //             update();
+    //         });
+    //         contextMenu.exec(event->globalPos());
+    //         return;
+    //     }
+    // }
+    if (!closestShapeId.isEmpty() && closestEntry && closestIt != tempMeshes.end()) {
         QMenu contextMenu(this);
-        // Add edit option for shapes and bitmaps
+        contextMenu.setStyleSheet(
+            "QMenu { background-color: white; color: black; border: 1px solid #cccccc; }"
+            "QMenu::item { background-color: white; color: black; padding: 5px 20px; }"
+            "QMenu::item:selected { background-color: #0078d7; color: white; }"
+            );
+
+        // Edit action (if applicable)
         if (closestShapeId.startsWith("TempPolyline") ||
             closestShapeId.startsWith("TempCircle") ||
             closestShapeId.startsWith("TempRectangle") ||
@@ -1107,6 +1252,16 @@ void CanvasWidget::handleShapeRightClick(QMouseEvent *event) {
                 update();
             });
         }
+
+        // === ROTATE ACTION ===
+        QAction* rotateAction = contextMenu.addAction("Rotate");
+        connect(rotateAction, &QAction::triggered, this, [=]() {
+            activeRotateId = closestShapeId;
+            Console::log("Rotate mode entered for: " + closestShapeId.toStdString());
+            update();
+        });
+
+        // === DELETE ACTION ===
         QAction* deleteAction = contextMenu.addAction(
             closestShapeId.startsWith("TempPolyline") ||
                     closestShapeId.startsWith("TempCircle") ||
@@ -1117,37 +1272,28 @@ void CanvasWidget::handleShapeRightClick(QMouseEvent *event) {
                 "Delete Bitmap"
             );
         connect(deleteAction, &QAction::triggered, this, [=]() {
-            // Delete immediately without confirmation dialog
             delete closestEntry->position;
             delete closestEntry->rotation;
             delete closestEntry->size;
             delete closestEntry->velocity;
             if (closestEntry->mesh) {
-                for (Vector* v : closestEntry->mesh->polygen) {
-                    delete v;
-                }
+                for (Vector* v : closestEntry->mesh->polygen) delete v;
                 delete closestEntry->mesh->color;
                 delete closestEntry->mesh;
             }
             delete closestEntry->collider;
             delete closestEntry->trajectory;
-            // Erase using the stored iterator instead of looping by name
             tempMeshes.erase(closestIt);
-            Console::log(std::string("Deleted ") +
-                         (closestShapeId.startsWith("TempText") ? "text: " :
-                              closestShapeId.startsWith("TempPolyline") ||
-                                  closestShapeId.startsWith("TempCircle") ||
-                                  closestShapeId.startsWith("TempRectangle") ||
-                                  closestShapeId.startsWith("TempPolygon") ||
-                                  closestShapeId.startsWith("TempPoint") ? "shape: " :
-                              "bitmap: ") +
-                         closestShapeId.toStdString());
+            Console::log("Deleted: " + closestShapeId.toStdString());
             update();
         });
+        // === EXEC MENU ===
         contextMenu.exec(event->globalPos());
-        return;
+        // DO NOT RETURN HERE
     }
+    // Remove the `return;` from here
 }
+
 
 bool CanvasWidget::isPointInPolygon(const QPointF& point, const std::vector<Vector*>& vertices, const QPointF& centroidGeo, GISlib* gislib) {
     int i, j, n = vertices.size();
@@ -1169,6 +1315,27 @@ void CanvasWidget::handleMouseMove(QMouseEvent *event) {
     if (!gislib) {
         Console::error("GISlib is not initialized");
         return;
+    }
+    if (isRotatingBitmap && !rotatingBitmapId.isEmpty()) {
+        for (auto& entry : tempMeshes) {
+            if (entry.name == rotatingBitmapId) {
+                qreal dx = event->pos().x() - rotateHandleCenter.x();
+                qreal dy = event->pos().y() - rotateHandleCenter.y();
+                qreal currentAngle = std::atan2(dy, dx);
+                qreal delta = currentAngle - initialBitmapAngle;
+
+                // Update rotation (in radians)
+                entry.rotation->setZ(entry.rotation->z() + delta);
+                initialBitmapAngle = currentAngle;
+
+                Console::log(QString("Bitmap rotated: %1°").arg(qRadiansToDegrees(entry.rotation->z()), 0, 'f', 1).toStdString());
+                update();
+                return;
+            }
+        }
+        // Not found → stop
+        isRotatingBitmap = false;
+        rotatingBitmapId.clear();
     }
 
     // First check for shape dragging
@@ -1355,6 +1522,15 @@ void CanvasWidget::handleMouseMove(QMouseEvent *event) {
 
 void CanvasWidget::handleMouseRelease(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
+        if (isRotatingBitmap) {
+            Console::log("Bitmap rotation finished");
+            isRotatingBitmap = false;
+            rotatingBitmapId.clear();
+            activeRotateId.clear();  // ADD THIS LINE
+            setCursor(Qt::ArrowCursor);
+            update();
+            return;
+        }
 
         // Stop all types of dragging
         if (isDraggingShape) {
@@ -1401,6 +1577,12 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
         return;
     }
     if (event->key() == Qt::Key_Escape) {
+        if (!activeRotateId.isEmpty()) {
+            activeRotateId.clear();
+            Console::log("Rotate mode cancelled via Escape");
+            update();
+            return;
+        }
         if (currentMode == EditShape) {
             currentMode = Translate;
             editingShapeId = "";
@@ -1682,6 +1864,24 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
     drawCollider(painter);
     drawAirbases(painter);// for preset layer
 
+    // // Draw rotation handle for ALL rotatable shapes
+    // for (const auto& entry : tempMeshes) {
+    //     bool isRotatable = !entry.bitmapPath.isEmpty() ||
+    //                        entry.name.startsWith("TempRectangle") ||
+    //                        entry.name.startsWith("TempCircle") ||
+    //                        entry.name.startsWith("TempPolygon") ||
+    //                        entry.name.startsWith("TempPolyline");
+
+    //     if (isRotatable) {
+    //         drawRotationHandle(painter, entry);
+    //     }
+    // }
+    // Draw rotation handle only for the active rotating shape
+    for (const auto& entry : tempMeshes) {
+        if (entry.name == activeRotateId) {
+            drawRotationHandle(painter, entry);
+        }
+    }
     // Draw selection outline for dragged shape
     if (isDraggingShape && !draggingShapeId.isEmpty()) {
         for (const auto& entry : tempMeshes) {
@@ -2495,10 +2695,14 @@ QJsonObject CanvasWidget::toJson() const {
         posObj["z"] = entry.position->z();
         meshObj["position"] = posObj;
 
+        // QJsonObject rotObj;
+        // rotObj["x"] = entry.rotation->x();
+        // rotObj["y"] = entry.rotation->y();
+        // rotObj["z"] = entry.rotation->z();
+        // meshObj["rotation"] = rotObj;
+        /* **ROTATION** – store Euler Z in degrees (QGIS style) */
         QJsonObject rotObj;
-        rotObj["x"] = entry.rotation->x();
-        rotObj["y"] = entry.rotation->y();
-        rotObj["z"] = entry.rotation->z();
+        rotObj["z_deg"] = entry.rotation->z() * (180.0 / M_PI);
         meshObj["rotation"] = rotObj;
 
         QJsonObject sizeObj;
@@ -2689,14 +2893,22 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
                 entry.position = new QVector3D(0, 0, 0);
             }
 
+            // if (meshObj.contains("rotation")) {
+            //     QJsonObject rotObj = meshObj["rotation"].toObject();
+            //     entry.rotation = new QQuaternion(QQuaternion::fromEulerAngles(
+            //         rotObj["x"].toDouble(),
+            //         rotObj["y"].toDouble(),
+            //         rotObj["z"].toDouble()
+            //         ));
+            // }
+            /* **ROTATION** – read degrees, store as radians */
+            entry.rotation = new QQuaternion();
             if (meshObj.contains("rotation")) {
                 QJsonObject rotObj = meshObj["rotation"].toObject();
-                entry.rotation = new QQuaternion(QQuaternion::fromEulerAngles(
-                    rotObj["x"].toDouble(),
-                    rotObj["y"].toDouble(),
-                    rotObj["z"].toDouble()
-                    ));
-            } else {
+                qreal deg = rotObj["z_deg"].toDouble();
+                entry.rotation->setZ(deg * (M_PI / 180.0));
+            }
+            else {
                 entry.rotation = new QQuaternion();
             }
 
@@ -3284,4 +3496,67 @@ void CanvasWidget::stopShapeDragging() {
         setCursor(Qt::ArrowCursor);
         update();
     }
+}
+qreal CanvasWidget::angleBetweenPoints(const QPointF &center, const QPointF &p1, const QPointF &p2)
+{
+    QVector2D v1(p1 - center);
+    QVector2D v2(p2 - center);
+    if (v1.length() < 1e-6 || v2.length() < 1e-6) return 0.0;
+    qreal angle = std::atan2(v2.y(), v2.x()) - std::atan2(v1.y(), v1.x());
+    return qRadiansToDegrees(angle);
+}
+
+void CanvasWidget::drawRotationHandle(QPainter& painter, const MeshEntry& entry)
+{
+    if (simulate || currentMode != Translate) return;
+    if (!entry.position || !entry.size || !entry.mesh) return;
+
+    // Only draw if this shape is in rotate mode
+    if (entry.name != activeRotateId) return;
+
+    bool isRotatable = !entry.bitmapPath.isEmpty() ||
+                       entry.name.startsWith("TempRectangle") ||
+                       entry.name.startsWith("TempCircle") ||
+                       entry.name.startsWith("TempPolygon") ||
+                       entry.name.startsWith("TempPolyline");
+
+    if (!isRotatable) return;
+
+    // === Rest of your bounding box + handle logic (same as before) ===
+    QPointF center = gislib->geoToCanvas(entry.position->y(), entry.position->x());
+
+    QRectF boundingBox;
+    if (entry.name.startsWith("TempCircle")) {
+        float radiusCanvas = entry.size->x() * 25.0f;
+        boundingBox = QRectF(center.x() - radiusCanvas, center.y() - radiusCanvas,
+                             radiusCanvas * 2, radiusCanvas * 2);
+    }
+    else if (entry.name.startsWith("TempRectangle") || !entry.bitmapPath.isEmpty()) {
+        float w = entry.size->x() * 25.0f;
+        float h = entry.size->y() * 25.0f;
+        boundingBox = QRectF(center.x() - w/2, center.y() - h/2, w, h);
+    }
+    else if (entry.name.startsWith("TempPolygon") || entry.name.startsWith("TempPolyline")) {
+        QPolygonF poly;
+        for (const Vector* v : entry.mesh->polygen) {
+            QPointF geo(v->x + entry.position->x(), v->y + entry.position->y());
+            QPointF canvas = gislib->geoToCanvas(geo.y(), geo.x());
+            poly << canvas;
+        }
+        if (poly.isEmpty()) return;
+        boundingBox = poly.boundingRect();
+    }
+    else {
+        return;
+    }
+
+    QPointF handle = boundingBox.bottomRight() + QPointF(10, 10);
+
+    painter.save();
+    painter.setPen(QPen(Qt::yellow, 2));
+    painter.setBrush(Qt::yellow);
+    painter.drawEllipse(handle, 8, 8);
+    painter.setPen(QPen(Qt::yellow, 1, Qt::DashLine));
+    painter.drawLine(center, handle);
+    painter.restore();
 }
