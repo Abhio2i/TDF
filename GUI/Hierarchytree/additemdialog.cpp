@@ -1,31 +1,32 @@
+
+
 /* ========================================================================= */
 /* File: additemdialog.cpp                                                  */
 /* Purpose: Implements dialog for adding entities or folders with components */
 /* ========================================================================= */
 
-#include "GUI/Hierarchytree/additemdialog.h"        // For add item dialog class
-#include "core/Hierarchy/entity.h"                  // For entity base class
-#include "core/Hierarchy/EntityProfiles/platform.h"  // For platform entity profile
-#include "core/Hierarchy/EntityProfiles/radio.h"    // For radio entity profile
-#include "core/Hierarchy/EntityProfiles/sensor.h"   // For sensor entity profile
-#include "core/Hierarchy/EntityProfiles/fixedpoints.h" // For fixed points profile
-#include "core/Hierarchy/EntityProfiles/iff.h"      // For IFF entity profile
-#include <QDebug>                                  // For debug output
-#include <QCheckBox>                               // For checkbox widget
-#include <QGroupBox>                               // For group box widget
-#include <QLabel>                                  // For label widget
-#include <QLineEdit>                               // For text input widget
-#include <QDialogButtonBox>                        // For dialog buttons
-#include <QVBoxLayout>                             // For vertical layout
-#include <QHBoxLayout>                             // For horizontal layout
-#include <QValidator>                              // For input validation
+#include "GUI/Hierarchytree/additemdialog.h"
+#include "core/Hierarchy/entity.h"
+#include "core/Hierarchy/EntityProfiles/platform.h"
+#include "core/Hierarchy/EntityProfiles/radio.h"
+#include "core/Hierarchy/EntityProfiles/sensor.h"
+#include "core/Hierarchy/EntityProfiles/fixedpoints.h"
+#include "core/Hierarchy/EntityProfiles/iff.h"
+#include <QDebug>
+#include <QCheckBox>
+#include <QGroupBox>
+#include <QLabel>
+#include <QLineEdit>
+#include <QDialogButtonBox>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QValidator>
+#include <QComboBox>
 
 // %%% Utility Functions %%%
 /* Demangle component names */
 QString demangleComponentName(const std::string& mangledName) {
-    // Convert string to QString
     QString name = QString::fromStdString(mangledName);
-    // Remove leading digits
     while (!name.isEmpty() && name[0].isDigit()) {
         name.remove(0, 1);
     }
@@ -34,15 +35,11 @@ QString demangleComponentName(const std::string& mangledName) {
 
 /* Convert string to camelCase */
 QString toCamelCase(const QString& input) {
-    // Return empty string if input is empty
     if (input.isEmpty()) return input;
-    // Initialize result
     QString result = input;
-    // Lowercase first character
     if (!result.isEmpty()) {
         result[0] = result[0].toLower();
     }
-    // Process characters for camelCase
     for (int i = 1; i < result.size(); ++i) {
         if (result[i] == 'D' && i > 0 && result[i-1].isDigit()) {
             result[i] = result[i].toLower();
@@ -59,23 +56,20 @@ QString toCamelCase(const QString& input) {
 
 /* Get default item name */
 QString getDefaultName(AddItemDialog::DialogType type) {
-    // Return default name based on type
     return (type == AddItemDialog::EntityType) ? "Entity" : "Folder";
 }
 
 // %%% Constructor %%%
 /* Initialize add item dialog */
 AddItemDialog::AddItemDialog(DialogType type, const QString &specificType, QWidget *parent)
-    : QDialog(parent), specificType(specificType)
+    : QDialog(parent), specificType(specificType), sensorTypeComboBox(nullptr)
 {
-    // Setup dialog UI
     setupUI(type);
 }
 
 /* Setup dialog UI */
 void AddItemDialog::setupUI(DialogType type)
 {
-    // Create main vertical layout
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
     // Name input section
@@ -83,17 +77,25 @@ void AddItemDialog::setupUI(DialogType type)
     QString itemType = (type == EntityType) ? "Entity" : "Folder";
     nameLayout->addWidget(new QLabel(itemType + " Name:", this));
     nameLineEdit = new QLineEdit(this);
-
-    // Set default name
     QString defaultName = getDefaultName(type);
     nameLineEdit->setText(defaultName);
     nameLineEdit->setPlaceholderText("Enter " + itemType + " name");
-
     nameLayout->addWidget(nameLineEdit);
     mainLayout->addLayout(nameLayout);
+    //->CHANGE
+    // Sensor type dropdown (only for sensors)
+    if (specificType.toLower() == "sensors") {
+        QHBoxLayout *sensorTypeLayout = new QHBoxLayout();
+        sensorTypeLayout->addWidget(new QLabel("Sensor Type:", this));
+        sensorTypeComboBox = new QComboBox(this);
+        sensorTypeComboBox->addItems({"Generic", "CSM", "ESM"}); // ✅ cleaner naming
+        sensorTypeComboBox->setCurrentText("Generic"); // ✅ default
+        sensorTypeLayout->addWidget(sensorTypeComboBox);
+        mainLayout->addLayout(sensorTypeLayout);
+    }
 
     // Number input section (for EntityType)
-    if (type == EntityType) {
+    if (type == EntityType && specificType.toLower() != "sensors") {
         QHBoxLayout *numberLayout = new QHBoxLayout();
         numberLayout->addWidget(new QLabel("Number of Entities:", this));
         numberLineEdit = new QLineEdit(this);
@@ -105,12 +107,10 @@ void AddItemDialog::setupUI(DialogType type)
         mainLayout->addLayout(numberLayout);
     }
 
-    // Components section (for EntityType)
-    if (type == EntityType) {
+    // Components section (for EntityType, excluding sensors)
+    if (type == EntityType && specificType.toLower() != "sensors") {
         QGroupBox *componentsGroup = new QGroupBox("Components", this);
         QVBoxLayout *componentsLayout = new QVBoxLayout();
-
-        // Create entity based on specificType
         Entity *entity = nullptr;
         QString effectiveType = specificType.isEmpty() ? "Entity" : specificType;
         if (effectiveType == "Radio") {
@@ -125,13 +125,11 @@ void AddItemDialog::setupUI(DialogType type)
             entity = new Platform(nullptr);
         }
 
-        // Get supported components
         std::vector<std::string> supportedComponents = entity->getSupportedComponents();
         QMap<QString, Component*> uniqueComponents;
         for (const std::string &component : supportedComponents) {
             uniqueComponents.insert(demangleComponentName(component), nullptr);
         }
-        // Add component checkboxes
         for (auto it = uniqueComponents.begin(); it != uniqueComponents.end(); ++it) {
             QString displayName = it.key();
             QString camelCaseName = toCamelCase(displayName);
@@ -158,27 +156,23 @@ void AddItemDialog::setupUI(DialogType type)
     connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
     mainLayout->addWidget(buttonBox);
-    // Set dialog properties
     setLayout(mainLayout);
-    setWindowTitle("Add " + itemType);
-    resize(300, 300);
+    setWindowTitle("Add " + (specificType.toLower() == "sensors" ? "Sensor" : itemType));
+    resize(300, specificType.toLower() == "sensors" ? 200 : 300);
 }
 
 /* Get entered name */
 QString AddItemDialog::getName() const {
-    // Return trimmed name
     return nameLineEdit->text().trimmed();
 }
 
 /* Get number of entities */
 int AddItemDialog::getNumber() const {
-    // Return number as integer
-    return numberLineEdit->text().trimmed().toInt();
+    return numberLineEdit ? numberLineEdit->text().trimmed().toInt() : 1;
 }
 
 /* Get selected components */
 QVariantMap AddItemDialog::getComponents() const {
-    // Collect checked components
     QVariantMap components;
     for (auto it = componentCheckboxes.begin(); it != componentCheckboxes.end(); ++it) {
         components.insert(it.key(), it.value()->isChecked());

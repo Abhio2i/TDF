@@ -4,6 +4,33 @@
 #include <QDebug>
 #include <cmath>
 
+auto normalizeAngle = [](float angle) {
+    while (angle > 180.0f) angle -= 360.0f;
+    while (angle < -180.0f) angle += 360.0f;
+    return angle;
+};
+#define EARTH_RADIUS 6371000.0 // in meters
+
+double toRadians(double degree) {
+    return degree * M_PI / 180.0;
+}
+float delta = 0;
+float currentSpeed = 0;
+float speeed = 0;
+double distanceBetween(double lat1, double lon1, double lat2, double lon2) {
+    double dLat = toRadians(lat2 - lat1);
+    double dLon = toRadians(lon2 - lon1);
+
+    lat1 = toRadians(lat1);
+    lat2 = toRadians(lat2);
+
+    double a = pow(sin(dLat / 2), 2) +
+               pow(sin(dLon / 2), 2) * cos(lat1) * cos(lat2);
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    return EARTH_RADIUS * c; // Distance in meters
+}
+
 DynamicModel::DynamicModel() {
     controle = true;
     follow = true;
@@ -19,6 +46,7 @@ void DynamicModel::Update(float deltaTime) {
     QVector3D upDir = transform->up();           // z-axis (up)
     QVector3D rightDir = transform->right();     // y-axis (right)
     time += deltaTime;
+    delta = deltaTime;
     //qDebug() << time;
     if(start<time)
     {
@@ -176,10 +204,20 @@ void DynamicModel::FollowTrajectory() {
     QVector3D target_qvec(target.x, target.y, target.z);
     QVector3D diff = target_qvec - current;
     float distance = diff.length();
-    if((trajectory->Trajectories.size()-1) == trajectory->current && distance <0.05f ) return;
-    if (distance > 0.01f) {
+    float metredis = distanceBetween(target.x,target.z,current.x(),current.z());
+
+    //if((trajectory->Trajectories.size()-1) == trajectory->current && distance <0.05f ) return;
+    if (metredis > 100) {
         QVector3D dir = diff.normalized();
-        current += transform->forward() * moveSpeed * 0.01f;
+        QVector3D last(current.x(), current.y(), current.z());
+
+        current += transform->forward() * speeed * 0.0001f;
+        float deltaDis = distanceBetween(last.x(),last.z(),current.x(),current.z());
+        float time = 1/delta;
+        currentSpeed = deltaDis*time;
+
+        speeed += (currentSpeed<(moveSpeed/3.6f))?0.1f:-0.1f;
+        qDebug()<<currentSpeed;
         QVector3D targetAsQVector3D(target.x, target.y, target.z);
         QVector3D direction = targetAsQVector3D - current;
 
@@ -188,7 +226,13 @@ void DynamicModel::FollowTrajectory() {
         float angleRad = atan2(direction.x(), direction.z());
         float angleDeg = angleRad * (180.0f / M_PI);
 
-        angdeg = lerp(angdeg,angleDeg,moveSpeed * 0.004f);
+        float delta = normalizeAngle(angleDeg - angdeg);
+        angdeg += delta * 1 * 0.04f;
+        angdeg = normalizeAngle(angdeg);
+
+        //angdeg = lerp(angdeg,angleDeg,moveSpeed * 0.004f);
+
+
         // current.setZ(current.z()-(sin(angdeg)*moveSpeed*0.01f));
         // current.setX(current.x()+(cos(angdeg)*moveSpeed*0.01f));
         //*transform->rotation = QQuaternion::fromAxisAndAngle(angdeg, 0.0f, 1.0f, 0.0f);
@@ -199,13 +243,16 @@ void DynamicModel::FollowTrajectory() {
     }
     transform->setTranslation(current);
     //*transform->position = Vector::Lerp(*transform->position, *trajectory->Trajectories[trajectory->current]->position, moveSpeed * 0.1);
-
-    if (trajectory->Trajectories.size() > trajectory->current && (transform->matrix->translation()).distanceToPoint(QVector3D(
+    metredis = distanceBetween(trajectory->Trajectories[trajectory->current]->position->x,
+                               trajectory->Trajectories[trajectory->current]->position->z,
+                               current.x(),
+                               current.z());
+    if (trajectory->Trajectories.size() > trajectory->current && /*(transform->matrix->translation()).distanceToPoint(QVector3D(
                                                                      trajectory->Trajectories[trajectory->current]->position->x,
                                                                      trajectory->Trajectories[trajectory->current]->position->y,
                                                                      trajectory->Trajectories[trajectory->current]->position->z
-                                                                     ))
-    < 1) {
+                                                                     )*/ metredis
+                                                                     < 500) {
         trajectory->current += 1;
         //trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? (trajectory->Trajectories.size()-1) : trajectory->current;
         trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? 0: trajectory->current;
@@ -215,6 +262,8 @@ void DynamicModel::FollowTrajectory() {
 float DynamicModel::lerp(float a, float b, float t){
     return a + (b - a) * t;
 }
+
+
 
 QJsonObject DynamicModel::toJson() const {
     QJsonObject obj;
@@ -234,7 +283,7 @@ QJsonObject DynamicModel::toJson() const {
     obj["bankedTurnEffect"] = bankedTurnEffect;
     obj["autoRollLevel"] = autoRollLevel;
     obj["autoPitchLevel"] = autoPitchLevel;
-     obj["type"] = "component";
+    obj["type"] = "component";
 
     // Add custom parameters
     for (auto it = customParameters.begin(); it != customParameters.end(); ++it) {

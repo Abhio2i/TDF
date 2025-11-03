@@ -42,10 +42,10 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
         QDockWidget::DockWidgetMovable |
         QDockWidget::DockWidgetFloatable;
     // Initialize text script dock
-    textScriptDock = new QDockWidget("Text Script", this);
+    textScriptDock = new QDockWidget("", this);
     textScriptView = new TextScriptWidget(this);
     textScriptDock->setWidget(textScriptView);
-    qDebug() << "textScriptDock initialized:" << textScriptDock << ", textScriptView:" << textScriptView;
+
     // Setup UI components
     setupMenuBar();
     connect(menuBar, &MenuBar::exitTriggered, qApp, &QApplication::quit);

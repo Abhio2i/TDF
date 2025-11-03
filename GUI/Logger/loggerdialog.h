@@ -1,171 +1,3 @@
-// /* ========================================================================= */
-// /* File: loggerdialog.h                                                     */
-// /* Purpose: Defines dialog and widget for logging and timeline visualization */
-// /* ========================================================================= */
-
-// #ifndef LOGGERDIALOG_H
-// #define LOGGERDIALOG_H
-
-// #include <QDialog>                                // For dialog base class
-// #include <QCheckBox>                              // For checkbox widget
-// #include <QLabel>                                 // For label widget
-// #include <QListWidget>                            // For list widget
-// #include <QPushButton>                            // For push button widget
-// #include <QVBoxLayout>                            // For vertical layout
-// #include <QGridLayout>                            // For grid layout
-// #include <QStandardPaths>                         // For standard paths
-// #include <QDir>                                   // For directory handling
-// #include <QToolButton>                            // For tool button widget
-// #include <QPainter>                               // For painting operations
-// #include <QWidget>                                // For widget base class
-// #include <QDateTime>                              // For date and time handling
-
-// // %%% TimelineWidget Class %%%
-// /* Widget for visualizing recording timeline */
-// class TimelineWidget : public QWidget
-// {
-//     Q_OBJECT
-
-// public:
-//     // Initialize timeline widget
-//     explicit TimelineWidget(QWidget *parent = nullptr) : QWidget(parent) {
-//         setMinimumHeight(50);
-//         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-//     }
-//     // Set recording start time
-//     void setRecordingStartTime(const QDateTime &startTime) {
-//         recordingStartTime = startTime;
-//         update();
-//     }
-//     // Set recording duration
-//     void setRecordingDuration(qint64 durationMs) {
-//         recordingDurationMs = durationMs;
-//         update();
-//     }
-//     // Add bookmark with note and timestamp
-//     void addBookmark(const QString &note, qint64 timestampMs) {
-//         bookmarks.append({note, timestampMs});
-//         update();
-//     }
-//     // Clear all bookmarks
-//     void clearBookmarks() {
-//         bookmarks.clear();
-//         update();
-//     }
-
-// protected:
-//     // Handle paint events
-//     void paintEvent(QPaintEvent *event) override {
-//         QPainter painter(this);
-//         painter.setRenderHint(QPainter::Antialiasing);
-//         painter.fillRect(rect(), Qt::white);
-
-//         if (recordingDurationMs <= 0) return;
-
-//         int margin = 10;
-//         int width = this->width() - 2 * margin;
-//         int height = this->height() - 2 * margin;
-//         int timelineY = height / 2;
-
-//         // Draw timeline
-//         painter.setPen(QPen(Qt::black, 2));
-//         painter.drawLine(margin, margin + timelineY, margin + width, margin + timelineY);
-
-//         // Draw duration markers (every 10 seconds)
-//         qint64 intervalMs = 10000; // 10 seconds
-//         int numIntervals = recordingDurationMs / intervalMs + 1;
-//         for (int i = 0; i <= numIntervals; ++i) {
-//             int x = margin + (i * width * intervalMs) / recordingDurationMs;
-//             painter.setPen(QPen(Qt::black, 1));
-//             painter.drawLine(x, margin + timelineY - 5, x, margin + timelineY + 5);
-//             painter.drawText(x - 20, margin + timelineY + 20, QString("%1s").arg(i * 10));
-//         }
-
-//         // Draw bookmarks
-//         painter.setPen(QPen(Qt::red, 2));
-//         for (const auto &bookmark : bookmarks) {
-//             qint64 relativeTimeMs = bookmark.second;
-//             if (relativeTimeMs >= 0 && relativeTimeMs <= recordingDurationMs) {
-//                 int x = margin + (relativeTimeMs * width) / recordingDurationMs;
-//                 painter.drawLine(x, margin + timelineY - 10, x, margin + timelineY + 10);
-//                 painter.drawText(x + 5, margin + timelineY - 15, bookmark.first);
-//             }
-//         }
-//     }
-
-// private:
-//     // %%% Data Members %%%
-//     // Recording start time
-//     QDateTime recordingStartTime;
-//     // Recording duration in milliseconds
-//     qint64 recordingDurationMs = 0;
-//     // List of bookmarks (note, timestamp)
-//     QList<QPair<QString, qint64>> bookmarks;
-// };
-
-// // %%% LoggerDialog Class %%%
-// /* Dialog for managing logging operations */
-// class LoggerDialog : public QDialog
-// {
-//     Q_OBJECT
-
-// public:
-//     // Initialize logger dialog
-//     explicit LoggerDialog(QWidget *parent = nullptr);
-//     // Update recording duration
-//     void updateRecordingDuration(qint64 durationMs);
-//     // Add bookmark with timestamp
-//     void addBookmarkWithTimestamp(const QString &note, qint64 timestampMs);
-
-// signals:
-//     // Signal start recording
-//     void startRecording();
-//     // Signal stop recording
-//     void stopRecording();
-//     // Signal replay recording
-//     void replayRecording(const QString &filePath);
-//     // Signal event types selected
-//     void eventTypesSelected(QStringList eventTypes);
-//     // Signal bookmark added
-//     void bookmarkAdded(const QString &bookmarkNote);
-//     // Signal timestamp toggle
-//     void timestampToggled(bool enabled);
-
-// private:
-//     // %%% UI Setup Methods %%%
-//     // Configure UI components
-//     void setupUi();
-//     // Update recordings list
-//     void updateRecordingsList();
-
-//     // %%% UI Components %%%
-//     // Actions checkbox
-//     QCheckBox *actionsCheckBox;
-//     // Waypoints checkbox
-//     QCheckBox *waypointsCheckBox;
-//     // Engagements checkbox
-//     QCheckBox *engagementsCheckBox;
-//     // Timestamp checkbox
-//     QCheckBox *timestampCheckBox;
-//     // Status label (commented)
-//     // QLabel *statusLabel;
-//     // Recordings list widget
-//     QListWidget *recordingsList;
-//     // Replay button
-//     QPushButton *replayButton;
-//     // Bookmark button
-//     QToolButton *bookmarkButton;
-//     // Recordings directory path
-//     QString recordingsDir;
-//     // Timeline widget
-//     TimelineWidget *timelineWidget;
-//     // Recording start time
-//     QDateTime recordingStartTime;
-// };
-
-// #endif // LOGGERDIALOG_H
-
-
 
 
 #ifndef LOGGERDIALOG_H
@@ -185,6 +17,8 @@
 #include <QWidget>
 #include <QDateTime>
 //#include "core/Recorder/recorder.h"
+#include "core/Recorder/recorder.h"
+
 class TimelineWidget : public QWidget
 {
     Q_OBJECT
@@ -192,6 +26,7 @@ public:
     explicit TimelineWidget(QWidget *parent = nullptr) : QWidget(parent) {
         setMinimumHeight(50);
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        setMouseTracking(true);
     }
     void setRecordingStartTime(const QDateTime &startTime) {
         recordingStartTime = startTime;
@@ -201,15 +36,93 @@ public:
         recordingDurationMs = durationMs;
         update();
     }
+    // void addBookmark(const QString &note, qint64 timestampMs) {
+    //     bookmarks.append({note, timestampMs});
+    //     update();
+    // }
+
+
     void addBookmark(const QString &note, qint64 timestampMs) {
         bookmarks.append({note, timestampMs});
+        // Added: Create a button for the bookmark with dynamic sizing based on text
+        QPushButton *button = new QPushButton(note, this);
+        button->setFlat(true);
+        // Modified: Improved styling and added tooltip for full text visibility
+        button->setStyleSheet("border: none; color: red; background: transparent; text-align: left; font-size: 12px; padding: 2px;");
+        button->setToolTip(note); // Added: Show full note on hover
+        button->setVisible(false); // Initially hidden, positioned in paintEvent
+        // Modified: Dynamically adjust button width based on text content
+        QFontMetrics fm(button->font());
+        int buttonWidth = fm.horizontalAdvance(note) + 10; // Add padding
+        button->resize(qMin(buttonWidth, 150), 20); // Limit max width to 150px
+        bookmarkButtons.append(button);
+        // Added: Connect button click to emit bookmarkClicked signal
+        connect(button, &QPushButton::clicked, this, [this, note, timestampMs]() {
+            emit bookmarkButtonClicked(note, timestampMs);
+        });
         update();
     }
+    // void clearBookmarks() {
+    //     bookmarks.clear();
+    //     update();
+    // }
     void clearBookmarks() {
         bookmarks.clear();
+        // Added: Delete all bookmark buttons
+        for (QPushButton *button : bookmarkButtons) {
+            delete button;
+        }
+        bookmarkButtons.clear();
         update();
     }
 
+signals:
+    // Added: Signal emitted when a bookmark button is clicked
+    void bookmarkButtonClicked(const QString &note, qint64 timestampMs);
+    void bookmarkClicked(const QString &note, qint64 timestampMs);
+    // protected:
+    // void paintEvent(QPaintEvent *event) override {
+    //     QPainter painter(this);
+    //     painter.setRenderHint(QPainter::Antialiasing);
+    //     painter.fillRect(rect(), Qt::white);
+
+    //     int margin = 10;
+    //     int width = this->width() - 2 * margin;
+    //     int height = this->height() - 2 * margin;
+    //     int timelineY = height / 2;
+
+    //     // Always draw the timeline
+    //     painter.setPen(QPen(Qt::black, 2));
+    //     painter.drawLine(margin, margin + timelineY, margin + width, margin + timelineY);
+
+    //     // If no recording is active, show a placeholder text
+    //     if (recordingDurationMs <= 0) {
+    //         painter.setPen(QPen(Qt::gray, 1));
+    //         painter.drawText(margin + 10, margin + timelineY - 15, tr("No active recording"));
+    //         return;
+    //     }
+
+    //     // Draw duration markers (every 10 seconds)
+    //     qint64 intervalMs = 10000; // 10 seconds
+    //     int numIntervals = recordingDurationMs / intervalMs + 1;
+    //     for (int i = 0; i <= numIntervals; ++i) {
+    //         int x = margin + (i * width * intervalMs) / recordingDurationMs;
+    //         painter.setPen(QPen(Qt::black, 1));
+    //         painter.drawLine(x, margin + timelineY - 5, x, margin + timelineY + 5);
+    //         painter.drawText(x - 20, margin + timelineY + 20, QString("%1s").arg(i * 10));
+    //     }
+
+    //     // Draw bookmarks
+    //     painter.setPen(QPen(Qt::red, 2));
+    //     for (const auto &bookmark : bookmarks) {
+    //         qint64 relativeTimeMs = bookmark.second;
+    //         if (relativeTimeMs >= 0 && relativeTimeMs <= recordingDurationMs) {
+    //             int x = margin + (relativeTimeMs * width) / recordingDurationMs;
+    //             painter.drawLine(x, margin + timelineY - 10, x, margin + timelineY + 10);
+    //             painter.drawText(x + 5, margin + timelineY - 15, bookmark.first);
+    //         }
+    //     }
+    // }
 protected:
     void paintEvent(QPaintEvent *event) override {
         QPainter painter(this);
@@ -242,14 +155,21 @@ protected:
             painter.drawText(x - 20, margin + timelineY + 20, QString("%1s").arg(i * 10));
         }
 
-        // Draw bookmarks
+        // Draw bookmarks as lines and position buttons
         painter.setPen(QPen(Qt::red, 2));
-        for (const auto &bookmark : bookmarks) {
+        for (int i = 0; i < bookmarks.size(); ++i) {
+            const auto &bookmark = bookmarks[i];
             qint64 relativeTimeMs = bookmark.second;
             if (relativeTimeMs >= 0 && relativeTimeMs <= recordingDurationMs) {
                 int x = margin + (relativeTimeMs * width) / recordingDurationMs;
                 painter.drawLine(x, margin + timelineY - 10, x, margin + timelineY + 10);
-                painter.drawText(x + 5, margin + timelineY - 15, bookmark.first);
+                // Added: Position the corresponding button
+                if (i < bookmarkButtons.size()) {
+                    QPushButton *button = bookmarkButtons[i];
+                    button->setVisible(true);
+                    button->move(x + 5, margin + timelineY - 25);
+                    button->resize(100, 20); // Adjust size as needed
+                }
             }
         }
     }
@@ -261,32 +181,43 @@ private:
     //By Hima
     void saveRecordingToFile();   // <--- Add this new method
     //End Hima
+
+    QList<QPushButton*> bookmarkButtons;
 };
 
 class LoggerDialog : public QDialog
 {
     Q_OBJECT
 public:
-    explicit LoggerDialog(QWidget *parent = nullptr);
+        // explicit LoggerDialog(QWidget *parent = nullptr);
+    explicit LoggerDialog(QWidget *parent = nullptr, Recorder* recorder = nullptr);
     void updateRecordingDuration(qint64 durationMs);
     void addBookmarkWithTimestamp(const QString &note, qint64 timestampMs);
 
+public slots:
+    void showBookmarkOnReplay(const QString& note, qint64 timestamp);
+    void setTimelineDuration(qint64 duration);
+    void replayFromBookmark(const QString& note, qint64 timestamp);
 signals:
     void startRecording();
     void stopRecording();
-    void saveRecording();
+    // void saveRecording();
+    void saveRecording(const QString &filePath);
 
     //By Hima
     void loadRecording(const QString &filePath);
-    //void saveRecordingToFile(const QJsonObject &recordings);
-    //void saveRecordingRequested();
+    void saveRecordingToFile(const QJsonObject &recordings);
+    void saveRecordingRequested();
     //End Hima
     void replayRecording(const QString &filePath);
     void eventTypesSelected(QStringList eventTypes);
     void bookmarkAdded(const QString &bookmarkNote);
     void timestampToggled(bool enabled);
+    void bookmarkClicked(const QString &note, qint64 timestampMs);
+    void bookmarkButtonClicked(const QString &note, qint64 timestampMs);
 
 private:
+
     void setupUi();
     void updateRecordingsList();
     void saveRecordingToFile();
@@ -303,11 +234,20 @@ private:
     QString filePath;
     QPushButton *loadRecordingButton;
     QPushButton *replayRecordingButton;
+
     //QPushButton *saveRecordingButton;
     //End Hima
     QString recordingsDir;
     TimelineWidget *timelineWidget;
     QDateTime recordingStartTime;
+
+    Recorder* recorder;
+
+
+    // Added: List to store bookmark buttons
+    QList<QPushButton*> bookmarkButtons;
+
+
 };
 
 #endif // LOGGERDIALOG_H

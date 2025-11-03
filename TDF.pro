@@ -59,6 +59,7 @@ SOURCES += \
     GUI/Tacticaldisplay/Gis/gisnetwork.cpp \
     GUI/Tacticaldisplay/Gis/layerinformationdialog.cpp \
     GUI/Tacticaldisplay/canvaswidget.cpp \
+    GUI/Tacticaldisplay/shapepropertiesdialog.cpp \
     GUI/Tacticaldisplay/tacticaldisplay.cpp \
     GUI/Testscript/angelscripthighlighter.cpp \
     GUI/Testscript/testscriptdialog.cpp \
@@ -393,6 +394,7 @@ HEADERS += \
     GUI/Tacticaldisplay/Gis/gisnetwork.h \
     GUI/Tacticaldisplay/Gis/layerinformationdialog.h \
     GUI/Tacticaldisplay/canvaswidget.h \
+    GUI/Tacticaldisplay/shapepropertiesdialog.h \
     GUI/Tacticaldisplay/tacticaldisplay.h \
     GUI/Testscript/angelscripthighlighter.h \
     GUI/Testscript/testscriptdialog.h \

@@ -17,7 +17,7 @@ StandardToolBar::StandardToolBar(QWidget *parent)
 
 
     addAction(newAction);
-    addAction(saveAction);
+
     addAction(saveAllAction);
     addSeparator();
     addAction(cutAction);
@@ -39,7 +39,7 @@ void StandardToolBar::createActions()
     newAction = new QAction(QIcon(withWhiteBg(":/icons/images/new-document.png")), tr("New"), this);
 
 
-    saveAction = new QAction(QIcon(withWhiteBg(":/icons/images/floppy-disk.png")), tr("SaveAction"), this);
+
 
 
     saveAllAction = new QAction(QIcon(withWhiteBg(":/icons/images/floppy-disk.png")), tr("Save All"), this);

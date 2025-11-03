@@ -8,7 +8,7 @@
 #include <QJsonArray>
 #include <string>
 #include <vector>
-
+class CanvasWidget;
 class Radio : public Entity
 {
     Q_OBJECT
@@ -48,6 +48,11 @@ public:
     float noiseFigure = 0.0f; // dB
     std::vector<Message> messages;
     float frequencyUsed = 0.0f; // MHz
+    float receiverSensitivity = -100.0f;   // dBm, typical small radio
+    float systemLoss = 2.0f;               // dB, cable/connectors
+    float fadeMargin = 10.0f;              // dB, reliability buffer
+    float receiverAntennaGain = -1.0f;     // dBi, -1 = use antennaGain automatically
+    float pathLossExponent = 2.0f;         // Free space default
 
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
@@ -58,7 +63,11 @@ public:
 
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& obj) override;
-
+    float calculateRange() const;
+    // --- Auto connections ---
+    void updateAvailableConnections(Transform* source); // Scans hierarchy for compatible radios
+signals:
+    void availableConnectionsUpdated(const QJsonArray& connArray); // <--- Add this
 private:
     QString radioTypeToString(RadioType rt) const;
     RadioType stringToRadioType(const QString& str) const;

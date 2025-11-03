@@ -23,7 +23,7 @@ SidebarWidget::SidebarWidget(QWidget *parent)
     QPushButton *sensorsButton = createSidebarButton("Sensors", "Sensors");
     QPushButton *libraryButton = createSidebarButton("Library", "Library");
     QPushButton *inspectorButton = createSidebarButton("Inspector", "Inspector");
-    QPushButton *textScriptButton = createSidebarButton("TextScript", "TextScript");
+    QPushButton *textScriptButton = createSidebarButton("TestScript", "TextScript");
     // Add buttons to layout and group
     layout->addWidget(sensorsButton);
     buttonGroup->addButton(sensorsButton);

@@ -3,7 +3,9 @@
 #include <core/Hierarchy/hierarchy.h> // Include full Hierarchy definition
 #include <core/Debug/console.h>
 #include <core/GlobalRegistry.h>
-
+#include <cmath>
+#include <QtMath>
+#include <QDebug>
 Radio::Radio(Hierarchy* h) : Entity(h) {
     // Initialize default parameter (similar to Platform and Sensor)
     std::shared_ptr<Parameter> par = std::make_shared<Parameter>();
@@ -77,6 +79,11 @@ QJsonObject Radio::toJson() const {
     obj["antennaGain"] = antennaGain;
     obj["noiseFigure"] = noiseFigure;
     obj["frequencyUsed"] = frequencyUsed;
+    obj["receiverSensitivity"]   = receiverSensitivity;
+    obj["systemLoss"]            = systemLoss;
+    obj["fadeMargin"]            = fadeMargin;
+    obj["receiverAntennaGain"]   = receiverAntennaGain;
+    obj["pathLossExponent"]      = pathLossExponent;
 
     QJsonArray messagesArray;
     for (const auto& message : messages) {
@@ -120,17 +127,53 @@ void Radio::fromJson(const QJsonObject& obj) {
         modulation.majorModulation = stringToMajorModulation(modObj["majorModulation"].toString());
         modulation.detailModulation = modObj["detailModulation"].toString().toStdString();
     }
-    frequencyMin = static_cast<float>(obj["frequencyMin"].toDouble());
-    frequencyMax = static_cast<float>(obj["frequencyMax"].toDouble());
-    emittingPower = static_cast<float>(obj["emittingPower"].toDouble());
-    bandwidth = static_cast<float>(obj["bandwidth"].toDouble());
-    dataRate = static_cast<float>(obj["dataRate"].toDouble());
-    encryptionType = stringToEncryptionType(obj["encryptionType"].toString());
-    channelCount = obj["channelCount"].toInt();
-    jammingResistance = obj["jammingResistance"].toBool();
-    antennaGain = static_cast<float>(obj["antennaGain"].toDouble());
-    noiseFigure = static_cast<float>(obj["noiseFigure"].toDouble());
-    frequencyUsed = static_cast<float>(obj["frequencyUsed"].toDouble());
+    if (obj.contains("frequencyMin"))
+        frequencyMin = static_cast<float>(obj["frequencyMin"].toDouble());
+
+    if (obj.contains("frequencyMax"))
+        frequencyMax = static_cast<float>(obj["frequencyMax"].toDouble());
+
+    if (obj.contains("emittingPower"))
+        emittingPower = static_cast<float>(obj["emittingPower"].toDouble());
+
+    if (obj.contains("bandwidth"))
+        bandwidth = static_cast<float>(obj["bandwidth"].toDouble());
+
+    if (obj.contains("dataRate"))
+        dataRate = static_cast<float>(obj["dataRate"].toDouble());
+
+    if (obj.contains("encryptionType"))
+        encryptionType = stringToEncryptionType(obj["encryptionType"].toString());
+
+    if (obj.contains("channelCount"))
+        channelCount = obj["channelCount"].toInt();
+
+    if (obj.contains("jammingResistance"))
+        jammingResistance = obj["jammingResistance"].toBool();
+
+    if (obj.contains("antennaGain"))
+        antennaGain = static_cast<float>(obj["antennaGain"].toDouble());
+
+    if (obj.contains("noiseFigure"))
+        noiseFigure = static_cast<float>(obj["noiseFigure"].toDouble());
+
+    if (obj.contains("frequencyUsed"))
+        frequencyUsed = static_cast<float>(obj["frequencyUsed"].toDouble());
+
+    if (obj.contains("receiverSensitivity"))
+        receiverSensitivity = static_cast<float>(obj["receiverSensitivity"].toDouble());
+
+    if (obj.contains("systemLoss"))
+        systemLoss = static_cast<float>(obj["systemLoss"].toDouble());
+
+    if (obj.contains("fadeMargin"))
+        fadeMargin = static_cast<float>(obj["fadeMargin"].toDouble());
+
+    if (obj.contains("receiverAntennaGain"))
+        receiverAntennaGain = static_cast<float>(obj["receiverAntennaGain"].toDouble());
+
+    if (obj.contains("pathLossExponent"))
+        pathLossExponent = static_cast<float>(obj["pathLossExponent"].toDouble());
 
     messages.clear();
     if (obj.contains("messages") && obj["messages"].isArray()) {
@@ -207,4 +250,190 @@ Radio::EncryptionType Radio::stringToEncryptionType(const QString& str) const {
     if (str == "AES") return EncryptionType::AES;
     if (str == "DES") return EncryptionType::DES;
     return EncryptionType::None;
+}
+
+float Radio::calculateRange() const
+{
+    bool isDefault = (emittingPower <= 0.0f &&
+                      antennaGain <= 0.0f &&
+                      bandwidth <= 0.0f &&
+                      noiseFigure <= 0.0f &&
+                      frequencyUsed <= 0.0f &&
+                      frequencyMax <= 0.0f);
+
+    if (isDefault) {
+        float defaultRange = 7000.0f; // 7 km
+        qDebug() << "Default radio detected, using hardcoded range:" << defaultRange << "meters";
+        return defaultRange;
+    }
+
+    // --- simplified FSPL-based range ---
+    float txGain = antennaGain;
+    float rxGain = (receiverAntennaGain >= 0.0f) ? receiverAntennaGain : antennaGain;
+    float Pt_dBm = 10.0f * log10(emittingPower * 1000.0f);
+
+    const float k = 1.38064852e-23f;
+    const float T = 290.0f;
+    float B_Hz = bandwidth * 1000.0f;
+    float N_dBm = 10.0f * log10(k * T * B_Hz * 1000.0f);
+    float Prx_dBm = N_dBm + noiseFigure + fadeMargin;
+
+    float freqMHz = (frequencyUsed > 0.0f) ? frequencyUsed : frequencyMax;
+    float FSPL_dB = Pt_dBm + txGain + rxGain - Prx_dBm - systemLoss;
+    float exponent = (FSPL_dB - 32.44f - 20.0f * log10(freqMHz)) / 20.0f;
+    float range_m = pow(10.0f, exponent);
+
+    // --- clamp range to reasonable values ---
+    if (!std::isfinite(range_m) || range_m <= 0.0f) range_m = 7000.0f; // fallback 7 km
+    if (range_m > 50000.0f) range_m = 50000.0f; // max ~50 km
+    if (range_m < 100.0f) range_m = 100.0f;     // min ~100 m
+
+    qDebug() << "Radio range calculated:"
+             << "Frequency(MHz):" << freqMHz
+             << "Range(m):" << range_m;
+
+    return range_m;
+}
+
+void Radio::updateAvailableConnections(Transform* source)
+{
+    qDebug() << "=== updateAvailableConnections() called for Radio:" << QString::fromStdString(Name) << "===";
+
+    messages.clear();
+    qDebug() << "Messages cleared.";
+
+    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    if (!parent) {
+        qDebug() << "Parent hierarchy is NULL!";
+        return;
+    }
+
+    qDebug() << "Total entities in hierarchy:" << parent->Entities->size();
+
+    float range = calculateRange();
+    qDebug() << "Calculated radio range:" << range << "meters";
+
+    // Detect default/empty radio
+    bool thisRadioDefault = (emittingPower <= 0.0f &&
+                             antennaGain <= 0.0f &&
+                             bandwidth <= 0.0f &&
+                             noiseFigure <= 0.0f &&
+                             frequencyUsed <= 0.0f &&
+                             frequencyMax <= 0.0f);
+
+    const float SCENE_UNIT_TO_METERS = 1000.0f;
+
+    for (auto& [key, entity] : *parent->Entities) {
+        if (!entity) continue;
+        if (entity->ID == this->parentID) {
+            qDebug() << "Skipping own platform/entity:" << QString::fromStdString(entity->Name);
+            continue;
+        }
+
+
+        Platform* platform = dynamic_cast<Platform*>(entity);
+        if (!platform) {
+            qDebug() << "Skipping entity (not a Platform):" << QString::fromStdString(entity->ID);
+            continue;
+        }
+
+        if (platform->radioList.empty()) {
+            qDebug() << "Platform has no radios:" << QString::fromStdString(platform->Name);
+            continue;
+        }
+
+        if (!platform->transform || !platform->transform->matrix) {
+            qDebug() << "Invalid transform/matrix for platform:" << QString::fromStdString(platform->Name);
+            continue;
+        }
+
+        // Distance calculation
+        QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
+        float distance = localPos.length() * SCENE_UNIT_TO_METERS;
+        qDebug() << "Platform:" << QString::fromStdString(platform->Name)
+                 << "| Distance (meters):" << distance;
+
+        // Frequency compatibility check
+        bool freqMatch = false;
+        for (Radio* otherRadio : platform->radioList) {
+            if (!otherRadio) continue;
+
+            bool otherDefault = (otherRadio->emittingPower <= 0.0f &&
+                                 otherRadio->antennaGain <= 0.0f &&
+                                 otherRadio->bandwidth <= 0.0f &&
+                                 otherRadio->noiseFigure <= 0.0f &&
+                                 otherRadio->frequencyUsed <= 0.0f &&
+                                 otherRadio->frequencyMax <= 0.0f);
+
+            // Both default -> allow
+            if (thisRadioDefault && otherDefault) {
+                freqMatch = true;
+                qDebug() << "Both radios are default: communication allowed";
+                break;
+            }
+
+            // One default and one custom -> block
+            if (thisRadioDefault != otherDefault) {
+                qDebug() << "One radio default, one custom: communication blocked";
+                continue;
+            }
+
+            // Both custom -> check overlap
+            float thisMin = frequencyMin;
+            float thisMax = frequencyMax;
+            float otherMin = otherRadio->frequencyMin;
+            float otherMax = otherRadio->frequencyMax;
+
+            if (thisMax >= otherMin && thisMin <= otherMax) {
+                freqMatch = true;
+                qDebug() << "Custom frequency ranges overlap:"
+                         << "this[" << thisMin << "," << thisMax << "]"
+                         << "other[" << otherMin << "," << otherMax << "]";
+                break;
+            } else {
+                qDebug() << "Custom frequency ranges do NOT overlap:"
+                         << "this[" << thisMin << "," << thisMax << "]"
+                         << "other[" << otherMin << "," << otherMax << "]";
+            }
+        }
+
+        if (distance <= range && freqMatch) {
+            Message msg;
+            msg.timeStamp = "now";
+            msg.source = Name;
+            msg.destination = platform->Name;
+            msg.content = "Distance: " + std::to_string(distance) +
+                          " m | MHz: " + std::to_string(frequencyUsed);
+
+            messages.push_back(msg);
+
+            qDebug() << "Message added:" << QString::fromStdString(msg.source)
+                     << "->" << QString::fromStdString(msg.destination);
+        }
+        else {
+            if (distance > range) {
+                qDebug() << "Platform out of range:" << QString::fromStdString(platform->Name)
+                         << "| Distance:" << distance << ">" << range;
+            }
+            if (!freqMatch) {
+                qDebug() << "Frequency mismatch with platform:" << QString::fromStdString(platform->Name);
+            }
+        }
+    }
+
+    qDebug() << "Total messages prepared:" << messages.size();
+
+    QJsonArray msgArray;
+    for (const auto& m : messages) {
+        QJsonObject obj;
+        obj["timeStamp"] = QString::fromStdString(m.timeStamp);
+        obj["source"] = QString::fromStdString(m.source);
+        obj["destination"] = QString::fromStdString(m.destination);
+        obj["content"] = QString::fromStdString(m.content);
+        msgArray.append(obj);
+    }
+
+    qDebug() << "Emitting availableConnectionsUpdated with"
+             << msgArray.size() << "messages.";
+    emit availableConnectionsUpdated(msgArray);
 }

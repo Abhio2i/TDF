@@ -24,10 +24,40 @@ Platform::Platform(Hierarchy* h) : Entity(h) {
 void Platform::update(){
     //qDebug()<<"update";
     for (Sensor* s : sensorList) {
-        if (s) {
-            s->scan(ID,transform);
-            s->ewscan(ID,transform);
-           // qDebug()<<"found sensor";
+        qDebug() << "[Platform::update] platformID=" << QString::fromStdString(ID)
+                 << "sensor=" << QString::fromStdString(s->Name)
+                 << "subType=" << s->subTypeToString(s->subType);
+
+        switch (s->subType) {
+        case Sensor::SubType::CSM:
+            qDebug() << "[Platform::update] calling csmScan";
+            s->csmScan(ID, transform);
+            break;
+
+        case Sensor::SubType::ESM:
+            qDebug() << "[Platform::update] calling esmScan";
+            s->esmScan(ID, transform);
+            break;
+
+        default:
+            qDebug() << "[Platform::update] calling scan + ewscan (Generic)";
+            s->scan(ID, transform);
+            s->ewscan(ID, transform);
+            break;
+        }
+    }
+
+
+    for (Radio* r : radioList) { // assuming you have a list of radios on this platform
+        if (r) {
+            qDebug()<<"found radio";
+            r->updateAvailableConnections(transform);
+            // qDebug()<<"found radio";
+        }
+    }
+    for (IFF* iff : iffList) {
+        if (iff) {
+            iff->interrogateTargets(transform);
         }
     }
 }
@@ -249,7 +279,7 @@ void Platform::fromJson(const QJsonObject& obj) {
 
 
 void Platform::addComponent(std::string name) {
-     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (name == "transform") {
         if (!transform){
             transform = new Transform();
@@ -377,18 +407,18 @@ QJsonObject Platform::getComponent(std::string name) {
         return meshRenderer2d->toJson();
     }
     else if (name == "iff") {
-       //if (iffList) { Console::error(name + ": not exist"); return QJsonObject(); }
-       //return ififfListfs->toJson();
-       QJsonObject obj;
-       obj["id"] = QString::fromStdString(ID);
-       obj["active"] = Active;
-       obj["type"] = "component";
-       QJsonArray iffArray;
-       for (IFF* i : iffList) {
-           if (i) iffArray.append(i->toJson());
-       }
-       obj["iffs"] = iffArray;
-       return obj;
+        //if (iffList) { Console::error(name + ": not exist"); return QJsonObject(); }
+        //return ififfListfs->toJson();
+        QJsonObject obj;
+        obj["id"] = QString::fromStdString(ID);
+        obj["active"] = Active;
+        obj["type"] = "component";
+        QJsonArray iffArray;
+        for (IFF* i : iffList) {
+            if (i) iffArray.append(i->toJson());
+        }
+        obj["iffs"] = iffArray;
+        return obj;
     }
     else if (name == "radios") {
 

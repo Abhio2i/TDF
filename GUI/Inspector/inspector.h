@@ -145,6 +145,14 @@ private:
     void addParameterRow(const QString &parameterName, int row);
     // Create remove button
     QPushButton *createRemoveButton(const QString &parameterName);
+
+    //  helper that capitalises the first letter of any string
+
+    static QString capitalizeFirstLetter(const QString &s)
+    {
+        if (s.isEmpty()) return s;
+        return s[0].toUpper() + s.mid(1);
+    }
 };
 
 #endif // INSPECTOR_H

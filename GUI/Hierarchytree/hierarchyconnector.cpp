@@ -18,7 +18,7 @@
 #include "GUI/Editors/databaseeditor.h"            // For database editor
 #include "GUI/Editors/scenarioeditor.h"            // For scenario editor
 #include "GUI/Editors/runtimeeditor.h"             // For runtime editor
-
+#include "GUI/Hierarchytree/contextmenu.h"
 // %%% Static Instance %%%
 /* Singleton instance */
 HierarchyConnector* HierarchyConnector::m_instance = nullptr;
@@ -117,15 +117,16 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
             hierarchy, &Hierarchy::removeEntity);
     connect(treeView->getContextMenu(), &ContextMenu::removeComponentRequested,
             hierarchy, &Hierarchy::removeComponent);
-
+    //->CHANGE
     // Connect add component action
     connect(treeView->getContextMenu(), &ContextMenu::addComponentRequested, this,
-            [=](QString entityID, QString componentType, QString componentName) {
+            [=](QString entityID, QString componentType, QString componentName, QString sensorType) {
                 if (componentType == "iff") {
                     hierarchy->attchedIff(entityID, componentName);
                 } else if (componentType == "sensors") {
-                    hierarchy->attachSensors(entityID, componentName);
-                } else if (componentType == "radios") {
+                    hierarchy->attachSensors(entityID, componentName, sensorType);
+                }
+                else if (componentType == "radios") {
                     hierarchy->attachRadios(entityID, componentName);
                 } else {
                     qWarning() << "Unsupported component type for addComponentRequested:" << componentType;

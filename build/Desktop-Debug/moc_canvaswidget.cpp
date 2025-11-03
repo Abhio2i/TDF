@@ -23,8 +23,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_CanvasWidget_t {
-    QByteArrayData data[36];
-    char stringdata0[490];
+    QByteArrayData data[38];
+    char stringdata0[516];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -68,7 +68,9 @@ QT_MOC_LITERAL(31, 409, 18), // "importGeoJsonLayer"
 QT_MOC_LITERAL(32, 428, 8), // "filePath"
 QT_MOC_LITERAL(33, 437, 21), // "onGeoJsonLayerToggled"
 QT_MOC_LITERAL(34, 459, 24), // "onMeasurementTypeChanged"
-QT_MOC_LITERAL(35, 484, 5) // "isEll"
+QT_MOC_LITERAL(35, 484, 5), // "isEll"
+QT_MOC_LITERAL(36, 490, 17), // "clearShapeHistory"
+QT_MOC_LITERAL(37, 508, 7) // "shapeId"
 
     },
     "CanvasWidget\0selectEntitybyCursor\0\0"
@@ -85,7 +87,7 @@ QT_MOC_LITERAL(35, 484, 5) // "isEll"
     "endPoint\0onPresetLayerSelected\0preset\0"
     "importGeoJsonLayer\0filePath\0"
     "onGeoJsonLayerToggled\0onMeasurementTypeChanged\0"
-    "isEll"
+    "isEll\0clearShapeHistory\0shapeId"
 };
 #undef QT_MOC_LITERAL
 
@@ -95,7 +97,7 @@ static const uint qt_meta_data_CanvasWidget[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-      17,   14, // methods
+      19,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -103,25 +105,27 @@ static const uint qt_meta_data_CanvasWidget[] = {
        6,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    1,   99,    2, 0x06 /* Public */,
-       4,    1,  102,    2, 0x06 /* Public */,
-       5,    2,  105,    2, 0x06 /* Public */,
-       8,    1,  110,    2, 0x06 /* Public */,
-      10,    1,  113,    2, 0x06 /* Public */,
-      12,    1,  116,    2, 0x06 /* Public */,
+       1,    1,  109,    2, 0x06 /* Public */,
+       4,    1,  112,    2, 0x06 /* Public */,
+       5,    2,  115,    2, 0x06 /* Public */,
+       8,    1,  120,    2, 0x06 /* Public */,
+      10,    1,  123,    2, 0x06 /* Public */,
+      12,    1,  126,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-      15,    1,  119,    2, 0x0a /* Public */,
-      18,    1,  122,    2, 0x0a /* Public */,
-      20,    1,  125,    2, 0x0a /* Public */,
-      21,    1,  128,    2, 0x0a /* Public */,
-      22,    1,  131,    2, 0x0a /* Public */,
-      24,    2,  134,    2, 0x0a /* Public */,
-      25,    3,  139,    2, 0x0a /* Public */,
-      29,    1,  146,    2, 0x0a /* Public */,
-      31,    1,  149,    2, 0x0a /* Public */,
-      33,    2,  152,    2, 0x0a /* Public */,
-      34,    1,  157,    2, 0x08 /* Private */,
+      15,    1,  129,    2, 0x0a /* Public */,
+      18,    1,  132,    2, 0x0a /* Public */,
+      20,    1,  135,    2, 0x0a /* Public */,
+      21,    1,  138,    2, 0x0a /* Public */,
+      22,    1,  141,    2, 0x0a /* Public */,
+      24,    2,  144,    2, 0x0a /* Public */,
+      25,    3,  149,    2, 0x0a /* Public */,
+      29,    1,  156,    2, 0x0a /* Public */,
+      31,    1,  159,    2, 0x0a /* Public */,
+      33,    2,  162,    2, 0x0a /* Public */,
+      34,    1,  167,    2, 0x08 /* Private */,
+      36,    0,  170,    2, 0x0a /* Public */,
+      36,    1,  171,    2, 0x0a /* Public */,
 
  // signals: parameters
     QMetaType::Void, QMetaType::QString,    3,
@@ -143,6 +147,8 @@ static const uint qt_meta_data_CanvasWidget[] = {
     QMetaType::Void, QMetaType::QString,   32,
     QMetaType::Void, QMetaType::QString, QMetaType::Bool,   11,    9,
     QMetaType::Void, QMetaType::Bool,   35,
+    QMetaType::Void,
+    QMetaType::Void, QMetaType::QString,   37,
 
        0        // eod
 };
@@ -170,6 +176,8 @@ void CanvasWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id
         case 14: _t->importGeoJsonLayer((*reinterpret_cast< const QString(*)>(_a[1]))); break;
         case 15: _t->onGeoJsonLayerToggled((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< bool(*)>(_a[2]))); break;
         case 16: _t->onMeasurementTypeChanged((*reinterpret_cast< bool(*)>(_a[1]))); break;
+        case 17: _t->clearShapeHistory(); break;
+        case 18: _t->clearShapeHistory((*reinterpret_cast< const QString(*)>(_a[1]))); break;
         default: ;
         }
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
@@ -287,13 +295,13 @@ int CanvasWidget::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 17)
+        if (_id < 19)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 17;
+        _id -= 19;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 17)
+        if (_id < 19)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 17;
+        _id -= 19;
     }
     return _id;
 }

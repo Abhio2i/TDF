@@ -42,7 +42,7 @@ public:
     float forwardSpeed = 0.0f;
     float enginePower = 0.0f;
     float aeroFactor = 0.0f;
-    float moveSpeed = 1;
+    float moveSpeed = 800;
     float rotationSpeed = 1;
     float angdeg = 1;
     float start = 0;

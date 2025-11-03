@@ -46,7 +46,7 @@ public:
     void getCurrentJsonData();
     void addComponent(QString Id, QString ComponentName);
     void attchedIff(QString Id, QString name);
-    void attachSensors(QString ID, QString name);
+    void attachSensors(QString ID, QString name, QString sensorType);
     void attachRadios(QString ID, QString name);
 
 

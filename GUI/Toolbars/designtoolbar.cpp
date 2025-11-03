@@ -4,7 +4,6 @@
 #include "GUI/Tacticaldisplay/Gis/layerinformationdialog.h"
 #include "GUI/Tacticaldisplay/canvaswidget.h"
 #include "core/Debug/console.h"
-// #include "GUI/Panel/radardisplay.h"
 #include <QLineEdit>
 #include <QIcon>
 #include <QDebug>
@@ -38,16 +37,9 @@ QPixmap DesignToolBar::withWhiteBg(const QString &iconPath) {
 }
 
 DesignToolBar::DesignToolBar(QWidget *parent) : QToolBar(parent) {
-    setStyleSheet(
-        "QToolButton::menu-indicator { image: none; }"
-        "QToolButton::menu-button { border: none; width: 16px; }"
-        "QToolButton::menu-button:open { background-color: transparent; }"
-        );
 
     createActions();
     setupToolBar();
-
-
 }
 
 void DesignToolBar::createActions() {
@@ -55,7 +47,7 @@ void DesignToolBar::createActions() {
         // { name, id, zoomMin, zoomMax, tileUrl, isCustom, opacity, attribution, type }
         { "OpenStreetMap", "osm", 0, 9, "", false, 1.0, "N/A", "Raster" },
         { "Satellite Map", "satellite", 0, 9, "", true, 1.0, "N/A", "Raster" },
-        { "Tarrine Map", "tarrine", 0, 9, "", true, 1.0, "N/A", "Raster" }
+        { "Terrain Map", "tarrine", 0, 9, "", true, 1.0, "N/A", "Raster" }
                  };
 
     viewAction = new QAction(QIcon(withWhiteBg(":/icons/images/view.jpg")), tr("View"), this);
@@ -149,45 +141,6 @@ void DesignToolBar::createActions() {
         emit gridPlaneZToggled(checked);
     });
 
-    snappingToggleAction = new QAction(QIcon(withWhiteBg(":/icons/images/grid1.png")), tr("Snap to Grid"), this);
-    snappingToggleAction->setCheckable(true);
-    connect(snappingToggleAction, &QAction::triggered, this, [=](bool checked) {
-        highlightAction(snappingToggleAction);
-        emit gridSnappingToggled(checked);
-    });
-
-    snapGridSizeXAction = new QAction(tr("X Size"), this);
-    snapGridSizeXAction->setCheckable(true);
-    snapGridSizeXAction->setChecked(true);
-    connect(snapGridSizeXAction, &QAction::triggered, this, [=](bool checked) {
-        emit snapGridSizeXToggled(checked);
-    });
-
-    snapGridSizeYAction = new QAction(tr("Y Size"), this);
-    snapGridSizeYAction->setCheckable(true);
-    snapGridSizeYAction->setChecked(true);
-    connect(snapGridSizeYAction, &QAction::triggered, this, [=](bool checked) {
-        emit snapGridSizeYToggled(checked);
-    });
-
-    snapGridSizeZAction = new QAction(tr("Z Size"), this);
-    snapGridSizeZAction->setCheckable(true);
-    snapGridSizeZAction->setChecked(true);
-    connect(snapGridSizeZAction, &QAction::triggered, this, [=](bool checked) {
-        emit snapGridSizeZToggled(checked);
-    });
-
-    snapRotateAction = new QAction(tr("Rotate"), this);
-    snapRotateAction->setCheckable(true);
-    connect(snapRotateAction, &QAction::triggered, this, [=](bool checked) {
-        emit snapRotateToggled(checked);
-    });
-
-    snapScaleAction = new QAction(tr("Scale"), this);
-    snapScaleAction->setCheckable(true);
-    connect(snapScaleAction, &QAction::triggered, this, [=](bool checked) {
-        emit snapScaleToggled(checked);
-    });
 
     layerSelectAction = new QAction(QIcon(withWhiteBg(":/icons/images/layers.png")), tr("Select Layer"), this);
     layerSelectAction->setCheckable(true);
@@ -287,29 +240,6 @@ void DesignToolBar::createActions() {
         emit editTrajectoryTriggered();
     });
 
-
-    // databaseAction = new QAction(QIcon(withWhiteBg(":/icons/images/database (1).png")), tr("Database"), this);
-    // databaseAction->setCheckable(true);
-
-    // connect(databaseAction, &QAction::triggered, this, [=]() {
-    //     highlightAction(databaseAction);
-    //     emit databaseTriggered(); // Existing signal
-
-    //     // // Open RadarDisplay UI as dialog
-    //     // RadarDisplay *RadarDisplayUI = new RadarDisplay(nullptr);
-    //     // RadarDisplayUI->setAttribute(Qt::WA_DeleteOnClose, true);
-    //     // RadarDisplayUI->setWindowTitle("Radar Display");
-
-    //     // // ✅ Proper dialog flags (title bar + cut + move)
-    //     // RadarDisplayUI->setWindowFlags(Qt::Dialog |
-    //     //                                Qt::WindowTitleHint |
-    //     //                                Qt::WindowCloseButtonHint |
-    //     //                                Qt::WindowMinMaxButtonsHint |
-    //     //                                Qt::WindowSystemMenuHint);
-
-    //     // RadarDisplayUI->resize(800, 600);
-    //     // RadarDisplayUI->show(); // non-modal dialog (parallel use allowed)
-    // });
 
     addCustomMapAction = new QAction("Add Custom Map", this);
     connect(addCustomMapAction, &QAction::triggered, this, [=]() {
@@ -580,253 +510,12 @@ void DesignToolBar::createActions() {
     searchPlaceAction->setMenu(searchMenu);
 }
 
-void DesignToolBar::setupToolBar() {
-    addAction(viewAction);
-    addAction(moveAction);
-    addAction(rotateAction);
-    addAction(scaleAction);
-    addSeparator();
-
-    QToolButton* gridButton = new QToolButton(this);
-    gridButton->setDefaultAction(gridToggleAction);
-    gridButton->setPopupMode(QToolButton::InstantPopup);
-
-    QPixmap arrowPixmap(12, 12);
-    arrowPixmap.fill(Qt::transparent);
-    QPainter painter(&arrowPixmap);
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setPen(Qt::white);
-    painter.setBrush(Qt::white);
-    painter.drawPolygon(QPolygonF() << QPointF(2,4) << QPointF(10,4) << QPointF(6,8));
-
-    QToolButton* dropdownBtn = new QToolButton(this);
-    dropdownBtn->setIcon(QIcon(arrowPixmap));
-    dropdownBtn->setFixedSize(16, 16);
-    dropdownBtn->setStyleSheet("QToolButton { border: none; background: transparent; }");
-    connect(dropdownBtn, &QToolButton::clicked, [gridButton]() {
-        gridButton->showMenu();
-    });
-
-    QWidget* gridContainer = new QWidget();
-    QHBoxLayout* gridLayout = new QHBoxLayout(gridContainer);
-    gridLayout->setContentsMargins(0, 0, 0, 0);
-    gridLayout->setSpacing(0);
-    gridLayout->addWidget(gridButton);
-    gridLayout->addWidget(dropdownBtn);
-
-    QMenu* gridMenu = new QMenu(this);
-    QWidget* gridPlaneWidget = new QWidget();
-    QHBoxLayout* gridPlaneLayout = new QHBoxLayout(gridPlaneWidget);
-    gridPlaneLayout->setContentsMargins(5, 5, 5, 5);
-    gridPlaneLayout->setSpacing(5);
-
-    QLabel* planeLabel = new QLabel("Grid Plane:");
-    gridPlaneLayout->addWidget(planeLabel);
-
-    QToolButton* xButton = new QToolButton();
-    xButton->setDefaultAction(gridPlaneXAction);
-    xButton->setAutoRaise(true);
-
-    QToolButton* yButton = new QToolButton();
-    yButton->setDefaultAction(gridPlaneYAction);
-    yButton->setAutoRaise(true);
-
-    QToolButton* zButton = new QToolButton();
-    zButton->setDefaultAction(gridPlaneZAction);
-    zButton->setAutoRaise(true);
-
-    gridPlaneLayout->addWidget(xButton);
-    gridPlaneLayout->addWidget(yButton);
-    gridPlaneLayout->addWidget(zButton);
-
-    QWidgetAction* gridPlaneAction = new QWidgetAction(this);
-    gridPlaneAction->setDefaultWidget(gridPlaneWidget);
-    gridMenu->addAction(gridPlaneAction);
-
-    QWidgetAction* opacityAction = new QWidgetAction(this);
-    QWidget* opacityWidget = new QWidget();
-    QHBoxLayout* opacityLayout = new QHBoxLayout(opacityWidget);
-    opacityLayout->addWidget(new QLabel("Opacity:"));
-    QSlider* opacitySlider = new QSlider(Qt::Horizontal);
-    opacitySlider->setRange(0, 100);
-    opacitySlider->setValue(50);
-    connect(opacitySlider, &QSlider::valueChanged, this, &DesignToolBar::gridOpacityChanged);
-    opacityLayout->addWidget(opacitySlider);
-    opacityWidget->setLayout(opacityLayout);
-    opacityAction->setDefaultWidget(opacityWidget);
-
-    gridMenu->addSeparator();
-    gridMenu->addAction(opacityAction);
-
-    gridButton->setMenu(gridMenu);
-    addWidget(gridContainer);
-
-    QToolButton* snapButton = new QToolButton(this);
-    snapButton->setDefaultAction(snappingToggleAction);
-    snapButton->setPopupMode(QToolButton::InstantPopup);
-
-    QToolButton* snapDropdownBtn = new QToolButton(this);
-    snapDropdownBtn->setIcon(QIcon(arrowPixmap));
-    snapDropdownBtn->setFixedSize(16, 16);
-    snapDropdownBtn->setStyleSheet("QToolButton { border: none; background: transparent; }");
-    connect(snapDropdownBtn, &QToolButton::clicked, [snapButton]() {
-        snapButton->showMenu();
-    });
-
-    QWidget* snapContainer = new QWidget();
-    QHBoxLayout* snapLayout = new QHBoxLayout(snapContainer);
-    snapLayout->setContentsMargins(0, 0, 0, 0);
-    snapLayout->setSpacing(0);
-    snapLayout->addWidget(snapButton);
-    snapLayout->addWidget(snapDropdownBtn);
-
-    QMenu* snapMenu = new QMenu(this);
-    QWidget* snapSizeWidget = new QWidget();
-    QHBoxLayout* snapSizeLayout = new QHBoxLayout(snapSizeWidget);
-    snapSizeLayout->setContentsMargins(5, 5, 5, 5);
-    snapSizeLayout->setSpacing(5);
-
-    QLabel* snapSizeLabel = new QLabel("Grid Size:");
-    snapSizeLayout->addWidget(snapSizeLabel);
-
-    QToolButton* xSizeButton = new QToolButton();
-    xSizeButton->setDefaultAction(snapGridSizeXAction);
-    xSizeButton->setAutoRaise(true);
-
-    QToolButton* ySizeButton = new QToolButton();
-    ySizeButton->setDefaultAction(snapGridSizeYAction);
-    ySizeButton->setAutoRaise(true);
-
-    QToolButton* zSizeButton = new QToolButton();
-    zSizeButton->setDefaultAction(snapGridSizeZAction);
-    zSizeButton->setAutoRaise(true);
-
-    snapSizeLayout->addWidget(xSizeButton);
-    snapSizeLayout->addWidget(ySizeButton);
-    snapSizeLayout->addWidget(zSizeButton);
-
-    QWidgetAction* snapSizeAction = new QWidgetAction(this);
-    snapSizeAction->setDefaultWidget(snapSizeWidget);
-    snapMenu->addAction(snapSizeAction);
-
-    snapMenu->addSeparator();
-
-    QWidget* rotateWidget = new QWidget();
-    QHBoxLayout* rotateLayout = new QHBoxLayout(rotateWidget);
-    rotateLayout->setContentsMargins(5, 5, 5, 5);
-    QToolButton* rotateButton = new QToolButton();
-    rotateButton->setDefaultAction(snapRotateAction);
-    rotateButton->setAutoRaise(true);
-    rotateLayout->addWidget(rotateButton);
-    QWidgetAction* rotateAction = new QWidgetAction(this);
-    rotateAction->setDefaultWidget(rotateWidget);
-    snapMenu->addAction(rotateAction);
-
-    QWidget* scaleWidget = new QWidget();
-    QHBoxLayout* scaleLayout = new QHBoxLayout(scaleWidget);
-    scaleLayout->setContentsMargins(5, 5, 5, 5);
-    QToolButton* scaleButton = new QToolButton();
-    scaleButton->setDefaultAction(snapScaleAction);
-    scaleButton->setAutoRaise(true);
-    scaleLayout->addWidget(scaleButton);
-    QWidgetAction* scaleAction = new QWidgetAction(this);
-    scaleAction->setDefaultWidget(scaleWidget);
-    snapMenu->addAction(scaleAction);
-
-    snapButton->setMenu(snapMenu);
-    addWidget(snapContainer);
-
-    addSeparator();
-
-    QToolButton* layerButton = new QToolButton(this);
-    layerButton->setDefaultAction(layerSelectAction);
-    layerButton->setPopupMode(QToolButton::InstantPopup);
-
-    QToolButton* layerDropdownBtn = new QToolButton(this);
-    layerDropdownBtn->setIcon(QIcon(arrowPixmap));
-    layerDropdownBtn->setFixedSize(16, 16);
-    layerDropdownBtn->setStyleSheet("QToolButton { border: none; background: transparent; }");
-    connect(layerDropdownBtn, &QToolButton::clicked, [layerButton]() {
-        layerButton->showMenu();
-    });
-
-    QWidget* layerContainer = new QWidget();
-    QHBoxLayout* layerLayout = new QHBoxLayout(layerContainer);
-    layerLayout->setContentsMargins(0, 0, 0, 0);
-    layerLayout->setSpacing(0);
-    layerLayout->addWidget(layerButton);
-    layerLayout->addWidget(layerDropdownBtn);
-
-    addWidget(layerContainer);
-
-    // addAction(databaseAction);
-    addSeparator();
-    addAction(zoomInAction);
-    addAction(zoomOutAction);
-    addAction(layerInfoAction);
-    addAction(selectCenterAction);
-
-
-    QToolButton* mapLayerButton = new QToolButton(this);
-    mapLayerButton->setDefaultAction(mapSelectLayerAction);
-    mapLayerButton->setPopupMode(QToolButton::InstantPopup);
-    mapLayerButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
-    addWidget(mapLayerButton);
-
-    // Import GeoJSON Button
-    QToolButton* importGeoJsonButton = new QToolButton(this);
-    importGeoJsonButton->setDefaultAction(importGeoJsonAction);
-    importGeoJsonButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
-    addWidget(importGeoJsonButton);
-
-    // NEW: GeoJSON Layers Button
-    QToolButton* geoJsonLayersButton = new QToolButton(this);
-    geoJsonLayersButton->setDefaultAction(geoJsonLayersAction);
-    geoJsonLayersButton->setPopupMode(QToolButton::InstantPopup);
-    geoJsonLayersButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
-    addWidget(geoJsonLayersButton);
-
-    QToolButton* searchPlaceButton = new QToolButton(this);
-    searchPlaceButton->setDefaultAction(searchPlaceAction);
-    searchPlaceButton->setPopupMode(QToolButton::InstantPopup);
-    searchPlaceButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
-
-    addWidget(searchPlaceButton);
-    QToolButton* shapeButton = new QToolButton(this);
-    shapeButton->setDefaultAction(shapeAction);
-    shapeButton->setPopupMode(QToolButton::InstantPopup);
-    shapeButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
-    addWidget(shapeButton);
-
-    QToolButton* bitmapButton = new QToolButton(this);
-    bitmapButton->setDefaultAction(bitmapAction);
-    bitmapButton->setPopupMode(QToolButton::InstantPopup);
-    bitmapButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
-    addWidget(bitmapButton);
-
-    QToolButton* selectBitmapButton = new QToolButton(this);
-    selectBitmapButton->setDefaultAction(selectBitmapAction);
-    selectBitmapButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
-    addWidget(selectBitmapButton);
-
-    // for measure distance
-    QToolButton* measureDistanceButton = new QToolButton(this);
-    measureDistanceButton->setDefaultAction(measureDistanceAction);
-    measureDistanceButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
-    addWidget(measureDistanceButton);
-
-    QToolButton* presetLayersButton = new QToolButton(this);
-    presetLayersButton->setDefaultAction(presetLayersAction);
-    presetLayersButton->setPopupMode(QToolButton::InstantPopup);
-    presetLayersButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
-    addWidget(presetLayersButton);
-}
 
 void DesignToolBar::highlightAction(QAction *activeAction) {
     QList<QAction*> actions = {
         viewAction, moveAction, rotateAction, scaleAction,
         zoomInAction, zoomOutAction,
-        gridToggleAction, snappingToggleAction,
+        gridToggleAction,
         layerSelectAction,
         editTrajectoryAction,
         mapSelectLayerAction, searchPlaceAction,
@@ -847,8 +536,88 @@ void DesignToolBar::highlightAction(QAction *activeAction) {
         }
     }
 }
+void DesignToolBar::setupToolBar()
+{
+    addAction(viewAction);
+    addAction(moveAction);
+    addAction(rotateAction);
+    addAction(scaleAction);
+    addSeparator();
 
+    /* ------------------- Toggle Grid ------------------- */
+    QToolButton *gridButton = new QToolButton(this);
+    gridButton->setDefaultAction(gridToggleAction);
+    gridButton->setPopupMode(QToolButton::InstantPopup);
+    gridButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(gridButton);
 
+    addSeparator();
+
+    /* ------------------- Select Layer (NOW WORKS!) ------------------- */
+    QToolButton *layerButton = new QToolButton(this);
+    layerButton->setDefaultAction(layerSelectAction);
+    layerButton->setPopupMode(QToolButton::InstantPopup);
+    layerButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(layerButton);  // Menu already attached in createActions()
+
+    // --- Baaki buttons unchanged ---
+    addSeparator();
+    addAction(zoomInAction);
+    addAction(zoomOutAction);
+    addAction(layerInfoAction);
+    addAction(selectCenterAction);
+
+    QToolButton *mapLayerButton = new QToolButton(this);
+    mapLayerButton->setDefaultAction(mapSelectLayerAction);
+    mapLayerButton->setPopupMode(QToolButton::InstantPopup);
+    mapLayerButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(mapLayerButton);
+
+    QToolButton *importGeoJsonButton = new QToolButton(this);
+    importGeoJsonButton->setDefaultAction(importGeoJsonAction);
+    importGeoJsonButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(importGeoJsonButton);
+
+    QToolButton *geoJsonLayersButton = new QToolButton(this);
+    geoJsonLayersButton->setDefaultAction(geoJsonLayersAction);
+    geoJsonLayersButton->setPopupMode(QToolButton::InstantPopup);
+    geoJsonLayersButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(geoJsonLayersButton);
+
+    QToolButton *searchPlaceButton = new QToolButton(this);
+    searchPlaceButton->setDefaultAction(searchPlaceAction);
+    searchPlaceButton->setPopupMode(QToolButton::InstantPopup);
+    searchPlaceButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(searchPlaceButton);
+
+    QToolButton *shapeButton = new QToolButton(this);
+    shapeButton->setDefaultAction(shapeAction);
+    shapeButton->setPopupMode(QToolButton::InstantPopup);
+    shapeButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(shapeButton);
+
+    QToolButton *bitmapButton = new QToolButton(this);
+    bitmapButton->setDefaultAction(bitmapAction);
+    bitmapButton->setPopupMode(QToolButton::InstantPopup);
+    bitmapButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(bitmapButton);
+
+    QToolButton *selectBitmapButton = new QToolButton(this);
+    selectBitmapButton->setDefaultAction(selectBitmapAction);
+    selectBitmapButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(selectBitmapButton);
+
+    QToolButton *measureDistanceButton = new QToolButton(this);
+    measureDistanceButton->setDefaultAction(measureDistanceAction);
+    measureDistanceButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(measureDistanceButton);
+
+    QToolButton *presetLayersButton = new QToolButton(this);
+    presetLayersButton->setDefaultAction(presetLayersAction);
+    presetLayersButton->setPopupMode(QToolButton::InstantPopup);
+    presetLayersButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(presetLayersButton);
+}
 void DesignToolBar::onModeChanged(TransformMode mode) {
     viewAction->setChecked(false);
     moveAction->setChecked(false);

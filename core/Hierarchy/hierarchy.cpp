@@ -1,4 +1,3 @@
-
 #include "hierarchy.h"
 #include "core/Debug/console.h"
 #include "core/Hierarchy/EntityProfiles/radio.h"
@@ -75,7 +74,6 @@ void Hierarchy::addFolderViaNetwork(QString parentId, QString ID, QString Folder
         (*Folders)[parentId.toStdString()]->addFolder(FolderName.toStdString(),ID.toStdString());
     }
 }
-
 
 void Hierarchy::removeFolder(QString parentId, QString ID, bool Profile)
 {
@@ -160,7 +158,6 @@ void Hierarchy::addComponent(QString ID, QString componentName)
     }
 }
 
-
 //------------------IFF------------------------
 
 void Hierarchy::attchedIff(QString ID, QString name)
@@ -169,8 +166,8 @@ void Hierarchy::attchedIff(QString ID, QString name)
         return;
     }
 
-    IFF* iff = new IFF(this);
-    iff->Name = name.toStdString();
+    // IFF* iff = new IFF(this);
+    // iff->Name = name.toStdString();
     QString iffProfileId;
 
     bool foundIffProfile = false;
@@ -189,26 +186,25 @@ void Hierarchy::attchedIff(QString ID, QString name)
         dictionry[iffProfile->ID] = {iffProfile->ID};
     }
 
-    Entity* newEntity = addEntityFromJson(iffProfileId, iff->toJson(), true);
-    if (newEntity) {
+    Entity* entity = addEntity(iffProfileId, name, true);
+    IFF* iff = dynamic_cast<IFF*>(entity);
+    iff->Name = name.toStdString();
+    if (iff) {
         (*Entities)[ID.toStdString()]->addIFF(iff);
     } else {
         delete iff;
     }
 }
 
-
-void Hierarchy::attachSensors(QString ID, QString name)
+void Hierarchy::attachSensors(QString ID, QString name, QString sensorType)
 {
     if (Entities->find(ID.toStdString()) == Entities->end()) {
         return;
     }
 
-    // Sensor* sensor = new Sensor(this);
-    // sensor->Name = name.toStdString();
     QString sensorsProfileId;
-
     bool foundSensorsProfile = false;
+
     for (const auto& [key, profilePtr] : ProfileCategories) {
         if (profilePtr->type == Constants::EntityType::Sensor) {
             sensorsProfileId = QString::fromStdString(key);
@@ -224,16 +220,34 @@ void Hierarchy::attachSensors(QString ID, QString name)
         dictionry[sensorsProfile->ID] = {sensorsProfile->ID};
     }
 
+    // Create the sensor entity
     Entity* entity = addEntity(sensorsProfileId, name, true);
     Sensor* sensor = dynamic_cast<Sensor*>(entity);
-    sensor->Name = name.toStdString();
-    if (sensor) {
-        (*Entities)[ID.toStdString()]->addSensor(sensor);
-    } else {
-        delete sensor;
-    }
-}
 
+    if (!sensor) {
+        qWarning() << "❌ Failed to cast entity to Sensor for:" << name;
+        delete entity;
+        return;
+    }
+
+    sensor->Name = name.toStdString();
+
+    // ✅ Map string to SubType safely
+    if (sensorType.compare("CSM", Qt::CaseInsensitive) == 0) {
+        sensor->subType = Sensor::SubType::CSM;
+    }
+    else if (sensorType.compare("ESM", Qt::CaseInsensitive) == 0) {
+        sensor->subType = Sensor::SubType::ESM;
+    }
+    else {
+        sensor->subType = Sensor::SubType::Generic;
+    }
+
+    qDebug() << "✅ Sensor attached:" << name << "Subtype:" << sensorType;
+
+    // ✅ Attach to entity
+    (*Entities)[ID.toStdString()]->addSensor(sensor);
+}
 
 void Hierarchy::attachRadios(QString ID, QString name)
 {
@@ -241,8 +255,8 @@ void Hierarchy::attachRadios(QString ID, QString name)
         return;
     }
 
-    Radio* radio = new Radio(this);
-    radio->Name = name.toStdString();
+    // Radio* radio = new Radio(this);
+    // radio->Name = name.toStdString();
     QString radiosProfileId;
 
     bool foundRadiosProfile = false;
@@ -261,8 +275,13 @@ void Hierarchy::attachRadios(QString ID, QString name)
         dictionry[radiosProfile->ID] = {radiosProfile->ID};
     }
 
-    Entity* newEntity = addEntityFromJson(radiosProfileId, radio->toJson(), true);
-    if (newEntity) {
+
+    Entity* entity = addEntity(radiosProfileId, name, true);
+    Radio* radio = dynamic_cast<Radio*>(entity);
+    radio->Name = name.toStdString();
+    if (radio) {
+        // ✅ The only required fix
+        radio->parentID = ID.toStdString();
         (*Entities)[ID.toStdString()]->addRadio(radio);
     } else {
         delete radio;
@@ -294,7 +313,7 @@ void Hierarchy::UpdateComponent(QString ID, QString componentName, QJsonObject d
         if(componentName.contains("_self")){
             entity->fromJson(delta);
         }
-         entity->updateComponent(componentName, mergedData);
+        entity->updateComponent(componentName, mergedData);
         emit entityUpdate(ID);
         emit entityComponentUpdate(ID,componentName,delta);
         //getCurrentJsonData(); // Emit updated JSON

@@ -82,13 +82,21 @@ public:
     QJsonObject getAllRecordings() const;
     void startRecording();
     void stopRecording();
-    void recordToJson();
+    // void recordToJson();
+    void recordToJson(const QString &filePath);
+
     void record(const QJsonObject &data);       // Store entire JSON data
     void recordFrame(const QJsonObject &frame); // Store individual frame
-    bool saveToFile();
+    // bool saveToFile();
+    bool saveToFile(const QString &filePath);
+    void saveBookmark(const QString &message, qint64 timestampMs);
     bool loadFromFile(const QString &filePath);
     void clear();  // Clears previously recorded dataz
-
+    //By Hime
+    //void showBookmarkLog(const QString &note, qint64 timestampMs);
+    void bookmarkReplay(const QString &note, qint64 timestampMs);
+    void startReplayFromTimestamp(qint64 timestampMs);
+    //By Hime End
     void setRate(int rate);
     int getRate() const;
 
@@ -98,8 +106,18 @@ public:
     QVector<QJsonObject> getRecordedFrames() const;
 
 signals:
-    void replayFrame(QJsonObject frame);
+    void replayFrame(QJsonObject frame); //p1
+    void bookmarkAdded(const QString &note, qint64 timestampMs);
+    //By Amz
 
+    void replayBookmark(const QString &note, qint64 timestamp);
+    void setReplayDuration(qint64 duration);
+    //By Amz
+
+    // void bookmarkAdded(const QString &note, qint64 timestampMs); // emitted during playback when frame has "message"
+    // void playbackProgress(qint64 timestampMs);                    // current playback timestamp (ms)
+    // void playbackStarted(qint64 totalDurationMs);                // emitted once at start (total duration)
+    // void playbackFinished();
 private slots:
     void playNextFrame();
 
@@ -118,6 +136,7 @@ private:
     QDateTime recordingStartTime;  // Start time of the current recording
     QTimer *recordingTimer = nullptr; // Timer to store intervals
     QJsonArray m_recordings;
+    QVector<QJsonObject> playbackFrames;
     //End Hima
 };
 

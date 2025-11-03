@@ -32,7 +32,7 @@ public:
     // Sensor attributes
     enum class Type { Active, Passive };
     enum class Mode { Search, Track, TrackWhileScan, FireControl };
-
+    enum class SubType { Generic, CSM, ESM };
     struct Detection {
         struct GeoCoords {
             double latitude;
@@ -49,9 +49,18 @@ public:
         float signalStrength;
         float detectionConfidence;
     };
-
+    struct Message {
+        std::string timeStamp;
+        std::string source;
+        std::string destination;
+        std::string content;
+    };
     Type type = Type::Active;
     Mode mode = Mode::Search;
+    // --- Add below Mode enum ---
+    SubType subType = SubType::Generic;
+    bool csmEnabled = false;
+    bool esmEnabled = false;
     float emissionPower = 0.0f; // Watts
     float emissionFrequency = 0.0f; // MHz or GHz
     float bandwidth = 0.0f; // MHz
@@ -73,10 +82,24 @@ public:
     QVector<Target> targets;
     std::unordered_set<Platform*> ewdetects;
     QVector<Target> ewtargets;
+    std::vector<Message> messages;
+    // --- CSM / ESM Specific ---
+    std::unordered_set<Platform*> csmdetects;
+    QVector<Target> csmtargets;
+    std::unordered_set<Platform*> esmdetects;
+    QVector<Target> esmtargets;
+
+    float csmrange = 5000.0f;
+    float esrange = 8000.0f;
+    float csmSensitivity = 1.0f;
+    float esmSensitivity = 1.0f;
+    bool csmActive = true;
+    bool esmActive = true;
     void scan(std::string id, Transform *source);
     void ewscan(std::string id , Transform *source);
     bool detectCheck(QVector3D localPos);
-
+    void csmScan(std::string id, Transform* source);
+    void esmScan(std::string id, Transform* source);
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;
@@ -86,7 +109,15 @@ public:
 
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& obj) override;
-
+    static SubType getSubTypeFromString(const QString& str) {
+        if (str == "CSM") return SubType::CSM;
+        if (str == "ESM") return SubType::ESM;
+        return SubType::Generic;
+    }
+    QString subTypeToString(SubType t) const;
+    SubType stringToSubType(const QString& str) const;
+signals:
+    void availableConnectionsUpdated(const QJsonArray& msgArray);
 private:
     QString modeToString(Mode m) const;
     Mode stringToMode(const QString& str) const;

@@ -1,9 +1,12 @@
-
-
 #include "iff.h"
 #include <core/Hierarchy/hierarchy.h>
 #include <core/Debug/console.h>
 #include <core/GlobalRegistry.h>
+#include <QDateTime>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <core/Hierarchy/Components/transform.h>
+#include <unordered_set>
 
 IFF::IFF(Hierarchy* h) : Entity(h) {
     std::shared_ptr<Parameter> par = std::make_shared<Parameter>();
@@ -35,9 +38,98 @@ QJsonObject IFF::getComponent(std::string name) {
     return QJsonObject();
 }
 
-void IFF::updateComponent(QString name, const QJsonObject& /*obj*/) {
+void IFF::updateComponent(QString name, const QJsonObject& obj) {
     Console::error(name.toStdString() + ": IFF does not support components");
+
+    // Update basic entity fields
+    if (obj.contains("name"))
+        Name = obj["name"].toString().toStdString();
+
+    if (obj.contains("active"))
+        Active = obj["active"].toBool();
+
+    if (obj.contains("parent_id"))
+        parentID = obj["parent_id"].toString().toStdString();
+
+    // Update parameters
+    if (obj.contains("parameters")) {
+        QJsonObject parObj = obj["parameters"].toObject();
+        if (parObj.contains("value")) {
+            QJsonObject paramMap = parObj["value"].toObject();
+            for (const QString& key : paramMap.keys()) {
+                QJsonObject paramObj = paramMap[key].toObject();
+
+                auto it = parameters.find(key.toStdString());
+                if (it != parameters.end()) {
+                    // Existing parameter → update
+                    it->second->fromJson(paramObj);
+                } else {
+                    // New parameter → create and insert
+                    std::shared_ptr<Parameter> param = std::make_shared<Parameter>();
+                    param->fromJson(paramObj);
+                    parameters[key.toStdString()] = param;
+                }
+            }
+        }
+    }
+
+    // Update IFF-specific fields
+    if (obj.contains("transponder")) {
+        transponder = obj["transponder"].toBool();
+        qDebug() << "[IFF] Updated transponder to" << transponder
+                 << "for:" << QString::fromStdString(Name);
+    } else {
+        qDebug() << "[IFF] No 'transponder' key in JSON for:"
+                 << QString::fromStdString(Name)
+                 << "| Keys are:" << obj.keys();
+    }
+
+
+    if (obj.contains("emittingRange"))
+        emittingRange = static_cast<float>(obj["emittingRange"].toDouble());
+
+    if (obj.contains("emittingFrequency"))
+        emittingFrequency = static_cast<float>(obj["emittingFrequency"].toDouble());
+
+    if (obj.contains("disType"))
+        disType = obj["disType"].toString().toStdString();
+
+    if (obj.contains("disName"))
+        disName = obj["disName"].toString().toStdString();
+
+    if (obj.contains("operationalMode"))
+        operationalMode = stringToOperationalMode(obj["operationalMode"].toString());
+
+    if (obj.contains("modeConfiguration") && obj["modeConfiguration"].isObject()) {
+        QJsonObject modeConfigObj = obj["modeConfiguration"].toObject();
+        if (modeConfigObj.contains("mode1"))
+            modeConfiguration.mode1 = modeConfigObj["mode1"].toString().toStdString();
+        if (modeConfigObj.contains("mode2"))
+            modeConfiguration.mode2 = modeConfigObj["mode2"].toString().toStdString();
+        if (modeConfigObj.contains("mode3A"))
+            modeConfiguration.mode3A = modeConfigObj["mode3A"].toString().toStdString();
+        if (modeConfigObj.contains("mode4"))
+            modeConfiguration.mode4 = modeConfigObj["mode4"].toString().toStdString();
+        if (modeConfigObj.contains("modeC"))
+            modeConfiguration.modeC = modeConfigObj["modeC"].toString().toStdString();
+    }
+
+    if (obj.contains("codeSystem"))
+        codeSystem = stringToCodeSystem(obj["codeSystem"].toString());
+
+    if (obj.contains("encryptionType"))
+        encryptionType = stringToEncryptionType(obj["encryptionType"].toString());
+
+    if (obj.contains("spoofable"))
+        spoofable = obj["spoofable"].toBool();
+
+    if (obj.contains("responseDelay"))
+        responseDelay = static_cast<float>(obj["responseDelay"].toDouble());
+
+    if (obj.contains("lastInterrogationTime"))
+        lastInterrogationTime = obj["lastInterrogationTime"].toString().toStdString();
 }
+
 
 QJsonObject IFF::toJson() const {
     QJsonObject obj;
@@ -78,15 +170,33 @@ QJsonObject IFF::toJson() const {
     obj["spoofable"] = spoofable;
     obj["responseDelay"] = responseDelay;
     obj["lastInterrogationTime"] = QString::fromStdString(lastInterrogationTime);
+    // --- Serialize message history ---
+    QJsonArray messagesArray;
+    for (const auto& message : messages) {
+        QJsonObject msgObj;
+        msgObj["timeStamp"] = QString::fromStdString(message.timeStamp);
+        msgObj["source"] = QString::fromStdString(message.source);
+        msgObj["destination"] = QString::fromStdString(message.destination);
+        msgObj["content"] = QString::fromStdString(message.content);
+        messagesArray.append(msgObj);
+    }
+    obj["messages"] = messagesArray;
 
     return obj;
 }
 
 void IFF::fromJson(const QJsonObject& obj) {
-    Name = obj["name"].toString().toStdString();
-    ID = obj["id"].toString().toStdString();
-    parentID = obj["parent_id"].toString().toStdString();
-    Active = obj["active"].toBool();
+    if (obj.contains("name"))
+        Name = obj["name"].toString().toStdString();
+
+    if (obj.contains("id"))
+        ID = obj["id"].toString().toStdString();
+
+    if (obj.contains("parent_id"))
+        parentID = obj["parent_id"].toString().toStdString();
+
+    if (obj.contains("active"))
+        Active = obj["active"].toBool();
 
     // Deserialize parameters
     if (obj.contains("parameters")) {
@@ -102,26 +212,76 @@ void IFF::fromJson(const QJsonObject& obj) {
         }
     }
 
-    // Deserialize IFF attributes
-    transponder = obj["transponder"].toBool();
-    emittingRange = static_cast<float>(obj["emittingRange"].toDouble());
-    emittingFrequency = static_cast<float>(obj["emittingFrequency"].toDouble());
-    disType = obj["disType"].toString().toStdString();
-    disName = obj["disName"].toString().toStdString();
-    operationalMode = stringToOperationalMode(obj["operationalMode"].toString());
+    if (obj.contains("transponder")) {
+        transponder = obj["transponder"].toBool();
+        qDebug() << "[IFF] Updated transponder to" << transponder
+                 << "for:" << QString::fromStdString(Name);
+    } else {
+        qDebug() << "[IFF] No 'transponder' key in JSON for:"
+                 << QString::fromStdString(Name)
+                 << "| Keys are:" << obj.keys();
+    }
+
+
+    if (obj.contains("emittingRange"))
+        emittingRange = static_cast<float>(obj["emittingRange"].toDouble());
+
+    if (obj.contains("emittingFrequency"))
+        emittingFrequency = static_cast<float>(obj["emittingFrequency"].toDouble());
+
+    if (obj.contains("disType"))
+        disType = obj["disType"].toString().toStdString();
+
+    if (obj.contains("disName"))
+        disName = obj["disName"].toString().toStdString();
+
+    if (obj.contains("operationalMode"))
+        operationalMode = stringToOperationalMode(obj["operationalMode"].toString());
+
     if (obj.contains("modeConfiguration") && obj["modeConfiguration"].isObject()) {
         QJsonObject modeConfigObj = obj["modeConfiguration"].toObject();
-        modeConfiguration.mode1 = modeConfigObj["mode1"].toString().toStdString();
-        modeConfiguration.mode2 = modeConfigObj["mode2"].toString().toStdString();
-        modeConfiguration.mode3A = modeConfigObj["mode3A"].toString().toStdString();
-        modeConfiguration.mode4 = modeConfigObj["mode4"].toString().toStdString();
-        modeConfiguration.modeC = modeConfigObj["modeC"].toString().toStdString();
+        if (modeConfigObj.contains("mode1"))
+            modeConfiguration.mode1 = modeConfigObj["mode1"].toString().toStdString();
+        if (modeConfigObj.contains("mode2"))
+            modeConfiguration.mode2 = modeConfigObj["mode2"].toString().toStdString();
+        if (modeConfigObj.contains("mode3A"))
+            modeConfiguration.mode3A = modeConfigObj["mode3A"].toString().toStdString();
+        if (modeConfigObj.contains("mode4"))
+            modeConfiguration.mode4 = modeConfigObj["mode4"].toString().toStdString();
+        if (modeConfigObj.contains("modeC"))
+            modeConfiguration.modeC = modeConfigObj["modeC"].toString().toStdString();
     }
-    codeSystem = stringToCodeSystem(obj["codeSystem"].toString());
-    encryptionType = stringToEncryptionType(obj["encryptionType"].toString());
-    spoofable = obj["spoofable"].toBool();
-    responseDelay = static_cast<float>(obj["responseDelay"].toDouble());
-    lastInterrogationTime = obj["lastInterrogationTime"].toString().toStdString();
+
+    if (obj.contains("codeSystem"))
+        codeSystem = stringToCodeSystem(obj["codeSystem"].toString());
+
+    if (obj.contains("encryptionType"))
+        encryptionType = stringToEncryptionType(obj["encryptionType"].toString());
+
+    if (obj.contains("spoofable"))
+        spoofable = obj["spoofable"].toBool();
+
+    if (obj.contains("responseDelay"))
+        responseDelay = static_cast<float>(obj["responseDelay"].toDouble());
+
+    if (obj.contains("lastInterrogationTime"))
+        lastInterrogationTime = obj["lastInterrogationTime"].toString().toStdString();
+
+    // --- Deserialize message history ---
+    if (obj.contains("messages") && obj["messages"].isArray()) {
+        QJsonArray messagesArray = obj["messages"].toArray();
+        messages.clear();
+        for (const auto& msgVal : messagesArray) {
+            QJsonObject msgObj = msgVal.toObject();
+            Message msg;
+            msg.timeStamp = msgObj["timeStamp"].toString().toStdString();
+            msg.source = msgObj["source"].toString().toStdString();
+            msg.destination = msgObj["destination"].toString().toStdString();
+            msg.content = msgObj["content"].toString().toStdString();
+            messages.push_back(msg);
+        }
+    }
+
 }
 
 QString IFF::operationalModeToString(OperationalMode om) const {
@@ -171,4 +331,161 @@ IFF::EncryptionType IFF::stringToEncryptionType(const QString& str) const {
     if (str == "NATO") return EncryptionType::NATO;
     if (str == "SecureID") return EncryptionType::SecureID;
     return EncryptionType::None;
+}
+// Helper to get ISO timestamp string
+static std::string nowIsoString() {
+    return QDateTime::currentDateTimeUtc().toString(Qt::ISODate).toStdString();
+}
+void IFF::interrogateTargets(Transform* source)
+{
+    qDebug() << "=== IFF::interrogateTargets called for:" << QString::fromStdString(Name);
+    // Prevent re-interrogation after first time
+    if (interrogationDone) {
+        qDebug() << "Interrogation already done, skipping...";
+        return;
+    }
+    interrogationDone = true;
+    // Skip if this IFF's transponder is off
+    if (!transponder) {
+        qDebug() << "Transponder disabled, cannot interrogate.";
+        return;
+    }
+
+    // Only allow interrogation in Active or Simulation modes
+    if (!(operationalMode == OperationalMode::Active || operationalMode == OperationalMode::Simulation)) {
+        qDebug() << "Operational mode does not allow interrogation:" << operationalModeToString(operationalMode);
+        return;
+    }
+
+    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    if (!parent) {
+        qDebug() << "Parent hierarchy not found!";
+        return;
+    }
+
+    Platform* sourcePlatform = nullptr;
+    for (auto& [key, entity] : *parent->Entities) {
+        Platform* plat = dynamic_cast<Platform*>(entity);
+        if (!plat) continue;
+        for (IFF* iff : plat->iffList) {
+            if (iff == this) {
+                sourcePlatform = plat;
+                break;
+            }
+        }
+        if (sourcePlatform) break;
+    }
+
+    QJsonArray responsesArray;
+    float range_m = (emittingRange > 0.0f) ? (emittingRange * 1000.0f) : 5000.0f;
+    qDebug() << "Emitting range used (meters):" << range_m;
+
+    for (auto& [key, entity] : *parent->Entities) {
+        Platform* platform = dynamic_cast<Platform*>(entity);
+        if (!platform || platform == sourcePlatform || platform->iffList.empty()) continue;
+        if (!platform->transform || !platform->transform->matrix) continue;
+
+        // Skip platforms where all IFFs have transponders OFF
+        bool anyTransponderOn = false;
+        for (IFF* other : platform->iffList) {
+            if (other && other->transponder) {
+                anyTransponderOn = true;
+                break;
+            }
+        }
+        if (!anyTransponderOn) continue;
+
+        // Calculate distance from source
+        QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
+        float distance = localPos.length();
+        if (distance > range_m) continue;
+
+        bool responded = false; // <-- ONE RESPONSE FLAG per platform
+
+        for (IFF* other : platform->iffList) {
+            if (!other || !other->transponder) continue;
+            if (!(other->operationalMode == OperationalMode::Active ||
+                  other->operationalMode == OperationalMode::Passive ||
+                  other->operationalMode == OperationalMode::Simulation)) continue;
+
+            if (!responded) { // <-- only first valid IFF responds
+                QJsonObject resp = other->respondToInterrogation(this, distance);
+                if (!resp.isEmpty()) {
+                    responsesArray.append(resp);
+                    responded = true; // mark platform as responded
+                    qDebug() << "Platform responded:" << QString::fromStdString(platform->Name)
+                             << "via IFF:" << QString::fromStdString(other->Name);
+                }
+            }
+        }
+    }
+
+    qDebug() << "Total responses collected:" << responsesArray.size();
+    if (!responsesArray.isEmpty()) {
+        emit iffContactsUpdated(responsesArray);
+        qDebug() << "iffContactsUpdated emitted with" << responsesArray.size() << "responses.";
+    }
+}
+
+QJsonObject IFF::respondToInterrogation(IFF* interrogator, float distanceMeters)
+{
+    QJsonObject result;
+
+    if (!transponder) return result;
+
+    if (!(operationalMode == OperationalMode::Active ||
+          operationalMode == OperationalMode::Passive ||
+          operationalMode == OperationalMode::Simulation))
+        return result;
+
+    QString modeStr = "Unknown";
+    QString codeStr = "0000";
+    QString status = "Unknown";
+
+    if (interrogator) {
+        const auto& intrMode = interrogator->modeConfiguration;
+
+        bool mode3AMatch = !modeConfiguration.mode3A.empty() && !intrMode.mode3A.empty() &&
+                           modeConfiguration.mode3A == intrMode.mode3A;
+        bool mode4Match = !modeConfiguration.mode4.empty() && !intrMode.mode4.empty() &&
+                          modeConfiguration.mode4 == intrMode.mode4;
+
+        if ((modeConfiguration.mode3A.empty() || mode3AMatch) &&
+            (modeConfiguration.mode4.empty() || mode4Match)) {
+
+            if (mode3AMatch) {
+                modeStr = "Mode3A";
+                codeStr = modeConfiguration.mode3A.c_str();
+            } else if (mode4Match) {
+                modeStr = "Mode4";
+                codeStr = modeConfiguration.mode4.c_str();
+            }
+            status = "Friend";
+        }
+    }
+
+    result["interrogatorId"] = QString::fromStdString(interrogator ? interrogator->ID : std::string(""));
+    result["interrogatorName"] = QString::fromStdString(interrogator ? interrogator->Name : std::string(""));
+    result["responderId"] = QString::fromStdString(this->ID);
+    result["responderName"] = QString::fromStdString(this->Name);
+    result["mode"] = modeStr;
+    result["code"] = codeStr;
+    result["distanceMeters"] = distanceMeters;
+    result["responseDelayMs"] = responseDelay;
+    result["status"] = status;
+    result["timestamp"] = QString::fromStdString(nowIsoString());
+
+    lastInterrogationTime = nowIsoString();
+
+    // Add message to local history
+    Message msg;
+    msg.timeStamp = nowIsoString();
+    msg.source = interrogator ? interrogator->Name : "Unknown";
+    msg.destination = this->Name;
+    msg.content = "Responded with status: " + status.toStdString() +
+                  ", Mode: " + modeStr.toStdString() +
+                  ", Code: " + codeStr.toStdString();
+    messages.push_back(msg);
+
+    return result;
 }

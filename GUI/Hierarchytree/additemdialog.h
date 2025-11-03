@@ -1,3 +1,5 @@
+
+
 /* ========================================================================= */
 /* File: additemdialog.h                                                    */
 /* Purpose: Defines dialog for adding items to hierarchy                     */
@@ -8,12 +10,13 @@
 
 #include <QDialog>                                // For dialog base class
 #include <QVBoxLayout>                            // For vertical layout
-#include <QHBoxLayout>                            // For horizontal layout
+#include <QHBoxLayout>                             // For horizontal layout
 #include <QLabel>                                 // For label widget
 #include <QLineEdit>                              // For text input widget
 #include <QCheckBox>                              // For checkbox widget
 #include <QDialogButtonBox>                       // For dialog buttons
 #include <QGroupBox>                              // For group box widget
+#include <QComboBox>                              // For dropdown widget
 #include <QMap>                                   // For key-value mapping
 
 // %%% Class Definition %%%
@@ -39,6 +42,13 @@ public:
     QString getName() const;
     // Get selected components
     QVariantMap getComponents() const;
+    // Get selected sensor type
+    //-> CHANGE ✅ Only keep this single getter for sensor type
+    QString getSensorType() const {
+        if (sensorTypeComboBox)
+            return sensorTypeComboBox->currentText();
+        return "Generic";
+    }
     // Get default components
     static QMap<QString, bool> defaultComponents();
 
@@ -54,6 +64,8 @@ private:
     QLineEdit* numberLineEdit;
     // Component checkboxes
     QMap<QString, QCheckBox*> componentCheckboxes;
+    // Sensor type dropdown
+    QComboBox *sensorTypeComboBox=nullptr;
     // Specific item type
     QString specificType;
 };

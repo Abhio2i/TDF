@@ -300,9 +300,9 @@ void Inspector::addParameterRow(const QString &parameterName, int row)
 }
 
 /* Handle add parameter action */
+/* Handle add parameter action */
 void Inspector::handleAddParameter()
 {
-    // Show custom parameter dialog
     CustomParameterDialog dialog(this);
     if (dialog.exec() == QDialog::Accepted) {
         QString parameterName = dialog.getParameterName();
@@ -312,17 +312,20 @@ void Inspector::handleAddParameter()
             int row = rowToKeyPath.size();
             addParameterRow(parameterName, row);
             QJsonObject delta;
-            // Setup cell based on parameter type
+
             if (parameterType == "string") {
                 setupStringCell(row, parameterName, parameterValue);
                 delta[parameterName] = parameterValue;
-            } else if (parameterType == "number") {
+            }
+            else if (parameterType == "number") {
                 setupNumberCell(row, parameterName, parameterValue.toDouble());
                 delta[parameterName] = parameterValue.toDouble();
-            } else if (parameterType == "boolean") {
+            }
+            else if (parameterType == "boolean") {
                 setupBooleanCell(row, parameterName, parameterValue.toLower() == "true");
                 delta[parameterName] = (parameterValue.toLower() == "true");
-            } else if (parameterType == "vector") {
+            }
+            else if (parameterType == "vector") {
                 VectorTemplate *vector = new VectorTemplate(this);
                 vector->setConnectedID(ConnectedID);
                 vector->setName(Name);
@@ -335,7 +338,8 @@ void Inspector::handleAddParameter()
                 vector->setupVectorCell(row, parameterName, vectorData, tableWidget);
                 connect(vector, &VectorTemplate::valueChanged, this, &Inspector::valueChanged);
                 delta[parameterName] = vectorData;
-            } else if (parameterType == "geocord") {
+            }
+            else if (parameterType == "geocord") {
                 GeocordsTemplate *geocords = new GeocordsTemplate(this);
                 geocords->setConnectedID(ConnectedID);
                 geocords->setName(Name);
@@ -349,7 +353,8 @@ void Inspector::handleAddParameter()
                 geocords->setupGeocordsCell(row, parameterName, geocordsData, tableWidget);
                 connect(geocords, &GeocordsTemplate::valueChanged, this, &Inspector::valueChanged);
                 delta[parameterName] = geocordsData;
-            } else if (parameterType == "option") {
+            }
+            else if (parameterType == "option") {
                 OptionTemplate *option = new OptionTemplate(this);
                 option->setConnectedID(ConnectedID);
                 option->setName(Name);
@@ -360,7 +365,8 @@ void Inspector::handleAddParameter()
                 option->setupOptionCell(row, parameterName, optionObj, tableWidget);
                 connect(option, &OptionTemplate::valueChanged, this, &Inspector::valueChanged);
                 delta[parameterName] = optionObj;
-            } else if (parameterType == "color") {
+            }
+            else if (parameterType == "color") {
                 ColorTemplate *color = new ColorTemplate(this);
                 color->setConnectedID(ConnectedID);
                 color->setName(Name);
@@ -370,7 +376,8 @@ void Inspector::handleAddParameter()
                 color->setupColorCell(row, parameterName, colorObj, tableWidget);
                 connect(color, &ColorTemplate::valueChanged, this, &Inspector::valueChanged);
                 delta[parameterName] = colorObj;
-            } else if (parameterType == "image") {
+            }
+            else if (parameterType == "image") {
                 ImageTemplate *image = new ImageTemplate(this);
                 image->setConnectedID(ConnectedID);
                 image->setName(Name);
@@ -381,16 +388,15 @@ void Inspector::handleAddParameter()
                 connect(image, &ImageTemplate::valueChanged, this, &Inspector::valueChanged);
                 delta[parameterName] = spriteObj;
             }
-            // Adjust row height for images
+
             tableWidget->setRowHeight(row, parameterType == "image" ? ImageTemplate::ROW_HEIGHT : 30);
             tableWidget->viewport()->update();
-            // Emit signals for parameter and value changes
+
             emit parameterChanged(ConnectedID, Name, parameterName, parameterType, true);
             emit valueChanged(ConnectedID, Name, delta);
         }
     }
 }
-
 /* Setup boolean cell */
 void Inspector::setupBooleanCell(int row, const QString &fullKey, bool value)
 {
@@ -429,6 +435,7 @@ void Inspector::setupBooleanCell(int row, const QString &fullKey, bool value)
 }
 
 /* Setup array cell */
+/* Setup array cell */
 void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray &array)
 {
     qDebug() << "setupArrayCell: Setting row:" << row << "for key:" << fullKey;
@@ -443,44 +450,59 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
     listWidget->setDragDropMode(QAbstractItemView::DropOnly);
     listWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     listWidget->setMaximumHeight(fullKey == "entity" ? 50 : 200);
+
     // Style list widget
     listWidget->setStyleSheet(
         "QListWidget { background: #333; border: 1px solid #555; color: white; }"
         "QListWidget::item { color: white; }"
         "QListWidget::item:selected { background-color: #555; }"
         );
+
     // Populate list with array items
     for (const QJsonValue &val : array) {
         QJsonObject obj = val.toObject();
         QString displayText;
+
         if (fullKey == "entity" || obj["type"].toString() == "reference") {
-            displayText = obj["name"].toString() + (obj["id"].toString().isEmpty() ? "" : " (ID: " + obj["id"].toString() + ")");
-        } else if (fullKey == "trajectories" && obj.contains("position")) {
+            // Capitalize first letter of name
+            QString name = obj["name"].toString();
+            displayText = capitalizeFirstLetter(name) +
+                          (obj["id"].toString().isEmpty() ? "" : " (ID: " + obj["id"].toString() + ")");
+        }
+        else if (fullKey == "trajectories" && obj.contains("position")) {
             QJsonObject pos = obj["position"].toObject();
             displayText = QString("(%1, %2)")
                               .arg(formatNumberForUI(pos["x"].toDouble()))
                               .arg(formatNumberForUI(pos["y"].toDouble()));
-        } else {
-            displayText = obj["name"].toString();
+        }
+        else {
+            // Capitalize name field
+            displayText = capitalizeFirstLetter(obj["name"].toString());
             if (displayText.isEmpty()) {
                 displayText = QString(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+                if (!displayText.isEmpty() && displayText[0].isLetter()) {
+                    displayText[0] = displayText[0].toUpper();
+                }
             }
         }
+
         QListWidgetItem *item = new QListWidgetItem(displayText);
         item->setData(Qt::UserRole, obj.toVariantMap());
         listWidget->addItem(item);
     }
+
     // Create layout for array widget
     QVBoxLayout *layout = new QVBoxLayout(arrayWidget);
     layout->addWidget(listWidget);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(4);
+
     // Add buttons for non-entity arrays
     QPushButton *addBtn = nullptr;
     QPushButton *removeBtn = nullptr;
     if (fullKey != "entity") {
-        addBtn = new QPushButton("➕");
-        removeBtn = new QPushButton("❌");
+        addBtn = new QPushButton("Add");
+        removeBtn = new QPushButton("Remove");
         addBtn->setStyleSheet(
             "QPushButton { color: white; border-radius: 3px; background-color: #2A3F54; }"
             "QPushButton:hover { background-color: #444; }"
@@ -496,6 +518,7 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
         btnLayout->setSpacing(5);
         layout->addLayout(btnLayout);
     }
+
     // Lambda to emit array changes
     auto emitArrayChanged = [=]() {
         QJsonObject delta;
@@ -519,6 +542,7 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
             emit trajectoryWaypointsChanged(ConnectedID, delta[fullKey].toArray());
         }
     };
+
     // Connect add and remove buttons
     if (fullKey != "entity") {
         connect(addBtn, &QPushButton::clicked, this, [=]() {
@@ -540,8 +564,9 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
                 emitArrayChanged();
             } else {
                 QJsonObject newObj;
+                // Capitalize "Unnamed"
                 newObj["name"] = "Unnamed";
-                QString displayText = "Unnamed";
+                QString displayText = capitalizeFirstLetter("Unnamed");
                 QListWidgetItem *newItem = new QListWidgetItem(displayText);
                 newItem->setData(Qt::UserRole, newObj.toVariantMap());
                 listWidget->addItem(newItem);
@@ -549,6 +574,7 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
                 emitArrayChanged();
             }
         });
+
         connect(removeBtn, &QPushButton::clicked, this, [=]() {
             QListWidgetItem *item = listWidget->currentItem();
             if (item) {
@@ -557,43 +583,45 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
             }
         });
     }
+
     // Connect list item changes
     connect(listWidget, &QListWidget::itemChanged, this, [=](QListWidgetItem *item) {
-        QString itemText = item->text();
-        QVariantMap itemData = item->data(Qt::UserRole).toMap();
-        QJsonObject json = QJsonObject::fromVariantMap(itemData);
         emitArrayChanged();
     });
+
     // Connect double-click to focus entity
     connect(listWidget, &QListWidget::doubleClicked, this, [=](const QModelIndex &index) {
         QListWidgetItem *item = listWidget->item(index.row());
         if (!item) return;
-        QString itemText = item->text();
         QVariantMap itemData = item->data(Qt::UserRole).toMap();
-        QJsonObject json = QJsonObject::fromVariantMap(itemData);
         if (itemData.contains("id") && !itemData["id"].toString().isEmpty()) {
             emit foucsEntity(itemData["id"].toString());
         }
         emitArrayChanged();
     });
+
     // Set row height and add widget
     tableWidget->setRowHeight(row, fullKey == "entity" ? 80 : 200);
     tableWidget->setCellWidget(row, 1, arrayWidget);
 }
-
+/* Setup string cell */
 /* Setup string cell */
 void Inspector::setupStringCell(int row, const QString &fullKey, const QString &value)
 {
     qDebug() << "setupStringCell: Key:" << fullKey << "Value:" << value;
+
     // Create key item if not exists
     QTableWidgetItem *keyItem = tableWidget->item(row, 0);
     if (!keyItem) {
-        keyItem = new QTableWidgetItem(fullKey.split(".").last());
+        // Capitalize the visible key (last part of fullKey)
+        QString displayKey = capitalizeFirstLetter(fullKey.split(".").last());
+        keyItem = new QTableWidgetItem(displayKey);
         keyItem->setBackground(QColor("#111"));
         keyItem->setForeground(QColor(Qt::white));
         keyItem->setFlags(Qt::ItemIsEnabled);
         tableWidget->setItem(row, 0, keyItem);
     }
+
     // Create input field
     QLineEdit *lineEdit = new QLineEdit();
     lineEdit->setText(value);
@@ -603,14 +631,15 @@ void Inspector::setupStringCell(int row, const QString &fullKey, const QString &
         );
     lineEdit->setFrame(true);
     lineEdit->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
     // Set read-only for specific fields
     if (fullKey.contains("id") || fullKey.contains("name") || fullKey.contains("branch")) {
         lineEdit->setReadOnly(true);
     }
-    // Set row height and add widget
+
     tableWidget->setRowHeight(row, 30);
     tableWidget->setCellWidget(row, 1, lineEdit);
-    // Connect input changes
+
     connect(lineEdit, &QLineEdit::editingFinished, this, [=]() {
         QString newValue = lineEdit->text();
         QStringList parts = fullKey.split(".");
@@ -621,11 +650,8 @@ void Inspector::setupStringCell(int row, const QString &fullKey, const QString &
             delta[parts[0]] = QJsonObject{{parts[1], newValue}};
         }
         emit valueChanged(ConnectedID, Name, delta);
-        qDebug() << "String cell updated: Key:" << fullKey << "Value:" << newValue << "Foreground Color:" << lineEdit->palette().text().color().name();
     });
-    qDebug() << "setupStringCell: Key:" << fullKey << "Value:" << value << "Foreground Color:" << lineEdit->palette().text().color().name();
 }
-
 /* Setup number cell */
 void Inspector::setupNumberCell(int row, const QString &fullKey, double value)
 {
@@ -839,96 +865,99 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
 }
 
 /* Add simple row to table */
+/* Add simple row to table */
 int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value)
 {
     qDebug() << "addSimpleRow: Adding row for key:" << key << "at row:" << row << "type:" << value.type();
     rowToKeyPath[row] = key;
-    // Create key item
-    QTableWidgetItem *keyItem = new QTableWidgetItem(key);
+
+    // Capitalize key label
+    QTableWidgetItem *keyItem = new QTableWidgetItem(capitalizeFirstLetter(key));
     keyItem->setFlags(Qt::ItemIsEnabled);
     keyItem->setBackground(QColor("#111"));
     keyItem->setForeground(Qt::white);
     tableWidget->setItem(row, 0, keyItem);
-    // Handle object values
+
     if (value.isObject()) {
         QJsonObject obj = value.toObject();
         QString type = obj["type"].toString().toLower();
         if (type == "component" || type == "parameter") {
-            qDebug() << "addSimpleRow: Skipping component or parameter type for key:" << key;
             return row;
         }
-        // Handle modeConfiguration
+
         if (key == "modeConfiguration") {
-            qDebug() << "addSimpleRow: Handling modeConfiguration for key:" << key;
             QStringList subKeys = {"mode1", "mode2", "mode3A", "mode4", "modeC"};
             int currentRow = row;
             for (const QString &subKey : subKeys) {
                 QString fullKey = QString("modeConfiguration.%1").arg(subKey);
                 rowToKeyPath[currentRow] = fullKey;
-                QTableWidgetItem *subKeyItem = new QTableWidgetItem(fullKey);
+                QTableWidgetItem *subKeyItem = new QTableWidgetItem(capitalizeFirstLetter(fullKey.split(".").last()));
                 subKeyItem->setFlags(Qt::ItemIsEnabled);
                 subKeyItem->setBackground(QColor("#111"));
                 subKeyItem->setForeground(Qt::white);
                 tableWidget->setItem(currentRow, 0, subKeyItem);
                 setupStringCell(currentRow, fullKey, obj.value(subKey).toString());
-                qDebug() << "addSimpleRow: Added modeConfiguration subkey:" << fullKey << "at row:" << currentRow;
                 currentRow++;
             }
             return currentRow;
         }
     }
-    // Handle entity and arrays
+
     if (key == "entity" && (value.isObject() || value.isNull())) {
         QJsonArray singleItemArray;
-        if (value.isObject()) {
-            singleItemArray.append(value.toObject());
-        }
+        if (value.isObject()) singleItemArray.append(value.toObject());
         setupArrayCell(row, key, singleItemArray);
-    } else if (value.isArray()) {
+    }
+    else if (value.isArray()) {
         setupArrayCell(row, key, value.toArray());
-    } else if (value.isObject()) {
+    }
+    else if (value.isObject()) {
         QJsonObject obj = value.toObject();
         QString type = obj["type"].toString().toLower();
-        // Setup specialized templates
         if (type == "vector") {
             VectorTemplate *vector = new VectorTemplate(this);
             vector->setConnectedID(ConnectedID);
             vector->setName(Name);
             vector->setupVectorCell(row, key, obj, tableWidget);
             connect(vector, &VectorTemplate::valueChanged, this, &Inspector::valueChanged);
-        } else if (type == "geocord" || type == "geooffset") {
+        }
+        else if (type == "geocord" || type == "geooffset") {
             GeocordsTemplate *geocords = new GeocordsTemplate(this);
             geocords->setConnectedID(ConnectedID);
             geocords->setName(Name);
             geocords->setupGeocordsCell(row, key, obj, tableWidget);
             connect(geocords, &GeocordsTemplate::valueChanged, this, &Inspector::valueChanged);
-        } else if (type == "option") {
+        }
+        else if (type == "option") {
             OptionTemplate *option = new OptionTemplate(this);
             option->setConnectedID(ConnectedID);
             option->setName(Name);
             option->setupOptionCell(row, key, obj, tableWidget);
             connect(option, &OptionTemplate::valueChanged, this, &Inspector::valueChanged);
-        } else if (type == "color") {
+        }
+        else if (type == "color") {
             ColorTemplate *color = new ColorTemplate(this);
             color->setConnectedID(ConnectedID);
             color->setName(Name);
             color->setupColorCell(row, key, obj, tableWidget);
             connect(color, &ColorTemplate::valueChanged, this, &Inspector::valueChanged);
-        } else if (type == "image") {
+        }
+        else if (type == "image") {
             ImageTemplate *image = new ImageTemplate(this);
             image->setConnectedID(ConnectedID);
             image->setName(Name);
             image->setupImageCell(row, key, obj, tableWidget);
             connect(image, &ImageTemplate::valueChanged, this, &Inspector::valueChanged);
-        } else {
+        }
+        else {
             setupGenericObjectCell(row, key, obj);
         }
-    } else {
+    }
+    else {
         setupValueCell(row, key, value);
     }
     return row + 1;
 }
-
 /* Setup value cell based on type */
 void Inspector::setupValueCell(int row, const QString &fullKey, const QJsonValue &value)
 {
@@ -983,19 +1012,21 @@ void Inspector::setupValueCell(int row, const QString &fullKey, const QJsonValue
 }
 
 /* Setup generic object cell */
+/* Setup generic object cell */
 void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJsonObject &obj)
 {
     qDebug() << "setupGenericObjectCell: Setting row:" << row << "for key:" << fullKey;
-    // Create widget for object
     QWidget *valueWidget = new QWidget();
     QVBoxLayout *layout = new QVBoxLayout(valueWidget);
     layout->setContentsMargins(0, 0, 0, 0);
-    // Add subfields
+
     for (const QString &subKey : obj.keys()) {
         QHBoxLayout *subLayout = new QHBoxLayout();
-        QLabel *label = new QLabel(subKey);
+        // Capitalize subfield label
+        QLabel *label = new QLabel(capitalizeFirstLetter(subKey));
         label->setStyleSheet("color: white; min-width: 20px;");
         subLayout->addWidget(label);
+
         WheelableLineEdit *edit = new WheelableLineEdit();
         edit->setText(formatNumberForUI(obj[subKey].toDouble()));
         edit->setStyleSheet("QLineEdit { background: #333; border: 1px solid #555; border-radius: 3px; color: white; }");
@@ -1006,18 +1037,17 @@ void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJ
         edit->setObjectName(subKey);
         subLayout->addWidget(edit);
         layout->addLayout(subLayout);
-        // Connect input changes
+
         connect(edit, &QLineEdit::editingFinished, this, [=]() {
             QJsonObject delta;
             delta[fullKey] = QJsonObject{{subKey, edit->text().toDouble()}};
             emit valueChanged(ConnectedID, Name, delta);
         });
     }
-    // Set row height and add widget
+
     tableWidget->setRowHeight(row, 30 * obj.size());
     tableWidget->setCellWidget(row, 1, valueWidget);
 }
-
 /* Update trajectory waypoints */
 void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
 {
@@ -1102,4 +1132,13 @@ void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
     }
     // Update table viewport
     tableWidget->viewport()->update();
+}
+
+
+// %%% Utility Function %%%
+// Capitalize the first letter of a string
+static QString capitalizeFirstLetter(const QString &str)
+{
+    if (str.isEmpty()) return str;
+    return str[0].toUpper() + str.mid(1);
 }

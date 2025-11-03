@@ -33,21 +33,6 @@ QJsonObject Recorder::getAllRecordings() const
     return obj;
 }
 
-// // Start recording: clears old data and prepares to record new session
-// void Recorder::startRecording()
-// {
-//     qDebug() << "Recording started.";
-//     clear();    // Reset previous recordings
-
-//     if (!m_hierarchy) {
-//         qWarning() << "Hierarchy is null. Cannot record.";
-//         return;
-//     }
-
-//     QJsonObject jsonData = m_hierarchy->toJson(); // Convert full structure
-//     jsonData["recording_rate"] = getRate();   // Include sample rate
-//     record(jsonData);  // Include sample rate
-// }
 void Recorder::startRecording()
 {
     qDebug() << "Recording started.";
@@ -89,11 +74,6 @@ void Recorder::startRecording()
 }
 
 
-// // Stop recordings
-// void Recorder::stopRecording()
-// {
-//     qDebug() << "Recording stopped.";
-// }
 void Recorder::stopRecording()
 {
     qDebug() << "Recording stopped.";
@@ -109,13 +89,13 @@ void Recorder::stopRecording()
     recordingStartTime = QDateTime();
 
     // Display the entire JSON recording
-    if (!m_recordings.isEmpty()) {
-        QJsonDocument doc(m_recordings);
-        QString jsonString = doc.toJson(QJsonDocument::Indented); // Pretty print
-        qDebug() << "Full Recording JSON:\n" << jsonString;
-    } else {
-        qDebug() << "No recordings to display.";
-    }
+    // if (!m_recordings.isEmpty()) {
+    //     QJsonDocument doc(m_recordings);
+    //     QString jsonString = doc.toJson(QJsonDocument::Indented); // Pretty print
+    //     qDebug() << "Full Recording JSON:\n" << jsonString;
+    // } else {
+    //     qDebug() << "No recordings to display.";
+    // }
 
     qDebug() << "Recorder cleanup done.";
 }
@@ -124,9 +104,9 @@ void Recorder::stopRecording()
 
 
 // Convert hierarchy to JSON and save it to file
-void Recorder::recordToJson()
+void Recorder::recordToJson(const QString &filePath)
 {
-    saveToFile();  // Automatically save to file
+    saveToFile(filePath); // Automatically save to file
 }
 
 // Store provided JSON data in internal buffer
@@ -143,54 +123,53 @@ void Recorder::recordFrame(const QJsonObject &frame)
     recordedData["trajectories"] = trajectoryArray;  // Update in main object
 }
 
-// Save recorded data to a JSON file
-// bool Recorder::saveToFile(const QString &filePaths)
+// bool Recorder::saveToFile()
 // {
-//     QString finalPath = filePaths;
-//     QString filePath = QFileDialog::getSaveFileName(nullptr, "Save JSON",  QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss"), "JSON Files (*.json)");
-//     if (!filePath.isEmpty()) {
-//         QFile file(filePath);
-//         if (file.open(QIODevice::WriteOnly)) {
-//             QJsonDocument doc(recordedData);
-//             file.write(doc.toJson(QJsonDocument::Indented));
-//             file.close();
-//             QMessageBox::information(nullptr, "Saved", "JSON saved successfully");
-//         }
+//     if (m_recordings.isEmpty()) {
+//         qWarning() << "No recordings to save!";
+//         return false;
+//     }
+//     QString directory = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/recordings";
+//     QDir().mkpath(directory); // ensure directory exists
+//     // Build file path with timestamp
+//     QString finalPath = directory + "/recorder" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".json";
+
+//     QFile file(finalPath);
+//     if (!file.open(QIODevice::WriteOnly)) {
+//         qWarning() << "Failed to open file for saving:" << finalPath;
+//         return false;
 //     }
 
-//     //finalPath = directory + "/recording_" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".json";
+//     // Convert recorded snapshots to JSON document
+//     QJsonDocument doc(m_recordings);
 
-
-//     // QFile file(finalPath);
-//     // if (!file.open(QIODevice::WriteOnly)) {
-//     //     qWarning() << "Failed to open file for saving:" << finalPath;
-//     //     return false;
-//     // }
-
-//     // QJsonDocument doc(recordedData);
-//     // file.write(doc.toJson(QJsonDocument::Indented));
-//     // file.close();
+//     // Write JSON to file
+//     file.write(doc.toJson(QJsonDocument::Indented));
+//     file.close();
 
 //     qDebug() << "Recording saved to:" << finalPath;
 
-//     // Open the folder where file is saved (auto open location)
+//     // Optionally open the folder containing the file
 //     QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(finalPath).absolutePath()));
+
 //     return true;
 // }
-bool Recorder::saveToFile()
+bool Recorder::saveToFile(const QString &filePath)
 {
     if (m_recordings.isEmpty()) {
         qWarning() << "No recordings to save!";
         return false;
     }
-    QString directory = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/recordings";
-    QDir().mkpath(directory); // ensure directory exists
-    // Build file path with timestamp
-    QString finalPath = directory + "/recorder" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".json";
 
-    QFile file(finalPath);
+    // Ensure the directory exists
+    QDir dir(QFileInfo(filePath).absolutePath());
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+
+    QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly)) {
-        qWarning() << "Failed to open file for saving:" << finalPath;
+        qWarning() << "Failed to open file for saving:" << filePath;
         return false;
     }
 
@@ -201,86 +180,36 @@ bool Recorder::saveToFile()
     file.write(doc.toJson(QJsonDocument::Indented));
     file.close();
 
-    qDebug() << "Recording saved to:" << finalPath;
+    qDebug() << "Recording saved to:" << filePath;
 
     // Optionally open the folder containing the file
-    QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(finalPath).absolutePath()));
+    QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(filePath).absolutePath()));
 
     return true;
 }
+void Recorder::saveBookmark(const QString &message, qint64 timestampMs)
+{
+    if (!recordingStartTime.isValid()) {
+        qWarning() << "Cannot save bookmark — recording is not active.";
+        return;
+    }
+
+    qint64 elapsedMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
+
+    QJsonObject bookmarkEntry;
+    bookmarkEntry["timestamp_ms"] = elapsedMs;
+    bookmarkEntry["current_time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+    bookmarkEntry["message"] = message;
+
+    // Store this entry just like normal recording frames
+    record(bookmarkEntry);
 
 
-// Load recording from JSON file into memory
-// bool Recorder::loadFromFile(const QString &filePath)
-// {
-//     QFile file(filePath);
-//     if (!file.open(QIODevice::ReadOnly)) {
-//         qWarning() << "Failed to open file for loading:" << filePath;
-//         return false;
-//     }
+    qDebug().noquote() << "Bookmark saved at" << elapsedMs << "ms — message:" << message;
+}
 
-//     QByteArray data = file.readAll();
-//     file.close();
 
-//     QJsonParseError parseError;
-//     QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-//     if (parseError.error != QJsonParseError::NoError) {
-//         qWarning() << "JSON parse error:" << parseError.errorString();
-//         return false;
-//     }
 
-//     if (!doc.isObject()) {
-//         qWarning() << "Invalid JSON format in file:" << filePath;
-//         return false;
-//     }
-
-//     QJsonObject jsonObj = doc.object();
-
-//     // Example: Rebuild your recorder’s state
-//     recordedData = jsonObj;  // Assuming 'recordedData' is your QJsonObject holding current state
-
-//     qDebug() << "Recording loaded successfully from:" << filePath;
-//     qDebug().noquote() << QJsonDocument(recordedData).toJson(QJsonDocument::Indented);
-
-//     return true;
-// }
-// bool Recorder::loadFromFile(const QString &filePath)
-// {
-//     QFile file(filePath);
-//     if (!file.open(QIODevice::ReadOnly)) {
-//         qWarning() << "Failed to open file for loading:" << filePath;
-//         return false;
-//     }
-
-//     QByteArray data = file.readAll();
-//     file.close();
-
-//     QJsonParseError parseError;
-//     QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-//     if (parseError.error != QJsonParseError::NoError) {
-//         qWarning() << "JSON parse error:" << parseError.errorString();
-//         return false;
-//     }
-
-//     if (doc.isObject()) {
-//         recordedData = doc.object();
-//     } else if (doc.isArray()) {
-//         // Wrap array in object if needed
-//         QJsonObject wrapper;
-//         wrapper["recordings"] = doc.array();
-//         recordedData = wrapper;
-//     } else {
-//         qWarning() << "Invalid JSON format in file:" << filePath;
-//         return false;
-//     }
-//     // QJsonDocument doc(recordedData);
-//     file.write(doc.toJson(QJsonDocument::Indented));
-//     qDebug().noquote() << "File contents:\n" << data;
-
-//     // qDebug() << "Recording loaded successfully from:" << filePath;
-//     // qDebug().noquote() << QJsonDocument(recordedData).toJson(QJsonDocument::Indented);
-//     return true;
-// }
 bool Recorder::loadFromFile(const QString &filePath)
 {
     QFile file(filePath);
@@ -319,16 +248,47 @@ bool Recorder::loadFromFile(const QString &filePath)
     }
 
     // Copy all snapshots into memory
-    QVector<QJsonObject> playbackFrames;
+    playbackFrames.clear();
     playbackFrames.reserve(jsonArray.size());
 
+    // QList<QJsonObject> messageFrames;
+    //messageFrames.reserve(jsonArray.size());
+
+    qint64 maxTimestamp = 0;
     for (const QJsonValue &value : jsonArray) {
         if (value.isObject()) {
-            playbackFrames.append(value.toObject());
+            QJsonObject obj = value.toObject();
+            playbackFrames.append(obj);
+            if (obj.contains("timestamp_ms")){
+                maxTimestamp = qMax(maxTimestamp, obj["timestamp_ms"].toVariant().toLongLong());
+            }
+            // else if (obj.contains("message")){
+            //     messageFrames.append(obj);
+            // }
+
         }
     }
 
     qDebug() << "Loaded" << playbackFrames.size() << "frames for playback.";
+
+    // --- SIGNAL: Set total duration on UI before replay (ensure timeline scaling is correct) ---
+    emit setReplayDuration(maxTimestamp);
+    // for(QJsonObject JO : QList<QJsonObject> messageFrames){
+    //     QString note = JO["message"].toString();
+    //     qint64 timestampMs = JO["timestamp_ms"].toVariant().toLongLong();
+    //     emit replayBookmark(note, timestampMs);
+    // }
+    // for (const QJsonObject &JO : QList<QJsonObject>(messageFrames)) {
+    //     QString note = JO.value("message").toString();
+    //     qint64 timestampMs = JO.value("timestamp_ms").toVariant().toLongLong();
+    //     emit replayBookmark(note, timestampMs);
+    // }
+    // if (frame.contains("message")) {
+    //     QString note = frame["message"].toString();
+    //     qint64 timestampMs = frame["timestamp_ms"].toVariant().toLongLong();
+    //     emit replayBookmark(note, timestampMs); // <-- This updates LoggerDialog/TimelineWidget
+    // }
+    // --- Clear bookmarks before starting replay; slot in LoggerDialog should handle this ---
 
     // Start playback timer
     int currentIndex = 0;
@@ -337,15 +297,24 @@ bool Recorder::loadFromFile(const QString &filePath)
     connect(recordingTimer, &QTimer::timeout, this, [=]() mutable {
         if (currentIndex < playbackFrames.size()) {
             const QJsonObject &frame = playbackFrames.at(currentIndex);
-            QJsonValue JV = frame["snapshot"];
 
+            // Bookmarks: emit for UI when replayed
+            if (frame.contains("message")) {
+                QString note = frame["message"].toString();
+                qint64 timestampMs = frame["timestamp_ms"].toVariant().toLongLong();
+                emit replayBookmark(note, timestampMs); // <-- This updates LoggerDialog/TimelineWidget
+            }
+
+            // Hierarchy state: replay as usual
+            QJsonValue JV = frame["snapshot"];
             if (JV.isObject()) {
                 m_hierarchy->fromJson(JV.toObject());
                 qDebug().noquote() << "Replayed frame" << currentIndex
                                    << "at timestamp:" << frame["timestamp_ms"].toInt()
-                                   << "ms\n"
-                                   << QJsonDocument(JV.toObject()).toJson(QJsonDocument::Indented);
-            } else {
+                                   << "ms\n";
+                //<< QJsonDocument(JV.toObject()).toJson(QJsonDocument::Indented);
+            } else if (!frame.contains("message")) {
+                // Only warn for snapshot frames, not bookmarks
                 qWarning() << "Invalid snapshot type in frame" << currentIndex;
             }
 
@@ -360,79 +329,60 @@ bool Recorder::loadFromFile(const QString &filePath)
     return true;
 }
 
-// bool Recorder::loadFromFile(const QString &filePath)
-// {
-//     QFile file(filePath);
-//     if (!file.open(QIODevice::ReadOnly)) {
-//         qWarning() << "Failed to open file for loading:" << filePath;
-//         return false;
-//     }
+void Recorder::startReplayFromTimestamp(qint64 timestampMs)
+{
+    if (playbackFrames.isEmpty())
+        return;
 
-//     QByteArray data = file.readAll();
-//     file.close();
+    // Find first frame with timestamp >= the requested time
+    int startIdx = 0;
+    for (int i = 0; i < playbackFrames.size(); ++i) {
+        qint64 frameTime = playbackFrames[i].value("timestamp_ms").toVariant().toLongLong();
+        if (frameTime >= timestampMs) {
+            startIdx = i;
+            break;
+        }
+    }
 
-//     QJsonParseError parseError;
-//     QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-//     if (parseError.error != QJsonParseError::NoError) {
-//         qWarning() << "JSON parse error:" << parseError.errorString();
-//         return false;
-//     }
+    int currentIndex = startIdx;
+    if (recordingTimer) {
+        recordingTimer->stop();
+        delete recordingTimer;
+        recordingTimer = nullptr;
+    }
+    recordingTimer = new QTimer(this);
 
-//     if (doc.isObject()) {
-//         recordedData = doc.object();
-//     } else if (doc.isArray()) {
-//         QJsonArray doc2 = doc.array();
-//         // QJsonValue JV = doc2.at(1)["snapshot"];
-//         // qDebug().noquote() << "File contents:\n" << JV;
-//         // Make sure the index exists
-//         qsizetype arr_size = doc2.size();
-//         for(qsizetype i = 0 ; i <arr_size ;i++){
-//             qDebug()<<"JV No."<<i;
-//             if (doc2.size() > 1 && doc2.at(i).isObject()) {
-//                 QJsonObject obj = doc2.at(i).toObject();  // convert QJsonValue → QJsonObject
-//                 QJsonValue JV = obj["snapshot"];          // now access the key safely
+    connect(recordingTimer, &QTimer::timeout, this, [=]() mutable {
+        if (currentIndex < playbackFrames.size()) {
+            const QJsonObject &frame = playbackFrames.at(currentIndex);
 
-//                 qDebug().noquote() << "Snapshot content:\n"
-//                                    << QJsonDocument(JV.toObject()).toJson(QJsonDocument::Indented);
+            // Bookmarks: emit for UI when replayed
+            if (frame.contains("message")) {
+                QString note = frame["message"].toString();
+                qint64 timestampVal = frame["timestamp_ms"].toVariant().toLongLong();
+                emit replayBookmark(note, timestampVal);
+            }
 
-//                 if (JV.isObject()) {
-//                     m_hierarchy->fromJson(JV.toObject());
-//                 } else {
-//                     qWarning() << "Expected a JSON object for hierarchy data, but got:" << JV;
-//                 }
+            // Hierarchy state: replay as usual
+            QJsonValue JV = frame["snapshot"];
+            if (JV.isObject()) {
+                m_hierarchy->fromJson(JV.toObject());
+                qDebug().noquote() << "Replayed frame" << currentIndex
+                                   << "at timestamp:" << frame["timestamp_ms"].toInt()
+                                   << "ms\n";
+            } else if (!frame.contains("message")) {
+                qWarning() << "Invalid snapshot type in frame" << currentIndex;
+            }
 
-//             } else {
-//                 qWarning() << "Invalid index or element is not an object!";
-//             }
+            ++currentIndex;
+        } else {
+            qDebug() << "Playback completed.";
+            recordingTimer->stop();
+        }
+    });
 
-//         }
-//         // if (doc2.size() > 1 && doc2.at(1).isObject()) {
-//         //     QJsonObject obj = doc2.at(1).toObject();  // convert QJsonValue → QJsonObject
-//         //     QJsonValue JV = obj["snapshot"];          // now access the key safely
-
-//         //     qDebug().noquote() << "Snapshot content:\n"
-//         //                        << QJsonDocument(JV.toObject()).toJson(QJsonDocument::Indented);
-
-//         //     if (JV.isObject()) {
-//         //         m_hierarchy->fromJson(JV.toObject());
-//         //     } else {
-//         //         qWarning() << "Expected a JSON object for hierarchy data, but got:" << JV;
-//         //     }
-
-//         // } else {
-//         //     qWarning() << "Invalid index or element is not an object!";
-//         // }
-
-//     } else {
-//         qWarning() << "Invalid JSON format in file:" << filePath;
-//         return false;
-//     }
-
-//     //QJsonDocument doc(recordedData);
-//     // file.write(doc.toJson(QJsonDocument::Indented));
-//     // qDebug().noquote() << "File contents:\n" << data;
-//     return true;
-// }
+    recordingTimer->start(100); // replay interval = 0.1 sec
+}
 
 QJsonValue Recorder::getArrayElement(const QJsonArray &array, int index)
 {
@@ -491,9 +441,27 @@ void Recorder::playNextFrame()
     }
 
     QJsonObject frame = trajectoryArray[currentFrame].toObject();
-    emit replayFrame(frame);   // Emit frame to connected slot
+    //emit replayFrame(frame);   // Emit frame to connected slot
     currentFrame++;
 }
+
+// void Recorder::showBookmarkLog(const QString &note, qint64 timestampMs){
+//     qDebug() << "By Recorder : Bookmark clicked : Note =" << note << ", Timestamp =" << timestampMs << "ms";
+// }
+
+
+void Recorder::bookmarkReplay(const QString &note, qint64 timestampMs){
+    qDebug() << "By Recorder : Bookmark clicked : Note =" << note << ", Timestamp =" << timestampMs << "ms";
+    // Stop any current playback
+    if (recordingTimer) {
+        recordingTimer->stop();
+        delete recordingTimer;
+        recordingTimer = nullptr;
+    }
+    // Start a new replay sequence from the given timestamp
+    startReplayFromTimestamp(timestampMs);
+}
+
 
 QVector<QJsonObject> Recorder::getRecordedFrames() const {
     return recordedFrames;
