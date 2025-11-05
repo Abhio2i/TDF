@@ -207,24 +207,70 @@ void CanvasWidget::setTransformMode(TransformMode mode) {
     update();
 }
 
+// void CanvasWidget::setTrajectoryDrawingMode(bool enabled) {
+//     isDrawingTrajectory = enabled;
+//     if (enabled) {
+
+
+//         if (!selectedEntityId.empty()) {
+
+//             auto it = Meshes.find(selectedEntityId);
+//             if (it != Meshes.end() && it->second.trajectory ==nullptr ) return;
+//             if (it->second.trajectory && it->second.trajectory->Active) {
+//                 currentMode = DrawTrajectory;
+//                 setCursor(Qt::CrossCursor);
+//                 Console::log("Trajectory drawing mode enabled");
+//                 for (Waypoints* wp : currentTrajectory) {
+//                     delete wp->position;
+//                     delete wp;
+//                 }
+//                 currentTrajectory.clear();
+//                 for (const Waypoints* wp : it->second.trajectory->Trajectories) {
+//                     Waypoints* newWaypoint = new Waypoints();
+//                     newWaypoint->position = new Vector(wp->position->x, wp->position->y, wp->position->z);
+//                     currentTrajectory.push_back(newWaypoint);
+//                 }
+//                 Console::log("Loaded " + std::to_string(currentTrajectory.size()) + " waypoints for entity: " + selectedEntityId);
+//             } else {
+//                 Console::log("No existing trajectory found for entity: " + selectedEntityId);
+//                 currentTrajectory.clear();
+//             }
+//         } else {
+//             Console::error("No entity selected for trajectory editing");
+//             currentTrajectory.clear();
+//         }
+//     } else {
+//         currentMode = Translate;
+//         setCursor(Qt::ArrowCursor);
+//         deselectWaypoint();
+//         Console::log("Trajectory drawing mode disabled");
+//         if (!currentTrajectory.empty() && !selectedEntityId.empty()) {
+//             saveTrajectory();
+//         }
+//     }
+//     update();
+// }
 void CanvasWidget::setTrajectoryDrawingMode(bool enabled) {
     isDrawingTrajectory = enabled;
     if (enabled) {
-
-
         if (!selectedEntityId.empty()) {
-
             auto it = Meshes.find(selectedEntityId);
-            if (it != Meshes.end() && it->second.trajectory ==nullptr ) return;
-            if (it->second.trajectory && it->second.trajectory->Active) {
+            if (it != Meshes.end() && it->second.trajectory == nullptr) return;
+
+            // YEH LINE IMPORTANT HAI - trajectory NULL ho ya empty, drawing mode enable honi chahiye
+            if (it->second.trajectory) {
                 currentMode = DrawTrajectory;
                 setCursor(Qt::CrossCursor);
                 Console::log("Trajectory drawing mode enabled");
+
+                // Clear existing current trajectory
                 for (Waypoints* wp : currentTrajectory) {
                     delete wp->position;
                     delete wp;
                 }
                 currentTrajectory.clear();
+
+                // Load existing waypoints from entity trajectory (even if empty)
                 for (const Waypoints* wp : it->second.trajectory->Trajectories) {
                     Waypoints* newWaypoint = new Waypoints();
                     newWaypoint->position = new Vector(wp->position->x, wp->position->y, wp->position->z);
@@ -232,7 +278,10 @@ void CanvasWidget::setTrajectoryDrawingMode(bool enabled) {
                 }
                 Console::log("Loaded " + std::to_string(currentTrajectory.size()) + " waypoints for entity: " + selectedEntityId);
             } else {
-                Console::log("No existing trajectory found for entity: " + selectedEntityId);
+                // Agar trajectory NULL hai, toh nayi trajectory start karein
+                currentMode = DrawTrajectory;
+                setCursor(Qt::CrossCursor);
+                Console::log("Starting new trajectory for entity: " + selectedEntityId);
                 currentTrajectory.clear();
             }
         } else {
@@ -250,7 +299,6 @@ void CanvasWidget::setTrajectoryDrawingMode(bool enabled) {
     }
     update();
 }
-
 void CanvasWidget::saveTrajectory() {
     Console::log("saveTrajectory called");
     if (!isDrawingTrajectory) {
@@ -382,6 +430,19 @@ void CanvasWidget::wheelEvent(QWheelEvent *event)
 }
 
 void CanvasWidget::handleMousePress(QMouseEvent *event) {
+
+    // ===== RIGHT CLICK HANDLING - ADD THIS AT THE TOP =====
+    if (event->button() == Qt::RightButton) {
+        Console::log("=== RIGHT CLICK DETECTED ===");
+        Console::log("Position: " + std::to_string(event->pos().x()) + "," + std::to_string(event->pos().y()));
+        Console::log("Current Mode: " + std::to_string(currentMode));
+        Console::log("isDrawingTrajectory: " + std::to_string(isDrawingTrajectory));
+
+        handleRightClick(event);
+        return; // IMPORTANT: Return immediately after handling right click
+    }
+
+
     if (event->button() == Qt::MiddleButton) {
         isPanning = true;
         lastMousePos = event->pos();
@@ -1035,46 +1096,237 @@ void CanvasWidget::handleRightClick(QMouseEvent *event) {
     update();
 }
 
+// void CanvasWidget::handleTrajectoryRightClick(QMouseEvent *event) {
+//     int nearestIndex = findNearestWaypoint(event->pos());
+//     if (nearestIndex >= 0) {
+//         selectWaypoint(nearestIndex);
+//         QMenu contextMenu(this);
+//         QAction* deleteAction = contextMenu.addAction("Delete Waypoint");
+//         connect(deleteAction, &QAction::triggered, this, [=]() {
+//             if (selectedWaypointIndex >= 0 && selectedWaypointIndex < (int)currentTrajectory.size()) {
+//                 QMessageBox confirmationDialog(this);
+//                 confirmationDialog.setWindowTitle("Confirm Delete");
+//                 confirmationDialog.setText("Are you sure you want to delete this waypoint?");
+//                 confirmationDialog.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+//                 confirmationDialog.setDefaultButton(QMessageBox::No);
+//                 QPalette palette = confirmationDialog.palette();
+//                 palette.setColor(QPalette::ButtonText, Qt::white);
+//                 palette.setColor(QPalette::Button, QColor("#333333"));
+//                 palette.setColor(QPalette::Window, QColor("#222222"));
+//                 palette.setColor(QPalette::WindowText, Qt::white);
+//                 confirmationDialog.setPalette(palette);
+//                 QList<QPushButton*> buttons = confirmationDialog.findChildren<QPushButton*>();
+//                 for (QPushButton* button : buttons) {
+//                     button->setStyleSheet("color: white; background-color: #333333; border: 1px solid #555555; padding: 5px;");
+//                     Console::log("Applied stylesheet to button: " + button->text().toStdString());
+//                 }
+//                 QMessageBox::StandardButton reply = static_cast<QMessageBox::StandardButton>(confirmationDialog.exec());
+//                 if (reply == QMessageBox::Yes) {
+//                     delete currentTrajectory[selectedWaypointIndex]->position;
+//                     delete currentTrajectory[selectedWaypointIndex];
+//                     currentTrajectory.erase(currentTrajectory.begin() + selectedWaypointIndex);
+//                     deselectWaypoint();
+//                     updateTrajectoryData();
+//                     Console::log("Deleted waypoint at index: " + std::to_string(nearestIndex));
+//                     update();
+//                 }
+//             }
+//         });
+//         contextMenu.exec(event->globalPos());
+//     }
+// }
+
+
+// void CanvasWidget::handleTrajectoryRightClick(QMouseEvent *event) {
+//     int nearestIndex = findNearestWaypoint(event->pos());
+
+//     QMenu contextMenu(this);
+
+//     if (nearestIndex >= 0) {
+//         selectWaypoint(nearestIndex);
+
+//         // Individual waypoint delete option
+//         QAction* deleteWaypointAction = contextMenu.addAction("Delete Waypoint");
+//         connect(deleteWaypointAction, &QAction::triggered, this, [=]() {
+//             if (selectedWaypointIndex >= 0 && selectedWaypointIndex < (int)currentTrajectory.size()) {
+//                 QMessageBox confirmationDialog(this);
+//                 confirmationDialog.setWindowTitle("Confirm Delete");
+//                 confirmationDialog.setText("Are you sure you want to delete this waypoint?");
+//                 confirmationDialog.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+//                 confirmationDialog.setDefaultButton(QMessageBox::No);
+
+//                 QPalette palette = confirmationDialog.palette();
+//                 palette.setColor(QPalette::ButtonText, Qt::white);
+//                 palette.setColor(QPalette::Button, QColor("#333333"));
+//                 palette.setColor(QPalette::Window, QColor("#222222"));
+//                 palette.setColor(QPalette::WindowText, Qt::white);
+//                 confirmationDialog.setPalette(palette);
+
+//                 QList<QPushButton*> buttons = confirmationDialog.findChildren<QPushButton*>();
+//                 for (QPushButton* button : buttons) {
+//                     button->setStyleSheet("color: white; background-color: #333333; border: 1px solid #555555; padding: 5px;");
+//                 }
+
+//                 QMessageBox::StandardButton reply = static_cast<QMessageBox::StandardButton>(confirmationDialog.exec());
+//                 if (reply == QMessageBox::Yes) {
+//                     delete currentTrajectory[selectedWaypointIndex]->position;
+//                     delete currentTrajectory[selectedWaypointIndex];
+//                     currentTrajectory.erase(currentTrajectory.begin() + selectedWaypointIndex);
+//                     deselectWaypoint();
+//                     updateTrajectoryData();
+//                     Console::log("Deleted waypoint at index: " + std::to_string(nearestIndex));
+//                     update();
+//                 }
+//             }
+//         });
+
+//         contextMenu.addSeparator(); // Separator between individual and bulk operations
+//     }
+
+//     // Delete all waypoints option (always available if there are waypoints)
+//     if (!currentTrajectory.empty()) {
+//         QAction* deleteAllWaypointsAction = contextMenu.addAction("Delete All Waypoints");
+//         connect(deleteAllWaypointsAction, &QAction::triggered, this, [=]() {
+//             QMessageBox confirmationDialog(this);
+//             confirmationDialog.setWindowTitle("Confirm Delete All");
+//             confirmationDialog.setText("Are you sure you want to delete ALL waypoints in this trajectory?");
+//             confirmationDialog.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+//             confirmationDialog.setDefaultButton(QMessageBox::No);
+
+//             QPalette palette = confirmationDialog.palette();
+//             palette.setColor(QPalette::ButtonText, Qt::white);
+//             palette.setColor(QPalette::Button, QColor("#333333"));
+//             palette.setColor(QPalette::Window, QColor("#222222"));
+//             palette.setColor(QPalette::WindowText, Qt::white);
+//             confirmationDialog.setPalette(palette);
+
+//             QList<QPushButton*> buttons = confirmationDialog.findChildren<QPushButton*>();
+//             for (QPushButton* button : buttons) {
+//                 button->setStyleSheet("color: white; background-color: #333333; border: 1px solid #555555; padding: 5px;");
+//             }
+
+//             QMessageBox::StandardButton reply = static_cast<QMessageBox::StandardButton>(confirmationDialog.exec());
+//             if (reply == QMessageBox::Yes) {
+//                 // Delete all waypoints
+//                 for (Waypoints* wp : currentTrajectory) {
+//                     delete wp->position;
+//                     delete wp;
+//                 }
+//                 currentTrajectory.clear();
+//                 deselectWaypoint();
+//                 updateTrajectoryData();
+//                 Console::log("Deleted all waypoints from trajectory");
+//                 update();
+//             }
+//         });
+//     }
+
+//     // Only show context menu if there are actions to show
+//     if (!contextMenu.actions().isEmpty()) {
+//         contextMenu.exec(event->globalPos());
+//     }
+// }
+
+
+// void CanvasWidget::handleTrajectoryRightClick(QMouseEvent *event) {
+//     int nearestIndex = findNearestWaypoint(event->pos());
+
+//     QMenu contextMenu(this);
+
+//     if (nearestIndex >= 0) {
+//         selectWaypoint(nearestIndex);
+
+//         // Individual waypoint delete option - WITHOUT confirmation
+//         QAction* deleteWaypointAction = contextMenu.addAction("Delete Waypoint");
+//         connect(deleteWaypointAction, &QAction::triggered, this, [=]() {
+//             if (selectedWaypointIndex >= 0 && selectedWaypointIndex < (int)currentTrajectory.size()) {
+//                 delete currentTrajectory[selectedWaypointIndex]->position;
+//                 delete currentTrajectory[selectedWaypointIndex];
+//                 currentTrajectory.erase(currentTrajectory.begin() + selectedWaypointIndex);
+//                 deselectWaypoint();
+//                 updateTrajectoryData();
+//                 Console::log("Deleted waypoint at index: " + std::to_string(nearestIndex));
+//                 update();
+//             }
+//         });
+
+//         contextMenu.addSeparator(); // Separator between individual and bulk operations
+//     }
+
+//     // Delete all waypoints option (always available if there are waypoints) - WITHOUT confirmation
+//     if (!currentTrajectory.empty()) {
+//         QAction* deleteAllWaypointsAction = contextMenu.addAction("Delete All Waypoints");
+//         connect(deleteAllWaypointsAction, &QAction::triggered, this, [=]() {
+//             // Delete all waypoints directly without confirmation
+//             for (Waypoints* wp : currentTrajectory) {
+//                 delete wp->position;
+//                 delete wp;
+//             }
+//             currentTrajectory.clear();
+//             deselectWaypoint();
+//             updateTrajectoryData();
+//             Console::log("Deleted all waypoints from trajectory");
+//             update();
+//         });
+//     }
+
+//     // Only show context menu if there are actions to show
+//     if (!contextMenu.actions().isEmpty()) {
+//         contextMenu.exec(event->globalPos());
+//     }
+// }
+
+
 void CanvasWidget::handleTrajectoryRightClick(QMouseEvent *event) {
     int nearestIndex = findNearestWaypoint(event->pos());
+
+    QMenu contextMenu(this);
+
     if (nearestIndex >= 0) {
         selectWaypoint(nearestIndex);
-        QMenu contextMenu(this);
-        QAction* deleteAction = contextMenu.addAction("Delete Waypoint");
-        connect(deleteAction, &QAction::triggered, this, [=]() {
+
+        // Individual waypoint delete option - WITHOUT confirmation
+        QAction* deleteWaypointAction = contextMenu.addAction("Delete Waypoint");
+        connect(deleteWaypointAction, &QAction::triggered, this, [=]() {
             if (selectedWaypointIndex >= 0 && selectedWaypointIndex < (int)currentTrajectory.size()) {
-                QMessageBox confirmationDialog(this);
-                confirmationDialog.setWindowTitle("Confirm Delete");
-                confirmationDialog.setText("Are you sure you want to delete this waypoint?");
-                confirmationDialog.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                confirmationDialog.setDefaultButton(QMessageBox::No);
-                QPalette palette = confirmationDialog.palette();
-                palette.setColor(QPalette::ButtonText, Qt::white);
-                palette.setColor(QPalette::Button, QColor("#333333"));
-                palette.setColor(QPalette::Window, QColor("#222222"));
-                palette.setColor(QPalette::WindowText, Qt::white);
-                confirmationDialog.setPalette(palette);
-                QList<QPushButton*> buttons = confirmationDialog.findChildren<QPushButton*>();
-                for (QPushButton* button : buttons) {
-                    button->setStyleSheet("color: white; background-color: #333333; border: 1px solid #555555; padding: 5px;");
-                    Console::log("Applied stylesheet to button: " + button->text().toStdString());
-                }
-                QMessageBox::StandardButton reply = static_cast<QMessageBox::StandardButton>(confirmationDialog.exec());
-                if (reply == QMessageBox::Yes) {
-                    delete currentTrajectory[selectedWaypointIndex]->position;
-                    delete currentTrajectory[selectedWaypointIndex];
-                    currentTrajectory.erase(currentTrajectory.begin() + selectedWaypointIndex);
-                    deselectWaypoint();
-                    updateTrajectoryData();
-                    Console::log("Deleted waypoint at index: " + std::to_string(nearestIndex));
-                    update();
-                }
+                delete currentTrajectory[selectedWaypointIndex]->position;
+                delete currentTrajectory[selectedWaypointIndex];
+                currentTrajectory.erase(currentTrajectory.begin() + selectedWaypointIndex);
+                deselectWaypoint();
+                updateTrajectoryData();
+                Console::log("Deleted waypoint at index: " + std::to_string(nearestIndex));
+                update();
             }
         });
+
+        contextMenu.addSeparator(); // Separator between individual and bulk operations
+    }
+
+    // Delete all waypoints option (always available if there are waypoints) - WITHOUT confirmation
+    if (!currentTrajectory.empty()) {
+        QAction* deleteAllWaypointsAction = contextMenu.addAction("Delete All Waypoints");
+        connect(deleteAllWaypointsAction, &QAction::triggered, this, [=]() {
+            // Delete all waypoints directly without confirmation
+            for (Waypoints* wp : currentTrajectory) {
+                delete wp->position;
+                delete wp;
+            }
+            currentTrajectory.clear();
+            deselectWaypoint();
+
+            // IMPORTANT: Save the empty trajectory to entity data
+            saveTrajectory();
+
+            Console::log("Deleted all waypoints from trajectory");
+            update();
+        });
+    }
+
+    // Only show context menu if there are actions to show
+    if (!contextMenu.actions().isEmpty()) {
         contextMenu.exec(event->globalPos());
     }
 }
-
 // // EXISTING handleShapeRightClick() function ko COMPLETELY REPLACE karen:
 // void CanvasWidget::handleShapeRightClick(QMouseEvent *event) {
 //     QPointF geoPos = gislib->canvasToGeo(event->pos());
