@@ -1,3 +1,5 @@
+
+
 /* ========================================================================= */
 /* File: scenarioeditor.h                                                   */
 /* Purpose: Defines the main window for the scenario editor application      */
@@ -61,6 +63,14 @@ private slots:
     void showFeedbackWindow();
     // Mark unsaved changes
     void markUnsavedChanges();
+    // Handle dock visibility changes
+    void onDockVisibilityChanged(bool visible);
+    // Reset layout to initial state
+    void resetLayout();
+
+    void onRecentProjectTriggered();
+    void loadRecentProject(const QString& filePath);
+    void clearRecentProjects();
 
 signals:
     // Signal unsaved changes state
@@ -69,7 +79,7 @@ signals:
 private:
     // %%% Core Components %%%
     // Script engine instance
-    ScriptEngine* scriptengine = nullptr;   // <-- add this
+    ScriptEngine* scriptengine = nullptr;
     // Hierarchy tree view widget
     HierarchyTree *treeView;
     // Inspector panel widget
@@ -100,8 +110,6 @@ private:
     QDockWidget *textScriptDock;
     // Console view widget
     ConsoleView *consoleView;
-    // Tactical display widget (commented)
-    // TacticalDisplay *tacticalDisplay;
     // Text script view widget
     TextScriptWidget *textScriptView;
 
@@ -112,6 +120,8 @@ private:
     void setupToolBars();
     // Configure dock widgets
     void setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures);
+    // Enhanced dock widget setup for Linux compatibility
+    void setupEnhancedDockWidgets();
     // Connect toolbar signals
     void setupToolBarConnections();
 

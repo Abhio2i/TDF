@@ -781,6 +781,14 @@ void RuntimeEditor::setupToolBarConnections()
         connect(standardToolBar->getSaveAction(), &QAction::triggered,
                 menuBar->getSaveAction(), &QAction::trigger);
     }
+
+    // RECENT PROJECT CONNECTION - ADD THIS LINE
+    connect(menuBar->getRecentProjectAction(), &QAction::triggered,
+            this, &RuntimeEditor::onRecentProjectTriggered);
+
+    qDebug() << "MenuBar actions connected successfully";
+    qDebug() << "Recent Project Action:" << menuBar->getRecentProjectAction()->text();
+
     connect(designToolBar, &DesignToolBar::modeChanged,
             this, [=](int mode) {
                 tacticalDisplay->canvas->setTransformMode(static_cast<TransformMode>(mode));
@@ -1009,4 +1017,144 @@ void RuntimeEditor::updateStatusBar(const QString &message) {
     if (statusBar) {
         statusBar->showMessage(message);
     }
+}
+void RuntimeEditor::onRecentProjectTriggered()
+{
+    qDebug() << "Recent Project menu clicked - showing recent projects list";
+
+    // Get recent projects from HierarchyConnector
+    QStringList recentProjects = HierarchyConnector::instance()->getRecentProjects();
+    if (recentProjects.size() > 10) {
+        recentProjects = recentProjects.mid(0, 10); // First 10 (most recent)
+    }
+    qDebug() << "Recent projects found:" << recentProjects.size();
+
+    // Filter only existing files
+    QStringList existingProjects;
+    for (const QString& projectPath : recentProjects) {
+        if (QFile::exists(projectPath)) {
+            existingProjects << projectPath;
+            qDebug() << "✅ Available:" << QFileInfo(projectPath).fileName();
+        } else {
+            qDebug() << "❌ Not found:" << projectPath;
+        }
+    }
+
+    // Remove non-existing projects from the list
+    if (existingProjects.size() < recentProjects.size()) {
+        for (const QString& projectPath : existingProjects) {
+            HierarchyConnector::instance()->addToRecentProjects(projectPath);
+        }
+    }
+
+    if (existingProjects.isEmpty()) {
+        QMessageBox::information(this, "Recent Projects",
+                                 "📂 No recent projects found!\n\n"
+                                 "To see projects here:\n"
+                                 );
+        return;
+    }
+
+    // Create recent projects menu
+    QMenu recentMenu(this);
+    recentMenu.setTitle("Recent Projects");
+
+    // Add header
+    QAction* headerAction = recentMenu.addAction("📋 Recently Opened Projects");
+    headerAction->setEnabled(false);
+    recentMenu.addSeparator();
+
+    // Add recent projects to menu with numbers
+    int count = 1;
+    for (const QString& projectPath : existingProjects) {
+        QFileInfo fileInfo(projectPath);
+        QString displayText = QString("%1. 📄 %2\n    📍 %3")
+                                  .arg(count)
+                                  .arg(fileInfo.fileName())
+                                  .arg(fileInfo.path());
+
+        QAction* projectAction = recentMenu.addAction(displayText);
+        projectAction->setData(projectPath);
+        projectAction->setToolTip(projectPath);
+
+
+    }
+
+    recentMenu.addSeparator();
+
+
+    recentMenu.addAction("🗑️ Clear All Recent Projects", this, &RuntimeEditor::clearRecentProjects);
+
+
+    // Show menu at cursor position
+    QPoint menuPos = QCursor::pos();
+    QAction* selectedAction = recentMenu.exec(menuPos);
+
+    if (selectedAction && selectedAction->data().isValid()) {
+        QString filePath = selectedAction->data().toString();
+        loadRecentProject(filePath);
+    }
+}
+
+/* Load recent project manually */
+void RuntimeEditor::loadRecentProject(const QString& filePath)
+{
+    if (!QFile::exists(filePath)) {
+        QMessageBox::warning(this, "File Not Found",
+                             QString("The project file was not found:\n\n%1\n\nIt will be removed from recent list.").arg(filePath));
+
+        // Remove from recent list
+        HierarchyConnector::instance()->addToRecentProjects(""); // This will cleanup
+        return;
+    }
+
+    qDebug() << "Loading recent project manually:" << filePath;
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, "Error",
+                             QString("Failed to open file:\n\n%1\n\nError: %2").arg(filePath).arg(file.errorString()));
+        return;
+    }
+
+    QByteArray data = file.readAll();
+    file.close();
+
+    QJsonParseError err;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+    if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+        QMessageBox::warning(this, "Error",
+                             QString("Failed to parse JSON file:\n\n%1\n\nError: %2").arg(filePath).arg(err.errorString()));
+        return;
+    }
+
+    QJsonObject obj = doc.object();
+    if (!obj.contains("hierarchy")) {
+        QMessageBox::warning(this, "Error",
+                             QString("Invalid project file (missing 'hierarchy'):\n\n%1").arg(filePath));
+        return;
+    }
+
+    // Load the project
+    QJsonObject hier = obj["hierarchy"].toObject();
+    hierarchy->fromJson(hier);
+    lastSavedFilePath = filePath;
+    clearUnsavedChanges();
+
+    // Update UI
+    updateStatusBar("Loaded: " + QFileInfo(filePath).fileName());
+    console->log("Recent project loaded: " + filePath.toStdString());
+
+
+}
+
+// Clear recent projects list
+void RuntimeEditor::clearRecentProjects()
+{
+
+    HierarchyConnector::instance()->clearRecentProjects();
+
+    // Optional: Just update status bar
+    updateStatusBar("Recent projects list cleared");
+    console->log("Recent projects list cleared");
 }

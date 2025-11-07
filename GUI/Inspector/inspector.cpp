@@ -434,14 +434,26 @@ void Inspector::setupBooleanCell(int row, const QString &fullKey, bool value)
     qDebug() << "setupBooleanCell: Assigned checkbox to row:" << row << "for key:" << fullKey << "visible:" << checkBox->isVisible();
 }
 
-/* Setup array cell */
-/* Setup array cell */
+
+
 void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray &array)
 {
     qDebug() << "setupArrayCell: Setting row:" << row << "for key:" << fullKey;
+
     // Create array widget
     QWidget *arrayWidget = new QWidget();
     arrayWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    // Create dropdown button for right side
+    QPushButton *dropdownButton = new QPushButton("▼", this);
+    dropdownButton->setStyleSheet(
+        "QPushButton { color: white;  border-radius: 3px; padding: 2px 8px; }"
+        "QPushButton:hover { background: #3A4F64; }"
+        "QPushButton:pressed { background: #1A2F44; }"
+        );
+    dropdownButton->setFixedSize(30, 25); // Fixed size for right alignment
+
+    // Create list widget but initially hide it
     QListWidget *listWidget = new QListWidget();
     listWidget->setProperty("row", row);
     listWidget->viewport()->installEventFilter(this);
@@ -450,6 +462,7 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
     listWidget->setDragDropMode(QAbstractItemView::DropOnly);
     listWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     listWidget->setMaximumHeight(fullKey == "entity" ? 50 : 200);
+    listWidget->setVisible(false); // Initially hidden
 
     // Style list widget
     listWidget->setStyleSheet(
@@ -491,32 +504,51 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
         listWidget->addItem(item);
     }
 
-    // Create layout for array widget
-    QVBoxLayout *layout = new QVBoxLayout(arrayWidget);
-    layout->addWidget(listWidget);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(4);
+    // Create main layout for array widget
+    QVBoxLayout *mainLayout = new QVBoxLayout(arrayWidget);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setSpacing(4);
 
-    // Add buttons for non-entity arrays
+    // Create top row with dropdown button aligned to right
+    QWidget *topRowWidget = new QWidget();
+    QHBoxLayout *topRowLayout = new QHBoxLayout(topRowWidget);
+    topRowLayout->setContentsMargins(0, 0, 0, 0);
+    topRowLayout->setSpacing(0);
+
+    // Add stretch to push button to right
+    topRowLayout->addStretch();
+    topRowLayout->addWidget(dropdownButton);
+
+    mainLayout->addWidget(topRowWidget);
+    mainLayout->addWidget(listWidget); // Initially hidden
+
+    // Add buttons for non-entity arrays (initially hidden)
+    QWidget *buttonWidget = nullptr;
     QPushButton *addBtn = nullptr;
     QPushButton *removeBtn = nullptr;
+
     if (fullKey != "entity") {
+        buttonWidget = new QWidget();
+        QHBoxLayout *btnLayout = new QHBoxLayout(buttonWidget);
         addBtn = new QPushButton("Add");
         removeBtn = new QPushButton("Remove");
+
         addBtn->setStyleSheet(
-            "QPushButton { color: white; border-radius: 3px; background-color: #2A3F54; }"
+            "QPushButton { color: white; border-radius: 3px; background-color: #2A3F54; padding: 3px 8px; }"
             "QPushButton:hover { background-color: #444; }"
             );
         removeBtn->setStyleSheet(
-            "QPushButton { color: white; border-radius: 3px; background-color: #2A3F54; }"
+            "QPushButton { color: white; border-radius: 3px; background-color: #2A3F54; padding: 3px 8px; }"
             "QPushButton:hover { background-color: #444; }"
             );
-        QHBoxLayout *btnLayout = new QHBoxLayout();
+
         btnLayout->addWidget(addBtn);
         btnLayout->addWidget(removeBtn);
         btnLayout->setContentsMargins(0, 0, 0, 0);
         btnLayout->setSpacing(5);
-        layout->addLayout(btnLayout);
+
+        buttonWidget->setVisible(false); // Initially hidden
+        mainLayout->addWidget(buttonWidget);
     }
 
     // Lambda to emit array changes
@@ -542,6 +574,26 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
             emit trajectoryWaypointsChanged(ConnectedID, delta[fullKey].toArray());
         }
     };
+
+    // Toggle dropdown visibility
+    connect(dropdownButton, &QPushButton::clicked, this, [=]() {
+        bool isVisible = !listWidget->isVisible();
+        listWidget->setVisible(isVisible);
+        if (buttonWidget) {
+            buttonWidget->setVisible(isVisible);
+        }
+
+        // Update button icon
+        if (isVisible) {
+            dropdownButton->setText("▲");
+            // Adjust row height when expanded
+            tableWidget->setRowHeight(row, fullKey == "entity" ? 80 : 200);
+        } else {
+            dropdownButton->setText("▼");
+            // Reset row height when collapsed
+            tableWidget->setRowHeight(row, 30);
+        }
+    });
 
     // Connect add and remove buttons
     if (fullKey != "entity") {
@@ -600,8 +652,8 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
         emitArrayChanged();
     });
 
-    // Set row height and add widget
-    tableWidget->setRowHeight(row, fullKey == "entity" ? 80 : 200);
+    // Set initial row height (collapsed state)
+    tableWidget->setRowHeight(row, 30);
     tableWidget->setCellWidget(row, 1, arrayWidget);
 }
 /* Setup string cell */

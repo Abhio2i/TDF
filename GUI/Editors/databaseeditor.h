@@ -1,3 +1,4 @@
+
 /* ========================================================================= */
 /* File: databaseeditor.h                                                   */
 /* Purpose: Defines the main window for the database editor application      */
@@ -42,12 +43,23 @@ private slots:
     void addInspectorTab();
     // Show feedback window
     void showFeedbackWindow();
+    // Handle dock visibility changes
+    void onDockVisibilityChanged(bool visible);
+
+     void resetLayout();
+
+    // NEW METHODS ADD HERE
+
+    void onRecentProjectTriggered();
+    void clearRecentProjects();
+    void loadRecentProject(const QString& filePath);
 
 signals:
     // Signal unsaved changes state
     void unsavedChangesChanged(bool hasChanges);
 
 private:
+
     // %%% UI Setup Methods %%%
     // Configure menu bar
     void setupMenuBar();
@@ -55,6 +67,8 @@ private:
     void setupToolBars();
     // Configure dock widgets
     void setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures);
+    // Enhanced dock widget setup for Linux compatibility
+    void setupEnhancedDockWidgets();
 
     // %%% Core Components %%%
     // Scenario data structure

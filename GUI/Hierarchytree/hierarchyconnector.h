@@ -47,7 +47,9 @@ public:
     QString getLastSavedFilePath(QMainWindow* parent);
     // Get feedback data as JSON
     QJsonObject getFeedbackData(Hierarchy* hierarchy);
-
+    void addToRecentProjects(const QString& filePath);
+    QStringList getRecentProjects() const;
+    void clearRecentProjects();
 public slots:
     // Handle library to hierarchy drop
     void handleLibraryToHierarchyDrop(QVariantMap sourceData, QVariantMap targetData);

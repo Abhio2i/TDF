@@ -19,6 +19,7 @@
 #include "GUI/Editors/scenarioeditor.h"            // For scenario editor
 #include "GUI/Editors/runtimeeditor.h"             // For runtime editor
 #include "GUI/Hierarchytree/contextmenu.h"
+#include <QSettings>
 // %%% Static Instance %%%
 /* Singleton instance */
 HierarchyConnector* HierarchyConnector::m_instance = nullptr;
@@ -525,8 +526,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
     QAction* loadToLibraryAction = menuBar->getLoadToLibraryAction();
     QAction* saveAction = menuBar->getSaveAction();
     QAction* sameSaveAction = menuBar->getSameSaveAction();
-
-    // Connect load action
     connect(loadAction, &QAction::triggered, this, [=]() {
         QString filePath = QFileDialog::getOpenFileName(parent, "Open JSON", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), "JSON Files (*.json)");
         if (!filePath.isEmpty()) {
@@ -549,6 +548,10 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
                         }
                     }
                     qDebug() << "JSON loaded into Hierarchy successfully";
+
+                    // ✅ ADD TO RECENT PROJECTS
+                    this->addToRecentProjects(filePath);
+
                     if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(parent)) {
                         dbEditor->lastSavedFilePath = filePath;
                         dbEditor->clearUnsavedChanges();
@@ -568,13 +571,12 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
             }
         }
     });
-
     // Connect load to library action
     connect(loadToLibraryAction, &QAction::triggered, this, [=]() {
         this->loadToLibrary(parent);
     });
 
-    // Connect save as action
+
     connect(saveAction, &QAction::triggered, this, [=]() {
         QString filePath = QFileDialog::getSaveFileName(parent, "Save JSON", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), "JSON Files (*.json)");
         if (!filePath.isEmpty()) {
@@ -591,6 +593,10 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
                 file.write(doc.toJson(QJsonDocument::Indented));
                 file.close();
                 qDebug() << "JSON saved successfully";
+
+                // ✅ ADD TO RECENT PROJECTS
+                this->addToRecentProjects(filePath);
+
                 if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(parent)) {
                     dbEditor->lastSavedFilePath = filePath;
                     dbEditor->clearUnsavedChanges();
@@ -610,7 +616,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
             }
         }
     });
-
     // Connect save action
     connect(sameSaveAction, &QAction::triggered, this, [=]() {
         QString filePath = this->getLastSavedFilePath(parent);
@@ -1014,4 +1019,43 @@ QJsonObject HierarchyConnector::getFeedbackData(Hierarchy* hierarchy)
     }
 
     return feedbackData;
+}
+/* Add file to recent projects list */
+void HierarchyConnector::addToRecentProjects(const QString& filePath)
+{
+    if (filePath.isEmpty()) return;
+
+    QSettings settings;
+    QStringList recentProjects = settings.value("recentProjects").toStringList();
+
+    // Remove if already exists
+    recentProjects.removeAll(filePath);
+
+    // Add to beginning
+    recentProjects.prepend(filePath);
+
+    // Keep only last 10 projects
+    while (recentProjects.size() > 10) {
+        recentProjects.removeLast();
+    }
+
+    settings.setValue("recentProjects", recentProjects);
+
+    qDebug() << "✅ Added to recent projects:" << filePath;
+    qDebug() << "📋 Recent projects list now:" << recentProjects;
+}
+
+/* Get recent projects list */
+QStringList HierarchyConnector::getRecentProjects() const
+{
+    QSettings settings;
+    return settings.value("recentProjects").toStringList();
+}
+
+/* Clear recent projects list */
+void HierarchyConnector::clearRecentProjects()
+{
+    QSettings settings;
+    settings.remove("recentProjects");
+    qDebug() << "🗑️ Recent projects list cleared";
 }

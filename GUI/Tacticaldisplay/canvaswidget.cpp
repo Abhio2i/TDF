@@ -37,6 +37,58 @@
 #include <QDoubleSpinBox>
 #include <QDialog>
 #include <QFontMetrics>
+#include "core/Hierarchy/EntityProfiles/sensor.h"
+#include <iostream>
+#include <cmath>
+#include <tuple> // std::tuple का उपयोग करने के लिए
+
+using namespace std;
+
+// पृथ्वी की औसत त्रिज्या (किलोमीटर में)
+const double EARTH_RADIUS_KM = 6371.0;
+
+// डिग्री को रेडियन में बदलने के लिए फंक्शन
+double degToRad(double degrees) {
+    return degrees * (M_PI / 180.0);
+}
+
+// रेडियन को डिग्री में बदलने के लिए फंक्शन
+double radToDeg(double radians) {
+    return radians * (180.0 / M_PI);
+}
+
+/**
+ * शीर्षक (Heading) और दूरी (Distance) का उपयोग करके नया Lat/Long ज्ञात करता है।
+ * @param lat1 आरंभिक अक्षांश (डिग्री में)
+ * @param lon1 आरंभिक देशांतर (डिग्री में)
+ * @param heading शीर्षक (डिग्री में)
+ * @return std::tuple<double, double> {नया अक्षांश, नया देशांतर} डिग्री में
+ */
+std::tuple<double, double> calculateNewLatLong(double lat1, double lon1, double heading, double DISTANCE_KM) {
+
+    // 1. सभी इनपुट को रेडियन में बदलें
+    double phi1 = degToRad(lat1);
+    double lambda1 = degToRad(lon1);
+    double theta = degToRad(heading);
+
+    // 2. कोणीय दूरी (Angular Distance) की गणना
+    double angular_distance = DISTANCE_KM / EARTH_RADIUS_KM; // डेल्टा (delta)
+
+    // 3. नए अक्षांश (phi2) की गणना
+    double phi2 = asin(sin(phi1) * cos(angular_distance) +
+                       cos(phi1) * sin(angular_distance) * cos(theta));
+
+    // 4. नए देशांतर (lambda2) की गणना
+    double lambda2 = lambda1 + atan2(sin(theta) * sin(angular_distance) * cos(phi1),
+                                     cos(angular_distance) - sin(phi1) * sin(phi2));
+
+    // 5. परिणाम को वापस डिग्री में बदलें
+    double new_lat_deg = radToDeg(phi2);
+    double new_lon_deg = radToDeg(lambda2);
+
+    // 6. परिणाम लौटाएँ
+    return {new_lat_deg, new_lon_deg};
+}
 
 CanvasWidget::CanvasWidget(QWidget *parent) : QWidget(parent) {
     gislib = new GISlib();
@@ -98,28 +150,99 @@ void CanvasWidget::simulation() {
 }
 
 
-void CanvasWidget::dragEnterEvents(QDragEnterEvent *event)
+// void CanvasWidget::dragEnterEvents(QDragEnterEvent *event)
+// {
+//     if (event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist")) {
+//         event->acceptProposedAction();
+//     } else {
+//         event->ignore();
+//     }
+// }
+
+// void CanvasWidget::dragMoveEvents(QDragMoveEvent *event)
+// {
+//     if (event->mimeData()->hasFormat("application/x-entity")) {
+//         event->acceptProposedAction();
+//     } else {
+//         event->ignore();
+//     }
+// }
+
+// void CanvasWidget::dropEvents(QDropEvent *event)
+// {   qDebug()<<"i am working";
+//     const QMimeData *mimeData = event->mimeData();
+//     if (mimeData->hasFormat("application/x-qabstractitemmodeldatalist")) {
+//         QByteArray encoded = mimeData->data("application/x-qabstractitemmodeldatalist");
+//         QDataStream stream(&encoded, QIODevice::ReadOnly);
+
+//         while (!stream.atEnd()) {
+//             int row, col;
+//             QMap<int, QVariant> roleDataMap;
+//             stream >> row >> col >> roleDataMap;
+//             QString text = roleDataMap.value(Qt::DisplayRole).toString();
+//             QVariantMap customData = roleDataMap.value(Qt::UserRole).toMap();
+//             QJsonObject json = QJsonObject::fromVariantMap(customData);
+//             if ("entity" || true) {
+//                 if (customData["type"].toString() != "entity" ||
+//                     !customData.contains("name") || customData["name"].toString().isEmpty() ||
+//                     !customData.contains("ID") || customData["ID"].toString().isEmpty()) {
+//                     continue;
+//                 }
+//                 QPoint dropPos = event->pos();
+//                 QPointF geoPos = gislib->canvasToGeo(dropPos);
+//                 auto& entry = Meshes[customData["ID"].toString().toStdString()];
+//                 entry.transform->setTranslation(QVector3D(geoPos.y(),0,geoPos.x()));
+//                 entry.position->setZ(geoPos.x());
+//                 entry.position->setX(geoPos.y());
+//                 qDebug() << "Entity dropped at:" << geoPos;
+//                 update(); // Canvas ko redraw karne ke liye
+
+//             }
+//         }
+//         event->acceptProposedAction();
+//     } else {
+//         event->ignore();
+//     }
+// }
+
+
+
+
+void CanvasWidget::dragEnterEvents(QDragEnterEvent *event)  // Note: Corrected method name
 {
-    if (event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist")) {
+    qDebug() << "Drag enter event, MIME formats:" << event->mimeData()->formats();
+
+    if (event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist") ||
+        event->mimeData()->hasFormat("application/x-entity")) {
+        event->acceptProposedAction();
+        qDebug() << "Drag enter accepted";
+    } else {
+        event->ignore();
+        qDebug() << "Drag enter ignored";
+    }
+}
+
+void CanvasWidget::dragMoveEvents(QDragMoveEvent *event)  // Note: Corrected method name
+{
+    if (event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist") ||
+        event->mimeData()->hasFormat("application/x-entity")) {
         event->acceptProposedAction();
     } else {
         event->ignore();
     }
 }
 
-void CanvasWidget::dragMoveEvents(QDragMoveEvent *event)
+void CanvasWidget::dropEvents(QDropEvent *event)  // Note: Corrected method name
 {
-    if (event->mimeData()->hasFormat("application/x-entity")) {
-        event->acceptProposedAction();
-    } else {
-        event->ignore();
-    }
-}
+    qDebug() << "Drop event received";
+    qDebug() << "Available MIME formats:" << event->mimeData()->formats();
 
-void CanvasWidget::dropEvents(QDropEvent *event)
-{   qDebug()<<"i am working";
     const QMimeData *mimeData = event->mimeData();
+    bool accepted = false;
+
+    // Try both MIME types
     if (mimeData->hasFormat("application/x-qabstractitemmodeldatalist")) {
+        qDebug() << "Processing application/x-qabstractitemmodeldatalist";
         QByteArray encoded = mimeData->data("application/x-qabstractitemmodeldatalist");
         QDataStream stream(&encoded, QIODevice::ReadOnly);
 
@@ -127,29 +250,58 @@ void CanvasWidget::dropEvents(QDropEvent *event)
             int row, col;
             QMap<int, QVariant> roleDataMap;
             stream >> row >> col >> roleDataMap;
+
             QString text = roleDataMap.value(Qt::DisplayRole).toString();
             QVariantMap customData = roleDataMap.value(Qt::UserRole).toMap();
-            QJsonObject json = QJsonObject::fromVariantMap(customData);
-            if ("entity" || true) {
-                if (customData["type"].toString() != "entity" ||
-                    !customData.contains("name") || customData["name"].toString().isEmpty() ||
-                    !customData.contains("ID") || customData["ID"].toString().isEmpty()) {
-                    continue;
-                }
+
+            qDebug() << "Row:" << row << "Col:" << col << "Text:" << text;
+            qDebug() << "Custom data:" << customData;
+
+            // FIX: Remove the always-true condition
+            if (customData["type"].toString() == "entity" &&
+                customData.contains("name") && !customData["name"].toString().isEmpty() &&
+                customData.contains("ID") && !customData["ID"].toString().isEmpty()) {
+
                 QPoint dropPos = event->pos();
                 QPointF geoPos = gislib->canvasToGeo(dropPos);
-                auto& entry = Meshes[customData["ID"].toString().toStdString()];
-                entry.transform->setTranslation(QVector3D(geoPos.y(),0,geoPos.x()));
-                entry.position->setZ(geoPos.x());
-                entry.position->setX(geoPos.y());
-                qDebug() << "Entity dropped at:" << geoPos;
-                update(); // Canvas ko redraw karne ke liye
+                QString entityId = customData["ID"].toString();
 
+                qDebug() << "Entity dropped - ID:" << entityId << "at canvas:" << dropPos << "geo:" << geoPos;
+
+                // Check if entity exists in Meshes
+                if (Meshes.find(entityId.toStdString()) != Meshes.end()) {
+                    auto& entry = Meshes[entityId.toStdString()];
+                    entry.transform->setTranslation(QVector3D(geoPos.y(), 0, geoPos.x()));
+                    if (entry.position) {
+                        entry.position->setZ(geoPos.x());
+                        entry.position->setX(geoPos.y());
+                    }
+                    qDebug() << "Entity successfully placed at:" << geoPos;
+                    accepted = true;
+                } else {
+                    qDebug() << "Entity ID not found in Meshes:" << entityId;
+                }
             }
         }
+    }
+
+    // Also check for application/x-entity format
+    if (!accepted && mimeData->hasFormat("application/x-entity")) {
+        qDebug() << "Processing application/x-entity";
+        QByteArray entityData = mimeData->data("application/x-entity");
+        QDataStream stream(&entityData, QIODevice::ReadOnly);
+
+        // Implement your custom entity data parsing here
+        // This depends on how you serialize entity data
+    }
+
+    if (accepted) {
         event->acceptProposedAction();
+        update();
+        qDebug() << "Drop event accepted";
     } else {
         event->ignore();
+        qDebug() << "Drop event ignored - no valid entity data found";
     }
 }
 
@@ -2611,7 +2763,9 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
     drawGridLines(painter);
     drawTrajectory(painter);
     drawMesh(painter);
+    drawTrail(painter);
     drawImage(painter);
+    drawRadar(painter);
     drawSelectionOutline(painter);
     drawCollider(painter);
     drawAirbases(painter);// for preset layer
@@ -2823,7 +2977,7 @@ void CanvasWidget::drawSceneInformation(QPainter& painter) {
 
     QFont font("Arial", 10, QFont::Bold);
     painter.setFont(font);
-    painter.setPen(QColor(255, 255, 255, 200));
+    painter.setPen(QColor(5, 5, 5, 200));
 
     if (showInformation) {
         QString modeText = QString(" %1").arg(simulate ? "Simulation" : "Editor");
@@ -2931,12 +3085,14 @@ void CanvasWidget::drawSelectionOutline(QPainter& painter) {
     if (Meshes.find(selectedEntityId) == Meshes.end()) return;
 
     auto& entry = Meshes[selectedEntityId];
-    auto& pos = entry.position;
-    auto& size = entry.size;
-
-    float w = size->z() * 25;
-    float h = size->x() * 25;
-    QRectF outlineRect(pos->z() - w / 2.0f, pos->x() - h / 2.0f, w, h);
+    //auto& pos = entry.position;
+    //auto& size = entry.size;
+    QPointF point = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
+    float x = point.x();
+    float y = point.y();
+    float w = entry.transform->scale3D().z() * 55;
+    float h = entry.transform->scale3D().x() * 55;
+    QRectF outlineRect(x - w / 2.0f, y - h / 2.0f, w, h);
 
     QPen pen(Qt::yellow);
     pen.setWidth(2);
@@ -2944,6 +3100,50 @@ void CanvasWidget::drawSelectionOutline(QPainter& painter) {
     painter.setPen(pen);
     painter.setBrush(Qt::NoBrush);
     painter.drawRect(outlineRect);
+}
+
+void CanvasWidget::drawRadar(QPainter& painter){
+    for (auto& [id, entry] : Meshes) {
+        Entity* entity = entry.entity;
+        if (!entity) continue;
+        for (Sensor* s : entity->sensorList) {
+            if(s->subType == Sensor::SubType::Generic){
+                QPointF point = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
+                float centerX = point.x();
+                float centerY = point.y();
+                float radius = s->range;
+                float azimuth = s->maxDetectionAngle;
+                float angle = entry.transform->rotation().toEulerAngles().y();
+
+                painter.setPen(QPen(Qt::blue, 1));
+                double halfBeamWidth = azimuth / 2.0;
+                auto [newLat, newLon] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)-halfBeamWidth),-radius);
+                QPointF points = gislib->geoToCanvas(newLat, newLon);
+                painter.drawLine(centerX, centerY, points.x(), points.y());
+                auto [newLat2, newLon2] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)+halfBeamWidth),-radius);
+                QPointF points2 = gislib->geoToCanvas(newLat2, newLon2);
+                painter.drawLine(centerX, centerY, points2.x(), points2.y());
+                painter.drawLine(points.x(), points.y(), points2.x(), points2.y());
+                break;
+            }
+        }
+    }
+}
+
+void CanvasWidget::drawTrail(QPainter& painter){
+    for (auto& [id, entry] : Meshes) {
+        if(entry.coreTransform->trailData.capacity()>2){
+            QVector3D v = entry.coreTransform->trailData.at(0);
+            QPointF lastv = gislib->geoToCanvas(v.x(), v.z());
+            painter.setPen(QPen(Qt::green, 1));
+            for (const auto& position : entry.coreTransform->trailData) {
+                    QPointF point = gislib->geoToCanvas(position.x(), position.z());
+                    painter.drawLine(lastv.x(), lastv.y(), point.x(), point.y());
+                    lastv.setX( point.x());
+                    lastv.setY( point.y());
+            }
+        }
+    }
 }
 
 void CanvasWidget::drawCollider(QPainter& painter) {
@@ -3173,6 +3373,8 @@ void CanvasWidget::drawImage(QPainter& painter) {
         Mesh* mesh = entry.mesh;
         if (!mesh) continue;
 
+
+
         QPixmap img(mesh->Sprite->data());
         if (!img.isNull()) {
             QPixmap scaled = img.scaled(entry.transform->scale3D().z() * 50, entry.transform->scale3D().x() * 50,
@@ -3181,6 +3383,10 @@ void CanvasWidget::drawImage(QPainter& painter) {
             float x = point.x();
             float y = point.y();
             float angle = entry.transform->rotation().toEulerAngles().y();
+            painter.setPen(QPen(Qt::blue, 1));
+            auto [newLat, newLon] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)),-(entry.dynamicModel->moveSpeed/3.6f));
+            QPointF points = gislib->geoToCanvas(newLat, newLon);
+            painter.drawLine(point.x(), point.y(), points.x(), points.y());
 
             painter.save();
             painter.translate(x, y);

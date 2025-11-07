@@ -42,12 +42,13 @@ public:
     float forwardSpeed = 0.0f;
     float enginePower = 0.0f;
     float aeroFactor = 0.0f;
-    float moveSpeed = 800;
+    float moveSpeed = 800;//km/h
+    float turnRadius = 100;//metre
     float rotationSpeed = 1;
     float angdeg = 1;
     float start = 0;
     float time = 0;
-
+    float currentSpeed = 0;
     // New member variables for 6-DoF simulation without Rigidbody
     QVector3D velocity;
     QVector3D angularVelocity;

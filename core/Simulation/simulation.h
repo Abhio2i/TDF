@@ -87,7 +87,7 @@ private:
 
     QTimer *updateTimer;
     float deltaTime;
-    float speed;
+    float speed = 1.0f;
     QElapsedTimer* elapsedTimer;
     qint64 lastTime;
 

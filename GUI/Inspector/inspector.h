@@ -96,6 +96,9 @@ private slots:
     void handleRemoveParameter();
 
 private:
+
+
+
     // %%% UI Components %%%
     // Table widget for data
     QTableWidget *tableWidget;

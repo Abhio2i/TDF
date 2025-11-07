@@ -10,13 +10,15 @@ auto normalizeAngle = [](float angle) {
     return angle;
 };
 #define EARTH_RADIUS 6371000.0 // in meters
-
+const double G_ACCELERATION = 9.8;
 double toRadians(double degree) {
     return degree * M_PI / 180.0;
 }
 float delta = 0;
-float currentSpeed = 0;
 float speeed = 0;
+double lastLat = 0;
+double lastLon = 0;
+float lastdist = 0;
 double distanceBetween(double lat1, double lon1, double lat2, double lon2) {
     double dLat = toRadians(lat2 - lat1);
     double dLon = toRadians(lon2 - lon1);
@@ -42,9 +44,9 @@ void DynamicModel::Update(float deltaTime) {
     if (!controle || !transform || !rigidbody || !trajectory) return;
 
     // Direction vectors
-    QVector3D forwardDir = transform->forward(); // x-axis (forward)
-    QVector3D upDir = transform->up();           // z-axis (up)
-    QVector3D rightDir = transform->right();     // y-axis (right)
+    // QVector3D forwardDir = transform->forward(); // x-axis (forward)
+    // QVector3D upDir = transform->up();           // z-axis (up)
+    // QVector3D rightDir = transform->right();     // y-axis (right)
     time += deltaTime;
     delta = deltaTime;
     //qDebug() << time;
@@ -217,7 +219,7 @@ void DynamicModel::FollowTrajectory() {
         currentSpeed = deltaDis*time;
 
         speeed += (currentSpeed<(moveSpeed/3.6f))?0.1f:-0.1f;
-        qDebug()<<currentSpeed;
+        //qDebug()<<currentSpeed;
         QVector3D targetAsQVector3D(target.x, target.y, target.z);
         QVector3D direction = targetAsQVector3D - current;
 
@@ -227,7 +229,15 @@ void DynamicModel::FollowTrajectory() {
         float angleDeg = angleRad * (180.0f / M_PI);
 
         float delta = normalizeAngle(angleDeg - angdeg);
-        angdeg += delta * 1 * 0.04f;
+        double tangent_argument = pow(speeed, 2) / (turnRadius * G_ACCELERATION);
+
+        // 2. arctan का उपयोग करके बैंक कोण (रेडियन में) की गणना
+        float bank_angle_radians = atan(tangent_argument);
+
+        // 3. रेडियन को डिग्री में बदलना
+        // 1 रेडियन = 180 / PI डिग्री
+        float bank_angle_degrees = bank_angle_radians * (180.0 / M_PI);
+        angdeg += delta * bank_angle_degrees;//1 * 0.04f;
         angdeg = normalizeAngle(angdeg);
 
         //angdeg = lerp(angdeg,angleDeg,moveSpeed * 0.004f);
@@ -241,7 +251,20 @@ void DynamicModel::FollowTrajectory() {
         // Smoothly interpolate between the current rotation and the target rotation.
         //*transform->rotation = QQuaternion::slerp(*transform->rotation, targetRotation, moveSpeed * 0.05f);
     }
+
     transform->setTranslation(current);
+
+    if(distanceBetween(lastLat,lastLon,current.x(),current.z())>1){
+        transform->trailData.push_back(current);
+    }
+    lastLat = current.x();
+    lastLon = current.z();
+
+    ////////////////////////////////////////////////////
+    if( transform->trailData.capacity()>4000){
+        transform->trailData.erase(transform->trailData.begin());
+    }
+    ////////////////////////////////////////////////////
     //*transform->position = Vector::Lerp(*transform->position, *trajectory->Trajectories[trajectory->current]->position, moveSpeed * 0.1);
     metredis = distanceBetween(trajectory->Trajectories[trajectory->current]->position->x,
                                trajectory->Trajectories[trajectory->current]->position->z,
@@ -272,6 +295,7 @@ QJsonObject DynamicModel::toJson() const {
     obj["Lift"] = Lift;
     obj["zeroLiftSpeed"] = zeroLiftSpeed;
     obj["moveSpeed"] = moveSpeed;
+    obj["turnRadius"] = turnRadius;
     obj["start"] = start;
     obj["rotationSpeed"] = rotationSpeed;
     obj["dragIncreaseFactor"] = dragIncreaseFactor;
@@ -308,6 +332,8 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
         zeroLiftSpeed = obj["zeroLiftSpeed"].toVariant().toDouble();
     if (obj.contains("moveSpeed"))
         moveSpeed = obj["moveSpeed"].toVariant().toDouble();
+    if (obj.contains("turnRadius"))
+        turnRadius = obj["turnRadius"].toVariant().toDouble();
     if (obj.contains("start"))
         start = obj["start"].toVariant().toDouble();
     if (obj.contains("rotationSpeed"))
@@ -348,5 +374,5 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
 }
 
 void DynamicModel::setMoveSpeed(float speed) {
-    moveSpeed = qBound(1.0f, speed, 10.0f);
+    //moveSpeed = qBound(1.0f, speed, 10.0f);
 }

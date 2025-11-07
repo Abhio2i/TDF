@@ -21,6 +21,8 @@ void SceneRenderer::entityAdded(QString /*parentID*/, Entity* entity) {
         meshData.collider = platform->collider;
         meshData.trajectory = platform->trajectory;
         meshData.Meshes = platform->meshRenderer2d->Meshes;
+        meshData.entity = entity;
+        meshData.dynamicmodel = platform->dynamicModel;
         emit addMesh(QString::fromStdString(platform->ID), meshData);
     }
     Specialzone* zone = dynamic_cast<Specialzone*>(entity);
@@ -35,6 +37,8 @@ void SceneRenderer::entityAdded(QString /*parentID*/, Entity* entity) {
         meshData.collider = zone->collider;
         meshData.trajectory = nullptr;
         meshData.Meshes = zone->meshRenderer2d->Meshes;
+        meshData.entity = entity;
+        meshData.dynamicmodel = new DynamicModel();
         emit addMesh(QString::fromStdString(zone->ID), meshData);
     }
     FixedPoints* point = dynamic_cast<FixedPoints*>(entity);
@@ -49,6 +53,8 @@ void SceneRenderer::entityAdded(QString /*parentID*/, Entity* entity) {
         meshData.collider = point->collider;
         meshData.trajectory = nullptr;
         meshData.Meshes = point->meshRenderer2d->Meshes;
+        meshData.entity = entity;
+        meshData.dynamicmodel = new DynamicModel();
         emit addMesh(QString::fromStdString(point->ID), meshData);
     }
 

@@ -27,7 +27,7 @@ public:
     void setFromEulerAngles(const QVector3D& eulerAngles);
 
     QJsonObject customParameters;
-
+    std::vector<QVector3D> trailData;
 
     void setTranslation(const QVector3D& vector);
     void addTranslation(const QVector3D& vector);

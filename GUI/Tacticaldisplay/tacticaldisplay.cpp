@@ -134,12 +134,15 @@ void TacticalDisplay::addMesh(QString ID, MeshData meshData)
     entity.name = meshData.name;
     entity.velocity = new QVector3D(0, 0, 0);
     entity.transform = meshData.transform->matrix;
+    entity.coreTransform = meshData.transform;
     entity.position = new QVector3D(0, 0, 0);
     entity.rotation = new QQuaternion();
     entity.size = new QVector3D(0, 0, 0);
     entity.mesh = meshData.Meshes[0];
     entity.collider = meshData.collider;
     entity.trajectory = meshData.trajectory;
+    entity.entity = meshData.entity;
+    entity.dynamicModel = meshData.dynamicmodel;
     // Add to canvas and update
     canvas->Meshes[ID.toStdString()] = entity;
     canvas->update();

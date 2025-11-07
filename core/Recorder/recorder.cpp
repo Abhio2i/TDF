@@ -61,7 +61,7 @@ void Recorder::startRecording()
             QJsonObject timeEntry;
             timeEntry["timestamp_ms"] = elapsedMs;
             timeEntry["current_time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
-            timeEntry["snapshot"] = m_hierarchy->toJson();
+            //timeEntry["snapshot"] = m_hierarchy->toJson();
 
             record(timeEntry);
 

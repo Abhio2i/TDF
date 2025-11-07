@@ -18,7 +18,9 @@ struct MeshData {
     Transform *transform;
     Collider *collider;
     Trajectory *trajectory;
+    DynamicModel *dynamicmodel;
     std::vector<Mesh*> Meshes;
+    Entity* entity;
 };
 
 class SceneRenderer : public QObject {

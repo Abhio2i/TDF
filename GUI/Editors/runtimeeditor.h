@@ -75,6 +75,10 @@ private slots:
     // Toggle logger display
     void toggleLoggerDisplay(bool checked);
 
+    void onRecentProjectTriggered();
+    void loadRecentProject(const QString& filePath);
+    void clearRecentProjects();
+
 signals:
     // Signal unsaved changes state
     void unsavedChangesChanged(bool hasChanges);

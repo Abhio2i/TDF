@@ -69,6 +69,62 @@
         <file>images/qgislayer.png</file>
         <file>images/geojson-layers.png</file>
         <file>images/check-box.png</file>
+        <file>images/AgustaWestland Apache.png</file>
+        <file>images/Antonov An-32.png</file>
+        <file>images/Dassault Mirage 2000 .png</file>
+        <file>images/Dassault Rafale.png</file>
+        <file>images/TATA Quick Reaction Fighting Vehicle-Photoroom.png</file>
+        <file>images/Tethered Aerostat Radar System-Photoroom.png</file>
+        <file>images/TAPAS-BH-201.png</file>
+        <file>images/BMP-2 Sarath-Photoroom.png</file>
+        <file>images/INS Mysore (d60).png</file>
+        <file>images/EADS CASA C-295.png</file>
+        <file>images/Boeing AH-64 Apache.png</file>
+        <file>images/Boeing C-17 Globemaster II.png</file>
+        <file>images/Boeing CH-47 Chinook.png</file>
+        <file>images/Carrier Mortar Tracked-Photoroom.png</file>
+        <file>images/Casspir Armoured Personnel Carrier-Photoroom.png</file>
+        <file>images/DRDO Ghatak.png</file>
+        <file>images/DRDO Imperial Eagle.png</file>
+        <file>images/DRDO Nishant.png</file>
+        <file>images/DRDO Prahaar Missile-Photoroom.png</file>
+        <file>images/DRDO Rustom-1.png</file>
+        <file>images/DRDO Rustom-2.png</file>
+        <file>images/Fairchild C-119-.jpg</file>
+        <file>images/HAL Tejas.png</file>
+        <file>images/INS Chennai (D65.png</file>
+        <file>images/INS Delhi (D61.png</file>
+        <file>images/INS Imphal.png</file>
+        <file>images/INS Kochi (D64.png</file>
+        <file>images/INS Kolkata (D63.png</file>
+        <file>images/INS Mormugao (D67).png</file>
+        <file>images/INS Mumbai (D62 copy.png</file>
+        <file>images/INS Rana (D52).png</file>
+        <file>images/INS Ranvir (D54.png</file>
+        <file>images/INS Vikrant.png</file>
+        <file>images/INS Visakhapatnam.png</file>
+        <file>images/Kalyani M4-Photoroom.png</file>
+        <file>images/Kiev-Class.png</file>
+        <file>images/lakshya.png</file>
+        <file>images/Long Range Tracking Radar-Photoroom.png</file>
+        <file>images/Magar-Class.png</file>
+        <file>images/Mahindra Armado Armoured Vehicle-Photoroom.png</file>
+        <file>images/Mahindra Marksman-Photoroom.png</file>
+        <file>images/Mahindra Rakshak Armoured Vehicle-Photoroom.png</file>
+        <file>images/Mig - 29.png</file>
+        <file>images/Mikoyan-Gurevich MiG-21.png</file>
+        <file>images/mil_mi_24.png</file>
+        <file>images/NAMICA-Photoroom.png</file>
+        <file>images/NBC-Photoroom.png</file>
+        <file>images/Netra.png</file>
+        <file>images/OFB Aditya-Photoroom.png</file>
+        <file>images/T-72 Ajeya-Photoroom.png</file>
+        <file>images/T-90S Bhishma-Photoroom.png</file>
+        <file>images/TATA Kestrel-Photoroom.png</file>
+        <file>images/Shardul-Class.png</file>
+        <file>images/Sukhoi Su-30MKI.png</file>
+        <file>images/Swathi Weapon Locating-Photoroom.png</file>
+        <file>images/PJT-531 Battlefield Surveillance Radar-Photoroom.png</file>
     </qresource>
     <qresource prefix="/texture">
         <file>images/Texture/bball.png</file>
@@ -104,4 +160,5 @@
         <file>Model/Airplane/11803_Airplane_wing_details_L_diff.jpg</file>
         <file>Model/Airplane/11803_Airplane_wing_details_R_diff.jpg</file>
     </qresource>
+    <qresource prefix="/new/prefix1"/>
 </RCC>

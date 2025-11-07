@@ -15,7 +15,7 @@ Transform::Transform() {
     matrix = new Qt3DCore::QTransform();
 
     customParameters = QJsonObject();
-    setTranslation(QVector3D(28.7041,0,77.1025));
+    setTranslation(QVector3D(2842341234.70418974987,0,772344123.1025413276));
 }
 
 // ===== Unity-like Directional Methods (using QQuaternion) =====

@@ -16,6 +16,7 @@
 #include <QJsonArray>
 #include <QElapsedTimer>
 #include <Qt3DCore/QTransform>
+#include <core/Hierarchy/entity.h>
 
 // Forward declarations
 class QDialog;
@@ -27,13 +28,16 @@ class QPushButton;
 struct MeshEntry {
     QString name;                           // Name identifier for the mesh
     Qt3DCore::QTransform* transform;        // 3D transformation
+    Transform* coreTransform;
     QVector3D* position;                    // Position in 3D space
     QQuaternion* rotation;                  // Rotation as quaternion
     QVector3D* velocity;                    // Velocity vector
     QVector3D* size;                        // Size/scaling factors
-    Mesh* mesh;                             // Mesh geometry data
+    Mesh* mesh;                           // Mesh geometry data
+    Entity* entity;
     Collider* collider;                     // Collision detection component
-    Trajectory* trajectory;                 // Path/trajectory data
+    Trajectory* trajectory;               // Path/trajectory data
+    DynamicModel* dynamicModel;
     QString bitmapPath;                     // Path to bitmap image
     QString text;                           // Text content for text entities
 
@@ -187,7 +191,9 @@ private:
     void drawSelectionOutline(QPainter& painter);  // Draw selection outline
     void drawImage(QPainter& painter);  // Draw entity images
     void drawTrajectory(QPainter& painter);  // Draw trajectory paths
+    void drawTrail(QPainter& painter);  // Draw trajectory paths
     void drawMesh(QPainter& painter);  // Draw mesh geometries
+    void drawRadar(QPainter& painter);  // Draw collision boundaries
 
     // Mouse event handlers
     void handleMousePress(QMouseEvent *event);

@@ -105,14 +105,14 @@ void RuntimeToolBar::createActions()
     //     bookmarkDialog->exec();
     // });
 
-    timingAction = new QAction(QIcon(withWhiteBg(":/icons/images/timing.png")), tr("Timing Info"), this);
-    timingAction->setCheckable(false);
-    connect(timingAction, &QAction::triggered, this, [this]() {
-        if (!timingDialog) {
-            timingDialog = new TimingDialog(this);
-        }
-        timingDialog->show();
-    });
+    // timingAction = new QAction(QIcon(withWhiteBg(":/icons/images/timing.png")), tr("Timing Info"), this);
+    // timingAction->setCheckable(false);
+    // connect(timingAction, &QAction::triggered, this, [this]() {
+    //     if (!timingDialog) {
+    //         timingDialog = new TimingDialog(this);
+    //     }
+    //     timingDialog->show();
+    // });
 
 loggerAction = new QAction(QIcon(withWhiteBg(":/icons/images/audit.png")), tr("Logger"), this);
 loggerAction->setCheckable(true);
@@ -193,7 +193,7 @@ void RuntimeToolBar::setupToolBar()
     addAction(replayAction);
     addAction(nextStepAction);
     // addAction(bookmarkAction);
-    addAction(timingAction);
+    // addAction(timingAction);
     addAction(loggerAction);
     addAction(radarToggleAction); // Add radar toggle action
     addSeparator();
