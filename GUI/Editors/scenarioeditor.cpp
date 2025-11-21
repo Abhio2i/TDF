@@ -188,10 +188,10 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
         }
         if (tacticalDisplay && type == "entity") {
             tacticalDisplay->selectedMesh(data["ID"].toString());
-            standardToolBar->getAddTrajectoryAction()->setEnabled(true);
+            // standardToolBar->getAddTrajectoryAction()->setEnabled(true);
             Console::log("Entity selected: " + data["ID"].toString().toStdString());
         } else {
-            standardToolBar->getAddTrajectoryAction()->setEnabled(false);
+            // standardToolBar->getAddTrajectoryAction()->setEnabled(false);
             Console::log("Non-entity selected, addTrajectoryAction disabled");
         }
     });
@@ -300,7 +300,7 @@ void ScenarioEditor::setupEnhancedDockWidgets()
     libraryDock->hide();
 
     // Setup text script dock with enhanced features
-    textScriptDock = new QDockWidget("Text Script", this);
+    textScriptDock = new QDockWidget("Test Script", this);
     textScriptDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
                                     Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
     textScriptDock->setFeatures(fullDockFeatures);
@@ -441,7 +441,7 @@ void ScenarioEditor::setupMenuBar()
     if (editMenu) {
         // Create reset layout action
         QAction *resetLayoutAction = new QAction("Reset Layout", this);
-        resetLayoutAction->setShortcut(QKeySequence("Ctrl+R"));
+        // resetLayoutAction->setShortcut(QKeySequence("Ctrl+R"));
         resetLayoutAction->setStatusTip("Reset all docks to initial positions");
 
         // Add separator and then reset layout action to Edit menu
@@ -456,24 +456,24 @@ void ScenarioEditor::setupMenuBar()
 /* Setup toolbars */
 void ScenarioEditor::setupToolBars()
 {
-    // Add standard toolbar
-    standardToolBar = new StandardToolBar(this);
-    addToolBar(Qt::TopToolBarArea, standardToolBar);
-    addToolBarBreak(Qt::TopToolBarArea);
+    // // Add standard toolbar
+    // standardToolBar = new StandardToolBar(this);
+    // addToolBar(Qt::TopToolBarArea, standardToolBar);
+    // addToolBarBreak(Qt::TopToolBarArea);
 
     // Add design toolbar
     designToolBar = new DesignToolBar(this);
     addToolBar(Qt::TopToolBarArea, designToolBar);
 
     // Allow toolbars to be movable
-    standardToolBar->setMovable(true);
+    // standardToolBar->setMovable(true);
     designToolBar->setMovable(true);
 
-    // Connect save action
-    if (menuBar && standardToolBar) {
-        connect(standardToolBar->getSaveAction(), &QAction::triggered,
-                menuBar->getSaveAction(), &QAction::trigger);
-    }
+    // // Connect save action
+    // if (menuBar && standardToolBar) {
+    //     connect(standardToolBar->getSaveAction(), &QAction::triggered,
+    //             menuBar->getSaveAction(), &QAction::trigger);
+    // }
     connect(menuBar->getRecentProjectAction(), &QAction::triggered,
             this, &ScenarioEditor::onRecentProjectTriggered);
 
@@ -495,12 +495,14 @@ void ScenarioEditor::setupToolBarConnections()
         return;
     }
 
-    // Connect save action
-    if (menuBar) {
-        connect(standardToolBar->getSaveAction(), &QAction::triggered,
-                menuBar->getSaveAction(), &QAction::trigger);
-    }
-
+    // // Connect save action
+    // if (menuBar) {
+    //     connect(standardToolBar->getSaveAction(), &QAction::triggered,
+    //             menuBar->getSaveAction(), &QAction::trigger);
+    // }
+    // 🆕 NEW: Coordinate System Connection
+    connect(designToolBar, &DesignToolBar::coordinateSystemChanged,
+            tacticalDisplay->mapWidget, &GISlib::setCoordinateSystem);
     // Connect transform mode
     connect(designToolBar, &DesignToolBar::modeChanged,
             this, [=](int mode) {
@@ -575,13 +577,19 @@ void ScenarioEditor::setupToolBarConnections()
         qCritical() << "Map widget not available for layer connections";
     }
 
-    // Connect trajectory action
-    connect(standardToolBar->getAddTrajectoryAction(), &QAction::triggered,
+    // // Connect trajectory action
+    // connect(standardToolBar->getAddTrajectoryAction(), &QAction::triggered,
+    //         this, [=]() {
+    //             tacticalDisplay->canvas->setTrajectoryDrawingMode(true);
+    //             Console::log("Add Trajectory action triggered");
+    //         });
+
+
+    connect(designToolBar->getAddTrajectoryAction(), &QAction::triggered,
             this, [=]() {
                 tacticalDisplay->canvas->setTrajectoryDrawingMode(true);
-                Console::log("Add Trajectory action triggered");
+                Console::log("Add Trajectory action triggered from DesignToolBar");
             });
-
     // Connect GeoJSON signals
     connect(designToolBar, &DesignToolBar::importGeoJsonTriggered,
             tacticalDisplay->canvas, &CanvasWidget::importGeoJsonLayer);
@@ -923,8 +931,11 @@ void ScenarioEditor::onRecentProjectTriggered()
     int count = 1;
     for (const QString& projectPath : existingProjects) {
         QFileInfo fileInfo(projectPath);
-        QString displayText = QString("%1. 📄 %2\n    📍 %3")
-                                  .arg(count)
+        // QString displayText = QString("%1. 📄 %2\n    📍 %3")
+        //                           .arg(count)
+        //                           .arg(fileInfo.fileName())
+        //                           .arg(fileInfo.path());
+        QString displayText = QString("📄 %1\n    📍 %2")
                                   .arg(fileInfo.fileName())
                                   .arg(fileInfo.path());
 

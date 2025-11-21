@@ -69,9 +69,9 @@ public:
     // Get pause action
     QAction* getPauseAction();
     // Get add 3D view action
-    QAction* getAdd3DViewAction();
-    // Get remove 3D view action
-    QAction* getRemove3DViewAction();
+    // QAction* getAdd3DViewAction();
+    // // Get remove 3D view action
+    // QAction* getRemove3DViewAction();
 
 signals:
     // Signal feedback action triggered
@@ -117,9 +117,9 @@ signals:
     // Signal pause action triggered
     void pauseTriggered();
     // Signal add 3D view action triggered
-    void add3DViewTriggered();
-    // Signal remove 3D view action triggered
-    void remove3DViewTriggered();
+    // void add3DViewTriggered();
+    // // Signal remove 3D view action triggered
+    // void remove3DViewTriggered();
 
 private:
     // %%% Menu Components %%%

@@ -1,11 +1,18 @@
-
 #include "radio.h"
 #include <core/Hierarchy/hierarchy.h> // Include full Hierarchy definition
 #include <core/Debug/console.h>
+#include "core/Hierarchy/Utils/entityutils.h"
 #include <core/GlobalRegistry.h>
 #include <cmath>
 #include <QtMath>
 #include <QDebug>
+std::unordered_set<std::string> Radio::radioSeen;
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+const float RAD2DEG = 180.0f / M_PI;
+
 Radio::Radio(Hierarchy* h) : Entity(h) {
     // Initialize default parameter (similar to Platform and Sensor)
     std::shared_ptr<Parameter> par = std::make_shared<Parameter>();
@@ -71,6 +78,7 @@ QJsonObject Radio::toJson() const {
     obj["frequencyMin"] = frequencyMin;
     obj["frequencyMax"] = frequencyMax;
     obj["emittingPower"] = emittingPower;
+    obj["Range"] = Range;
     obj["bandwidth"] = bandwidth;
     obj["dataRate"] = dataRate;
     obj["encryptionType"] = encryptionTypeToString(encryptionType);
@@ -136,6 +144,9 @@ void Radio::fromJson(const QJsonObject& obj) {
     if (obj.contains("emittingPower"))
         emittingPower = static_cast<float>(obj["emittingPower"].toDouble());
 
+    if (obj.contains("Range"))
+        Range = static_cast<float>(obj["Range"].toDouble());
+
     if (obj.contains("bandwidth"))
         bandwidth = static_cast<float>(obj["bandwidth"].toDouble());
 
@@ -175,7 +186,7 @@ void Radio::fromJson(const QJsonObject& obj) {
     if (obj.contains("pathLossExponent"))
         pathLossExponent = static_cast<float>(obj["pathLossExponent"].toDouble());
 
-    messages.clear();
+    // messages.clear();
     if (obj.contains("messages") && obj["messages"].isArray()) {
         QJsonArray messagesArray = obj["messages"].toArray();
         for (const auto& msgVal : messagesArray) {
@@ -258,13 +269,11 @@ float Radio::calculateRange() const
                       antennaGain <= 0.0f &&
                       bandwidth <= 0.0f &&
                       noiseFigure <= 0.0f &&
-                      frequencyUsed <= 0.0f &&
-                      frequencyMax <= 0.0f);
+                      frequencyUsed <= 1.0f &&
+                      frequencyMax <= 1.0f);
 
-    if (isDefault) {
-        float defaultRange = 7000.0f; // 7 km
-        qDebug() << "Default radio detected, using hardcoded range:" << defaultRange << "meters";
-        return defaultRange;
+    if (isDefault||true) {
+        return Range;
     }
 
     // --- simplified FSPL-based range ---
@@ -297,10 +306,10 @@ float Radio::calculateRange() const
 
 void Radio::updateAvailableConnections(Transform* source)
 {
-    qDebug() << "=== updateAvailableConnections() called for Radio:" << QString::fromStdString(Name) << "===";
+    //qDebug() << "=== updateAvailableConnections() called for Radio:" << QString::fromStdString(Name) << "===";
 
-    messages.clear();
-    qDebug() << "Messages cleared.";
+    // messages.clear();
+    // qDebug() << "Messages cleared.";
 
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (!parent) {
@@ -308,50 +317,52 @@ void Radio::updateAvailableConnections(Transform* source)
         return;
     }
 
-    qDebug() << "Total entities in hierarchy:" << parent->Entities->size();
+    //qDebug() << "Total entities in hierarchy:" << parent->Entities->size();
 
     float range = calculateRange();
-    qDebug() << "Calculated radio range:" << range << "meters";
+    //qDebug() << "Calculated radio range:" << range << "meters";
 
     // Detect default/empty radio
     bool thisRadioDefault = (emittingPower <= 0.0f &&
                              antennaGain <= 0.0f &&
                              bandwidth <= 0.0f &&
                              noiseFigure <= 0.0f &&
-                             frequencyUsed <= 0.0f &&
-                             frequencyMax <= 0.0f);
+                             frequencyUsed <= 1.0f &&
+                             frequencyMax <= 1.0f);
 
     const float SCENE_UNIT_TO_METERS = 1000.0f;
 
     for (auto& [key, entity] : *parent->Entities) {
         if (!entity) continue;
         if (entity->ID == this->parentID) {
-            qDebug() << "Skipping own platform/entity:" << QString::fromStdString(entity->Name);
+            //qDebug() << "Skipping own platform/entity:" << QString::fromStdString(entity->Name);
             continue;
         }
 
 
         Platform* platform = dynamic_cast<Platform*>(entity);
         if (!platform) {
-            qDebug() << "Skipping entity (not a Platform):" << QString::fromStdString(entity->ID);
+            //qDebug() << "Skipping entity (not a Platform):" << QString::fromStdString(entity->ID);
             continue;
         }
 
         if (platform->radioList.empty()) {
-            qDebug() << "Platform has no radios:" << QString::fromStdString(platform->Name);
+            //qDebug() << "Platform has no radios:" << QString::fromStdString(platform->Name);
             continue;
         }
 
         if (!platform->transform || !platform->transform->matrix) {
-            qDebug() << "Invalid transform/matrix for platform:" << QString::fromStdString(platform->Name);
+            //qDebug() << "Invalid transform/matrix for platform:" << QString::fromStdString(platform->Name);
             continue;
         }
 
         // Distance calculation
         QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
-        float distance = localPos.length() * SCENE_UNIT_TO_METERS;
-        qDebug() << "Platform:" << QString::fromStdString(platform->Name)
-                 << "| Distance (meters):" << distance;
+        //float distance = localPos.length() * SCENE_UNIT_TO_METERS;
+        float metredis = distanceBetween(source->translation().x(),source->translation().z(),platform->transform->matrix->translation().x(),platform->transform->matrix->translation().z())/1000;
+
+        //qDebug() << "Platform:" << QString::fromStdString(platform->Name)
+        //<< "| Distance (meters):" << distance;
 
         // Frequency compatibility check
         bool freqMatch = false;
@@ -362,19 +373,19 @@ void Radio::updateAvailableConnections(Transform* source)
                                  otherRadio->antennaGain <= 0.0f &&
                                  otherRadio->bandwidth <= 0.0f &&
                                  otherRadio->noiseFigure <= 0.0f &&
-                                 otherRadio->frequencyUsed <= 0.0f &&
-                                 otherRadio->frequencyMax <= 0.0f);
+                                 otherRadio->frequencyUsed <= 1.0f &&
+                                 otherRadio->frequencyMax <= 1.0f);
 
             // Both default -> allow
             if (thisRadioDefault && otherDefault) {
                 freqMatch = true;
-                qDebug() << "Both radios are default: communication allowed";
+                //qDebug() << "Both radios are default: communication allowed";
                 break;
             }
 
             // One default and one custom -> block
             if (thisRadioDefault != otherDefault) {
-                qDebug() << "One radio default, one custom: communication blocked";
+                //qDebug() << "One radio default, one custom: communication blocked";
                 continue;
             }
 
@@ -386,42 +397,101 @@ void Radio::updateAvailableConnections(Transform* source)
 
             if (thisMax >= otherMin && thisMin <= otherMax) {
                 freqMatch = true;
-                qDebug() << "Custom frequency ranges overlap:"
-                         << "this[" << thisMin << "," << thisMax << "]"
-                         << "other[" << otherMin << "," << otherMax << "]";
+                //qDebug() << "Custom frequency ranges overlap:"
+                //<< "this[" << thisMin << "," << thisMax << "]"
+                //<< "other[" << otherMin << "," << otherMax << "]";
                 break;
             } else {
-                qDebug() << "Custom frequency ranges do NOT overlap:"
-                         << "this[" << thisMin << "," << thisMax << "]"
-                         << "other[" << otherMin << "," << otherMax << "]";
+                //qDebug() << "Custom frequency ranges do NOT overlap:"
+                //<< "this[" << thisMin << "," << thisMax << "]"
+                //<< "other[" << otherMin << "," << otherMax << "]";
             }
         }
+        // If within range and frequency matches, store target
+        if (metredis > 0.0f && metredis <= range && freqMatch)
+        {
+            // Calculate angle (horizontal azimuth)
+            //QVector3D delta = platform->transform->matrix->translation() - source->matrix->translation();
+            QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
 
-        if (distance <= range && freqMatch) {
-            Message msg;
-            msg.timeStamp = "now";
-            msg.source = Name;
-            msg.destination = platform->Name;
-            msg.content = "Distance: " + std::to_string(distance) +
-                          " m | MHz: " + std::to_string(frequencyUsed);
+            float angle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
+            //if (angle < 0) angle += 360.0f;
 
-            messages.push_back(msg);
+            // Make key unique per radio and per platform
+            std::string key = parentID + ":" + Name + "->" + platform->ID + ":" + platform->Name;
 
-            qDebug() << "Message added:" << QString::fromStdString(msg.source)
-                     << "->" << QString::fromStdString(msg.destination);
-        }
-        else {
-            if (distance > range) {
-                qDebug() << "Platform out of range:" << QString::fromStdString(platform->Name)
-                         << "| Distance:" << distance << ">" << range;
+            if (radioSeen.find(key) == radioSeen.end())
+            {
+                radioSeen.insert(key);
+
+                RadioTarget target;
+                target.entity = platform;
+                target.name = platform->Name;
+                target.radius = metredis;
+                target.angle = angle;
+                target.range = range;
+                target.frequency = frequencyUsed;
+
+                targets.push_back(target);  // store in vector of RadioTarget
+
+                qDebug() << "[RADIO] 🟢 New radio target stored:" << QString::fromStdString(key);
+            }else{
+                for (int i = 0; i < targets.size(); ++i) {
+                    if (targets.at(i).entity == platform) {
+                        targets[i].angle = angle;
+                        targets[i].radius = metredis;
+                        targets[i].range = range;
+                        targets[i].frequency = frequencyUsed;
+                        //qDebug()<< localPos;
+                        break; // एक बार मिल जाने पर लूप से बाहर निकल जाएँ
+                    }
+                }
             }
-            if (!freqMatch) {
-                qDebug() << "Frequency mismatch with platform:" << QString::fromStdString(platform->Name);
+        }
+        else
+        {
+            if (metredis > range)"";
+            //qDebug() << "Platform out of range:" << QString::fromStdString(platform->Name)
+            //<< "| Distance:" << distance << ">" << range;
+
+            if (!freqMatch)"";
+            //qDebug() << "Frequency mismatch with platform:" << QString::fromStdString(platform->Name);
+        }
+        // --------- PASTE BELOW THIS LINE ---------
+
+        for (int i = targets.size() - 1; i >= 0; --i) {
+            bool stillExists = false;
+            for (auto& [entityKey, entity] : *parent->Entities) { // renamed 'key' -> 'entityKey'
+                Platform* platform = dynamic_cast<Platform*>(entity);
+                if (!platform) continue;
+
+                float metredis = distanceBetween(
+                                     source->translation().x(), source->translation().z(),
+                                     platform->transform->matrix->translation().x(),
+                                     platform->transform->matrix->translation().z()
+                                     ) / 1000;
+
+                if (platform == targets[i].entity && metredis <= range) {
+                    stillExists = true;
+                    break;
+                }
+            }
+
+            if (!stillExists) {
+                std::string removeKey = parentID + ":" + Name + "->" +
+                                        targets[i].entity->ID + ":" +
+                                        targets[i].entity->Name;
+
+                radioSeen.erase(removeKey);
+                targets.erase(targets.begin() + i);
+
+                qDebug() << "[RADIO] REMOVED (out of range):"
+                         << QString::fromStdString(removeKey);
             }
         }
     }
 
-    qDebug() << "Total messages prepared:" << messages.size();
+    //qDebug() << "Total messages prepared:" << messages.size();
 
     QJsonArray msgArray;
     for (const auto& m : messages) {
@@ -433,7 +503,7 @@ void Radio::updateAvailableConnections(Transform* source)
         msgArray.append(obj);
     }
 
-    qDebug() << "Emitting availableConnectionsUpdated with"
-             << msgArray.size() << "messages.";
+    //qDebug() << "Emitting availableConnectionsUpdated with"
+    //<< msgArray.size() << "messages.";
     emit availableConnectionsUpdated(msgArray);
 }

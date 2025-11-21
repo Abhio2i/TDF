@@ -38,6 +38,7 @@
 #include <QDialog>
 #include <QFontMetrics>
 #include "core/Hierarchy/EntityProfiles/sensor.h"
+#include "core/Hierarchy/EntityProfiles/radio.h"
 #include <iostream>
 #include <cmath>
 #include <tuple> // std::tuple का उपयोग करने के लिए
@@ -734,7 +735,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
             QAction* addTextAction = contextMenu.addAction("Add Text");
             connect(addTextAction, &QAction::triggered, this, [=]() {
                 bool ok;
-                QString text = QInputDialog::getText(this, "Add Text", "Enter text:",
+                QString text = QInputDialog::getText(nullptr, "Add Text", "Enter text:",
                                                      QLineEdit::Normal, "", &ok);
                 if (ok && !text.isEmpty()) {
                     static int textCounter = 0;
@@ -1248,137 +1249,6 @@ void CanvasWidget::handleRightClick(QMouseEvent *event) {
     update();
 }
 
-// void CanvasWidget::handleTrajectoryRightClick(QMouseEvent *event) {
-//     int nearestIndex = findNearestWaypoint(event->pos());
-//     if (nearestIndex >= 0) {
-//         selectWaypoint(nearestIndex);
-//         QMenu contextMenu(this);
-//         QAction* deleteAction = contextMenu.addAction("Delete Waypoint");
-//         connect(deleteAction, &QAction::triggered, this, [=]() {
-//             if (selectedWaypointIndex >= 0 && selectedWaypointIndex < (int)currentTrajectory.size()) {
-//                 QMessageBox confirmationDialog(this);
-//                 confirmationDialog.setWindowTitle("Confirm Delete");
-//                 confirmationDialog.setText("Are you sure you want to delete this waypoint?");
-//                 confirmationDialog.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-//                 confirmationDialog.setDefaultButton(QMessageBox::No);
-//                 QPalette palette = confirmationDialog.palette();
-//                 palette.setColor(QPalette::ButtonText, Qt::white);
-//                 palette.setColor(QPalette::Button, QColor("#333333"));
-//                 palette.setColor(QPalette::Window, QColor("#222222"));
-//                 palette.setColor(QPalette::WindowText, Qt::white);
-//                 confirmationDialog.setPalette(palette);
-//                 QList<QPushButton*> buttons = confirmationDialog.findChildren<QPushButton*>();
-//                 for (QPushButton* button : buttons) {
-//                     button->setStyleSheet("color: white; background-color: #333333; border: 1px solid #555555; padding: 5px;");
-//                     Console::log("Applied stylesheet to button: " + button->text().toStdString());
-//                 }
-//                 QMessageBox::StandardButton reply = static_cast<QMessageBox::StandardButton>(confirmationDialog.exec());
-//                 if (reply == QMessageBox::Yes) {
-//                     delete currentTrajectory[selectedWaypointIndex]->position;
-//                     delete currentTrajectory[selectedWaypointIndex];
-//                     currentTrajectory.erase(currentTrajectory.begin() + selectedWaypointIndex);
-//                     deselectWaypoint();
-//                     updateTrajectoryData();
-//                     Console::log("Deleted waypoint at index: " + std::to_string(nearestIndex));
-//                     update();
-//                 }
-//             }
-//         });
-//         contextMenu.exec(event->globalPos());
-//     }
-// }
-
-
-// void CanvasWidget::handleTrajectoryRightClick(QMouseEvent *event) {
-//     int nearestIndex = findNearestWaypoint(event->pos());
-
-//     QMenu contextMenu(this);
-
-//     if (nearestIndex >= 0) {
-//         selectWaypoint(nearestIndex);
-
-//         // Individual waypoint delete option
-//         QAction* deleteWaypointAction = contextMenu.addAction("Delete Waypoint");
-//         connect(deleteWaypointAction, &QAction::triggered, this, [=]() {
-//             if (selectedWaypointIndex >= 0 && selectedWaypointIndex < (int)currentTrajectory.size()) {
-//                 QMessageBox confirmationDialog(this);
-//                 confirmationDialog.setWindowTitle("Confirm Delete");
-//                 confirmationDialog.setText("Are you sure you want to delete this waypoint?");
-//                 confirmationDialog.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-//                 confirmationDialog.setDefaultButton(QMessageBox::No);
-
-//                 QPalette palette = confirmationDialog.palette();
-//                 palette.setColor(QPalette::ButtonText, Qt::white);
-//                 palette.setColor(QPalette::Button, QColor("#333333"));
-//                 palette.setColor(QPalette::Window, QColor("#222222"));
-//                 palette.setColor(QPalette::WindowText, Qt::white);
-//                 confirmationDialog.setPalette(palette);
-
-//                 QList<QPushButton*> buttons = confirmationDialog.findChildren<QPushButton*>();
-//                 for (QPushButton* button : buttons) {
-//                     button->setStyleSheet("color: white; background-color: #333333; border: 1px solid #555555; padding: 5px;");
-//                 }
-
-//                 QMessageBox::StandardButton reply = static_cast<QMessageBox::StandardButton>(confirmationDialog.exec());
-//                 if (reply == QMessageBox::Yes) {
-//                     delete currentTrajectory[selectedWaypointIndex]->position;
-//                     delete currentTrajectory[selectedWaypointIndex];
-//                     currentTrajectory.erase(currentTrajectory.begin() + selectedWaypointIndex);
-//                     deselectWaypoint();
-//                     updateTrajectoryData();
-//                     Console::log("Deleted waypoint at index: " + std::to_string(nearestIndex));
-//                     update();
-//                 }
-//             }
-//         });
-
-//         contextMenu.addSeparator(); // Separator between individual and bulk operations
-//     }
-
-//     // Delete all waypoints option (always available if there are waypoints)
-//     if (!currentTrajectory.empty()) {
-//         QAction* deleteAllWaypointsAction = contextMenu.addAction("Delete All Waypoints");
-//         connect(deleteAllWaypointsAction, &QAction::triggered, this, [=]() {
-//             QMessageBox confirmationDialog(this);
-//             confirmationDialog.setWindowTitle("Confirm Delete All");
-//             confirmationDialog.setText("Are you sure you want to delete ALL waypoints in this trajectory?");
-//             confirmationDialog.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-//             confirmationDialog.setDefaultButton(QMessageBox::No);
-
-//             QPalette palette = confirmationDialog.palette();
-//             palette.setColor(QPalette::ButtonText, Qt::white);
-//             palette.setColor(QPalette::Button, QColor("#333333"));
-//             palette.setColor(QPalette::Window, QColor("#222222"));
-//             palette.setColor(QPalette::WindowText, Qt::white);
-//             confirmationDialog.setPalette(palette);
-
-//             QList<QPushButton*> buttons = confirmationDialog.findChildren<QPushButton*>();
-//             for (QPushButton* button : buttons) {
-//                 button->setStyleSheet("color: white; background-color: #333333; border: 1px solid #555555; padding: 5px;");
-//             }
-
-//             QMessageBox::StandardButton reply = static_cast<QMessageBox::StandardButton>(confirmationDialog.exec());
-//             if (reply == QMessageBox::Yes) {
-//                 // Delete all waypoints
-//                 for (Waypoints* wp : currentTrajectory) {
-//                     delete wp->position;
-//                     delete wp;
-//                 }
-//                 currentTrajectory.clear();
-//                 deselectWaypoint();
-//                 updateTrajectoryData();
-//                 Console::log("Deleted all waypoints from trajectory");
-//                 update();
-//             }
-//         });
-//     }
-
-//     // Only show context menu if there are actions to show
-//     if (!contextMenu.actions().isEmpty()) {
-//         contextMenu.exec(event->globalPos());
-//     }
-// }
-
 
 // void CanvasWidget::handleTrajectoryRightClick(QMouseEvent *event) {
 //     int nearestIndex = findNearestWaypoint(event->pos());
@@ -1416,7 +1286,10 @@ void CanvasWidget::handleRightClick(QMouseEvent *event) {
 //             }
 //             currentTrajectory.clear();
 //             deselectWaypoint();
-//             updateTrajectoryData();
+
+//             // IMPORTANT: Save the empty trajectory to entity data
+//             saveTrajectory();
+
 //             Console::log("Deleted all waypoints from trajectory");
 //             update();
 //         });
@@ -1427,504 +1300,146 @@ void CanvasWidget::handleRightClick(QMouseEvent *event) {
 //         contextMenu.exec(event->globalPos());
 //     }
 // }
+// void CanvasWidget::handleTrajectoryRightClick(QMouseEvent *event) {
+//     int nearestIndex = findNearestWaypoint(event->pos());
+//     QMenu contextMenu(this);
+
+//     if (nearestIndex >= 0) {
+//         selectWaypoint(nearestIndex);
+
+//         QAction* deleteWaypointAction = contextMenu.addAction("Delete Waypoint");
+//         connect(deleteWaypointAction, &QAction::triggered, this, [=]() {
+//             if (selectedWaypointIndex >= 0 && selectedWaypointIndex < (int)currentTrajectory.size()) {
+//                 Waypoints* wp = currentTrajectory[selectedWaypointIndex];
+//                 if (wp) {
+//                     // MEMORY LEAK FIX: Delete position object first
+//                     if (wp->position) {
+//                         delete wp->position;  // FIX: Prevents memory leak of Vector object
+//                         wp->position = nullptr; // Safety: set to null after deletion
+//                     }
+//                     // MEMORY LEAK FIX: Delete waypoint object
+//                     delete wp;  // FIX: Prevents memory leak of Waypoints object
+//                 }
+//                 // Remove from vector after deletion
+//                 currentTrajectory.erase(currentTrajectory.begin() + selectedWaypointIndex);
+//                 deselectWaypoint();
+//                 updateTrajectoryData();
+//                 update();
+//             }
+//         });
+
+//         contextMenu.addSeparator();
+//     }
+
+//     if (!currentTrajectory.empty()) {
+//         QAction* deleteAllWaypointsAction = contextMenu.addAction("Delete All Waypoints");
+//         connect(deleteAllWaypointsAction, &QAction::triggered, this, [=]() {
+//             // MEMORY LEAK FIX: Delete all waypoints and their positions
+//             for (Waypoints* wp : currentTrajectory) {
+//                 if (wp) {
+//                     // Delete nested position object first
+//                     if (wp->position) {
+//                         delete wp->position;  // FIX: Prevents memory leak
+//                         wp->position = nullptr;
+//                     }
+//                     // Delete waypoint object
+//                     delete wp;  // FIX: Prevents memory leak
+//                 }
+//             }
+//             // Clear vector after all objects are deleted
+//             currentTrajectory.clear();
+//             deselectWaypoint();
+//             saveTrajectory();
+//             update();
+//         });
+//     }
+
+//     if (!contextMenu.actions().isEmpty()) {
+//         contextMenu.exec(event->globalPos());
+//     }
+// }
 
 
 void CanvasWidget::handleTrajectoryRightClick(QMouseEvent *event) {
     int nearestIndex = findNearestWaypoint(event->pos());
-
     QMenu contextMenu(this);
+
+    // Style sheet to keep text black always
+    contextMenu.setStyleSheet(
+        "QMenu {"
+        "    background-color: white;"
+        "    color: black;"
+        "    border: 1px solid #cccccc;"
+        "}"
+        "QMenu::item {"
+        "    background-color: white;"
+        "    color: black;"
+        "    padding: 5px 20px;"
+        "}"
+        "QMenu::item:selected {"
+        "    background-color: #e6e6e6;"  // Light gray background on selection
+        "    color: black;"  // Text remains black
+        "}"
+        "QMenu::item:hover {"
+        "    background-color: #f0f0f0;"  // Light background on hover
+        "    color: black;"  // Text remains black
+        "}"
+    );
 
     if (nearestIndex >= 0) {
         selectWaypoint(nearestIndex);
 
-        // Individual waypoint delete option - WITHOUT confirmation
         QAction* deleteWaypointAction = contextMenu.addAction("Delete Waypoint");
         connect(deleteWaypointAction, &QAction::triggered, this, [=]() {
             if (selectedWaypointIndex >= 0 && selectedWaypointIndex < (int)currentTrajectory.size()) {
-                delete currentTrajectory[selectedWaypointIndex]->position;
-                delete currentTrajectory[selectedWaypointIndex];
+                Waypoints* wp = currentTrajectory[selectedWaypointIndex];
+                if (wp) {
+                    // MEMORY LEAK FIX: Delete position object first
+                    if (wp->position) {
+                        delete wp->position;  // FIX: Prevents memory leak of Vector object
+                        wp->position = nullptr; // Safety: set to null after deletion
+                    }
+                    // MEMORY LEAK FIX: Delete waypoint object
+                    delete wp;  // FIX: Prevents memory leak of Waypoints object
+                }
+                // Remove from vector after deletion
                 currentTrajectory.erase(currentTrajectory.begin() + selectedWaypointIndex);
                 deselectWaypoint();
                 updateTrajectoryData();
-                Console::log("Deleted waypoint at index: " + std::to_string(nearestIndex));
                 update();
             }
         });
 
-        contextMenu.addSeparator(); // Separator between individual and bulk operations
+        contextMenu.addSeparator();
     }
 
-    // Delete all waypoints option (always available if there are waypoints) - WITHOUT confirmation
     if (!currentTrajectory.empty()) {
         QAction* deleteAllWaypointsAction = contextMenu.addAction("Delete All Waypoints");
         connect(deleteAllWaypointsAction, &QAction::triggered, this, [=]() {
-            // Delete all waypoints directly without confirmation
+            // MEMORY LEAK FIX: Delete all waypoints and their positions
             for (Waypoints* wp : currentTrajectory) {
-                delete wp->position;
-                delete wp;
+                if (wp) {
+                    // Delete nested position object first
+                    if (wp->position) {
+                        delete wp->position;  // FIX: Prevents memory leak
+                        wp->position = nullptr;
+                    }
+                    // Delete waypoint object
+                    delete wp;  // FIX: Prevents memory leak
+                }
             }
+            // Clear vector after all objects are deleted
             currentTrajectory.clear();
             deselectWaypoint();
-
-            // IMPORTANT: Save the empty trajectory to entity data
             saveTrajectory();
-
-            Console::log("Deleted all waypoints from trajectory");
             update();
         });
     }
 
-    // Only show context menu if there are actions to show
     if (!contextMenu.actions().isEmpty()) {
         contextMenu.exec(event->globalPos());
     }
 }
-// // EXISTING handleShapeRightClick() function ko COMPLETELY REPLACE karen:
-// void CanvasWidget::handleShapeRightClick(QMouseEvent *event) {
-//     QPointF geoPos = gislib->canvasToGeo(event->pos());
-//     const qreal tolerance = 20.0;
-//     QString closestShapeId;
-//     qreal minDistance = std::numeric_limits<qreal>::max();
-//     MeshEntry* closestEntry = nullptr;
-//     auto closestIt = tempMeshes.end();
-
-//     for (auto it = tempMeshes.begin(); it != tempMeshes.end(); ++it) {
-//         MeshEntry& entry = *it;
-//         if (!entry.position || (!entry.mesh && entry.text.isEmpty() && !entry.name.startsWith("TempPoint"))) {
-//             Console::error("Invalid MeshEntry data for " + entry.name.toStdString());
-//             continue;
-//         }
-//         QPointF entityPos = gislib->geoToCanvas(entry.position->y(), entry.position->x());
-//         bool isHit = false;
-//         qreal distance = std::numeric_limits<qreal>::max();
-
-//         // NEW: Text hit detection
-//         if (entry.name.startsWith("TempText") && !entry.text.isEmpty()) {
-//             QFontMetrics fm(entry.textFont);
-//             QRect textRect = fm.boundingRect(entry.text);
-//             textRect.moveTo(entityPos.x(), entityPos.y());
-//             isHit = textRect.adjusted(-5, -5, 5, 5).contains(event->pos());
-//             distance = QVector2D(event->pos() - entityPos).length();
-//             if (isHit) {
-//                 Console::log(std::string("Right-click detected on text: ") + entry.text.toStdString());
-//             }
-//         }
-//         // Check if the right-click is on a point
-//         else if (entry.name.startsWith("TempPoint")) {
-//             distance = QVector2D(event->pos() - entityPos).length();
-//             isHit = (distance < tolerance);
-//         }
-//         // Check if the right-click is on a polygon
-//         else if (entry.name.startsWith("TempPolygon")) {
-//             isHit = isPointInPolygon(event->pos(), entry.mesh->polygen, QPointF(entry.position->x(), entry.position->y()), gislib);
-//             distance = QVector2D(event->pos() - entityPos).length();
-//         }
-//         // Check if the right-click is on a polyline
-//         else if (entry.name.startsWith("TempPolyline")) {
-//             for (size_t i = 0; i < entry.mesh->polygen.size() - 1; ++i) {
-//                 QPointF v1 = gislib->geoToCanvas(entry.mesh->polygen[i]->y + entry.position->y(), entry.mesh->polygen[i]->x + entry.position->x());
-//                 QPointF v2 = gislib->geoToCanvas(entry.mesh->polygen[i + 1]->y + entry.position->y(), entry.mesh->polygen[i + 1]->x + entry.position->x());
-//                 if (isPointNearLineSegment(event->pos(), v1, v2, tolerance)) {
-//                     isHit = true;
-//                     distance = QVector2D(event->pos() - entityPos).length();
-//                     break;
-//                 }
-//             }
-//         }
-//         // Check for other shapes (circle, rectangle, bitmap)
-//         else {
-//             qreal w, h;
-//             if (entry.name.startsWith("TempCircle")) {
-//                 w = h = entry.size->x() * 25;
-//                 distance = QVector2D(event->pos() - entityPos).length();
-//                 isHit = (distance < w / 2.0);
-//             } else if (entry.name.startsWith("TempRectangle") || !entry.bitmapPath.isEmpty()) {
-//                 w = entry.size->x() * 25;
-//                 h = entry.size->y() * 25;
-//                 isHit = (event->pos().x() >= entityPos.x() - w / 2 &&
-//                          event->pos().x() <= entityPos.x() + w / 2 &&
-//                          event->pos().y() >= entityPos.y() - h / 2 &&
-//                          event->pos().y() <= entityPos.y() + h / 2);
-//                 distance = QVector2D(event->pos() - entityPos).length();
-//             } else {
-//                 continue;
-//             }
-//         }
-
-//         if (isHit && distance < minDistance) {
-//             minDistance = distance;
-//             closestShapeId = entry.name;
-//             closestEntry = &entry;
-//             closestIt = it;
-//         }
-//     }
-
-//     if (!closestShapeId.isEmpty() && closestEntry && closestIt != tempMeshes.end()) {
-//         QMenu contextMenu(this);
-//         contextMenu.setStyleSheet(
-//             "QMenu { background-color: white; color: black; border: 1px solid #cccccc; }"
-//             "QMenu::item { background-color: white; color: black; padding: 5px 20px; }"
-//             "QMenu::item:selected { background-color: #0078d7; color: white; }"
-//             );
-
-//         // NEW: Text-specific context menu
-//         if (closestShapeId.startsWith("TempText")) {
-//             QAction* editTextAction = contextMenu.addAction("Edit Text Properties");
-//             connect(editTextAction, &QAction::triggered, this, [=]() {
-//                 showTextPropertiesDialog(closestShapeId);
-//             });
-
-//             QAction* deleteAction = contextMenu.addAction("Delete Text");
-//             connect(deleteAction, &QAction::triggered, this, [=]() {
-//                 deleteText(closestShapeId);
-//             });
-//         }
-//         // Existing shape context menu
-//         else if (closestShapeId.startsWith("TempPolyline") ||
-//                  closestShapeId.startsWith("TempCircle") ||
-//                  closestShapeId.startsWith("TempRectangle") ||
-//                  closestShapeId.startsWith("TempPolygon") ||
-//                  closestShapeId.startsWith("TempPoint") ||  // ADD THIS LINE
-//                  !closestEntry->bitmapPath.isEmpty()) {
-
-//             QAction* editAction = contextMenu.addAction("Edit");
-//             connect(editAction, &QAction::triggered, this, [=]() {
-//                 currentMode = EditShape;
-//                 editingShapeId = closestShapeId;
-//                 setCursor(Qt::SizeAllCursor);
-//                 resizeHandles.clear();
-//                 if (closestShapeId.startsWith("TempRectangle") || !closestEntry->bitmapPath.isEmpty()) {
-//                     float w = closestEntry->size->x() * 25;
-//                     float h = closestEntry->size->y() * 25;
-//                     QPointF centerCanvas = gislib->geoToCanvas(closestEntry->position->y(), closestEntry->position->x());
-//                     resizeHandles = {
-//                         centerCanvas + QPointF(-w/2, -h/2),
-//                         centerCanvas + QPointF(w/2, -h/2),
-//                         centerCanvas + QPointF(w/2, h/2),
-//                         centerCanvas + QPointF(-w/2, h/2)
-//                     };
-//                 } else if (closestShapeId.startsWith("TempCircle")) {
-//                     QPointF centerCanvas = gislib->geoToCanvas(closestEntry->position->y(), closestEntry->position->x());
-//                     resizeHandles = { centerCanvas + QPointF(closestEntry->size->x() * 25, 0) };
-//                 } else if (closestShapeId.startsWith("TempPolygon") || closestShapeId.startsWith("TempPolyline")) {
-//                     for (Vector* v : closestEntry->mesh->polygen) {
-//                         QPointF canvasPoint = gislib->geoToCanvas(v->y + closestEntry->position->y(), v->x + closestEntry->position->x());
-//                         resizeHandles.push_back(canvasPoint);
-//                     }
-//                 }
-//                 Console::log("Entered EditShape mode for: " + closestShapeId.toStdString());
-//                 update();
-//             });
-
-//             // === SHAPE PROPERTIES ACTION ===
-//             QAction* propertiesAction = contextMenu.addAction("Shape Properties");
-//             connect(propertiesAction, &QAction::triggered, this, [=]() {
-//                 showShapePropertiesDialog(closestShapeId);
-//             });
-
-//             // QAction* editAction = contextMenu.addAction("Edit");
-//             connect(editAction, &QAction::triggered, this, [=]() {
-//                 currentMode = EditShape;
-//                 editingShapeId = closestShapeId;
-//                 setCursor(Qt::SizeAllCursor);
-//                 resizeHandles.clear();
-//                 if (closestShapeId.startsWith("TempRectangle") || !closestEntry->bitmapPath.isEmpty()) {
-//                     float w = closestEntry->size->x() * 25;
-//                     float h = closestEntry->size->y() * 25;
-//                     QPointF centerCanvas = gislib->geoToCanvas(closestEntry->position->y(), closestEntry->position->x());
-//                     resizeHandles = {
-//                         centerCanvas + QPointF(-w/2, -h/2),
-//                         centerCanvas + QPointF(w/2, -h/2),
-//                         centerCanvas + QPointF(w/2, h/2),
-//                         centerCanvas + QPointF(-w/2, h/2)
-//                     };
-//                 } else if (closestShapeId.startsWith("TempCircle")) {
-//                     QPointF centerCanvas = gislib->geoToCanvas(closestEntry->position->y(), closestEntry->position->x());
-//                     resizeHandles = { centerCanvas + QPointF(closestEntry->size->x() * 25, 0) };
-//                 } else if (closestShapeId.startsWith("TempPolygon") || closestShapeId.startsWith("TempPolyline")) {
-//                     for (Vector* v : closestEntry->mesh->polygen) {
-//                         QPointF canvasPoint = gislib->geoToCanvas(v->y + closestEntry->position->y(), v->x + closestEntry->position->x());
-//                         resizeHandles.push_back(canvasPoint);
-//                     }
-//                 }
-//                 Console::log("Entered EditShape mode for: " + closestShapeId.toStdString());
-//                 update();
-//             });
-
-
-//             // === ROTATE ACTION ===
-//             QAction* rotateAction = contextMenu.addAction("Rotate");
-//             connect(rotateAction, &QAction::triggered, this, [=]() {
-//                 activeRotateId = closestShapeId;
-//                 Console::log("Rotate mode entered for: " + closestShapeId.toStdString());
-//                 update();
-//             });
-
-//             // === DELETE ACTION ===
-//             QAction* deleteAction = contextMenu.addAction(
-//                 closestShapeId.startsWith("TempPolyline") ||
-//                         closestShapeId.startsWith("TempCircle") ||
-//                         closestShapeId.startsWith("TempRectangle") ||
-//                         closestShapeId.startsWith("TempPolygon") ||
-//                         closestShapeId.startsWith("TempPoint") ? "Delete Shape" :
-//                     "Delete Bitmap"
-//                 );
-//             connect(deleteAction, &QAction::triggered, this, [=]() {
-//                 delete closestEntry->position;
-//                 delete closestEntry->rotation;
-//                 delete closestEntry->size;
-//                 delete closestEntry->velocity;
-//                 if (closestEntry->mesh) {
-//                     for (Vector* v : closestEntry->mesh->polygen) delete v;
-//                     delete closestEntry->mesh->color;
-//                     delete closestEntry->mesh;
-//                 }
-//                 delete closestEntry->collider;
-//                 delete closestEntry->trajectory;
-//                 tempMeshes.erase(closestIt);
-//                 Console::log("Deleted: " + closestShapeId.toStdString());
-//                 update();
-//             });
-//         }
-
-//         // === EXEC MENU ===
-//         contextMenu.exec(event->globalPos());
-//     }
-// }
-// workin
-// void CanvasWidget::handleShapeRightClick(QMouseEvent *event) {
-//     QPointF geoPos = gislib->canvasToGeo(event->pos());
-//     const qreal tolerance = 20.0;
-//     QString closestShapeId;
-//     qreal minDistance = std::numeric_limits<qreal>::max();
-//     MeshEntry* closestEntry = nullptr;
-//     auto closestIt = tempMeshes.end();
-
-//     for (auto it = tempMeshes.begin(); it != tempMeshes.end(); ++it) {
-//         MeshEntry& entry = *it;
-//         if (!entry.position || (!entry.mesh && entry.text.isEmpty() && !entry.name.startsWith("TempPoint") && entry.bitmapPath.isEmpty())) {
-//             Console::error("Invalid MeshEntry data for " + entry.name.toStdString());
-//             continue;
-//         }
-//         QPointF entityPos = gislib->geoToCanvas(entry.position->y(), entry.position->x());
-//         bool isHit = false;
-//         qreal distance = std::numeric_limits<qreal>::max();
-
-//         // NEW: Text hit detection
-//         if (entry.name.startsWith("TempText") && !entry.text.isEmpty()) {
-//             QFontMetrics fm(entry.textFont);
-//             QRect textRect = fm.boundingRect(entry.text);
-//             textRect.moveTo(entityPos.x(), entityPos.y());
-//             isHit = textRect.adjusted(-5, -5, 5, 5).contains(event->pos());
-//             distance = QVector2D(event->pos() - entityPos).length();
-//             if (isHit) {
-//                 Console::log(std::string("Right-click detected on text: ") + entry.text.toStdString());
-//             }
-//         }
-//         // Check if the right-click is on a point
-//         else if (entry.name.startsWith("TempPoint")) {
-//             distance = QVector2D(event->pos() - entityPos).length();
-//             isHit = (distance < tolerance);
-//         }
-//         // Check if the right-click is on a polygon
-//         else if (entry.name.startsWith("TempPolygon")) {
-//             isHit = isPointInPolygon(event->pos(), entry.mesh->polygen, QPointF(entry.position->x(), entry.position->y()), gislib);
-//             distance = QVector2D(event->pos() - entityPos).length();
-//         }
-//         // Check if the right-click is on a polyline
-//         else if (entry.name.startsWith("TempPolyline")) {
-//             for (size_t i = 0; i < entry.mesh->polygen.size() - 1; ++i) {
-//                 QPointF v1 = gislib->geoToCanvas(entry.mesh->polygen[i]->y + entry.position->y(), entry.mesh->polygen[i]->x + entry.position->x());
-//                 QPointF v2 = gislib->geoToCanvas(entry.mesh->polygen[i + 1]->y + entry.position->y(), entry.mesh->polygen[i + 1]->x + entry.position->x());
-//                 if (isPointNearLineSegment(event->pos(), v1, v2, tolerance)) {
-//                     isHit = true;
-//                     distance = QVector2D(event->pos() - entityPos).length();
-//                     break;
-//                 }
-//             }
-//         }
-//         // Check for other shapes (circle, rectangle, bitmap)
-//         else {
-//             qreal w, h;
-//             if (entry.name.startsWith("TempCircle")) {
-//                 w = h = entry.size->x() * 25;
-//                 distance = QVector2D(event->pos() - entityPos).length();
-//                 isHit = (distance < w / 2.0);
-//             } else if (entry.name.startsWith("TempRectangle") || !entry.bitmapPath.isEmpty()) {
-//                 w = entry.size->x() * 25;
-//                 h = entry.size->y() * 25;
-//                 isHit = (event->pos().x() >= entityPos.x() - w / 2 &&
-//                          event->pos().x() <= entityPos.x() + w / 2 &&
-//                          event->pos().y() >= entityPos.y() - h / 2 &&
-//                          event->pos().y() <= entityPos.y() + h / 2);
-//                 distance = QVector2D(event->pos() - entityPos).length();
-//             } else {
-//                 continue;
-//             }
-//         }
-
-//         if (isHit && distance < minDistance) {
-//             minDistance = distance;
-//             closestShapeId = entry.name;
-//             closestEntry = &entry;
-//             closestIt = it;
-//         }
-//     }
-
-//     if (!closestShapeId.isEmpty() && closestEntry && closestIt != tempMeshes.end()) {
-//         QMenu contextMenu(this);
-//         contextMenu.setStyleSheet(
-//             "QMenu { background-color: white; color: black; border: 1px solid #cccccc; }"
-//             "QMenu::item { background-color: white; color: black; padding: 5px 20px; }"
-//             "QMenu::item:selected { background-color: #0078d7; color: white; }"
-//             );
-
-//         // NEW: Text-specific context menu
-//         if (closestShapeId.startsWith("TempText")) {
-//             QAction* editTextAction = contextMenu.addAction("Edit Text Properties");
-//             connect(editTextAction, &QAction::triggered, this, [=]() {
-//                 showTextPropertiesDialog(closestShapeId);
-//             });
-
-//             QAction* deleteAction = contextMenu.addAction("Delete Text");
-//             connect(deleteAction, &QAction::triggered, this, [=]() {
-//                 deleteText(closestShapeId);
-//             });
-//         }
-//         // SHAPES ONLY: Show Properties option for shapes but NOT for bitmaps
-//         else if (closestShapeId.startsWith("TempPolyline") ||
-//                  closestShapeId.startsWith("TempCircle") ||
-//                  closestShapeId.startsWith("TempRectangle") ||
-//                  closestShapeId.startsWith("TempPolygon") ||
-//                  closestShapeId.startsWith("TempPoint")) {
-
-//             QAction* editAction = contextMenu.addAction("Edit");
-//             connect(editAction, &QAction::triggered, this, [=]() {
-//                 currentMode = EditShape;
-//                 editingShapeId = closestShapeId;
-//                 setCursor(Qt::SizeAllCursor);
-//                 resizeHandles.clear();
-//                 if (closestShapeId.startsWith("TempRectangle")) {
-//                     float w = closestEntry->size->x() * 25;
-//                     float h = closestEntry->size->y() * 25;
-//                     QPointF centerCanvas = gislib->geoToCanvas(closestEntry->position->y(), closestEntry->position->x());
-//                     resizeHandles = {
-//                         centerCanvas + QPointF(-w/2, -h/2),
-//                         centerCanvas + QPointF(w/2, -h/2),
-//                         centerCanvas + QPointF(w/2, h/2),
-//                         centerCanvas + QPointF(-w/2, h/2)
-//                     };
-//                 } else if (closestShapeId.startsWith("TempCircle")) {
-//                     QPointF centerCanvas = gislib->geoToCanvas(closestEntry->position->y(), closestEntry->position->x());
-//                     resizeHandles = { centerCanvas + QPointF(closestEntry->size->x() * 25, 0) };
-//                 } else if (closestShapeId.startsWith("TempPolygon") || closestShapeId.startsWith("TempPolyline")) {
-//                     for (Vector* v : closestEntry->mesh->polygen) {
-//                         QPointF canvasPoint = gislib->geoToCanvas(v->y + closestEntry->position->y(), v->x + closestEntry->position->x());
-//                         resizeHandles.push_back(canvasPoint);
-//                     }
-//                 }
-//                 Console::log("Entered EditShape mode for: " + closestShapeId.toStdString());
-//                 update();
-//             });
-
-//             // === SHAPE PROPERTIES ACTION - ONLY FOR SHAPES, NOT FOR BITMAPS ===
-//             QAction* propertiesAction = contextMenu.addAction("Shape Properties");
-//             connect(propertiesAction, &QAction::triggered, this, [=]() {
-//                 showShapePropertiesDialog(closestShapeId);
-//             });
-
-//             // === ROTATE ACTION ===
-//             QAction* rotateAction = contextMenu.addAction("Rotate");
-//             connect(rotateAction, &QAction::triggered, this, [=]() {
-//                 activeRotateId = closestShapeId;
-//                 Console::log("Rotate mode entered for: " + closestShapeId.toStdString());
-//                 update();
-//             });
-
-//             // === DELETE ACTION ===
-//             QAction* deleteAction = contextMenu.addAction("Delete Shape");
-//             connect(deleteAction, &QAction::triggered, this, [=]() {
-//                 delete closestEntry->position;
-//                 delete closestEntry->rotation;
-//                 delete closestEntry->size;
-//                 delete closestEntry->velocity;
-//                 if (closestEntry->mesh) {
-//                     for (Vector* v : closestEntry->mesh->polygen) delete v;
-//                     delete closestEntry->mesh->color;
-//                     delete closestEntry->mesh;
-//                 }
-//                 delete closestEntry->collider;
-//                 delete closestEntry->trajectory;
-//                 tempMeshes.erase(closestIt);
-//                 Console::log("Deleted: " + closestShapeId.toStdString());
-//                 update();
-//             });
-//         }
-//         // BITMAPS ONLY: Show Edit, Rotate, Delete but NO Properties option
-//         else if (!closestEntry->bitmapPath.isEmpty()) {
-//             QAction* editAction = contextMenu.addAction("Edit");
-//             connect(editAction, &QAction::triggered, this, [=]() {
-//                 currentMode = EditShape;
-//                 editingShapeId = closestShapeId;
-//                 setCursor(Qt::SizeAllCursor);
-//                 resizeHandles.clear();
-
-//                 float w = closestEntry->size->x() * 25;
-//                 float h = closestEntry->size->y() * 25;
-//                 QPointF centerCanvas = gislib->geoToCanvas(closestEntry->position->y(), closestEntry->position->x());
-//                 resizeHandles = {
-//                     centerCanvas + QPointF(-w/2, -h/2),
-//                     centerCanvas + QPointF(w/2, -h/2),
-//                     centerCanvas + QPointF(w/2, h/2),
-//                     centerCanvas + QPointF(-w/2, h/2)
-//                 };
-
-//                 Console::log("Entered EditShape mode for bitmap: " + closestShapeId.toStdString());
-//                 update();
-//             });
-
-//             // === ROTATE ACTION ===
-//             QAction* rotateAction = contextMenu.addAction("Rotate");
-//             connect(rotateAction, &QAction::triggered, this, [=]() {
-//                 activeRotateId = closestShapeId;
-//                 Console::log("Rotate mode entered for bitmap: " + closestShapeId.toStdString());
-//                 update();
-//             });
-
-//             // === DELETE ACTION ===
-//             QString deleteText;
-//             if (closestShapeId.startsWith("TempBitmap")) {
-//                 deleteText = "Delete Bitmap";
-//             } else if (closestShapeId.startsWith("UserImage_")) {
-//                 deleteText = "Delete Image";
-//             } else {
-//                 deleteText = "Delete";
-//             }
-
-//             QAction* deleteAction = contextMenu.addAction(deleteText);
-//             connect(deleteAction, &QAction::triggered, this, [=]() {
-//                 delete closestEntry->position;
-//                 delete closestEntry->rotation;
-//                 delete closestEntry->size;
-//                 delete closestEntry->velocity;
-//                 if (closestEntry->mesh) {
-//                     for (Vector* v : closestEntry->mesh->polygen) delete v;
-//                     delete closestEntry->mesh->color;
-//                     delete closestEntry->mesh;
-//                 }
-//                 delete closestEntry->collider;
-//                 delete closestEntry->trajectory;
-//                 tempMeshes.erase(closestIt);
-//                 Console::log("Deleted: " + closestShapeId.toStdString());
-//                 update();
-//             });
-//         }
-
-//         // === EXEC MENU ===
-//         contextMenu.exec(event->globalPos());
-//     }
-// }
-// for hist
 void CanvasWidget::handleShapeRightClick(QMouseEvent *event) {
     QPointF geoPos = gislib->canvasToGeo(event->pos());
     const qreal tolerance = 20.0;
@@ -2761,16 +2276,62 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     drawGridLines(painter);
-    drawTrajectory(painter);
-    drawMesh(painter);
-    drawTrail(painter);
-    drawImage(painter);
-    drawRadar(painter);
-    drawSelectionOutline(painter);
-    drawCollider(painter);
+    for (auto& [id, entry] : Meshes) {
+        drawMesh(painter);
+        drawTrail(painter, id, entry);
+        drawTrajectory(painter, id, entry);
+        drawRadar(painter, id, entry);
+        drawRadio(painter, id, entry);
+        drawImage(painter, id, entry);
+        drawSelectionOutline(painter);
+        //drawCollider(painter, id, entry);
+    }
+       drawMesh(painter);
     drawAirbases(painter);// for preset layer
     // NEW: Draw shape history (previous positions with green border)
     drawShapeHistory(painter);
+
+    if (!tempPolygonVertices.empty()) {
+        QPolygonF previewPolygon;
+        for (const Vector* vertex : tempPolygonVertices) {
+            QPointF canvasPoint = gislib->geoToCanvas(vertex->y, vertex->x);
+            previewPolygon << canvasPoint;
+
+        }
+        painter.setPen(QPen(Qt::red, 2, Qt::DashLine));
+        painter.setBrush(QColor(255, 0, 0, 50));
+        if (previewPolygon.size() > 1) {
+            painter.drawPolyline(previewPolygon);
+            for (const QPointF& point : previewPolygon) {
+                painter.drawEllipse(point, 3, 3);
+            }
+        }
+        if (previewPolygon.size() >= 3) {
+            painter.drawPolygon(previewPolygon);
+
+        }
+    }
+
+    if (!tempLineVertices.empty()) {
+        QPolygonF previewLine;
+        for (const Vector* vertex : tempLineVertices) {
+            QPointF canvasPoint = gislib->geoToCanvas(vertex->y, vertex->x);
+            previewLine << canvasPoint;
+
+        }
+        painter.setPen(QPen(Qt::red, 2, Qt::DashLine));
+        painter.setBrush(Qt::NoBrush);
+        if (previewLine.size() == 1) {
+            painter.drawEllipse(previewLine[0], 3, 3);
+        } else if (previewLine.size() >= 2) {
+            painter.drawPolyline(previewLine);
+            for (const QPointF& point : previewLine) {
+                painter.drawEllipse(point, 3, 3);
+            }
+
+        }
+    }
+
 
     // Draw rotation handle only for the active rotating shape
     for (const auto& entry : tempMeshes) {
@@ -3081,7 +2642,7 @@ void CanvasWidget::drawTransformGizmo(QPainter& painter) {
 
 
 void CanvasWidget::drawSelectionOutline(QPainter& painter) {
-    if (!showOutline || simulate) return;
+    if (!showOutline /*|| simulate*/) return;
     if (Meshes.find(selectedEntityId) == Meshes.end()) return;
 
     auto& entry = Meshes[selectedEntityId];
@@ -3102,10 +2663,10 @@ void CanvasWidget::drawSelectionOutline(QPainter& painter) {
     painter.drawRect(outlineRect);
 }
 
-void CanvasWidget::drawRadar(QPainter& painter){
-    for (auto& [id, entry] : Meshes) {
+void CanvasWidget::drawRadar(QPainter& painter,std::string id , MeshEntry entry){
+    // for (auto& [id, entry] : Meshes) {
         Entity* entity = entry.entity;
-        if (!entity) continue;
+        if (!entity) return;
         for (Sensor* s : entity->sensorList) {
             if(s->subType == Sensor::SubType::Generic){
                 QPointF point = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
@@ -3127,15 +2688,46 @@ void CanvasWidget::drawRadar(QPainter& painter){
                 break;
             }
         }
-    }
+    // }
 }
 
-void CanvasWidget::drawTrail(QPainter& painter){
-    for (auto& [id, entry] : Meshes) {
+void CanvasWidget::drawRadio(QPainter& painter,std::string id , MeshEntry entry){
+    // for (auto& [id, entry] : Meshes) {
+        Entity* entity = entry.entity;
+        if (!entity) return;
+        for (Radio* s : entity->radioList) {
+                QPointF point = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
+                float centerX = point.x();
+                float centerY = point.y();
+                QPen pen(Qt::black, 1);
+                QVector<qreal> dashes;
+                dashes << 4 << 10;  // 4px dash, 2px gap
+                pen.setDashPattern(dashes);
+                painter.setPen(pen);
+                //painter.setPen(QPen(Qt::black, 1,Qt::DashLine));
+                for (int i = 0; i < s->targets.size(); ++i) {
+                        QPointF points2 = gislib->geoToCanvas(s->targets[i].entity->transform->translation().x(), s->targets[i].entity->transform->translation().z());
+                        painter.drawLine(centerX, centerY, points2.x(), points2.y());
+                }
+
+                // double halfBeamWidth = azimuth / 2.0;
+                // auto [newLat, newLon] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)-halfBeamWidth),-radius);
+                // QPointF points = gislib->geoToCanvas(newLat, newLon);
+                // painter.drawLine(centerX, centerY, points.x(), points.y());
+                // auto [newLat2, newLon2] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)+halfBeamWidth),-radius);
+                // QPointF points2 = gislib->geoToCanvas(newLat2, newLon2);
+
+                // painter.drawLine(points.x(), points.y(), points2.x(), points2.y());
+        }
+    // }
+}
+
+void CanvasWidget::drawTrail(QPainter& painter,std::string id , MeshEntry entry){
+    // for (auto& [id, entry] : Meshes) {
         if(entry.coreTransform->trailData.capacity()>2){
             QVector3D v = entry.coreTransform->trailData.at(0);
             QPointF lastv = gislib->geoToCanvas(v.x(), v.z());
-            painter.setPen(QPen(Qt::green, 1));
+            painter.setPen(QPen(Qt::magenta, 1));
             for (const auto& position : entry.coreTransform->trailData) {
                     QPointF point = gislib->geoToCanvas(position.x(), position.z());
                     painter.drawLine(lastv.x(), lastv.y(), point.x(), point.y());
@@ -3143,13 +2735,13 @@ void CanvasWidget::drawTrail(QPainter& painter){
                     lastv.setY( point.y());
             }
         }
-    }
+    // }
 }
 
-void CanvasWidget::drawCollider(QPainter& painter) {
+void CanvasWidget::drawCollider(QPainter& painter,std::string id , MeshEntry entry) {
     if (!showColliders) return;
-    for (const auto& [id, entry] : Meshes) {
-        if (!entry.collider || !entry.position) continue;
+    // for (const auto& [id, entry] : Meshes) {
+        if (!entry.collider || !entry.position) return;
 
         painter.save();
         painter.translate(entry.position->z(), entry.position->x());
@@ -3178,9 +2770,164 @@ void CanvasWidget::drawCollider(QPainter& painter) {
         }
 
         painter.restore();
-    }
+    // }
 }
 
+// void CanvasWidget::drawMesh(QPainter& painter,std::string id , MeshEntry entry) {
+//     if (!showMesh) {
+//         return;
+//     }
+//     if (!painter.isActive()) {
+//         return;
+//     }
+
+//     // for (const auto& entry : tempMeshes) {
+//         Mesh* mesh = entry.mesh;
+//         if (!mesh || !mesh->color) {
+//             Console::log("Warning: Invalid mesh or color in tempMeshes for " + entry.name.toStdString());
+//             // continue;
+//             return;
+//         }
+//         if (entry.name.startsWith("TempText") && !entry.text.isEmpty()) {
+//             QPointF canvasPos = gislib->geoToCanvas(entry.position->y(), entry.position->x());
+//             painter.save();
+
+//             // Set text properties
+//             QFont font = entry.textFont;
+//             font.setPointSize(entry.textSize);
+//             painter.setFont(font);
+//             painter.setPen(entry.textColor);
+
+//             // Draw selection outline if selected
+//             if (entry.isTextSelected) {
+//                 QFontMetrics fm(font);
+//                 QRect textRect = fm.boundingRect(entry.text);
+//                 textRect.moveTo(canvasPos.x(), canvasPos.y());
+
+//                 painter.setPen(QPen(Qt::blue, 2, Qt::DashLine));
+//                 painter.setBrush(Qt::NoBrush);
+//                 painter.drawRect(textRect.adjusted(-2, -2, 2, 2));
+
+//                 // Draw resize handles
+//                 drawTextResizeHandles(painter, entry);
+//             }
+
+//             painter.drawText(canvasPos, entry.text);
+//             painter.restore();
+//             // continue;
+//             return;
+//         }
+
+//         // Handle bitmap images
+//         if (!entry.bitmapPath.isEmpty()) {
+//             QPixmap img(entry.bitmapPath);
+//             if (!img.isNull()) {
+//                 QPointF canvasPos = gislib->geoToCanvas(entry.position->y(), entry.position->x());
+//                 QPointF sizePointGeo(entry.position->x() + entry.size->x(), entry.position->y() + entry.size->y());
+//                 QPointF sizePointCanvas = gislib->geoToCanvas(sizePointGeo.y(), sizePointGeo.x());
+//                 float canvasWidth = qAbs(sizePointCanvas.x() - canvasPos.x()) * 2;
+//                 float canvasHeight = qAbs(sizePointCanvas.y() - canvasPos.y()) * 2;
+//                 QPixmap scaled = img.scaled(canvasWidth, canvasHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+//                 painter.save();
+//                 painter.translate(canvasPos);
+//                 painter.rotate(entry.rotation->z()*(180/3.14159265359));
+//                 painter.drawPixmap(QPointF(-scaled.width() / 2.0f, -scaled.height() / 2.0f), scaled);
+//                 painter.restore();
+//             } else {
+//                 Console::log("Error: Failed to load bitmap image at path: " + entry.bitmapPath.toStdString());
+//             }
+//             // continue;
+//             return;
+//         }
+
+//         // Also update point drawing:
+//         if (entry.name.startsWith("TempPoint")) {
+//             if (mesh->polygen.empty()) {
+//                 Console::log("Warning: Point mesh has no position for " + entry.name.toStdString());
+//                 // continue;
+//                 return;
+//             }
+
+//             // Get position from entry position (not from polygen)
+//             QPointF canvasPoint = gislib->geoToCanvas(entry.position->y(), entry.position->x());
+
+//             painter.setPen(QPen(*mesh->color, mesh->lineWidth, Qt::SolidLine));
+//             painter.setBrush(*mesh->color);
+//             painter.drawEllipse(canvasPoint, 3, 3);
+//             // continue;
+//             return;
+//         }
+
+//         if (entry.name.startsWith("TempCircle")) {
+//             if (mesh->polygen.empty()) {
+//                 Console::log("Warning: Circle mesh has no center point for " + entry.name.toStdString());
+//                 // continue;
+//                 return;
+//             }
+
+//             // Get center position from the entry position (not from polygen)
+//             QPointF canvasCenter = gislib->geoToCanvas(entry.position->y(), entry.position->x());
+
+//             // Calculate radius in canvas coordinates
+//             QPointF radiusPointGeo(entry.position->x() + entry.size->x(), entry.position->y());
+//             QPointF radiusPointCanvas = gislib->geoToCanvas(radiusPointGeo.y(), radiusPointGeo.x());
+//             float canvasRadius = sqrt(pow(radiusPointCanvas.x() - canvasCenter.x(), 2) +
+//                                       pow(radiusPointCanvas.y() - canvasCenter.y(), 2));
+
+//             if (canvasRadius > 0 && canvasRadius < 10000) {
+//                 painter.setPen(QPen(*mesh->color, mesh->lineWidth, Qt::SolidLine));
+//                 painter.setBrush(QColor(255, 0, 0, 50));
+//                 painter.drawEllipse(canvasCenter, canvasRadius, canvasRadius);
+//             }
+//             // continue;
+//             return;
+//         }
+
+//         // Handle rectangles, polylines, and polygons
+//         QPolygonF polygon;
+//         QPointF canvasPos = gislib->geoToCanvas(entry.position->y(), entry.position->x());
+//         float angle = qDegreesToRadians(entry.rotation->z()*(180/3.14159265359));
+//         float cosA = cos(angle);
+//         float sinA = sin(angle);
+//         for (Vector* point : mesh->polygen) {
+//             if (!point) {
+//                 Console::log("Warning: Null point in mesh for " + entry.name.toStdString());
+//                 // continue;
+//                 return;
+//             }
+//             float geoX = point->x;
+//             float geoY = point->y;
+//             if (entry.name.startsWith("TempRectangle")) {
+//                 geoX *= entry.size->x() / 0.02f;
+//                 geoY *= entry.size->y() / 0.01f;
+//             }
+//             QPointF canvasPoint = gislib->geoToCanvas(geoY + entry.position->y(), geoX + entry.position->x());
+//             float x = canvasPoint.x() - canvasPos.x();
+//             float y = canvasPoint.y() - canvasPos.y();
+//             float rotatedX = x * cosA - y * sinA;
+//             float rotatedY = x * sinA + y * cosA;
+//             float finalX = canvasPos.x() + rotatedX;
+//             float finalY = canvasPos.y() + rotatedY;
+//             polygon << QPointF(finalX, finalY);
+
+//         }
+//         if (polygon.isEmpty()) {
+
+//             Console::log("Warning: Polygon/Polyline/Rectangle is empty, cannot draw for " + entry.name.toStdString());
+//             // continue;
+//             return;
+//         }
+//         painter.setPen(QPen(*mesh->color, mesh->lineWidth, Qt::SolidLine));
+//         if (entry.name.startsWith("TempPolygon") || entry.name.startsWith("TempRectangle")) {
+//             painter.setBrush(QColor(255, 0, 0, 50));
+//             painter.drawPolygon(polygon);
+//         } else {
+//             painter.setBrush(Qt::NoBrush);
+//             painter.drawPolyline(polygon);
+//         }
+//     // }
+
+// }
 void CanvasWidget::drawMesh(QPainter& painter) {
     if (!showMesh) {
         return;
@@ -3368,12 +3115,9 @@ void CanvasWidget::drawMesh(QPainter& painter) {
     }
 }
 
-void CanvasWidget::drawImage(QPainter& painter) {
-    for (auto& [id, entry] : Meshes) {
+void CanvasWidget::drawImage(QPainter& painter,std::string id , MeshEntry entry){
         Mesh* mesh = entry.mesh;
-        if (!mesh) continue;
-
-
+        if (!mesh) return;
 
         QPixmap img(mesh->Sprite->data());
         if (!img.isNull()) {
@@ -3396,15 +3140,16 @@ void CanvasWidget::drawImage(QPainter& painter) {
         } else {
             qDebug() << "Image load failed!";
         }
-    }
+    // }
 }
 
-void CanvasWidget::drawTrajectory(QPainter& painter) {
-    for (const auto& [id, entry] : Meshes) {
+void CanvasWidget::drawTrajectory(QPainter& painter, string id, MeshEntry entry) {
+    //for (const auto& [id, entry] : Meshes) {
         // Skip if trajectory is null or not active
         if (!entry.trajectory || !entry.trajectory->Active || entry.trajectory->Trajectories.empty()) {
 
-            continue;
+            //continue;
+            return;
         }
 
         painter.save();
@@ -3435,7 +3180,7 @@ void CanvasWidget::drawTrajectory(QPainter& painter) {
         }
 
         painter.restore();
-    }
+    //}
 }
 
 void CanvasWidget::toggleLayerVisibility(const QString& layer, bool visible) {
@@ -3737,45 +3482,307 @@ QJsonObject CanvasWidget::toJson() const {
     return json;
 }
 
+// void CanvasWidget::fromJson(const QJsonObject& json) {
+//     for (Waypoints* wp : currentTrajectory) {
+//         delete wp->position;
+//         delete wp;
+//     }
+//     currentTrajectory.clear();
+
+//     for (Vector* v : tempPolygonVertices) {
+//         delete v;
+//     }
+//     tempPolygonVertices.clear();
+//     tempPolygonCanvasPoints.clear();
+
+//     for (Vector* v : tempLineVertices) {
+//         delete v;
+//     }
+//     tempLineVertices.clear();
+//     tempLineCanvasPoints.clear();
+
+//     for (MeshEntry& entry : tempMeshes) {
+//         delete entry.position;
+//         delete entry.rotation;
+//         delete entry.size;
+//         delete entry.velocity;
+//         if (entry.mesh) {
+//             for (Vector* v : entry.mesh->polygen) {
+//                 delete v;
+//             }
+//             delete entry.mesh->color;
+//             delete entry.mesh;
+//         }
+//         delete entry.collider;
+//         delete entry.trajectory;
+//     }
+//     tempMeshes.clear();
+
+//     // use for save data in json for airbase
+//     airbasePositions.clear();
+//     showAirbases = false;
+
+//     // Restore airbase layer data
+//     if (json.contains("showAirbases")) {
+//         showAirbases = json["showAirbases"].toBool();
+//     }
+//     if (json.contains("airbasePositions") && json["airbasePositions"].isArray()) {
+//         QJsonArray airbasesArray = json["airbasePositions"].toArray();
+//         for (const QJsonValue& value : airbasesArray) {
+//             if (value.isObject()) {
+//                 QJsonObject airbase = value.toObject();
+//                 double lon = airbase["lon"].toDouble();
+//                 double lat = airbase["lat"].toDouble();
+//                 airbasePositions.emplace_back(lon, lat);
+//             }
+//         }
+//     }
+
+//     if (json.contains("selectedBitmapType")) {
+//         selectedBitmapType = json["selectedBitmapType"].toString();
+//     }
+
+//     if (json.contains("isPlacingBitmap")) {
+//         isPlacingBitmap = json["isPlacingBitmap"].toBool();
+//     }
+
+//     if (json.contains("tempPolygonVertices") && json["tempPolygonVertices"].isArray()) {
+//         QJsonArray verticesArray = json["tempPolygonVertices"].toArray();
+//         for (const QJsonValue& val : verticesArray) {
+//             QJsonObject vObj = val.toObject();
+//             tempPolygonVertices.push_back(new Vector(
+//                 vObj["x"].toDouble(),
+//                 vObj["y"].toDouble(),
+//                 vObj["z"].toDouble()
+//                 ));
+//         }
+//     }
+
+//     if (json.contains("tempPolygonCanvasPoints") && json["tempPolygonCanvasPoints"].isArray()) {
+//         QJsonArray pointsArray = json["tempPolygonCanvasPoints"].toArray();
+//         for (const QJsonValue& val : pointsArray) {
+//             QJsonObject pObj = val.toObject();
+//             tempPolygonCanvasPoints.push_back(QPointF(
+//                 pObj["x"].toDouble(),
+//                 pObj["y"].toDouble()
+//                 ));
+//         }
+//     }
+
+//     if (json.contains("tempLineVertices") && json["tempLineVertices"].isArray()) {
+//         QJsonArray verticesArray = json["tempLineVertices"].toArray();
+//         for (const QJsonValue& val : verticesArray) {
+//             QJsonObject vObj = val.toObject();
+//             tempLineVertices.push_back(new Vector(
+//                 vObj["x"].toDouble(),
+//                 vObj["y"].toDouble(),
+//                 vObj["z"].toDouble()
+//                 ));
+//         }
+//     }
+
+//     if (json.contains("tempLineCanvasPoints") && json["tempLineCanvasPoints"].isArray()) {
+//         QJsonArray pointsArray = json["tempLineCanvasPoints"].toArray();
+//         for (const QJsonValue& val : pointsArray) {
+//             QJsonObject pObj = val.toObject();
+//             tempLineCanvasPoints.push_back(QPointF(
+//                 pObj["x"].toDouble(),
+//                 pObj["y"].toDouble()
+//                 ));
+//         }
+//     }
+
+//     if (json.contains("tempMeshes") && json["tempMeshes"].isArray()) {
+//         QJsonArray tempMeshesArray = json["tempMeshes"].toArray();
+//         for (const QJsonValue& val : tempMeshesArray) {
+//             QJsonObject meshObj = val.toObject();
+//             MeshEntry entry;
+
+//             entry.name = meshObj["name"].toString();
+//             entry.text = meshObj["text"].toString(); // Deserialize text field for TempText entries
+
+//             // NEW: Text properties deserialization
+//             if (entry.name.startsWith("TempText")) {
+//                 if (meshObj.contains("textColor")) {
+//                     QJsonObject colorObj = meshObj["textColor"].toObject();
+//                     entry.textColor = QColor(
+//                         colorObj["r"].toInt(),
+//                         colorObj["g"].toInt(),
+//                         colorObj["b"].toInt(),
+//                         colorObj["a"].toInt()
+//                         );
+//                 } else {
+//                     entry.textColor = Qt::black;
+//                 }
+
+//                 if (meshObj.contains("textFont")) {
+//                     QJsonObject fontObj = meshObj["textFont"].toObject();
+//                     entry.textFont = QFont(fontObj["family"].toString());
+//                     entry.textSize = fontObj["size"].toInt();
+//                     entry.textFont.setPointSize(entry.textSize);
+//                     entry.textFont.setBold(fontObj["bold"].toBool());
+//                     entry.textFont.setItalic(fontObj["italic"].toBool());
+//                 } else {
+//                     entry.textFont = QFont("Arial", 12);
+//                     entry.textSize = 12;
+//                 }
+
+//                 entry.isTextSelected = false;
+//             }
+
+//             if (meshObj.contains("position")) {
+//                 QJsonObject posObj = meshObj["position"].toObject();
+//                 entry.position = new QVector3D(
+//                     posObj["x"].toDouble(),
+//                     posObj["y"].toDouble(),
+//                     posObj["z"].toDouble()
+//                     );
+//             } else {
+//                 entry.position = new QVector3D(0, 0, 0);
+//             }
+
+//             // if (meshObj.contains("rotation")) {
+//             //     QJsonObject rotObj = meshObj["rotation"].toObject();
+//             //     entry.rotation = new QQuaternion(QQuaternion::fromEulerAngles(
+//             //         rotObj["x"].toDouble(),
+//             //         rotObj["y"].toDouble(),
+//             //         rotObj["z"].toDouble()
+//             //         ));
+//             // }
+//             /* **ROTATION** – read degrees, store as radians */
+//             entry.rotation = new QQuaternion();
+//             if (meshObj.contains("rotation")) {
+//                 QJsonObject rotObj = meshObj["rotation"].toObject();
+//                 qreal deg = rotObj["z_deg"].toDouble();
+//                 entry.rotation->setZ(deg * (M_PI / 180.0));
+//             }
+//             else {
+//                 entry.rotation = new QQuaternion();
+//             }
+
+//             if (meshObj.contains("size")) {
+//                 QJsonObject sizeObj = meshObj["size"].toObject();
+//                 entry.size = new QVector3D(
+//                     sizeObj["x"].toDouble(),
+//                     sizeObj["y"].toDouble(),
+//                     sizeObj["z"].toDouble()
+//                     );
+//             } else {
+//                 entry.size = new QVector3D(1, 1, 1);
+//             }
+
+//             if (meshObj.contains("velocity")) {
+//                 QJsonObject velObj = meshObj["velocity"].toObject();
+//                 entry.velocity = new QVector3D(
+//                     velObj["x"].toDouble(),
+//                     velObj["y"].toDouble(),
+//                     velObj["z"].toDouble()
+//                     );
+//             } else {
+//                 entry.velocity = new QVector3D(0, 0, 0);
+//             }
+
+//             if (meshObj.contains("bitmapPath")) {
+//                 entry.bitmapPath = meshObj["bitmapPath"].toString();
+//             }
+
+//             if (meshObj.contains("mesh")) {
+//                 QJsonObject meshData = meshObj["mesh"].toObject();
+//                 entry.mesh = new Mesh();
+//                 entry.mesh->lineWidth = meshData["lineWidth"].toInt();
+//                 entry.mesh->closePath = meshData["closePath"].toBool();
+//                 if (meshData.contains("color")) {
+//                     QJsonObject colorObj = meshData["color"].toObject();
+//                     entry.mesh->color = new QColor(
+//                         colorObj["r"].toInt(),
+//                         colorObj["g"].toInt(),
+//                         colorObj["b"].toInt(),
+//                         colorObj["a"].toInt()
+//                         );
+//                 } else {
+//                     entry.mesh->color = new QColor(Qt::red);
+//                 }
+//                 if (meshData.contains("polygen")) {
+//                     QJsonArray polygenArray = meshData["polygen"].toArray();
+//                     for (const QJsonValue& pointVal : polygenArray) {
+//                         QJsonObject pointObj = pointVal.toObject();
+//                         entry.mesh->polygen.push_back(new Vector(
+//                             pointObj["x"].toDouble(),
+//                             pointObj["y"].toDouble(),
+//                             pointObj["z"].toDouble()
+//                             ));
+//                     }
+//                 }
+//             } else {
+//                 entry.mesh = nullptr;
+//             }
+
+//             entry.collider = nullptr;
+//             entry.trajectory = nullptr;
+
+//             tempMeshes.push_back(entry);
+//         }
+//     }
+
+//     update();
+// }
 void CanvasWidget::fromJson(const QJsonObject& json) {
+    // ===== PHASE 1: COMPLETE MEMORY CLEANUP =====
+
+    // MEMORY LEAK FIX: Cleanup currentTrajectory waypoints
     for (Waypoints* wp : currentTrajectory) {
-        delete wp->position;
-        delete wp;
+        if (wp) {
+            if (wp->position) {
+                delete wp->position;  // FIX: Vector object memory leak
+            }
+            delete wp;  // FIX: Waypoints object memory leak
+        }
     }
     currentTrajectory.clear();
 
+    // MEMORY LEAK FIX: Cleanup temporary polygon vertices
     for (Vector* v : tempPolygonVertices) {
-        delete v;
+        delete v;  // FIX: Vector object memory leak
     }
     tempPolygonVertices.clear();
     tempPolygonCanvasPoints.clear();
 
+    // MEMORY LEAK FIX: Cleanup temporary line vertices
     for (Vector* v : tempLineVertices) {
-        delete v;
+        delete v;  // FIX: Vector object memory leak
     }
     tempLineVertices.clear();
     tempLineCanvasPoints.clear();
 
+    // MEMORY LEAK FIX: Cleanup all temporary meshes
     for (MeshEntry& entry : tempMeshes) {
-        delete entry.position;
-        delete entry.rotation;
-        delete entry.size;
-        delete entry.velocity;
+        if (entry.position) delete entry.position;
+        if (entry.rotation) delete entry.rotation;
+        if (entry.size) delete entry.size;
+        if (entry.velocity) delete entry.velocity;
         if (entry.mesh) {
-            for (Vector* v : entry.mesh->polygen) {
-                delete v;
-            }
-            delete entry.mesh->color;
+            for (Vector* v : entry.mesh->polygen) delete v;
+            if (entry.mesh->color) delete entry.mesh->color;
             delete entry.mesh;
         }
-        delete entry.collider;
-        delete entry.trajectory;
+        if (entry.collider) delete entry.collider;
+        if (entry.trajectory) {
+            for (Waypoints* wp : entry.trajectory->Trajectories) {
+                if (wp) {
+                    if (wp->position) delete wp->position;
+                    delete wp;
+                }
+            }
+            delete entry.trajectory;
+        }
     }
     tempMeshes.clear();
 
-    // use for save data in json for airbase
+    // Airbase data cleanup
     airbasePositions.clear();
     showAirbases = false;
+
+    // ===== PHASE 2: RESTORE DATA FROM JSON =====
 
     // Restore airbase layer data
     if (json.contains("showAirbases")) {
@@ -3801,6 +3808,7 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
         isPlacingBitmap = json["isPlacingBitmap"].toBool();
     }
 
+    // Restore temporary polygon vertices
     if (json.contains("tempPolygonVertices") && json["tempPolygonVertices"].isArray()) {
         QJsonArray verticesArray = json["tempPolygonVertices"].toArray();
         for (const QJsonValue& val : verticesArray) {
@@ -3809,10 +3817,11 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
                 vObj["x"].toDouble(),
                 vObj["y"].toDouble(),
                 vObj["z"].toDouble()
-                ));
+            ));
         }
     }
 
+    // Restore temporary polygon canvas points
     if (json.contains("tempPolygonCanvasPoints") && json["tempPolygonCanvasPoints"].isArray()) {
         QJsonArray pointsArray = json["tempPolygonCanvasPoints"].toArray();
         for (const QJsonValue& val : pointsArray) {
@@ -3820,10 +3829,11 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
             tempPolygonCanvasPoints.push_back(QPointF(
                 pObj["x"].toDouble(),
                 pObj["y"].toDouble()
-                ));
+            ));
         }
     }
 
+    // Restore temporary line vertices
     if (json.contains("tempLineVertices") && json["tempLineVertices"].isArray()) {
         QJsonArray verticesArray = json["tempLineVertices"].toArray();
         for (const QJsonValue& val : verticesArray) {
@@ -3832,10 +3842,11 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
                 vObj["x"].toDouble(),
                 vObj["y"].toDouble(),
                 vObj["z"].toDouble()
-                ));
+            ));
         }
     }
 
+    // Restore temporary line canvas points
     if (json.contains("tempLineCanvasPoints") && json["tempLineCanvasPoints"].isArray()) {
         QJsonArray pointsArray = json["tempLineCanvasPoints"].toArray();
         for (const QJsonValue& val : pointsArray) {
@@ -3843,10 +3854,11 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
             tempLineCanvasPoints.push_back(QPointF(
                 pObj["x"].toDouble(),
                 pObj["y"].toDouble()
-                ));
+            ));
         }
     }
 
+    // Restore temporary meshes
     if (json.contains("tempMeshes") && json["tempMeshes"].isArray()) {
         QJsonArray tempMeshesArray = json["tempMeshes"].toArray();
         for (const QJsonValue& val : tempMeshesArray) {
@@ -3854,9 +3866,9 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
             MeshEntry entry;
 
             entry.name = meshObj["name"].toString();
-            entry.text = meshObj["text"].toString(); // Deserialize text field for TempText entries
+            entry.text = meshObj["text"].toString();
 
-            // NEW: Text properties deserialization
+            // Text properties deserialization
             if (entry.name.startsWith("TempText")) {
                 if (meshObj.contains("textColor")) {
                     QJsonObject colorObj = meshObj["textColor"].toObject();
@@ -3865,7 +3877,7 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
                         colorObj["g"].toInt(),
                         colorObj["b"].toInt(),
                         colorObj["a"].toInt()
-                        );
+                    );
                 } else {
                     entry.textColor = Qt::black;
                 }
@@ -3891,28 +3903,17 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
                     posObj["x"].toDouble(),
                     posObj["y"].toDouble(),
                     posObj["z"].toDouble()
-                    );
+                );
             } else {
                 entry.position = new QVector3D(0, 0, 0);
             }
 
-            // if (meshObj.contains("rotation")) {
-            //     QJsonObject rotObj = meshObj["rotation"].toObject();
-            //     entry.rotation = new QQuaternion(QQuaternion::fromEulerAngles(
-            //         rotObj["x"].toDouble(),
-            //         rotObj["y"].toDouble(),
-            //         rotObj["z"].toDouble()
-            //         ));
-            // }
             /* **ROTATION** – read degrees, store as radians */
             entry.rotation = new QQuaternion();
             if (meshObj.contains("rotation")) {
                 QJsonObject rotObj = meshObj["rotation"].toObject();
                 qreal deg = rotObj["z_deg"].toDouble();
                 entry.rotation->setZ(deg * (M_PI / 180.0));
-            }
-            else {
-                entry.rotation = new QQuaternion();
             }
 
             if (meshObj.contains("size")) {
@@ -3921,7 +3922,7 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
                     sizeObj["x"].toDouble(),
                     sizeObj["y"].toDouble(),
                     sizeObj["z"].toDouble()
-                    );
+                );
             } else {
                 entry.size = new QVector3D(1, 1, 1);
             }
@@ -3932,7 +3933,7 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
                     velObj["x"].toDouble(),
                     velObj["y"].toDouble(),
                     velObj["z"].toDouble()
-                    );
+                );
             } else {
                 entry.velocity = new QVector3D(0, 0, 0);
             }
@@ -3953,7 +3954,7 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
                         colorObj["g"].toInt(),
                         colorObj["b"].toInt(),
                         colorObj["a"].toInt()
-                        );
+                    );
                 } else {
                     entry.mesh->color = new QColor(Qt::red);
                 }
@@ -3965,7 +3966,7 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
                             pointObj["x"].toDouble(),
                             pointObj["y"].toDouble(),
                             pointObj["z"].toDouble()
-                            ));
+                        ));
                     }
                 }
             } else {
@@ -3981,7 +3982,6 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
 
     update();
 }
-
 void CanvasWidget::onDistanceMeasured(double distance, QPointF startPoint, QPointF endPoint) {
     double distanceKilometers = distance / 1000.0; // Convert to kilometers
     QString msg = QString("Measured distance: %1 meters (%2 km) from (lon: %3, lat: %4) to (lon: %5, lat: %6)")

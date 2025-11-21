@@ -6,7 +6,16 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <core/Hierarchy/Components/transform.h>
+#include "core/Hierarchy/Utils/entityutils.h"
 #include <unordered_set>
+#include <QVector3D>
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+// C# Mathf.Rad2Deg के बराबर
+const float RAD2DEG = 180.0f / M_PI;
+// std::unordered_set<std::string> IFF::iffSeen;
 
 IFF::IFF(Hierarchy* h) : Entity(h) {
     std::shared_ptr<Parameter> par = std::make_shared<Parameter>();
@@ -338,93 +347,189 @@ static std::string nowIsoString() {
 }
 void IFF::interrogateTargets(Transform* source)
 {
-    qDebug() << "=== IFF::interrogateTargets called for:" << QString::fromStdString(Name);
-    // Prevent re-interrogation after first time
-    if (interrogationDone) {
-        qDebug() << "Interrogation already done, skipping...";
-        return;
-    }
-    interrogationDone = true;
-    // Skip if this IFF's transponder is off
+    // Critical call trace — keep
+    qWarning() << "IFF::interrogateTargets for:" << QString::fromStdString(Name);
+
     if (!transponder) {
-        qDebug() << "Transponder disabled, cannot interrogate.";
+        qWarning() << "[IFF] Transponder OFF – interrogation aborted.";
         return;
     }
 
-    // Only allow interrogation in Active or Simulation modes
     if (!(operationalMode == OperationalMode::Active || operationalMode == OperationalMode::Simulation)) {
-        qDebug() << "Operational mode does not allow interrogation:" << operationalModeToString(operationalMode);
+        qWarning() << "[IFF] Operational mode prevents interrogation:" << operationalModeToString(operationalMode);
         return;
     }
 
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (!parent) {
-        qDebug() << "Parent hierarchy not found!";
+        qWarning() << "[IFF] ERROR: Parent hierarchy missing.";
         return;
     }
 
     Platform* sourcePlatform = nullptr;
     for (auto& [key, entity] : *parent->Entities) {
-        Platform* plat = dynamic_cast<Platform*>(entity);
-        if (!plat) continue;
-        for (IFF* iff : plat->iffList) {
-            if (iff == this) {
-                sourcePlatform = plat;
-                break;
+        if (Platform* plat = dynamic_cast<Platform*>(entity)) {
+            for (IFF* iff : plat->iffList) {
+                if (iff == this) {
+                    sourcePlatform = plat;
+                    break;
+                }
             }
+            if (sourcePlatform) break;
         }
-        if (sourcePlatform) break;
     }
 
     QJsonArray responsesArray;
-    float range_m = (emittingRange > 0.0f) ? (emittingRange * 1000.0f) : 5000.0f;
-    qDebug() << "Emitting range used (meters):" << range_m;
+    float range_m = (emittingRange > 0.0f) ? emittingRange : 5.0f;
 
+    // ================================
+    //   CLEANUP OUT-OF-RANGE TARGETS
+    // ================================
+    for (int i = iffTargets.size() - 1; i >= 0; --i) {
+        IFFTarget &t = iffTargets[i];
+        if (!t.entity || !t.entity->transform || !t.entity->transform->matrix) {
+            qWarning() << "[IFF] Removing invalid target record.";
+            localIffSeen.erase(t.responderId);
+            iffTargets.removeAt(i);
+            continue;
+        }
+
+        QVector3D localPos = source->inverseTransformPoint(t.entity->transform->matrix->translation());
+        float dist = localPos.length();
+
+        if (dist > range_m) {
+            localIffSeen.erase(t.responderId);
+            iffTargets.removeAt(i);
+        }
+    }
+
+    // ======================================
+    //   MAIN INTERROGATION LOOP
+    // ======================================
     for (auto& [key, entity] : *parent->Entities) {
         Platform* platform = dynamic_cast<Platform*>(entity);
         if (!platform || platform == sourcePlatform || platform->iffList.empty()) continue;
         if (!platform->transform || !platform->transform->matrix) continue;
 
-        // Skip platforms where all IFFs have transponders OFF
         bool anyTransponderOn = false;
         for (IFF* other : platform->iffList) {
-            if (other && other->transponder) {
-                anyTransponderOn = true;
-                break;
-            }
+            if (other && other->transponder) { anyTransponderOn = true; break; }
         }
         if (!anyTransponderOn) continue;
 
-        // Calculate distance from source
         QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
         float distance = localPos.length();
-        if (distance > range_m) continue;
+        float metredis = distanceBetween(
+                             source->translation().x(), source->translation().z(),
+                             platform->transform->matrix->translation().x(), platform->transform->matrix->translation().z()
+                             ) / 1000;
 
-        bool responded = false; // <-- ONE RESPONSE FLAG per platform
+        if (distance > range_m)
+            continue;
+
+        bool responded = false;
 
         for (IFF* other : platform->iffList) {
             if (!other || !other->transponder) continue;
             if (!(other->operationalMode == OperationalMode::Active ||
                   other->operationalMode == OperationalMode::Passive ||
-                  other->operationalMode == OperationalMode::Simulation)) continue;
+                  other->operationalMode == OperationalMode::Simulation))
+                continue;
 
-            if (!responded) { // <-- only first valid IFF responds
-                QJsonObject resp = other->respondToInterrogation(this, distance);
-                if (!resp.isEmpty()) {
-                    responsesArray.append(resp);
-                    responded = true; // mark platform as responded
-                    qDebug() << "Platform responded:" << QString::fromStdString(platform->Name)
-                             << "via IFF:" << QString::fromStdString(other->Name);
+            if (responded) continue;
+
+            QJsonObject resp = other->respondToInterrogation(this, distance);
+            if (resp.isEmpty()) continue;
+
+            responsesArray.append(resp);
+            responded = true;
+
+            std::string uid = resp["responderId"].toString().toStdString();
+
+            // =========================
+            // NEW TARGET
+            // =========================
+            if (localIffSeen.find(uid) == localIffSeen.end()) {
+                localIffSeen.insert(uid);
+
+                float angle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
+                if (angle < 0.0f) angle += 360.0f;
+
+                int status = (resp["status"].toString().compare("friend", Qt::CaseInsensitive) == 0) ? 1 : 0;
+
+                IFFTarget tgt;
+                tgt.distance      = metredis;
+                tgt.radius        = metredis;
+                tgt.angle         = angle;
+                tgt.responderId   = uid;
+                tgt.responderName = resp["responderName"].toString().toStdString();
+                tgt.status        = status;
+                tgt.mode          = resp["mode"].toString().toStdString();
+                tgt.code          = resp["code"].toString().toStdString();
+                tgt.entity        = platform;
+
+                // Avoid duplicates
+                bool exists = false;
+                for (const IFFTarget& t : iffTargets)
+                    if (t.responderId == uid) { exists = true; break; }
+
+                if (!exists) iffTargets.append(tgt);
+            }
+            else {
+                // =========================
+                // UPDATED EXISTING TARGET (OPTIMIZED + PER-FRAME MOVEMENT)
+                // =========================
+                for (int i = 0; i < iffTargets.size(); ++i) {
+
+                    IFFTarget &target = iffTargets[i];
+                    if (target.responderId != uid) continue;
+
+                    // --- ALWAYS UPDATE POSITION (movement per frame) ---
+                    float angle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
+                    if (angle < 0.0f) angle += 360.0f;
+
+                    target.distance = metredis;
+                    target.radius   = metredis;
+                    target.angle    = angle;
+
+                    // --- NEW IDENTITY DATA FROM RESPONSE ---
+                    int newStatus = (resp["status"].toString().compare("friend", Qt::CaseInsensitive) == 0) ? 1 : 0;
+                    std::string newMode = resp["mode"].toString().toStdString();
+                    std::string newCode = resp["code"].toString().toStdString();
+
+                    // Check for identity change
+                    bool changed =
+                        target.status != newStatus ||
+                        target.mode   != newMode   ||
+                        target.code   != newCode;
+
+                    // Only emit UI update if identity changed
+                    if (changed) {
+                        target.status = newStatus;
+                        target.mode   = newMode;
+                        target.code   = newCode;
+
+                        QJsonObject obj;
+                        obj["responderId"]   = QString::fromStdString(target.responderId);
+                        obj["responderName"] = QString::fromStdString(target.responderName);
+                        obj["status"]        = (target.status == 1 ? "Friend" : "Foe");
+                        obj["mode"]          = QString::fromStdString(target.mode);
+                        obj["code"]          = QString::fromStdString(target.code);
+
+                        QJsonArray arr;
+                        arr.append(obj);
+
+                        emit iffContactsUpdated(arr);
+                    }
+
+                    break;
                 }
             }
         }
     }
 
-    qDebug() << "Total responses collected:" << responsesArray.size();
-    if (!responsesArray.isEmpty()) {
+    if (!responsesArray.isEmpty())
         emit iffContactsUpdated(responsesArray);
-        qDebug() << "iffContactsUpdated emitted with" << responsesArray.size() << "responses.";
-    }
 }
 
 QJsonObject IFF::respondToInterrogation(IFF* interrogator, float distanceMeters)

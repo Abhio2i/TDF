@@ -38,7 +38,7 @@ QString Inspector::formatNumberForUI(double value)
         return QString::number(qRound(value));
     }
     // Format with up to 4 decimals, trim trailing zeros
-    QString result = QString::number(value, 'f', 4).trimmed();
+    QString result = QString::number(value, 'f', 6).trimmed();
     while (result.endsWith('0')) result.chop(1);
     if (result.endsWith('.')) result.chop(1);
     return result;
@@ -486,7 +486,7 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
             QJsonObject pos = obj["position"].toObject();
             displayText = QString("(%1, %2)")
                               .arg(formatNumberForUI(pos["x"].toDouble()))
-                              .arg(formatNumberForUI(pos["y"].toDouble()));
+                              .arg(formatNumberForUI(pos["z"].toDouble()));
         }
         else {
             // Capitalize name field
@@ -530,13 +530,13 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
     if (fullKey != "entity") {
         buttonWidget = new QWidget();
         QHBoxLayout *btnLayout = new QHBoxLayout(buttonWidget);
-        addBtn = new QPushButton("Add");
+        // addBtn = new QPushButton("Add");
         removeBtn = new QPushButton("Remove");
 
-        addBtn->setStyleSheet(
-            "QPushButton { color: white; border-radius: 3px; background-color: #2A3F54; padding: 3px 8px; }"
-            "QPushButton:hover { background-color: #444; }"
-            );
+        // addBtn->setStyleSheet(
+        //     "QPushButton { color: white; border-radius: 3px; background-color: #2A3F54; padding: 3px 8px; }"
+        //     "QPushButton:hover { background-color: #444; }"
+        //     );
         removeBtn->setStyleSheet(
             "QPushButton { color: white; border-radius: 3px; background-color: #2A3F54; padding: 3px 8px; }"
             "QPushButton:hover { background-color: #444; }"
@@ -597,35 +597,35 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
 
     // Connect add and remove buttons
     if (fullKey != "entity") {
-        connect(addBtn, &QPushButton::clicked, this, [=]() {
-            if (fullKey == "trajectories") {
-                QJsonObject newObj;
-                QJsonObject posObj;
-                posObj["type"] = "vector";
-                posObj["x"] = 0.0;
-                posObj["y"] = 0.0;
-                posObj["z"] = 0.0;
-                newObj["position"] = posObj;
-                QString displayText = QString("(%1, %2)")
-                                          .arg(formatNumberForUI(0.0))
-                                          .arg(formatNumberForUI(0.0));
-                QListWidgetItem *newItem = new QListWidgetItem(displayText);
-                newItem->setData(Qt::UserRole, newObj.toVariantMap());
-                listWidget->addItem(newItem);
-                listWidget->setCurrentItem(newItem);
-                emitArrayChanged();
-            } else {
-                QJsonObject newObj;
-                // Capitalize "Unnamed"
-                newObj["name"] = "Unnamed";
-                QString displayText = capitalizeFirstLetter("Unnamed");
-                QListWidgetItem *newItem = new QListWidgetItem(displayText);
-                newItem->setData(Qt::UserRole, newObj.toVariantMap());
-                listWidget->addItem(newItem);
-                listWidget->setCurrentItem(newItem);
-                emitArrayChanged();
-            }
-        });
+        // connect(addBtn, &QPushButton::clicked, this, [=]() {
+        //     if (fullKey == "trajectories") {
+        //         QJsonObject newObj;
+        //         QJsonObject posObj;
+        //         posObj["type"] = "vector";
+        //         posObj["x"] = 0.0;
+        //         posObj["y"] = 0.0;
+        //         posObj["z"] = 0.0;
+        //         newObj["position"] = posObj;
+        //         QString displayText = QString("(%1, %2)")
+        //                                   .arg(formatNumberForUI(0.0))
+        //                                   .arg(formatNumberForUI(0.0));
+        //         QListWidgetItem *newItem = new QListWidgetItem(displayText);
+        //         newItem->setData(Qt::UserRole, newObj.toVariantMap());
+        //         listWidget->addItem(newItem);
+        //         listWidget->setCurrentItem(newItem);
+        //         emitArrayChanged();
+        //     } else {
+        //         QJsonObject newObj;
+        //         // Capitalize "Unnamed"
+        //         newObj["name"] = "Unnamed";
+        //         QString displayText = capitalizeFirstLetter("Unnamed");
+        //         QListWidgetItem *newItem = new QListWidgetItem(displayText);
+        //         newItem->setData(Qt::UserRole, newObj.toVariantMap());
+        //         listWidget->addItem(newItem);
+        //         listWidget->setCurrentItem(newItem);
+        //         emitArrayChanged();
+        //     }
+        // });
 
         connect(removeBtn, &QPushButton::clicked, this, [=]() {
             QListWidgetItem *item = listWidget->currentItem();
@@ -773,7 +773,7 @@ bool Inspector::eventFilter(QObject *watched, QEvent *event)
                     QVariantMap customData = roleDataMap.value(Qt::UserRole).toMap();
                     QJsonObject json = QJsonObject::fromVariantMap(customData);
                     // Handle entity drop
-                    if (key == "entity") {
+                    if (key == "sensors" || key == "iffs" ||key == "radios") {
                         if (customData["type"].toString() != "entity" ||
                             !customData.contains("name") || customData["name"].toString().isEmpty() ||
                             !customData.contains("ID") || customData["ID"].toString().isEmpty()) {
@@ -782,6 +782,7 @@ bool Inspector::eventFilter(QObject *watched, QEvent *event)
                         listWidget->clear();
                         QJsonObject refObj;
                         refObj["type"] = "reference";
+                        refObj["subtype"] = key;
                         refObj["name"] = customData["name"].toString();
                         refObj["id"] = customData["ID"].toString();
                         QString displayText = refObj["name"].toString() + " (ID: " + refObj["id"].toString() + ")";
@@ -789,7 +790,7 @@ bool Inspector::eventFilter(QObject *watched, QEvent *event)
                         newItem->setData(Qt::UserRole, refObj.toVariantMap());
                         listWidget->addItem(newItem);
                         QJsonObject delta;
-                        delta[key] = refObj;
+                        delta["ref"] = refObj;
                         emit valueChanged(ConnectedID, Name, delta);
                     }
                     // Handle trajectory drop
@@ -1159,7 +1160,7 @@ void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
         QJsonObject pos = obj["position"].toObject();
         QString displayText = QString("(%1, %2)")
                                   .arg(formatNumberForUI(pos["x"].toDouble()))
-                                  .arg(formatNumberForUI(pos["y"].toDouble()));
+                                  .arg(formatNumberForUI(pos["z"].toDouble()));
         QListWidgetItem *item = new QListWidgetItem(displayText);
         item->setData(Qt::UserRole, obj.toVariantMap());
         listWidget->addItem(item);

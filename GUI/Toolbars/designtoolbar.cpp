@@ -37,7 +37,7 @@ QPixmap DesignToolBar::withWhiteBg(const QString &iconPath) {
 }
 
 DesignToolBar::DesignToolBar(QWidget *parent) : QToolBar(parent) {
-
+  setWindowTitle("Design ToolBar");
     createActions();
     setupToolBar();
 }
@@ -240,6 +240,14 @@ void DesignToolBar::createActions() {
         emit editTrajectoryTriggered();
     });
 
+    // ADD TRAJECTORY ACTION (NAYA ADD KAREIN)
+    addTrajectoryAction = new QAction(QIcon(withWhiteBg(":/icons/images/trajectory.png")), tr("Add Trajectory"), this);
+    addTrajectoryAction->setCheckable(true);
+    connect(addTrajectoryAction, &QAction::triggered, this, [=]() {
+        highlightAction(addTrajectoryAction);
+        emit modeChanged(DrawTrajectory);
+        emit addTrajectoryTriggered();
+    });
 
     addCustomMapAction = new QAction("Add Custom Map", this);
     connect(addCustomMapAction, &QAction::triggered, this, [=]() {
@@ -387,7 +395,47 @@ void DesignToolBar::createActions() {
         highlightAction(bitmapAction);
         emit bitmapSelected("Forest Area");
     });
+    // NEW: Coordinate System Action
+    coordinateSystemAction = new QAction(QIcon(withWhiteBg(":/icons/images/coordinate-system.png")), tr("Coordinate System"), this);
+    coordinateSystemAction->setCheckable(true);
 
+    // Coordinate System Menu Setup
+    StayOpenMenu* coordMenu = new StayOpenMenu(this);
+    coordMenu->setStyleSheet("QMenu::item:checked { background-color: #d0e0ff; }");
+
+    QActionGroup* coordGroup = new QActionGroup(this);
+    coordGroup->setExclusive(true);
+
+    QAction* latLonAction = new QAction("Geo-detic", this);
+    QAction* utmAction = new QAction("UTM", this);
+
+    latLonAction->setCheckable(true);
+    utmAction->setCheckable(true);
+    latLonAction->setChecked(true); // Default
+
+    latLonAction->setData("EPSG:4326");
+    utmAction->setData("UTM_AUTO");
+
+    coordGroup->addAction(latLonAction);
+    coordGroup->addAction(utmAction);
+
+    coordMenu->addAction(latLonAction);
+    coordMenu->addAction(utmAction);
+
+    coordinateSystemAction->setMenu(coordMenu);
+
+    // Connect coordinate system changes
+    connect(latLonAction, &QAction::triggered, this, [=]() {
+        highlightAction(coordinateSystemAction);
+        emit coordinateSystemChanged("EPSG:4326");
+        qDebug() << "Coordinate system changed to Lat/Lon";
+    });
+
+    connect(utmAction, &QAction::triggered, this, [=]() {
+        highlightAction(coordinateSystemAction);
+        emit coordinateSystemChanged("UTM_AUTO");
+        qDebug() << "Coordinate system changed to UTM";
+    });
     selectBitmapAction = new QAction(QIcon(withWhiteBg(":/icons/images/picture.png")), tr("Select Bitmap Image"), this);
     selectBitmapAction->setCheckable(false);
     connect(selectBitmapAction, &QAction::triggered, this, [=]() {
@@ -518,6 +566,8 @@ void DesignToolBar::highlightAction(QAction *activeAction) {
         gridToggleAction,
         layerSelectAction,
         editTrajectoryAction,
+ coordinateSystemAction,
+        addTrajectoryAction,
         mapSelectLayerAction, searchPlaceAction,
         selectCenterAction, addCustomMapAction, layerInfoAction,
         shapeAction, bitmapAction, selectBitmapAction,
@@ -560,12 +610,27 @@ void DesignToolBar::setupToolBar()
     layerButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
     addWidget(layerButton);  // Menu already attached in createActions()
 
+
+    // NAYA ADD TRAJECTORY ACTION ADD KAREIN
+    QToolButton *addTrajectoryButton = new QToolButton(this);
+    addTrajectoryButton->setDefaultAction(addTrajectoryAction);
+    addTrajectoryButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(addTrajectoryButton);
+
+
     // --- Baaki buttons unchanged ---
     addSeparator();
     addAction(zoomInAction);
     addAction(zoomOutAction);
     addAction(layerInfoAction);
     addAction(selectCenterAction);
+    QToolButton *coordSystemButton = new QToolButton(this);
+    coordSystemButton->setDefaultAction(coordinateSystemAction);
+    coordSystemButton->setPopupMode(QToolButton::InstantPopup);
+    coordSystemButton->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+    addWidget(coordSystemButton);
+
+    addSeparator();
 
     QToolButton *mapLayerButton = new QToolButton(this);
     mapLayerButton->setDefaultAction(mapSelectLayerAction);
@@ -644,6 +709,7 @@ void DesignToolBar::onModeChanged(TransformMode mode) {
         break;
     case DrawTrajectory:
         editTrajectoryAction->setChecked(true);
+          addTrajectoryAction->setChecked(true); // NAYA ACTION
         highlightAction(editTrajectoryAction);
         break;
     case MeasureDistance:

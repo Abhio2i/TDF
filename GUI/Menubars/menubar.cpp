@@ -16,19 +16,19 @@ MenuBar::MenuBar(QWidget *parent)
     // Create file menu
     fileMenu = addMenu("File");
     newFileAction = new QAction("New File", this);
-    newFileAction->setShortcut(QKeySequence("Ctrl+N"));
+    // newFileAction->setShortcut(QKeySequence("Ctrl+N"));
     recentProjectAction = new QAction("Recent Project", this);
     loadJsonAction = new QAction("Open File", this);
-    loadJsonAction->setShortcut(QKeySequence("Ctrl+O"));
+    // loadJsonAction->setShortcut(QKeySequence("Ctrl+O"));
     loadToLibraryAction = new QAction("Open File to Library", this);
     sameSaveAction = new QAction("Save", this);
     sameSaveAction->setShortcut(QKeySequence("Ctrl+S"));
     saveJsonAction = new QAction("Save As", this);
-    saveJsonAction->setShortcut(QKeySequence("Ctrl+Shift+S"));
+    // saveJsonAction->setShortcut(QKeySequence("Ctrl+Shift+S"));
     // runAction = new QAction("Run", this);
     // runAction->setShortcut(QKeySequence("F5"));
     exitAction = new QAction("Exit", this);
-    exitAction->setShortcut(QKeySequence("Ctrl+Q"));
+    // exitAction->setShortcut(QKeySequence("Ctrl+Q"));
     fileMenu->addAction(newFileAction);
     fileMenu->addAction(recentProjectAction);
     fileMenu->addSeparator();
@@ -43,29 +43,29 @@ MenuBar::MenuBar(QWidget *parent)
     // Create edit menu
     editMenu = addMenu("Edit");
     undoAction = new QAction("Undo", this);
-    undoAction->setShortcut(QKeySequence("Ctrl+Z"));
+    // undoAction->setShortcut(QKeySequence("Ctrl+Z"));
     redoAction = new QAction("Redo", this);
-    redoAction->setShortcut(QKeySequence("Ctrl+Y"));
+    // redoAction->setShortcut(QKeySequence("Ctrl+Y"));
     selectAllAction = new QAction("Select All", this);
-    selectAllAction->setShortcut(QKeySequence("Ctrl+A"));
+    // selectAllAction->setShortcut(QKeySequence("Ctrl+A"));
     deselectAllAction = new QAction("Deselect All", this);
-    deselectAllAction->setShortcut(QKeySequence("Ctrl+Shift+A"));
+    // deselectAllAction->setShortcut(QKeySequence("Ctrl+Shift+A"));
     cutAction = new QAction("Cut", this);
-    cutAction->setShortcut(QKeySequence("Ctrl+X"));
+    // cutAction->setShortcut(QKeySequence("Ctrl+X"));
     copyAction = new QAction("Copy", this);
-    copyAction->setShortcut(QKeySequence("Ctrl+C"));
+    // copyAction->setShortcut(QKeySequence("Ctrl+C"));
     pasteAction = new QAction("Paste", this);
-    pasteAction->setShortcut(QKeySequence("Ctrl+V"));
+    // pasteAction->setShortcut(QKeySequence("Ctrl+V"));
     duplicateAction = new QAction("Duplicate", this);
-    duplicateAction->setShortcut(QKeySequence("Ctrl+D"));
+    // duplicateAction->setShortcut(QKeySequence("Ctrl+D"));
     renameAction = new QAction("Rename", this);
-    renameAction->setShortcut(QKeySequence("F2"));
+    // renameAction->setShortcut(QKeySequence("F2"));
     deleteAction = new QAction("Delete", this);
-    deleteAction->setShortcut(QKeySequence("Del"));
-    playAction = new QAction("Play", this);
-    playAction->setShortcut(QKeySequence("Space"));
-    pauseAction = new QAction("Pause", this);
-    pauseAction->setShortcut(QKeySequence("Ctrl+P"));
+    // // deleteAction->setShortcut(QKeySequence("Del"));
+    // playAction = new QAction("Play", this);
+    // // playAction->setShortcut(QKeySequence("Space"));
+    // pauseAction = new QAction("Pause", this);
+    // // pauseAction->setShortcut(QKeySequence("Ctrl+P"));
     editMenu->addAction(undoAction);
     editMenu->addAction(redoAction);
     editMenu->addSeparator();
@@ -80,17 +80,17 @@ MenuBar::MenuBar(QWidget *parent)
     editMenu->addAction(renameAction);
     editMenu->addAction(deleteAction);
     editMenu->addSeparator();
-    editMenu->addAction(playAction);
-    editMenu->addAction(pauseAction);
+    // editMenu->addAction(playAction);
+    // editMenu->addAction(pauseAction);
 
-    // Create view menu
-    viewMenu = addMenu("View");
-    add3DViewAction = new QAction("Add 3D View", this);
-    add3DViewAction->setShortcut(QKeySequence("Ctrl+3"));
-    remove3DViewAction = new QAction("Remove 3D View", this);
-    remove3DViewAction->setShortcut(QKeySequence("Ctrl+Shift+3"));
-    viewMenu->addAction(add3DViewAction);
-    viewMenu->addAction(remove3DViewAction);
+    // // Create view menu
+    // viewMenu = addMenu("View");
+    // add3DViewAction = new QAction("Add 3D View", this);
+    // add3DViewAction->setShortcut(QKeySequence("Ctrl+3"));
+    // remove3DViewAction = new QAction("Remove 3D View", this);
+    // remove3DViewAction->setShortcut(QKeySequence("Ctrl+Shift+3"));
+    // viewMenu->addAction(add3DViewAction);
+    // viewMenu->addAction(remove3DViewAction);
 
     // Create feedback menu
     feedbackMenu = addMenu("Feedback");
@@ -117,10 +117,10 @@ MenuBar::MenuBar(QWidget *parent)
     connect(duplicateAction, &QAction::triggered, this, &MenuBar::duplicateTriggered);
     connect(renameAction, &QAction::triggered, this, &MenuBar::renameTriggered);
     connect(deleteAction, &QAction::triggered, this, &MenuBar::deleteTriggered);
-    connect(playAction, &QAction::triggered, this, &MenuBar::playTriggered);
-    connect(pauseAction, &QAction::triggered, this, &MenuBar::pauseTriggered);
-    connect(add3DViewAction, &QAction::triggered, this, &MenuBar::add3DViewTriggered);
-    connect(remove3DViewAction, &QAction::triggered, this, &MenuBar::remove3DViewTriggered);
+    // connect(playAction, &QAction::triggered, this, &MenuBar::playTriggered);
+    // connect(pauseAction, &QAction::triggered, this, &MenuBar::pauseTriggered);
+    // connect(add3DViewAction, &QAction::triggered, this, &MenuBar::add3DViewTriggered);
+    // connect(remove3DViewAction, &QAction::triggered, this, &MenuBar::remove3DViewTriggered);
 }
 
 // %%% Getter Methods %%%
@@ -250,20 +250,20 @@ QAction* MenuBar::getDeleteAction()
     return deleteAction;
 }
 
-/* Get play action */
-QAction* MenuBar::getPlayAction()
-{
-    return playAction;
-}
+// /* Get play action */
+// QAction* MenuBar::getPlayAction()
+// {
+//     return playAction;
+// }
 
-/* Get pause action */
-QAction* MenuBar::getPauseAction()
-{
-    return pauseAction;
-}
+// /* Get pause action */
+// QAction* MenuBar::getPauseAction()
+// {
+//     return pauseAction;
+// }
 
-/* Get add 3D view action */
-QAction* MenuBar::getAdd3DViewAction()
-{
-    return add3DViewAction;
-}
+// /* Get add 3D view action */
+// QAction* MenuBar::getAdd3DViewAction()
+// {
+//     return add3DViewAction;
+// }

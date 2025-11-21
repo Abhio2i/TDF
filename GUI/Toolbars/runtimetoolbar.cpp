@@ -35,6 +35,7 @@ QPixmap RuntimeToolBar::withWhiteBg(const QString &iconPath)
 
 RuntimeToolBar::RuntimeToolBar(QWidget *parent) : QToolBar(parent)
 {
+    setWindowTitle("Runtime ToolBar");
     elapsedSeconds = 0;
     createActions();
     setupToolBar();
@@ -76,11 +77,11 @@ void RuntimeToolBar::createActions()
         emit replayTriggered();
     });
 
-    nextStepAction = new QAction(QIcon(withWhiteBg(":/icons/images/step.png")), tr("Next Step"), this);
-    nextStepAction->setCheckable(false);
-    connect(nextStepAction, &QAction::triggered, this, [=]() {
-        emit nextStepTriggered();
-    });
+    // nextStepAction = new QAction(QIcon(withWhiteBg(":/icons/images/step.png")), tr("Next Step"), this);
+    // nextStepAction->setCheckable(false);
+    // connect(nextStepAction, &QAction::triggered, this, [=]() {
+    //     emit nextStepTriggered();
+    // });
 
     // bookmarkAction = new QAction(QIcon(withWhiteBg(":/icons/images/star.png")), tr("Bookmark"), this);
     // bookmarkAction->setCheckable(false);
@@ -191,7 +192,7 @@ void RuntimeToolBar::setupToolBar()
     addAction(pauseAction);
     addAction(stopAction);
     addAction(replayAction);
-    addAction(nextStepAction);
+    // addAction(nextStepAction);
     // addAction(bookmarkAction);
     // addAction(timingAction);
     addAction(loggerAction);

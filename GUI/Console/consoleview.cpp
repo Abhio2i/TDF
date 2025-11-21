@@ -116,8 +116,8 @@ void ConsoleView::setupConsoleTabs()
 
     // Set tab bar colors and styles
     tabWidget->setStyleSheet(
-        "QTabBar::tab { color: black; background: #1E1E1E; } "
-        "QTabBar::tab:selected { background: #2E2E2E; } "
+        "QTabBar::tab { color: black;  } "
+        "QTabBar::tab:selected { background: lightgray; } "
         "QTabWidget::pane { border: none; } "
         );
 }

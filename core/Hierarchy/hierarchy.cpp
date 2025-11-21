@@ -313,6 +313,32 @@ void Hierarchy::UpdateComponent(QString ID, QString componentName, QJsonObject d
         if(componentName.contains("_self")){
             entity->fromJson(delta);
         }
+        QJsonObject obj = delta["ref"].toObject();
+        if(!obj.isEmpty()){
+            QString ID = obj["id"].toString();
+            QString type = obj["subtype"].toString();
+            Entity* en = (*Entities)[ID.toStdString()];
+
+            if(type == "sensors"){
+                Sensor* sensor = dynamic_cast<Sensor*>(en);
+                Sensor* newsensor = new Sensor(this);
+                newsensor->fromJson(sensor->toJson());
+                entity->addSensor(newsensor);
+            }
+
+            if(type == "iffs"){
+                IFF* iff = dynamic_cast<IFF*>(en);
+                IFF* newiff = new IFF(this);
+                newiff->fromJson(iff->toJson());
+                entity->addIFF(newiff);
+            }
+            if(type == "radios"){
+                Radio* radio = dynamic_cast<Radio*>(en);
+                Radio* newradio = new Radio(this);
+                newradio->fromJson(radio->toJson());
+                entity->addRadio(newradio);
+            }
+        }
         entity->updateComponent(componentName, mergedData);
         emit entityUpdate(ID);
         emit entityComponentUpdate(ID,componentName,delta);

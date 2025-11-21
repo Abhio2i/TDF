@@ -73,11 +73,13 @@ void RadarDisplay::selectEntity(Entity* entit)
     // Select first valid sensor
     for (Sensor* s : entity->sensorList) {
         if (s) {
-            sensor = s;
-            // Set window title with platform name
-            setWindowTitle("Radar Display (" + QString::fromStdString(entity->Name) + ")");
-            qDebug() << "csdvfyjkygj";
-            break;
+            if(s->subType == Sensor::SubType::Generic){
+                sensor = s;
+                // Set window title with platform name
+                setWindowTitle("Radar Display (" + QString::fromStdString(entity->Name) + ")");
+                qDebug() << "csdvfyjkygj";
+                break;
+            }
         }
     }
 }

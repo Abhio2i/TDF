@@ -27,6 +27,10 @@
 #include "GUI/Timing/graphwidgettime.h"           // For timing graph widget
 #include "GUI/Panel/radardisplay.h"               // For radar display
 #include "GUI/Panel/ewdisplay.h"                  // For EW display
+#include "GUI/Panel/iffdisplay.h"
+#include "GUI/Panel/radiodisplay.h"
+#include "GUI/Panel/csmdisplay.h"
+#include "GUI/Panel/esmdisplay.h"
 #include "GUI/Logger/loggerdialog.h"              // For logger dialog
 #include <QTabWidget>                             // For tabbed interface
 #include <QStatusBar>                             // For status bar display
@@ -78,6 +82,9 @@ private slots:
     void onRecentProjectTriggered();
     void loadRecentProject(const QString& filePath);
     void clearRecentProjects();
+    void setupEnhancedDockWidgets();
+    void onDockVisibilityChanged(bool visible);
+    void resetLayout();
 
 signals:
     // Signal unsaved changes state
@@ -126,7 +133,7 @@ private:
     // Text script view widget
     TextScriptWidget *textScriptView;
     // Timing graph widget
-    GraphWidgetTime *timingGraphWidget;
+    // GraphWidgetTime *timingGraphWidget;
     // Hierarchy connector
     HierarchyConnector* m_hierarchyConnector;
     // Hierarchy data structure
@@ -142,7 +149,7 @@ private:
     // Network toolbar
     NetworkToolbar *networkToolBar;
     // Standard toolbar
-    StandardToolBar *standardToolBar;
+    // StandardToolBar *standardToolBar;
     // Menu bar
     MenuBar *menuBar;
     // List of inspector docks
@@ -169,7 +176,15 @@ private:
     QTabWidget *displayTabs;
     // EW display UI
     EWDisplay *ewDisplayUI;
-    // Dock widget for logger dialog
+    // IFF display UI
+    IFFDisplay *iffDisplayUI;
+
+    // RADIO display UI
+    RADIODisplay *radioDisplayUI;
+
+
+    ESMDisplay *esmDisplayUI;
+    CSMDisplay *csmDisplayUI;
     QDockWidget *loggerDock;
     // Logger dialog instance
     LoggerDialog *loggerDialog;
@@ -177,6 +192,7 @@ private:
     QDateTime recordingStartTime;
     // Timer for updating recording duration
     QTimer *recordingTimer;
+
 };
 
 #endif // RUNTIMEEDITOR_H

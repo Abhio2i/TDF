@@ -177,7 +177,6 @@ public:
     double getTotalDistance() const;        // Total distance from first to last
     void clearMeasurementPoints();          // Clears all points
     void setMeasurementUnit(const QString &unit);  // Set measurement unit (e.g., "m", "km", "ft", "mile")
-
     QString measurementUnit = "m";      // Default: meters
     double conversionFactor = 1.0;      // Default factor for meters
 
@@ -187,13 +186,15 @@ private:
     void drawEntityInformation(QPainter& painter);  // Draw entity info overlay
     void drawSceneInformation(QPainter& painter);  // Draw scene info (FPS, mode)
     void drawTransformGizmo(QPainter& painter);  // Draw transformation gizmo
-    void drawCollider(QPainter& painter);  // Draw collision boundaries
+    void drawCollider(QPainter& painter,std::string id , MeshEntry entry);  // Draw collision boundaries
     void drawSelectionOutline(QPainter& painter);  // Draw selection outline
-    void drawImage(QPainter& painter);  // Draw entity images
-    void drawTrajectory(QPainter& painter);  // Draw trajectory paths
-    void drawTrail(QPainter& painter);  // Draw trajectory paths
+    void drawImage(QPainter& painter,std::string id , MeshEntry entry);  // Draw entity images
+    void drawTrajectory(QPainter& painter,std::string id , MeshEntry entry);  // Draw trajectory paths
+    void drawTrail(QPainter& painter,std::string id , MeshEntry entry);  // Draw trajectory paths
     void drawMesh(QPainter& painter);  // Draw mesh geometries
-    void drawRadar(QPainter& painter);  // Draw collision boundaries
+    // void drawMesh(QPainter& painter,std::string id , MeshEntry entry);  // Draw mesh geometries
+    void drawRadar(QPainter& painter,std::string id , MeshEntry entry);  // Draw collision boundaries
+    void drawRadio(QPainter& painter,std::string id , MeshEntry entry);  // Draw collision boundaries
 
     // Mouse event handlers
     void handleMousePress(QMouseEvent *event);
@@ -275,6 +276,8 @@ signals:
     void pointsUpdated(const QList<QPointF>& points);  // Measurement points updated
 
 private:
+
+
     // Internal state variables
     bool selectEntity;  // Entity selection flag
     QTimer *updateTimer;  // Timer for periodic updates

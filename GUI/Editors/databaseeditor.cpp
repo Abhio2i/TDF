@@ -306,7 +306,7 @@ void DatabaseEditor::setupMenuBar()
     if (editMenu) {
         // Create reset layout action
         QAction *resetLayoutAction = new QAction("Reset Layout", this);
-        resetLayoutAction->setShortcut(QKeySequence("Ctrl+R"));
+        // resetLayoutAction->setShortcut(QKeySequence("Ctrl+R"));
         resetLayoutAction->setStatusTip("Reset all docks to initial positions");
 
         // Add separator and then reset layout action to Edit menu
@@ -394,12 +394,12 @@ void DatabaseEditor::resetLayout()
 /* Setup toolbars */
 void DatabaseEditor::setupToolBars()
 {
-    // Create and add standard toolbar
-    StandardToolBar *standardToolBar = new StandardToolBar(this);
-    addToolBar(Qt::TopToolBarArea, standardToolBar);
+    // // Create and add standard toolbar
+    // StandardToolBar *standardToolBar = new StandardToolBar(this);
+    // addToolBar(Qt::TopToolBarArea, standardToolBar);
 
     // Allow toolbar to be movable
-    standardToolBar->setMovable(true);
+    // standardToolBar->setMovable(true);
 }
 
 /* Add new inspector tab */
@@ -506,7 +506,7 @@ void DatabaseEditor::setupStatusBar()
     // Create and set status bar
     statusBar = new QStatusBar(this);
     setStatusBar(statusBar);
-    statusBar->showMessage("Ready - Fully Dockable Interface Active");
+    statusBar->showMessage("Ready");
 }
 
 /* Update status bar message */
@@ -568,8 +568,11 @@ void DatabaseEditor::onRecentProjectTriggered()
     int count = 1;
     for (const QString& projectPath : existingProjects) {
         QFileInfo fileInfo(projectPath);
-        QString displayText = QString("%1. 📄 %2\n    📍 %3")
-                                  .arg(count)
+        // QString displayText = QString("%1. 📄 %2\n    📍 %3")
+        //                           .arg(count)
+        //                           .arg(fileInfo.fileName())
+        //                           .arg(fileInfo.path());
+        QString displayText = QString("📄 %1\n    📍 %2")
                                   .arg(fileInfo.fileName())
                                   .arg(fileInfo.path());
 

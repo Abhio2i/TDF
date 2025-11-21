@@ -41,6 +41,7 @@ private:
     QString name;
     // Copied vector data
     QJsonObject copiedVectorData;
+     QString formatVectorNumber(double value);
 };
 
 #endif // VECTORTEMPLATE_H

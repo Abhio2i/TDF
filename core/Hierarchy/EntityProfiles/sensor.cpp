@@ -1,6 +1,7 @@
 #include "sensor.h"
 #include <core/Hierarchy/hierarchy.h> // Include full Hierarchy definition
 #include <core/Debug/console.h>
+#include "core/Hierarchy/Utils/entityutils.h"
 #include <core/GlobalRegistry.h>
 #include <cmath>       // For std::atan2, std::abs
 #include <QVector3D>   // For QVector3D
@@ -8,11 +9,11 @@
 #include <unordered_set> // For detects (for fast Contains/Add/Remove)
 #include "core/Hierarchy/EntityProfiles/radio.h"
 
-// M_PI को अधिकांश सिस्टम में डिफाइन किया जाता है, लेकिन इसकी गारंटी नहीं है।
-// इसलिए, आप इसे मैन्युअल रूप से डिफाइन कर सकते हैं:
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+// // M_PI को अधिकांश सिस्टम में डिफाइन किया जाता है, लेकिन इसकी गारंटी नहीं है।
+// // इसलिए, आप इसे मैन्युअल रूप से डिफाइन कर सकते हैं:
+// #ifndef M_PI
+// #define M_PI 3.14159265358979323846
+// #endif
 
 // C# Mathf.Rad2Deg के बराबर
 const float RAD2DEG = 180.0f / M_PI;
@@ -55,32 +56,33 @@ void Sensor::updateComponent(QString name, const QJsonObject& /*obj*/) {
 void Sensor::scan(std::string id , Transform *source)
 {
     // 🔹 Step 1: entry debug
-    qDebug() << "[Sensor::scan] called for ID:" << QString::fromStdString(id)
-             << " | parent:" << (GlobalRegistry::getParentHierarchy(this) ? "valid" : "null");
+    // qDebug() << "[Sensor::scan] called for ID:" << QString::fromStdString(id)
+    //          << " | parent:" << (GlobalRegistry::getParentHierarchy(this) ? "valid" : "null");
 
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
     for (auto& [key, entity] : *parent->Entities)
     {
-        qDebug() << "[Sensor::scan] iterating entity:" << QString::fromStdString(key);
+        // qDebug() << "[Sensor::scan] iterating entity:" << QString::fromStdString(key);
         if(key == id) continue;
         Platform* platform = dynamic_cast<Platform*>(entity);
         if (platform) {
-            qDebug() << "[Sensor::scan] found Platform entity:"
-                     << QString::fromStdString(platform->Name);
+            // qDebug() << "[Sensor::scan] found Platform entity:"
+            //          << QString::fromStdString(platform->Name);
             QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
-            float distance = localPos.length();
+            //float distance = localPos.length();
+            float metredis = distanceBetween(source->translation().x(),source->translation().z(),platform->transform->matrix->translation().x(),platform->transform->matrix->translation().z())/1000;
             // horizontal angle (Y axis) : x vs z
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
             // 🔹 Step 3: debug detection conditions
-            qDebug() << "[Sensor::scan] distance:" << distance
-                     << " range:" << range
-                     << " maxAngle:" << maxDetectionAngle;
+            // qDebug() << "[Sensor::scan] distance:" << metredis
+            //          << " range:" << range
+            //          << " maxAngle:" << maxDetectionAngle;
             // InverseTransformPoint(tr.position) (Transform method assumed to exist)
-            if (detectCheck(localPos)) // .position() is assumed
+            if (detectCheck(localPos,metredis)) // .position() is assumed
             {
-                qDebug() << "[Sensor::scan] DETECTED target:"
-                         << QString::fromStdString(platform->Name);
+                // qDebug() << "[Sensor::scan] DETECTED target:"
+                //          << QString::fromStdString(platform->Name);
                 //qDebug()<< "detect";
                 // C# !detects.Contains(tr) -> C++ detects.count(tr) == 0
                 if (detects.count(platform) == 0)
@@ -90,14 +92,14 @@ void Sensor::scan(std::string id , Transform *source)
                     Target target;
                     target.entity = platform;
                     target.angle = yAngle;
-                    target.radius = distance;
+                    target.radius = metredis;
                     targets.append(target);
                     //qDebug()<< "detect :"<<&entity->Name;
                 }else{
                     for (int i = 0; i < targets.size(); ++i) {
                         if (targets.at(i).entity == platform) {
                             targets[i].angle = yAngle;
-                            targets[i].radius = distance;
+                            targets[i].radius = metredis;
                             //qDebug()<< localPos;
                             break; // एक बार मिल जाने पर लूप से बाहर निकल जाएँ
                         }
@@ -120,7 +122,7 @@ void Sensor::scan(std::string id , Transform *source)
                         }
                     }
                     detects.erase(platform);
-                    qDebug()<< "vanish :"<<&entity->Name;
+                    // qDebug()<< "vanish :"<<&entity->Name;
                 }
             }
         }
@@ -129,8 +131,8 @@ void Sensor::scan(std::string id , Transform *source)
 
 void Sensor::ewscan(std::string id , Transform *source)
 {
-    qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
-             << " | parent:" << (GlobalRegistry::getParentHierarchy(this) ? "valid" : "null");
+    // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
+    // << " | parent:" << (GlobalRegistry::getParentHierarchy(this) ? "valid" : "null");
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (!parent) {
         qDebug() << "[Sensor::ewscan] parent hierarchy is null";
@@ -139,40 +141,42 @@ void Sensor::ewscan(std::string id , Transform *source)
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
     for (auto& [key, entity] : *parent->Entities)
     {
-        qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
+        // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
         if(key == id) continue;
         Platform* platform = dynamic_cast<Platform*>(entity);
         if (platform) {
-            qDebug() << "[Sensor::ewscan] found Platform entity:"
-                     << QString::fromStdString(platform->Name);
+            // qDebug() << "[Sensor::ewscan] found Platform entity:"
+            // << QString::fromStdString(platform->Name);
             //qDebug()<< "platform";
             QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
-            float distance = localPos.length();
+            //float distance = localPos.length();
+            float metredis = distanceBetween(source->translation().x(),source->translation().z(),platform->transform->matrix->translation().x(),platform->transform->matrix->translation().z())/1000;
+
             // horizontal angle (Y axis) : x vs z
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
             // InverseTransformPoint(tr.position) (Transform method assumed to exist)
-            qDebug() << "[Sensor::ewscan] distance:" << distance << " ewrange:" << ewrange;
-            if (distance<ewrange) // .position() is assumed
+            // qDebug() << "[Sensor::ewscan] distance:" << metredis << " ewrange:" << ewrange;
+            if (metredis<ewrange) // .position() is assumed
             {
                 //qDebug()<< "detect";
                 // C# !detects.Contains(tr) -> C++ detects.count(tr) == 0
                 if (ewdetects.count(platform) == 0)
                 {
                     // C# detects.Add(tr) -> C++ detects.insert(tr)
-                    qDebug() << "[Sensor::ewscan] DETECTED (EW) target:"
-                             << QString::fromStdString(platform->Name);
+                    // qDebug() << "[Sensor::ewscan] DETECTED (EW) target:"
+                    // << QString::fromStdString(platform->Name);
                     ewdetects.insert(platform);
                     Target target;
                     target.entity = platform;
                     target.angle = yAngle;
-                    target.radius = distance;
+                    target.radius = metredis;
                     ewtargets.append(target);
                     //qDebug()<< "detect :"<<&entity->Name;
                 }else{
                     for (int i = 0; i < ewtargets.size(); ++i) {
                         if (ewtargets.at(i).entity == platform) {
                             ewtargets[i].angle = yAngle;
-                            ewtargets[i].radius = distance;
+                            ewtargets[i].radius = metredis;
                             //qDebug()<< localPos;
                             break; // एक बार मिल जाने पर लूप से बाहर निकल जाएँ
                         }
@@ -195,7 +199,7 @@ void Sensor::ewscan(std::string id , Transform *source)
                         }
                     }
                     ewdetects.erase(platform);
-                    qDebug()<< "vanish :"<<&entity->Name;
+                    // qDebug()<< "vanish :"<<&entity->Name;
                 }
             }
         }
@@ -207,114 +211,86 @@ void Sensor::csmScan(std::string id, Transform* source)
     if (subType != SubType::CSM) return;
 
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-    qDebug() << "[CSM] scan started for ID:" << QString::fromStdString(id)
-             << "| total entities:" << parent->Entities->size();
+    if (!parent) return;
+
+    QVector3D sourcePos = source->translation();
+    std::vector<Message> newMessages;
 
     for (auto& [key, entity] : *parent->Entities)
     {
-        qDebug() << "[CSM] checking entity:" << QString::fromStdString(key);
-
         if (key == id) continue;
 
         Platform* platform = dynamic_cast<Platform*>(entity);
-        if (!platform) {
-            qDebug() << "   [CSM] skipped - not a Platform";
+        if (!platform || platform->radioList.empty()) continue;
+
+        float metredis = distanceBetween(sourcePos.x(), sourcePos.z(),
+                                         platform->transform->matrix->translation().x(),
+                                         platform->transform->matrix->translation().z()) / 1000;
+        if (metredis >= csmrange) {
+            if (csmdetects.count(platform) > 0) {
+                csmdetects.erase(platform);
+                csmtargets.erase(std::remove_if(csmtargets.begin(), csmtargets.end(),
+                                                [platform](const Target& t){ return t.entity == platform; }),
+                                 csmtargets.end());
+            }
             continue;
         }
 
-        QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
-        float distance = localPos.length();
-        float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
+        float yAngle = std::atan2(source->inverseTransformPoint(platform->transform->matrix->translation()).x(),
+                                  source->inverseTransformPoint(platform->transform->matrix->translation()).z()) * RAD2DEG;
 
-        qDebug() << "   [CSM] found Platform:" << QString::fromStdString(platform->Name)
-                 << "| distance:" << distance << "| range:" << csmrange;
-
-        bool hasRadio = !platform->radioList.empty();
-        qDebug() << "   [CSM] hasRadio:" << hasRadio;
-
-        if (hasRadio && distance < csmrange)
+        for (Radio* radio : platform->radioList)
         {
-            // ✅ Collect radio frequency data
-            for (Radio* radio : platform->radioList)
-            {
-                if (!radio) continue;
+            if (!radio) continue;
 
-                float freqUsed = radio->frequencyUsed;
-                if (freqUsed <= 0.0f)
-                {
-                    // fallback: average of min and max if not used
-                    freqUsed = (radio->frequencyMin + radio->frequencyMax) / 2.0f;
-                }
+            float freqUsed = radio->frequencyUsed;
+            if (freqUsed <= 0.0f) freqUsed = (radio->frequencyMin + radio->frequencyMax) / 2.0f;
 
-                // Detect new platform
-                if (csmdetects.count(platform) == 0)
-                {
-                    csmdetects.insert(platform);
+            if (csmdetects.count(platform) == 0) {
+                csmdetects.insert(platform);
 
-                    Target target;
-                    target.entity = platform;
-                    target.angle = yAngle;
-                    target.radius = distance;
-                    csmtargets.append(target);
+                Target target;
+                target.entity = platform;
+                target.angle = yAngle;
+                target.radius = metredis;
+                csmtargets.push_back(target);
 
-                    Message msg;
-                    msg.timeStamp = QDateTime::currentDateTime().toString("hh:mm:ss").toStdString();
-                    msg.source = Name;
-                    msg.destination = platform->Name;
-                    msg.content =
-                        "Detected radio emission from " + platform->Name +
-                        " | Frequency: " + std::to_string(freqUsed) + " MHz"
-                                                                      " | Bandwidth: " + std::to_string(radio->bandwidth) + " kHz"
-                                                             " | Power: " + std::to_string(radio->emittingPower) + " W";
-
-                    messages.push_back(msg);
-
-                    // ✅ Emit to UI
-                    QJsonArray msgArray;
-                    for (const auto& m : messages) {
-                        QJsonObject o;
-                        o["timeStamp"] = QString::fromStdString(m.timeStamp);
-                        o["source"] = QString::fromStdString(m.source);
-                        o["destination"] = QString::fromStdString(m.destination);
-                        o["content"] = QString::fromStdString(m.content);
-                        msgArray.append(o);
-                    }
-                    emit availableConnectionsUpdated(msgArray);
-
-                    qDebug() << "📡 [CSM] Detected radio from:"
-                             << QString::fromStdString(platform->Name)
-                             << "| Frequency:" << freqUsed << "MHz"
-                             << "| Power:" << radio->emittingPower << "W"
-                             << "| BW:" << radio->bandwidth << "kHz";
-                }
-                else {
-                    // update tracking if already known
-                    for (int i = 0; i < csmtargets.size(); ++i) {
-                        if (csmtargets.at(i).entity == platform) {
-                            csmtargets[i].angle = yAngle;
-                            csmtargets[i].radius = distance;
-                            break;
-                        }
-                    }
+                Message msg;
+                msg.timeStamp = QDateTime::currentDateTime().toString("hh:mm:ss").toStdString();
+                msg.source = Name;
+                msg.destination = platform->Name;
+                msg.content = "Detected radio emission from " + platform->Name +
+                              " | Frequency: " + std::to_string(freqUsed) + " MHz"
+                                                                            " | Bandwidth: " + std::to_string(radio->bandwidth) + " kHz"
+                                                                   " | Power: " + std::to_string(radio->emittingPower) + " W";
+                newMessages.push_back(msg);
+            }
+            else {
+                // update existing
+                auto it = std::find_if(csmtargets.begin(), csmtargets.end(),
+                                       [platform](const Target& t){ return t.entity == platform; });
+                if (it != csmtargets.end()) {
+                    it->angle = yAngle;
+                    it->radius = metredis;
                 }
             }
-        }
-        else if (csmdetects.count(platform) > 0)
-        {
-            // Lost contact
-            for (int i = 0; i < csmtargets.size(); ++i) {
-                if (csmtargets.at(i).entity == platform) {
-                    csmtargets.removeAt(i);
-                    break;
-                }
-            }
-            csmdetects.erase(platform);
-            qDebug() << "❌ [CSM] lost radio contact with:"
-                     << QString::fromStdString(platform->Name);
         }
     }
 
-    qDebug() << "[CSM] scan completed — total detections:" << csmdetects.size();
+    if (!newMessages.empty()) {
+        messages.insert(messages.end(), newMessages.begin(), newMessages.end());
+
+        QJsonArray msgArray;
+        for (const auto& m : messages) {
+            QJsonObject o;
+            o["timeStamp"] = QString::fromStdString(m.timeStamp);
+            o["source"] = QString::fromStdString(m.source);
+            o["destination"] = QString::fromStdString(m.destination);
+            o["content"] = QString::fromStdString(m.content);
+            msgArray.append(o);
+        }
+        emit availableConnectionsUpdated(msgArray);
+    }
 }
 
 void Sensor::esmScan(std::string id, Transform* source)
@@ -338,7 +314,9 @@ void Sensor::esmScan(std::string id, Transform* source)
         if (!platform) continue;
 
         QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
-        float distance = localPos.length();
+        //float distance = localPos.length();
+        float metredis = distanceBetween(source->translation().x(),source->translation().z(),platform->transform->matrix->translation().x(),platform->transform->matrix->translation().z())/1000;
+
         float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
 
         bool hasEmitter = false;
@@ -358,13 +336,13 @@ void Sensor::esmScan(std::string id, Transform* source)
         }
 
         qDebug() << "[ESM] checking entity:" << QString::fromStdString(platform->Name)
-                 << "| distance:" << distance
-                 << "| inRange:" << (distance < esrange)
+                 << "| distance:" << metredis
+                 << "| inRange:" << (metredis < esrange)
                  << "| hasEmitter:" << hasEmitter
                  << "| emitterType:" << emitterType;
 
         // ✅ Detected new emitter
-        if (hasEmitter && distance < esrange)
+        if (hasEmitter && metredis < esrange)
         {
             if (esmdetects.count(platform) == 0)
             {
@@ -373,7 +351,7 @@ void Sensor::esmScan(std::string id, Transform* source)
                 Target target;
                 target.entity = platform;
                 target.angle = yAngle;
-                target.radius = distance;
+                target.radius = metredis;
                 esmtargets.append(target);
 
                 // 🛰️ Create detection message for Inspector
@@ -406,7 +384,7 @@ void Sensor::esmScan(std::string id, Transform* source)
                 for (int i = 0; i < esmtargets.size(); ++i) {
                     if (esmtargets.at(i).entity == platform) {
                         esmtargets[i].angle = yAngle;
-                        esmtargets[i].radius = distance;
+                        esmtargets[i].radius = metredis;
                         break;
                     }
                 }
@@ -432,10 +410,10 @@ void Sensor::esmScan(std::string id, Transform* source)
 
 // Sensor.cpp
 
-bool Sensor::detectCheck(QVector3D localPos)
+bool Sensor::detectCheck(QVector3D localPos,float distance)
 {
     // localPos.magnitude  ->  localPos.length() (QVector3D method)
-    float distance = localPos.length();
+    //loat distance = localPos.length();
 
     // C# Mathf.Atan2(y, x) -> std::atan2(y, x)
     // C# Mathf.Rad2Deg -> RAD2DEG constant
@@ -600,6 +578,18 @@ void Sensor::fromJson(const QJsonObject& obj) {
     beamWidth = static_cast<float>(obj["beamWidth"].toDouble());
     antennaGain = static_cast<float>(obj["antennaGain"].toDouble());
     detectionCapabilities = static_cast<float>(obj["detectionCapabilities"].toDouble());
+    // // --- Load detection ranges for CSM / ESM ---
+    // if (subType == SubType::CSM) {
+    //     if (obj.contains("detectionRange")) {
+    //         csmrange = static_cast<float>(obj["detectionRange"].toDouble());
+    //     }
+    // }
+
+    // if (subType == SubType::ESM) {
+    //     if (obj.contains("detectionRange")) {
+    //         esrange = static_cast<float>(obj["detectionRange"].toDouble());
+    //     }
+    // }
     if (obj.contains("maxDetectionAngle")){
         maxDetectionAngle = static_cast<float>(obj["maxDetectionAngle"].toDouble());
     }

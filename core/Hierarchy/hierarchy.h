@@ -16,6 +16,7 @@ public:
     std::unordered_map<std::string, std::list<std::string>> dictionry;
     std::unordered_map<std::string, Folder*> *Folders;
     std::unordered_map<std::string, Entity*> *Entities;
+
     std::unordered_map<std::string, Component*> *Components;
     std::unordered_map<std::string, Mesh*> *Meshes;
     std::unordered_map<std::string, Mission*> *missionList;

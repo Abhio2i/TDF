@@ -24,33 +24,28 @@ Platform::Platform(Hierarchy* h) : Entity(h) {
 void Platform::update(){
     //qDebug()<<"update";
     for (Sensor* s : sensorList) {
-        qDebug() << "[Platform::update] platformID=" << QString::fromStdString(ID)
-                 << "sensor=" << QString::fromStdString(s->Name)
-                 << "subType=" << s->subTypeToString(s->subType);
+        //qDebug() << "[Platform::update] platformID=" << QString::fromStdString(ID)
+                 //<< "sensor=" << QString::fromStdString(s->Name)
+                 //<< "subType=" << s->subTypeToString(s->subType);
 
-        switch (s->subType) {
-        case Sensor::SubType::CSM:
-            qDebug() << "[Platform::update] calling csmScan";
+        if(s->subType == Sensor::SubType::CSM){
+            //qDebug() << "[Platform::update] calling csmScan";
             s->csmScan(ID, transform);
-            break;
-
-        case Sensor::SubType::ESM:
-            qDebug() << "[Platform::update] calling esmScan";
+        }else
+        if(s->subType == Sensor::SubType::ESM){
+            //qDebug() << "[Platform::update] calling esmScan";
             s->esmScan(ID, transform);
-            break;
-
-        default:
-            qDebug() << "[Platform::update] calling scan + ewscan (Generic)";
+        }else{
+            //qDebug() << "[Platform::update] calling scan + ewscan (Generic)";
             s->scan(ID, transform);
             s->ewscan(ID, transform);
-            break;
         }
     }
 
 
     for (Radio* r : radioList) { // assuming you have a list of radios on this platform
         if (r) {
-            qDebug()<<"found radio";
+            //qDebug()<<"found radio";
             r->updateAvailableConnections(transform);
             // qDebug()<<"found radio";
         }

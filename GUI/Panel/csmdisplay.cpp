@@ -1,9 +1,9 @@
 /* ========================================================================= */
-/* File: ewdisplay.cpp                                                    */
+/* File: CSMDisplay.cpp                                                    */
 /* Purpose: Implements electronic warfare display for radar visualization   */
 /* ========================================================================= */
 
-#include "ewdisplay.h"                             // For EW display class
+#include "csmdisplay.h"                            // For EW display class
 #include <QPainter>                                // For painting operations
 #include <QPaintEvent>                             // For paint events
 #include <QFont>                                   // For font settings
@@ -13,7 +13,7 @@
 
 // %%% Constructor %%%
 /* Initialize electronic warfare display */
-EWDisplay::EWDisplay(QWidget *parent)
+CSMDisplay::CSMDisplay(QWidget *parent)
     : QWidget(parent)
 {
     // Set background color
@@ -28,28 +28,28 @@ EWDisplay::EWDisplay(QWidget *parent)
 
 // %%% Size Management %%%
 /* Provide size hint for widget */
-QSize EWDisplay::sizeHint() const
+QSize CSMDisplay::sizeHint() const
 {
     int defaultWidth = 400;
     return QSize(defaultWidth, heightForWidth(defaultWidth));
 }
 
 /* Provide minimum size for widget */
-QSize EWDisplay::minimumSize() const
+QSize CSMDisplay::minimumSize() const
 {
     int minW = 250;
     return QSize(minW, heightForWidth(minW));
 }
 
 /* Calculate height based on width and aspect ratio */
-int EWDisplay::heightForWidth(int width) const
+int CSMDisplay::heightForWidth(int width) const
 {
     return qRound(width * ASPECT_RATIO);
 }
 
 // %%% Entity Management %%%
 /* Select and configure entity for display */
-void EWDisplay::selectEntity(Entity* entit)
+void CSMDisplay::selectEntity(Entity* entit)
 {
     // Cast entity to Platform
     Platform* platform = dynamic_cast<Platform*>(entit);
@@ -64,19 +64,19 @@ void EWDisplay::selectEntity(Entity* entit)
     // Select first valid sensor
     for (Sensor* s : entity->sensorList) {
         if (s) {
-            if(s->subType == Sensor::SubType::Generic){
-                sensor = s;
-                // Set window title with platform name
-                setWindowTitle("Radar Display (" + QString::fromStdString(entity->Name) + ")");
-                qDebug() << "csdvfyjkygj";
-                break;
+            if(s->subType == Sensor::SubType::CSM){
+            sensor = s;
+            // Set window title with platform name
+            setWindowTitle("Radar Display (" + QString::fromStdString(entity->Name) + ")");
+            qDebug() << "csdvfyjkygj";
+            break;
             }
         }
     }
 }
 
 /* Remove entity if ID matches */
-void EWDisplay::RemoveEntity(QString ID)
+void CSMDisplay::RemoveEntity(QString ID)
 {
     if (id == ID) {
         // Clear entity and sensor
@@ -89,23 +89,64 @@ void EWDisplay::RemoveEntity(QString ID)
 
 // %%% Update Methods %%%
 /* Update radar display data */
-void EWDisplay::updateRadar()
+void CSMDisplay::updateRadar()
 {
     if (entity && sensor) {
         // Set radar range and trigger repaint
-        setRange(sensor->ewrange);
+        setRange(sensor->csmrange);
+        targets = sensor->csmtargets;
         update();
     }
 }
 
 // %%% Paint Event %%%
 /* Handle painting of radar display */
-void EWDisplay::paintEvent(QPaintEvent * /*event*/)
+// void CSMDisplay::paintEvent(QPaintEvent * /*event*/)
+// {
+//     if (width() <= 0 || height() <= 0) return;
+//     // Initialize painter
+//     QPainter p(this);
+//     p.setRenderHint(QPainter::Antialiasing);
+//     // Draw display components
+//     drawBackground(p);
+//     int w = width();
+//     int h = height();
+//     int outerDiameter = qMin(w - padding*2, h - padding*2);
+//     int outerRadius = outerDiameter / 2;
+//     QPoint center(w / 2, h / 2);
+//     drawRadarRing(p, center, outerRadius);
+//     drawConcentricCircles(p, center, outerRadius);
+//     drawTicksAndLabels(p, center, outerRadius);
+//     drawCenterMark(p, center);
+//     drawTopMarker(p, center, outerRadius);
+//     drawTargetAndPath(p);
+//     // Draw targets if present
+//     if (!targets.isEmpty()) {
+//         qDebug() << entity;
+//         p.setPen(QPen(radarGreen, 1, Qt::DotLine));
+//         for (const Target &t : targets) {
+//             double per = qBound(0.0, t.radius / 100.0, 1.0);
+//             double r = per * outerRadius;
+//             double angleDeg = t.angle;
+//             double theta = qDegreesToRadians(angleDeg - 90.0);
+//             int tx = center.x() + int(r * cos(theta));
+//             int ty = center.y() + int(r * sin(theta));
+//             p.setBrush(Qt::red);
+//             p.setPen(Qt::NoPen);
+//             p.drawEllipse(QPointF(tx, ty), 4, 4);
+//             p.setPen(QPen(radarGreen, 1, Qt::DotLine));
+//             p.drawLine(center, QPoint(tx, ty));
+//         }
+//     }
+// }
+void CSMDisplay::paintEvent(QPaintEvent * /*event*/)
 {
     if (width() <= 0 || height() <= 0) return;
+
     // Initialize painter
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
+
     // Draw display components
     drawBackground(p);
     int w = width();
@@ -113,35 +154,62 @@ void EWDisplay::paintEvent(QPaintEvent * /*event*/)
     int outerDiameter = qMin(w - padding*2, h - padding*2);
     int outerRadius = outerDiameter / 2;
     QPoint center(w / 2, h / 2);
+
     drawRadarRing(p, center, outerRadius);
     drawConcentricCircles(p, center, outerRadius);
     drawTicksAndLabels(p, center, outerRadius);
     drawCenterMark(p, center);
     drawTopMarker(p, center, outerRadius);
-    drawTargetAndPath(p);
-    // Draw targets if present
+
+    // Draw targets with dotted lines and labels - ALL IN ONE PLACE
     if (!targets.isEmpty()) {
-        qDebug() << entity;
-        p.setPen(QPen(radarGreen, 1, Qt::DotLine));
+        // qDebug() << "CSM Targets count:" << targets.size();
+
         for (const Target &t : targets) {
-            double per = qBound(0.0, t.radius / 100.0, 1.0);
+            // FIX: Manual bound check - qBound error avoid karein
+            double per = t.radius / range;
+            if (per < 0.0) per = 0.0;
+            if (per > 1.0) per = 1.0;
+
             double r = per * outerRadius;
             double angleDeg = t.angle;
             double theta = qDegreesToRadians(angleDeg - 90.0);
             int tx = center.x() + int(r * cos(theta));
             int ty = center.y() + int(r * sin(theta));
+
+            // qDebug() << "CSM Target - Angle:" << angleDeg << "Radius:" << t.radius << "Position:" << tx << "," << ty;
+
+            // Draw dotted line from center to target
+            p.setPen(QPen(radarGreen, 1, Qt::DotLine));
+            p.drawLine(center, QPoint(tx, ty));
+
+            // Draw red dot at target position
             p.setBrush(Qt::red);
             p.setPen(Qt::NoPen);
             p.drawEllipse(QPointF(tx, ty), 4, 4);
-            p.setPen(QPen(radarGreen, 1, Qt::DotLine));
-            p.drawLine(center, QPoint(tx, ty));
+
+            // Draw labels AT THE RED DOT position
+            p.setPen(QPen(Qt::yellow, 1)); // Yellow color for better visibility
+            QFont font = p.font();
+            font.setPointSize(8);
+            p.setFont(font);
+
+            // Position labels near the red dot
+            QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
+            QString distText = QString("D:%1").arg(t.radius, 0, 'f', 1);
+
+            // Draw text at red dot position with offset
+            p.drawText(tx + 6, ty - 6, angleText);    // Top-right of red dot
+            p.drawText(tx + 6, ty + 12, distText);    // Bottom-right of red dot
         }
     }
-}
 
+    // Remove drawTargetAndPath(p) call - comment this line
+    // drawTargetAndPath(p);
+}
 // %%% Drawing Methods %%%
 /* Draw targets and their paths */
-void EWDisplay::drawTargetAndPath(QPainter &painter)
+void CSMDisplay::drawTargetAndPath(QPainter &painter)
 {
     int w = width();
     int h = height();
@@ -153,7 +221,12 @@ void EWDisplay::drawTargetAndPath(QPainter &painter)
         // Get entity angle
         ang = entity->transform->toEulerAngles().y();
         painter.setBrush(Qt::red);
-        for (const Target &target : sensor->ewtargets) {
+        for (const Target &target : sensor->csmtargets) {
+
+
+
+
+
             // Calculate target position
             int panelhigh = outerRadius;
             float per = target.radius/range;
@@ -174,7 +247,7 @@ void EWDisplay::drawTargetAndPath(QPainter &painter)
 }
 
 /* Draw display background */
-void EWDisplay::drawBackground(QPainter &p)
+void CSMDisplay::drawBackground(QPainter &p)
 {
     p.save();
     // Fill background
@@ -189,7 +262,7 @@ void EWDisplay::drawBackground(QPainter &p)
 }
 
 /* Draw outer radar ring */
-void EWDisplay::drawRadarRing(QPainter &p, const QPoint &center, int outerRadius)
+void CSMDisplay::drawRadarRing(QPainter &p, const QPoint &center, int outerRadius)
 {
     p.save();
     QPen ringPen(radarGreen, 2);
@@ -201,7 +274,7 @@ void EWDisplay::drawRadarRing(QPainter &p, const QPoint &center, int outerRadius
 }
 
 /* Draw concentric radar circles */
-void EWDisplay::drawConcentricCircles(QPainter &p, const QPoint &center, int outerRadius)
+void CSMDisplay::drawConcentricCircles(QPainter &p, const QPoint &center, int outerRadius)
 {
     p.save();
     QPen pen(radarGreen, 1, Qt::DashLine);
@@ -217,7 +290,7 @@ void EWDisplay::drawConcentricCircles(QPainter &p, const QPoint &center, int out
 }
 
 /* Draw radar ticks and labels */
-void EWDisplay::drawTicksAndLabels(QPainter &p, const QPoint &center, int outerRadius)
+void CSMDisplay::drawTicksAndLabels(QPainter &p, const QPoint &center, int outerRadius)
 {
     p.save();
     QPen majorPen(radarGreen, 2);
@@ -254,7 +327,7 @@ void EWDisplay::drawTicksAndLabels(QPainter &p, const QPoint &center, int outerR
 }
 
 /* Draw center cross mark */
-void EWDisplay::drawCenterMark(QPainter &p, const QPoint &center)
+void CSMDisplay::drawCenterMark(QPainter &p, const QPoint &center)
 {
     p.save();
     p.setPen(QPen(radarGreen, 2));
@@ -268,7 +341,7 @@ void EWDisplay::drawCenterMark(QPainter &p, const QPoint &center)
 }
 
 /* Draw top marker triangle and label */
-void EWDisplay::drawTopMarker(QPainter &p, const QPoint &center, int outerRadius)
+void CSMDisplay::drawTopMarker(QPainter &p, const QPoint &center, int outerRadius)
 {
     p.save();
     double theta = qDegreesToRadians(-90.0);

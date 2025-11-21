@@ -1,5 +1,3 @@
-
-
 #ifndef IFF_H
 #define IFF_H
 
@@ -8,13 +6,14 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <string>
+#include <unordered_set>
 
 class IFF : public Entity
 {
     Q_OBJECT
 public:
     explicit IFF(Hierarchy* h);
-
+    // static std::unordered_set<std::string> iffSeen;
     // IFF attributes
     enum class OperationalMode { Active, Passive, Off, Simulation };
     enum class CodeSystem { NoPulse, FivePulses, SixPulses, TwelvePulses };
@@ -38,6 +37,17 @@ public:
         float distanceMeters;   // distance in meters
         std::string timestamp;  // ISO string
     };
+    struct IFFTarget {
+        float distance = 0.0f;
+        std::string responderId;
+        std::string responderName;
+        std::string mode;
+        std::string code;
+        float radius;
+        float angle;
+        int status;
+        Platform* entity;
+    };
     struct Message {
         std::string timeStamp;      // Timestamp of the event
         std::string source;         // Entity name or ID initiating the communication
@@ -50,7 +60,7 @@ public:
     QJsonObject respondToInterrogation(IFF* interrogator, float distanceMeters); // called when this IFF is interrogated
 
     bool transponder = true;
-    float emittingRange = 0.1f; // km
+    float emittingRange = 5.0f; // km
     float emittingFrequency = 0.0f; // MHz
     std::string disType;
     std::string disName;
@@ -62,13 +72,17 @@ public:
     float responseDelay = 50.0f; // ms
     std::string lastInterrogationTime;
     std::vector<Message> messages;
+    QVector<IFFTarget> iffTargets;
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;
     void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;
     void updateComponent(QString name, const QJsonObject& obj) override;
-
+    // ✅ ADD INSTANCE-SPECIFIC SET
+    std::unordered_set<std::string> localIffSeen;
+    // Track last known state per responder to detect status/code/mode changes
+    std::unordered_map<std::string, IFFTarget> lastTargetStates;
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& obj) override;
 signals:

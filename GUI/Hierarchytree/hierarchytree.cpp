@@ -200,9 +200,17 @@ void HierarchyTree::componentAdded(QString parentID, QString componentName)
         qWarning() << "Cannot add component: Parent ID" << parentID << "not found in Items";
         return;
     }
+
+    // ✅ SIRF COMPONENT KA FIRST LETTER CAPITAL KARO
+    QString displayName = componentName;
+    if (!displayName.isEmpty()) {
+        displayName[0] = displayName[0].toUpper();
+    }
     // Create component item
     QTreeWidgetItem *component = new QTreeWidgetItem(Items[parentID]);
-    component->setText(0, componentName);
+    // component->setText(0, componentName);
+    component->setText(0, displayName);  // ✅ Capitalized name use karo
+
     component->setIcon(0, QIcon(":/icons/images/component.png"));
     // Set item data
     QVariantMap data;

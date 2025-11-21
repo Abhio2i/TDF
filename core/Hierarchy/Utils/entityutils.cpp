@@ -1,6 +1,10 @@
 #include "entityutils.h"
 #include "qmetaobject.h"
 
+double toRadians(double degree) {
+    return degree * M_PI / 180.0;
+}
+
 QString entityTypeToString(Constants::EntityType type) {
     switch (type) {
     case Constants::EntityType::Platform: return "Platform";
@@ -63,4 +67,18 @@ QStringList formationTypeOptions() {
         list << QString::fromLatin1(metaEnum.key(i));
     }
     return list;
+}
+
+double distanceBetween(double lat1, double lon1, double lat2, double lon2) {
+    double dLat = toRadians(lat2 - lat1);
+    double dLon = toRadians(lon2 - lon1);
+
+    lat1 = toRadians(lat1);
+    lat2 = toRadians(lat2);
+
+    double a = pow(sin(dLat / 2), 2) +
+               pow(sin(dLon / 2), 2) * cos(lat1) * cos(lat2);
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    return EARTH_RADIUS * c; // Distance in meters
 }

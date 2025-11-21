@@ -34,7 +34,7 @@
 NetworkToolbar::NetworkToolbar(QWidget *parent) : QToolBar(parent)
 {
     setObjectName("NetworkToolbar");
-    setWindowTitle("Network Tools");
+    setWindowTitle("Network Toolbar");
     setMovable(false);
 
     // Define JSON configuration as a string

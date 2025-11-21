@@ -70,6 +70,7 @@ public:
     QAction *importGeoJsonAction;
     // GeoJSON layers action
     QAction *geoJsonLayersAction;
+       QAction *coordinateSystemAction;
 
     // %%% Data Structures %%%
     /* Structure for map layer data */
@@ -84,6 +85,8 @@ public:
         QString resolution;                       // Layer resolution
         QString type;                             // Layer type
     };
+
+      QAction* getAddTrajectoryAction() const { return addTrajectoryAction; }
 
 signals:
     // Signal view action triggered
@@ -164,6 +167,8 @@ signals:
     void geoJsonLayerToggled(const QString &layerName, bool visible);
     // Signal search coordinates triggered
     void searchCoordinatesTriggered(double latitude, double longitude);
+    void addTrajectoryTriggered();
+ void coordinateSystemChanged(const QString& crsId);  // NEW SIGNAL
 
 public slots:
     // Handle mode change
@@ -179,6 +184,7 @@ private slots:
 
 private:
     // %%% UI Components %%%
+     QAction *addTrajectoryAction;
     // View action
     QAction *viewAction;
     // Move action

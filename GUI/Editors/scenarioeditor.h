@@ -129,7 +129,7 @@ private:
     // Design toolbar
     DesignToolBar *designToolBar;
     // Standard toolbar
-    StandardToolBar *standardToolBar;
+    // StandardToolBar *standardToolBar;
     // Menu bar
     MenuBar *menuBar;
 

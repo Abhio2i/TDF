@@ -66,7 +66,7 @@ private:
     // Stop action
     QAction *stopAction;
     // Next step action
-    QAction *nextStepAction;
+    // QAction *nextStepAction;
     // Bookmark action (commented)
     // QAction *bookmarkAction;
     // Replay action

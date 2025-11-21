@@ -97,7 +97,7 @@ public:
     bool esmActive = true;
     void scan(std::string id, Transform *source);
     void ewscan(std::string id , Transform *source);
-    bool detectCheck(QVector3D localPos);
+    bool detectCheck(QVector3D localPos,float distance);
     void csmScan(std::string id, Transform* source);
     void esmScan(std::string id, Transform* source);
     void spawn() override;
