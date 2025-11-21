@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_DesignToolBar_t {
-    QByteArrayData data[66];
-    char stringdata0[1002];
+    QByteArrayData data[69];
+    char stringdata0[1055];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -94,10 +94,13 @@ QT_MOC_LITERAL(58, 873, 7), // "visible"
 QT_MOC_LITERAL(59, 881, 26), // "searchCoordinatesTriggered"
 QT_MOC_LITERAL(60, 908, 8), // "latitude"
 QT_MOC_LITERAL(61, 917, 9), // "longitude"
-QT_MOC_LITERAL(62, 927, 13), // "onModeChanged"
-QT_MOC_LITERAL(63, 941, 26), // "onMeasureDistanceTriggered"
-QT_MOC_LITERAL(64, 968, 19), // "onGeoJsonLayerAdded"
-QT_MOC_LITERAL(65, 988, 13) // "importGeoJson"
+QT_MOC_LITERAL(62, 927, 22), // "addTrajectoryTriggered"
+QT_MOC_LITERAL(63, 950, 23), // "coordinateSystemChanged"
+QT_MOC_LITERAL(64, 974, 5), // "crsId"
+QT_MOC_LITERAL(65, 980, 13), // "onModeChanged"
+QT_MOC_LITERAL(66, 994, 26), // "onMeasureDistanceTriggered"
+QT_MOC_LITERAL(67, 1021, 19), // "onGeoJsonLayerAdded"
+QT_MOC_LITERAL(68, 1041, 13) // "importGeoJson"
 
     },
     "DesignToolBar\0viewTriggered\0\0moveTriggered\0"
@@ -125,8 +128,9 @@ QT_MOC_LITERAL(65, 988, 13) // "importGeoJson"
     "preset\0importGeoJsonTriggered\0"
     "geoJsonLayerToggled\0visible\0"
     "searchCoordinatesTriggered\0latitude\0"
-    "longitude\0onModeChanged\0"
-    "onMeasureDistanceTriggered\0"
+    "longitude\0addTrajectoryTriggered\0"
+    "coordinateSystemChanged\0crsId\0"
+    "onModeChanged\0onMeasureDistanceTriggered\0"
     "onGeoJsonLayerAdded\0importGeoJson"
 };
 #undef QT_MOC_LITERAL
@@ -137,58 +141,60 @@ static const uint qt_meta_data_DesignToolBar[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-      42,   14, // methods
+      44,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
        0,       // flags
-      38,       // signalCount
+      40,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    0,  224,    2, 0x06 /* Public */,
-       3,    0,  225,    2, 0x06 /* Public */,
-       4,    0,  226,    2, 0x06 /* Public */,
-       5,    0,  227,    2, 0x06 /* Public */,
-       6,    0,  228,    2, 0x06 /* Public */,
-       7,    0,  229,    2, 0x06 /* Public */,
-       8,    1,  230,    2, 0x06 /* Public */,
-       9,    1,  233,    2, 0x06 /* Public */,
-      10,    0,  236,    2, 0x06 /* Public */,
-      11,    0,  237,    2, 0x06 /* Public */,
-      12,    1,  238,    2, 0x06 /* Public */,
-      13,    1,  241,    2, 0x06 /* Public */,
-      14,    1,  244,    2, 0x06 /* Public */,
-      15,    1,  247,    2, 0x06 /* Public */,
-      16,    1,  250,    2, 0x06 /* Public */,
-      17,    1,  253,    2, 0x06 /* Public */,
-      18,    1,  256,    2, 0x06 /* Public */,
-      19,    1,  259,    2, 0x06 /* Public */,
-      20,    1,  262,    2, 0x06 /* Public */,
-      21,    1,  265,    2, 0x06 /* Public */,
-      24,    1,  268,    2, 0x06 /* Public */,
-      26,    1,  271,    2, 0x06 /* Public */,
-      28,    1,  274,    2, 0x06 /* Public */,
-      29,    1,  277,    2, 0x06 /* Public */,
-      30,    2,  280,    2, 0x06 /* Public */,
-      33,    1,  285,    2, 0x06 /* Public */,
-      35,    2,  288,    2, 0x06 /* Public */,
-      38,    1,  293,    2, 0x06 /* Public */,
-      40,    0,  296,    2, 0x06 /* Public */,
-      41,    5,  297,    2, 0x06 /* Public */,
-      47,    1,  308,    2, 0x06 /* Public */,
-      49,    1,  311,    2, 0x06 /* Public */,
-      51,    1,  314,    2, 0x06 /* Public */,
-      53,    0,  317,    2, 0x06 /* Public */,
-      54,    1,  318,    2, 0x06 /* Public */,
-      56,    1,  321,    2, 0x06 /* Public */,
-      57,    2,  324,    2, 0x06 /* Public */,
-      59,    2,  329,    2, 0x06 /* Public */,
+       1,    0,  234,    2, 0x06 /* Public */,
+       3,    0,  235,    2, 0x06 /* Public */,
+       4,    0,  236,    2, 0x06 /* Public */,
+       5,    0,  237,    2, 0x06 /* Public */,
+       6,    0,  238,    2, 0x06 /* Public */,
+       7,    0,  239,    2, 0x06 /* Public */,
+       8,    1,  240,    2, 0x06 /* Public */,
+       9,    1,  243,    2, 0x06 /* Public */,
+      10,    0,  246,    2, 0x06 /* Public */,
+      11,    0,  247,    2, 0x06 /* Public */,
+      12,    1,  248,    2, 0x06 /* Public */,
+      13,    1,  251,    2, 0x06 /* Public */,
+      14,    1,  254,    2, 0x06 /* Public */,
+      15,    1,  257,    2, 0x06 /* Public */,
+      16,    1,  260,    2, 0x06 /* Public */,
+      17,    1,  263,    2, 0x06 /* Public */,
+      18,    1,  266,    2, 0x06 /* Public */,
+      19,    1,  269,    2, 0x06 /* Public */,
+      20,    1,  272,    2, 0x06 /* Public */,
+      21,    1,  275,    2, 0x06 /* Public */,
+      24,    1,  278,    2, 0x06 /* Public */,
+      26,    1,  281,    2, 0x06 /* Public */,
+      28,    1,  284,    2, 0x06 /* Public */,
+      29,    1,  287,    2, 0x06 /* Public */,
+      30,    2,  290,    2, 0x06 /* Public */,
+      33,    1,  295,    2, 0x06 /* Public */,
+      35,    2,  298,    2, 0x06 /* Public */,
+      38,    1,  303,    2, 0x06 /* Public */,
+      40,    0,  306,    2, 0x06 /* Public */,
+      41,    5,  307,    2, 0x06 /* Public */,
+      47,    1,  318,    2, 0x06 /* Public */,
+      49,    1,  321,    2, 0x06 /* Public */,
+      51,    1,  324,    2, 0x06 /* Public */,
+      53,    0,  327,    2, 0x06 /* Public */,
+      54,    1,  328,    2, 0x06 /* Public */,
+      56,    1,  331,    2, 0x06 /* Public */,
+      57,    2,  334,    2, 0x06 /* Public */,
+      59,    2,  339,    2, 0x06 /* Public */,
+      62,    0,  344,    2, 0x06 /* Public */,
+      63,    1,  345,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-      62,    1,  334,    2, 0x0a /* Public */,
-      63,    0,  337,    2, 0x0a /* Public */,
-      64,    1,  338,    2, 0x0a /* Public */,
-      65,    0,  341,    2, 0x08 /* Private */,
+      65,    1,  348,    2, 0x0a /* Public */,
+      66,    0,  351,    2, 0x0a /* Public */,
+      67,    1,  352,    2, 0x0a /* Public */,
+      68,    0,  355,    2, 0x08 /* Private */,
 
  // signals: parameters
     QMetaType::Void,
@@ -229,6 +235,8 @@ static const uint qt_meta_data_DesignToolBar[] = {
     QMetaType::Void, QMetaType::QString,   52,
     QMetaType::Void, QMetaType::QString, QMetaType::Bool,   42,   58,
     QMetaType::Void, QMetaType::Double, QMetaType::Double,   60,   61,
+    QMetaType::Void,
+    QMetaType::Void, QMetaType::QString,   64,
 
  // slots: parameters
     QMetaType::Void, 0x80000000 | 22,   23,
@@ -283,10 +291,12 @@ void DesignToolBar::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
         case 35: _t->importGeoJsonTriggered((*reinterpret_cast< const QString(*)>(_a[1]))); break;
         case 36: _t->geoJsonLayerToggled((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< bool(*)>(_a[2]))); break;
         case 37: _t->searchCoordinatesTriggered((*reinterpret_cast< double(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
-        case 38: _t->onModeChanged((*reinterpret_cast< TransformMode(*)>(_a[1]))); break;
-        case 39: _t->onMeasureDistanceTriggered(); break;
-        case 40: _t->onGeoJsonLayerAdded((*reinterpret_cast< const QString(*)>(_a[1]))); break;
-        case 41: _t->importGeoJson(); break;
+        case 38: _t->addTrajectoryTriggered(); break;
+        case 39: _t->coordinateSystemChanged((*reinterpret_cast< const QString(*)>(_a[1]))); break;
+        case 40: _t->onModeChanged((*reinterpret_cast< TransformMode(*)>(_a[1]))); break;
+        case 41: _t->onMeasureDistanceTriggered(); break;
+        case 42: _t->onGeoJsonLayerAdded((*reinterpret_cast< const QString(*)>(_a[1]))); break;
+        case 43: _t->importGeoJson(); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
@@ -557,6 +567,20 @@ void DesignToolBar::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
                 return;
             }
         }
+        {
+            using _t = void (DesignToolBar::*)();
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&DesignToolBar::addTrajectoryTriggered)) {
+                *result = 38;
+                return;
+            }
+        }
+        {
+            using _t = void (DesignToolBar::*)(const QString & );
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&DesignToolBar::coordinateSystemChanged)) {
+                *result = 39;
+                return;
+            }
+        }
     }
 }
 
@@ -589,13 +613,13 @@ int DesignToolBar::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 42)
+        if (_id < 44)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 42;
+        _id -= 44;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 42)
+        if (_id < 44)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 42;
+        _id -= 44;
     }
     return _id;
 }
@@ -854,6 +878,19 @@ void DesignToolBar::searchCoordinatesTriggered(double _t1, double _t2)
 {
     void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t2))) };
     QMetaObject::activate(this, &staticMetaObject, 37, _a);
+}
+
+// SIGNAL 38
+void DesignToolBar::addTrajectoryTriggered()
+{
+    QMetaObject::activate(this, &staticMetaObject, 38, nullptr);
+}
+
+// SIGNAL 39
+void DesignToolBar::coordinateSystemChanged(const QString & _t1)
+{
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    QMetaObject::activate(this, &staticMetaObject, 39, _a);
 }
 QT_WARNING_POP
 QT_END_MOC_NAMESPACE
