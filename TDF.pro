@@ -20,6 +20,7 @@ INCLUDEPATH += /usr/include/qgis/core
 INCLUDEPATH += /usr/include/qgis/gui
 INCLUDEPATH += /usr/include/qgis/analysis
 
+
 LIBS += -L/usr/lib \
     -lqgis_core \
     -lqgis_gui \
@@ -43,6 +44,7 @@ SOURCES += \
     GUI/Inspector/inspector.cpp \
     GUI/Inspector/template/colortemplate.cpp \
     GUI/Inspector/template/geocordstemplate.cpp \
+    GUI/Inspector/template/iconsdialog.cpp \
     GUI/Inspector/template/imagetemplate.cpp \
     GUI/Inspector/template/optiontemplate.cpp \
     GUI/Inspector/template/vectortemplate.cpp \
@@ -50,9 +52,14 @@ SOURCES += \
     GUI/Menubars/menubar.cpp \
     GUI/Navigation/navigationpage.cpp \
     GUI/Overview/overview.cpp \
+    GUI/Panel/csmdisplay.cpp \
+    GUI/Panel/esmdisplay.cpp \
     GUI/Panel/ewdisplay.cpp \
+    GUI/Panel/iffdisplay.cpp \
     GUI/Panel/radardisplay.cpp \
+    GUI/Panel/radiodisplay.cpp \
     GUI/Plugins/pluginwindow.cpp \
+    GUI/Settingsmanager/settingsmanager.cpp \
     GUI/Sidebar/sidebarwidget.cpp \
     GUI/Tacticaldisplay/Gis/custommapdialog.cpp \
     GUI/Tacticaldisplay/Gis/gislib.cpp \
@@ -378,6 +385,7 @@ HEADERS += \
     GUI/Inspector/inspector.h \
     GUI/Inspector/template/colortemplate.h \
     GUI/Inspector/template/geocordstemplate.h \
+    GUI/Inspector/template/iconsdialog.h \
     GUI/Inspector/template/imagetemplate.h \
     GUI/Inspector/template/optiontemplate.h \
     GUI/Inspector/template/vectortemplate.h \
@@ -385,9 +393,14 @@ HEADERS += \
     GUI/Menubars/menubar.h \
     GUI/Navigation/navigationpage.h \
     GUI/Overview/overview.h \
+    GUI/Panel/csmdisplay.h \
+    GUI/Panel/esmdisplay.h \
     GUI/Panel/ewdisplay.h \
+    GUI/Panel/iffdisplay.h \
     GUI/Panel/radardisplay.h \
+    GUI/Panel/radiodisplay.h \
     GUI/Plugins/pluginwindow.h \
+    GUI/Settingsmanager/settingsmanager.h \
     GUI/Sidebar/sidebarwidget.h \
     GUI/Tacticaldisplay/Gis/custommapdialog.h \
     GUI/Tacticaldisplay/Gis/gislib.h \

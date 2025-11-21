@@ -125,6 +125,15 @@
         <file>images/Sukhoi Su-30MKI.png</file>
         <file>images/Swathi Weapon Locating-Photoroom.png</file>
         <file>images/PJT-531 Battlefield Surveillance Radar-Photoroom.png</file>
+        <file>images/Indra.png</file>
+        <file>images/INDRA Mk-II-Photoroom.png</file>
+        <file>images/Rajendra radar (2)-Photoroom.png</file>
+        <file>images/Central Acquisition Radar-Photoroom.png</file>
+        <file>images/Ashwini Radar-Photoroom.png</file>
+        <file>images/Arjun-Photoroom.png</file>
+        <file>images/Armoured Ambulance vehicle-Photoroom.png</file>
+        <file>images/Renault Sherpa-Photoroom.png</file>
+        <file>images/coordinate-system.png</file>
     </qresource>
     <qresource prefix="/texture">
         <file>images/Texture/bball.png</file>
