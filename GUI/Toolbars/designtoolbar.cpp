@@ -37,7 +37,7 @@ QPixmap DesignToolBar::withWhiteBg(const QString &iconPath) {
 }
 
 DesignToolBar::DesignToolBar(QWidget *parent) : QToolBar(parent) {
-  setWindowTitle("Design ToolBar");
+    setWindowTitle("Design ToolBar");
     createActions();
     setupToolBar();
 }
@@ -48,7 +48,7 @@ void DesignToolBar::createActions() {
         { "OpenStreetMap", "osm", 0, 9, "", false, 1.0, "N/A", "Raster" },
         { "Satellite Map", "satellite", 0, 9, "", true, 1.0, "N/A", "Raster" },
         { "Terrain Map", "tarrine", 0, 9, "", true, 1.0, "N/A", "Raster" }
-                 };
+    };
 
     viewAction = new QAction(QIcon(withWhiteBg(":/icons/images/view.jpg")), tr("View"), this);
     viewAction->setCheckable(true);
@@ -408,19 +408,24 @@ void DesignToolBar::createActions() {
 
     QAction* latLonAction = new QAction("Geo-detic", this);
     QAction* utmAction = new QAction("UTM", this);
+    QAction* mgrsAction = new QAction("MGRS", this);
 
     latLonAction->setCheckable(true);
     utmAction->setCheckable(true);
+    mgrsAction->setCheckable(true);
     latLonAction->setChecked(true); // Default
 
     latLonAction->setData("EPSG:4326");
     utmAction->setData("UTM_AUTO");
+    mgrsAction->setData("MGRS");
 
     coordGroup->addAction(latLonAction);
     coordGroup->addAction(utmAction);
+    coordGroup->addAction(mgrsAction);
 
     coordMenu->addAction(latLonAction);
     coordMenu->addAction(utmAction);
+    coordMenu->addAction(mgrsAction);
 
     coordinateSystemAction->setMenu(coordMenu);
 
@@ -436,6 +441,14 @@ void DesignToolBar::createActions() {
         emit coordinateSystemChanged("UTM_AUTO");
         qDebug() << "Coordinate system changed to UTM";
     });
+
+    // Connect MGRS action
+    connect(mgrsAction, &QAction::triggered, this, [=]() {
+        highlightAction(coordinateSystemAction);
+        emit coordinateSystemChanged("MGRS");
+        qDebug() << "Coordinate system changed to MGRS";
+    });
+
     selectBitmapAction = new QAction(QIcon(withWhiteBg(":/icons/images/picture.png")), tr("Select Bitmap Image"), this);
     selectBitmapAction->setCheckable(false);
     connect(selectBitmapAction, &QAction::triggered, this, [=]() {
@@ -566,7 +579,7 @@ void DesignToolBar::highlightAction(QAction *activeAction) {
         gridToggleAction,
         layerSelectAction,
         editTrajectoryAction,
- coordinateSystemAction,
+        coordinateSystemAction,
         addTrajectoryAction,
         mapSelectLayerAction, searchPlaceAction,
         selectCenterAction, addCustomMapAction, layerInfoAction,
@@ -709,7 +722,7 @@ void DesignToolBar::onModeChanged(TransformMode mode) {
         break;
     case DrawTrajectory:
         editTrajectoryAction->setChecked(true);
-          addTrajectoryAction->setChecked(true); // NAYA ACTION
+        addTrajectoryAction->setChecked(true); // NAYA ACTION
         highlightAction(editTrajectoryAction);
         break;
     case MeasureDistance:

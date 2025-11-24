@@ -46,6 +46,8 @@ public slots:
     void setMapLayers(const QStringList& layerNames);
     // Add custom map layer
     void addCustomMap(const QString& layerName, int zoomMin, int zoomMax, const QString& tileUrl, qreal opacity = 1.0);
+    // Slot to handle coordinate system changes from the toolbar
+    void onCoordinateSystemChanged(const QString& crsId); // <-- NEW SLOT
 
 signals:
     // Signal mesh selection

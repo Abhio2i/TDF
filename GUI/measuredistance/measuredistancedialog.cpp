@@ -119,8 +119,8 @@ void MeasureDistanceDialog::addMeasurement(double x, double y, double distance)
     double convertedDistance = distance * factor;
     // Format and add item to list
     QString itemText = QString("%1 %2 %3")
-                           .arg(x, 10, 'f', 4)
-                           .arg(y, 10, 'f', 4)
+                           .arg(x, 10, 'f', 6)
+                           .arg(y, 10, 'f', 6)
                            .arg(convertedDistance, 10, 'f', 3);
     segmentsList->addItem(itemText);
     // Update total distance

@@ -196,6 +196,28 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
                                   .arg(xLabel)
                                   .arg(QString::number(lon, 'f', 6))); // ✅ Decimal points kam kiya
     });
+    connect(mapWidget, &GISlib::mouseCords, this, [=](double lat, double lon, const QString& crsId) {
+
+        QString text;
+
+        if (crsId == "MGRS") {
+            // MGRS calculation (since the signal can't send a string)
+            // Call the GISlib public method to get the MGRS string
+            text = mapWidget->latLonToMGRS(lat, lon); // NOTE: This assumes `lat` and `lon` are WGS84 here.
+        } else {
+            QString xLabel = crsId.startsWith("EPSG:326") ? "X" : "Lon";
+            QString yLabel = crsId.startsWith("EPSG:326") ? "Y" : "Lat";
+
+            // Compact format for smaller display (for Lat/Lon or UTM X/Y)
+            text = QString("%1: %2\n%3: %4")
+                       .arg(yLabel)
+                       .arg(QString::number(lat, 'f', 6))
+                       .arg(xLabel)
+                       .arg(QString::number(lon, 'f', 6));
+        }
+
+        overlayLabel->setText(text);
+    });
     // 🚫 COMBOBOX CONNECTION REMOVED - Yeh comment hi rahega
     // connect(crsComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int index) {
     //     QString crsId = crsComboBox->itemData(index).toString();
@@ -303,4 +325,10 @@ bool TacticalDisplay::eventFilter(QObject *obj, QEvent *event)
         return true;
     }
     return QWidget::eventFilter(obj, event);
+}
+void TacticalDisplay::onCoordinateSystemChanged(const QString& crsId) {
+    if (mapWidget) {
+        mapWidget->setCoordinateSystem(crsId); // Call the new GISlib slot
+        qDebug() << "TacticalDisplay: Forwarded CRS change to GISlib:" << crsId;
+    }
 }

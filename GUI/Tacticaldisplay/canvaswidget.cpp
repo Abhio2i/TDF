@@ -2278,8 +2278,9 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
     drawGridLines(painter);
     for (auto& [id, entry] : Meshes) {
         drawMesh(painter);
-        drawTrail(painter, id, entry);
+        // drawTrail(painter, id, entry);
         drawTrajectory(painter, id, entry);
+        drawTrail(painter, id, entry);
         drawRadar(painter, id, entry);
         drawRadio(painter, id, entry);
         drawImage(painter, id, entry);

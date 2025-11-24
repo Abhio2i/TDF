@@ -1,4 +1,5 @@
 
+
 #include "loggerdialog.h"
 #include <QFileDialog>
 #include <QMessageBox>
@@ -6,31 +7,39 @@
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QGroupBox>
+#include <QMenuBar>
+#include <QStatusBar>
+#include <QToolBar>
+#include <QTabWidget>
+#include <QStackedWidget>
 #include "core/Recorder/recorder.h"
 
-
 LoggerDialog::LoggerDialog(QWidget *parent, Recorder* recorderParam)
-    : QDialog(parent), recorder(recorderParam)
+    : QMainWindow(parent), recorder(recorderParam)
 {
     setWindowTitle(tr("Logger Control"));
     setAttribute(Qt::WA_DeleteOnClose);
     recordingsDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/recordings";
     setMinimumSize(400, 550);
+
+    setupMenuBar();
     setupUi();
 
     setStyleSheet(R"(
-        QDialog {
+        QMainWindow {
             background-color: #f5f6fa;
             font-family: 'Segoe UI', Arial, sans-serif;
         }
         QToolButton {
-            background-color: #ffffff;
-            border: 1px solid #dcdcdc;
-            border-radius: 4px;
-            padding: 5px;
+            background-color: transparent;
+            border: none;
+            padding: 0px;
+            margin: 0px;
         }
         QToolButton:hover {
             background-color: #e0e0e0;
+            border-radius: 3px;
         }
         QPushButton {
             background-color: #0078d4;
@@ -46,183 +55,376 @@ LoggerDialog::LoggerDialog(QWidget *parent, Recorder* recorderParam)
         QPushButton:disabled {
             background-color: #a0a0a0;
         }
-        QCheckBox {
-            font-size: 14px;
-            padding: 5px;
-        }
         QLabel {
             font-size: 14px;
             color: #333333;
-        }
-        QListWidget {
-            border: 1px solid #dcdcdc;
-            border-radius: 4px;
-            background-color: #ffffff;
             padding: 5px;
         }
-        QFrame {
-            background-color: #ffffff;
+        QGroupBox {
+            font-weight: bold;
+            font-size: 14px;
             border: 1px solid #dcdcdc;
             border-radius: 4px;
-            padding: 10px;
+            margin-top: 10px;
+            padding-top: 10px;
+            background-color: #ffffff;
         }
-        QPushButton#recordingActive {
-            background-color: #55efc4;
-            color: #2c3e50;
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            left: 10px;
+            padding: 0 5px 0 5px;
         }
-        QPushButton#recordingActive:hover {
-            background-color: #00bc8c;
+        QToolButton#recordingActive {
+            background-color: #e74c3c;
+            color: white;
+        }
+        QToolButton#paused {
+            background-color: #f39c12;
+            color: white;
+        }
+        QToolButton#replayActive {
+            background-color: #27ae60;
+            color: white;
+        }
+        QMenuBar {
+            background-color: #e0e0e0;
+            color: black;
+            font-size: 14px;
+        }
+        QMenuBar::item {
+            background-color: #e0e0e0;
+            color: black;
+            padding: 4px 10px;
+        }
+        QMenuBar::item:selected {
+            background-color: #d0d0d0;
+            color: black;
+        }
+        QMenuBar::item:pressed {
+            background-color: #c0c0c0;
+            color: black;
+        }
+        QMenu {
+            background-color: #e0e0e0;
+            border: 1px solid #c0c0c0;
+            color: black;
+        }
+        QMenu::item {
+            background-color: #e0e0e0;
+            color: black;
+            padding: 5px 20px;
+        }
+        QMenu::item:selected {
+            background-color: #d0d0d0;
+            color: black;
+        }
+        QMenu::item:pressed {
+            background-color: #c0c0c0;
+            color: black;
+        }
+        QTabWidget {
+            border: 0px;
+        }
+        QTabWidget::pane {
+            border: 0px;
+            margin: 0px;
+            padding: 0px;
+            background-color: transparent;
+        }
+        QTabWidget::tab-bar {
+            alignment: center;
+        }
+        QTabBar::tab {
+            background-color: #e0e0e0;
+            border: 1px solid #dcdcdc;
+            padding: 8px 16px;
+            margin: 2px;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+        QTabBar::tab:selected {
+            background-color: #0078d4;
+            color: white;
+        }
+        QTabBar::tab:hover:!selected {
+            background-color: #d0d0d0;
         }
     )");
 }
 
+void LoggerDialog::setupMenuBar()
+{
+    QMenuBar *menuBar = new QMenuBar(this);
+    setMenuBar(menuBar);
 
+    QMenu *fileMenu = menuBar->addMenu(tr("File"));
+    QAction *loadAction = fileMenu->addAction(tr("Load Recording"));
+
+    QMenu *toolsMenu = menuBar->addMenu(tr("Tools"));
+    QAction *settingsAction = toolsMenu->addAction(tr("Settings"));
+
+    QMenu *helpMenu = menuBar->addMenu(tr("Help"));
+    QAction *aboutAction = helpMenu->addAction(tr("About"));
+    QAction *helpAction = helpMenu->addAction(tr("Help"));
+
+    connect(loadAction, &QAction::triggered, this, [this]() {
+        loadRecordingButton->click();
+    });
+}
 
 void LoggerDialog::setupUi()
 {
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    centralWidget = new QWidget(this);
+    setCentralWidget(centralWidget);
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
     mainLayout->setSpacing(10);
     mainLayout->setContentsMargins(15, 15, 15, 15);
 
-    // Top toolbar for bookmark and timestamp
+    modeTabWidget = new QTabWidget(this);
+    modeTabWidget->setTabPosition(QTabWidget::North);
+    modeTabWidget->setDocumentMode(true);
+    modeTabWidget->setFixedHeight(80);
+
+    QWidget *recordingTab = new QWidget();
+    recordingTab->setContentsMargins(0, 0, 0, 0);
+    QVBoxLayout *recordingLayout = new QVBoxLayout(recordingTab);
+    recordingLayout->setContentsMargins(0, 0, 0, 0);
+    recordingLayout->setSpacing(0);
+    recordingLayout->addWidget(createRecordingControls());
+
+    QWidget *replayTab = new QWidget();
+    replayTab->setContentsMargins(0, 0, 0, 0);
+    QVBoxLayout *replayLayout = new QVBoxLayout(replayTab);
+    replayLayout->setContentsMargins(0, 0, 0, 0);
+    replayLayout->setSpacing(0);
+    replayLayout->addWidget(createReplayControls());
+
+    modeTabWidget->addTab(recordingTab, tr("Recording"));
+    modeTabWidget->addTab(replayTab, tr("Replay"));
+    mainLayout->addWidget(modeTabWidget);
+
     QHBoxLayout *topLayout = new QHBoxLayout();
     bookmarkButton = new QToolButton(this);
     bookmarkButton->setIcon(QIcon(":/icons/images/star.png"));
     bookmarkButton->setToolTip(tr("Add Bookmark"));
-    bookmarkButton->setFixedSize(32, 32);
+    bookmarkButton->setFixedSize(28, 28);
+
     timestampCheckBox = new QCheckBox(tr("Enable Timestamp"), this);
     timestampCheckBox->setChecked(true);
+
     topLayout->addWidget(bookmarkButton);
     topLayout->addWidget(timestampCheckBox);
     topLayout->addStretch();
     mainLayout->addLayout(topLayout);
 
-    // Event selection frame
-    QFrame *eventFrame = new QFrame(this);
-    QVBoxLayout *eventLayout = new QVBoxLayout(eventFrame);
-    eventLayout->setSpacing(8);
-    QLabel *eventLabel = new QLabel(tr("Recordable Events"), this);
-    eventLabel->setStyleSheet("font-weight: bold; font-size: 16px; color: #2c3e50;");
-    actionsCheckBox = new QCheckBox(tr("Actions"), this);
-    waypointsCheckBox = new QCheckBox(tr("Waypoints"), this);
-    engagementsCheckBox = new QCheckBox(tr("Engagements"), this);
-    actionsCheckBox->setChecked(true);
-    waypointsCheckBox->setChecked(true);
-    engagementsCheckBox->setChecked(true);
-    eventLayout->addWidget(eventLabel);
-    eventLayout->addWidget(actionsCheckBox);
-    eventLayout->addWidget(waypointsCheckBox);
-    eventLayout->addWidget(engagementsCheckBox);
-    eventLayout->addStretch();
-    mainLayout->addWidget(eventFrame);
+    QGroupBox *infoGroup = new QGroupBox(tr("Recording Information"), this);
+    QFormLayout *formLayout = new QFormLayout(infoGroup);
 
-    // Control frame
-    QFrame *controlFrame = new QFrame(this);
-    QVBoxLayout *controlLayout = new QVBoxLayout(controlFrame);
-    controlLayout->setSpacing(8);
+    recordingDateLabel = new QLabel(tr("No recording"), this);
+    durationLabel = new QLabel(tr("00:00:00"), this);
+    loggerStatusLabel = new QLabel(tr("Stopped"), this);
+    simulationStatusLabel = new QLabel(tr("Not Available"), this);
 
-    // Icon-only buttons in a single row
-    QHBoxLayout *buttonLayout = new QHBoxLayout();
-    buttonLayout->setSpacing(8);
+    recordingDateLabel->setStyleSheet("font-weight: normal; color: #666;");
+    durationLabel->setStyleSheet("font-weight: normal; color: #666;");
+    loggerStatusLabel->setStyleSheet("font-weight: normal; color: #666;");
+    simulationStatusLabel->setStyleSheet("font-weight: normal; color: #666;");
 
-    QToolButton *startRecordingButton = new QToolButton(this);
-    startRecordingButton->setIcon(QIcon(":/icons/images/play.png"));
-    startRecordingButton->setToolTip(tr("Start Recording"));
-    startRecordingButton->setFixedSize(32, 32);
-    startRecordingButton->setObjectName("startRecordingButton");
+    formLayout->addRow(tr("Recording Date:"), recordingDateLabel);
+    formLayout->addRow(tr("Duration:"), durationLabel);
+    formLayout->addRow(tr("Logger Status:"), loggerStatusLabel);
+    formLayout->addRow(tr("Simulation Status:"), simulationStatusLabel);
 
-    QToolButton *replayRecordingButton = new QToolButton(this);
-    replayRecordingButton->setIcon(QIcon(":/icons/images/replay.png"));
-    replayRecordingButton->setToolTip(tr("Replay Recording"));
-    replayRecordingButton->setFixedSize(32, 32);
+    mainLayout->addWidget(infoGroup);
 
-    QToolButton *stopRecordingButton = new QToolButton(this);
-    stopRecordingButton->setIcon(QIcon(":/icons/images/stop.png"));
-    stopRecordingButton->setToolTip(tr("Stop Recording"));
-    stopRecordingButton->setFixedSize(32, 32);
-    stopRecordingButton->setEnabled(false); // Disable Stop button by default
-
-    QToolButton *loadRecordingButton = new QToolButton(this);
-    loadRecordingButton->setIcon(QIcon(":/icons/images/loading-arrow.png"));
-    loadRecordingButton->setToolTip(tr("Load Recording"));
-    loadRecordingButton->setFixedSize(32, 32);
-
-    buttonLayout->addWidget(startRecordingButton);
-    buttonLayout->addWidget(replayRecordingButton);
-    buttonLayout->addWidget(stopRecordingButton);
-    buttonLayout->addWidget(loadRecordingButton);
-    buttonLayout->addStretch();
-    controlLayout->addLayout(buttonLayout);
-
-    // Timeline widget
     timelineWidget = new TimelineWidget(this);
     timelineWidget->setVisible(true);
+    mainLayout->addWidget(timelineWidget);
 
-    // Add widgets to control layout
-    controlLayout->addWidget(timelineWidget);
-    controlLayout->addStretch();
-    mainLayout->addWidget(controlFrame);
-
-    // Stretch to push content up
     mainLayout->addStretch();
 
-    // Connections
-    connect(startRecordingButton, &QToolButton::clicked, this, [this, startRecordingButton, stopRecordingButton]() {
+    connect(modeTabWidget, &QTabWidget::currentChanged, this, [this](int index) {
+        if (index == 0) {
+            switchToRecordingMode();
+        } else {
+            switchToReplayMode();
+        }
+    });
+
+    connect(bookmarkButton, &QToolButton::clicked, this, &LoggerDialog::showBookmarkDialog);
+    setupConnections();
+}
+
+QWidget* LoggerDialog::createRecordingControls()
+{
+    QWidget *container = new QWidget();
+    container->setContentsMargins(0, 0, 0, 0);
+    QHBoxLayout *controlLayout = new QHBoxLayout(container);
+    controlLayout->setContentsMargins(5, 0, 5, 0);
+    controlLayout->setSpacing(8);
+
+    recordButton = new QToolButton(this);
+    recordButton->setIcon(QIcon(":/icons/images/record-button.png"));
+    recordButton->setToolTip(tr("Start Recording"));
+    recordButton->setFixedSize(28, 28);
+    recordButton->setIconSize(QSize(24, 24));
+
+    pauseRecordingButton = new QToolButton(this);
+    pauseRecordingButton->setIcon(QIcon(":/icons/images/pause.png"));
+    pauseRecordingButton->setToolTip(tr("Pause Recording"));
+    pauseRecordingButton->setFixedSize(28, 28);
+    pauseRecordingButton->setIconSize(QSize(24, 24));
+    pauseRecordingButton->setEnabled(false);
+
+    stopRecordingButton = new QToolButton(this);
+    stopRecordingButton->setIcon(QIcon(":/icons/images/stop.png"));
+    stopRecordingButton->setToolTip(tr("Stop Recording"));
+    stopRecordingButton->setFixedSize(28, 28);
+    stopRecordingButton->setIconSize(QSize(24, 24));
+    stopRecordingButton->setEnabled(false);
+
+    controlLayout->addWidget(recordButton);
+    controlLayout->addWidget(pauseRecordingButton);
+    controlLayout->addWidget(stopRecordingButton);
+    controlLayout->addStretch();
+
+    return container;
+}
+
+QWidget* LoggerDialog::createReplayControls()
+{
+    QWidget *container = new QWidget();
+    container->setContentsMargins(0, 0, 0, 0);
+    QHBoxLayout *controlLayout = new QHBoxLayout(container);
+    controlLayout->setContentsMargins(5, 0, 5, 0);
+    controlLayout->setSpacing(8);
+
+    startReplayButton = new QToolButton(this);
+    startReplayButton->setIcon(QIcon(":/icons/images/play.png"));
+    startReplayButton->setToolTip(tr("Start Replay"));
+    startReplayButton->setFixedSize(28, 28);
+    startReplayButton->setIconSize(QSize(24, 24));
+
+    pauseResumeReplayButton = new QToolButton(this);
+    pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
+    pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
+    pauseResumeReplayButton->setFixedSize(28, 28);
+    pauseResumeReplayButton->setIconSize(QSize(24, 24));
+    pauseResumeReplayButton->setEnabled(false);
+
+    previousFrameButton = new QToolButton(this);
+    previousFrameButton->setIcon(QIcon(":/icons/images/back.png"));
+    previousFrameButton->setToolTip(tr("Previous Frame"));
+    previousFrameButton->setFixedSize(28, 28);
+    previousFrameButton->setIconSize(QSize(24, 24));
+    previousFrameButton->setEnabled(false);
+
+    nextFrameButton = new QToolButton(this);
+    nextFrameButton->setIcon(QIcon(":/icons/images/next-button.png"));
+    nextFrameButton->setToolTip(tr("Next Frame"));
+    nextFrameButton->setFixedSize(28, 28);
+    nextFrameButton->setIconSize(QSize(24, 24));
+    nextFrameButton->setEnabled(false);
+
+    loadRecordingButton = new QToolButton(this);
+    loadRecordingButton->setIcon(QIcon(":/icons/images/loading-arrow.png"));
+    loadRecordingButton->setToolTip(tr("Load Recording"));
+    loadRecordingButton->setFixedSize(28, 28);
+    loadRecordingButton->setIconSize(QSize(24, 24));
+
+    controlLayout->addWidget(startReplayButton);
+    controlLayout->addWidget(pauseResumeReplayButton);
+    controlLayout->addWidget(previousFrameButton);
+    controlLayout->addWidget(nextFrameButton);
+    controlLayout->addWidget(loadRecordingButton);
+    controlLayout->addStretch();
+
+    return container;
+}
+
+void LoggerDialog::setupConnections()
+{
+    connect(recordButton, &QToolButton::clicked, this, [this]() {
         recordingStartTime = QDateTime::currentDateTime();
         timelineWidget->setRecordingStartTime(recordingStartTime);
         timelineWidget->setRecordingDuration(0);
         timelineWidget->clearBookmarks();
+
+        recordingDateLabel->setText(recordingStartTime.toString("yyyy-MM-dd hh:mm:ss"));
+        loggerStatusLabel->setText(tr("Recording"));
+        loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
+
         emit startRecording();
-        startRecordingButton->setToolTip(tr("Recording..."));
-        startRecordingButton->setObjectName("recordingActive");
-        startRecordingButton->setStyleSheet("");
-        startRecordingButton->setEnabled(false);
+        recordButton->setToolTip(tr("Recording..."));
+        recordButton->setObjectName("recordingActive");
+        recordButton->setStyleSheet("");
+        recordButton->setEnabled(false);
+        pauseRecordingButton->setEnabled(true);
         stopRecordingButton->setEnabled(true);
+
+        isRecordingPaused = false;
+        pauseRecordingButton->setIcon(QIcon(":/icons/images/pause.png"));
+        pauseRecordingButton->setToolTip(tr("Pause Recording"));
     });
 
-    connect(stopRecordingButton, &QToolButton::clicked, this, [this, startRecordingButton, stopRecordingButton]() {
-        if (recordingStartTime.isValid()) { // Check if recording is active
-            // Stop recording
+    connect(pauseRecordingButton, &QToolButton::clicked, this, [this]() {
+        if (!isRecordingPaused) {
+            emit pauseRecording();
+            loggerStatusLabel->setText(tr("Recording Paused"));
+            loggerStatusLabel->setStyleSheet("font-weight: bold; color: #f39c12;");
+
+            pauseRecordingButton->setIcon(QIcon(":/icons/images/resume.png"));
+            pauseRecordingButton->setToolTip(tr("Resume Recording"));
+            pauseRecordingButton->setObjectName("paused");
+            isRecordingPaused = true;
+        } else {
+            emit startRecording();
+            loggerStatusLabel->setText(tr("Recording"));
+            loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
+
+            pauseRecordingButton->setIcon(QIcon(":/icons/images/pause.png"));
+            pauseRecordingButton->setToolTip(tr("Pause Recording"));
+            pauseRecordingButton->setObjectName("");
+            isRecordingPaused = false;
+        }
+    });
+
+    connect(stopRecordingButton, &QToolButton::clicked, this, [this]() {
+        if (recordingStartTime.isValid()) {
             emit stopRecording();
 
-            // Open file dialog to choose save location and file name
             QString saveFilePath = QFileDialog::getSaveFileName(
                 this,
                 tr("Save Recording"),
-                QDir::homePath(), // Default to home directory instead of recordingsDir
+                QDir::homePath(),
                 tr("JSON Files (*.json)")
                 );
 
-            if (!saveFilePath.isEmpty()) { // User provided a file name and location
-                // Ensure the file has .json extension
+            if (!saveFilePath.isEmpty()) {
                 if (!saveFilePath.endsWith(".json", Qt::CaseInsensitive)) {
                     saveFilePath += ".json";
                 }
-                filePath = saveFilePath; // Store the file path
-                emit saveRecording(filePath); // Emit signal with file path
-                qDebug() << "Recording stopped and saveRecording signal emitted with file path:" << filePath;
-            } else {
-                qDebug() << "Save cancelled by user.";
+                filePath = saveFilePath;
+                emit saveRecording(filePath);
+                qDebug() << "Recording stopped and saved to:" << filePath;
             }
 
-            // Reset UI
-            startRecordingButton->setToolTip(tr("Start Recording"));
-            startRecordingButton->setObjectName("startRecordingButton");
-            startRecordingButton->setStyleSheet("");
-            startRecordingButton->setEnabled(true);
+            recordButton->setToolTip(tr("Start Recording"));
+            recordButton->setObjectName("");
+            recordButton->setStyleSheet("");
+            recordButton->setEnabled(true);
+            pauseRecordingButton->setEnabled(false);
             stopRecordingButton->setEnabled(false);
+            loggerStatusLabel->setText(tr("Stopped"));
+            loggerStatusLabel->setStyleSheet("font-weight: normal; color: #666;");
             timelineWidget->setRecordingDuration(0);
             recordingStartTime = QDateTime();
-        }
-    });
 
-    connect(replayRecordingButton, &QToolButton::clicked, this, [this]() {
-        if (filePath.isEmpty()) {
-            qDebug() << "No recording loaded to replay!";
-            return;
+            isRecordingPaused = false;
+            pauseRecordingButton->setIcon(QIcon(":/icons/images/pause.png"));
+            pauseRecordingButton->setToolTip(tr("Pause Recording"));
         }
-        emit loadRecording(filePath);
-        qDebug() << "Replay triggered — file path:" << filePath;
     });
 
     connect(loadRecordingButton, &QToolButton::clicked, this, [this]() {
@@ -233,73 +435,73 @@ void LoggerDialog::setupUi()
             tr("JSON Files (*.json)")
             );
 
-        if (selectedFile.isEmpty())
-            return; // User cancelled
+        if (selectedFile.isEmpty()) return;
 
-        filePath = selectedFile; // Store permanently
+        filePath = selectedFile;
         emit loadRecording(filePath);
-        qDebug() << "Recording loaded — file path:" << filePath;
+
+        QFileInfo fileInfo(filePath);
+        recordingDateLabel->setText(fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss"));
+        loggerStatusLabel->setText(tr("Loaded"));
+        loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
+
+        startReplayButton->setEnabled(true);
+        previousFrameButton->setEnabled(true);
+        nextFrameButton->setEnabled(true);
+
+        qDebug() << "Recording loaded:" << filePath;
     });
 
-    connect(actionsCheckBox, &QCheckBox::stateChanged, this, [this]() {
-        QStringList eventTypes;
-        if (actionsCheckBox->isChecked()) eventTypes << "Actions";
-        if (waypointsCheckBox->isChecked()) eventTypes << "Waypoints";
-        if (engagementsCheckBox->isChecked()) eventTypes << "Engagements";
-        emit eventTypesSelected(eventTypes);
+    connect(startReplayButton, &QToolButton::clicked, this, [this]() {
+        if (filePath.isEmpty()) {
+            qDebug() << "No recording loaded to replay!";
+            QMessageBox::warning(this, tr("Warning"), tr("No recording loaded to replay!"));
+            return;
+        }
+
+        emit startReplay();
+        loggerStatusLabel->setText(tr("Replaying"));
+        loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
+
+        startReplayButton->setEnabled(false);
+        pauseResumeReplayButton->setEnabled(true);
+        pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
+        pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
+        isReplayPaused = false;
+
+        qDebug() << "Replay started - file path:" << filePath;
     });
 
-    connect(waypointsCheckBox, &QCheckBox::stateChanged, this, [this]() {
-        QStringList eventTypes;
-        if (actionsCheckBox->isChecked()) eventTypes << "Actions";
-        if (waypointsCheckBox->isChecked()) eventTypes << "Waypoints";
-        if (engagementsCheckBox->isChecked()) eventTypes << "Engagements";
-        emit eventTypesSelected(eventTypes);
+    connect(pauseResumeReplayButton, &QToolButton::clicked, this, [this]() {
+        if (!isReplayPaused) {
+            emit pauseReplay();
+            loggerStatusLabel->setText(tr("Replay Paused"));
+            loggerStatusLabel->setStyleSheet("font-weight: bold; color: #f39c12;");
+
+            pauseResumeReplayButton->setIcon(QIcon(":/icons/images/resume.png"));
+            pauseResumeReplayButton->setToolTip(tr("Resume Replay"));
+            pauseResumeReplayButton->setObjectName("paused");
+            isReplayPaused = true;
+        } else {
+            emit resumeReplay();
+            loggerStatusLabel->setText(tr("Replaying"));
+            loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
+
+            pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
+            pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
+            pauseResumeReplayButton->setObjectName("");
+            isReplayPaused = false;
+        }
     });
 
-    connect(engagementsCheckBox, &QCheckBox::stateChanged, this, [this]() {
-        QStringList eventTypes;
-        if (actionsCheckBox->isChecked()) eventTypes << "Actions";
-        if (waypointsCheckBox->isChecked()) eventTypes << "Waypoints";
-        if (engagementsCheckBox->isChecked()) eventTypes << "Engagements";
-        emit eventTypesSelected(eventTypes);
+    connect(previousFrameButton, &QToolButton::clicked, this, [this]() {
+        emit previousFrame();
+        qDebug() << "Previous Frame requested";
     });
 
-    connect(bookmarkButton, &QToolButton::clicked, this, [this]() {
-        QDialog bookmarkDialog(this);
-        bookmarkDialog.setWindowTitle(tr("Add Bookmark"));
-        bookmarkDialog.setStyleSheet("background-color: #ffffff; font-family: 'Segoe UI', Arial, sans-serif;");
-        QVBoxLayout *dialogLayout = new QVBoxLayout(&bookmarkDialog);
-        QLineEdit *bookmarkEdit = new QLineEdit(&bookmarkDialog);
-        bookmarkEdit->setPlaceholderText(tr("Enter comment"));
-        QPushButton *okButton = new QPushButton(tr("OK"), &bookmarkDialog);
-        okButton->setStyleSheet("background-color: #0078d4; color: white; border: none; border-radius: 4px; padding: 8px 16px; font-size: 14px;");
-        dialogLayout->addWidget(bookmarkEdit);
-        dialogLayout->addWidget(okButton);
-        dialogLayout->addStretch();
-
-        connect(okButton, &QPushButton::clicked, &bookmarkDialog, [this, &bookmarkDialog, bookmarkEdit]() {
-            if (!bookmarkEdit->text().isEmpty()) {
-                QString bookmarkNote = bookmarkEdit->text();
-                emit bookmarkAdded(bookmarkNote);
-
-                if (recorder && recordingStartTime.isValid()) {
-                    qint64 timestampMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
-                    recorder->saveBookmark(bookmarkNote, timestampMs);
-                }
-
-                if (timestampCheckBox->isChecked() && recordingStartTime.isValid()) {
-                    qint64 timestampMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
-                    addBookmarkWithTimestamp(bookmarkNote, timestampMs);
-                }
-
-                bookmarkDialog.accept();
-            } else {
-                QMessageBox::warning(this, tr("Invalid Input"), tr("Please enter a bookmark comment."));
-            }
-        });
-
-        bookmarkDialog.exec();
+    connect(nextFrameButton, &QToolButton::clicked, this, [this]() {
+        emit nextFrame();
+        qDebug() << "Next Frame requested";
     });
 
     connect(timestampCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
@@ -317,22 +519,76 @@ void LoggerDialog::setupUi()
         qDebug() << "Bookmark clicked: Note =" << note << ", Timestamp =" << timestampMs << "ms";
     });
 }
+
+void LoggerDialog::showBookmarkDialog()
+{
+    QDialog bookmarkDialog(this);
+    bookmarkDialog.setWindowTitle(tr("Add Bookmark"));
+    bookmarkDialog.setStyleSheet("background-color: #ffffff; font-family: 'Segoe UI', Arial, sans-serif;");
+    QVBoxLayout *dialogLayout = new QVBoxLayout(&bookmarkDialog);
+    QLineEdit *bookmarkEdit = new QLineEdit(&bookmarkDialog);
+    bookmarkEdit->setPlaceholderText(tr("Enter comment"));
+    QPushButton *okButton = new QPushButton(tr("OK"), &bookmarkDialog);
+    okButton->setStyleSheet("background-color: #0078d4; color: white; border: none; border-radius: 4px; padding: 8px 16px; font-size: 14px;");
+    dialogLayout->addWidget(bookmarkEdit);
+    dialogLayout->addWidget(okButton);
+    dialogLayout->addStretch();
+
+    connect(okButton, &QPushButton::clicked, &bookmarkDialog, [this, &bookmarkDialog, bookmarkEdit]() {
+        if (!bookmarkEdit->text().isEmpty()) {
+            QString bookmarkNote = bookmarkEdit->text();
+            emit bookmarkAdded(bookmarkNote);
+
+            if (recorder && recordingStartTime.isValid()) {
+                qint64 timestampMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
+                recorder->saveBookmark(bookmarkNote, timestampMs);
+            }
+
+            if (timestampCheckBox->isChecked() && recordingStartTime.isValid()) {
+                qint64 timestampMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
+                addBookmarkWithTimestamp(bookmarkNote, timestampMs);
+            }
+
+            bookmarkDialog.accept();
+        } else {
+            QMessageBox::warning(this, tr("Invalid Input"), tr("Please enter a bookmark comment."));
+        }
+    });
+
+    bookmarkDialog.exec();
+}
+
+void LoggerDialog::switchToRecordingMode()
+{
+    loggerStatusLabel->setText(tr("Recording Mode"));
+    loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
+    qDebug() << "Switched to Recording Mode";
+}
+
+void LoggerDialog::switchToReplayMode()
+{
+    loggerStatusLabel->setText(tr("Replay Mode"));
+    loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
+    qDebug() << "Switched to Replay Mode";
+}
+
 void LoggerDialog::updateRecordingsList()
 {
-    recordingsList->clear();
-    QStringList filters;
-    filters << "*.json";
-    QStringList recordingFiles = QDir(recordingsDir).entryList(filters, QDir::Files, QDir::Time);
-    for (const QString &file : recordingFiles) {
-        QListWidgetItem *item = new QListWidgetItem(QIcon(":/icons/images/file.png"), file, recordingsList);
-        item->setToolTip(file);
-    }
 }
 
 void LoggerDialog::updateRecordingDuration(qint64 durationMs)
 {
-    if (timestampCheckBox->isChecked()) {
+    if (timelineWidget) {
         timelineWidget->setRecordingDuration(durationMs);
+
+        int seconds = durationMs / 1000;
+        int minutes = seconds / 60;
+        int hours = minutes / 60;
+        QString durationText = QString("%1:%2:%3")
+                                   .arg(hours, 2, 10, QLatin1Char('0'))
+                                   .arg(minutes % 60, 2, 10, QLatin1Char('0'))
+                                   .arg(seconds % 60, 2, 10, QLatin1Char('0'));
+        durationLabel->setText(durationText);
     }
 }
 
@@ -358,6 +614,6 @@ void LoggerDialog::setTimelineDuration(qint64 duration)
     }
 }
 
-void LoggerDialog::replayFromBookmark(const QString& note, qint64 timestamp){
-
+void LoggerDialog::replayFromBookmark(const QString& note, qint64 timestamp)
+{
 }

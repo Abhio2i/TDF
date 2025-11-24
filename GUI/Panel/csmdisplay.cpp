@@ -47,34 +47,101 @@ int CSMDisplay::heightForWidth(int width) const
     return qRound(width * ASPECT_RATIO);
 }
 
-// %%% Entity Management %%%
-/* Select and configure entity for display */
+// // %%% Entity Management %%%
+// /* Select and configure entity for display */
+// void CSMDisplay::selectEntity(Entity* entit)
+// {
+//     // Cast entity to Platform
+//     Platform* platform = dynamic_cast<Platform*>(entit);
+//     if (!platform) {
+//         Console::error("Entity is not a Platform");
+//         return;
+//     }
+//     qDebug() << "csdvfdsagdsb";
+//     // Set entity ID and pointer
+//     id = QString::fromStdString(platform->ID);
+//     entity = platform;
+//     // Select first valid sensor
+//     for (Sensor* s : entity->sensorList) {
+//         if (s) {
+//             if(s->subType == Sensor::SubType::CSM){
+//             sensor = s;
+//             // Set window title with platform name
+//             setWindowTitle("Radar Display (" + QString::fromStdString(entity->Name) + ")");
+//             qDebug() << "csdvfyjkygj";
+//             break;
+//             }
+//         }
+//     }
+// }
 void CSMDisplay::selectEntity(Entity* entit)
 {
-    // Cast entity to Platform
+    // 🔥 पहले पुराने connections को clean up करें
+    if (sensor) {
+        disconnect(sensor, &Sensor::availableConnectionsUpdated, this, &CSMDisplay::updateRadar);
+        sensor = nullptr;
+    }
+
+    entity = nullptr;
+    id = "";
+
     Platform* platform = dynamic_cast<Platform*>(entit);
     if (!platform) {
         Console::error("Entity is not a Platform");
+        setWindowTitle("CSM Display (No Platform)");
+        update();
         return;
     }
-    qDebug() << "csdvfdsagdsb";
+
     // Set entity ID and pointer
     id = QString::fromStdString(platform->ID);
     entity = platform;
-    // Select first valid sensor
+
+    // 🔥 सिर्फ CSM type के sensors ढूंढें
+    sensor = nullptr;
     for (Sensor* s : entity->sensorList) {
-        if (s) {
-            if(s->subType == Sensor::SubType::CSM){
+        if (s && s->subType == Sensor::SubType::CSM) {
             sensor = s;
-            // Set window title with platform name
-            setWindowTitle("Radar Display (" + QString::fromStdString(entity->Name) + ")");
-            qDebug() << "csdvfyjkygj";
-            break;
+            qDebug() << "🎯 CSM Sensor selected for platform:" << QString::fromStdString(entity->Name)
+                     << "Sensor ID:" << QString::fromStdString(sensor->ID)
+                     << "Range:" << sensor->csmrange << "km";
+
+            // Connect Sensor signals to this display
+            connect(sensor, &Sensor::availableConnectionsUpdated, this, &CSMDisplay::updateRadar);
+
+            // 🔥 IMMEDIATE UPDATE TRIGGER
+            if (entity->transform) {
+                sensor->csmScan(entity->ID, entity->transform);
             }
+
+            setWindowTitle("CSM Display (" + QString::fromStdString(entity->Name) + ")");
+            break;
         }
     }
-}
 
+    if (!sensor) {
+        qDebug() << "❌ No CSM Sensor found for platform:" << QString::fromStdString(entity->Name);
+
+        // 🔥 Alternative: Check if any sensor can be used as CSM
+        for (Sensor* s : entity->sensorList) {
+            if (s) {
+                sensor = s;
+                qDebug() << "⚠️ Using generic sensor as CSM for:" << QString::fromStdString(entity->Name);
+                connect(sensor, &Sensor::availableConnectionsUpdated, this, &CSMDisplay::updateRadar);
+                setWindowTitle("CSM Display (" + QString::fromStdString(entity->Name) + " - Generic)");
+                break;
+            }
+        }
+
+        if (!sensor) {
+            setWindowTitle("CSM Display (No CSM Sensor)");
+        }
+    }
+
+    // 🔥 FORCE UI UPDATE
+    updateRadar();
+    update();
+}
 /* Remove entity if ID matches */
 void CSMDisplay::RemoveEntity(QString ID)
 {
@@ -89,16 +156,48 @@ void CSMDisplay::RemoveEntity(QString ID)
 
 // %%% Update Methods %%%
 /* Update radar display data */
+// void CSMDisplay::updateRadar()
+// {
+//     if (entity && sensor) {
+//         // Set radar range and trigger repaint
+//         setRange(sensor->csmrange);
+//         targets = sensor->csmtargets;
+//         update();
+//     }
+// }
 void CSMDisplay::updateRadar()
 {
     if (entity && sensor) {
-        // Set radar range and trigger repaint
         setRange(sensor->csmrange);
+
+        // 🔥 DEBUG: Show current targets information
+        qDebug() << "🔄 CSMDisplay update - Entity:" << QString::fromStdString(entity->Name)
+                 << "Targets count:" << sensor->csmtargets.size()
+                 << "Range:" << range << "km";
+
+        // 🔥 Ensure targets are properly updated
         targets = sensor->csmtargets;
+
+        for (int i = 0; i < targets.size(); ++i) {
+            const Target &target = targets.at(i);
+            Platform* targetPlatform = dynamic_cast<Platform*>(target.entity);
+            if (targetPlatform) {
+                qDebug() << "  Target" << i << ":" << QString::fromStdString(targetPlatform->Name)
+                         << "Dist:" << target.radius << "km, Angle:" << target.angle << "°";
+            }
+        }
+
+        update();
+    } else {
+        if (!entity) {
+            qDebug() << "❌ CSMDisplay - No entity selected";
+        } else if (!sensor) {
+            qDebug() << "❌ CSMDisplay - No CSM sensor component found";
+        }
+        // Clear display when no entity/sensor
         update();
     }
 }
-
 // %%% Paint Event %%%
 /* Handle painting of radar display */
 // void CSMDisplay::paintEvent(QPaintEvent * /*event*/)
@@ -139,15 +238,81 @@ void CSMDisplay::updateRadar()
 //         }
 //     }
 // }
+// void CSMDisplay::paintEvent(QPaintEvent * /*event*/)
+// {
+//     if (width() <= 0 || height() <= 0) return;
+
+//     // Initialize painter
+//     QPainter p(this);
+//     p.setRenderHint(QPainter::Antialiasing);
+
+//     // Draw display components
+//     drawBackground(p);
+//     int w = width();
+//     int h = height();
+//     int outerDiameter = qMin(w - padding*2, h - padding*2);
+//     int outerRadius = outerDiameter / 2;
+//     QPoint center(w / 2, h / 2);
+
+//     drawRadarRing(p, center, outerRadius);
+//     drawConcentricCircles(p, center, outerRadius);
+//     drawTicksAndLabels(p, center, outerRadius);
+//     drawCenterMark(p, center);
+//     drawTopMarker(p, center, outerRadius);
+
+//     // Draw targets with dotted lines and labels - ALL IN ONE PLACE
+//     if (!targets.isEmpty()) {
+//         // qDebug() << "CSM Targets count:" << targets.size();
+
+//         for (const Target &t : targets) {
+//             // FIX: Manual bound check - qBound error avoid karein
+//             double per = t.radius / range;
+//             if (per < 0.0) per = 0.0;
+//             if (per > 1.0) per = 1.0;
+
+//             double r = per * outerRadius;
+//             double angleDeg = t.angle;
+//             double theta = qDegreesToRadians(angleDeg - 90.0);
+//             int tx = center.x() + int(r * cos(theta));
+//             int ty = center.y() + int(r * sin(theta));
+
+//             // qDebug() << "CSM Target - Angle:" << angleDeg << "Radius:" << t.radius << "Position:" << tx << "," << ty;
+
+//             // Draw dotted line from center to target
+//             p.setPen(QPen(radarGreen, 1, Qt::DotLine));
+//             p.drawLine(center, QPoint(tx, ty));
+
+//             // Draw red dot at target position
+//             p.setBrush(Qt::red);
+//             p.setPen(Qt::NoPen);
+//             p.drawEllipse(QPointF(tx, ty), 4, 4);
+
+//             // Draw labels AT THE RED DOT position
+//             p.setPen(QPen(Qt::yellow, 1)); // Yellow color for better visibility
+//             QFont font = p.font();
+//             font.setPointSize(8);
+//             p.setFont(font);
+
+//             // Position labels near the red dot
+//             QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
+//             QString distText = QString("D:%1").arg(t.radius, 0, 'f', 1);
+
+//             // Draw text at red dot position with offset
+//             p.drawText(tx + 6, ty - 6, angleText);    // Top-right of red dot
+//             p.drawText(tx + 6, ty + 12, distText);    // Bottom-right of red dot
+//         }
+//     }
+
+//     // Remove drawTargetAndPath(p) call - comment this line
+//     // drawTargetAndPath(p);
+// }
 void CSMDisplay::paintEvent(QPaintEvent * /*event*/)
 {
     if (width() <= 0 || height() <= 0) return;
 
-    // Initialize painter
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
 
-    // Draw display components
     drawBackground(p);
     int w = width();
     int h = height();
@@ -161,12 +326,20 @@ void CSMDisplay::paintEvent(QPaintEvent * /*event*/)
     drawCenterMark(p, center);
     drawTopMarker(p, center, outerRadius);
 
-    // Draw targets with dotted lines and labels - ALL IN ONE PLACE
+    // // // 🔥 CURRENT ENTITY INFORMATION SHOW करें
+    // p.setPen(Qt::yellow);
+    // p.drawText(10, 20, QString("Entity: %1").arg(entity ? QString::fromStdString(entity->Name) : "None"));
+    // if (sensor) {
+    //     p.drawText(10, 35, QString("CSM Range: %1 km").arg(sensor->csmrange));
+    //     p.drawText(10, 50, QString("Targets: %1").arg(targets.size()));
+    // }
+
+    // Draw targets with dotted lines and labels
     if (!targets.isEmpty()) {
-        // qDebug() << "CSM Targets count:" << targets.size();
+        qDebug() << "🎯 CSM Drawing" << targets.size() << "targets";
 
         for (const Target &t : targets) {
-            // FIX: Manual bound check - qBound error avoid karein
+            // FIX: Manual bound check
             double per = t.radius / range;
             if (per < 0.0) per = 0.0;
             if (per > 1.0) per = 1.0;
@@ -177,8 +350,6 @@ void CSMDisplay::paintEvent(QPaintEvent * /*event*/)
             int tx = center.x() + int(r * cos(theta));
             int ty = center.y() + int(r * sin(theta));
 
-            // qDebug() << "CSM Target - Angle:" << angleDeg << "Radius:" << t.radius << "Position:" << tx << "," << ty;
-
             // Draw dotted line from center to target
             p.setPen(QPen(radarGreen, 1, Qt::DotLine));
             p.drawLine(center, QPoint(tx, ty));
@@ -188,24 +359,29 @@ void CSMDisplay::paintEvent(QPaintEvent * /*event*/)
             p.setPen(Qt::NoPen);
             p.drawEllipse(QPointF(tx, ty), 4, 4);
 
-            // Draw labels AT THE RED DOT position
-            p.setPen(QPen(Qt::yellow, 1)); // Yellow color for better visibility
+            // Draw labels
+            p.setPen(QPen(Qt::yellow, 1));
             QFont font = p.font();
             font.setPointSize(8);
             p.setFont(font);
 
-            // Position labels near the red dot
-            QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
-            QString distText = QString("D:%1").arg(t.radius, 0, 'f', 1);
+            Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
+            QString targetName = targetPlatform ? QString::fromStdString(targetPlatform->Name) : "Unknown";
 
-            // Draw text at red dot position with offset
-            p.drawText(tx + 6, ty - 6, angleText);    // Top-right of red dot
-            p.drawText(tx + 6, ty + 12, distText);    // Bottom-right of red dot
+            // QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
+            QString distText = QString("D:%1km").arg(t.radius, 0, 'f', 1);
+            // QString nameText = QString("N:%1").arg(targetName);
+
+            // Draw text at target position
+            // p.drawText(tx + 6, ty - 6, angleText);
+            p.drawText(tx + 6, ty + 12, distText);
+            // p.drawText(tx + 6, ty + 30, nameText);
         }
+    } else if (entity && sensor) {
+        // No targets message
+        p.setPen(Qt::white);
+        p.drawText(center, "No CSM Targets Detected");
     }
-
-    // Remove drawTargetAndPath(p) call - comment this line
-    // drawTargetAndPath(p);
 }
 // %%% Drawing Methods %%%
 /* Draw targets and their paths */

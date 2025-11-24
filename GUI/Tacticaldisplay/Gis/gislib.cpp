@@ -23,6 +23,122 @@
 #include <QDebug>
 #include <core/Debug/console.h>
 
+
+// =========================================================================
+// MGRS Conversion Utility Functions (Relies on QGIS for robust UTM conversion)
+// =========================================================================
+
+namespace MGRS_Utils {
+// Latitude Band Letters (C-H, J-N, P-X, excluding I, O)
+const char* latBandLetters = "CDEFGHJKLMNPQRSTUVWXX";
+// 100k Square Column Letters (A-Z, excluding I, O)
+const char* colLetters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+// 100k Square Row Letters (A-V, excluding I, O)
+const char* rowLetters = "ABCDEFGHJKLMNPQRSTUV";
+
+// Gets the MGRS latitude band letter (C-X)
+char getLatBand(double lat) {
+    if (lat < -80 || lat >= 84) return 'Z';
+    // Handle special case for band X (72N to 84N)
+    if (lat >= 72.0 && lat <= 84.0) return 'X';
+
+    int index = qFloor((lat + 80.0) / 8.0);
+    return latBandLetters[qBound(0, index, 20)];
+}
+
+/*
+     * latLonToUtm: Convert WGS84 Lat/Lon to UTM Easting/Northing
+     * Uses QGIS coordinate transformation to correctly determine and transform to the correct UTM zone.
+     */
+QPointF latLonToUtm(double lat, double lon, int& zone) {
+    // 1. Determine UTM Zone
+    zone = qFloor((lon + 180.0) / 6.0) + 1;
+
+    QgsCoordinateReferenceSystem srcCrs("EPSG:4326");
+    QgsCoordinateReferenceSystem destCrs;
+
+    // 2. Define destination CRS based on the zone (326XX for North, 327XX for South)
+    if (lat >= 0) {
+        // Northern Hemisphere
+        destCrs = QgsCoordinateReferenceSystem(QString("EPSG:326%1").arg(zone));
+    } else {
+        // Southern Hemisphere
+        destCrs = QgsCoordinateReferenceSystem(QString("EPSG:327%1").arg(zone));
+    }
+
+    if (!destCrs.isValid()) {
+        qWarning() << "Could not create valid UTM CRS for zone" << zone;
+        return QPointF(0, 0);
+    }
+
+    // 3. Perform the transformation
+    QgsCoordinateTransform transform(srcCrs, destCrs, QgsProject::instance());
+    QgsPointXY point(lon, lat);
+    QgsPointXY transformed = transform.transform(point);
+
+    return QPointF(transformed.x(), transformed.y());
+}
+}
+
+/*
+ * latLonToMGRS: Convert latitude/longitude to MGRS string
+ * Takes WGS84 decimal degrees and returns a 10-digit MGRS string (1-meter precision).
+ * NOTE: This function's complexity is why we rely on QGIS for the Lat/Lon -> UTM step.
+ */
+QString GISlib::latLonToMGRS(double lat, double lon) {
+    if (lat < -80 || lat >= 84) return "POLAR";
+
+    int zone;
+    QPointF utm = MGRS_Utils::latLonToUtm(lat, lon, zone);
+    double easting = utm.x();
+    double northing = utm.y();
+
+    // 1. Get GZD (Grid Zone Designation)
+    QString gzd = QString::number(zone) + MGRS_Utils::getLatBand(lat);
+
+    // 2. Get 100,000-Meter Square Identifier (Letters)
+
+    // Lookup table initialization for 100k square letters
+    // Easting band sequence starts at a specific offset based on (zone-1) mod 3
+    int colOffset = (zone - 1) % 3;
+    int colIndex = qFloor(easting / 100000.0) - 1;
+    char colLetter = MGRS_Utils::colLetters[(colIndex + colOffset * 8) % 24];
+
+    // Northing band sequence (row letters) cycles every 2000 km (20 rows)
+    double northingInCycle = northing;
+    if (lat >= 0) {
+        // Northern Hemisphere starts cycle at 0
+        northingInCycle = fmod(northing, 2000000.0);
+    } else {
+        // Southern Hemisphere reference is 10,000,000m (equator to pole distance)
+        // Northing is relative to the equator, but the cycle must be calculated from a fixed point.
+        northingInCycle = fmod(northing + 10000000.0, 2000000.0);
+    }
+
+    // Starting row letter index for the cycle (complex: determined by latitude band)
+    // The index for the C-band (80S) starts at 'H' (index 7).
+    int rowOffset = 0;
+    char latBand = MGRS_Utils::getLatBand(lat);
+    if (latBand >= 'C' && latBand <= 'H') rowOffset = 7;
+    else if (latBand >= 'J' && latBand <= 'N') rowOffset = 0; // J-N starts at 'A' relative to the cycle
+    else if (latBand >= 'P' && latBand <= 'X') rowOffset = 7;
+
+    int rowIndex = qFloor(northingInCycle / 100000.0);
+    char rowLetter = MGRS_Utils::rowLetters[(rowIndex + rowOffset) % 20];
+
+    // 3. Get Numerical Location (5 digits for 1m precision)
+    QString numEasting = QString::number(qRound(fmod(easting, 100000.0))).rightJustified(5, '0');
+    QString numNorthing = QString::number(qRound(fmod(northing, 100000.0))).rightJustified(5, '0');
+
+    // Combine: GZD + 100k Letters + Numerical Location (e.g., 31SDA 12345 67890)
+    return QString("%1%2%3 %4 %5")
+        .arg(gzd)
+        .arg(colLetter)
+        .arg(rowLetter)
+        .arg(numEasting)
+        .arg(numNorthing);
+}
+
 /*
  * Constructor: GISlib
  * Initializes the GIS library with default settings, network components,
@@ -243,35 +359,70 @@ void GISlib::receiveImage(QString url, QByteArray data) {
  * setCoordinateSystem: Configure coordinate reference system
  * Supports EPSG:4326 (WGS84) and automatic UTM zone detection
  */
+// void GISlib::setCoordinateSystem(const QString& crsId) {
+//     if (crsId == "MGRS") {
+//         currentCoordinateSystem = "MGRS";
+//         qDebug() << "GISlib: Display coordinate system set to MGRS.";
+//     }
+//     else if (crsId == "EPSG:4326") {
+//         // Set to standard WGS84 Lat/Lon
+//         currentCrs.createFromString("EPSG:4326");
+//     } else if (crsId == "UTM_AUTO") {
+//         // Automatically determine UTM zone based on current center
+//         QgsCoordinateReferenceSystem srcCrs("EPSG:4326");
+//         try {
+//             double lon = centerLon;
+//             int zone = (int)((lon + 180.0) / 6.0) + 1;  // Calculate UTM zone
+//             bool isNorthern = centerLat >= 0;           // Determine hemisphere
+//             QString epsgCode = QString("EPSG:%1").arg(isNorthern ? 32600 + zone : 32700 + zone);
+//             currentCrs.createFromString(epsgCode);      // Set UTM CRS
+//         } catch (QgsCsException &e) {
+//             qDebug() << "Failed to determine UTM zone:" << e.what();
+//             currentCrs.createFromString("EPSG:4326");   // Fallback to WGS84
+//             QMessageBox::warning(this, "Error", QString("Failed to determine UTM zone: %1").arg(e.what()));
+//         }
+//     }
+
+//     // Ensure valid CRS, fallback to WGS84 if invalid
+//     if (!currentCrs.isValid()) {
+//         currentCrs.createFromString("EPSG:4326");
+//     }
+
+//     // // Trigger coordinate update to reflect new CRS
+//     // QPointF mousePos = mapFromGlobal(QCursor::pos());
+//     // mouseMoveEvent(new QMouseEvent(QEvent::MouseMove, mousePos, Qt::NoButton, Qt::NoButton, Qt::NoModifier));
+//     QPointF mousePos = mapFromGlobal(QCursor::pos());
+//     if (rect().contains(mousePos.toPoint())) {
+//         QMouseEvent dummyMove(QEvent::MouseMove, mousePos, Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+//         mouseMoveEvent(&dummyMove);
+//     }
+//     update(); // Force map repaint
+// }
+
+/* Set coordinate reference system by CRS ID */
 void GISlib::setCoordinateSystem(const QString& crsId) {
-    if (crsId == "EPSG:4326") {
-        // Set to standard WGS84 Lat/Lon
-        currentCrs.createFromString("EPSG:4326");
-    } else if (crsId == "UTM_AUTO") {
-        // Automatically determine UTM zone based on current center
-        QgsCoordinateReferenceSystem srcCrs("EPSG:4326");
-        try {
-            double lon = centerLon;
-            int zone = (int)((lon + 180.0) / 6.0) + 1;  // Calculate UTM zone
-            bool isNorthern = centerLat >= 0;           // Determine hemisphere
-            QString epsgCode = QString("EPSG:%1").arg(isNorthern ? 32600 + zone : 32700 + zone);
-            currentCrs.createFromString(epsgCode);      // Set UTM CRS
-        } catch (QgsCsException &e) {
-            qDebug() << "Failed to determine UTM zone:" << e.what();
-            currentCrs.createFromString("EPSG:4326");   // Fallback to WGS84
-            QMessageBox::warning(this, "Error", QString("Failed to determine UTM zone: %1").arg(e.what()));
-        }
-    }
+    // 1. Update the string flag to track the display mode
+    currentCoordinateSystem = crsId;
 
-    // Ensure valid CRS, fallback to WGS84 if invalid
-    if (!currentCrs.isValid()) {
+    // 2. Set the QgsCoordinateReferenceSystem object.
+    // For MGRS/UTM_AUTO/4326, we reset the currentCrs to WGS84.
+    // The dynamic UTM calculation will happen in mouseMoveEvent.
+    if (crsId == "EPSG:4326" || crsId == "MGRS" || crsId == "UTM_AUTO") {
         currentCrs.createFromString("EPSG:4326");
     }
 
-    // Trigger coordinate update to reflect new CRS
-    QPointF mousePos = mapFromGlobal(QCursor::pos());
-    mouseMoveEvent(new QMouseEvent(QEvent::MouseMove, mousePos, Qt::NoButton, Qt::NoButton, Qt::NoModifier));
+    qDebug() << "GISlib: CRS updated to" << crsId;
+
+    // 3. Force coordinate display update
+    // Simulate a mouse move event to instantly update the overlay label
+    QPoint currentMousePos = mapFromGlobal(QCursor::pos());
+    if (rect().contains(currentMousePos)) {
+        QMouseEvent fakeMove(QEvent::MouseMove, currentMousePos, Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+        mouseMoveEvent(&fakeMove);
+    }
+    update();
 }
+
 
 /*
  * receivePlace: Process received place search results
@@ -814,12 +965,167 @@ void GISlib::mouseReleaseEvent(QMouseEvent* event) {
     }
 }
 
+// void GISlib::mouseMoveEvent(QMouseEvent* event) {
+//     emit mouseMoved(event);  // Forward event
+
+//     int tileSize = 256;
+
+//     // Handle map dragging
+//     if (dragging) {
+//         QPointF delta = event->pos() - lastMouse;
+//         double dx = delta.x();
+//         double dy = delta.y();
+
+//         // Calculate new center in tile coordinates
+//         double cx = lonToX(centerLon, zoom) - dx / tileSize;
+//         double cy = latToY(centerLat, zoom) - dy / tileSize;
+
+//         // Convert back to geographic coordinates
+//         centerLon = xToLon(cx, zoom);
+//         centerLat = yToLat(cy, zoom);
+
+//         lastMouse = event->pos();  // Update last position
+//         emit centerChanged(centerLat, centerLon);  // Notify center change
+//         update();  // Refresh display
+//     }
+
+//     // Update measurement end point
+//     if (measuringDistance) {
+//         measureEndPoint = canvasToGeo(event->pos());
+//         qDebug() << "Measurement end point updated to (lon:" << measureEndPoint.x()
+//                  << ", lat:" << measureEndPoint.y() << ")";
+//         update();  // Refresh display
+//     }
+
+//     // Calculate and display mouse coordinates
+//     double mouseX = event->pos().x();
+//     double mouseY = event->pos().y();
+//     double centerX = lonToX(centerLon, zoom);
+//     double centerY = latToY(centerLat, zoom);
+//     double dx = (mouseX - width() / 2) / tileSize;
+//     double dy = (mouseY - height() / 2) / tileSize;
+//     double tileX = centerX + dx;
+//     double tileY = centerY + dy;
+//     double lon = xToLon(tileX, zoom);
+//     double lat = yToLat(tileY, zoom);
+
+//     // Transform coordinates to current CRS
+//     QgsCoordinateReferenceSystem srcCrs("EPSG:4326");
+//     QgsCoordinateTransform transform(srcCrs, currentCrs, QgsProject::instance());
+//     try {
+//         QgsPointXY point(lon, lat);
+//         QgsPointXY transformedPoint = transform.transform(point);
+//         mouseLat = QString::number(transformedPoint.y(), 'f', 6);
+//         mouseLon = QString::number(transformedPoint.x(), 'f', 6);
+//         emit mouseCords(transformedPoint.y(), transformedPoint.x(), currentCrs.authid());
+//     } catch (QgsCsException &e) {
+//         qDebug() << "Coordinate transformation error:" << e.what();
+//         // Fallback to DMS format in WGS84
+//         mouseLat = toDMS(lat, true);
+//         mouseLon = toDMS(lon, false);
+//         emit mouseCords(lat, lon, "EPSG:4326");
+//     }
+// }
+
+/*
+ * mouseMoveEvent: Handle mouse movement on the map widget
+ * Converts screen coordinates to geographic coordinates and emits the signal.
+ */
+// void GISlib::mouseMoveEvent(QMouseEvent* event) {
+//     // 1. Event Forwarding
+//     emit mouseMoved(event);  // Forward event to listeners (e.g., CanvasWidget)
+
+//     int tileSize = 256;
+
+//     // 2. Map Dragging/Panning Logic (RETAINED)
+//     // NOTE: 'dragging' variable must be set to true in mousePressEvent
+//     // when the middle mouse button (scroll wheel click) is pressed.
+//     if (dragging) {
+//         QPointF delta = event->pos() - lastMouse;
+//         double dx = delta.x();
+//         double dy = delta.y();
+
+//         // Calculate new center in tile coordinates
+//         double cx = lonToX(centerLon, zoom) - dx / tileSize;
+//         double cy = latToY(centerLat, zoom) - dy / tileSize;
+
+//         // Convert back to geographic coordinates
+//         centerLon = xToLon(cx, zoom);
+//         centerLat = yToLat(cy, zoom);
+
+//         lastMouse = event->pos();  // Update last position
+//         emit centerChanged(centerLat, centerLon);  // Notify center change
+//         update();  // Refresh display
+//     }
+
+//     // 3. Update measurement end point (RETAINED)
+//     if (measuringDistance) {
+//         // Assumes canvasToGeo is available and correct
+//         measureEndPoint = canvasToGeo(event->pos());
+//         qDebug() << "Measurement end point updated to (lon:" << measureEndPoint.x()
+//                  << ", lat:" << measureEndPoint.y() << ")";
+//         update();  // Refresh display
+//     }
+
+//     // 4. Calculate mouse coordinates in WGS84 (EPSG:4326)
+//     double mouseX = event->pos().x();
+//     double mouseY = event->pos().y();
+//     double centerX = lonToX(centerLon, zoom);
+//     double centerY = yToLat(centerLat, zoom); // Note: Should use yToLat for centerLat if it was used in canvasToGeo logic.
+//     // However, sticking to your original logic:
+//     // double centerY = lonToY(centerLat, zoom); // Assuming there's a lonToY function or simply calculate based on tile system
+//     // Using the same tile calculation method as your original code:
+//     centerY = latToY(centerLat, zoom); // Use latToY for consistency if it calculates tile Y
+
+//     double dx = (mouseX - width() / 2) / tileSize;
+//     double dy = (mouseY - height() / 2) / tileSize;
+//     double tileX = centerX + dx;
+//     double tileY = centerY + dy;
+//     double lon = xToLon(tileX, zoom);
+//     double lat = yToLat(tileY, zoom);
+
+//     // 5. Transform coordinates and emit signal (FIXED for MGRS/UTM)
+//     if (currentCoordinateSystem == "MGRS") {
+//         // For MGRS, emit WGS84 coordinates (lat, lon) with the 'MGRS' identifier.
+//         // The TacticalDisplay slot handles the actual MGRS string conversion.
+//         mouseLat = QString::number(lat, 'f', 6);
+//         mouseLon = QString::number(lon, 'f', 6);
+//         emit mouseCords(lat, lon, "MGRS");
+//     } else {
+//         // Transformation for UTM_AUTO (where currentCrs has a UTM EPSG code) or Lat/Lon
+//         QgsCoordinateReferenceSystem srcCrs("EPSG:4326");
+//         // Use currentCrs, which holds the active CRS (UTM or 4326)
+//         QgsCoordinateTransform transform(srcCrs, currentCrs, QgsProject::instance());
+
+//         try {
+//             QgsPointXY point(lon, lat);
+//             QgsPointXY transformedPoint = transform.transform(point);
+
+//             // If transformation succeeds, use the transformed coordinates for display
+//             mouseLat = QString::number(transformedPoint.y(), 'f', 6);
+//             mouseLon = QString::number(transformedPoint.x(), 'f', 6);
+
+//             // Emit transformed coordinates and the CRS ID
+//             emit mouseCords(transformedPoint.y(), transformedPoint.x(), currentCrs.authid());
+
+//         } catch (QgsCsException &e) {
+//             qDebug() << "Coordinate transformation error:" << e.what();
+//             // Fallback to WGS84 (DMS format as per your original code)
+//             mouseLat = toDMS(lat, true);
+//             mouseLon = toDMS(lon, false);
+//             emit mouseCords(lat, lon, "EPSG:4326"); // Emit WGS84 coordinates
+//         }
+//     }
+// }
+
+// In gislib.cpp
 void GISlib::mouseMoveEvent(QMouseEvent* event) {
-    emit mouseMoved(event);  // Forward event
+    // 1. Event Forwarding
+    emit mouseMoved(event);
 
     int tileSize = 256;
 
-    // Handle map dragging
+    // 2. Map Dragging/Panning Logic (RETAINED)
     if (dragging) {
         QPointF delta = event->pos() - lastMouse;
         double dx = delta.x();
@@ -833,47 +1139,74 @@ void GISlib::mouseMoveEvent(QMouseEvent* event) {
         centerLon = xToLon(cx, zoom);
         centerLat = yToLat(cy, zoom);
 
-        lastMouse = event->pos();  // Update last position
-        emit centerChanged(centerLat, centerLon);  // Notify center change
-        update();  // Refresh display
+        lastMouse = event->pos();
+        emit centerChanged(centerLat, centerLon);
+        update();
     }
 
-    // Update measurement end point
+    // 3. Update measurement end point (RETAINED)
     if (measuringDistance) {
         measureEndPoint = canvasToGeo(event->pos());
         qDebug() << "Measurement end point updated to (lon:" << measureEndPoint.x()
                  << ", lat:" << measureEndPoint.y() << ")";
-        update();  // Refresh display
+        update();
     }
 
-    // Calculate and display mouse coordinates
-    double mouseX = event->pos().x();
-    double mouseY = event->pos().y();
-    double centerX = lonToX(centerLon, zoom);
-    double centerY = latToY(centerLat, zoom);
-    double dx = (mouseX - width() / 2) / tileSize;
-    double dy = (mouseY - height() / 2) / tileSize;
-    double tileX = centerX + dx;
-    double tileY = centerY + dy;
-    double lon = xToLon(tileX, zoom);
-    double lat = yToLat(tileY, zoom);
+    // 4. Calculate mouse coordinates in WGS84 (EPSG:4326)
+    QPointF geo = canvasToGeo(event->pos());
+    double lon = geo.x();
+    double lat = geo.y();
 
-    // Transform coordinates to current CRS
-    QgsCoordinateReferenceSystem srcCrs("EPSG:4326");
-    QgsCoordinateTransform transform(srcCrs, currentCrs, QgsProject::instance());
-    try {
-        QgsPointXY point(lon, lat);
-        QgsPointXY transformedPoint = transform.transform(point);
-        mouseLat = QString::number(transformedPoint.y(), 'f', 6);
-        mouseLon = QString::number(transformedPoint.x(), 'f', 6);
-        emit mouseCords(transformedPoint.y(), transformedPoint.x(), currentCrs.authid());
-    } catch (QgsCsException &e) {
-        qDebug() << "Coordinate transformation error:" << e.what();
-        // Fallback to DMS format in WGS84
-        mouseLat = toDMS(lat, true);
-        mouseLon = toDMS(lon, false);
-        emit mouseCords(lat, lon, "EPSG:4326");
+    double displayLat = lat;
+    double displayLon = lon;
+    QString displayCrsId = "EPSG:4326"; // Default WGS84
+
+    // 5. Transformation Logic (FIXED for robust switching)
+
+    if (currentCoordinateSystem == "MGRS") {
+        // MGRS: Emit WGS84 coordinates and let TacticalDisplay slot handle conversion
+        displayCrsId = "MGRS";
+
+    } else if (currentCoordinateSystem == "UTM_AUTO") {
+        // UTM_AUTO: Dynamically determine UTM zone and transform
+
+        int zone = qFloor((lon + 180.0) / 6.0) + 1;
+        // Determine UTM EPSG code (326XX for North, 327XX for South)
+        QString utmEpsg = (lat >= 0) ? QString("EPSG:326%1").arg(zone) : QString("EPSG:327%1").arg(zone);
+
+        QgsCoordinateReferenceSystem srcCrs("EPSG:4326");
+        QgsCoordinateReferenceSystem utmCrs(utmEpsg);
+
+        if (utmCrs.isValid()) {
+            QgsCoordinateTransform transform(srcCrs, utmCrs, QgsProject::instance());
+            try {
+                QgsPointXY point(lon, lat);
+                QgsPointXY transformedPoint = transform.transform(point);
+
+                // Set the UTM Easting (X) and Northing (Y) for display
+                displayLat = transformedPoint.y();
+                displayLon = transformedPoint.x();
+                displayCrsId = utmEpsg; // e.g., "EPSG:32644"
+
+                // Update currentCrs to the dynamic UTM zone
+                currentCrs = utmCrs;
+
+            } catch (QgsCsException &e) {
+                qWarning() << "UTM Transformation error:" << e.what();
+                // Fallback to WGS84
+            }
+        } else {
+            qWarning() << "Invalid UTM CRS:" << utmEpsg;
+            // Fallback to WGS84
+        }
+
+    } else {
+        // Default: EPSG:4326 (Lat/Lon). No transformation needed.
+        displayCrsId = "EPSG:4326";
     }
+
+    // 6. Emit the signal with the coordinates and CRS ID
+    emit mouseCords(displayLat, displayLon, displayCrsId);
 }
 
 /*
@@ -1301,10 +1634,6 @@ QPointF GISlib::jsonCoordinateToCanvas(const QJsonArray &coord) {
     double lat = coord[1].toDouble(); // Second element is latitude
     return geoToCanvas(lat, lon);     // Convert to canvas coordinates
 }
-
-// ============================================================================
-// Custom Coordinate System Functions
-// ============================================================================
 
 /*
  * latLonToCustomXY: Convert latitude/longitude to custom coordinate system

@@ -29,6 +29,12 @@
 #include <QTimer>                                 // For delayed operations
 
 // %%% Constructor %%%
+// Capitalize the first letter of a string
+static QString capitalizeFirstLetter(const QString &str)
+{
+    if (str.isEmpty()) return str;
+    return str[0].toUpper() + str.mid(1);
+}
 /* Initialize scenario editor */
 ScenarioEditor::ScenarioEditor(QWidget *parent)
     : QMainWindow(parent)
@@ -164,20 +170,21 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
         }
         QString name = data["name"].toString();
         QString ID = data["parentId"].toString();
+                 QString displayName = capitalizeFirstLetter(name);
         for (Inspector* inspector : inspectors) {
             if (type == "component") {
                 QJsonObject componentData = hierarchy->getComponentData(ID, name);
                 if (!componentData.isEmpty()) {
-                    inspector->init(ID, name, componentData);
+                    inspector->init(ID, displayName, componentData);
                 }
             } else if (type == "profile") {
-                inspector->init(ID, name + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
+                inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
             } else if (type == "folder") {
-                inspector->init(ID, name + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
+                inspector->init(ID, displayName + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
             } else if (type == "entity") {
-                inspector->init(data["ID"].toString(), name + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
+                inspector->init(data["ID"].toString(), displayName + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
             } else {
-                inspector->init(ID, name, QJsonObject());
+                inspector->init(ID, displayName, QJsonObject());
             }
         }
         if (!inspectorDock->isVisible()) {
@@ -260,6 +267,7 @@ void ScenarioEditor::setupEnhancedDockWidgets()
     consoleDock->setMinimumHeight(100);
     consoleDock->setTitleBarWidget(nullptr);
     addDockWidget(Qt::BottomDockWidgetArea, consoleDock);
+    consoleDock->hide();
 
     // Setup sidebar dock with enhanced features - CHANGED HERE
     sidebarDock = new QDockWidget("Sidebar", this);  // Title add kiya

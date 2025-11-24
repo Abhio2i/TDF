@@ -47,6 +47,8 @@ public:
 
     // Public member variables for mouse coordinates
     QString mouseLat, mouseLon;
+    /* Convert latitude/longitude to MGRS string */
+    QString latLonToMGRS(double lat, double lon);
 
     /*
      * Core GIS Functionality Methods
@@ -143,7 +145,6 @@ public:
 
     /* Search by geographic coordinates */
     void searchByCoordinates(double latitude, double longitude);
-
 protected:
     /*
      * Drag and Drop Event Handlers
@@ -288,6 +289,8 @@ private:
 
     QgsCoordinateReferenceSystem currentCrs; // Current coordinate reference system
 
+    QString currentCoordinateSystem;
+
     bool measuringDistance = false;     // Distance measurement mode flag
     QPointF measureStartPoint;          // Start point for measurement (lon, lat)
     QPointF measureEndPoint;            // End point for measurement (lon, lat)
@@ -306,6 +309,9 @@ public slots:
 
     /* Handle received place search results */
     void receivePlace(QString url, QByteArray data);
+
+    /* Slot to change the current coordinate reference system */
+    // void setCoordinateSystem(const QString& crsId);
 
 protected:
     /*

@@ -20,6 +20,14 @@
 #include <QMessageBox>
 
 // %%% Constructor %%%
+
+
+// Capitalize the first letter of a string
+static QString capitalizeFirstLetter(const QString &str)
+{
+    if (str.isEmpty()) return str;
+    return str[0].toUpper() + str.mid(1);
+}
 /* Initialize database editor */
 DatabaseEditor::DatabaseEditor(QWidget *parent)
     : QMainWindow(parent)
@@ -106,6 +114,55 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
     }
 
     // Connect tree view item selection
+    // if (treeView && hierarchy) {
+    //     connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
+    //         QString type;
+    //         // Handle nested type data
+    //         if (data["type"].type() == QVariant::Map) {
+    //             QVariantMap typeData = data["type"].toMap();
+    //             if (typeData.contains("type") && typeData["type"].toString() == "option") {
+    //                 type = "profile";
+    //             } else {
+    //                 qWarning() << "Invalid nested type structure in itemSelected:" << data["type"];
+    //                 return;
+    //             }
+    //         } else {
+    //             type = data["type"].toString();
+    //         }
+    //         // Extract item data
+    //         QString name = data["name"].toString();
+    //         QString ID = data["parentId"].toString();
+    //         // Update inspectors
+    //         for (Inspector* inspector : inspectors) {
+    //             // Skip locked inspectors (commented)
+    //             // if (inspector->isLocked()) {
+    //             //     continue;
+    //             // }
+    //             // Initialize inspector based on type
+    //             if (type == "component") {
+    //                 QJsonObject componentData = hierarchy->getComponentData(ID, name);
+    //                 if (!componentData.isEmpty()) {
+    //                     inspector->init(ID, name, componentData);
+    //                 }
+    //             } else if (type == "profile") {
+    //                 inspector->init(ID, name + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
+    //             } else if (type == "folder") {
+    //                 inspector->init(ID, name + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
+    //             } else if (type == "entity") {
+    //                 inspector->init(data["ID"].toString(), name + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
+    //             } else {
+    //                 inspector->init(ID, name, QJsonObject());
+    //             }
+    //         }
+    //         // Show inspector dock if hidden
+    //         if (!inspectorDock->isVisible()) {
+    //             addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
+    //             inspectorDock->show();
+    //         }
+    //     });
+    // }
+
+    // Connect tree view item selection
     if (treeView && hierarchy) {
         connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
             QString type;
@@ -124,6 +181,10 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
             // Extract item data
             QString name = data["name"].toString();
             QString ID = data["parentId"].toString();
+
+            // CAPITALIZE THE NAME FOR DISPLAY
+            QString displayName = capitalizeFirstLetter(name);
+
             // Update inspectors
             for (Inspector* inspector : inspectors) {
                 // Skip locked inspectors (commented)
@@ -134,16 +195,21 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
                 if (type == "component") {
                     QJsonObject componentData = hierarchy->getComponentData(ID, name);
                     if (!componentData.isEmpty()) {
-                        inspector->init(ID, name, componentData);
+                        // Use capitalized name for display
+                        inspector->init(ID, displayName, componentData);
                     }
                 } else if (type == "profile") {
-                    inspector->init(ID, name + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
+                    // Use capitalized name for display
+                    inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
                 } else if (type == "folder") {
-                    inspector->init(ID, name + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
+                    // Use capitalized name for display
+                    inspector->init(ID, displayName + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
                 } else if (type == "entity") {
-                    inspector->init(data["ID"].toString(), name + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
+                    // Use capitalized name for display
+                    inspector->init(data["ID"].toString(), displayName + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
                 } else {
-                    inspector->init(ID, name, QJsonObject());
+                    // Use capitalized name for display
+                    inspector->init(ID, displayName, QJsonObject());
                 }
             }
             // Show inspector dock if hidden
