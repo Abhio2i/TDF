@@ -28,6 +28,7 @@ class TimelineWidget : public QWidget
 {
     Q_OBJECT
 public:
+    qint64 currentReplayTimeMs = 0;
     explicit TimelineWidget(QWidget *parent = nullptr) : QWidget(parent) {
         setMinimumHeight(50);
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -39,6 +40,11 @@ public:
     }
     void setRecordingDuration(qint64 durationMs) {
         recordingDurationMs = durationMs;
+        update();
+    }
+    void setCurrentReplayTime(qint64 t)
+    {
+        currentReplayTimeMs = t;
         update();
     }
 
@@ -67,7 +73,6 @@ public:
         bookmarkButtons.clear();
         update();
     }
-
 signals:
     void bookmarkButtonClicked(const QString &note, qint64 timestampMs);
     void bookmarkClicked(const QString &note, qint64 timestampMs);
@@ -116,6 +121,13 @@ protected:
                 }
             }
         }
+        // --- Current replay position line ---
+        if (currentReplayTimeMs > 0 && recordingDurationMs > 0) {
+            int x = margin + (currentReplayTimeMs * width) / recordingDurationMs;
+            painter.setPen(QPen(Qt::blue, 2));
+            painter.drawLine(x, margin, x, margin + height);
+        }
+
     }
 
 private:
@@ -133,14 +145,19 @@ public:
     explicit LoggerDialog(QWidget *parent = nullptr, Recorder* recorder = nullptr);
     void updateRecordingDuration(qint64 durationMs);
     void addBookmarkWithTimestamp(const QString &note, qint64 timestampMs);
+    void updateRecordingDurationLabel(qint64 durationMs);
 
 public slots:
     void showBookmarkOnReplay(const QString& note, qint64 timestamp);
+    void onReplayBookmarkLoaded(const QString& note, qint64 timestamp);
     void setTimelineDuration(qint64 duration);
     void replayFromBookmark(const QString& note, qint64 timestamp);
+    void updateReplayProgress(qint64 timestamp);
     void switchToRecordingMode();
     void switchToReplayMode();
-
+    // void setReplayTimelineDuration(qint64 duration);
+    // Hime
+    // Hime
 private slots:
     void showBookmarkDialog();
 
@@ -156,14 +173,18 @@ signals:
     void startReplay();
     void pauseReplay();
     void resumeReplay();
-    void previousFrame();
-    void nextFrame();
     void eventTypesSelected(QStringList eventTypes);
     void bookmarkAdded(const QString &bookmarkNote);
     void timestampToggled(bool enabled);
     void bookmarkClicked(const QString &note, qint64 timestampMs);
     void bookmarkButtonClicked(const QString &note, qint64 timestampMs);
-
+    //Start Himan
+    void toggleReplayPause();
+    void previousFrame();
+    void nextFrame();
+    void pressPlayAgain();
+    void requestReplayReset();
+    //End Himan
 private:
     void setupUi();
     void setupMenuBar();
@@ -209,6 +230,8 @@ private:
     // State variables
     bool isRecordingPaused = false;
     bool isReplayPaused = false;
+
+
 };
 
 #endif // LOGGERDIALOG_H

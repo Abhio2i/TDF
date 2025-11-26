@@ -17,6 +17,7 @@
 #include <QElapsedTimer>
 #include <Qt3DCore/QTransform>
 #include <core/Hierarchy/entity.h>
+#include <GUI/Tacticaldisplay/entityinfodialog.h>
 
 // Forward declarations
 class QDialog;
@@ -127,6 +128,9 @@ public:
     void updateTextProperties(const QString& textId, const QColor& color,
                               const QFont& font, int fontSize);
     void deleteText(const QString& textId);
+    //=============info
+    EntityInfoDialog *entityInfoDialog;
+        bool m_isBeingDestroyed = false;
 
 public slots:
     // GIS event forwarding slots
@@ -148,7 +152,14 @@ public slots:
 private slots:
     void onMeasurementTypeChanged(bool isEll);  // Handle measurement type change (ellipsoidal vs planar)
 
+
 public slots:
+
+
+    //------info
+    void showEntityInfo(const QString& entityId);
+    void hideEntityInfo();
+
     void clearShapeHistory() {
         shapeHistory.clear();
         showHistoryForShapes.clear();

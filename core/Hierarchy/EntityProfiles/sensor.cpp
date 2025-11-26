@@ -579,17 +579,17 @@ void Sensor::fromJson(const QJsonObject& obj) {
     antennaGain = static_cast<float>(obj["antennaGain"].toDouble());
     detectionCapabilities = static_cast<float>(obj["detectionCapabilities"].toDouble());
     // // --- Load detection ranges for CSM / ESM ---
-    // if (subType == SubType::CSM) {
-    //     if (obj.contains("detectionRange")) {
-    //         csmrange = static_cast<float>(obj["detectionRange"].toDouble());
-    //     }
-    // }
+    if (subType == SubType::CSM) {
+        if (obj.contains("detectionRange")) {
+            csmrange = static_cast<float>(obj["detectionRange"].toDouble());
+        }
+    }
 
-    // if (subType == SubType::ESM) {
-    //     if (obj.contains("detectionRange")) {
-    //         esrange = static_cast<float>(obj["detectionRange"].toDouble());
-    //     }
-    // }
+    if (subType == SubType::ESM) {
+        if (obj.contains("detectionRange")) {
+            esrange = static_cast<float>(obj["detectionRange"].toDouble());
+        }
+    }
     if (obj.contains("maxDetectionAngle")){
         maxDetectionAngle = static_cast<float>(obj["maxDetectionAngle"].toDouble());
     }

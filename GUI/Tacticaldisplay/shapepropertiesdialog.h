@@ -20,6 +20,7 @@ public:
     void setCurrentProperties(const QColor& color, int borderThickness);
     QColor getSelectedColor() const;
     int getBorderThickness() const;
+     void setEntityInfo(const QString& entityId, const QVariantMap& entityData);
 
 private slots:
     void onColorButtonClicked();

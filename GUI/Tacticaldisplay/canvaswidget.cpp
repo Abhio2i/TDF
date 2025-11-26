@@ -113,6 +113,17 @@ CanvasWidget::CanvasWidget(QWidget *parent) : QWidget(parent) {
         fps = frameCount;
         frameCount = 0;
     });
+    // // Initialize entity info dialog
+    //   entityInfoDialog = new EntityInfoDialog(parentWidget());
+    //   entityInfoDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+    //    connect(this, &CanvasWidget::selectEntitybyCursor, this, &CanvasWidget::showEntityInfo);
+
+
+    // Initialize entity info dialog
+      entityInfoDialog = new EntityInfoDialog(parentWidget());
+      entityInfoDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+      connect(this, &CanvasWidget::selectEntitybyCursor, this, &CanvasWidget::showEntityInfo);
+
     connect(gislib, &GISlib::distanceMeasured, this, &CanvasWidget::onDistanceMeasured);
     // NEW: Add GISlib event connections for geojson
     connect(gislib, &GISlib::keyPressed, this, &CanvasWidget::keyPressEvent);
@@ -931,6 +942,22 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
         }
     }
 
+    // bool entityWasClicked = false;
+    // for (auto& [id, entry] : Meshes) {
+    //     QPointF entityPos = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
+    //     if (QVector2D(event->pos() - entityPos).length() < 20.0f) {
+    //         if (selectedEntityId != id) {
+    //             selectedEntityId = id;
+    //             emit selectEntitybyCursor(QString::fromStdString(id));
+    //             Console::log("Selected entity: " + id);
+    //         }
+    //         dragStartPos = event->pos();
+    //         activeDragAxis = "both";
+    //         entityWasClicked = true;
+    //         update();
+    //         return;
+    //     }
+    // }
     bool entityWasClicked = false;
     for (auto& [id, entry] : Meshes) {
         QPointF entityPos = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
@@ -938,6 +965,10 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
             if (selectedEntityId != id) {
                 selectedEntityId = id;
                 emit selectEntitybyCursor(QString::fromStdString(id));
+
+                // 🆕 ENTITY INFO DIALOG SHOW KARNA
+                showEntityInfo(QString::fromStdString(id));
+
                 Console::log("Selected entity: " + id);
             }
             dragStartPos = event->pos();
@@ -951,14 +982,30 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
     if (!entityWasClicked && currentMode != DrawTrajectory && currentMode != DrawShape && currentMode != PlaceBitmap) {
         selectedEntityId = "";
         activeDragAxis = "";
+
+        // 🆕 ENTITY INFO DIALOG HIDE KARNA
+        hideEntityInfo();
+
         Console::log("Deselected all entities.");
         update();
     }
+
+    // if (!entityWasClicked && currentMode != DrawTrajectory && currentMode != DrawShape && currentMode != PlaceBitmap) {
+    //     selectedEntityId = "";
+    //     activeDragAxis = "";
+    //     Console::log("Deselected all entities.");
+    //     update();
+    // }
 
     if (event->button() == Qt::RightButton) {
         handleRightClick(event);
         return;
     }
+
+
+
+
+
 
     update();
 }
@@ -2656,7 +2703,7 @@ void CanvasWidget::drawSelectionOutline(QPainter& painter) {
     float h = entry.transform->scale3D().x() * 55;
     QRectF outlineRect(x - w / 2.0f, y - h / 2.0f, w, h);
 
-    QPen pen(Qt::yellow);
+    QPen pen(Qt::red);
     pen.setWidth(2);
     pen.setStyle(Qt::DashLine);
     painter.setPen(pen);
@@ -4953,7 +5000,7 @@ bool CanvasWidget::handleTextRightClick(QMouseEvent *event) {
                 QMenu contextMenu(this);
                 contextMenu.setStyleSheet(
                     "QMenu { background-color: white; color: black; border: 1px solid #cccccc; }"
-                    "QMenu::item { background-color: white; color: black; padding: 5px 20px; }"
+                    "QMenu::item { background-color:    white; color: black; padding: 5px 20px; }"
                     "QMenu::item:selected { background-color: #0078d7; color: white; }"
                     );
 
@@ -5284,4 +5331,143 @@ void CanvasWidget::drawShapeHistory(QPainter& painter) {
     }
 
     painter.restore();
+}
+
+
+
+// void CanvasWidget::showEntityInfo(const QString& entityId)
+// {
+//     // Safety checks
+//     if (!entityInfoDialog || entityId.isEmpty()) {
+//         return;
+//     }
+
+//     auto it = Meshes.find(entityId.toStdString());
+//     if (it == Meshes.end()) {
+//         hideEntityInfo();
+//         return;
+//     }
+
+//     MeshEntry& entry = it->second;
+//     QVariantMap entityData;
+
+//     // SIMPLE VERSION - crash avoid karne ke liye
+//     entityData["Name"] = entry.name;
+//     entityData["Entity Type"] = "Platform";
+
+//     // Only basic fields add karo
+//     if (entry.position) {
+//         entityData["Position"] = QString("X: %1, Y: %2, Z: %3")
+//                                     .arg(entry.position->x())
+//                                     .arg(entry.position->y())
+//                                     .arg(entry.position->z());
+//     }
+
+//     // Safe dialog update
+//     if (entityInfoDialog) {
+//         entityInfoDialog->setEntityInfo(entityId, entityData);
+
+//         if (!entityInfoDialog->isVisible()) {
+//             entityInfoDialog->show();
+//         }
+//     }
+// }
+
+void CanvasWidget::showEntityInfo(const QString& entityId)
+{
+    if (!entityInfoDialog || entityId.isEmpty()) {
+        return;
+    }
+
+    auto it = Meshes.find(entityId.toStdString());
+    if (it == Meshes.end()) {
+        hideEntityInfo();
+        return;
+    }
+
+    MeshEntry& entry = it->second;
+    QVariantMap entityData;
+
+    // Basic entity information - TYPE CONVERSION FIXED
+    if (entry.entity) {
+        // Convert entity type to string
+        QString typeStr = "Unknown";
+        switch(entry.entity->type) {
+            case Constants::EntityType::Platform: typeStr = "Platform"; break;
+            case Constants::EntityType::Sensor: typeStr = "Sensor"; break;
+            case Constants::EntityType::Weapon: typeStr = "Weapon"; break;
+            // Add other entity types as needed
+            default: typeStr = "Unknown"; break;
+        }
+        entityData["type"] = typeStr;
+    } else {
+        entityData["type"] = "Unknown";
+    }
+
+    // NAME CONVERSION FIXED - Direct QString assignment
+        entityData["Name"] = entry.name;
+    //     entityData["Entity Type"] = "Platform";
+    // entityData["displayName"] = QString::fromStdString(entry.name);
+
+    // Position information
+    if (entry.position) {
+        entityData["currentPosition"] = QString("Lon: %1, Lat: %2, Alt: %3")
+                                           .arg(entry.position->x())
+                                           .arg(entry.position->y())
+                                           .arg(entry.position->z());
+        entityData["requestedPosition"] = "Same as current";
+    }
+
+    // Speed and altitude
+    if (entry.dynamicModel) {
+        entityData["speed"] = QString("%1 km/h").arg(entry.dynamicModel->moveSpeed);
+    }
+    entityData["altitude"] = QString("%1 m").arg(entry.position ? entry.position->z() : 0);
+
+    // Carrier information
+    entityData["carrier"] = "None";
+
+    // Equipment data
+    if (entry.entity) {
+        QStringList weaponsList, sensorsList, radiosList;
+
+        for (Sensor* sensor : entry.entity->sensorList) {
+            // sensorsList << QString::fromStdString(sensor->name);
+        }
+
+        for (Radio* radio : entry.entity->radioList) {
+            // radiosList << QString::fromStdString(radio->name);
+        }
+
+        entityData["sensors"] = sensorsList.join(", ");
+        entityData["radios"] = radiosList.join(", ");
+        entityData["weapons"] = "Weapon data";
+        entityData["formation"] = "Formation data";
+        entityData["iff"] = "IFF data";
+    }
+
+    // Status flags
+    entityData["active"] = entry.trajectory ? entry.trajectory->Active : false;
+    entityData["track"] = true;
+    entityData["centre"] = false;
+    entityData["aggregatedScript"] = false;
+    entityData["followTrajectory"] = true;
+    entityData["showConnection"] = true;
+    entityData["showDetection"] = true;
+    entityData["controlDecisive"] = false;
+
+    // Update dialog
+    if (entityInfoDialog) {
+        entityInfoDialog->setEntityInfo(entityId, entityData);
+
+        if (!entityInfoDialog->isVisible()) {
+            entityInfoDialog->show();
+        }
+    }
+}
+void CanvasWidget::hideEntityInfo()
+{
+    if (entityInfoDialog && entityInfoDialog->isVisible()) {
+        entityInfoDialog->hide();
+    }
 }

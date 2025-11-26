@@ -70,12 +70,12 @@ void RuntimeToolBar::createActions()
         emit stopTriggered();
     });
 
-    replayAction = new QAction(QIcon(withWhiteBg(":/icons/images/replay.png")), tr("Replay"), this);
-    replayAction->setCheckable(true);
-    connect(replayAction, &QAction::triggered, this, [=]() {
-        highlightAction(replayAction);
-        emit replayTriggered();
-    });
+    // replayAction = new QAction(QIcon(withWhiteBg(":/icons/images/replay.png")), tr("Replay"), this);
+    // replayAction->setCheckable(true);
+    // connect(replayAction, &QAction::triggered, this, [=]() {
+    //     highlightAction(replayAction);
+    //     emit replayTriggered();
+    // });
 
     // nextStepAction = new QAction(QIcon(withWhiteBg(":/icons/images/step.png")), tr("Next Step"), this);
     // nextStepAction->setCheckable(false);
@@ -191,7 +191,7 @@ void RuntimeToolBar::setupToolBar()
     addAction(startAction);
     addAction(pauseAction);
     addAction(stopAction);
-    addAction(replayAction);
+    // addAction(replayAction);
     // addAction(nextStepAction);
     // addAction(bookmarkAction);
     // addAction(timingAction);
@@ -204,7 +204,7 @@ void RuntimeToolBar::setupToolBar()
 
 void RuntimeToolBar::highlightAction(QAction *activeAction)
 {
-    QList<QAction*> actions = { startAction, pauseAction, stopAction, replayAction, loggerAction, radarToggleAction };
+    QList<QAction*> actions = { startAction, pauseAction, stopAction, loggerAction, radarToggleAction };
     for (QAction *action : actions) {
         QWidget *btn = widgetForAction(action);
         if (!btn) continue;

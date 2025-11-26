@@ -1,6 +1,5 @@
 
 
-
 #include "runtimeeditor.h"
 #include "GUI/Menubars/menubar.h"
 #include "GUI/Panel/radardisplay.h"
@@ -28,7 +27,7 @@
 #include <QScreen>
 #include <QVBoxLayout>
 #include <QTimer>
-// Capitalize the first letter of a string
+
 static QString capitalizeFirstLetter(const QString &str)
 {
     if (str.isEmpty()) return str;
@@ -235,7 +234,12 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         recordingTimer->start(100); // Update every 100ms
         qDebug() << "Recording started from LoggerDialog";
     });
-
+    //Start Himan
+    // Logger Pause/Resume connection
+    connect(loggerDialog, &LoggerDialog::pauseRecording, this, [=]() {
+        runtime->recorder->togglePause();
+    });
+    //End Himan
     connect(loggerDialog, &LoggerDialog::stopRecording, this, [=]() {
         runtime->recorder->stopRecording();
         if (recordingTimer) {
@@ -259,18 +263,58 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             qWarning() << "Recorder instance not available!";
         }
     });
-
     connect(loggerDialog, &LoggerDialog::loadRecording, this, [=](const QString &filePath) {
         if (runtime && runtime->recorder) {
-            qDebug() << "Loading recording from:" << filePath;
-            runtime->recorder->loadFromFile(filePath);
+            if (runtime->recorder->loadReplay(filePath)) {
+                qDebug() << "Replay loaded:" << filePath;
+            }
+        }
+    });
+    connect(loggerDialog, &LoggerDialog::startReplay, this, [=]() {
+        if (runtime && runtime->recorder) {
+            runtime->recorder->startReplay();
+        }
+    });
+
+    // connect(loggerDialog, &LoggerDialog::loadRecording, this, [=](const QString &filePath) {
+    //     if (runtime && runtime->recorder) {
+    //         qDebug() << "Loading recording from:" << filePath;
+    //         runtime->recorder->loadReplay(filePath);
+    //     }
+    // });
+    connect(loggerDialog, &LoggerDialog::toggleReplayPause, this, [=]() {
+        if (runtime && runtime->recorder) {
+            runtime->recorder->toggleReplayPause();
+        }
+    });
+    connect(loggerDialog, &LoggerDialog::previousFrame, this, [=]() {
+        if (runtime && runtime->recorder) {
+            runtime->recorder->goToPreviousFrame();
+        }
+    });
+
+    connect(loggerDialog, &LoggerDialog::nextFrame, this, [=]() {
+        if (runtime && runtime->recorder) {
+            runtime->recorder->goToNextFrame();
+        }
+    });
+
+    // connect(loggerDialog, &LoggerDialog::loadRecording, this, [=](const QString &filePath) {
+    //     if (runtime && runtime->recorder) {
+    //         qDebug() << "Loading recording from:" << filePath;
+    //         runtime->recorder->loadReplay(filePath);
+    //     }
+    // });
+    connect(loggerDialog, &LoggerDialog::pressPlayAgain, this, [=]() {
+        if (runtime && runtime->recorder) {
+            runtime->recorder->playAgain();
         }
     });
 
     connect(loggerDialog, &LoggerDialog::replayRecording, this, [=](const QString &filePath) {
         simulation->stop();
         tacticalDisplay->canvas->Render(0.016f);
-        if (!filePath.isEmpty() && runtime->recorder->loadFromFile(filePath)) {
+        if (!filePath.isEmpty() && runtime->recorder->loadReplay(filePath)) {
             QVector<QJsonObject> frames = runtime->recorder->getRecordedFrames();
             if (!frames.isEmpty()) {
                 simulation->replay(frames);
@@ -297,7 +341,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
 
         if (recordingStartTime.isValid()) {
             qint64 timestampMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
-            runtime->recorder->saveBookmark(bookmarkNote, timestampMs);
+            runtime->recorder->recordBookmark(bookmarkNote, timestampMs);
             loggerDialog->addBookmarkWithTimestamp(bookmarkNote, timestampMs);
 
             qDebug() << "Bookmark added at" << timestampMs << "ms — message:" << bookmarkNote;
@@ -309,6 +353,10 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(loggerDialog, &LoggerDialog::timestampToggled, this, [=](bool enabled) {
         qDebug() << "Timestamp toggled:" << enabled;
     });
+
+    connect(loggerDialog, &LoggerDialog::requestReplayReset,
+            runtime->recorder, &Recorder::resetReplayState);
+
 
     connect(loggerDialog, &LoggerDialog::bookmarkClicked,this, [=](const QString &note, qint64 timestampMs) {
         runtime->recorder->bookmarkReplay(note, timestampMs);
@@ -335,10 +383,12 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     });
 
     connect(runtime->recorder, &Recorder::replayBookmark,
-            loggerDialog, &LoggerDialog::showBookmarkOnReplay);
-
+            loggerDialog, &LoggerDialog::onReplayBookmarkLoaded);
+    connect(runtime->recorder, &Recorder::replayFrameLoaded,
+            loggerDialog, &LoggerDialog::updateReplayProgress);
     connect(runtime->recorder, &Recorder::setReplayDuration,
             loggerDialog, &LoggerDialog::setTimelineDuration);
+
 
     // Handle RadarDisplay closure to prevent crashes - now for displayWindow
     connect(displayWindow, &QObject::destroyed, this, [=]() {
@@ -394,7 +444,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/recordings",
                 "*.json"
                 );
-            if (!filePath.isEmpty() && runtime->recorder->loadFromFile(filePath)) {
+            if (!filePath.isEmpty() && runtime->recorder->loadReplay(filePath)) {
                 QVector<QJsonObject> frames = runtime->recorder->getRecordedFrames();
                 if (!frames.isEmpty()) {
                     simulation->replay(frames);
@@ -458,82 +508,157 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 treeView, &HierarchyTree::selectEntityById);
     }
 
-    connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
-        QString type;
-        if (data["type"].type() == QVariant::Map) {
-            QVariantMap typeData = data["type"].toMap();
-            if (typeData.contains("type") && typeData["type"].toString() == "option") {
-                type = "profile";
+        connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
+            QString type;
+            if (data["type"].type() == QVariant::Map) {
+                QVariantMap typeData = data["type"].toMap();
+                if (typeData.contains("type") && typeData["type"].toString() == "option") {
+                    type = "profile";
+                } else {
+                    qWarning() << "Invalid nested type structure in itemSelected:" << data["type"];
+                    return;
+                }
             } else {
-                qWarning() << "Invalid nested type structure in itemSelected:" << data["type"];
-                return;
+                type = data["type"].toString();
             }
-        } else {
-            type = data["type"].toString();
-        }
-        QString name = data["name"].toString();
-        QString ID = data["parentId"].toString();
-         QString displayName = capitalizeFirstLetter(name);
-        for (Inspector* inspector : inspectors) {
-            if (type == "component") {
-                QJsonObject componentData = hierarchy->getComponentData(ID, name);
-                if (!componentData.isEmpty()) {
-                    inspector->init(ID, displayName, componentData);
-                }
-            } else if (type == "profile") {
-                inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
-            } else if (type == "folder") {
-                inspector->init(ID, displayName + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
-            } else if (type == "entity") {
-                inspector->init(data["ID"].toString(), displayName + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
-                if (radarDisplayUI) {
-                    radarDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                }
-                if (ewDisplayUI) {
-                    ewDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                }
-                if (iffDisplayUI) {
-                    iffDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                }
-                if (radioDisplayUI) {
-                    auto entityIt = hierarchy->Entities->find(data["ID"].toString().toStdString());
-                    if (entityIt != hierarchy->Entities->end()) {
-                        radioDisplayUI->selectEntity(entityIt->second);
-                        qDebug() << "📡 Entity selected in RADIODisplay:" << QString::fromStdString(entityIt->second->Name);
+            QString name = data["name"].toString();
+            QString ID = data["parentId"].toString();
+             QString displayName = capitalizeFirstLetter(name);
+            for (Inspector* inspector : inspectors) {
+                if (type == "component") {
+                    QJsonObject componentData = hierarchy->getComponentData(ID, name);
+                    if (!componentData.isEmpty()) {
+                        inspector->init(ID, displayName, componentData);
                     }
+                } else if (type == "profile") {
+                    inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
+                } else if (type == "folder") {
+                    inspector->init(ID, displayName + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
+                } else if (type == "entity") {
+                    inspector->init(data["ID"].toString(), displayName + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
+                    if (radarDisplayUI) {
+                        radarDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                    }
+                    if (ewDisplayUI) {
+                        ewDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                    }
+                    if (iffDisplayUI) {
+                        iffDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                    }
+                    if (radioDisplayUI) {
+                        auto entityIt = hierarchy->Entities->find(data["ID"].toString().toStdString());
+                        if (entityIt != hierarchy->Entities->end()) {
+                            radioDisplayUI->selectEntity(entityIt->second);
+                            qDebug() << "📡 Entity selected in RADIODisplay:" << QString::fromStdString(entityIt->second->Name);
+                        }
+                    }
+                    if (csmDisplayUI) {
+                        csmDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                    }
+                    if (esmDisplayUI) {
+                        esmDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                    }
+                } else {
+                    inspector->init(ID, displayName, QJsonObject());
                 }
-                if (csmDisplayUI) {
-                    csmDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                }
-                if (esmDisplayUI) {
-                    esmDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                }
-            } else {
-                inspector->init(ID, displayName, QJsonObject());
             }
-        }
-        if (!inspectorDock->isVisible()) {
-            addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
-            splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
-            inspectorDock->show();
-            qDebug() << "Inspector dock shown on item selection, geometry:" << inspectorDock->geometry();
-        }
-        if (tacticalDisplay && type == "entity") {
-            tacticalDisplay->selectedMesh(data["ID"].toString());
-            Console::log("Entity selected: " + data["ID"].toString().toStdString());
-        }
-    });
+            if (!inspectorDock->isVisible()) {
+                addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
+                splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
+                inspectorDock->show();
+                qDebug() << "Inspector dock shown on item selection, geometry:" << inspectorDock->geometry();
+            }
+            if (tacticalDisplay && type == "entity") {
+                tacticalDisplay->selectedMesh(data["ID"].toString());
+                Console::log("Entity selected: " + data["ID"].toString().toStdString());
+            }
+        });
 
-    connect(libTreeView, &HierarchyTree::itemSelected, this, &RuntimeEditor::onLibraryItemSelected);
-    connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
-    connect(inspector, &Inspector::addTabRequested, this, &RuntimeEditor::addInspectorTab);
+        connect(libTreeView, &HierarchyTree::itemSelected, this, &RuntimeEditor::onLibraryItemSelected);
+        connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
+        connect(inspector, &Inspector::addTabRequested, this, &RuntimeEditor::addInspectorTab);
 
-    inspectorDocks.append(inspectorDock);
-    inspectors.append(inspector);
-    inspector->setHierarchy(hierarchy);
+        inspectorDocks.append(inspectorDock);
+        inspectors.append(inspector);
+        inspector->setHierarchy(hierarchy);
 
-    setupToolBarConnections();
-}
+        setupToolBarConnections();
+    }
+//     connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
+//         QString type;
+//         if (data["type"].type() == QVariant::Map) {
+//             QVariantMap typeData = data["type"].toMap();
+//             if (typeData.contains("type") && typeData["type"].toString() == "option") {
+//                 type = "profile";
+//             } else {
+//                 qWarning() << "Invalid nested type structure in itemSelected:" << data["type"];
+//                 return;
+//             }
+//         } else {
+//             type = data["type"].toString();
+//         }
+//         QString name = data["name"].toString();
+//         QString ID = data["parentId"].toString();
+//         for (Inspector* inspector : inspectors) {
+//             if (type == "component") {
+//                 QJsonObject componentData = hierarchy->getComponentData(ID, name);
+//                 if (!componentData.isEmpty()) {
+//                     inspector->init(ID, name, componentData);
+//                 }
+//             } else if (type == "profile") {
+//                 inspector->init(ID, name + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
+//             } else if (type == "folder") {
+//                 inspector->init(ID, name + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
+//             } else if (type == "entity") {
+//                 inspector->init(data["ID"].toString(), name + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
+//                 if (radarDisplayUI) {
+//                     radarDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+//                 }
+//                 if (ewDisplayUI) {
+//                     ewDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+//                 }
+//                 if (iffDisplayUI) {
+//                     iffDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+//                 }
+//                 if (radioDisplayUI) {
+//                     auto entityIt = hierarchy->Entities->find(data["ID"].toString().toStdString());
+//                     if (entityIt != hierarchy->Entities->end()) {
+//                         radioDisplayUI->selectEntity(entityIt->second);
+//                         qDebug() << "📡 Entity selected in RADIODisplay:" << QString::fromStdString(entityIt->second->Name);
+//                     }
+//                 }
+//                 if (csmDisplayUI) {
+//                     csmDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+//                 }
+//                 if (esmDisplayUI) {
+//                     esmDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+//                 }
+//             } else {
+//                 inspector->init(ID, name, QJsonObject());
+//             }
+//         }
+//         if (!inspectorDock->isVisible()) {
+//             addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
+//             splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
+//             inspectorDock->show();
+//             qDebug() << "Inspector dock shown on item selection, geometry:" << inspectorDock->geometry();
+//         }
+//         if (tacticalDisplay && type == "entity") {
+//             tacticalDisplay->selectedMesh(data["ID"].toString());
+//             Console::log("Entity selected: " + data["ID"].toString().toStdString());
+//         }
+//     });
+
+//     connect(libTreeView, &HierarchyTree::itemSelected, this, &RuntimeEditor::onLibraryItemSelected);
+//     connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
+//     connect(inspector, &Inspector::addTabRequested, this, &RuntimeEditor::addInspectorTab);
+
+//     inspectorDocks.append(inspectorDock);
+//     inspectors.append(inspector);
+//     inspector->setHierarchy(hierarchy);
+
+//     setupToolBarConnections();
+// }
 void RuntimeEditor::setupEnhancedDockWidgets()
 {
     // Full dock features for complete movability - JUST LIKE SCENARIO EDITOR
@@ -576,7 +701,7 @@ void RuntimeEditor::setupEnhancedDockWidgets()
     consoleDock->setMinimumHeight(100);
     consoleDock->setTitleBarWidget(nullptr);
     addDockWidget(Qt::BottomDockWidgetArea, consoleDock);
-        consoleDock->hide();
+    consoleDock->hide();
 
     // Setup sidebar dock with enhanced features
     sidebarDock = new QDockWidget("Sidebar", this);

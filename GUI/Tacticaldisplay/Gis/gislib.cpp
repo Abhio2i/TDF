@@ -753,7 +753,7 @@ QString GISlib::getTileKey(const QString& layer, int z, int x, int y) {
  * Supports multiple tile servers and custom map layers
  */
 QString GISlib::tileUrl(const QString& layer, int x, int y, int z) {
-    qDebug() << "Generating tile URL for layer:" << layer << ", z:" << z << ", x:" << x << ", y:" << y;
+    //qDebug() << "Generating tile URL for layer:" << layer << ", z:" << z << ", x:" << x << ", y:" << y;
     QString lowerLayer = layer.toLower();
 
     // Local OSM tiles
@@ -761,7 +761,7 @@ QString GISlib::tileUrl(const QString& layer, int x, int y, int z) {
         QString appDir = QCoreApplication::applicationDirPath();
         QString osmPath = QDir(appDir).filePath("testOSM");
         QString filePath = QString("file://%1/%2/%3/%4.png").arg(osmPath).arg(z).arg(x).arg(y);
-        qDebug() << "Generated local tile path for OSM:" << filePath;
+        //qDebug() << "Generated local tile path for OSM:" << filePath;
         flipkeyaxis = false;
         return filePath;
     }
@@ -771,7 +771,7 @@ QString GISlib::tileUrl(const QString& layer, int x, int y, int z) {
         QString appDir = QCoreApplication::applicationDirPath();
         QString satPath = QDir(appDir).filePath("satMAP");
         QString filePath = QString("file://%1/%2/%3/%4.png").arg(satPath).arg(z).arg(x).arg(y);
-        qDebug() << "Generated local tile path for Satellite Map:" << filePath;
+        //qDebug() << "Generated local tile path for Satellite Map:" << filePath;
         flipkeyaxis = false;
         return filePath;
     }
@@ -781,7 +781,7 @@ QString GISlib::tileUrl(const QString& layer, int x, int y, int z) {
         QString appDir = QCoreApplication::applicationDirPath();
         QString tarPath = QDir(appDir).filePath("tarMAP");
         QString filePath = QString("file://%1/%2/%3/%4.png").arg(tarPath).arg(z).arg(x).arg(y);
-        qDebug() << "Generated local tile path for Tarrine Map:" << filePath;
+        //qDebug() << "Generated local tile path for Tarrine Map:" << filePath;
         flipkeyaxis = false;
         return filePath;
     }
@@ -855,7 +855,7 @@ void GISlib::requestTile(const QString& layer, int x, int y, int z, int retries)
     QString url = tileUrl(layer, x, y, z);
     if (url.isEmpty()) return;
 
-    qDebug() << "Requesting tile for" << layer << ":" << url;
+    //qDebug() << "Requesting tile for" << layer << ":" << url;
     pendingTiles++;                       // Increment pending count
     net->requestImage(QUrl(url));         // Send network request
 }

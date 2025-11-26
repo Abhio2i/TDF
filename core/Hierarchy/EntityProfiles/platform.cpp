@@ -307,6 +307,7 @@ void Platform::addComponent(std::string name) {
             dynamicModel->transform = transform;
             dynamicModel->rigidbody = rigidbody;
             dynamicModel->trajectory = trajectory;
+            dynamicModel->init();
             emit parent->componentAdded(QString::fromStdString(ID), "dynamicModel");
             emit parent->entityPhysicsAdded(QString::fromStdString(parentID), this);
         }

@@ -190,9 +190,9 @@ void CSMDisplay::updateRadar()
         update();
     } else {
         if (!entity) {
-            qDebug() << "❌ CSMDisplay - No entity selected";
+            //qDebug() << "❌ CSMDisplay - No entity selected";
         } else if (!sensor) {
-            qDebug() << "❌ CSMDisplay - No CSM sensor component found";
+            //qDebug() << "❌ CSMDisplay - No CSM sensor component found";
         }
         // Clear display when no entity/sensor
         update();

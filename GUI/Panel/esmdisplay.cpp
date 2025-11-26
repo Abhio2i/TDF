@@ -193,9 +193,9 @@ void ESMDisplay::updateRadar()
         update();
     } else {
         if (!entity) {
-            qDebug() << "❌ ESMDisplay - No entity selected";
+            //qDebug() << "❌ ESMDisplay - No entity selected";
         } else if (!sensor) {
-            qDebug() << "❌ ESMDisplay - No ESM sensor component found";
+            //qDebug() << "❌ ESMDisplay - No ESM sensor component found";
         }
         // Clear display when no entity/sensor
         update();

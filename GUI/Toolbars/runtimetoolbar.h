@@ -70,7 +70,7 @@ private:
     // Bookmark action (commented)
     // QAction *bookmarkAction;
     // Replay action
-    QAction *replayAction;
+    // QAction *replayAction;
     // Timing action
     QAction *timingAction;
     // Logger action

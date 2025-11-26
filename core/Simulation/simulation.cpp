@@ -10,8 +10,8 @@ Simulation::Simulation() {
     elapsedTimer = new QElapsedTimer();
     elapsedTimer->start();
     lastTime = elapsedTimer->elapsed();
-    SimulationFrameRate = 60;
-    PhysicsUpdateFrameRate = 60;
+    SimulationFrameRate = 50;
+    PhysicsUpdateFrameRate = 50;
     UIUpdateFrameRate = 30;
     Gravity = new Vector(0, 0, -3.81f);
     speed = 1;
@@ -107,6 +107,10 @@ void Simulation::start() {
     lastTime = elapsedTimer->elapsed();
     updateTimer->start(1000 / SimulationFrameRate);
     isPlay = true;
+    for (auto& [id, comp] : physicsComponent) {
+        if (comp.dynamicModel) comp.dynamicModel->start();
+    }
+
 }
 
 void Simulation::pause() {
@@ -333,8 +337,7 @@ void Simulation::calculatePhysics() {
     const float dt = deltaTime * speed;
     const float maxDt = 1.0f / PhysicsUpdateFrameRate;
     const float clampedDt = std::min(dt, maxDt);
-
-    dynamicsWorld->stepSimulation(clampedDt, 10);
+    //dynamicsWorld->stepSimulation(clampedDt, 10);
     emit Physics();
 
     for (auto& [id, comp] : physicsComponent) {
@@ -343,65 +346,65 @@ void Simulation::calculatePhysics() {
         if (comp.dynamicModel) comp.dynamicModel->Update(dt);
         if (comp.entity) comp.entity->update();
 
-        auto it = bulletBodies.find(id);
-        if (it != bulletBodies.end()) {
-            btRigidBody* body = it->second;
-            btTransform trans;
-            body->getMotionState()->getWorldTransform(trans);
+        // auto it = bulletBodies.find(id);
+        // if (it != bulletBodies.end()) {
+        //     btRigidBody* body = it->second;
+        //     btTransform trans;
+        //     body->getMotionState()->getWorldTransform(trans);
 
-            btVector3 pos = trans.getOrigin();
-            btQuaternion rot = trans.getRotation();
-            // comp.transform->position->x = pos.getX();
-            // comp.transform->position->y = pos.getY();
-            // comp.transform->position->z = pos.getZ();
+        //     btVector3 pos = trans.getOrigin();
+        //     btQuaternion rot = trans.getRotation();
+        //     // comp.transform->position->x = pos.getX();
+        //     // comp.transform->position->y = pos.getY();
+        //     // comp.transform->position->z = pos.getZ();
 
-            btScalar x, y, z;
-            rot.getEulerZYX(z, y, x);
-            // comp.transform->rotation->x = qRadiansToDegrees(x);
-            // comp.transform->rotation->y = qRadiansToDegrees(y);
-            // comp.transform->rotation->z = qRadiansToDegrees(z);
+        //     btScalar x, y, z;
+        //     rot.getEulerZYX(z, y, x);
+        //     // comp.transform->rotation->x = qRadiansToDegrees(x);
+        //     // comp.transform->rotation->y = qRadiansToDegrees(y);
+        //     // comp.transform->rotation->z = qRadiansToDegrees(z);
 
-            if (comp.collider) {
-                body->getCollisionShape()->setLocalScaling(btVector3(
-                    comp.transform->matrix->scale3D().x() * comp.collider->Width * 0.5f,
-                    comp.transform->matrix->scale3D().y() * comp.collider->Length * 0.5f,
-                    comp.transform->matrix->scale3D().z() * comp.collider->Height * 0.5f));
-            }
+        //     if (comp.collider) {
+        //         body->getCollisionShape()->setLocalScaling(btVector3(
+        //             comp.transform->matrix->scale3D().x() * comp.collider->Width * 0.5f,
+        //             comp.transform->matrix->scale3D().y() * comp.collider->Length * 0.5f,
+        //             comp.transform->matrix->scale3D().z() * comp.collider->Height * 0.5f));
+        //     }
 
-            if (comp.rigidbody->Gravity) {
-                body->setGravity(btVector3(Gravity->x, Gravity->y, Gravity->z));
-            } else {
-                body->setGravity(btVector3(0, 0, 0));
-            }
+        //     if (comp.rigidbody->Gravity) {
+        //         body->setGravity(btVector3(Gravity->x, Gravity->y, Gravity->z));
+        //     } else {
+        //         body->setGravity(btVector3(0, 0, 0));
+        //     }
 
-            comp.rigidbody->velocity->x = body->getLinearVelocity().x();
-            comp.rigidbody->velocity->y = body->getLinearVelocity().y();
-            comp.rigidbody->velocity->z = body->getLinearVelocity().z();
+        //     comp.rigidbody->velocity->x = body->getLinearVelocity().x();
+        //     comp.rigidbody->velocity->y = body->getLinearVelocity().y();
+        //     comp.rigidbody->velocity->z = body->getLinearVelocity().z();
 
-            comp.rigidbody->angularVelocity->x = body->getAngularVelocity().x();
-            comp.rigidbody->angularVelocity->y = body->getAngularVelocity().y();
-            comp.rigidbody->angularVelocity->z = body->getAngularVelocity().z();
+        //     comp.rigidbody->angularVelocity->x = body->getAngularVelocity().x();
+        //     comp.rigidbody->angularVelocity->y = body->getAngularVelocity().y();
+        //     comp.rigidbody->angularVelocity->z = body->getAngularVelocity().z();
 
-            btVector3 linearFactor(1, 1, 1);
-            if (comp.rigidbody->freezePositionX) linearFactor.setX(0);
-            if (comp.rigidbody->freezePositionY) linearFactor.setY(0);
-            if (comp.rigidbody->freezePositionZ) linearFactor.setZ(0);
-            body->setLinearFactor(linearFactor);
+        //     btVector3 linearFactor(1, 1, 1);
+        //     if (comp.rigidbody->freezePositionX) linearFactor.setX(0);
+        //     if (comp.rigidbody->freezePositionY) linearFactor.setY(0);
+        //     if (comp.rigidbody->freezePositionZ) linearFactor.setZ(0);
+        //     body->setLinearFactor(linearFactor);
 
-            btVector3 angularFactor(1, 1, 1);
-            if (comp.rigidbody->freezeRotationX) angularFactor.setX(0);
-            if (comp.rigidbody->freezeRotationY) angularFactor.setY(0);
-            if (comp.rigidbody->freezeRotationZ) angularFactor.setZ(0);
-            body->setAngularFactor(angularFactor);
+        //     btVector3 angularFactor(1, 1, 1);
+        //     if (comp.rigidbody->freezeRotationX) angularFactor.setX(0);
+        //     if (comp.rigidbody->freezeRotationY) angularFactor.setY(0);
+        //     if (comp.rigidbody->freezeRotationZ) angularFactor.setZ(0);
+        //     body->setAngularFactor(angularFactor);
 
-            if (comp.rigidbody->Kinematics) {
-                body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-                body->setActivationState(DISABLE_DEACTIVATION);
-            } else {
-                body->setCollisionFlags(body->getCollisionFlags() & ~btCollisionObject::CF_KINEMATIC_OBJECT);
-                body->setActivationState(ACTIVE_TAG);
-            }
-        }
+        //     if (comp.rigidbody->Kinematics) {
+        //         body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+        //         body->setActivationState(DISABLE_DEACTIVATION);
+        //     } else {
+        //         body->setCollisionFlags(body->getCollisionFlags() & ~btCollisionObject::CF_KINEMATIC_OBJECT);
+        //         body->setActivationState(ACTIVE_TAG);
+        //     }
+        // }
     }
 }
 

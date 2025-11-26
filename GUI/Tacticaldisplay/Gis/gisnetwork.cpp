@@ -92,7 +92,7 @@ void GISNetwork::requestImage(QUrl url){
         QByteArray data = reply->readAll();
 
         // Debug output to monitor download sizes
-        qDebug() << "Downloaded size:" << data.size();
+        //qDebug() << "Downloaded size:" << data.size();
 
         // Emit signal with URL and image data for processing
         emit receiveImage(reply->url().toString(), data);
