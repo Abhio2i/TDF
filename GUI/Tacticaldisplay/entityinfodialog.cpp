@@ -138,51 +138,51 @@ void EntityInfoDialog::createCarrierSection()
     scrollLayout->addWidget(carrierLabel);
 }
 
-// void EntityInfoDialog::createPositionSection()
-// {
-//     // Create position display like carrier (not as table)
-//     positionLayout = new QVBoxLayout();
-
-//     positionCurrentLabel = new QLabel("Current Position: -");
-//     positionRequestedLabel = new QLabel("Requested Position: -");
-
-//     // Style position labels
-//     QString positionStyle = "QLabel { padding: 6px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 3px; margin-bottom: 2px; }";
-//     positionCurrentLabel->setStyleSheet(positionStyle);
-//     positionRequestedLabel->setStyleSheet(positionStyle);
-
-//     positionCurrentLabel->setMinimumHeight(30);
-//     positionRequestedLabel->setMinimumHeight(30);
-
-//     positionLayout->addWidget(positionCurrentLabel);
-//     positionLayout->addWidget(positionRequestedLabel);
-
-//     QWidget *positionWidget = new QWidget();
-//     positionWidget->setLayout(positionLayout);
-//     scrollLayout->addWidget(positionWidget);
-// }
-
-
 void EntityInfoDialog::createPositionSection()
 {
     // Create position display like carrier (not as table)
     positionLayout = new QVBoxLayout();
 
-    // SIRF CURRENT POSITION - requested position remove karein
     positionCurrentLabel = new QLabel("Current Position: -");
+    positionRequestedLabel = new QLabel("Requested Position: -");
 
-    // Style position label
-    QString positionStyle = "QLabel { padding: 8px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 3px; }";
+    // Style position labels
+    QString positionStyle = "QLabel { padding: 6px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 3px; margin-bottom: 2px; }";
     positionCurrentLabel->setStyleSheet(positionStyle);
+    positionRequestedLabel->setStyleSheet(positionStyle);
 
-    positionCurrentLabel->setMinimumHeight(35);
+    positionCurrentLabel->setMinimumHeight(30);
+    positionRequestedLabel->setMinimumHeight(30);
 
     positionLayout->addWidget(positionCurrentLabel);
+    positionLayout->addWidget(positionRequestedLabel);
 
     QWidget *positionWidget = new QWidget();
     positionWidget->setLayout(positionLayout);
     scrollLayout->addWidget(positionWidget);
 }
+
+
+// void EntityInfoDialog::createPositionSection()
+// {
+//     // Create position display like carrier (not as table)
+//     positionLayout = new QVBoxLayout();
+
+//     // SIRF CURRENT POSITION - requested position remove karein
+//     positionCurrentLabel = new QLabel("Current Position: -");
+
+//     // Style position label
+//     QString positionStyle = "QLabel { padding: 8px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 3px; }";
+//     positionCurrentLabel->setStyleSheet(positionStyle);
+
+//     positionCurrentLabel->setMinimumHeight(35);
+
+//     positionLayout->addWidget(positionCurrentLabel);
+
+//     QWidget *positionWidget = new QWidget();
+//     positionWidget->setLayout(positionLayout);
+//     scrollLayout->addWidget(positionWidget);
+// }
 
 void EntityInfoDialog::createSpeedAltTableSection()
 {
