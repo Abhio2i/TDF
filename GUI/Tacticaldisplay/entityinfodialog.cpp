@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include <QTableWidget>
 #include <QHeaderView>
+#include "core/Hierarchy/EntityProfiles/sensor.h"
 
 EntityInfoDialog::EntityInfoDialog(QWidget *parent)
     : QDialog(parent)
@@ -140,49 +141,16 @@ void EntityInfoDialog::createCarrierSection()
 
 void EntityInfoDialog::createPositionSection()
 {
-    // Create position display like carrier (not as table)
-    positionLayout = new QVBoxLayout();
+    // Create only current position display (no requested position)
+    positionLabel = new QLabel("Position: -");
 
-    positionCurrentLabel = new QLabel("Current Position: -");
-    positionRequestedLabel = new QLabel("Requested Position: -");
+    // Style position label
+    QString positionStyle = "QLabel { padding: 8px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 3px; }";
+    positionLabel->setStyleSheet(positionStyle);
+    positionLabel->setMinimumHeight(35);
 
-    // Style position labels
-    QString positionStyle = "QLabel { padding: 6px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 3px; margin-bottom: 2px; }";
-    positionCurrentLabel->setStyleSheet(positionStyle);
-    positionRequestedLabel->setStyleSheet(positionStyle);
-
-    positionCurrentLabel->setMinimumHeight(30);
-    positionRequestedLabel->setMinimumHeight(30);
-
-    positionLayout->addWidget(positionCurrentLabel);
-    positionLayout->addWidget(positionRequestedLabel);
-
-    QWidget *positionWidget = new QWidget();
-    positionWidget->setLayout(positionLayout);
-    scrollLayout->addWidget(positionWidget);
+    scrollLayout->addWidget(positionLabel);
 }
-
-
-// void EntityInfoDialog::createPositionSection()
-// {
-//     // Create position display like carrier (not as table)
-//     positionLayout = new QVBoxLayout();
-
-//     // SIRF CURRENT POSITION - requested position remove karein
-//     positionCurrentLabel = new QLabel("Current Position: -");
-
-//     // Style position label
-//     QString positionStyle = "QLabel { padding: 8px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 3px; }";
-//     positionCurrentLabel->setStyleSheet(positionStyle);
-
-//     positionCurrentLabel->setMinimumHeight(35);
-
-//     positionLayout->addWidget(positionCurrentLabel);
-
-//     QWidget *positionWidget = new QWidget();
-//     positionWidget->setLayout(positionLayout);
-//     scrollLayout->addWidget(positionWidget);
-// }
 
 void EntityInfoDialog::createSpeedAltTableSection()
 {
@@ -244,7 +212,6 @@ void EntityInfoDialog::createSpeedAltTableSection()
 
     scrollLayout->addWidget(speedAltTable);
 }
-
 
 void EntityInfoDialog::createTrackSection()
 {
@@ -361,59 +328,84 @@ void EntityInfoDialog::createOptionsSection()
     optionsLayout->addWidget(showConnectionCheckBox);
     optionsLayout->addWidget(showDetectionCheckBox);
     optionsLayout->addWidget(controlDecisiveCheckBox);
+    connect(showDetectionCheckBox, &QCheckBox::clicked, this, [=](bool checked) {
+    if(!currentEntityId.isEmpty()){
+        if(entryInfo){
+            entryInfo->detection = checked;
+            emit update();
+        }
+    }
+    });
 
     QWidget *optionsWidget = new QWidget();
     optionsWidget->setLayout(optionsLayout);
     scrollLayout->addWidget(optionsWidget);
 }
 
-void EntityInfoDialog::setEntityInfo(const QString& entityId, const QVariantMap& entityData)
+void EntityInfoDialog::setEntityInfo(const QString& entityId,  MeshEntry* info)
 {
     currentEntityId = entityId;
-    currentEntityData = entityData;
-
+    //currentEntityData = entityData;
+    entryInfo = info;
     titleLabel->setText("Entity: " + entityId);
+    entryInfo->detection = showDetectionCheckBox->isChecked();
+}
 
-    // Update attribute table
-    if (attributeTable) {
-        attributeTable->item(0, 1)->setText(entityData.value("type", "Unknown").toString());
-        attributeTable->item(1, 1)->setText(entityData.value("name", "Unknown").toString());
-        attributeTable->item(2, 1)->setText(entityData.value("displayName", "Unknown").toString());
+void EntityInfoDialog::updateEntityInfo(){
+    if(currentEntityId.isEmpty())return;
+    if(entryInfo){
+        if(entryInfo->entity){
+            // Convert entity type to string
+                QString typeStr = "Unknown";
+                switch(entryInfo->entity->type) {
+                    case Constants::EntityType::Platform: typeStr = "Platform"; break;
+                    case Constants::EntityType::Sensor: typeStr = "Sensor"; break;
+                    case Constants::EntityType::Weapon: typeStr = "Weapon"; break;
+                    // Add other entity types as needed
+                    default: typeStr = "Unknown"; break;
+                }
+            // Update attribute table
+            if (attributeTable) {
+                attributeTable->item(0, 1)->setText(typeStr);
+                attributeTable->item(1, 1)->setText(entryInfo->name);
+                attributeTable->item(2, 1)->setText(entryInfo->name);
+            }
+
+            // Update position section - show only current position
+            QString currentPos = QString("Lat: %1, Long: %2")
+                                     .arg(entryInfo->transform->translation().x())
+                                     .arg(entryInfo->transform->translation().z());
+
+            positionLabel->setText("Position: " + currentPos);
+
+        }
+
+
     }
 
+
     // Update carrier section
-    carrierLabel->setText("Carrier: " + entityData.value("carrier", "None").toString());
+    // carrierLabel->setText("Carrier: " + entityData.value("carrier", "None").toString());
 
-    // Update position section - show Lat/Long values
-    QString currentPos = QString("Lat: %1, Long: %2")
-                             .arg(entityData.value("latitude", "Unknown").toString())
-                             .arg(entityData.value("longitude", "Unknown").toString());
-
-    QString requestedPos = QString("Lat: %1, Long: %2")
-                               .arg(entityData.value("requestedLatitude", "Unknown").toString())
-                               .arg(entityData.value("requestedLongitude", "Unknown").toString());
-
-    positionCurrentLabel->setText("Current Position: " + currentPos);
-    positionRequestedLabel->setText("Requested Position: " + requestedPos);
 
     // Update Speed and Altitude table
     if (speedAltTable) {
-        speedAltTable->item(0, 1)->setText(entityData.value("speed", "Unknown").toString());
-        speedAltTable->item(0, 2)->setText(entityData.value("requestedSpeed", "Unknown").toString());
+        // speedAltTable->item(0, 1)->setText(entityData.value("speed", "Unknown").toString());
+        // speedAltTable->item(0, 2)->setText(entityData.value("requestedSpeed", "Unknown").toString());
 
-        speedAltTable->item(1, 1)->setText(entityData.value("altitude", "Unknown").toString());
-        speedAltTable->item(1, 2)->setText(entityData.value("requestedAltitude", "Unknown").toString());
+        // speedAltTable->item(1, 1)->setText(entityData.value("altitude", "Unknown").toString());
+        // speedAltTable->item(1, 2)->setText(entityData.value("requestedAltitude", "Unknown").toString());
     }
 
-    // Update checkboxes from entity data
-    trackCheckBox->setChecked(entityData.value("track", false).toBool());
-    centreCheckBox->setChecked(entityData.value("centre", false).toBool());
-    aggregatedScriptCheckBox->setChecked(entityData.value("aggregatedScript", false).toBool());
-    activeCheckBox->setChecked(entityData.value("active", false).toBool());
-    followTrajectoryCheckBox->setChecked(entityData.value("followTrajectory", false).toBool());
-    showConnectionCheckBox->setChecked(entityData.value("showConnection", false).toBool());
-    showDetectionCheckBox->setChecked(entityData.value("showDetection", false).toBool());
-    controlDecisiveCheckBox->setChecked(entityData.value("controlDecisive", false).toBool());
+    // // Update checkboxes from entity data
+    // trackCheckBox->setChecked(entityData.value("track", false).toBool());
+    // centreCheckBox->setChecked(entityData.value("centre", false).toBool());
+    // aggregatedScriptCheckBox->setChecked(entityData.value("aggregatedScript", false).toBool());
+    // activeCheckBox->setChecked(entityData.value("active", false).toBool());
+    // followTrajectoryCheckBox->setChecked(entityData.value("followTrajectory", false).toBool());
+    // showConnectionCheckBox->setChecked(entityData.value("showConnection", false).toBool());
+    // showDetectionCheckBox->setChecked(entityData.value("showDetection", false).toBool());
+    // controlDecisiveCheckBox->setChecked(entityData.value("controlDecisive", false).toBool());
 }
 
 void EntityInfoDialog::clearInfo()
@@ -433,8 +425,7 @@ void EntityInfoDialog::clearInfo()
     carrierLabel->setText("Carrier: -");
 
     // Reset position section
-    positionCurrentLabel->setText("Current Position: -");
-    positionRequestedLabel->setText("Requested Position: -");
+    positionLabel->setText("Position: -");
 
     // Reset Speed and Altitude table
     if (speedAltTable) {
@@ -471,11 +462,31 @@ void EntityInfoDialog::onWeaponsClicked()
 
 void EntityInfoDialog::onSensorsClicked()
 {
+    if(!currentEntityId.isEmpty()){
+        if(entryInfo){
+            if(entryInfo->entity){
+                QString str;
+                Entity* entity = entryInfo->entity;
+                for (Sensor* s : entity->sensorList) {
+                    if(s->subType == Sensor::SubType::Generic){
+                       str += QString::fromStdString(s->Name+":Generic");
+                    }
+                }
+                // Show sensors list popup
+                QMessageBox::information(this, "Sensors",
+                                         QString("Sensors for entity %1:\n%2")
+                                             .arg(currentEntityId)
+                                             .arg(currentEntityData.value("sensors", str).toString()));
+
+            }
+        }
+    }else{
     // Show sensors list popup
     QMessageBox::information(this, "Sensors",
                              QString("Sensors for entity %1:\n%2")
                                  .arg(currentEntityId)
                                  .arg(currentEntityData.value("sensors", "No sensors data").toString()));
+    }
 }
 
 void EntityInfoDialog::onFormationClicked()

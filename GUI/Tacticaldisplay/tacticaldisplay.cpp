@@ -124,6 +124,7 @@
 //     // Set minimum width
 //     setMinimumWidth(400);
 // }
+
 // %%% Constructor %%%
 /* Initialize tactical display with map and 3D widgets */
 TacticalDisplay::TacticalDisplay(QWidget *parent)
@@ -156,6 +157,7 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
     containerLayout->addWidget(mapWidget);
     canvas->gislib = mapWidget;
 
+    // Create coordinate overlay widget (TOP-LEFT)
     QWidget *coordWidget = new QWidget(mapWidget);
     coordWidget->setStyleSheet("background-color: transparent;");
     QHBoxLayout *coordLayout = new QHBoxLayout(coordWidget);
@@ -163,7 +165,7 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
     coordLayout->setSpacing(2);
     coordLayout->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-    // ✅ FIXED: Configure coordinate label with smaller width
+    // Coordinate label
     overlayLabel = new QLabel("Lat: ---, Lon: ---", coordWidget);
     overlayLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
     overlayLabel->setStyleSheet(
@@ -172,43 +174,30 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
         "padding: 5px;"
         "border-radius: 6px;"
         "font-family: Arial;"
-        "font-size: 9pt;"  // ✅ Optional: Font size bhi kam kar sakte hain
+        "font-size: 9pt;"
         );
-    overlayLabel->setFixedSize(150, 40);  // ✅ WIDTH KAM KI: 200 se 150, height 60 se 40
+    overlayLabel->setFixedSize(150, 40);
 
-    // ✅ FIXED: Add ONLY label to layout
     coordLayout->addWidget(overlayLabel);
-
-    // ✅ FIXED: Adjust widget size since no combobox and smaller label
-    coordWidget->setFixedSize(160, 50);  // ✅ WIDTH KAM KI: 210 se 160, height 60 se 50
-    coordWidget->setGeometry(20, 20, 160, 50);  // ✅ Position bhi adjust kiya
+    coordWidget->setFixedSize(160, 50);
+    coordWidget->setGeometry(20, 20, 160, 50);  // Top-left position
     coordWidget->raise();
 
-    // ✅ FIXED: Coordinate display signal connection - text format bhi adjust karen
-    connect(mapWidget, &GISlib::mouseCords, this, [=](double lat, double lon, const QString& crsId) {
-        QString xLabel = crsId.startsWith("EPSG:326") ? "X" : "Lon";
-        QString yLabel = crsId.startsWith("EPSG:326") ? "Y" : "Lat";
+    // Create scale bar widget (TOP-RIGHT)
+    scaleBar = new ScaleBar(mapWidget);
+    scaleBar->setGeometry(mapWidget->width() - 200, 20, 180, 40);  // Top-right position
+    scaleBar->raise();
 
-        // ✅ Compact format for smaller display
-        overlayLabel->setText(QString("%1: %2\n%3: %4")
-                                  .arg(yLabel)
-                                  .arg(QString::number(lat, 'f', 6))  // ✅ Decimal points kam kiya
-                                  .arg(xLabel)
-                                  .arg(QString::number(lon, 'f', 6))); // ✅ Decimal points kam kiya
-    });
+    // ✅ FIXED: Coordinate display signal connection
     connect(mapWidget, &GISlib::mouseCords, this, [=](double lat, double lon, const QString& crsId) {
-
         QString text;
 
         if (crsId == "MGRS") {
-            // MGRS calculation (since the signal can't send a string)
-            // Call the GISlib public method to get the MGRS string
-            text = mapWidget->latLonToMGRS(lat, lon); // NOTE: This assumes `lat` and `lon` are WGS84 here.
+            text = mapWidget->latLonToMGRS(lat, lon);
         } else {
             QString xLabel = crsId.startsWith("EPSG:326") ? "X" : "Lon";
             QString yLabel = crsId.startsWith("EPSG:326") ? "Y" : "Lat";
 
-            // Compact format for smaller display (for Lat/Lon or UTM X/Y)
             text = QString("%1: %2\n%3: %4")
                        .arg(yLabel)
                        .arg(QString::number(lat, 'f', 6))
@@ -217,12 +206,10 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
         }
 
         overlayLabel->setText(text);
+
+        // Update scale bar when coordinates change (for latitude adjustment)
+        updateScaleBar();
     });
-    // 🚫 COMBOBOX CONNECTION REMOVED - Yeh comment hi rahega
-    // connect(crsComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int index) {
-    //     QString crsId = crsComboBox->itemData(index).toString();
-    //     mapWidget->setCoordinateSystem(crsId);
-    // });
 
     // Connect GIS event signals to canvas
     connect(mapWidget, &GISlib::keyPressed, canvas, &CanvasWidget::onGISKeyPressed);
@@ -233,6 +220,12 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
     connect(mapWidget, &GISlib::dragEnterEvents, canvas, &CanvasWidget::dragEnterEvents);
     connect(mapWidget, &GISlib::dragMoveEvents, canvas, &CanvasWidget::dragMoveEvents);
     connect(mapWidget, &GISlib::dropEvents, canvas, &CanvasWidget::dropEvents);
+
+    // Connect zoom signals to update scale bar
+    connect(mapWidget, &GISlib::zoomChanged, this, [=](double zoom) {
+        currentZoom = static_cast<int>(zoom);
+        updateScaleBar();
+    });
 
     // Add map container to splitter
     splitter->addWidget(mapCanvasContainer);
@@ -250,7 +243,43 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
 
     // Set minimum width
     setMinimumWidth(400);
+
+    // Initial scale bar update
+    updateScaleBar();
 }
+
+void TacticalDisplay::updateScaleBar()
+{
+    if (scaleBar && mapWidget) {
+        // Calculate meters per pixel based on zoom level
+        // This formula will need adjustment based on your actual map scale
+        double baseScale = 156543.03392; // meters per pixel at zoom 0 (equator)
+        double metersPerPixel = baseScale / std::pow(2, currentZoom);
+
+        // Latitude adjustment - get from map center if available
+        double currentLatitude = 0.0; // Default
+        // If your GISlib has getCenterLatitude() method, use it:
+        // currentLatitude = mapWidget->getCenterLatitude();
+
+        double latRad = currentLatitude * M_PI / 180.0;
+        metersPerPixel *= std::cos(latRad);
+
+        scaleBar->updateScale(metersPerPixel, mapWidget->width());
+
+        // Ensure scale bar stays in top-right corner
+        scaleBar->setGeometry(mapWidget->width() - 200, 20, 180, 40);
+        scaleBar->raise();
+    }
+}
+
+// Add this to your resize event or override resizeEvent if needed
+// This ensures scale bar stays in top-right corner when window is resized
+void TacticalDisplay::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    updateScaleBar();
+}
+
 // %%% Mesh Management %%%
 /* Add a mesh to the canvas */
 void TacticalDisplay::addMesh(QString ID, MeshData meshData)

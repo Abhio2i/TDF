@@ -32,11 +32,14 @@ HierarchyTree::HierarchyTree(QWidget *parent)
 
     // Enable drag and drop
     tree->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    tree->setDragDropMode(QAbstractItemView::DragDrop);
+    //tree->setDragDropMode(QAbstractItemView::DragDrop);
     tree->setDragEnabled(true);
-    tree->viewport()->setAcceptDrops(true);
-    tree->setDropIndicatorShown(true);
-    tree->setDefaultDropAction(Qt::CopyAction);
+    //tree->setAcceptDrops(true);
+    //tree->viewport()->setAcceptDrops(true);
+    //tree->setDropIndicatorShown(true);
+
+    setAcceptDrops(true);
+    //tree->setDefaultDropAction(Qt::CopyAction);
 
     // Connect item clicked signal
     connect(tree, &QTreeWidget::itemClicked, this, [=](QTreeWidgetItem* item, int column) {
@@ -331,7 +334,8 @@ void HierarchyTree::contextMenuEvent(QContextMenuEvent *event)
 void HierarchyTree::dragEnterEvent(QDragEnterEvent *event)
 {
     // Accept drag if MIME data is entity
-    if (event->mimeData()->hasFormat("application/x-entity-data")) {
+    if (event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist") ||
+        event->mimeData()->hasFormat("application/x-entity")) {
         event->acceptProposedAction();
     } else {
         event->ignore();
@@ -342,7 +346,8 @@ void HierarchyTree::dragEnterEvent(QDragEnterEvent *event)
 void HierarchyTree::dragMoveEvent(QDragMoveEvent *event)
 {
     // Check MIME data
-    if (event->mimeData()->hasFormat("application/x-entity-data")) {
+    if (event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist") ||
+        event->mimeData()->hasFormat("application/x-entity")) {
         QTreeWidgetItem *item = tree->itemAt(event->pos());
         if (item) {
             QVariantMap data = item->data(0, Qt::UserRole).toMap();
@@ -360,8 +365,9 @@ void HierarchyTree::dragMoveEvent(QDragMoveEvent *event)
                 type = data["type"].toString();
             }
             // Accept if target is profile or folder
-            if (type == "profile" || type == "folder") {
+            if (type == "profile" || type == "folder" || type == "entity") {
                 event->acceptProposedAction();
+                qDebug()<<"i am working";
                 return;
             }
         }
@@ -372,11 +378,12 @@ void HierarchyTree::dragMoveEvent(QDragMoveEvent *event)
 /* Handle drop event */
 void HierarchyTree::dropEvent(QDropEvent *event)
 {
+   qDebug()<<"i am done";
     // Validate MIME data
-    if (!event->mimeData()->hasFormat("application/x-entity-data")) {
-        event->ignore();
-        return;
-    }
+    if (event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist") ||
+        event->mimeData()->hasFormat("application/x-entity")) {
+
+
     // Get target item
     QTreeWidgetItem *targetItem = tree->itemAt(event->pos());
     if (!targetItem) {
@@ -400,8 +407,8 @@ void HierarchyTree::dropEvent(QDropEvent *event)
     }
     // Validate target type
     if (targetType != "profile" && targetType != "folder") {
-        event->ignore();
-        return;
+        //event->ignore();
+        //return;
     }
     // Read source data
     QByteArray itemData = event->mimeData()->data("application/x-entity-data");
@@ -416,6 +423,10 @@ void HierarchyTree::dropEvent(QDropEvent *event)
     // Emit drop signal
     emit itemDropped(sourceData, targetData);
     event->acceptProposedAction();
+    }else{
+        event->ignore();
+        return;
+    }
 }
 
 /* Remove component from tree */

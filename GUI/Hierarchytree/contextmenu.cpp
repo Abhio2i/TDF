@@ -365,6 +365,7 @@ void ContextMenu::setupMenu(QTreeWidgetItem *item)
         });
 
         connect(copy, &QAction::triggered, this, [=]() {
+            qDebug()<<storedData["ID"];
             emit copyItemRequested(storedData);
         });
 

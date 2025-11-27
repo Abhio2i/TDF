@@ -17,8 +17,9 @@
 #include <QElapsedTimer>
 #include <Qt3DCore/QTransform>
 #include <core/Hierarchy/entity.h>
-#include <GUI/Tacticaldisplay/entityinfodialog.h>
+// #include <GUI/Tacticaldisplay/entityinfodialog.h>
 
+class EntityInfoDialog;
 // Forward declarations
 class QDialog;
 class QSpinBox;
@@ -41,7 +42,7 @@ struct MeshEntry {
     DynamicModel* dynamicModel;
     QString bitmapPath;                     // Path to bitmap image
     QString text;                           // Text content for text entities
-
+    bool detection = true;
     // NEW: Text-specific properties
     QColor textColor;          // Text color
     QFont textFont;           // Text font
@@ -129,7 +130,7 @@ public:
                               const QFont& font, int fontSize);
     void deleteText(const QString& textId);
     //=============info
-    EntityInfoDialog *entityInfoDialog;
+    EntityInfoDialog *entityInfoDialog = NULL;
         bool m_isBeingDestroyed = false;
 
 public slots:

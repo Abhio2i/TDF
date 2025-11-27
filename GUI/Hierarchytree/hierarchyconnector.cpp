@@ -20,6 +20,7 @@
 #include "GUI/Editors/runtimeeditor.h"             // For runtime editor
 #include "GUI/Hierarchytree/contextmenu.h"
 #include <QSettings>
+#include <core/Utility/uuid.h>
 // %%% Static Instance %%%
 /* Singleton instance */
 HierarchyConnector* HierarchyConnector::m_instance = nullptr;
@@ -177,6 +178,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
                 if (type != "entity") {
                     return;
                 }
+                qDebug()<<data["ID"];
                 copydata = data;
                 copySource = hierarchy;
             });
@@ -206,6 +208,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
             targetType = targetData["type"].toString();
         }
         QString targetId = targetData["ID"].toString();
+        qDebug()<<targetId;
         if (type != "entity") {
             qWarning() << "Can only paste entities! Type was:" << type;
             return;
@@ -217,24 +220,25 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
                 return;
             }
             QJsonObject entityJson = entityIt->second->toJson();
-            QString newId = QUuid::createUuid().toString();
+            QString newId = QString::fromStdString( Uuid::generateShortUniqueID());
             entityJson["id"] = newId;
-            QStringList componentNames;
-            for (auto it = entityJson.begin(); it != entityJson.end(); ++it) {
-                QString key = it.key();
-                if (key != "id" && key != "name" && key != "parent_id" && key != "branch" &&
-                    key != "active" && key != "parameters" && key != "type") {
-                    componentNames << key;
-                }
-            }
+            // QStringList componentNames;
+            // for (auto it = entityJson.begin(); it != entityJson.end(); ++it) {
+            //     QString key = it.key();
+            //     if (true) {
+            //         componentNames << key;
+            //         qDebug()<<key;
+            //     }
+            // }
+            // qDebug()<<"/////////////////////////////////////////////"<<newId;
             Entity* newEntity = hierarchy->addEntityFromJson(targetId, entityJson, targetType == "profile");
-            if (newEntity) {
-                for (const QString& compName : componentNames) {
-                    emit hierarchy->componentAdded(QString::fromStdString(newEntity->ID), compName);
-                }
-            } else {
-                qWarning() << "Failed to create new entity during paste";
-            }
+            // if (newEntity) {
+            //     for (const QString& compName : componentNames) {
+            //         newEntity->addComponent(compName.toStdString());
+            //     }
+            // } else {
+            //     qWarning() << "Failed to create new entity during paste";
+            // }
             copydata.clear();
             copySource = nullptr;
         } catch (const std::exception& e) {

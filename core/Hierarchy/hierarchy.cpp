@@ -127,8 +127,12 @@ Entity* Hierarchy::addEntityFromJson(QString parentId, QJsonObject obj, bool Pro
         entity = (*Folders)[parentId.toStdString()]->addEntity(EntityName.toStdString());
     }
     std::string id = entity->ID;
+    std::string prntId = entity->parentID;
+    obj["id"] = QString::fromStdString(id);
+    obj["parent_id"] = QString::fromStdString(prntId);
     entity->fromJson(obj);
-    entity->ID = id;
+    // entity->ID = id;
+    //entity->parentID = prntId;
     return entity;
 }
 
@@ -399,6 +403,9 @@ QJsonObject Hierarchy::toJson()
             profileCategoriesObj[QString::fromStdString(key)] = profilePtr->toJson();
         }
     }
+    for (const QString& key : tempData.keys()) {
+        profileCategoriesObj[key] = tempData[key].toObject();
+    }
     obj["profileCategories"] = profileCategoriesObj;
 
     // // Serialize Folders
@@ -453,18 +460,46 @@ void Hierarchy::fromJson(const QJsonObject& obj)
     for (const auto& key : keys) {
         removeProfileCategaory(QString::fromStdString(key));
     }
+    for (const QString& key : tempData.keys()) {
+        tempData.remove(key);
+    }
 
     if (obj.contains("profileCategories") && obj["profileCategories"].isObject()) {
         QJsonObject profileCategoriesObj = obj["profileCategories"].toObject();
         for (const QString& key : profileCategoriesObj.keys()) {
             QJsonObject catObj = profileCategoriesObj[key].toObject();
-            ProfileCategaory* profile = new ProfileCategaory(this);
-            profile->Name = catObj["name"].toString().toStdString();
-            profile->ID = catObj["id"].toString().toStdString();
-            if (profile) {
-                addProfileCategaoryWithObject(profile);
-                profile->fromJson(catObj);
+            QString name = catObj["name"].toString();
+            if(isDatabase){
+                ProfileCategaory* profile = new ProfileCategaory(this);
+                profile->Name = catObj["name"].toString().toStdString();
+                profile->ID = catObj["id"].toString().toStdString();
+                if (profile) {
+                    addProfileCategaoryWithObject(profile);
+                    profile->fromJson(catObj);
+                }
+            }else{
+                if(name.contains("Platform")||
+                    name.contains("Radio")||
+                    name.contains("Sensor")||
+                    name.contains("SpecialZone")||
+                    name.contains("Formation")||
+                    name.contains("IFF")||
+                    name.contains("Supply")||
+                    name.contains("FixedPoints"))
+                {
+                    ProfileCategaory* profile = new ProfileCategaory(this);
+                    profile->Name = catObj["name"].toString().toStdString();
+                    profile->ID = catObj["id"].toString().toStdString();
+                    if (profile) {
+                        addProfileCategaoryWithObject(profile);
+                        profile->fromJson(catObj);
+                    }
+                }else{
+                    tempData[key]=catObj;
+                    profileCategoriesObj.remove(key);
+                }
             }
+
         }
     }
 }

@@ -722,8 +722,6 @@ void Recorder::resetReplayState()
 
     // Optional: hierarchy reset
 
-
-
     qDebug() << "Replay data cleared.";
 }
 

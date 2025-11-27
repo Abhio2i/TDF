@@ -1218,6 +1218,7 @@ void RuntimeEditor::loadFromJsonFile(const QString &filePath)
     QJsonObject obj = doc.object();
     if (obj.contains("hierarchy")) {
         QJsonObject hier = obj["hierarchy"].toObject();
+
         hierarchy->fromJson(hier);
         qDebug() << "Hierarchy loaded from file:" << filePath;
         if (treeView && treeView->getTreeWidget()) {

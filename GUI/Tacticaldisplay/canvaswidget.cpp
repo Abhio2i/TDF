@@ -42,6 +42,7 @@
 #include <iostream>
 #include <cmath>
 #include <tuple> // std::tuple का उपयोग करने के लिए
+#include <GUI/Tacticaldisplay/entityinfodialog.h>
 
 using namespace std;
 
@@ -122,6 +123,9 @@ CanvasWidget::CanvasWidget(QWidget *parent) : QWidget(parent) {
     // Initialize entity info dialog
       entityInfoDialog = new EntityInfoDialog(parentWidget());
       entityInfoDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+      connect(entityInfoDialog, &EntityInfoDialog::update, this,[=]{
+          update();
+      });
       connect(this, &CanvasWidget::selectEntitybyCursor, this, &CanvasWidget::showEntityInfo);
 
     connect(gislib, &GISlib::distanceMeasured, this, &CanvasWidget::onDistanceMeasured);
@@ -153,6 +157,7 @@ void CanvasWidget::selectWaypoint(int index) {
 void CanvasWidget::Render(float /*deltatime*/) {
     angle += 2.0f;
     if (angle >= 360.0f) angle = 0;
+
     update();
 }
 
@@ -2320,6 +2325,7 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
 }
 
 void CanvasWidget::handlePaint(QPaintEvent *event) {
+   if(!selectedEntityId.empty())entityInfoDialog->updateEntityInfo();
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     drawGridLines(painter);
@@ -2714,6 +2720,7 @@ void CanvasWidget::drawSelectionOutline(QPainter& painter) {
 void CanvasWidget::drawRadar(QPainter& painter,std::string id , MeshEntry entry){
     // for (auto& [id, entry] : Meshes) {
         Entity* entity = entry.entity;
+        if(!entry.detection) return;
         if (!entity) return;
         for (Sensor* s : entity->sensorList) {
             if(s->subType == Sensor::SubType::Generic){
@@ -5335,43 +5342,6 @@ void CanvasWidget::drawShapeHistory(QPainter& painter) {
 
 
 
-// void CanvasWidget::showEntityInfo(const QString& entityId)
-// {
-//     // Safety checks
-//     if (!entityInfoDialog || entityId.isEmpty()) {
-//         return;
-//     }
-
-//     auto it = Meshes.find(entityId.toStdString());
-//     if (it == Meshes.end()) {
-//         hideEntityInfo();
-//         return;
-//     }
-
-//     MeshEntry& entry = it->second;
-//     QVariantMap entityData;
-
-//     // SIMPLE VERSION - crash avoid karne ke liye
-//     entityData["Name"] = entry.name;
-//     entityData["Entity Type"] = "Platform";
-
-//     // Only basic fields add karo
-//     if (entry.position) {
-//         entityData["Position"] = QString("X: %1, Y: %2, Z: %3")
-//                                     .arg(entry.position->x())
-//                                     .arg(entry.position->y())
-//                                     .arg(entry.position->z());
-//     }
-
-//     // Safe dialog update
-//     if (entityInfoDialog) {
-//         entityInfoDialog->setEntityInfo(entityId, entityData);
-
-//         if (!entityInfoDialog->isVisible()) {
-//             entityInfoDialog->show();
-//         }
-//     }
-// }
 
 void CanvasWidget::showEntityInfo(const QString& entityId)
 {
@@ -5388,77 +5358,78 @@ void CanvasWidget::showEntityInfo(const QString& entityId)
     MeshEntry& entry = it->second;
     QVariantMap entityData;
 
-    // Basic entity information - TYPE CONVERSION FIXED
-    if (entry.entity) {
-        // Convert entity type to string
-        QString typeStr = "Unknown";
-        switch(entry.entity->type) {
-            case Constants::EntityType::Platform: typeStr = "Platform"; break;
-            case Constants::EntityType::Sensor: typeStr = "Sensor"; break;
-            case Constants::EntityType::Weapon: typeStr = "Weapon"; break;
-            // Add other entity types as needed
-            default: typeStr = "Unknown"; break;
-        }
-        entityData["type"] = typeStr;
-    } else {
-        entityData["type"] = "Unknown";
-    }
+    // // Basic entity information - TYPE CONVERSION FIXED
+    // if (entry.entity) {
+    //     // Convert entity type to string
+    //     QString typeStr = "Unknown";
+    //     switch(entry.entity->type) {
+    //         case Constants::EntityType::Platform: typeStr = "Platform"; break;
+    //         case Constants::EntityType::Sensor: typeStr = "Sensor"; break;
+    //         case Constants::EntityType::Weapon: typeStr = "Weapon"; break;
+    //         // Add other entity types as needed
+    //         default: typeStr = "Unknown"; break;
+    //     }
+    //     entityData["type"] = typeStr;
+    // } else {
+    //     entityData["type"] = "Unknown";
+    // }
 
-    // NAME CONVERSION FIXED - Direct QString assignment
-        entityData["Name"] = entry.name;
-    //     entityData["Entity Type"] = "Platform";
-    // entityData["displayName"] = QString::fromStdString(entry.name);
+    // // NAME CONVERSION FIXED - Direct QString assignment
+    //     entityData["Name"] = entry.name;
+    // //     entityData["Entity Type"] = "Platform";
+    // // entityData["displayName"] = QString::fromStdString(entry.name);
 
-    // Position information
-    if (entry.position) {
-        entityData["currentPosition"] = QString("Lon: %1, Lat: %2, Alt: %3")
-                                           .arg(entry.position->x())
-                                           .arg(entry.position->y())
-                                           .arg(entry.position->z());
-        entityData["requestedPosition"] = "Same as current";
-    }
+    // // Position information
+    // if (entry.position) {
+    //     entityData["currentPosition"] = QString("Lon: %1, Lat: %2, Alt: %3")
+    //                                        .arg(entry.position->x())
+    //                                        .arg(entry.position->y())
+    //                                        .arg(entry.position->z());
+    //     entityData["requestedPosition"] = "Same as current";
+    // }
 
-    // Speed and altitude
-    if (entry.dynamicModel) {
-        entityData["speed"] = QString("%1 km/h").arg(entry.dynamicModel->moveSpeed);
-    }
-    entityData["altitude"] = QString("%1 m").arg(entry.position ? entry.position->z() : 0);
+    // // Speed and altitude
+    // if (entry.dynamicModel) {
+    //     entityData["speed"] = QString("%1 km/h").arg(entry.dynamicModel->moveSpeed);
+    // }
+    // entityData["altitude"] = QString("%1 m").arg(entry.position ? entry.position->z() : 0);
 
-    // Carrier information
-    entityData["carrier"] = "None";
+    // // Carrier information
+    // entityData["carrier"] = "None";
 
-    // Equipment data
-    if (entry.entity) {
-        QStringList weaponsList, sensorsList, radiosList;
+    // // Equipment data
+    // if (entry.entity) {
+    //     QStringList weaponsList, sensorsList, radiosList;
 
-        for (Sensor* sensor : entry.entity->sensorList) {
-            // sensorsList << QString::fromStdString(sensor->name);
-        }
+    //     for (Sensor* sensor : entry.entity->sensorList) {
+    //         // sensorsList << QString::fromStdString(sensor->name);
+    //     }
 
-        for (Radio* radio : entry.entity->radioList) {
-            // radiosList << QString::fromStdString(radio->name);
-        }
+    //     for (Radio* radio : entry.entity->radioList) {
+    //         // radiosList << QString::fromStdString(radio->name);
+    //     }
 
-        entityData["sensors"] = sensorsList.join(", ");
-        entityData["radios"] = radiosList.join(", ");
-        entityData["weapons"] = "Weapon data";
-        entityData["formation"] = "Formation data";
-        entityData["iff"] = "IFF data";
-    }
+    //     entityData["sensors"] = sensorsList.join(", ");
+    //     entityData["radios"] = radiosList.join(", ");
+    //     entityData["weapons"] = "Weapon data";
+    //     entityData["formation"] = "Formation data";
+    //     entityData["iff"] = "IFF data";
+    // }
 
-    // Status flags
-    entityData["active"] = entry.trajectory ? entry.trajectory->Active : false;
-    entityData["track"] = true;
-    entityData["centre"] = false;
-    entityData["aggregatedScript"] = false;
-    entityData["followTrajectory"] = true;
-    entityData["showConnection"] = true;
-    entityData["showDetection"] = true;
-    entityData["controlDecisive"] = false;
+    // // Status flags
+    // entityData["active"] = entry.trajectory ? entry.trajectory->Active : false;
+    // entityData["track"] = true;
+    // entityData["centre"] = false;
+    // entityData["aggregatedScript"] = false;
+    // entityData["followTrajectory"] = true;
+    // entityData["showConnection"] = true;
+    // entityData["showDetection"] = true;
+    // entityData["controlDecisive"] = false;
 
     // Update dialog
     if (entityInfoDialog) {
-        entityInfoDialog->setEntityInfo(entityId, entityData);
+        entityInfoDialog->setEntityInfo(entityId, &entry);
+        entityInfoDialog->updateEntityInfo();
 
         if (!entityInfoDialog->isVisible()) {
             entityInfoDialog->show();

@@ -54,6 +54,7 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
 
     // Initialize scenario
     scenario = new Scenario();
+    scenario->hierarchy->isDatabase = true;
     hierarchy = scenario->hierarchy;
     console = scenario->console;
     lastSavedFilePath = "";

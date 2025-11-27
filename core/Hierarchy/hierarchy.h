@@ -12,6 +12,13 @@ class Hierarchy : public QObject
 public:
     Hierarchy();
     ~Hierarchy();
+
+    //TempData
+    QJsonObject tempData;
+    //
+    bool isDatabase = false;
+    bool isScenario = false;
+    bool isRuntime = false;
     std::unordered_map<std::string, ProfileCategaory*> ProfileCategories;
     std::unordered_map<std::string, std::list<std::string>> dictionry;
     std::unordered_map<std::string, Folder*> *Folders;
