@@ -7,6 +7,7 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include "core/Hierarchy/EntityProfiles/sensor.h"
+#include "qtimer.h"
 
 EntityInfoDialog::EntityInfoDialog(QWidget *parent)
     : QDialog(parent)
@@ -351,19 +352,21 @@ void EntityInfoDialog::setEntityInfo(const QString& entityId,  MeshEntry* info)
     entryInfo->detection = showDetectionCheckBox->isChecked();
 }
 
+
 void EntityInfoDialog::updateEntityInfo(){
     if(currentEntityId.isEmpty())return;
     if(entryInfo){
         if(entryInfo->entity){
             // Convert entity type to string
-                QString typeStr = "Unknown";
-                switch(entryInfo->entity->type) {
-                    case Constants::EntityType::Platform: typeStr = "Platform"; break;
-                    case Constants::EntityType::Sensor: typeStr = "Sensor"; break;
-                    case Constants::EntityType::Weapon: typeStr = "Weapon"; break;
-                    // Add other entity types as needed
-                    default: typeStr = "Unknown"; break;
-                }
+            QString typeStr = "Unknown";
+            switch(entryInfo->entity->type) {
+            case Constants::EntityType::Platform: typeStr = "Platform"; break;
+            case Constants::EntityType::Sensor: typeStr = "Sensor"; break;
+            case Constants::EntityType::Weapon: typeStr = "Weapon"; break;
+            // Add other entity types as needed
+            default: typeStr = "Unknown"; break;
+            }
+
             // Update attribute table
             if (attributeTable) {
                 attributeTable->item(0, 1)->setText(typeStr);
@@ -378,36 +381,31 @@ void EntityInfoDialog::updateEntityInfo(){
 
             positionLabel->setText("Position: " + currentPos);
 
+            // 🆕 UPDATE SPEED INFORMATION
+            if (speedAltTable) {
+                if (entryInfo->dynamicModel) {
+                    // Current speed
+                    QString currentSpeed = QString("%1 km/h").arg(entryInfo->dynamicModel->moveSpeed);
+                    speedAltTable->item(0, 1)->setText(currentSpeed);
+
+                    // Requested speed (same as current for now, or you can add requested speed logic)
+                    speedAltTable->item(0, 2)->setText(currentSpeed);
+                } else {
+                    speedAltTable->item(0, 1)->setText("-");
+                    speedAltTable->item(0, 2)->setText("-");
+                }
+
+                // 🆕 UPDATE ALTITUDE INFORMATION - USE LONGITUDE VALUE HERE
+                QString currentLongitude = QString("%1").arg(entryInfo->transform->translation().z());
+                speedAltTable->item(1, 1)->setText(currentLongitude);
+                speedAltTable->item(1, 2)->setText(currentLongitude); // Same as current for now
+            }
+
         }
-
-
     }
 
 
-    // Update carrier section
-    // carrierLabel->setText("Carrier: " + entityData.value("carrier", "None").toString());
-
-
-    // Update Speed and Altitude table
-    if (speedAltTable) {
-        // speedAltTable->item(0, 1)->setText(entityData.value("speed", "Unknown").toString());
-        // speedAltTable->item(0, 2)->setText(entityData.value("requestedSpeed", "Unknown").toString());
-
-        // speedAltTable->item(1, 1)->setText(entityData.value("altitude", "Unknown").toString());
-        // speedAltTable->item(1, 2)->setText(entityData.value("requestedAltitude", "Unknown").toString());
-    }
-
-    // // Update checkboxes from entity data
-    // trackCheckBox->setChecked(entityData.value("track", false).toBool());
-    // centreCheckBox->setChecked(entityData.value("centre", false).toBool());
-    // aggregatedScriptCheckBox->setChecked(entityData.value("aggregatedScript", false).toBool());
-    // activeCheckBox->setChecked(entityData.value("active", false).toBool());
-    // followTrajectoryCheckBox->setChecked(entityData.value("followTrajectory", false).toBool());
-    // showConnectionCheckBox->setChecked(entityData.value("showConnection", false).toBool());
-    // showDetectionCheckBox->setChecked(entityData.value("showDetection", false).toBool());
-    // controlDecisiveCheckBox->setChecked(entityData.value("controlDecisive", false).toBool());
 }
-
 void EntityInfoDialog::clearInfo()
 {
     titleLabel->setText("Entity Information");
@@ -460,32 +458,165 @@ void EntityInfoDialog::onWeaponsClicked()
                                  .arg(currentEntityData.value("weapons", "No weapons data").toString()));
 }
 
+
 void EntityInfoDialog::onSensorsClicked()
 {
     if(!currentEntityId.isEmpty()){
         if(entryInfo){
             if(entryInfo->entity){
-                QString str;
-                Entity* entity = entryInfo->entity;
-                for (Sensor* s : entity->sensorList) {
-                    if(s->subType == Sensor::SubType::Generic){
-                       str += QString::fromStdString(s->Name+":Generic");
+                // Create a simple clean dialog for sensors
+                QDialog *sensorsDialog = new QDialog(this);
+                sensorsDialog->setWindowTitle("Sensors - " + currentEntityId);
+                sensorsDialog->setMinimumSize(450, 300);
+                sensorsDialog->setMaximumSize(500, 400);
+
+                // Simple window flags
+                sensorsDialog->setWindowFlags(Qt::Dialog);
+
+                // Minimal styling - clean and professional
+                sensorsDialog->setStyleSheet(
+                    "QDialog { background-color: white; border: 1px solid #ccc; }"
+                    "QLabel { color: #333; font-weight: normal; }"
+                    "QTableWidget { border: 1px solid #ddd; gridline-color: #eee; }"
+                    "QHeaderView::section { background-color: #f5f5f5; color: #333; padding: 6px; border: none; }"
+                    "QTableWidget::item { padding: 4px; border-bottom: 1px solid #f0f0f0; }"
+                    "QPushButton { background-color: #007acc; color: white; padding: 6px 12px; border: none; border-radius: 3px; }"
+                    "QPushButton:hover { background-color: #005a9e; }"
+                    );
+
+                QVBoxLayout *layout = new QVBoxLayout(sensorsDialog);
+                layout->setSpacing(8);
+                layout->setContentsMargins(10, 10, 10, 10);
+
+                // Simple title
+                QLabel *titleLabel = new QLabel("Sensor Systems");
+                titleLabel->setStyleSheet("QLabel { font-size: 14px; color: #222; font-weight: bold; }");
+                layout->addWidget(titleLabel);
+
+                // Create clean table
+                QTableWidget *sensorsTable = new QTableWidget();
+                sensorsTable->setColumnCount(4);
+                sensorsTable->setHorizontalHeaderLabels(QStringList()
+                                                        << "Name" << "Type" << "Range" << "FOV");
+
+                sensorsTable->verticalHeader()->setVisible(false);
+                sensorsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+                sensorsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+                sensorsTable->setSelectionMode(QAbstractItemView::SingleSelection);
+
+                // Clean table properties
+                sensorsTable->setShowGrid(true);
+                sensorsTable->setAlternatingRowColors(false);
+
+                // Real-time update timer
+                QTimer *sensorsUpdateTimer = new QTimer(sensorsDialog);
+                QObject::connect(sensorsUpdateTimer, &QTimer::timeout, sensorsDialog, [=]() {
+                    updateSensorsTable(sensorsTable, entryInfo->entity);
+                });
+                sensorsUpdateTimer->start(100);
+
+                // Initial population
+                updateSensorsTable(sensorsTable, entryInfo->entity);
+
+                // Simple column sizing
+                sensorsTable->horizontalHeader()->setStretchLastSection(false);
+                sensorsTable->setColumnWidth(0, 120); // Name
+                sensorsTable->setColumnWidth(1, 80);  // Type
+                sensorsTable->setColumnWidth(2, 80);  // Range
+                sensorsTable->setColumnWidth(3, 60);  // FOV
+
+                layout->addWidget(sensorsTable);
+
+                // Simple summary
+                QLabel *summaryLabel = new QLabel();
+                summaryLabel->setStyleSheet("QLabel { color: #666; font-size: 11px; }");
+                layout->addWidget(summaryLabel);
+
+                // Update summary
+                QObject::connect(sensorsUpdateTimer, &QTimer::timeout, sensorsDialog, [=]() {
+                    int total = 0;
+                    if(entryInfo && entryInfo->entity) {
+                        for (Sensor* s : entryInfo->entity->sensorList) {
+                            if(s->subType == Sensor::SubType::Generic ||
+                                s->subType == Sensor::SubType::CSM ||
+                                s->subType == Sensor::SubType::ESM) {
+                                total++;
+                            }
+                        }
                     }
-                }
-                // Show sensors list popup
-                QMessageBox::information(this, "Sensors",
-                                         QString("Sensors for entity %1:\n%2")
-                                             .arg(currentEntityId)
-                                             .arg(currentEntityData.value("sensors", str).toString()));
+                    summaryLabel->setText(QString("Total: %1 sensors").arg(total));
+                });
+
+                // Simple close button
+                QHBoxLayout *buttonLayout = new QHBoxLayout();
+                buttonLayout->addStretch();
+                QPushButton *closeButton = new QPushButton("Close");
+                QObject::connect(closeButton, &QPushButton::clicked, sensorsDialog, [=]() {
+                    sensorsUpdateTimer->stop();
+                    sensorsDialog->close();
+                });
+                buttonLayout->addWidget(closeButton);
+                layout->addLayout(buttonLayout);
+
+                // Show dialog
+                sensorsDialog->show();
+                sensorsDialog->setAttribute(Qt::WA_DeleteOnClose);
 
             }
         }
-    }else{
-    // Show sensors list popup
-    QMessageBox::information(this, "Sensors",
-                             QString("Sensors for entity %1:\n%2")
-                                 .arg(currentEntityId)
-                                 .arg(currentEntityData.value("sensors", "No sensors data").toString()));
+    } else {
+        QMessageBox::information(this, "Sensors", "No entity selected.");
+    }
+}
+
+void EntityInfoDialog::updateSensorsTable(QTableWidget* sensorsTable, Entity* entity)
+{
+    if(!sensorsTable || !entity) return;
+
+    sensorsTable->setRowCount(0);
+    int row = 0;
+
+    for (Sensor* s : entity->sensorList) {
+        if(s->subType == Sensor::SubType::Generic ||
+            s->subType == Sensor::SubType::CSM ||
+            s->subType == Sensor::SubType::ESM) {
+
+            sensorsTable->insertRow(row);
+
+            // Name
+            QString sensorName = QString::fromStdString(s->Name);
+            sensorsTable->setItem(row, 0, new QTableWidgetItem(sensorName));
+
+            // Type
+            QString typeStr;
+            if(s->subType == Sensor::SubType::Generic) typeStr = "Radar";
+            else if(s->subType == Sensor::SubType::CSM) typeStr = "CSM";
+            else if(s->subType == Sensor::SubType::ESM) typeStr = "ESM";
+            sensorsTable->setItem(row, 1, new QTableWidgetItem(typeStr));
+
+            // Range
+            QString rangeStr;
+            if(s->subType == Sensor::SubType::Generic) rangeStr = QString("%1").arg(s->range, 0, 'f', 1);
+            else if(s->subType == Sensor::SubType::CSM) rangeStr = QString("%1").arg(s->csmrange, 0, 'f', 1);
+            else if(s->subType == Sensor::SubType::ESM) rangeStr = QString("%1").arg(s->esrange, 0, 'f', 1);
+            sensorsTable->setItem(row, 2, new QTableWidgetItem(rangeStr));
+
+            // FOV
+            QString fovStr;
+            if(s->subType == Sensor::SubType::Generic) fovStr = QString("%1°").arg(s->maxDetectionAngle, 0, 'f', 0);
+            else fovStr = "-";
+            sensorsTable->setItem(row, 3, new QTableWidgetItem(fovStr));
+
+            row++;
+        }
+    }
+
+    if (row == 0) {
+        sensorsTable->setRowCount(1);
+        sensorsTable->setItem(0, 0, new QTableWidgetItem("No sensors"));
+        sensorsTable->setItem(0, 1, new QTableWidgetItem(""));
+        sensorsTable->setItem(0, 2, new QTableWidgetItem(""));
+        sensorsTable->setItem(0, 3, new QTableWidgetItem(""));
     }
 }
 
@@ -498,13 +629,115 @@ void EntityInfoDialog::onFormationClicked()
                                  .arg(currentEntityData.value("formation", "No formation data").toString()));
 }
 
+// void EntityInfoDialog::onRadiosClicked()
+// {
+//     // Show radios list popup
+//     QMessageBox::information(this, "Radios",
+//                              QString("Radios for entity %1:\n%2")
+//                                  .arg(currentEntityId)
+//                                  .arg(currentEntityData.value("radios", "No radios data").toString()));
+// }
+
+
 void EntityInfoDialog::onRadiosClicked()
 {
-    // Show radios list popup
-    QMessageBox::information(this, "Radios",
-                             QString("Radios for entity %1:\n%2")
-                                 .arg(currentEntityId)
-                                 .arg(currentEntityData.value("radios", "No radios data").toString()));
+    if(!currentEntityId.isEmpty()){
+        if(entryInfo){
+            if(entryInfo->entity){
+                // Create a simple clean dialog for radios (SENSORS की तरह)
+                QDialog *radiosDialog = new QDialog(this);
+                radiosDialog->setWindowTitle("Radios - " + currentEntityId);
+                radiosDialog->setMinimumSize(500, 350);
+                radiosDialog->setMaximumSize(600, 450);
+
+                // Simple window flags
+                radiosDialog->setWindowFlags(Qt::Dialog);
+
+                // Minimal styling - clean and professional
+                radiosDialog->setStyleSheet(
+                    "QDialog { background-color: white; border: 1px solid #ccc; }"
+                    "QLabel { color: #333; font-weight: normal; }"
+                    "QTableWidget { border: 1px solid #ddd; gridline-color: #eee; }"
+                    "QHeaderView::section { background-color: #f5f5f5; color: #333; padding: 6px; border: none; }"
+                    "QTableWidget::item { padding: 4px; border-bottom: 1px solid #f0f0f0; }"
+                    "QPushButton { background-color: #007acc; color: white; padding: 6px 12px; border: none; border-radius: 3px; }"
+                    "QPushButton:hover { background-color: #005a9e; }"
+                    );
+
+                QVBoxLayout *layout = new QVBoxLayout(radiosDialog);
+                layout->setSpacing(8);
+                layout->setContentsMargins(10, 10, 10, 10);
+
+                // Simple title
+                QLabel *titleLabel = new QLabel("Radio Systems");
+                titleLabel->setStyleSheet("QLabel { font-size: 14px; color: #222; font-weight: bold; }");
+                layout->addWidget(titleLabel);
+
+                // Create clean table for radios - ONLY NAME AND RANGE FIELDS
+                QTableWidget *radiosTable = new QTableWidget();
+                radiosTable->setColumnCount(2);  // ONLY 2 COLUMNS: Name and Range
+                radiosTable->setHorizontalHeaderLabels(QStringList() << "Name" << "Range");
+
+                radiosTable->verticalHeader()->setVisible(false);
+                radiosTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+                radiosTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+                radiosTable->setSelectionMode(QAbstractItemView::SingleSelection);
+
+                // Clean table properties
+                radiosTable->setShowGrid(true);
+                radiosTable->setAlternatingRowColors(false);
+
+                // Real-time update timer
+                QTimer *radiosUpdateTimer = new QTimer(radiosDialog);
+                QObject::connect(radiosUpdateTimer, &QTimer::timeout, radiosDialog, [=]() {
+                    // updateRadiosTable(radiosTable, entryInfo->entity);
+                });
+                radiosUpdateTimer->start(100);
+
+                // Initial population
+                // updateRadiosTable(radiosTable, entryInfo->entity);
+
+                // Simple column sizing
+                radiosTable->horizontalHeader()->setStretchLastSection(false);
+                radiosTable->setColumnWidth(0, 150); // Name
+                radiosTable->setColumnWidth(1, 100); // Range
+
+                layout->addWidget(radiosTable);
+
+                // Simple summary
+                QLabel *summaryLabel = new QLabel();
+                summaryLabel->setStyleSheet("QLabel { color: #666; font-size: 11px; }");
+                layout->addWidget(summaryLabel);
+
+                // Update summary
+                QObject::connect(radiosUpdateTimer, &QTimer::timeout, radiosDialog, [=]() {
+                    int total = 0;
+                    if(entryInfo && entryInfo->entity) {
+                        total = entryInfo->entity->radioList.size();
+                    }
+                    summaryLabel->setText(QString("Total: %1 radios").arg(total));
+                });
+
+                // Simple close button
+                QHBoxLayout *buttonLayout = new QHBoxLayout();
+                buttonLayout->addStretch();
+                QPushButton *closeButton = new QPushButton("Close");
+                QObject::connect(closeButton, &QPushButton::clicked, radiosDialog, [=]() {
+                    radiosUpdateTimer->stop();
+                    radiosDialog->close();
+                });
+                buttonLayout->addWidget(closeButton);
+                layout->addLayout(buttonLayout);
+
+                // Show dialog
+                radiosDialog->show();
+                radiosDialog->setAttribute(Qt::WA_DeleteOnClose);
+
+            }
+        }
+    } else {
+        QMessageBox::information(this, "Radios", "No entity selected.");
+    }
 }
 
 void EntityInfoDialog::onIFFClicked()
@@ -515,3 +748,5 @@ void EntityInfoDialog::onIFFClicked()
                                  .arg(currentEntityId)
                                  .arg(currentEntityData.value("iff", "No IFF data").toString()));
 }
+
+
