@@ -43,6 +43,7 @@ struct MeshEntry {
     QString bitmapPath;                     // Path to bitmap image
     QString text;                           // Text content for text entities
     bool detection = true;
+      bool radioVisible = true;
     // NEW: Text-specific properties
     QColor textColor;          // Text color
     QFont textFont;           // Text font

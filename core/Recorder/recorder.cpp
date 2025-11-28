@@ -15,7 +15,6 @@ Recorder::Recorder(Hierarchy* hierarchy, Simulation* simulation, QObject *parent
     : QObject(parent), m_hierarchy(hierarchy), m_simulation(simulation)
 {
     // Timer for replaying recorded frames
-
     replayTimer = new QTimer(this);
     connect(replayTimer, &QTimer::timeout, this, &Recorder::playNextFrame);
 
@@ -56,44 +55,186 @@ void Recorder::startRecording()
     if (!recordingTimer) {
         recordingTimer = new QTimer(this);
         connect(recordingTimer, &QTimer::timeout, this, [this]() {
-            qint64 elapsedMs = recordingStartTime.msecsTo(QDateTime::currentDateTime()) - pausedTimeOffset;
-
+            qint64 elapsedMs;
+            if (isRecordingPaused) {
+                elapsedMs = lastElapsedMs;  // freeze playback time
+            } else {
+                elapsedMs = recordingStartTime.msecsTo(QDateTime::currentDateTime()) - pausedTimeOffset;
+                lastElapsedMs = elapsedMs;
+            }
+            emit recordingTimeUpdated(elapsedMs);
             QJsonObject timeEntry;
             timeEntry["timestamp_ms"] = elapsedMs;
             timeEntry["current_time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
-            timeEntry["snapshot"] = m_hierarchy->toJson();
+            timeEntry["snapshot"] = m_hierarchy->toJson();   // SAFE now
 
             record(timeEntry);
         });
+
     }
 
     recordingTimer->start(100);
 }
+// void Recorder::startRecording()
+// {
+//     qDebug() << "Recording started.";
+//     clear();
+
+//     bookmarkArray = QJsonArray();  // reset bookmarks
+
+//     if (!m_hierarchy) {
+//         qWarning() << "Hierarchy is null. Cannot record.";
+//         return;
+//     }
+
+//     // ---- Write metadata as first frame ----
+//     QJsonObject metaData;
+//     metaData["bookmark"] = bookmarkArray;
+//     record(metaData);
+
+//     // ---- Reset timers ----
+//     recordingStartTime = QDateTime::currentDateTime();
+//     pausedTimeOffset = 0;
+//     lastElapsedMs = 0;
+//     isRecordingPaused = false;
+
+//     // ---- Create timer only once ----
+//     if (!recordingTimer) {
+//         recordingTimer = new QTimer(this);
+
+//         connect(recordingTimer, &QTimer::timeout, this, [this]() {
+
+//             qint64 elapsedMs = 0;
+
+//             if (isRecordingPaused)
+//             {
+//                 // Freeze time during pause
+//                 elapsedMs = lastElapsedMs;
+//             }
+//             else
+//             {
+//                 // Actual running time minus total paused duration
+//                 elapsedMs =
+//                     recordingStartTime.msecsTo(QDateTime::currentDateTime())
+//                     - pausedTimeOffset;
+
+//                 lastElapsedMs = elapsedMs;
+//             }
+
+//             // Update left side UI timer
+//             emit recordingTimeUpdated(elapsedMs);
+
+//             // Save snapshot
+//             QJsonObject frame;
+//             frame["timestamp_ms"] = elapsedMs;
+//             frame["current_time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+//             frame["snapshot"] = m_hierarchy->toJson();
+
+//             // Write frame
+//             record(frame);
+//         });
+//     }
+
+//     // Start continuous recording
+//     recordingTimer->start(100);
+// }
 
 
+// void Recorder::togglePause()
+// {
+//     if (!recordingTimer) return;
+
+//     if (recordingTimer->isActive()) {
+//         // Pause
+//         recordingTimer->stop();
+//         isRecordingPaused = true;
+//         pauseStartTime = QDateTime::currentDateTime();
+//         qDebug() << "[Recorder] Paused at" << pauseStartTime;
+//         emit recordingPaused();
+//         return;
+//     }
+//     if (isRecordingPaused) {
+//         // Resume
+//         qint64 pausedDuration = pauseStartTime.msecsTo(QDateTime::currentDateTime());
+//         pausedTimeOffset += pausedDuration;
+//         if (!recordingTimer->isActive()){
+//             recordingTimer->start(500);
+//         }
+
+//         isRecordingPaused = false;
+
+//         qDebug() << "[Recorder] Resumed. Pause duration =" << pausedDuration;
+
+//         emit recordingResumed();           // UI updates
+//         return;
+//     }
+// }
 void Recorder::togglePause()
 {
     if (!recordingTimer) return;
 
-    if (recordingTimer->isActive()) {
-        // Pause
-        recordingTimer->stop();
+    if (!isRecordingPaused)
+    {
+        // Enter pause
         isRecordingPaused = true;
         pauseStartTime = QDateTime::currentDateTime();
+
         qDebug() << "Recording Paused.";
         emit recordingPaused();
-    } else if (isRecordingPaused) {
+    }
+    else
+    {
         // Resume
         qint64 pausedDuration = pauseStartTime.msecsTo(QDateTime::currentDateTime());
         pausedTimeOffset += pausedDuration;
 
-        recordingTimer->start(500);   // same interval as in startRecording()
         isRecordingPaused = false;
 
         qDebug() << "Recording Resumed.";
         emit recordingResumed();
     }
 }
+// void Recorder::togglePause()
+// {
+//     if (!recordingTimer) {
+//         qWarning() << "Recording timer not active. Cannot toggle pause.";
+//         return;
+//     }
+
+//     // ---- PAUSE ----
+//     if (recordingTimer->isActive()) {
+
+//         recordingTimer->stop();
+//         isRecordingPaused = true;
+
+//         pauseStartTime = QDateTime::currentDateTime();
+
+//         qDebug() << "Recording Paused.";
+
+//         emit recordingPaused();   // Notify UI (optional)
+//     }
+
+//     // ---- RESUME ----
+//     else if (isRecordingPaused) {
+
+//         // Measure how long we remained paused
+//         qint64 pausedDuration =
+//             pauseStartTime.msecsTo(QDateTime::currentDateTime());
+
+//         pausedTimeOffset += pausedDuration;
+
+//         // Resume timer at the same 100 ms interval
+//         recordingTimer->start(100);
+//         isRecordingPaused = false;
+
+//         qDebug() << "Recording Resumed. Offset added:" << pausedDuration << "ms";
+
+//         emit recordingResumed();  // Notify UI (optional)
+//     }
+// }
+
+
+
 
 
 
@@ -239,7 +380,6 @@ bool Recorder::saveToFile(const QString &filePath)
 
 bool Recorder::loadReplay(const QString &filePath)
 {
-    p_hierarchy = m_hierarchy->toJson();
     QFile loadFile(filePath);
     if (!loadFile.open(QIODevice::ReadOnly)) {
         qWarning("Couldn't open replay file.");
@@ -296,30 +436,6 @@ bool Recorder::loadReplay(const QString &filePath)
         }
     }
 
-
-    // if (!array.isEmpty()) {
-    //     qDebug() << "array not empty";
-    //     QJsonObject metaFrame = array.at(0).toObject();
-
-    //     if (metaFrame.contains("bookmark") && metaFrame["bookmark"].isArray()) {
-    //         qDebug() << "contains bookmark";
-    //         QJsonArray bookmarkArray = metaFrame["bookmark"].toArray();
-
-    //         for (const QJsonValue &bookmarkVal : bookmarkArray) {
-    //             if (bookmarkVal.isObject()) {
-    //                 qDebug() << "   bookmark itr";
-    //                 QJsonObject bookmarkObj = bookmarkVal.toObject();
-
-    //                 QString note = bookmarkObj.value("message").toString();
-    //                 qint64 timestampMs = bookmarkObj.value("timestamp_ms").toVariant().toLongLong();
-
-    //                 emit replayBookmark(note, timestampMs);
-    //                 qDebug() << "Loaded bookmark:" << note << "at" << timestampMs;
-    //             }
-    //         }
-    //     }
-    // }
-
     // ===== Load first frame (SKIP metadata at index 0) =====
     if (playbackFrames.size() > 1) {
         currentReplayIndex = 1;   // Start from snapshot frame
@@ -345,69 +461,6 @@ bool Recorder::loadReplay(const QString &filePath)
 
     return true;
 }
-
-
-// bool Recorder::loadReplay(const QString &filePath)
-// {
-//     QFile loadFile(filePath);
-//     if (!loadFile.open(QIODevice::ReadOnly)) {
-//         qWarning("Couldn't open replay file.");
-//         return false;
-//     }
-
-//     QByteArray saveData = loadFile.readAll();
-//     loadFile.close();
-
-//     QJsonDocument loadDoc(QJsonDocument::fromJson(saveData));
-//     if (!loadDoc.isArray()) {
-//         qWarning("Replay file format error: Expected JSON array.");
-//         return false;
-//     }
-
-//     QJsonArray array = loadDoc.array();
-//     playbackFrames.clear();
-//     playbackFrames.reserve(array.size());
-
-//     // Convert QJsonArray → QVector<QJsonObject>
-//     for (const QJsonValue &val : array) {
-//         if (val.isObject())
-//             playbackFrames.append(val.toObject());
-//     }
-
-//     currentReplayIndex = 0;
-
-//     qDebug() << "Replay loaded with" << playbackFrames.size() << "frames.";
-
-//     // ===== Load first usable (snapshot) frame, NOT metaData =====
-//     int firstSnapshotIndex = -1;
-
-//     for (int i = 0; i < playbackFrames.size(); ++i) {
-//         if (playbackFrames[i].contains("snapshot")) {
-//             firstSnapshotIndex = i;
-//             break;
-//         }
-//     }
-
-//     // If we found a valid frame with snapshot, load it
-//     if (firstSnapshotIndex != -1) {
-//         currentReplayIndex = firstSnapshotIndex;
-
-//         const QJsonObject &firstFrame = playbackFrames.at(firstSnapshotIndex);
-//         QJsonObject snapshot = firstFrame["snapshot"].toObject();
-
-//         if (m_hierarchy) {
-//             m_hierarchy->fromJson(snapshot);
-//             qDebug() << "Loaded first snapshot frame at index:" << firstSnapshotIndex;
-//         }
-
-//         emit frameLoaded(firstFrame); // optional signal to UI
-//     } else {
-//         qWarning() << "No snapshot frames found — nothing to load.";
-//     }
-
-//     return true;
-// }
-
 
 void Recorder::startReplay()
 {
@@ -442,23 +495,6 @@ void Recorder::startReplay()
                 recordingTimer->stop();
             }
         });
-
-        // connect(recordingTimer, &QTimer::timeout, this, [this]() {
-        //     if (currentReplayIndex < playbackFrames.size()) {
-        //         const QJsonObject &frame = playbackFrames.at(currentReplayIndex);
-        //         QJsonValue jv = frame["snapshot"];
-        //         if (jv.isObject()) {
-        //             m_hierarchy->fromJson(jv.toObject());
-        //             qDebug() << "Frame" << currentReplayIndex
-        //                      << "Timestamp:" << frame["timestamp_ms"].toInt() << "ms";
-        //         }
-
-        //         currentReplayIndex++;
-        //     } else {
-        //         qDebug() << "Replay complete";
-        //         recordingTimer->stop();
-        //     }
-        // });
     }
 
     recordingTimer->start(100);
@@ -496,12 +532,6 @@ void Recorder::toggleReplayPause()
 void Recorder::goToNextFrame()
 {
     if (playbackFrames.isEmpty()) return;
-
-    // Stop live playback timer to avoid auto-increment
-    // if (recordingTimer && recordingTimer->isActive()) {
-    //     recordingTimer->stop();
-    //     isReplayPaused = true;
-    // }
 
     if (currentReplayIndex < playbackFrames.size() - 50) {
         currentReplayIndex += 50;
@@ -721,6 +751,10 @@ void Recorder::resetReplayState()
     currentReplayIndex = 0;
 
     // Optional: hierarchy reset
+    // if (m_hierarchy) {
+    //     QJsonObject empty;
+    //     m_hierarchy->fromJson(empty);
+    // }
 
     qDebug() << "Replay data cleared.";
 }

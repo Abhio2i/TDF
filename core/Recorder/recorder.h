@@ -61,8 +61,7 @@ signals:
     void recordingResumed();
     void frameLoaded(const QJsonObject &frame);
     void replayFrameLoaded(qint64 timestampMs);
-
-     void recordingStateChanged(bool recording, bool paused);
+    void recordingTimeUpdated(qint64 ms);
     //End Himan
 private slots:
     void playNextFrame();
@@ -74,7 +73,6 @@ public slots:
     //End Himan
 private:
     Hierarchy* m_hierarchy = nullptr;  // Used for extracting structure snapshot
-    QJsonObject p_hierarchy;
     Simulation* m_simulation = nullptr;  // Used for getting simulation speed
 
     QJsonObject recordedData;  // Main data JSON object
@@ -100,6 +98,8 @@ private:
     qint64 replayPausedTimeOffset = 0;
 
     int currentReplayIndex = 0;
+    qint64 lastElapsedMs = 0;
+
     //End Hima
 };
 

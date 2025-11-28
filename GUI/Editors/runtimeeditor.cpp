@@ -205,6 +205,166 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     // Connect loggerAction to toggleLoggerDisplay
     connect(runtimeToolBar, &RuntimeToolBar::loggerTriggered, this, &RuntimeEditor::toggleLoggerDisplay);
 
+    // // Handle loggerDock visibility changes
+    // connect(loggerDock, &QDockWidget::visibilityChanged, this, [=](bool visible) {
+    //     qDebug() << "Logger dock visibility changed, visible:" << visible;
+    //     if (!visible) {
+    //         SidebarWidget *sidebar = sidebarDock->widget()->findChild<SidebarWidget*>();
+    //         if (sidebar) {
+    //             sidebar->setActiveButton("");
+    //         }
+    //         QAction *loggerAction = runtimeToolBar->findChild<QAction*>("loggerAction");
+    //         if (loggerAction) {
+    //             loggerAction->setChecked(false);
+    //         }
+    //     }
+    // });
+
+    // //Logger connections
+    // connect(loggerDialog, &LoggerDialog::startRecording, this, [=]() {
+    //     recordingStartTime = QDateTime::currentDateTime();
+    //     runtime->recorder->startRecording();
+    //     recordingTimer = new QTimer(this);
+    //     connect(recordingTimer, &QTimer::timeout, this, [=]() {
+    //         if (recordingStartTime.isValid()) {
+    //             qint64 durationMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
+    //             loggerDialog->updateRecordingDuration(durationMs);
+    //         }
+    //     });
+    //     recordingTimer->start(100); // Update every 100ms
+    //     qDebug() << "Recording started from LoggerDialog";
+    // });
+    // //Start Himan
+    // // Logger Pause/Resume connection
+    // connect(loggerDialog, &LoggerDialog::pauseRecording, this, [=]() {
+    //     runtime->recorder->togglePause();
+    // });
+    // //End Himan
+    // connect(loggerDialog, &LoggerDialog::stopRecording, this, [=]() {
+    //     runtime->recorder->stopRecording();
+    //     if (recordingTimer) {
+    //         recordingTimer->stop();
+    //         delete recordingTimer;
+    //         recordingTimer = nullptr;
+    //     }
+    //     recordingStartTime = QDateTime();
+    //     loggerDialog->updateRecordingDuration(0);
+    //     qDebug() << "Recording stopped from LoggerDialog";
+    // });
+
+    // connect(loggerDialog, &LoggerDialog::saveRecording, this, [=](const QString &filePath) {
+    //     if (runtime && runtime->recorder) {
+    //         bool saved = runtime->recorder->saveToFile(filePath);
+    //         if (saved)
+    //             qDebug() << "Recording successfully saved to:" << filePath;
+    //         else
+    //             qWarning() << "Failed to save recording to:" << filePath;
+    //     } else {
+    //         qWarning() << "Recorder instance not available!";
+    //     }
+    // });
+    // connect(loggerDialog, &LoggerDialog::loadRecording, this, [=](const QString &filePath) {
+    //     if (runtime && runtime->recorder) {
+    //         if (runtime->recorder->loadReplay(filePath)) {
+    //             qDebug() << "Replay loaded:" << filePath;
+    //         }
+    //     }
+    // });
+    // connect(loggerDialog, &LoggerDialog::startReplay, this, [=]() {
+    //     if (runtime && runtime->recorder) {
+    //         runtime->recorder->startReplay();
+    //     }
+    // });
+
+    // // connect(loggerDialog, &LoggerDialog::loadRecording, this, [=](const QString &filePath) {
+    // //     if (runtime && runtime->recorder) {
+    // //         qDebug() << "Loading recording from:" << filePath;
+    // //         runtime->recorder->loadReplay(filePath);
+    // //     }
+    // // });
+    // connect(loggerDialog, &LoggerDialog::toggleReplayPause, this, [=]() {
+    //     if (runtime && runtime->recorder) {
+    //         runtime->recorder->toggleReplayPause();
+    //     }
+    // });
+    // connect(loggerDialog, &LoggerDialog::previousFrame, this, [=]() {
+    //     if (runtime && runtime->recorder) {
+    //         runtime->recorder->goToPreviousFrame();
+    //     }
+    // });
+
+    // connect(loggerDialog, &LoggerDialog::nextFrame, this, [=]() {
+    //     if (runtime && runtime->recorder) {
+    //         runtime->recorder->goToNextFrame();
+    //     }
+    // });
+
+    // // connect(loggerDialog, &LoggerDialog::loadRecording, this, [=](const QString &filePath) {
+    // //     if (runtime && runtime->recorder) {
+    // //         qDebug() << "Loading recording from:" << filePath;
+    // //         runtime->recorder->loadReplay(filePath);
+    // //     }
+    // // });
+    // connect(loggerDialog, &LoggerDialog::pressPlayAgain, this, [=]() {
+    //     if (runtime && runtime->recorder) {
+    //         runtime->recorder->playAgain();
+    //     }
+    // });
+
+    // connect(loggerDialog, &LoggerDialog::replayRecording, this, [=](const QString &filePath) {
+    //     simulation->stop();
+    //     tacticalDisplay->canvas->Render(0.016f);
+    //     if (!filePath.isEmpty() && runtime->recorder->loadReplay(filePath)) {
+    //         QVector<QJsonObject> frames = runtime->recorder->getRecordedFrames();
+    //         if (!frames.isEmpty()) {
+    //             simulation->replay(frames);
+    //             qDebug() << "Replay started using file:" << filePath;
+    //         } else {
+    //             qWarning() << "Replay file loaded but contains no frames.";
+    //         }
+    //     } else {
+    //         qWarning() << "Replay cancelled or file failed to load.";
+    //     }
+    // });
+
+    // connect(loggerDialog, &LoggerDialog::eventTypesSelected, this, [=](const QStringList &eventTypes) {
+    //     qDebug() << "Event types selected:" << eventTypes;
+    // });
+
+    // connect(loggerDialog, &LoggerDialog::bookmarkAdded, this, [=](const QString &bookmarkNote) {
+    //     qDebug() << "Bookmark button clicked — note:" << bookmarkNote;
+
+    //     if (!runtime || !runtime->recorder) {
+    //         qWarning() << "Runtime or Recorder not available — cannot save bookmark.";
+    //         return;
+    //     }
+
+    //     if (recordingStartTime.isValid()) {
+    //         qint64 timestampMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
+    //         runtime->recorder->recordBookmark(bookmarkNote, timestampMs);
+    //         loggerDialog->addBookmarkWithTimestamp(bookmarkNote, timestampMs);
+
+    //         qDebug() << "Bookmark added at" << timestampMs << "ms — message:" << bookmarkNote;
+    //     } else {
+    //         qWarning() << "Cannot add bookmark — recording not started.";
+    //     }
+    // });
+
+    // connect(loggerDialog, &LoggerDialog::timestampToggled, this, [=](bool enabled) {
+    //     qDebug() << "Timestamp toggled:" << enabled;
+    // });
+
+    // connect(loggerDialog, &LoggerDialog::requestReplayReset,
+    //         runtime->recorder, &Recorder::resetReplayState);
+
+
+    // connect(loggerDialog, &LoggerDialog::bookmarkClicked,this, [=](const QString &note, qint64 timestampMs) {
+    //     runtime->recorder->bookmarkReplay(note, timestampMs);
+    // });
+
+
+
+
     // Handle loggerDock visibility changes
     connect(loggerDock, &QDockWidget::visibilityChanged, this, [=](bool visible) {
         qDebug() << "Logger dock visibility changed, visible:" << visible;
@@ -236,9 +396,19 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     });
     //Start Himan
     // Logger Pause/Resume connection
-    connect(loggerDialog, &LoggerDialog::pauseRecording, this, [=]() {
-        runtime->recorder->togglePause();
-    });
+    // connect(loggerDialog, &LoggerDialog::pauseRecording, this, [=]() {
+    //     runtime->recorder->togglePause();
+    // });
+    // connect(runtime->recorder, &Recorder::recordingTimeUpdated,
+    //         loggerDialog->getTimelineWidget(),
+    //         &TimelineWidget::setCurrentRecordingTime);
+    connect(runtime->recorder, &Recorder::recordingPaused,
+            loggerDialog->getTimelineWidget(), &TimelineWidget::pauseRecording);
+
+    connect(runtime->recorder, &Recorder::recordingResumed,
+            loggerDialog->getTimelineWidget(), &TimelineWidget::resumeRecording);
+
+
     //End Himan
     connect(loggerDialog, &LoggerDialog::stopRecording, this, [=]() {
         runtime->recorder->stopRecording();

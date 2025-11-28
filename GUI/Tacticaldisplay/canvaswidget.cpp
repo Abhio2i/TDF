@@ -2746,37 +2746,61 @@ void CanvasWidget::drawRadar(QPainter& painter,std::string id , MeshEntry entry)
     // }
 }
 
-void CanvasWidget::drawRadio(QPainter& painter,std::string id , MeshEntry entry){
-    // for (auto& [id, entry] : Meshes) {
-        Entity* entity = entry.entity;
-        if (!entity) return;
-        for (Radio* s : entity->radioList) {
-                QPointF point = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
-                float centerX = point.x();
-                float centerY = point.y();
-                QPen pen(Qt::black, 1);
-                QVector<qreal> dashes;
-                dashes << 4 << 10;  // 4px dash, 2px gap
-                pen.setDashPattern(dashes);
-                painter.setPen(pen);
-                //painter.setPen(QPen(Qt::black, 1,Qt::DashLine));
-                for (int i = 0; i < s->targets.size(); ++i) {
-                        QPointF points2 = gislib->geoToCanvas(s->targets[i].entity->transform->translation().x(), s->targets[i].entity->transform->translation().z());
-                        painter.drawLine(centerX, centerY, points2.x(), points2.y());
-                }
+// void CanvasWidget::drawRadio(QPainter& painter,std::string id , MeshEntry entry){
+//     // for (auto& [id, entry] : Meshes) {
+//         Entity* entity = entry.entity;
+//         if (!entity) return;
+//         for (Radio* s : entity->radioList) {
+//                 QPointF point = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
+//                 float centerX = point.x();
+//                 float centerY = point.y();
+//                 QPen pen(Qt::black, 1);
+//                 QVector<qreal> dashes;
+//                 dashes << 4 << 10;  // 4px dash, 2px gap
+//                 pen.setDashPattern(dashes);
+//                 painter.setPen(pen);
+//                 //painter.setPen(QPen(Qt::black, 1,Qt::DashLine));
+//                 for (int i = 0; i < s->targets.size(); ++i) {
+//                         QPointF points2 = gislib->geoToCanvas(s->targets[i].entity->transform->translation().x(), s->targets[i].entity->transform->translation().z());
+//                         painter.drawLine(centerX, centerY, points2.x(), points2.y());
+//                 }
 
-                // double halfBeamWidth = azimuth / 2.0;
-                // auto [newLat, newLon] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)-halfBeamWidth),-radius);
-                // QPointF points = gislib->geoToCanvas(newLat, newLon);
-                // painter.drawLine(centerX, centerY, points.x(), points.y());
-                // auto [newLat2, newLon2] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)+halfBeamWidth),-radius);
-                // QPointF points2 = gislib->geoToCanvas(newLat2, newLon2);
+//                 // double halfBeamWidth = azimuth / 2.0;
+//                 // auto [newLat, newLon] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)-halfBeamWidth),-radius);
+//                 // QPointF points = gislib->geoToCanvas(newLat, newLon);
+//                 // painter.drawLine(centerX, centerY, points.x(), points.y());
+//                 // auto [newLat2, newLon2] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)+halfBeamWidth),-radius);
+//                 // QPointF points2 = gislib->geoToCanvas(newLat2, newLon2);
 
-                // painter.drawLine(points.x(), points.y(), points2.x(), points2.y());
+//                 // painter.drawLine(points.x(), points.y(), points2.x(), points2.y());
+//         }
+//     // }
+// }
+void CanvasWidget::drawRadio(QPainter& painter, std::string id, MeshEntry entry) {
+    Entity* entity = entry.entity;
+
+    // 🆕 EXACTLY JAISE drawRadar MEIN HAI
+    if(!entry.radioVisible) return;  // YAHAN radioVisible CHECK KAREN
+
+    if (!entity) return;
+
+    for (Radio* s : entity->radioList) {
+        QPointF point = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
+        float centerX = point.x();
+        float centerY = point.y();
+
+        QPen pen(Qt::black, 1);
+        QVector<qreal> dashes;
+        dashes << 4 << 10;  // 4px dash, 2px gap
+        pen.setDashPattern(dashes);
+        painter.setPen(pen);
+
+        for (int i = 0; i < s->targets.size(); ++i) {
+            QPointF points2 = gislib->geoToCanvas(s->targets[i].entity->transform->translation().x(), s->targets[i].entity->transform->translation().z());
+            painter.drawLine(centerX, centerY, points2.x(), points2.y());
         }
-    // }
+    }
 }
-
 void CanvasWidget::drawTrail(QPainter& painter,std::string id , MeshEntry entry){
     // for (auto& [id, entry] : Meshes) {
         if(entry.coreTransform->trailData.capacity()>2){
@@ -5358,75 +5382,7 @@ void CanvasWidget::showEntityInfo(const QString& entityId)
     MeshEntry& entry = it->second;
     QVariantMap entityData;
 
-    // // Basic entity information - TYPE CONVERSION FIXED
-    // if (entry.entity) {
-    //     // Convert entity type to string
-    //     QString typeStr = "Unknown";
-    //     switch(entry.entity->type) {
-    //         case Constants::EntityType::Platform: typeStr = "Platform"; break;
-    //         case Constants::EntityType::Sensor: typeStr = "Sensor"; break;
-    //         case Constants::EntityType::Weapon: typeStr = "Weapon"; break;
-    //         // Add other entity types as needed
-    //         default: typeStr = "Unknown"; break;
-    //     }
-    //     entityData["type"] = typeStr;
-    // } else {
-    //     entityData["type"] = "Unknown";
-    // }
 
-    // // NAME CONVERSION FIXED - Direct QString assignment
-    //     entityData["Name"] = entry.name;
-    // //     entityData["Entity Type"] = "Platform";
-    // // entityData["displayName"] = QString::fromStdString(entry.name);
-
-    // // Position information
-    // if (entry.position) {
-    //     entityData["currentPosition"] = QString("Lon: %1, Lat: %2, Alt: %3")
-    //                                        .arg(entry.position->x())
-    //                                        .arg(entry.position->y())
-    //                                        .arg(entry.position->z());
-    //     entityData["requestedPosition"] = "Same as current";
-    // }
-
-    // // Speed and altitude
-    // if (entry.dynamicModel) {
-    //     entityData["speed"] = QString("%1 km/h").arg(entry.dynamicModel->moveSpeed);
-    // }
-    // entityData["altitude"] = QString("%1 m").arg(entry.position ? entry.position->z() : 0);
-
-    // // Carrier information
-    // entityData["carrier"] = "None";
-
-    // // Equipment data
-    // if (entry.entity) {
-    //     QStringList weaponsList, sensorsList, radiosList;
-
-    //     for (Sensor* sensor : entry.entity->sensorList) {
-    //         // sensorsList << QString::fromStdString(sensor->name);
-    //     }
-
-    //     for (Radio* radio : entry.entity->radioList) {
-    //         // radiosList << QString::fromStdString(radio->name);
-    //     }
-
-    //     entityData["sensors"] = sensorsList.join(", ");
-    //     entityData["radios"] = radiosList.join(", ");
-    //     entityData["weapons"] = "Weapon data";
-    //     entityData["formation"] = "Formation data";
-    //     entityData["iff"] = "IFF data";
-    // }
-
-    // // Status flags
-    // entityData["active"] = entry.trajectory ? entry.trajectory->Active : false;
-    // entityData["track"] = true;
-    // entityData["centre"] = false;
-    // entityData["aggregatedScript"] = false;
-    // entityData["followTrajectory"] = true;
-    // entityData["showConnection"] = true;
-    // entityData["showDetection"] = true;
-    // entityData["controlDecisive"] = false;
-
-    // Update dialog
     if (entityInfoDialog) {
         entityInfoDialog->setEntityInfo(entityId, &entry);
         entityInfoDialog->updateEntityInfo();

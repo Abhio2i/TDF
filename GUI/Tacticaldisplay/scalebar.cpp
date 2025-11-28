@@ -14,8 +14,8 @@ void ScaleBar::updateScale(double metersPerPixel, int containerWidth)
     m_currentConfig = getOptimalScale(metersPerPixel, containerWidth);
     update(); // Trigger repaint
 
-    qDebug() << "Scale Bar:" << m_currentConfig.barLength << "px ="
-             << m_currentConfig.displayText << "(" << m_currentConfig.actualDistance << "m)";
+    // qDebug() << "Scale Bar:" << m_currentConfig.barLength << "px ="
+    //          << m_currentConfig.displayText << "(" << m_currentConfig.actualDistance << "m)";
 }
 
 ScaleBar::ScaleConfig ScaleBar::getOptimalScale(double metersPerPixel, int containerWidth) const

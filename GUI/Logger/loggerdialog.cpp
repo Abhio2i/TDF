@@ -1,4 +1,5 @@
 
+
 #include "loggerdialog.h"
 #include <QFileDialog>
 #include <QMessageBox>
@@ -24,10 +25,6 @@ LoggerDialog::LoggerDialog(QWidget *parent, Recorder* recorderParam)
 
     setupMenuBar();
     setupUi();
-
-    if (recorder) {
-        connect(recorder, &Recorder::recordingStateChanged, this, &LoggerDialog::onRecordingStateChanged);
-    }
 
     setStyleSheet(R"(
         QMainWindow {
@@ -383,10 +380,6 @@ void LoggerDialog::setupConnections()
         loggerStatusLabel->setText(tr("Recording"));
         loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
 
-        // Reset paused duration
-        pausedRecordingDuration = 0;
-        lastRecordingDuration = 0;
-
         emit startRecording();
         recordButton->setToolTip(tr("Recording..."));
         recordButton->setObjectName("recordingActive");
@@ -401,28 +394,20 @@ void LoggerDialog::setupConnections()
     });
 
     connect(pauseRecordingButton, &QToolButton::clicked, this, [this]() {
+        emit pauseRecording();
+        //timelineWidget->toggleReplayPause();
         if (!isRecordingPaused) {
-            // Pause recording
-            emit pauseRecording();
-
-            // Current duration store karen
-            pausedRecordingDuration = lastRecordingDuration;
-
+            timelineWidget->pauseRecording();
+        } else {
+            timelineWidget->resumeRecording();
+        }
+        if (!isRecordingPaused) {
             loggerStatusLabel->setText(tr("Recording Paused"));
             loggerStatusLabel->setStyleSheet("font-weight: bold; color: #f39c12;");
             pauseRecordingButton->setIcon(QIcon(":/icons/images/resume.png"));
             pauseRecordingButton->setToolTip(tr("Resume Recording"));
             isRecordingPaused = true;
         } else {
-            // Resume recording
-            emit startRecording();
-
-            // Stored duration se continue karen
-            if (pausedRecordingDuration > 0) {
-                timelineWidget->setRecordingDuration(pausedRecordingDuration);
-                lastRecordingDuration = pausedRecordingDuration;
-            }
-
             loggerStatusLabel->setText(tr("Recording"));
             loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
             pauseRecordingButton->setIcon(QIcon(":/icons/images/pause.png"));
@@ -434,11 +419,6 @@ void LoggerDialog::setupConnections()
     connect(stopRecordingButton, &QToolButton::clicked, this, [this]() {
         if (recordingStartTime.isValid()) {
             emit stopRecording();
-
-            // Timeline reset karen
-            pausedRecordingDuration = 0;
-            lastRecordingDuration = 0;
-            timelineWidget->setRecordingDuration(0);
 
             QString saveFilePath = QFileDialog::getSaveFileName(
                 this,
@@ -510,7 +490,7 @@ void LoggerDialog::setupConnections()
     });
 
     connect(pauseResumeReplayButton, &QToolButton::clicked, this, [this]() {
-        emit toggleReplayPause();
+        emit toggleReplayPause();   // Call merged replay function
 
         if (!isReplayPaused) {
             // UI Updates for Pause
@@ -595,6 +575,9 @@ void LoggerDialog::showBookmarkDialog()
 
 void LoggerDialog::switchToRecordingMode()
 {
+    timelineWidget->replayMode = false;
+    timelineWidget->modeisRecording = true;
+    //timelineWidget->toRunInRecording = true;
     loggerStatusLabel->setText(tr("Recording Mode"));
     loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
     timelineWidget->clearBookmarks();
@@ -602,10 +585,13 @@ void LoggerDialog::switchToRecordingMode()
     updateRecordingDurationLabel(0);
     emit requestReplayReset();
     qDebug() << "Switched to Recording Mode";
+
 }
 
 void LoggerDialog::switchToReplayMode()
 {
+    timelineWidget->replayMode = true;
+    timelineWidget->modeisRecording = false;
     loggerStatusLabel->setText(tr("Replay Mode"));
     loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
     timelineWidget->clearBookmarks();
@@ -621,10 +607,8 @@ void LoggerDialog::updateRecordingsList()
 
 void LoggerDialog::updateRecordingDuration(qint64 durationMs)
 {
-    if (timelineWidget && !isRecordingPaused) {
-        // Sirf tabhi duration update karen jab recording paused na ho
+    if (timelineWidget) {
         timelineWidget->setRecordingDuration(durationMs);
-        lastRecordingDuration = durationMs;
 
         int seconds = durationMs / 1000;
         int minutes = seconds / 60;
@@ -636,10 +620,10 @@ void LoggerDialog::updateRecordingDuration(qint64 durationMs)
         durationLabel->setText(durationText);
     }
 }
-
 void LoggerDialog::updateRecordingDurationLabel(qint64 durationMs)
 {
     if (timelineWidget) {
+
         int seconds = durationMs / 1000;
         int minutes = seconds / 60;
         int hours = minutes / 60;
@@ -657,21 +641,27 @@ void LoggerDialog::addBookmarkWithTimestamp(const QString &note, qint64 timestam
         timelineWidget->addBookmark(note, timestampMs);
     }
 }
-
+//No use Start
 void LoggerDialog::showBookmarkOnReplay(const QString& note, qint64 timestamp)
 {
     if (timelineWidget) {
         timelineWidget->addBookmark(note, timestamp);
     }
 }
+//No use Start End below replacement
 
 void LoggerDialog::onReplayBookmarkLoaded(const QString& note, qint64 timestamp)
 {
     if (timelineWidget) {
-        timelineWidget->addBookmark(note, timestamp);
+        // Only visually add bookmark marker during loading
+        /*timelineWidget->clearBookmarks();*/     // Clear old markers
+
+        timelineWidget->addBookmark(note, timestamp);     // now markers appear
+
         qDebug() << "Bookmark added to timeline:" << note << timestamp;
     }
 }
+
 
 void LoggerDialog::setTimelineDuration(qint64 duration)
 {
@@ -691,17 +681,4 @@ void LoggerDialog::updateReplayProgress(qint64 timestamp)
 
 void LoggerDialog::replayFromBookmark(const QString& note, qint64 timestamp)
 {
-}
-
-void LoggerDialog::onRecordingStateChanged(bool recording, bool paused)
-{
-    qDebug() << "Recording state changed - Recording:" << recording << "Paused:" << paused;
-
-    if (!recording) {
-        // Recording stopped
-        pausedRecordingDuration = 0;
-        lastRecordingDuration = 0;
-        timelineWidget->setRecordingDuration(0);
-        updateRecordingDurationLabel(0);
-    }
 }

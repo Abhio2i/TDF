@@ -29,11 +29,13 @@ signals:
     void update();
 private slots:
     void onCloseClicked();
-    void onWeaponsClicked();
+
     void onSensorsClicked();
-    void onFormationClicked();
+
     void onRadiosClicked();
     void onIFFClicked();
+        void onWeaponsClicked();
+            void onFormationClicked();
 
 private:
     void setupUI();
@@ -82,6 +84,7 @@ private:
     QPushButton *radiosButton;
     QPushButton *iffButton;
 
+
     // Options section
     QVBoxLayout *optionsLayout;
     QCheckBox *followTrajectoryCheckBox;
@@ -96,6 +99,7 @@ private:
 
     // 🆕 Helper function for real-time sensors updates
     void updateSensorsTable(QTableWidget* sensorsTable, Entity* entity);
+      void updateRadiosTable(QTableWidget* radiosTable, Entity* entity);
 
 };
 

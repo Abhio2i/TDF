@@ -17,12 +17,28 @@ Hierarchy::Hierarchy()
     setCurrentContext(this);
 }
 
-// Destructor
+// // Destructor
+// Hierarchy::~Hierarchy()
+// {
+//     for (auto& [key, folder] : *Folders) delete folder;
+//     for (auto& [key, entity] : *Entities) delete entity;
+//     for (auto& [key, profile] : ProfileCategories) delete profile;
+//     delete Folders;
+//     delete Entities;
+// }
+
 Hierarchy::~Hierarchy()
 {
-    for (auto& [key, folder] : *Folders) delete folder;
-    for (auto& [key, entity] : *Entities) delete entity;
-    for (auto& [key, profile] : ProfileCategories) delete profile;
+    // Bas yeh 3 lines add karein
+    if (Entities) {
+        Entities->clear();  // Pehle clear karein
+    }
+    if (Folders) {
+        Folders->clear();   // Pehle clear karein
+    }
+    ProfileCategories.clear(); // Pehle clear karein
+
+    // Baaki code same rakhein
     delete Folders;
     delete Entities;
 }
