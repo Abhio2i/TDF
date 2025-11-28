@@ -61,6 +61,8 @@ signals:
     void recordingResumed();
     void frameLoaded(const QJsonObject &frame);
     void replayFrameLoaded(qint64 timestampMs);
+
+     void recordingStateChanged(bool recording, bool paused);
     //End Himan
 private slots:
     void playNextFrame();
