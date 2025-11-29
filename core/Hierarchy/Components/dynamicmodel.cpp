@@ -398,7 +398,9 @@ auto normalizeAngle = [](float angle) {
 DynamicModel::DynamicModel() {
     controle = true;
     follow = true;
+     followPath = true;
     moveSpeed = 1;
+      originalMoveSpeed = moveSpeed;
     customParameters = QJsonObject(); // Initialize customParameters
 }
 
@@ -426,6 +428,12 @@ void DynamicModel::Update(float deltaTime) {
     // QVector3D rightDir = transform->right();     // y-axis (right)
     time += deltaTime;
     delta = deltaTime;
+
+
+    // 🆕 ADD CHECK: Agar followPath false hai to FollowTrajectory() call na karen
+    if (followPath && startTime < time) {
+        FollowTrajectory();
+    }
     //qDebug() << time;
     if(startTime<time)
     {
@@ -542,7 +550,12 @@ void DynamicModel::Update(float deltaTime) {
 // }
 
 void DynamicModel::FollowTrajectory() {
-
+    if (!followPath) {
+        // Entity movement complete stop
+        speeed = 0;
+        currentSpeed = 0;
+        return;
+    }
     if (follow) {
         // QVector3D current = *transform->position;
 
@@ -577,6 +590,8 @@ void DynamicModel::FollowTrajectory() {
 
         // return; // Skip trajectory logic
     }
+
+     if (!followPath) return;
     if(trajectory->Trajectories.size()<2) return;
     QVector3D current = transform->matrix->translation();
     Vector target = *trajectory->Trajectories[trajectory->current]->position;

@@ -13,6 +13,7 @@ public:
     Trajectory();
     ComponentType Typo() const override { return ComponentType::Trajectory; }
     bool Active;
+     bool FollowPath;
     std::string ID;
     // std::vector<QJsonObject> array;
     std::vector<Waypoints*> Trajectories;

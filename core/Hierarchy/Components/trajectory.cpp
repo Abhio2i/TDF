@@ -6,6 +6,7 @@
 
 Trajectory::Trajectory() {
     Active = true; // Initialize Active
+      FollowPath = true;
     current = 0;
     customParameters = QJsonObject(); // Initialize customParameters
 }

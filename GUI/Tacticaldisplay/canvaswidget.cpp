@@ -126,7 +126,7 @@ CanvasWidget::CanvasWidget(QWidget *parent) : QWidget(parent) {
       connect(entityInfoDialog, &EntityInfoDialog::update, this,[=]{
           update();
       });
-      connect(this, &CanvasWidget::selectEntitybyCursor, this, &CanvasWidget::showEntityInfo);
+      // connect(this, &CanvasWidget::selectEntitybyCursor, this, &CanvasWidget::showEntityInfo);
 
     connect(gislib, &GISlib::distanceMeasured, this, &CanvasWidget::onDistanceMeasured);
     // NEW: Add GISlib event connections for geojson
@@ -972,7 +972,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                 emit selectEntitybyCursor(QString::fromStdString(id));
 
                 // 🆕 ENTITY INFO DIALOG SHOW KARNA
-                showEntityInfo(QString::fromStdString(id));
+                // showEntityInfo(QString::fromStdString(id));
 
                 Console::log("Selected entity: " + id);
             }
@@ -989,7 +989,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
         activeDragAxis = "";
 
         // 🆕 ENTITY INFO DIALOG HIDE KARNA
-        hideEntityInfo();
+        // hideEntityInfo();
 
         Console::log("Deselected all entities.");
         update();
@@ -1286,13 +1286,53 @@ static bool isPointNearLineSegment(const QPointF& p, const QPointF& v1, const QP
     return QVector2D(p - projection).length() < tolerance;
 }
 
+// void CanvasWidget::handleRightClick(QMouseEvent *event) {
+//     // First try handling trajectory right-click
+//     if (currentMode == DrawTrajectory && isDrawingTrajectory) {
+//         handleTrajectoryRightClick(event);
+//         return;
+//     }
+//     // Text right-click handling add karein
+//     if (handleTextRightClick(event)) {
+//         return;
+//     }
+
+//     handleShapeRightClick(event);
+//     update();
+// }
+
 void CanvasWidget::handleRightClick(QMouseEvent *event) {
-    // First try handling trajectory right-click
+    Console::log("=== RIGHT CLICK DETECTED ===");
+    Console::log("Position: " + std::to_string(event->pos().x()) + "," + std::to_string(event->pos().y()));
+    Console::log("Current Mode: " + std::to_string(currentMode));
+    Console::log("isDrawingTrajectory: " + std::to_string(isDrawingTrajectory));
+
+    // FIRST: Check if right click is on an entity for EntityInfoDialog
+    bool entityClicked = false;
+    for (auto& [id, entry] : Meshes) {
+        QPointF entityPos = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
+        if (QVector2D(event->pos() - entityPos).length() < 20.0f) {
+            // Entity par right click hua hai - EntityInfoDialog show karen
+            selectedEntityId = id;
+            showEntityInfo(QString::fromStdString(id));
+            entityClicked = true;
+            Console::log("Right click on entity: " + id + " - EntityInfoDialog opened");
+            break;
+        }
+    }
+
+    // Agar entity par click hua hai, toh bas dialog show karke return ho jayein
+    if (entityClicked) {
+        return;
+    }
+
+    // Nahi toh existing right click logic continue karein
     if (currentMode == DrawTrajectory && isDrawingTrajectory) {
         handleTrajectoryRightClick(event);
         return;
     }
-    // Text right-click handling add karein
+
+    // Text right-click handling
     if (handleTextRightClick(event)) {
         return;
     }
@@ -1300,8 +1340,6 @@ void CanvasWidget::handleRightClick(QMouseEvent *event) {
     handleShapeRightClick(event);
     update();
 }
-
-
 // void CanvasWidget::handleTrajectoryRightClick(QMouseEvent *event) {
 //     int nearestIndex = findNearestWaypoint(event->pos());
 
