@@ -17,6 +17,7 @@
 #include <QListWidget>                            // For list widget
 #include <QJsonArray>                             // For JSON array handling
 #include "core/Hierarchy/hierarchy.h"             // For hierarchy data structure
+#include "qboxlayout.h"
 
 // %%% Forward Declarations %%%
 class ColorTemplate;
@@ -70,7 +71,7 @@ public slots:
     void setupValueCell(int row, const QString &fullKey, const QJsonValue &value);
     // Update trajectory waypoints
     void updateTrajectory(QString entityId, QJsonArray waypoints);
-
+  void handleInfoButton();
 signals:
     // Signal focus entity
     void foucsEntity(QString ID); // Note: Typo in code

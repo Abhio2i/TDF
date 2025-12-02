@@ -1381,6 +1381,62 @@ void Inspector::handleAddTab()
 }
 
 /* Setup main UI */
+// void Inspector::setupUI()
+// {
+//     // Create container widget
+//     QWidget *container = new QWidget(this);
+//     QVBoxLayout *layout = new QVBoxLayout(container);
+//     layout->setContentsMargins(0, 0, 0, 0);
+//     layout->setSpacing(0);
+//     // Setup title bar
+//     setupTitleBar();
+//     setTitleBarWidget(titleBarWidget);
+//     // Create table widget
+//     tableWidget = new QTableWidget(5, 2, this);
+//     tableWidget->horizontalHeader()->setVisible(false);
+//     tableWidget->verticalHeader()->setVisible(false);
+//     tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+//     tableWidget->setStyleSheet(
+//         "QTableWidget { background-color: white; color: black; border: 1px solid #ccc; }"
+//         "QTableWidget::item { border: 1px solid #ddd; color: black; }"
+//         "QTableWidget::item:selected { background-color: #e6f3ff; color: black; }"
+//         );
+//     tableWidget->setAlternatingRowColors(true);
+//     tableWidget->setStyleSheet("alternate-background-color: #f9f9f9; background-color: white;");
+
+//     // Add table to layout
+//     layout->addWidget(tableWidget);
+//     // Create button layout
+//     QHBoxLayout *buttonLayout = new QHBoxLayout();
+//     QPushButton *addButton = new QPushButton("Add", this);
+//     addButton->setFixedSize(30, 20);
+//     addButton->setStyleSheet(
+//         "QPushButton { color: black; border: 1px solid #ccc; border-radius: 3px; background-color: #e9ecef; }"
+//         "QPushButton:hover { background-color: #dde1e4; }"
+//         );
+//     buttonLayout->setSpacing(5);
+//     buttonLayout->addStretch();
+//     buttonLayout->addWidget(addButton);
+//     layout->addLayout(buttonLayout);
+//     // Set container as dock widget
+//     setWidget(container);
+//     // Connect table cell changes
+//     connect(tableWidget, &QTableWidget::cellChanged, this, [=](int r, int col) {
+//         if (col != 1 || !rowToKeyPath.contains(r)) return;
+//         QString keyPath = rowToKeyPath[r];
+//         QString newValue = tableWidget->item(r, 1)->text();
+//         QStringList parts = keyPath.split(".");
+//         QJsonObject delta;
+//         if (parts.size() == 1) delta[parts[0]] = newValue;
+//         else delta[parts[0]] = QJsonObject{{parts[1], newValue}};
+//         emit valueChanged(ConnectedID, Name, delta);
+//     });
+//     // Connect add button
+//     connect(addButton, &QPushButton::clicked, this, &Inspector::handleAddParameter);
+// }
+
+
+/* Setup main UI */
 void Inspector::setupUI()
 {
     // Create container widget
@@ -1388,9 +1444,11 @@ void Inspector::setupUI()
     QVBoxLayout *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
+
     // Setup title bar
     setupTitleBar();
     setTitleBarWidget(titleBarWidget);
+
     // Create table widget
     tableWidget = new QTableWidget(5, 2, this);
     tableWidget->horizontalHeader()->setVisible(false);
@@ -1406,20 +1464,37 @@ void Inspector::setupUI()
 
     // Add table to layout
     layout->addWidget(tableWidget);
+
     // Create button layout
     QHBoxLayout *buttonLayout = new QHBoxLayout();
+
+    // Info button
+    QPushButton *infoButton = new QPushButton("Info", this);
+    infoButton->setFixedSize(30, 20);
+    infoButton->setStyleSheet(
+        "QPushButton { color: black; border: 1px solid #ccc; border-radius: 3px; }"
+        "QPushButton:hover { background-color: #45a049; }"
+        );
+    infoButton->setToolTip("Show component information");
+
+    // Add button
     QPushButton *addButton = new QPushButton("Add", this);
     addButton->setFixedSize(30, 20);
     addButton->setStyleSheet(
         "QPushButton { color: black; border: 1px solid #ccc; border-radius: 3px; background-color: #e9ecef; }"
         "QPushButton:hover { background-color: #dde1e4; }"
         );
+
     buttonLayout->setSpacing(5);
+    buttonLayout->addWidget(infoButton);
     buttonLayout->addStretch();
     buttonLayout->addWidget(addButton);
+
     layout->addLayout(buttonLayout);
+
     // Set container as dock widget
     setWidget(container);
+
     // Connect table cell changes
     connect(tableWidget, &QTableWidget::cellChanged, this, [=](int r, int col) {
         if (col != 1 || !rowToKeyPath.contains(r)) return;
@@ -1431,10 +1506,13 @@ void Inspector::setupUI()
         else delta[parts[0]] = QJsonObject{{parts[1], newValue}};
         emit valueChanged(ConnectedID, Name, delta);
     });
+
     // Connect add button
     connect(addButton, &QPushButton::clicked, this, &Inspector::handleAddParameter);
-}
 
+    // Connect info button
+    connect(infoButton, &QPushButton::clicked, this, &Inspector::handleInfoButton);
+}
 /* Create remove button for parameter */
 QPushButton* Inspector::createRemoveButton(const QString &parameterName)
 {
@@ -2392,4 +2470,290 @@ static QString capitalizeFirstLetter(const QString &str)
 {
     if (str.isEmpty()) return str;
     return str[0].toUpper() + str.mid(1);
+}
+/* Alternative: Simple list format */
+// void Inspector::handleInfoButton()
+// {
+//     if (!hierarchy || ConnectedID.isEmpty() || Name.isEmpty()) {
+//         // QMessageBox::warning(this, "Info", "Please select a component first!");
+//         return;
+//     }
+
+//     QJsonObject componentData = hierarchy->getComponentData(ConnectedID, Name);
+
+//     // Create list widget dialog
+//     QDialog *dialog = new QDialog(this);
+//     dialog->setWindowTitle("Component Info - " + Name);
+//     dialog->setMinimumSize(350, 400);
+
+//     QVBoxLayout *layout = new QVBoxLayout(dialog);
+
+//     // Create list widget
+//     QListWidget *listWidget = new QListWidget(dialog);
+//     listWidget->setStyleSheet(
+//         "QListWidget {"
+//         "    background-color: #f5f5f5;"
+//         "    border: 1px solid #ccc;"
+//         "    border-radius: 5px;"
+//         "}"
+//         "QListWidget::item {"
+//         "    padding: 8px;"
+//         "    border-bottom: 1px solid #eee;"
+//         "}"
+//         "QListWidget::item:selected {"
+//         "    background-color: #d6e4ff;"
+//         "}"
+//         );
+
+//     // Add basic info
+//     QListWidgetItem *idItem = new QListWidgetItem("🔗 Component ID: " + ConnectedID);
+//     idItem->setForeground(QColor("#2c3e50"));
+//     listWidget->addItem(idItem);
+
+//     QListWidgetItem *nameItem = new QListWidgetItem("📝 Component Name: " + Name);
+//     nameItem->setForeground(QColor("#2c3e50"));
+//     listWidget->addItem(nameItem);
+
+//     // Add separator
+//     QListWidgetItem *separator = new QListWidgetItem("────────────────────");
+//     separator->setForeground(QColor("#95a5a6"));
+//     separator->setFlags(Qt::NoItemFlags); // Not selectable
+//     listWidget->addItem(separator);
+
+//     // Add movement parameters
+//     QListWidgetItem *movementHeader = new QListWidgetItem("🚀 MOVEMENT PARAMETERS");
+//     movementHeader->setForeground(QColor("#e74c3c"));
+//     movementHeader->setFont(QFont("Arial", 10, QFont::Bold));
+//     listWidget->addItem(movementHeader);
+
+//     // Check for speed
+//     if (componentData.contains("moveSpeed")) {
+//         double moveSpeed = componentData["moveSpeed"].toDouble();
+//         QListWidgetItem *speedItem = new QListWidgetItem(
+//             QString("   ⚡ Speed: %1 km/h").arg(moveSpeed)
+//             );
+//         speedItem->setForeground(QColor("#27ae60"));
+//         listWidget->addItem(speedItem);
+//     }
+
+//     // Check for turn radius
+//     if (componentData.contains("turnRadius")) {
+//         double turnRadius = componentData["turnRadius"].toDouble();
+//         QListWidgetItem *turnItem = new QListWidgetItem(
+//             QString("   ↻ Turn Radius: %1 meters").arg(turnRadius)
+//             );
+//         turnItem->setForeground(QColor("#2980b9"));
+//         listWidget->addItem(turnItem);
+//     }
+
+//     // Check for start time
+//     if (componentData.contains("start")) {
+//         double start = componentData["start"].toDouble();
+//         QListWidgetItem *startItem = new QListWidgetItem(
+//             QString("   ⏱️ Start Time: %1 seconds").arg(start)
+//             );
+//         startItem->setForeground(QColor("#8e44ad"));
+//         listWidget->addItem(startItem);
+//     }
+
+//     // Add another separator
+//     QListWidgetItem *separator2 = new QListWidgetItem("────────────────────");
+//     separator2->setForeground(QColor("#95a5a6"));
+//     separator2->setFlags(Qt::NoItemFlags);
+//     listWidget->addItem(separator2);
+
+//     // // Add all parameters
+//     // QListWidgetItem *allParamsHeader = new QListWidgetItem("📊 ALL PARAMETERS");
+//     // allParamsHeader->setForeground(QColor("#2c3e50"));
+//     // allParamsHeader->setFont(QFont("Arial", 10, QFont::Bold));
+//     // listWidget->addItem(allParamsHeader);
+
+//     // for (const QString &key : componentData.keys()) {
+//     //     QJsonValue value = componentData[key];
+//     //     QString valueStr;
+
+//     //     if (value.isString()) {
+//     //         valueStr = value.toString();
+//     //     } else if (value.isDouble()) {
+//     //         valueStr = QString::number(value.toDouble());
+//     //     } else if (value.isBool()) {
+//     //         valueStr = value.toBool() ? "true" : "false";
+//     //     } else if (value.isObject()) {
+//     //         valueStr = "{Object}";
+//     //     } else if (value.isArray()) {
+//     //         valueStr = QString("[Array: %1 items]").arg(value.toArray().size());
+//     //     } else {
+//     //         valueStr = "N/A";
+//     //     }
+
+//     //     QListWidgetItem *paramItem = new QListWidgetItem(
+//     //         QString("   • %1: %2").arg(key).arg(valueStr)
+//     //         );
+//     //     paramItem->setForeground(QColor("#7f8c8d"));
+//     //     listWidget->addItem(paramItem);
+//     // }
+
+//     layout->addWidget(listWidget);
+
+//     // Close button
+//     QPushButton *closeButton = new QPushButton("Close", dialog);
+//     closeButton->setStyleSheet(
+//         "QPushButton {"
+//         "    background-color: #7f8c8d;"
+//         "    color: white;"
+//         "    border: none;"
+//         "    padding: 8px 20px;"
+//         "    border-radius: 4px;"
+//         "}"
+//         "QPushButton:hover {"
+//         "    background-color: #95a5a6;"
+//         "}"
+//         );
+
+//     QHBoxLayout *buttonLayout = new QHBoxLayout();
+//     buttonLayout->addStretch();
+//     buttonLayout->addWidget(closeButton);
+//     buttonLayout->addStretch();
+
+//     layout->addLayout(buttonLayout);
+
+//     connect(closeButton, &QPushButton::clicked, dialog, &QDialog::accept);
+
+//     dialog->show();
+//     delete dialog;
+// }
+void Inspector::handleInfoButton()
+{
+    if (!hierarchy || ConnectedID.isEmpty() || Name.isEmpty()) {
+        return;
+    }
+
+    QJsonObject componentData = hierarchy->getComponentData(ConnectedID, Name);
+
+    // Create NON-MODAL dialog
+    QDialog *dialog = new QDialog(this);
+    dialog->setWindowTitle("Component Info - " + Name);
+    dialog->setMinimumSize(350, 400);
+    dialog->setModal(false); // IMPORTANT: Make it non-modal
+    dialog->setAttribute(Qt::WA_DeleteOnClose); // Auto delete when closed
+
+    QVBoxLayout *layout = new QVBoxLayout(dialog);
+
+    // Create list widget
+    QListWidget *listWidget = new QListWidget(dialog);
+    listWidget->setStyleSheet(
+        "QListWidget {"
+        "    background-color: #f5f5f5;"
+        "    border: 1px solid #ccc;"
+        "    border-radius: 5px;"
+        "}"
+        "QListWidget::item {"
+        "    padding: 8px;"
+        "    border-bottom: 1px solid #eee;"
+        "}"
+        "QListWidget::item:selected {"
+        "    background-color: #d6e4ff;"
+        "}"
+        );
+
+    // Add basic info
+    QListWidgetItem *idItem = new QListWidgetItem("🔗 Component ID: " + ConnectedID);
+    idItem->setForeground(QColor("#2c3e50"));
+    listWidget->addItem(idItem);
+
+    QListWidgetItem *nameItem = new QListWidgetItem("📝 Component Name: " + Name);
+    nameItem->setForeground(QColor("#2c3e50"));
+    listWidget->addItem(nameItem);
+
+    // Add separator
+    QListWidgetItem *separator = new QListWidgetItem("────────────────────");
+    separator->setForeground(QColor("#95a5a6"));
+    separator->setFlags(Qt::NoItemFlags); // Not selectable
+    listWidget->addItem(separator);
+
+    // Add movement parameters
+    QListWidgetItem *movementHeader = new QListWidgetItem("🚀 MOVEMENT PARAMETERS");
+    movementHeader->setForeground(QColor("#e74c3c"));
+    movementHeader->setFont(QFont("Arial", 10, QFont::Bold));
+    listWidget->addItem(movementHeader);
+
+    // Check for speed
+    if (componentData.contains("moveSpeed")) {
+        double moveSpeed = componentData["moveSpeed"].toDouble();
+        QListWidgetItem *speedItem = new QListWidgetItem(
+            QString("   ⚡ Speed: %1 km/h").arg(moveSpeed)
+            );
+        speedItem->setForeground(QColor("#27ae60"));
+        listWidget->addItem(speedItem);
+    }
+
+    // Check for turn radius
+    if (componentData.contains("turnRadius")) {
+        double turnRadius = componentData["turnRadius"].toDouble();
+        QListWidgetItem *turnItem = new QListWidgetItem(
+            QString("   ↻ Turn Radius: %1 meters").arg(turnRadius)
+            );
+        turnItem->setForeground(QColor("#2980b9"));
+        listWidget->addItem(turnItem);
+    }
+
+    // Check for start time
+    if (componentData.contains("start")) {
+        double start = componentData["start"].toDouble();
+        QListWidgetItem *startItem = new QListWidgetItem(
+            QString("   ⏱️ Start Time: %1 seconds").arg(start)
+            );
+        startItem->setForeground(QColor("#8e44ad"));
+        listWidget->addItem(startItem);
+    }
+
+    // Add another separator
+    QListWidgetItem *separator2 = new QListWidgetItem("────────────────────");
+    separator2->setForeground(QColor("#95a5a6"));
+    separator2->setFlags(Qt::NoItemFlags);
+    listWidget->addItem(separator2);
+
+    // Optional: Add more parameters if needed
+    if (componentData.contains("currentSpeed")) {
+        double currentSpeed = componentData["currentSpeed"].toDouble();
+        QListWidgetItem *currentSpeedItem = new QListWidgetItem(
+            QString("   🎯 Current Speed: %1 km/h").arg(currentSpeed)
+            );
+        currentSpeedItem->setForeground(QColor("#9b59b6"));
+        listWidget->addItem(currentSpeedItem);
+    }
+
+
+    layout->addWidget(listWidget);
+
+    // Close button
+    QPushButton *closeButton = new QPushButton("Close", dialog);
+    closeButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #3498db;"
+        "    color: white;"
+        "    border: none;"
+        "    padding: 8px 20px;"
+        "    border-radius: 4px;"
+        "    font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #2980b9;"
+        "}"
+        );
+
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->addStretch();
+    buttonLayout->addWidget(closeButton);
+    buttonLayout->addStretch();
+
+    layout->addLayout(buttonLayout);
+
+    // Connect close button to close the dialog
+    connect(closeButton, &QPushButton::clicked, dialog, &QDialog::close);
+
+    // Show the dialog (non-blocking)
+    dialog->show();
+    dialog->raise();
+    dialog->activateWindow();
 }

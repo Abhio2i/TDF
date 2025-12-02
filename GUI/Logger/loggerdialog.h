@@ -125,6 +125,84 @@ signals:
     void bookmarkButtonClicked(const QString &note, qint64 timestampMs);
     void bookmarkClicked(const QString &note, qint64 timestampMs);
 
+// protected:
+//     void paintEvent(QPaintEvent *event) override {
+//         QPainter painter(this);
+//         painter.setRenderHint(QPainter::Antialiasing);
+//         painter.fillRect(rect(), Qt::white);
+
+//         int margin = 10;
+//         int width = this->width() - 2 * margin;
+//         int height = this->height() - 2 * margin;
+//         int timelineY = height / 2;
+
+//         painter.setPen(QPen(Qt::black, 2));
+//         painter.drawLine(margin, margin + timelineY, margin + width, margin + timelineY);
+//         if (recordingDurationMs > 0 ) {
+
+//             // ───────────────────────────────────────────
+//             // Draw 00:00:00 ---------------- 00:10:31
+//             // ───────────────────────────────────────────
+//             QString leftTime;
+
+//             if (replayMode) {
+//                 leftTime = formatTime(currentReplayTimeMs);   // show replay position
+//             } else {
+//                 leftTime = "00:00:00";                        // recording mode
+//             }
+
+//             QString rightTime = formatTime(recordingDurationMs);
+
+//             painter.setPen(Qt::black);
+//             QFont f = painter.font();
+//             f.setBold(true);
+//             painter.setFont(f);
+
+//             painter.drawText(margin, margin + timelineY - 15, leftTime);
+//             painter.drawText(margin + width - 80, margin + timelineY - 15, rightTime);
+//         }
+//         if (recordingDurationMs <= 0) {
+//             painter.setPen(QPen(Qt::gray, 1));
+//             painter.drawText(margin + 10, margin + timelineY - 15, tr("No active recording"));
+//             return;
+//         }
+
+//         qint64 intervalMs = 10000;
+//         int numIntervals = recordingDurationMs / intervalMs + 1;
+//         for (int i = 0; i <= numIntervals && !(recordingPaused && modeisRecording); ++i) {
+//             qDebug()<<i<<"=====Recording=====";
+//             int x = margin + (i * width * intervalMs) / recordingDurationMs;
+//             painter.setPen(QPen(Qt::black, 1));
+//             painter.drawLine(x, margin + timelineY - 5, x, margin + timelineY + 5);
+//             painter.drawText(x - 20, margin + timelineY + 20, QString("%1s").arg(i * 10));
+//         }
+
+//         painter.setPen(QPen(Qt::red, 2));
+//         for (int i = 0; i < bookmarks.size(); ++i) {
+//             const auto &bookmark = bookmarks[i];
+//             qint64 relativeTimeMs = bookmark.second;
+//             if (relativeTimeMs >= 0 && (relativeTimeMs <= recordingDurationMs && !(recordingPaused && modeisRecording))) {
+//                 int x = margin + (relativeTimeMs * width) / recordingDurationMs;
+//                 painter.drawLine(x, margin + timelineY - 10, x, margin + timelineY + 10);
+//                 if (i < bookmarkButtons.size()) {
+//                     QPushButton *button = bookmarkButtons[i];
+//                     button->setVisible(true);
+//                     button->move(x + 5, margin + timelineY - 25);
+//                     button->resize(100, 20);
+//                 }
+//             }
+//         }
+//         // --- Current replay position line ---
+//         if ((currentReplayTimeMs > 0 && recordingDurationMs > 0)&& !modeisRecording) {
+//             int x = margin + (currentReplayTimeMs * width) / recordingDurationMs;
+//             painter.setPen(QPen(Qt::blue, 2));
+//             painter.drawLine(x, margin, x, margin + height);
+//         }
+
+//     }
+
+
+
 protected:
     void paintEvent(QPaintEvent *event) override {
         QPainter painter(this);
@@ -138,12 +216,11 @@ protected:
 
         painter.setPen(QPen(Qt::black, 2));
         painter.drawLine(margin, margin + timelineY, margin + width, margin + timelineY);
-        if (recordingDurationMs > 0 ) {
 
-            // ───────────────────────────────────────────
-            // Draw 00:00:00 ---------------- 00:10:31
-            // ───────────────────────────────────────────
+        if (recordingDurationMs > 0 ) {
+            // Draw time labels at both ends
             QString leftTime;
+            QString rightTime;
 
             if (replayMode) {
                 leftTime = formatTime(currentReplayTimeMs);   // show replay position
@@ -151,7 +228,7 @@ protected:
                 leftTime = "00:00:00";                        // recording mode
             }
 
-            QString rightTime = formatTime(recordingDurationMs);
+            rightTime = formatTime(recordingDurationMs);
 
             painter.setPen(Qt::black);
             QFont f = painter.font();
@@ -161,22 +238,62 @@ protected:
             painter.drawText(margin, margin + timelineY - 15, leftTime);
             painter.drawText(margin + width - 80, margin + timelineY - 15, rightTime);
         }
+
         if (recordingDurationMs <= 0) {
             painter.setPen(QPen(Qt::gray, 1));
             painter.drawText(margin + 10, margin + timelineY - 15, tr("No active recording"));
             return;
         }
 
-        qint64 intervalMs = 10000;
+        // Dynamically determine the best interval based on total duration
+        qint64 intervalMs;
+        QString intervalUnit;
+
+        if (recordingDurationMs <= 60000) {
+            // Under 1 minute: show 10-second intervals
+            intervalMs = 10000; // 10 seconds
+            intervalUnit = "s";
+        } else if (recordingDurationMs <= 600000) {
+            // 1-10 minutes: show 1-minute intervals
+            intervalMs = 60000; // 1 minute
+            intervalUnit = "m";
+        } else if (recordingDurationMs <= 3600000) {
+            // 10-60 minutes: show 5-minute intervals
+            intervalMs = 300000; // 5 minutes
+            intervalUnit = "m";
+        } else {
+            // Over 1 hour: show 10-minute intervals
+            intervalMs = 600000; // 10 minutes
+            intervalUnit = "m";
+        }
+
         int numIntervals = recordingDurationMs / intervalMs + 1;
+
         for (int i = 0; i <= numIntervals && !(recordingPaused && modeisRecording); ++i) {
-            qDebug()<<i<<"=====Recording=====";
             int x = margin + (i * width * intervalMs) / recordingDurationMs;
             painter.setPen(QPen(Qt::black, 1));
             painter.drawLine(x, margin + timelineY - 5, x, margin + timelineY + 5);
-            painter.drawText(x - 20, margin + timelineY + 20, QString("%1s").arg(i * 10));
+
+            // Format the label based on the interval
+            QString labelText;
+            if (intervalMs == 10000) {
+                // For 10-second intervals, show seconds
+                labelText = QString("%1%2").arg(i * 10).arg(intervalUnit);
+            } else if (intervalMs == 60000) {
+                // For 1-minute intervals, show minutes
+                labelText = QString("%1%2").arg(i).arg(intervalUnit);
+            } else if (intervalMs == 300000) {
+                // For 5-minute intervals, show minutes
+                labelText = QString("%1%2").arg(i * 5).arg(intervalUnit);
+            } else if (intervalMs == 600000) {
+                // For 10-minute intervals, show minutes
+                labelText = QString("%1%2").arg(i * 10).arg(intervalUnit);
+            }
+
+            painter.drawText(x - 20, margin + timelineY + 20, labelText);
         }
 
+        // Draw bookmarks
         painter.setPen(QPen(Qt::red, 2));
         for (int i = 0; i < bookmarks.size(); ++i) {
             const auto &bookmark = bookmarks[i];
@@ -192,13 +309,13 @@ protected:
                 }
             }
         }
-        // --- Current replay position line ---
-        if ((currentReplayTimeMs > 0 && recordingDurationMs > 0)&& !modeisRecording) {
+
+        // Draw current replay position line
+        if ((currentReplayTimeMs > 0 && recordingDurationMs > 0) && !modeisRecording) {
             int x = margin + (currentReplayTimeMs * width) / recordingDurationMs;
             painter.setPen(QPen(Qt::blue, 2));
             painter.drawLine(x, margin, x, margin + height);
         }
-
     }
 
 private:

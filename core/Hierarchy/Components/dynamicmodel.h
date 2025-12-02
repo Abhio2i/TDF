@@ -61,8 +61,7 @@ public:
     QVector3D velocity;
     QVector3D angularVelocity;
     float mass = 1.0f; // Add mass for realistic physics calculations
-  bool followPath;
-      float originalMoveSpeed;
+
     Transform* transform;
     Rigidbody* rigidbody;
     Trajectory* trajectory;
@@ -82,4 +81,3 @@ public slots:
 };
 
 #endif // DYNAMICMODEL_H
-

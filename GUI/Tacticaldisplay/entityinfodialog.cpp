@@ -1672,18 +1672,17 @@ EntityInfoDialog::EntityInfoDialog(QWidget *parent)
     setupUI();
 
 
+    // EntityInfoDialog constructor में connection अपडेट करें:
     connect(followTrajectoryCheckBox, &QCheckBox::clicked, this, [=](bool checked) {
         if(!currentEntityId.isEmpty() && entryInfo) {
             if (entryInfo->dynamicModel) {
-                entryInfo->dynamicModel->followPath = checked;
+                entryInfo->dynamicModel->follow = checked; // 'follow' का उपयोग करें
 
                 if (!checked) {
                     // STOP - only set movement variables to zero
                     entryInfo->dynamicModel->speeed = 0;
                     entryInfo->dynamicModel->currentSpeed = 0;
                     // 🆕 DON'T change moveSpeed
-                } else {
-
                 }
             }
 

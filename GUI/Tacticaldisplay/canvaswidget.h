@@ -72,6 +72,8 @@ class CanvasWidget : public QWidget {
 
 public:
     /* Constructor section */
+
+       double getMetersPerPixel() const; // Add this line
     CanvasWidget(QWidget *parent = nullptr);  // Constructor
     GISlib* gislib;  // GIS library instance for geographic operations
 
