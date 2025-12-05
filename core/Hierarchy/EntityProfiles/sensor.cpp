@@ -335,11 +335,11 @@ void Sensor::esmScan(std::string id, Transform* source)
             }
         }
 
-        qDebug() << "[ESM] checking entity:" << QString::fromStdString(platform->Name)
-                 << "| distance:" << metredis
-                 << "| inRange:" << (metredis < esrange)
-                 << "| hasEmitter:" << hasEmitter
-                 << "| emitterType:" << emitterType;
+        // qDebug() << "[ESM] checking entity:" << QString::fromStdString(platform->Name)
+        //          << "| distance:" << metredis
+        //          << "| inRange:" << (metredis < esrange)
+        //          << "| hasEmitter:" << hasEmitter
+        //          << "| emitterType:" << emitterType;
 
         // ✅ Detected new emitter
         if (hasEmitter && metredis < esrange)

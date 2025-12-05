@@ -188,10 +188,16 @@ private:
     QDockWidget *loggerDock;
     // Logger dialog instance
     LoggerDialog *loggerDialog;
-    // Store recording start time
+    // // Store recording start time
+    // QDateTime recordingStartTime;
+    // // Timer for updating recording duration
+    // QTimer *recordingTimer;
+
+
+private:
+    QTimer *recordingTimer = nullptr;
     QDateTime recordingStartTime;
-    // Timer for updating recording duration
-    QTimer *recordingTimer;
+    qint64 pausedTimeMs = 0;
 
 };
 

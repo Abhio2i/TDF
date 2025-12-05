@@ -43,6 +43,7 @@
 #include <cmath>
 #include <tuple> // std::tuple का उपयोग करने के लिए
 #include <GUI/Tacticaldisplay/entityinfodialog.h>
+#include <QElapsedTimer>
 
 using namespace std;
 
@@ -2363,6 +2364,8 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
 }
 
 void CanvasWidget::handlePaint(QPaintEvent *event) {
+    QElapsedTimer timer;
+        timer.start(); // ⏱ Start timer
    if(!selectedEntityId.empty())entityInfoDialog->updateEntityInfo();
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -2582,7 +2585,8 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
     drawSceneInformation(painter);
     drawEntityInformation(painter);
     drawTransformGizmo(painter);
-
+    qint64 elapsed = timer.elapsed(); // ms
+      qDebug() << "Paint time:" << elapsed << "ms";
     frameCount++;
 }
 
@@ -2755,35 +2759,93 @@ void CanvasWidget::drawSelectionOutline(QPainter& painter) {
     painter.drawRect(outlineRect);
 }
 
-void CanvasWidget::drawRadar(QPainter& painter,std::string id , MeshEntry entry){
-    // for (auto& [id, entry] : Meshes) {
-        Entity* entity = entry.entity;
-        if(!entry.detection) return;
-        if (!entity) return;
-        for (Sensor* s : entity->sensorList) {
-            if(s->subType == Sensor::SubType::Generic){
-                QPointF point = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
-                float centerX = point.x();
-                float centerY = point.y();
-                float radius = s->range;
-                float azimuth = s->maxDetectionAngle;
-                float angle = entry.transform->rotation().toEulerAngles().y();
+// void CanvasWidget::drawRadar(QPainter& painter,std::string id , MeshEntry entry){
+//     // for (auto& [id, entry] : Meshes) {
+//         Entity* entity = entry.entity;
+//         if(!entry.detection) return;
+//         if (!entity) return;
+//         for (Sensor* s : entity->sensorList) {
+//             if(s->subType == Sensor::SubType::Generic){
+//                 QPointF point = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
+//                 float centerX = point.x();
+//                 float centerY = point.y();
+//                 float radius = s->range;
+//                 float azimuth = s->maxDetectionAngle;
+//                 float angle = entry.transform->rotation().toEulerAngles().y();
 
-                painter.setPen(QPen(Qt::blue, 1));
-                double halfBeamWidth = azimuth / 2.0;
-                auto [newLat, newLon] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)-halfBeamWidth),-radius);
-                QPointF points = gislib->geoToCanvas(newLat, newLon);
-                painter.drawLine(centerX, centerY, points.x(), points.y());
-                auto [newLat2, newLon2] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)+halfBeamWidth),-radius);
-                QPointF points2 = gislib->geoToCanvas(newLat2, newLon2);
-                painter.drawLine(centerX, centerY, points2.x(), points2.y());
-                painter.drawLine(points.x(), points.y(), points2.x(), points2.y());
-                break;
-            }
+//                 painter.setPen(QPen(Qt::blue, 1));
+//                 double halfBeamWidth = azimuth / 2.0;
+//                 auto [newLat, newLon] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)-halfBeamWidth),-radius);
+//                 QPointF points = gislib->geoToCanvas(newLat, newLon);
+//                 painter.drawLine(centerX, centerY, points.x(), points.y());
+//                 auto [newLat2, newLon2] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)+halfBeamWidth),-radius);
+//                 QPointF points2 = gislib->geoToCanvas(newLat2, newLon2);
+//                 painter.drawLine(centerX, centerY, points2.x(), points2.y());
+//                 painter.drawLine(points.x(), points.y(), points2.x(), points2.y());
+//                 break;
+//             }
+//         }
+//     // }
+// }
+void CanvasWidget::drawRadar(QPainter& painter, std::string id, MeshEntry entry) {
+    Entity* entity = entry.entity;
+    if (!entry.detection) return;
+    if (!entity) return;
+
+    for (Sensor* s : entity->sensorList) {
+        if (s->subType == Sensor::SubType::Generic) {
+            // Get entity position in GIS coordinates
+            float entityX = entry.transform->translation().x();
+            float entityZ = entry.transform->translation().z();
+
+            // Convert entity position to canvas coordinates
+            QPointF centerPoint = gislib->geoToCanvas(entityX, entityZ);
+            float centerX = centerPoint.x();
+            float centerY = centerPoint.y();
+
+            float azimuth = s->maxDetectionAngle;
+            float angle = entry.transform->rotation().toEulerAngles().y();
+
+            // Calculate radius in canvas coordinates
+            auto [latAtRadius, lonAtRadius] = calculateNewLatLong(
+                entityX, entityZ,
+                -((angle + 90) - azimuth / 2.0),
+                s->range
+            );
+
+            QPointF radiusPoint = gislib->geoToCanvas(latAtRadius, lonAtRadius);
+
+            // Calculate pixel radius
+            float pixelRadius = std::sqrt(
+                std::pow(radiusPoint.x() - centerX, 2) +
+                std::pow(radiusPoint.y() - centerY, 2)
+            );
+
+            // Convert angles for QPainter
+            float startAngle = -((angle + 90) - (azimuth / 2.0));
+            float sweepAngle = azimuth;
+            startAngle = -startAngle - 90; // Adjust for Qt's coordinate system
+
+            // Set pen for outline and transparent fill
+            painter.setPen(QPen(Qt::blue, 1));
+            // painter.setBrush(QBrush(QColor(0, 0, 255, 30))); // Semi-transparent blue
+
+            // Draw ONLY the arc/sector - NO extra lines
+            QRectF boundingRect(
+                centerX - pixelRadius,
+                centerY - pixelRadius,
+                pixelRadius * 2,
+                pixelRadius * 2
+            );
+
+            painter.drawPie(boundingRect, startAngle * 16, sweepAngle * 16);
+
+
+
+            break;
         }
-    // }
+    }
 }
-
 // void CanvasWidget::drawRadio(QPainter& painter,std::string id , MeshEntry entry){
 //     // for (auto& [id, entry] : Meshes) {
 //         Entity* entity = entry.entity;

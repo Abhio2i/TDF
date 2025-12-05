@@ -28,6 +28,23 @@ class TimelineWidget : public QWidget
 {
     Q_OBJECT
 public:
+    bool replayMode = false;
+    bool modeisRecording = true;
+    //bool toRunInRecording = true;
+    QTime  recordingDuration;
+    qint64 pausedTimeMs = 0;
+    qint64 currentReplayTimeMs = 0;
+    qint64 recordingDurationMs = 0;
+    //    qint64* recordingDurationMsPtr = recordingDurationMs;
+
+private:
+    QDateTime recordingStartTime;
+
+    QList<QPair<QString, qint64>> bookmarks;
+    QList<QPushButton*> bookmarkButtons;
+    //By Him
+    bool recordingPaused = false;
+public:
     QString formatTime(qint64 ms) const {
         int totalSeconds = ms / 1000;
         int hours = totalSeconds / 3600;
@@ -44,11 +61,8 @@ public:
         update();
     }
 
-    bool replayMode = false;
-    bool modeisRecording = true;
-    //bool toRunInRecording = true;
-    qint64 pausedTimeMs = 0;
-    qint64 currentReplayTimeMs = 0;
+
+
     explicit TimelineWidget(QWidget *parent = nullptr) : QWidget(parent) {
         setMinimumHeight(50);
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -124,84 +138,6 @@ public:
 signals:
     void bookmarkButtonClicked(const QString &note, qint64 timestampMs);
     void bookmarkClicked(const QString &note, qint64 timestampMs);
-
-// protected:
-//     void paintEvent(QPaintEvent *event) override {
-//         QPainter painter(this);
-//         painter.setRenderHint(QPainter::Antialiasing);
-//         painter.fillRect(rect(), Qt::white);
-
-//         int margin = 10;
-//         int width = this->width() - 2 * margin;
-//         int height = this->height() - 2 * margin;
-//         int timelineY = height / 2;
-
-//         painter.setPen(QPen(Qt::black, 2));
-//         painter.drawLine(margin, margin + timelineY, margin + width, margin + timelineY);
-//         if (recordingDurationMs > 0 ) {
-
-//             // ───────────────────────────────────────────
-//             // Draw 00:00:00 ---------------- 00:10:31
-//             // ───────────────────────────────────────────
-//             QString leftTime;
-
-//             if (replayMode) {
-//                 leftTime = formatTime(currentReplayTimeMs);   // show replay position
-//             } else {
-//                 leftTime = "00:00:00";                        // recording mode
-//             }
-
-//             QString rightTime = formatTime(recordingDurationMs);
-
-//             painter.setPen(Qt::black);
-//             QFont f = painter.font();
-//             f.setBold(true);
-//             painter.setFont(f);
-
-//             painter.drawText(margin, margin + timelineY - 15, leftTime);
-//             painter.drawText(margin + width - 80, margin + timelineY - 15, rightTime);
-//         }
-//         if (recordingDurationMs <= 0) {
-//             painter.setPen(QPen(Qt::gray, 1));
-//             painter.drawText(margin + 10, margin + timelineY - 15, tr("No active recording"));
-//             return;
-//         }
-
-//         qint64 intervalMs = 10000;
-//         int numIntervals = recordingDurationMs / intervalMs + 1;
-//         for (int i = 0; i <= numIntervals && !(recordingPaused && modeisRecording); ++i) {
-//             qDebug()<<i<<"=====Recording=====";
-//             int x = margin + (i * width * intervalMs) / recordingDurationMs;
-//             painter.setPen(QPen(Qt::black, 1));
-//             painter.drawLine(x, margin + timelineY - 5, x, margin + timelineY + 5);
-//             painter.drawText(x - 20, margin + timelineY + 20, QString("%1s").arg(i * 10));
-//         }
-
-//         painter.setPen(QPen(Qt::red, 2));
-//         for (int i = 0; i < bookmarks.size(); ++i) {
-//             const auto &bookmark = bookmarks[i];
-//             qint64 relativeTimeMs = bookmark.second;
-//             if (relativeTimeMs >= 0 && (relativeTimeMs <= recordingDurationMs && !(recordingPaused && modeisRecording))) {
-//                 int x = margin + (relativeTimeMs * width) / recordingDurationMs;
-//                 painter.drawLine(x, margin + timelineY - 10, x, margin + timelineY + 10);
-//                 if (i < bookmarkButtons.size()) {
-//                     QPushButton *button = bookmarkButtons[i];
-//                     button->setVisible(true);
-//                     button->move(x + 5, margin + timelineY - 25);
-//                     button->resize(100, 20);
-//                 }
-//             }
-//         }
-//         // --- Current replay position line ---
-//         if ((currentReplayTimeMs > 0 && recordingDurationMs > 0)&& !modeisRecording) {
-//             int x = margin + (currentReplayTimeMs * width) / recordingDurationMs;
-//             painter.setPen(QPen(Qt::blue, 2));
-//             painter.drawLine(x, margin, x, margin + height);
-//         }
-
-//     }
-
-
 
 protected:
     void paintEvent(QPaintEvent *event) override {
@@ -318,13 +254,7 @@ protected:
         }
     }
 
-private:
-    QDateTime recordingStartTime;
-    qint64 recordingDurationMs = 0;
-    QList<QPair<QString, qint64>> bookmarks;
-    QList<QPushButton*> bookmarkButtons;
-    //By Him
-    bool recordingPaused = false;
+
 
 };
 
@@ -332,11 +262,103 @@ class LoggerDialog : public QMainWindow
 {
     Q_OBJECT
 
+    //Common Components Start
+public:
+
+private:
+    Recorder::loggerModes modeOfLogger;
+    QString debugString;
+
+public  slots:
+              //void loggerModeChangeStatus(bool mode);
+private:
+    void loggerModeChange(Recorder::loggerModes mode);
+
+private slots:
+               //    void loggerModeChangeShow(bool mode);
+signals:
+    void loggerModeSend  (Recorder::loggerModes modeOfLogger);
+    //Common Components End
+
+
+    //Recorder Information Start
+private:
+    TimelineWidget* timelineWidget;
+    //QDateTime recordingStartTime = QDateTime(); //Temp Remove
+    qint64     duration;
+    Recorder::LoggerStatusModes     loggerStatus     { Recorder::S_RECORDING_MODE};
+    Recorder::SimulationStatusModes simulationStatus { Recorder::S_SIMULATION_NA };
+
+    QString loggerStatusModeString[10];
+    QString SimulationStatusModeString[4];
+    //Use to Show Recorder Information
+    void recorderInfo();
+    void recorderInfo_Update(Recorder::LoggerStatusModes r_loggerStatus);
+
+    void recorderInfoUpdate(
+        QDateTime       r_recordingStartTime,
+        qint64           r_duration,
+        Recorder::LoggerStatusModes     r_loggerStatus,
+        Recorder::SimulationStatusModes r_simulationStatus);
+    void recorderInfoUpdateRecordingStartTime(QDateTime r_recordingStartTime);
+    void recorderInfoUpdateDuration(qint64 r_duration);
+    void recorderInfoUpdateLoggerStatus(Recorder::LoggerStatusModes r_loggerStatus);
+    void recorderInfoUpdateSimulationStatus(Recorder::SimulationStatusModes r_simulationStatus);
+
+public:
+    void updateRecordingDuration(qint64 durationMs);
+    void updateRecordingDurationLabel(qint64 durationMs);
+
+public slots:
+    //Testing
+    void recorderInfoReceive(
+        Recorder::LoggerStatusModes     r_loggerStatus);
+    // Get the Recorder Information from Core
+    void recorderInfoReceiveOnce(
+        QDateTime       r_recordingStartTime,
+        qint64           r_duration,
+        Recorder::LoggerStatusModes     r_loggerStatus,
+        Recorder::SimulationStatusModes r_simulationStatus);
+    void recorderInfoReceiveUsual(
+        qint64           r_duration,
+        Recorder::LoggerStatusModes     r_loggerStatus,
+        Recorder::SimulationStatusModes r_simulationStatus);
+    void recorderInfoReceiveDuration(qint64 r_duration);
+
+signals:
+    //Recorder : Recording
+    void recordingStart();
+    void recordingPause();
+    void recordingResume();
+    void recordingStop();
+
+
+
+signals:
+    void replayStart();
+    void replayPause();
+    void replayResume();
+    void replayStop();
+    void replayRestart();
+    void replayFileLoaded();
+    void replayFileUnloaded();
+
+    //Recorder :Replay
+    // void recorderInfoReceiveOnce(
+    //     QDateTime       r_recordingStartTime,
+    //     QTime           r_duration,
+    //     const QString   r_loggerStatus,
+    //     const QString   r_simulationStatus);
+
+    // Get the Recorder Information from Core
+
+    //Recorder Information End
+
 public:
     explicit LoggerDialog(QWidget *parent = nullptr, Recorder* recorder = nullptr);
-    void updateRecordingDuration(qint64 durationMs);
+    //void updateRecordingDuration(qint64 durationMs);
     void addBookmarkWithTimestamp(const QString &note, qint64 timestampMs);
-    void updateRecordingDurationLabel(qint64 durationMs);
+    //void updateRecordingDurationLabel(qint64 durationMs);
     //By Him
     TimelineWidget* getTimelineWidget() const { return timelineWidget; }
 
@@ -394,7 +416,7 @@ private:
     QCheckBox *timestampCheckBox;
     QListWidget *recordingsList;
     QToolButton *bookmarkButton;
-    TimelineWidget *timelineWidget;
+    //TimelineWidget *timelineWidget;
 
     // Information labels
     QLabel *recordingDateLabel;
@@ -416,14 +438,23 @@ private:
 
     QString filePath;
     QString recordingsDir;
-    QDateTime recordingStartTime;
     Recorder* recorder;
+    Recording* recording;
+    Replay* replay;
     QList<QPushButton*> bookmarkButtons;
 
     // State variables
     bool isRecordingPaused = false;
     bool isReplayPaused = false;
-
+    QDateTime recordingStartTime;
+public:
+    qint64 pausedTimeMs = 0;
+    qint64 getPauseTimeMs(){
+        return pausedTimeMs;
+    }
+    void setPauseTimeMs(qint64 newPausedTimeMs){
+        pausedTimeMs = newPausedTimeMs;
+    }
 
 
 };
