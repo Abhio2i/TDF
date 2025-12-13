@@ -15,31 +15,13 @@
 #include <QStackedWidget>
 #include "core/Recorder/recorder.h"
 
-
 LoggerDialog::LoggerDialog(QWidget *parent, Recorder* recorderParam)
     : QMainWindow(parent), recorder(recorderParam)
 {
     setWindowTitle(tr("Logger Control"));
     setAttribute(Qt::WA_DeleteOnClose);
     recordingsDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/recordings";
-    setMinimumSize(260, 400);
-
-    //For Assigning value the Recording Information Start
-    loggerStatusModeString[Recorder::S_RECORDING_MODE] = "Recording Mode";
-    loggerStatusModeString[Recorder::S_RECORDING] = "Recording";
-    loggerStatusModeString[Recorder::S_RECORDING_PAUSED] = "Paused";
-    loggerStatusModeString[Recorder::S_RECORDING_STOPPED] = "Stopped";
-    loggerStatusModeString[Recorder::S_REPLAY_MODE] = "Replay Mode";
-    loggerStatusModeString[Recorder::S_REPLAY_LOADED] = "Replay Loaded";
-    loggerStatusModeString[Recorder::S_REPLAY_UNLOADED] = "Replay Unloaded";
-    loggerStatusModeString[Recorder::S_REPLAYING] = "Replaying";
-    loggerStatusModeString[Recorder::S_REPLAY_PAUSED] = "Paused";
-    loggerStatusModeString[Recorder::S_REPLAY_STOPPED] = "Stopped";
-    SimulationStatusModeString[Recorder::S_SIMULATION_START] = "Start";
-    SimulationStatusModeString[Recorder::S_SIMULATION_PAUSED]= "Paused";
-    SimulationStatusModeString[Recorder::S_SIMULATION_STOP]  = "Stop";
-    SimulationStatusModeString[Recorder::S_SIMULATION_NA]    = "Not Available";
-    //For Assigning value for the Recording Information Start
+    setMinimumSize(400, 550);
 
     setupMenuBar();
     setupUi();
@@ -204,7 +186,7 @@ void LoggerDialog::setupMenuBar()
 
         QFileInfo fileInfo(filePath);
         recordingDateLabel->setText(fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss"));
-        //loggerStatusLabel->setText(tr("Loaded"));
+        loggerStatusLabel->setText(tr("Loaded"));
         loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
 
         startReplayButton->setEnabled(true);
@@ -388,9 +370,6 @@ QWidget* LoggerDialog::createReplayControls()
 
 void LoggerDialog::setupConnections()
 {
-    // connect(this, &LoggerDialog::loggerModeSend,
-    //         this, &LoggerDialog::loggerModeChangeShow);
-
     connect(recordButton, &QToolButton::clicked, this, [this]() {
         recordingStartTime = QDateTime::currentDateTime();
         timelineWidget->setRecordingStartTime(recordingStartTime);
@@ -398,12 +377,10 @@ void LoggerDialog::setupConnections()
         timelineWidget->clearBookmarks();
 
         recordingDateLabel->setText(recordingStartTime.toString("yyyy-MM-dd hh:mm:ss"));
-        //loggerStatusLabel->setText(tr("Recording"));
+        loggerStatusLabel->setText(tr("Recording"));
         loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
 
-        emit recordingStart();
-        //emit startRecording();//To Remove
-
+        emit startRecording();
         recordButton->setToolTip(tr("Recording..."));
         recordButton->setObjectName("recordingActive");
         recordButton->setStyleSheet("");
@@ -417,10 +394,7 @@ void LoggerDialog::setupConnections()
     });
 
     connect(pauseRecordingButton, &QToolButton::clicked, this, [this]() {
-
-
-        //emit pauseRecording();//To Remove
-
+        emit pauseRecording();
         //timelineWidget->toggleReplayPause();
         if (!isRecordingPaused) {
             timelineWidget->pauseRecording();
@@ -428,28 +402,23 @@ void LoggerDialog::setupConnections()
             timelineWidget->resumeRecording();
         }
         if (!isRecordingPaused) {
-            //loggerStatusLabel->setText(tr("Recording Paused"));
+            loggerStatusLabel->setText(tr("Recording Paused"));
             loggerStatusLabel->setStyleSheet("font-weight: bold; color: #f39c12;");
             pauseRecordingButton->setIcon(QIcon(":/icons/images/resume.png"));
             pauseRecordingButton->setToolTip(tr("Resume Recording"));
             isRecordingPaused = true;
-            emit recordingPause();
-
         } else {
-            //loggerStatusLabel->setText(tr("Recording"));
+            loggerStatusLabel->setText(tr("Recording"));
             loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
             pauseRecordingButton->setIcon(QIcon(":/icons/images/pause.png"));
             pauseRecordingButton->setToolTip(tr("Pause Recording"));
             isRecordingPaused = false;
-            emit recordingResume();
         }
     });
 
     connect(stopRecordingButton, &QToolButton::clicked, this, [this]() {
         if (recordingStartTime.isValid()) {
-
-            emit recordingStop();
-            //emit stopRecording();//To Remove
+            emit stopRecording();
 
             QString saveFilePath = QFileDialog::getSaveFileName(
                 this,
@@ -473,7 +442,7 @@ void LoggerDialog::setupConnections()
             recordButton->setEnabled(true);
             pauseRecordingButton->setEnabled(false);
             stopRecordingButton->setEnabled(false);
-            //loggerStatusLabel->setText(tr("Stopped"));
+            loggerStatusLabel->setText(tr("Stopped"));
             loggerStatusLabel->setStyleSheet("font-weight: normal; color: #666;");
             timelineWidget->setRecordingDuration(0);
             recordingStartTime = QDateTime();
@@ -488,13 +457,11 @@ void LoggerDialog::setupConnections()
         if (filePath.isEmpty()) {
             qDebug() << "No recording loaded to replay!";
             QMessageBox::warning(this, tr("Warning"), tr("No recording loaded to replay!"));
-            emit replayFileUnloaded();
             return;
         }
         pauseResumeReplayButton->setEnabled(true);
         pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
         pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
-        emit replayFileLoaded();
         emit pressPlayAgain();
         startReplayButton->setEnabled(true);
         previousFrameButton->setEnabled(true);
@@ -508,9 +475,9 @@ void LoggerDialog::setupConnections()
             QMessageBox::warning(this, tr("Warning"), tr("No recording loaded to replay!"));
             return;
         }
-        emit replayStart();
+
         emit startReplay();
-        //loggerStatusLabel->setText(tr("Replaying"));
+        loggerStatusLabel->setText(tr("Replaying"));
         loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
 
         startReplayButton->setEnabled(false);
@@ -527,20 +494,18 @@ void LoggerDialog::setupConnections()
 
         if (!isReplayPaused) {
             // UI Updates for Pause
-            //loggerStatusLabel->setText(tr("Replay Paused"));
+            loggerStatusLabel->setText(tr("Replay Paused"));
             loggerStatusLabel->setStyleSheet("font-weight: bold; color: #f39c12;");
             pauseResumeReplayButton->setIcon(QIcon(":/icons/images/resume.png"));
             pauseResumeReplayButton->setToolTip(tr("Resume Replay"));
             isReplayPaused = true;
-            emit replayPause();
         } else {
             // UI Updates for Resume
-            //loggerStatusLabel->setText(tr("Replaying"));
+            loggerStatusLabel->setText(tr("Replaying"));
             loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
             pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
             pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
             isReplayPaused = false;
-            emit replayResume();
         }
     });
 
@@ -569,157 +534,6 @@ void LoggerDialog::setupConnections()
         qDebug() << "Bookmark clicked: Note =" << note << ", Timestamp =" << timestampMs << "ms";
     });
 }
-void LoggerDialog::loggerModeChange(Recorder::loggerModes mode)
-{
-    modeOfLogger = mode;
-    switch(modeOfLogger){
-    case Recorder::RECORDING:
-        debugString = "RECORDING";
-        break;
-    case Recorder::REPLAY:
-        debugString = "REPLAY";
-        break;
-    default:
-        break;
-    }
-    qDebug()<<"Logger : Logger mode is changed"<<debugString;
-    recorderInfo();
-    emit loggerModeSend(modeOfLogger);
-}
-
-void LoggerDialog::recorderInfo()
-{
-    // timelineWidget = getTimelineWidget();
-    // timelineWidget->recordingDuration = duration;
-
-    int seconds = duration / 1000;
-    int minutes = seconds / 60;
-    int hours = minutes / 60;
-    QString durationText = QString("%1:%2:%3")
-                               .arg(hours, 2, 10, QLatin1Char('0'))
-                               .arg(minutes % 60, 2, 10, QLatin1Char('0'))
-                               .arg(seconds % 60, 2, 10, QLatin1Char('0'));
-    qDebug()<<"Logger : Recorder Information ->"
-             <<"\n\t"<<"Recording Date   :"<<recordingStartTime
-             <<"\n\t"<<"Duration         :"<<durationText
-             <<"\n\t"<<"Logger Status    :"<<loggerStatusModeString[loggerStatus]
-             <<"\n\t"<<"Simulation Status:"<<SimulationStatusModeString[simulationStatus];
-
-}
-
-//For All type of updates
-
-//For Receiving the Recording Information Start
-
-void LoggerDialog::recorderInfoReceive(Recorder::LoggerStatusModes r_loggerStatus)
-{
-    loggerStatus = r_loggerStatus;
-    recorderInfo_Update(loggerStatus);
-}
-
-void LoggerDialog::recorderInfoReceiveOnce(
-    QDateTime r_recordingStartTime,
-    qint64 r_duration,
-    Recorder::LoggerStatusModes     r_loggerStatus,
-    Recorder::SimulationStatusModes r_simulationStatus)
-{
-    recordingStartTime = r_recordingStartTime;
-    duration           = r_duration          ;
-    loggerStatus       = r_loggerStatus      ;
-    simulationStatus   = r_simulationStatus  ;
-    recorderInfoUpdate(r_recordingStartTime,
-                       r_duration,
-                       r_loggerStatus,
-                       r_simulationStatus);
-    recorderInfo();
-}
-void LoggerDialog::recorderInfoReceiveUsual(
-    qint64    r_duration,
-    Recorder::LoggerStatusModes       r_loggerStatus,
-    Recorder::SimulationStatusModes   r_simulationStatus)
-{
-    duration         = r_duration;
-    loggerStatus     = r_loggerStatus;
-    simulationStatus = r_simulationStatus;
-    recorderInfoUpdateDuration(r_duration);
-    recorderInfoUpdateLoggerStatus(r_loggerStatus);
-    recorderInfoUpdateSimulationStatus(r_simulationStatus);
-    recorderInfo();
-}
-void LoggerDialog::recorderInfoReceiveDuration(qint64 r_duration)
-{
-    duration = r_duration;
-    recorderInfoUpdateDuration(r_duration);
-    recorderInfo();
-}
-
-//For Receiving the Recording Information End
-
-
-//For Update the Recording Information Start
-void LoggerDialog::recorderInfoUpdate(
-    QDateTime r_recordingStartTime,
-    qint64 r_duration,
-    Recorder::LoggerStatusModes r_loggerStatus,
-    Recorder::SimulationStatusModes r_simulationStatus)
-{
-    recorderInfoUpdateRecordingStartTime(r_recordingStartTime);
-    recorderInfoUpdateDuration(r_duration);
-    recorderInfoUpdateLoggerStatus(r_loggerStatus);
-    recorderInfoUpdateSimulationStatus(r_simulationStatus);
-}
-
-void LoggerDialog::recorderInfo_Update(Recorder::LoggerStatusModes r_loggerStatus)
-{
-    loggerStatusLabel->    setText(loggerStatusModeString[r_loggerStatus]);
-    qDebug()<<"Logger : Recorder Info Update Recording Logger Status";
-}
-
-void LoggerDialog::recorderInfoUpdateRecordingStartTime(
-    QDateTime r_recordingStartTime)
-{
-    recordingDateLabel->setText(r_recordingStartTime.toString("yyyy-MM-dd hh:mm:ss"));
-    qDebug()<<"Logger : Recorder InfoUpdate Recording Start Time is Called"
-             <<"\n\t"<<r_recordingStartTime.toString("hh:mm:ss");
-}
-
-void LoggerDialog::recorderInfoUpdateDuration(
-    qint64 r_duration)
-{
-    updateRecordingDuration(r_duration);
-    qDebug()<<"Logger : Recorder InfoUpdate Recording Start Time is Called"
-             <<"\n\t"<<r_duration;
-}
-void LoggerDialog::updateRecordingDuration(qint64 durationMs)
-{
-    if (timelineWidget) {
-        timelineWidget->setRecordingDuration(durationMs);
-
-        int seconds = durationMs / 1000;
-        int minutes = seconds / 60;
-        int hours = minutes / 60;
-        QString durationText = QString("%1:%2:%3")
-                                   .arg(hours, 2, 10, QLatin1Char('0'))
-                                   .arg(minutes % 60, 2, 10, QLatin1Char('0'))
-                                   .arg(seconds % 60, 2, 10, QLatin1Char('0'));
-        durationLabel->setText(durationText);
-    }
-}
-
-void LoggerDialog::recorderInfoUpdateLoggerStatus(
-    Recorder::LoggerStatusModes r_loggerStatus)
-{
-    loggerStatusLabel->    setText(loggerStatusModeString[r_loggerStatus]);
-    qDebug()<<"Logger : Recorder Info Update Recording Logger Status";
-}
-
-void LoggerDialog::recorderInfoUpdateSimulationStatus(
-    Recorder::SimulationStatusModes r_simulationStatus)
-{
-    simulationStatusLabel->setText(SimulationStatusModeString[r_simulationStatus]);
-    qDebug()<<"Logger : Recorder Info Update Recording Simulation Status";
-}
-//For Update the Recording Information End
 
 void LoggerDialog::showBookmarkDialog()
 {
@@ -740,10 +554,10 @@ void LoggerDialog::showBookmarkDialog()
             QString bookmarkNote = bookmarkEdit->text();
             emit bookmarkAdded(bookmarkNote);
 
-            // if (recorder && recordingStartTime.isValid()) {
-            //     qint64 timestampMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
-            //     recorder->recordBookmark(bookmarkNote, timestampMs);
-            // }
+            if (recorder && recordingStartTime.isValid()) {
+                qint64 timestampMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
+                recorder->recordBookmark(bookmarkNote, timestampMs);
+            }
 
             if (timestampCheckBox->isChecked() && recordingStartTime.isValid()) {
                 qint64 timestampMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
@@ -761,50 +575,51 @@ void LoggerDialog::showBookmarkDialog()
 
 void LoggerDialog::switchToRecordingMode()
 {
-    //Defining the mode of Logger
-    loggerModeChange(Recorder::RECORDING);
-
-
     timelineWidget->replayMode = false;
     timelineWidget->modeisRecording = true;
     //timelineWidget->toRunInRecording = true;
-    //loggerStatusLabel->setText(tr("Recording Mode"));
+    loggerStatusLabel->setText(tr("Recording Mode"));
     loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
     timelineWidget->clearBookmarks();
     timelineWidget->setRecordingDuration(0);
     updateRecordingDurationLabel(0);
-
     emit requestReplayReset();
-    //qDebug() << "Switched to Recording Mode";
+    qDebug() << "Switched to Recording Mode";
 
 }
 
 void LoggerDialog::switchToReplayMode()
 {
-    //Defining the mode of Logger
-    loggerModeChange(Recorder::REPLAY);
-
     timelineWidget->replayMode = true;
     timelineWidget->modeisRecording = false;
-    //loggerStatusLabel->setText(tr("Replay Mode"));
+    loggerStatusLabel->setText(tr("Replay Mode"));
     loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
     timelineWidget->clearBookmarks();
     timelineWidget->setRecordingDuration(0);
     updateRecordingDurationLabel(0);
     emit requestReplayReset();
-    //qDebug() << "Switched to Replay Mode";
+    qDebug() << "Switched to Replay Mode";
 }
-
-// bool LoggerDialog::getLoggerMode()
-// {
-//     return modeOfLogger;
-// }
 
 void LoggerDialog::updateRecordingsList()
 {
 }
 
+void LoggerDialog::updateRecordingDuration(qint64 durationMs)
+{
+    if (timelineWidget) {
+        timelineWidget->setRecordingDuration(durationMs);
 
+        int seconds = durationMs / 1000;
+        int minutes = seconds / 60;
+        int hours = minutes / 60;
+        QString durationText = QString("%1:%2:%3")
+                                   .arg(hours, 2, 10, QLatin1Char('0'))
+                                   .arg(minutes % 60, 2, 10, QLatin1Char('0'))
+                                   .arg(seconds % 60, 2, 10, QLatin1Char('0'));
+        durationLabel->setText(durationText);
+    }
+}
 void LoggerDialog::updateRecordingDurationLabel(qint64 durationMs)
 {
     if (timelineWidget) {
@@ -819,11 +634,6 @@ void LoggerDialog::updateRecordingDurationLabel(qint64 durationMs)
         durationLabel->setText(durationText);
     }
 }
-
-
-
-
-
 
 void LoggerDialog::addBookmarkWithTimestamp(const QString &note, qint64 timestampMs)
 {

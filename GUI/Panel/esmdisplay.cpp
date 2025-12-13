@@ -4,6 +4,7 @@
 /* ========================================================================= */
 
 #include "esmdisplay.h"                           // For EW display class
+#include "qelapsedtimer.h"
 #include <QPainter>                                // For painting operations
 #include <QPaintEvent>                             // For paint events
 #include <QFont>                                   // For font settings
@@ -47,41 +48,10 @@ int ESMDisplay::heightForWidth(int width) const
     return qRound(width * ASPECT_RATIO);
 }
 
-// %%% Entity Management %%%
-/* Select and configure entity for display */
-// void ESMDisplay::selectEntity(Entity* entit)
-// {
-//     // Cast entity to Platform
-//     Platform* platform = dynamic_cast<Platform*>(entit);
-//     if (!platform) {
-//         Console::error("Entity is not a Platform");
-//         return;
-//     }
-//     qDebug() << "csdvfdsagdsb";
-//     // Set entity ID and pointer
-//     id = QString::fromStdString(platform->ID);
-//     entity = platform;
-//     // Select first valid sensor
-//     for (Sensor* s : entity->sensorList) {
-//         if (s) {
-//             if(s->subType == Sensor::SubType::ESM){
-//                 sensor = s;
-//                 // Set window title with platform name
-//                 setWindowTitle("Radar Display (" + QString::fromStdString(entity->Name) + ")");
-//                 qDebug() << "csdvfyjkygj";
-//                 break;
-//             }
-//         }
-//     }
-// }
 /* Select and configure entity for display */
 void ESMDisplay::selectEntity(Entity* entit)
 {
-    // 🔥 पहले पुराने connections को clean up करें
-    if (sensor) {
-        disconnect(sensor, &Sensor::availableConnectionsUpdated, this, &ESMDisplay::updateRadar);
-        sensor = nullptr;
-    }
+
 
     entity = nullptr;
     id = "";
@@ -90,7 +60,7 @@ void ESMDisplay::selectEntity(Entity* entit)
     if (!platform) {
         Console::error("Entity is not a Platform");
         setWindowTitle("ESM Display (No Platform)");
-        update();
+        //update();
         return;
     }
 
@@ -98,50 +68,50 @@ void ESMDisplay::selectEntity(Entity* entit)
     id = QString::fromStdString(platform->ID);
     entity = platform;
 
-    // 🔥 सिर्फ ESM type के sensors ढूंढें
+
     sensor = nullptr;
     for (Sensor* s : entity->sensorList) {
         if (s && s->subType == Sensor::SubType::ESM) {
             sensor = s;
-            qDebug() << "🎯 ESM Sensor selected for platform:" << QString::fromStdString(entity->Name)
-                     << "Sensor ID:" << QString::fromStdString(sensor->ID)
-                     << "Range:" << sensor->esrange << "km";
+            // qDebug() << "🎯 ESM Sensor selected for platform:" << QString::fromStdString(entity->Name)
+            //          << "Sensor ID:" << QString::fromStdString(sensor->ID)
+            //          << "Range:" << sensor->esrange << "km";
 
-            // Connect Sensor signals to this display
-            connect(sensor, &Sensor::availableConnectionsUpdated, this, &ESMDisplay::updateRadar);
+            // // Connect Sensor signals to this display
+            // connect(sensor, &Sensor::availableConnectionsUpdated, this, &ESMDisplay::updateRadar);
 
-            // 🔥 IMMEDIATE UPDATE TRIGGER
-            if (entity->transform) {
-                sensor->esmScan(entity->ID, entity->transform);
-            }
+            // // 🔥 IMMEDIATE UPDATE TRIGGER
+            // if (entity->transform) {
+            //     sensor->esmScan(entity->ID, entity->transform);
+            // }
 
             setWindowTitle("ESM Display (" + QString::fromStdString(entity->Name) + ")");
             break;
         }
     }
 
-    if (!sensor) {
-        qDebug() << "❌ No ESM Sensor found for platform:" << QString::fromStdString(entity->Name);
+    // if (!sensor) {
+    //     qDebug() << "❌ No ESM Sensor found for platform:" << QString::fromStdString(entity->Name);
 
-        // 🔥 Alternative: Check if any sensor can be used as ESM
-        for (Sensor* s : entity->sensorList) {
-            if (s) {
-                sensor = s;
-                qDebug() << "⚠️ Using generic sensor as ESM for:" << QString::fromStdString(entity->Name);
-                connect(sensor, &Sensor::availableConnectionsUpdated, this, &ESMDisplay::updateRadar);
-                setWindowTitle("ESM Display (" + QString::fromStdString(entity->Name) + " - Generic)");
-                break;
-            }
-        }
+    //     // 🔥 Alternative: Check if any sensor can be used as ESM
+    //     for (Sensor* s : entity->sensorList) {
+    //         if (s) {
+    //             sensor = s;
+    //             qDebug() << "⚠️ Using generic sensor as ESM for:" << QString::fromStdString(entity->Name);
+    //             connect(sensor, &Sensor::availableConnectionsUpdated, this, &ESMDisplay::updateRadar);
+    //             setWindowTitle("ESM Display (" + QString::fromStdString(entity->Name) + " - Generic)");
+    //             break;
+    //         }
+    //     }
 
-        if (!sensor) {
-            setWindowTitle("ESM Display (No ESM Sensor)");
-        }
-    }
+    //     if (!sensor) {
+    //         setWindowTitle("ESM Display (No ESM Sensor)");
+    //     }
+    // }
 
     // 🔥 FORCE UI UPDATE
-    updateRadar();
-    update();
+    // updateRadar();
+    // update();
 }
 /* Remove entity if ID matches */
 void ESMDisplay::RemoveEntity(QString ID)
@@ -155,17 +125,6 @@ void ESMDisplay::RemoveEntity(QString ID)
     }
 }
 
-// %%% Update Methods %%%
-/* Update radar display data */
-// void ESMDisplay::updateRadar()
-// {
-//     if (entity && sensor) {
-//         // Set radar range and trigger repaint
-//         setRange(sensor->esrange);
-//         targets = sensor->esmtargets;
-//         update();
-//     }
-// }
 /* Update radar display data */
 void ESMDisplay::updateRadar()
 {
@@ -176,142 +135,43 @@ void ESMDisplay::updateRadar()
         // 🔥 Ensure targets are properly updated
         targets = sensor->esmtargets;
 
-        // 🔥 DEBUG: Show current targets information
-        qDebug() << "🔄 ESMDisplay update - Entity:" << QString::fromStdString(entity->Name)
-                 << "Targets count:" << targets.size()
-                 << "Range:" << range << "km";
+        // // 🔥 DEBUG: Show current targets information
+        // qDebug() << "🔄 ESMDisplay update - Entity:" << QString::fromStdString(entity->Name)
+        //          << "Targets count:" << targets.size()
+        //          << "Range:" << range << "km";
 
-        for (int i = 0; i < targets.size(); ++i) {
-            const Target &target = targets.at(i);
-            Platform* targetPlatform = dynamic_cast<Platform*>(target.entity);
-            if (targetPlatform) {
-                qDebug() << "  Target" << i << ":" << QString::fromStdString(targetPlatform->Name)
-                         << "Dist:" << target.radius << "km, Angle:" << target.angle << "°";
-            }
-        }
+        // for (int i = 0; i < targets.size(); ++i) {
+        //     const Target &target = targets.at(i);
+        //     Platform* targetPlatform = dynamic_cast<Platform*>(target.entity);
+        //     if (targetPlatform) {
+        //         qDebug() << "  Target" << i << ":" << QString::fromStdString(targetPlatform->Name)
+        //                  << "Dist:" << target.radius << "km, Angle:" << target.angle << "°";
+        //     }
+        // }
 
         update();
     } else {
-        if (!entity) {
-            //qDebug() << "❌ ESMDisplay - No entity selected";
-        } else if (!sensor) {
-            //qDebug() << "❌ ESMDisplay - No ESM sensor component found";
-        }
-        // Clear display when no entity/sensor
-        update();
+        // if (!entity) {
+        //     //qDebug() << "❌ ESMDisplay - No entity selected";
+        // } else if (!sensor) {
+        //     //qDebug() << "❌ ESMDisplay - No ESM sensor component found";
+        // }
+        // // Clear display when no entity/sensor
+        // update();
     }
 }
-// %%% Paint Event %%%
-/* Handle painting of radar display */
-// void ESMDisplay::paintEvent(QPaintEvent * /*event*/)
-// {
-//     if (width() <= 0 || height() <= 0) return;
-//     // Initialize painter
-//     QPainter p(this);
-//     p.setRenderHint(QPainter::Antialiasing);
-//     // Draw display components
-//     drawBackground(p);
-//     int w = width();
-//     int h = height();
-//     int outerDiameter = qMin(w - padding*2, h - padding*2);
-//     int outerRadius = outerDiameter / 2;
-//     QPoint center(w / 2, h / 2);
-//     drawRadarRing(p, center, outerRadius);
-//     drawConcentricCircles(p, center, outerRadius);
-//     drawTicksAndLabels(p, center, outerRadius);
-//     drawCenterMark(p, center);
-//     drawTopMarker(p, center, outerRadius);
-//     drawTargetAndPath(p);
-//     // Draw targets if present
-//     if (!targets.isEmpty()) {
-//         qDebug() << entity;
-//         p.setPen(QPen(radarGreen, 1, Qt::DotLine));
-//         for (const Target &t : targets) {
-//             double per = qBound(0.0, t.radius / 100.0, 1.0);
-//             double r = per * outerRadius;
-//             double angleDeg = t.angle;
-//             double theta = qDegreesToRadians(angleDeg - 90.0);
-//             int tx = center.x() + int(r * cos(theta));
-//             int ty = center.y() + int(r * sin(theta));
-//             p.setBrush(Qt::red);
-//             p.setPen(Qt::NoPen);
-//             p.drawEllipse(QPointF(tx, ty), 4, 4);
-//             p.setPen(QPen(radarGreen, 1, Qt::DotLine));
-//             p.drawLine(center, QPoint(tx, ty));
-//         }
-//     }
-// }
-// void ESMDisplay::paintEvent(QPaintEvent * /*event*/)
-// {
-//     if (width() <= 0 || height() <= 0) return;
-
-//     // Initialize painter
-//     QPainter p(this);
-//     p.setRenderHint(QPainter::Antialiasing);
-
-//     // Draw display components
-//     drawBackground(p);
-//     int w = width();
-//     int h = height();
-//     int outerDiameter = qMin(w - padding*2, h - padding*2);
-//     int outerRadius = outerDiameter / 2;
-//     QPoint center(w / 2, h / 2);
-
-//     drawRadarRing(p, center, outerRadius);
-//     drawConcentricCircles(p, center, outerRadius);
-//     drawTicksAndLabels(p, center, outerRadius);
-//     drawCenterMark(p, center);
-//     drawTopMarker(p, center, outerRadius);
-
-//     // Draw targets with dotted lines and labels
-//     if (!targets.isEmpty()) {
-//         // qDebug() << "Targets count:" << targets.size();
-
-//         for (const Target &t : targets) {
-//             // FIX: Explicitly cast to double
-//             double per = qBound(0.0, static_cast<double>(t.radius) / static_cast<double>(range), 1.0);
-//             double r = per * outerRadius;
-//             double angleDeg = t.angle;
-//             double theta = qDegreesToRadians(angleDeg - 90.0);
-//             int tx = center.x() + int(r * cos(theta));
-//             int ty = center.y() + int(r * sin(theta));
-
-//             // qDebug() << "Target - Angle:" << angleDeg << "Radius:" << t.radius << "Position:" << tx << "," << ty;
-
-//             // Draw dotted line from center to target
-//             p.setPen(QPen(radarGreen, 1, Qt::DotLine));
-//             p.drawLine(center, QPoint(tx, ty));
-
-//             // Draw red dot at target position
-//             p.setBrush(Qt::red);
-//             p.setPen(Qt::NoPen);
-//             p.drawEllipse(QPointF(tx, ty), 4, 4);
-
-//             // Draw labels AT THE RED DOT position
-//             p.setPen(QPen(Qt::yellow, 1)); // Yellow color for better visibility
-//             QFont font = p.font();
-//             font.setPointSize(8);
-//             p.setFont(font);
-
-//             // Position labels near the red dot
-//             QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
-//             QString distText = QString("D:%1").arg(t.radius, 0, 'f', 1);
-
-//             // Draw text at red dot position with offset
-//             p.drawText(tx + 6, ty - 6, angleText);    // Top-right of red dot
-//             p.drawText(tx + 6, ty + 12, distText);    // Bottom-right of red dot
-//         }
-//     }
-// }
 
 
 void ESMDisplay::paintEvent(QPaintEvent * /*event*/)
 {
+
+    QElapsedTimer timer;
+    timer.start();  // Start measuring
     if (width() <= 0 || height() <= 0) return;
 
     // Initialize painter
     QPainter p(this);
-    p.setRenderHint(QPainter::Antialiasing);
+    //p.setRenderHint(QPainter::Antialiasing);
 
     // Draw display components
     drawBackground(p);
@@ -327,11 +187,6 @@ void ESMDisplay::paintEvent(QPaintEvent * /*event*/)
     drawCenterMark(p, center);
     drawTopMarker(p, center, outerRadius);
 
-    // // 🔥 SIRF SELECTED ENTITY KA NAAM SHOW KAREN
-    // p.setPen(Qt::yellow);
-    // if (entity) {
-    //     p.drawText(10, 20, QString("Entity: %1").arg(QString::fromStdString(entity->Name)));
-    // }
 
     // Draw targets with dotted lines and labels
     if (!targets.isEmpty()) {
@@ -374,6 +229,8 @@ void ESMDisplay::paintEvent(QPaintEvent * /*event*/)
         p.setPen(Qt::white);
         p.drawText(center, "No ESM Targets Detected");
     }
+    qint64 elapsedMs = timer.elapsed();
+    Profiler::currentFrame->esmdisplay = elapsedMs;
 }
 // %%% Drawing Methods %%%
 /* Draw targets and their paths */

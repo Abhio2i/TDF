@@ -80,24 +80,16 @@ MenuBar::MenuBar(QWidget *parent)
     editMenu->addAction(renameAction);
     editMenu->addAction(deleteAction);
     editMenu->addSeparator();
-    // editMenu->addAction(playAction);
-    // editMenu->addAction(pauseAction);
-
-    // // Create view menu
-    // viewMenu = addMenu("View");
-    // add3DViewAction = new QAction("Add 3D View", this);
-    // add3DViewAction->setShortcut(QKeySequence("Ctrl+3"));
-    // remove3DViewAction = new QAction("Remove 3D View", this);
-    // remove3DViewAction->setShortcut(QKeySequence("Ctrl+Shift+3"));
-    // viewMenu->addAction(add3DViewAction);
-    // viewMenu->addAction(remove3DViewAction);
-
     // Create feedback menu
     feedbackMenu = addMenu("Feedback");
     feedbackAction = new QAction("Open Feedback Page", this);
     feedbackMenu->addAction(feedbackAction);
-
+    profileAction = addAction("Profile");
+     applicationAction = addAction("Settings");
     // Connect actions to signals
+    connect(profileAction, &QAction::triggered, this, &MenuBar::profileTriggered);
+        connect(applicationAction, &QAction::triggered, this, &MenuBar::applicationTriggered);
+
     connect(feedbackAction, &QAction::triggered, this, &MenuBar::feedbackTriggered);
     connect(newFileAction, &QAction::triggered, this, &MenuBar::newFileTriggered);
     connect(recentProjectAction, &QAction::triggered, this, &MenuBar::recentProjectTriggered);
@@ -117,10 +109,7 @@ MenuBar::MenuBar(QWidget *parent)
     connect(duplicateAction, &QAction::triggered, this, &MenuBar::duplicateTriggered);
     connect(renameAction, &QAction::triggered, this, &MenuBar::renameTriggered);
     connect(deleteAction, &QAction::triggered, this, &MenuBar::deleteTriggered);
-    // connect(playAction, &QAction::triggered, this, &MenuBar::playTriggered);
-    // connect(pauseAction, &QAction::triggered, this, &MenuBar::pauseTriggered);
-    // connect(add3DViewAction, &QAction::triggered, this, &MenuBar::add3DViewTriggered);
-    // connect(remove3DViewAction, &QAction::triggered, this, &MenuBar::remove3DViewTriggered);
+
 }
 
 // %%% Getter Methods %%%

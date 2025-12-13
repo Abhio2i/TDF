@@ -34,6 +34,7 @@
 #include "GUI/Logger/loggerdialog.h"              // For logger dialog
 #include <QTabWidget>                             // For tabbed interface
 #include <QStatusBar>                             // For status bar display
+#include <GUI/Menubars/profileinfodialog.h>
 
 // %%% Class Definition %%%
 /* Main window class for the runtime editor */
@@ -62,7 +63,9 @@ public:
     bool hasUnsavedChanges = false;
     // Clear unsaved changes flag
     void clearUnsavedChanges();
-
+public slots:  // या public section में
+    void showProfileInfo();
+     void showApplicationDialog();
 private slots:
     // Handle item selection
     void onItemSelected(QVariantMap data);
@@ -81,7 +84,7 @@ private slots:
 
     void onRecentProjectTriggered();
     void loadRecentProject(const QString& filePath);
-    void clearRecentProjects();
+    // void clearRecentProjects();
     void setupEnhancedDockWidgets();
     void onDockVisibilityChanged(bool visible);
     void resetLayout();
@@ -89,9 +92,11 @@ private slots:
 signals:
     // Signal unsaved changes state
     void unsavedChangesChanged(bool hasChanges);
+    void Activated();
 
 private:
     // %%% UI Setup Methods %%%
+     ScriptEngine* scriptengine = nullptr;
     // Configure menu bar
     void setupMenuBar();
     // Configure toolbars
@@ -188,16 +193,10 @@ private:
     QDockWidget *loggerDock;
     // Logger dialog instance
     LoggerDialog *loggerDialog;
-    // // Store recording start time
-    // QDateTime recordingStartTime;
-    // // Timer for updating recording duration
-    // QTimer *recordingTimer;
-
-
-private:
-    QTimer *recordingTimer = nullptr;
+    // Store recording start time
     QDateTime recordingStartTime;
-    qint64 pausedTimeMs = 0;
+    // Timer for updating recording duration
+    QTimer *recordingTimer;
 
 };
 

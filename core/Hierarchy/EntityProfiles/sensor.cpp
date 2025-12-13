@@ -61,11 +61,11 @@ void Sensor::scan(std::string id , Transform *source)
 
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
-    for (auto& [key, entity] : *parent->Entities)
+    for (auto& [key, entity] : *parent->Platforms)
     {
         // qDebug() << "[Sensor::scan] iterating entity:" << QString::fromStdString(key);
         if(key == id) continue;
-        Platform* platform = dynamic_cast<Platform*>(entity);
+        Platform* platform = entity;
         if (platform) {
             // qDebug() << "[Sensor::scan] found Platform entity:"
             //          << QString::fromStdString(platform->Name);
@@ -139,11 +139,11 @@ void Sensor::ewscan(std::string id , Transform *source)
         return;
     }
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
-    for (auto& [key, entity] : *parent->Entities)
+    for (auto& [key, entity] : *parent->Platforms)
     {
         // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
         if(key == id) continue;
-        Platform* platform = dynamic_cast<Platform*>(entity);
+        Platform* platform = entity;
         if (platform) {
             // qDebug() << "[Sensor::ewscan] found Platform entity:"
             // << QString::fromStdString(platform->Name);
@@ -216,11 +216,11 @@ void Sensor::csmScan(std::string id, Transform* source)
     QVector3D sourcePos = source->translation();
     std::vector<Message> newMessages;
 
-    for (auto& [key, entity] : *parent->Entities)
+    for (auto& [key, entity] : *parent->Platforms)
     {
         if (key == id) continue;
 
-        Platform* platform = dynamic_cast<Platform*>(entity);
+        Platform* platform = entity;
         if (!platform || platform->radioList.empty()) continue;
 
         float metredis = distanceBetween(sourcePos.x(), sourcePos.z(),
@@ -303,14 +303,14 @@ void Sensor::esmScan(std::string id, Transform* source)
         return;
     }
 
-    qDebug() << "[ESM] scan started for ID:" << QString::fromStdString(id)
-             << "| total entities:" << parent->Entities->size();
+    //qDebug() << "[ESM] scan started for ID:" << QString::fromStdString(id)
+             //<< "| total entities:" << parent->Entities->size();
 
-    for (auto& [key, entity] : *parent->Entities)
+    for (auto& [key, entity] : *parent->Platforms)
     {
         if (key == id) continue; // skip self
 
-        Platform* platform = dynamic_cast<Platform*>(entity);
+        Platform* platform = entity;
         if (!platform) continue;
 
         QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
@@ -366,18 +366,18 @@ void Sensor::esmScan(std::string id, Transform* source)
 
                 // Emit JSON update
                 QJsonArray msgArray;
-                for (const auto& m : messages) {
-                    QJsonObject o;
-                    o["timeStamp"] = QString::fromStdString(m.timeStamp);
-                    o["source"] = QString::fromStdString(m.source);
-                    o["destination"] = QString::fromStdString(m.destination);
-                    o["content"] = QString::fromStdString(m.content);
-                    msgArray.append(o);
-                }
+                // for (const auto& m : messages) {
+                //     QJsonObject o;
+                //     o["timeStamp"] = QString::fromStdString(m.timeStamp);
+                //     o["source"] = QString::fromStdString(m.source);
+                //     o["destination"] = QString::fromStdString(m.destination);
+                //     o["content"] = QString::fromStdString(m.content);
+                //     msgArray.append(o);
+                // }
                 emit availableConnectionsUpdated(msgArray);
 
-                qDebug() << "🎯 [ESM] Detected" << emitterType
-                         << "from:" << QString::fromStdString(platform->Name);
+                // qDebug() << "🎯 [ESM] Detected" << emitterType
+                //          << "from:" << QString::fromStdString(platform->Name);
             }
             else {
                 // Update tracking for existing detection
@@ -400,11 +400,11 @@ void Sensor::esmScan(std::string id, Transform* source)
                 }
             }
             esmdetects.erase(platform);
-            qDebug() << "❌ [ESM] Lost contact with:" << QString::fromStdString(platform->Name);
+            // qDebug() << "❌ [ESM] Lost contact with:" << QString::fromStdString(platform->Name);
         }
     }
 
-    qDebug() << "[ESM] scan completed — total detections:" << esmdetects.size();
+    // qDebug() << "[ESM] scan completed — total detections:" << esmdetects.size();
 }
 
 

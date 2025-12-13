@@ -1,7 +1,9 @@
 #include "runtime.h"
 #include <QDebug>
-
+#include <QThread>
 Runtime::Runtime() {
+
+    simulationThread = new QThread(this);
     Library = new Hierarchy();
     hierarchy = new Hierarchy();
 
@@ -10,9 +12,13 @@ Runtime::Runtime() {
     scriptengine = new ScriptEngine();
     networkManager = new NetworkManager();
     console  = Console::internalInstance();
+    profiler = new Profiler();
     recorder = new Recorder(hierarchy, simulation);
+    simulation->moveToThread(simulationThread);
 
-
+    QObject::connect(simulationThread, &QThread::started, simulation, &Simulation::init);
+    connect(simulationThread,&QThread::finished,simulationThread,&QThread::deleteLater);
+    simulationThread->start();
 
     // Rendering pipeline
     connect(hierarchy,&Hierarchy::entityMeshAdded,scenerenderer,&SceneRenderer::entityAdded);
@@ -21,6 +27,7 @@ Runtime::Runtime() {
 
     // Physics system connections
     connect(hierarchy,&Hierarchy::entityPhysicsAdded,simulation,&Simulation::entityAdded);
+    connect(hierarchy,&Hierarchy::entityRemoved,simulation,&Simulation::entityRemoved);
     connect(hierarchy,&Hierarchy::entityPhysicsRemoved,simulation,&Simulation::entityRemoved);
     connect(hierarchy,&Hierarchy::entityUpdate,simulation,&Simulation::entityUpdate);
 

@@ -95,11 +95,8 @@ private:
     // Data
     QString currentEntityId;
     QVariantMap currentEntityData;
-
-
-    // 🆕 Helper function for real-time sensors updates
     void updateSensorsTable(QTableWidget* sensorsTable, Entity* entity);
-      void updateRadiosTable(QTableWidget* radiosTable, Entity* entity);
+    void updateRadiosTable(QTableWidget* radiosTable, Entity* entity);
 
 };
 

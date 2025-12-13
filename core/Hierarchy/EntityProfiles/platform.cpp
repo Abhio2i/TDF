@@ -4,12 +4,14 @@
 #include "core/Hierarchy/EntityProfiles/radio.h"
 #include "core/Hierarchy/EntityProfiles/sensor.h"
 #include "core/Hierarchy/EntityProfiles/iff.h"
+#include "qelapsedtimer.h"
 #include "qjsonarray.h"
 #include "core/Hierarchy/Utils/entityutils.h"
 #include "core/Hierarchy/Struct/parameter.h"
 #include "core/GlobalRegistry.h"
 #include <core/Hierarchy/hierarchy.h>
 #include <core/Debug/console.h>
+#include "core/Debug/profiler.h"
 
 Platform::Platform(Hierarchy* h) : Entity(h) {
     std::shared_ptr<Parameter> par = std::make_shared<Parameter>();
@@ -23,6 +25,10 @@ Platform::Platform(Hierarchy* h) : Entity(h) {
 
 void Platform::update(){
     //qDebug()<<"update";
+    int csmTime = 0;
+    int esmTime = 0;
+    int radarTime = 0;
+    int ewTime = 0;
     for (Sensor* s : sensorList) {
         //qDebug() << "[Platform::update] platformID=" << QString::fromStdString(ID)
                  //<< "sensor=" << QString::fromStdString(s->Name)
@@ -30,18 +36,42 @@ void Platform::update(){
 
         if(s->subType == Sensor::SubType::CSM){
             //qDebug() << "[Platform::update] calling csmScan";
+            QElapsedTimer timer;
+            timer.start();  // Start measuring
             s->csmScan(ID, transform);
+            qint64 elapsedMs = timer.elapsed();
+            csmTime +=elapsedMs;
+
         }else
         if(s->subType == Sensor::SubType::ESM){
+            QElapsedTimer timer;
+            timer.start();  // Start measuring
             //qDebug() << "[Platform::update] calling esmScan";
             s->esmScan(ID, transform);
+            qint64 elapsedMs = timer.elapsed();
+            esmTime +=elapsedMs;
         }else{
             //qDebug() << "[Platform::update] calling scan + ewscan (Generic)";
+            QElapsedTimer timer;
+            timer.start();  // Start measuring
             s->scan(ID, transform);
+            qint64 elapsedMs = timer.elapsed();
+            radarTime +=elapsedMs;
+
+            timer.start();  // Start measuring
             s->ewscan(ID, transform);
+            elapsedMs = timer.elapsed();
+            ewTime +=elapsedMs;
         }
     }
 
+    Profiler::currentFrame->CSMTime +=csmTime;
+    Profiler::currentFrame->ESMTime +=esmTime;
+    Profiler::currentFrame->RadarTime +=radarTime;
+    Profiler::currentFrame->EWTime +=ewTime;
+
+    QElapsedTimer timer;
+    timer.start();  // Start measuring
 
     for (Radio* r : radioList) { // assuming you have a list of radios on this platform
         if (r) {
@@ -50,11 +80,17 @@ void Platform::update(){
             // qDebug()<<"found radio";
         }
     }
+    qint64 elapsedMs = timer.elapsed();
+    Profiler::currentFrame->RadioTime +=elapsedMs;
+
+    timer.start();  // Start measuring
     for (IFF* iff : iffList) {
         if (iff) {
-            iff->interrogateTargets(transform);
+            //iff->interrogateTargets(transform);
         }
     }
+    elapsedMs = timer.elapsed();
+    Profiler::currentFrame->IFFTime +=elapsedMs;
 }
 
 

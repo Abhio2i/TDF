@@ -24,6 +24,7 @@
 #include <QTabWidget>                             // For tabbed interface
 #include <QStatusBar>                             // For status bar display
 #include "core/ScriptEngine/scriptengine.h"       // For script engine
+#include "core/Simulation/simulation.h"
 
 // %%% Class Definition %%%
 /* Main window class for the scenario editor */
@@ -52,6 +53,11 @@ public:
     // Tactical display widget
     TacticalDisplay *tacticalDisplay;
 
+
+public slots:
+    void showProfileInfo();
+    void showApplicationDialog();
+
 private slots:
     // Handle item selection
     void onItemSelected(QVariantMap data);
@@ -70,11 +76,13 @@ private slots:
 
     void onRecentProjectTriggered();
     void loadRecentProject(const QString& filePath);
-    void clearRecentProjects();
+    // void clearRecentProjects();
 
 signals:
     // Signal unsaved changes state
     void unsavedChangesChanged(bool hasChanges);
+    void Activated();
+
 
 private:
     // %%% Core Components %%%
@@ -148,6 +156,7 @@ private:
     void updateStatusBar(const QString &message);
     // Status bar widget
     QStatusBar *statusBar;
+         Simulation *simulation;
 
 };
 

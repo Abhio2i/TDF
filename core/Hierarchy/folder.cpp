@@ -162,6 +162,26 @@ Entity* Folder::addEntity(std::string entityName, std::string iD){
 
     if (parent && parent->Entities) {
         parent->Entities->insert({entity->ID, entity});
+        if(type == Constants::EntityType::Radio){
+            parent->Radios->insert({entity->ID, dynamic_cast<Radio*>(entity)});
+        }else
+        if(type == Constants::EntityType::Sensor){
+            parent->Sensors->insert({entity->ID, dynamic_cast<Sensor*>(entity)});
+        }else
+        if(type == Constants::EntityType::FixedPoint){
+            parent->FixedPointes->insert({entity->ID, dynamic_cast<FixedPoints*>(entity)});
+        }else
+        if(type == Constants::EntityType::Formation){
+            parent->Formations->insert({entity->ID, dynamic_cast<Formation*>(entity)});
+        }else
+        if(type == Constants::EntityType::SpecialZone){
+            parent->Specialzones->insert({entity->ID, dynamic_cast<Specialzone*>(entity)});
+        }else
+        if(type == Constants::EntityType::IFF){
+            parent->Iffs->insert({entity->ID, dynamic_cast<IFF*>(entity)});
+        }else{
+            parent->Platforms->insert({entity->ID, dynamic_cast<Platform*>(entity)});
+        }
         entity->spawn();
         // entity->addComponent("transform");
         // entity->addComponent("trajectory");
@@ -189,6 +209,26 @@ void Folder::addEntityWithObject(Entity *entity){
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (parent && parent->Entities) {
         parent->Entities->insert({entity->ID, entity});
+        if(type == Constants::EntityType::Radio){
+            parent->Radios->insert({entity->ID, dynamic_cast<Radio*>(entity)});
+        }else
+        if(type == Constants::EntityType::Sensor){
+            parent->Sensors->insert({entity->ID, dynamic_cast<Sensor*>(entity)});
+        }else
+        if(type == Constants::EntityType::FixedPoint){
+            parent->FixedPointes->insert({entity->ID, dynamic_cast<FixedPoints*>(entity)});
+        }else
+        if(type == Constants::EntityType::Formation){
+            parent->Formations->insert({entity->ID, dynamic_cast<Formation*>(entity)});
+        }else
+        if(type == Constants::EntityType::SpecialZone){
+            parent->Specialzones->insert({entity->ID, dynamic_cast<Specialzone*>(entity)});
+        }else
+        if(type == Constants::EntityType::IFF){
+            parent->Iffs->insert({entity->ID, dynamic_cast<IFF*>(entity)});
+        }else{
+            parent->Platforms->insert({entity->ID, dynamic_cast<Platform*>(entity)});
+        }
         entity->spawn();
         // entity->addComponent("transform");
         // entity->addComponent("trajectory");
@@ -223,6 +263,26 @@ void Folder::removeEntity(std::string EntityID){
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (parent && parent->Entities) {
         parent->Entities->erase(EntityID);
+        if(type == Constants::EntityType::Radio){
+            parent->Radios->erase(EntityID);
+        }else
+        if(type == Constants::EntityType::Sensor){
+            parent->Sensors->erase(EntityID);
+        }else
+        if(type == Constants::EntityType::FixedPoint){
+            parent->FixedPointes->erase(EntityID);
+        }else
+        if(type == Constants::EntityType::Formation){
+            parent->Formations->erase(EntityID);
+        }else
+        if(type == Constants::EntityType::SpecialZone){
+            parent->Specialzones->erase(EntityID);
+        }else
+        if(type == Constants::EntityType::IFF){
+            parent->Iffs->erase(EntityID);
+        }else{
+            parent->Platforms->erase(EntityID);
+        }
         emit parent->entityRemoved(QString::fromStdString(EntityID));
         emit parent->entityRemovedfull(QString::fromStdString(ID),QString::fromStdString(EntityID),false);
     } else {

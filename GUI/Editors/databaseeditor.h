@@ -17,6 +17,7 @@
 #include <QMainWindow>                            // For main window base class
 #include <QTabWidget>                             // For tabbed interface
 #include <QStatusBar>                             // For status bar display
+#include <GUI/Menubars/profileinfodialog.h>
 
 // %%% Class Definition %%%
 /* Main window class for the database editor */
@@ -37,6 +38,12 @@ public:
     void clearUnsavedChanges();
     // Track unsaved changes
     bool hasUnsavedChanges = false;
+        void loadFromJsonFile(const QString &filePath);
+public slots:
+    void showProfileInfo();
+    void showApplicationDialog();
+    // void onPerformanceClicked();
+    // void onSensorsClicked();
 
 private slots:
     // Add inspector tab
@@ -51,12 +58,13 @@ private slots:
     // NEW METHODS ADD HERE
 
     void onRecentProjectTriggered();
-    void clearRecentProjects();
+    // void clearRecentProjects();
     void loadRecentProject(const QString& filePath);
 
 signals:
     // Signal unsaved changes state
     void unsavedChangesChanged(bool hasChanges);
+    void Activated();
 
 private:
 

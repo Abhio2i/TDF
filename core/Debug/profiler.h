@@ -8,7 +8,8 @@ class Profiler: public QObject
     Q_OBJECT
 public:
     Profiler();
-    Frame *currentFrame;
+    ~Profiler();
+    static Frame *currentFrame;
     std::unordered_map<std::string,  Frame> *frames;
 
     void addExecuteLogs();

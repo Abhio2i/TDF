@@ -204,7 +204,7 @@ void HierarchyTree::componentAdded(QString parentID, QString componentName)
         return;
     }
 
-    // ✅ SIRF COMPONENT KA FIRST LETTER CAPITAL KARO
+
     QString displayName = componentName;
     if (!displayName.isEmpty()) {
         displayName[0] = displayName[0].toUpper();
@@ -212,7 +212,7 @@ void HierarchyTree::componentAdded(QString parentID, QString componentName)
     // Create component item
     QTreeWidgetItem *component = new QTreeWidgetItem(Items[parentID]);
     // component->setText(0, componentName);
-    component->setText(0, displayName);  // ✅ Capitalized name use karo
+    component->setText(0, displayName);
 
     component->setIcon(0, QIcon(":/icons/images/component.png"));
     // Set item data
@@ -299,7 +299,6 @@ void HierarchyTree::entityRenamed(QString ID, QString name)
         qWarning() << "Cannot rename entity: ID" << ID << "not found in Items";
     }
 }
-
 /* Show context menu */
 void HierarchyTree::showContextMenu(const QPoint &pos)
 {
@@ -368,6 +367,7 @@ void HierarchyTree::dragMoveEvent(QDragMoveEvent *event)
             if (type == "profile" || type == "folder" || type == "entity") {
                 event->acceptProposedAction();
                 qDebug()<<"i am working";
+
                 return;
             }
         }

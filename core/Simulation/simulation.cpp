@@ -2,16 +2,21 @@
 #include "simulation.h"
 #include <algorithm>
 #include <core/Debug/console.h>
+#include "core/Debug/profiler.h"
 #include <QJsonObject>
 #include <QtMath>
-
+#include <GUI/mainwindow.h>
 Simulation::Simulation() {
+
+}
+
+void Simulation::init(){
     updateTimer = new QTimer(this);
     elapsedTimer = new QElapsedTimer();
     elapsedTimer->start();
     lastTime = elapsedTimer->elapsed();
-    SimulationFrameRate = 50;
-    PhysicsUpdateFrameRate = 50;
+    SimulationFrameRate = MainWindow::scenarioconfig->getSavedFPS();
+    PhysicsUpdateFrameRate = MainWindow::scenarioconfig->getSavedFPS();
     UIUpdateFrameRate = 30;
     Gravity = new Vector(0, 0, -3.81f);
     speed = 1;
@@ -32,7 +37,13 @@ Simulation::Simulation() {
                 Console::log("Replay finished");
             }
         } else {
+            QElapsedTimer timer;
+            timer.start();  // Start measuring
             frame();
+            qint64 elapsedMs = timer.elapsed();
+            Profiler::currentFrame->physicsTime = elapsedMs;
+            Profiler::currentFrame->analyze();
+            // qDebug() << "Physics execution time:" << elapsedMs << "ms";
         }
     });
 
@@ -45,6 +56,12 @@ Simulation::Simulation() {
 
     emit Awake();
     emit Begin();
+}
+
+void Simulation::ReInit(){
+    SimulationFrameRate = MainWindow::scenarioconfig->getSavedFPS();
+    PhysicsUpdateFrameRate = MainWindow::scenarioconfig->getSavedFPS();
+    UIUpdateFrameRate = 30;
 }
 
 Simulation::~Simulation() {
@@ -62,9 +79,19 @@ Simulation::~Simulation() {
     delete Gravity;
 }
 
+void Simulation::setFps(int value){
+    SimulationFrameRate = value;
+    PhysicsUpdateFrameRate = value;
+    UIUpdateFrameRate = 30;
+    updateTimer->setInterval(1000/value);
+}
+
 void Simulation::frame() {
     qint64 currentTime = elapsedTimer->elapsed();
     deltaTime = (currentTime - lastTime) / 1000.0f;
+    if(!isPlay){
+        deltaTime = 0.02f;
+    }
     lastTime = currentTime;
     calculatePhysics();
 
@@ -104,9 +131,15 @@ void Simulation::frame() {
 }
 
 void Simulation::start() {
+
+    QMetaObject::invokeMethod(this, "startf", Qt::QueuedConnection);
+}
+
+void Simulation::startf() {
     lastTime = elapsedTimer->elapsed();
     updateTimer->start(1000 / SimulationFrameRate);
     isPlay = true;
+    qDebug()<<"i am working";
     for (auto& [id, comp] : physicsComponent) {
         if (comp.dynamicModel) comp.dynamicModel->start();
     }
@@ -114,10 +147,13 @@ void Simulation::start() {
 }
 
 void Simulation::pause() {
+    QMetaObject::invokeMethod(this, "pausef", Qt::QueuedConnection);
+}
+
+void Simulation::pausef() {
     updateTimer->stop();
     isPlay = false;
 }
-
 void Simulation::stop() {
     updateTimer->stop();
     isPlay = false;
@@ -134,7 +170,9 @@ void Simulation::setSpeed(float value) {
     emit speedUpdated(value);
 }
 void Simulation::nextStep() {
-    frame();
+    if(!isPlay){
+        frame();
+    }
 }
 
 int Simulation::getRate() const {
@@ -339,12 +377,35 @@ void Simulation::calculatePhysics() {
     const float clampedDt = std::min(dt, maxDt);
     //dynamicsWorld->stepSimulation(clampedDt, 10);
     emit Physics();
+    Profiler::currentFrame->RadarTime = 0;
+    Profiler::currentFrame->EWTime = 0;
+    Profiler::currentFrame->CSMTime = 0;
+    Profiler::currentFrame->ESMTime = 0;
+    Profiler::currentFrame->IFFTime = 0;
+    Profiler::currentFrame->RadioTime = 0;
+    int dynamicTime = 0;
+    int sensorTime = 0;
 
     for (auto& [id, comp] : physicsComponent) {
         if (!comp.transform || !comp.rigidbody) continue;
         comp.rigidbody->deltaTime = deltaTime;
-        if (comp.dynamicModel) comp.dynamicModel->Update(dt);
-        if (comp.entity) comp.entity->update();
+
+        if (comp.dynamicModel){
+            QElapsedTimer timer;
+            timer.start();  // Start measuring
+            comp.dynamicModel->Update(dt);
+            qint64 elapsedMs = timer.elapsed();
+            dynamicTime +=elapsedMs;
+        }
+
+
+        if (comp.entity){
+            QElapsedTimer timer;
+            timer.start();  // Start measuring
+            comp.entity->update();
+            qint64 elapsedMs = timer.elapsed();
+            sensorTime +=elapsedMs;
+        }
 
         // auto it = bulletBodies.find(id);
         // if (it != bulletBodies.end()) {
@@ -406,6 +467,8 @@ void Simulation::calculatePhysics() {
         //     }
         // }
     }
+    Profiler::currentFrame->dynamicTime = dynamicTime;
+    Profiler::currentFrame->SensorTime = sensorTime;
 }
 
 void Simulation::entityUpdate(QString ID) {

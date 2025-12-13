@@ -17,6 +17,7 @@
 #include <core/structure/scenario.h>              // For scenario structure
 #include "GUI/Tacticaldisplay/canvaswidget.h"      // For canvas widget
 #include "GUI/Toolbars/standardtoolbar.h"         // For standard toolbar
+#include "qthread.h"
 #include <core/Render/scenerenderer.h>            // For scene renderer
 #include <core/structure/runtime.h>               // For runtime structure
 #include <core/Hierarchy/Components/transform.h>  // For transform component
@@ -27,6 +28,10 @@
 #include <GUI/measuredistance/measuredistancedialog.h> // For measure distance dialog
 #include <QApplication>                           // For application instance
 #include <QTimer>                                 // For delayed operations
+#include <GUI/Menubars/profileinfodialog.h>
+#include <GUI/Editors/recentprojectsmanager.h>
+#include <GUI/Settings/applicationdialog.h>
+#include <QProgressDialog>
 
 // %%% Constructor %%%
 // Capitalize the first letter of a string
@@ -57,7 +62,9 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     Scenario *scenario = new Scenario();
     hierarchy = scenario->hierarchy;
     SceneRenderer *renderer = scenario->scenerenderer;
+
     console = scenario->console;
+
     scriptengine = scenario->scriptengine;
     library = scenario->Library;
     lastSavedFilePath = "";
@@ -68,7 +75,15 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     HierarchyConnector::instance()->setHierarchy(hierarchy);
     HierarchyConnector::instance()->setLibrary(library);
     HierarchyConnector::instance()->setLibTreeView(libTreeView);
-
+    // connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
+    //         this, &ScenarioEditor::loadRecentProject);
+    connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
+            this, [=](const QString& filePath, RecentProjectsManager::EditorType type) {
+                if (type == RecentProjectsManager::ScenarioEditor) {
+                    loadRecentProject(filePath);
+                }
+            });
+    connect(this,&ScenarioEditor::Activated,tacticalDisplay->canvas,&CanvasWidget::ReInit);
     // Connect console signals
     connect(console, &Console::logUpdate, this, [=](std::string log) {
         if (consoleView) {
@@ -464,10 +479,6 @@ void ScenarioEditor::setupMenuBar()
 /* Setup toolbars */
 void ScenarioEditor::setupToolBars()
 {
-    // // Add standard toolbar
-    // standardToolBar = new StandardToolBar(this);
-    // addToolBar(Qt::TopToolBarArea, standardToolBar);
-    // addToolBarBreak(Qt::TopToolBarArea);
 
     // Add design toolbar
     designToolBar = new DesignToolBar(this);
@@ -476,17 +487,14 @@ void ScenarioEditor::setupToolBars()
     // Allow toolbars to be movable
     // standardToolBar->setMovable(true);
     designToolBar->setMovable(true);
-
-    // // Connect save action
-    // if (menuBar && standardToolBar) {
-    //     connect(standardToolBar->getSaveAction(), &QAction::triggered,
-    //             menuBar->getSaveAction(), &QAction::trigger);
-    // }
     connect(menuBar->getRecentProjectAction(), &QAction::triggered,
             this, &ScenarioEditor::onRecentProjectTriggered);
 
     qDebug() << "MenuBar actions connected successfully";
     qDebug() << "Recent Project Action:" << menuBar->getRecentProjectAction()->text();
+    connect(menuBar, &MenuBar::profileTriggered,  // Signal use करें
+            this, &ScenarioEditor::showProfileInfo);
+    connect(menuBar, &MenuBar::applicationTriggered, this, &ScenarioEditor::showApplicationDialog);
 
     // Connect feedback trigger
     connect(menuBar, &MenuBar::feedbackTriggered, this, &ScenarioEditor::showFeedbackWindow);
@@ -502,13 +510,6 @@ void ScenarioEditor::setupToolBarConnections()
         qWarning() << "Toolbar connection setup failed - required components missing";
         return;
     }
-
-    // // Connect save action
-    // if (menuBar) {
-    //     connect(standardToolBar->getSaveAction(), &QAction::triggered,
-    //             menuBar->getSaveAction(), &QAction::trigger);
-    // }
-    // 🆕 NEW: Coordinate System Connection
     connect(designToolBar, &DesignToolBar::coordinateSystemChanged,
             tacticalDisplay->mapWidget, &GISlib::setCoordinateSystem);
     // Connect transform mode
@@ -584,15 +585,6 @@ void ScenarioEditor::setupToolBarConnections()
     } else {
         qCritical() << "Map widget not available for layer connections";
     }
-
-    // // Connect trajectory action
-    // connect(standardToolBar->getAddTrajectoryAction(), &QAction::triggered,
-    //         this, [=]() {
-    //             tacticalDisplay->canvas->setTrajectoryDrawingMode(true);
-    //             Console::log("Add Trajectory action triggered");
-    //         });
-
-
     connect(designToolBar->getAddTrajectoryAction(), &QAction::triggered,
             this, [=]() {
                 tacticalDisplay->canvas->setTrajectoryDrawingMode(true);
@@ -617,7 +609,7 @@ void ScenarioEditor::setupToolBarConnections()
 
 void ScenarioEditor::resetLayout()
 {
-    // Show message in console
+
     console->log("Resetting Scenario Editor layout to initial state...");
 
     // Close all additional inspector docks
@@ -720,8 +712,6 @@ void ScenarioEditor::resetLayout()
         console->log("Scenario Editor layout successfully reset to initial configuration");
     });
 }
-// ... (rest of the existing functions remain the same - setupToolBarConnections, addInspectorTab, showFeedbackWindow, etc.)
-// Continue with the existing implementation for other functions...
 
 /* Add new inspector tab */
 void ScenarioEditor::addInspectorTab()
@@ -784,8 +774,6 @@ void ScenarioEditor::showFeedbackWindow()
     feedbackWindow->show();
 }
 
-// ... (rest of the existing functions remain exactly the same)
-/* Handle item selection */
 void ScenarioEditor::onItemSelected(QVariantMap /*data*/)
 {
     // TODO: Implement item selection logic
@@ -803,17 +791,30 @@ ScenarioEditor::~ScenarioEditor()
     // Cleanup managed by Qt's parent-child relationships
 }
 
-/* Load data from JSON file */
+
 void ScenarioEditor::loadFromJsonFile(const QString &filePath)
 {
-    // Open JSON file
+    // Create loading dialog with indeterminate progress
+    QProgressDialog* loadingDialog = new QProgressDialog("Loading data...", nullptr, 0, 0, this);
+    loadingDialog->setWindowTitle("");
+    loadingDialog->setWindowModality(Qt::WindowModal);
+    loadingDialog->setCancelButton(nullptr); // No cancel button
+    loadingDialog->setMinimumDuration(0); // Show immediately
+    loadingDialog->setRange(0, 0); // Indeterminate mode
+    loadingDialog->setValue(0);
+    loadingDialog->show();
+
+    // Force UI update
+    QCoreApplication::processEvents();
+
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "Failed to open JSON file:" << filePath;
         QMessageBox::warning(this, "Error", QString("Failed to open JSON file: %1").arg(filePath));
+        loadingDialog->deleteLater();
         return;
     }
-    // Read and parse JSON
+
     QByteArray data = file.readAll();
     file.close();
     QJsonParseError err;
@@ -821,13 +822,20 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
         qWarning() << "Failed to parse JSON:" << err.errorString();
         QMessageBox::warning(this, "Error", QString("Failed to parse JSON: %1").arg(err.errorString()));
+        loadingDialog->deleteLater();
         return;
     }
-    // Load hierarchy data
+
     QJsonObject obj = doc.object();
     if (obj.contains("hierarchy")) {
+        loadingDialog->setLabelText("Loading...");
+        QCoreApplication::processEvents();
+
         QJsonObject hier = obj["hierarchy"].toObject();
         hierarchy->fromJson(hier);
+
+        QCoreApplication::processEvents();
+
         qDebug() << "Hierarchy loaded from file:" << filePath;
         if (treeView && treeView->getTreeWidget()) {
             treeView->getTreeWidget()->update();
@@ -835,20 +843,33 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
         } else {
             qWarning() << "Failed to update HierarchyTree: treeView or treeWidget is null";
         }
+
+        QCoreApplication::processEvents();
     } else {
         qWarning() << "JSON file does not contain 'hierarchy' key";
     }
-    // Load tactical display data
+
     if (tacticalDisplay && obj.contains("tactical")) {
+        loadingDialog->setLabelText("Loading tactical display...");
+        QCoreApplication::processEvents();
+
         QJsonObject tac = obj["tactical"].toObject();
         tacticalDisplay->canvas->fromJson(tac);
         qDebug() << "TacticalDisplay loaded from file:" << filePath;
     } else {
         qWarning() << "JSON file does not contain 'tactical' key or tacticalDisplay is null";
     }
+
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
+
+    // Close loading dialog
+    loadingDialog->close();
+    loadingDialog->deleteLater();
+
+    updateStatusBar("Project loaded: " + QFileInfo(filePath).fileName());
 }
+
 
 /* Mark unsaved changes */
 void ScenarioEditor::markUnsavedChanges()
@@ -884,109 +905,31 @@ void ScenarioEditor::setupStatusBar()
 /* Update status bar message */
 void ScenarioEditor::updateStatusBar(const QString &message)
 {
-    // Update status bar
     if (statusBar) {
         statusBar->showMessage(message);
     }
 }
-void ScenarioEditor::onRecentProjectTriggered()
-{
-    qDebug() << "Recent Project menu clicked - showing recent projects list";
 
-    // Get recent projects from HierarchyConnector
-    QStringList recentProjects = HierarchyConnector::instance()->getRecentProjects();
-    if (recentProjects.size() > 10) {
-        recentProjects = recentProjects.mid(0, 10); // First 10 (most recent)
-    }
-    qDebug() << "Recent projects found:" << recentProjects.size();
-
-    // Filter only existing files
-    QStringList existingProjects;
-    for (const QString& projectPath : recentProjects) {
-        if (QFile::exists(projectPath)) {
-            existingProjects << projectPath;
-            qDebug() << "✅ Available:" << QFileInfo(projectPath).fileName();
-        } else {
-            qDebug() << "❌ Not found:" << projectPath;
-        }
-    }
-
-    // Remove non-existing projects from the list
-    if (existingProjects.size() < recentProjects.size()) {
-        for (const QString& projectPath : existingProjects) {
-            HierarchyConnector::instance()->addToRecentProjects(projectPath);
-        }
-    }
-
-    if (existingProjects.isEmpty()) {
-        QMessageBox::information(this, "Recent Projects",
-                                 "📂 No recent projects found!\n\n"
-                                 "To see projects here:\n"
-                                 );
-        return;
-    }
-
-    // Create recent projects menu
-    QMenu recentMenu(this);
-    recentMenu.setTitle("Recent Projects");
-
-    // Add header
-    QAction* headerAction = recentMenu.addAction("📋 Recently Opened Projects");
-    headerAction->setEnabled(false);
-    recentMenu.addSeparator();
-
-    // Add recent projects to menu with numbers
-    int count = 1;
-    for (const QString& projectPath : existingProjects) {
-        QFileInfo fileInfo(projectPath);
-        // QString displayText = QString("%1. 📄 %2\n    📍 %3")
-        //                           .arg(count)
-        //                           .arg(fileInfo.fileName())
-        //                           .arg(fileInfo.path());
-        QString displayText = QString("📄 %1\n    📍 %2")
-                                  .arg(fileInfo.fileName())
-                                  .arg(fileInfo.path());
-
-        QAction* projectAction = recentMenu.addAction(displayText);
-        projectAction->setData(projectPath);
-        projectAction->setToolTip(projectPath);
-
-    }
-
-    recentMenu.addSeparator();
-
-
-    recentMenu.addAction("🗑️ Clear All Recent Projects", this, &ScenarioEditor::clearRecentProjects);
-
-
-    // Show menu at cursor position
-    QPoint menuPos = QCursor::pos();
-    QAction* selectedAction = recentMenu.exec(menuPos);
-
-    if (selectedAction && selectedAction->data().isValid()) {
-        QString filePath = selectedAction->data().toString();
-        loadRecentProject(filePath);
-    }
-}
-
-/* Load recent project manually */
 void ScenarioEditor::loadRecentProject(const QString& filePath)
 {
-    if (!QFile::exists(filePath)) {
-        QMessageBox::warning(this, "File Not Found",
-                             QString("The project file was not found:\n\n%1\n\nIt will be removed from recent list.").arg(filePath));
+    // Create loading dialog with indeterminate progress
+    QProgressDialog* loadingDialog = new QProgressDialog("Loading data...", nullptr, 0, 0, this);
+    loadingDialog->setWindowTitle("");
+    loadingDialog->setWindowModality(Qt::WindowModal);
+    loadingDialog->setCancelButton(nullptr); // No cancel button
+    loadingDialog->setMinimumDuration(0); // Show immediately
+    loadingDialog->setRange(0, 0); // Indeterminate mode
+    loadingDialog->setValue(0);
+    loadingDialog->show();
 
-        // Remove from recent list
-        HierarchyConnector::instance()->addToRecentProjects(""); // This will cleanup
-        return;
-    }
+    // Force UI update
+    QCoreApplication::processEvents();
 
-    qDebug() << "Loading recent project manually:" << filePath;
 
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(this, "Error",
-                             QString("Failed to open file:\n\n%1\n\nError: %2").arg(filePath).arg(file.errorString()));
+        QMessageBox::warning(this, "Error", "Failed to open scenario file");
+        loadingDialog->deleteLater();
         return;
     }
 
@@ -996,38 +939,71 @@ void ScenarioEditor::loadRecentProject(const QString& filePath)
     QJsonParseError err;
     QJsonDocument doc = QJsonDocument::fromJson(data, &err);
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
-        QMessageBox::warning(this, "Error",
-                             QString("Failed to parse JSON file:\n\n%1\n\nError: %2").arg(filePath).arg(err.errorString()));
+        QMessageBox::warning(this, "Error", "Invalid scenario file format");
+        loadingDialog->deleteLater();
         return;
     }
 
     QJsonObject obj = doc.object();
     if (!obj.contains("hierarchy")) {
-        QMessageBox::warning(this, "Error",
-                             QString("Invalid project file (missing 'hierarchy'):\n\n%1").arg(filePath));
+        QMessageBox::warning(this, "Error", "Not a valid scenario file");
+        loadingDialog->deleteLater();
         return;
     }
 
-    // Load the project
+    loadingDialog->setLabelText("Loading...");
+    QCoreApplication::processEvents();
+
+    // Load hierarchy
     QJsonObject hier = obj["hierarchy"].toObject();
     hierarchy->fromJson(hier);
+
+    loadingDialog->setLabelText("Loading tactical display...");
+    QCoreApplication::processEvents();
+
+    // Load tactical display if present
+    if (tacticalDisplay && obj.contains("tactical")) {
+        QJsonObject tac = obj["tactical"].toObject();
+        tacticalDisplay->canvas->fromJson(tac);
+    }
+
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
 
-    // Update UI
-    updateStatusBar("Loaded: " + QFileInfo(filePath).fileName());
-    console->log("Recent project loaded: " + filePath.toStdString());
+    // Add to ScenarioEditor-specific recent projects
+    RecentProjectsManager::instance()->addToRecentProjects(filePath,
+                                                           RecentProjectsManager::ScenarioEditor);
 
+    // Close loading dialog
+    loadingDialog->close();
+    loadingDialog->deleteLater();
 
+    updateStatusBar("Scenario loaded: " + QFileInfo(filePath).fileName());
+    console->log("Scenario project loaded: " + filePath.toStdString());
 }
-
-// Clear recent projects list
-void ScenarioEditor::clearRecentProjects()
+void ScenarioEditor::onRecentProjectTriggered()
 {
-
-    HierarchyConnector::instance()->clearRecentProjects();
-
-    // Optional: Just update status bar
-    updateStatusBar("Recent projects list cleared");
-    console->log("Recent projects list cleared");
+    RecentProjectsManager::instance()->showRecentProjectsMenu(this,
+                                                              RecentProjectsManager::ScenarioEditor);
 }
+// void ScenarioEditor::clearRecentProjects()
+// {
+//     RecentProjectsManager::instance()->clearRecentProjects();
+//     updateStatusBar("Recent projects list cleared");
+//     console->log("Recent projects list cleared");
+// }
+
+void ScenarioEditor::showProfileInfo()
+{
+    ProfileInfoDialog::showProfileInfo(this);
+}
+void ScenarioEditor::showApplicationDialog()
+{
+    ApplicationDialog dialog(this);
+    connect(&dialog,&ApplicationDialog::fpsState,simulation,&Simulation::setFps);
+    connect(&dialog,&ApplicationDialog::canvasIconState,tacticalDisplay->canvas,&CanvasWidget::setImageScale);
+    dialog.exec();
+
+
+}
+

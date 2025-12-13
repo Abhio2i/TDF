@@ -99,6 +99,7 @@ private slots:
 private:
 
 
+
     // %%% UI Components %%%
     // Table widget for data
     QTableWidget *tableWidget;

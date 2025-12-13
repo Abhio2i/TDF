@@ -348,27 +348,27 @@ static std::string nowIsoString() {
 void IFF::interrogateTargets(Transform* source)
 {
     // Critical call trace — keep
-    qWarning() << "IFF::interrogateTargets for:" << QString::fromStdString(Name);
+    // qWarning() << "IFF::interrogateTargets for:" << QString::fromStdString(Name);
 
     if (!transponder) {
-        qWarning() << "[IFF] Transponder OFF – interrogation aborted.";
+        // qWarning() << "[IFF] Transponder OFF – interrogation aborted.";
         return;
     }
 
     if (!(operationalMode == OperationalMode::Active || operationalMode == OperationalMode::Simulation)) {
-        qWarning() << "[IFF] Operational mode prevents interrogation:" << operationalModeToString(operationalMode);
+        // qWarning() << "[IFF] Operational mode prevents interrogation:" << operationalModeToString(operationalMode);
         return;
     }
 
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (!parent) {
-        qWarning() << "[IFF] ERROR: Parent hierarchy missing.";
+        // qWarning() << "[IFF] ERROR: Parent hierarchy missing.";
         return;
     }
 
     Platform* sourcePlatform = nullptr;
-    for (auto& [key, entity] : *parent->Entities) {
-        if (Platform* plat = dynamic_cast<Platform*>(entity)) {
+    for (auto& [key, entity] : *parent->Platforms) {
+        if (Platform* plat = entity) {
             for (IFF* iff : plat->iffList) {
                 if (iff == this) {
                     sourcePlatform = plat;
@@ -388,7 +388,7 @@ void IFF::interrogateTargets(Transform* source)
     for (int i = iffTargets.size() - 1; i >= 0; --i) {
         IFFTarget &t = iffTargets[i];
         if (!t.entity || !t.entity->transform || !t.entity->transform->matrix) {
-            qWarning() << "[IFF] Removing invalid target record.";
+            // qWarning() << "[IFF] Removing invalid target record.";
             localIffSeen.erase(t.responderId);
             iffTargets.removeAt(i);
             continue;
@@ -406,8 +406,8 @@ void IFF::interrogateTargets(Transform* source)
     // ======================================
     //   MAIN INTERROGATION LOOP
     // ======================================
-    for (auto& [key, entity] : *parent->Entities) {
-        Platform* platform = dynamic_cast<Platform*>(entity);
+    for (auto& [key, entity] : *parent->Platforms) {
+        Platform* platform = entity;
         if (!platform || platform == sourcePlatform || platform->iffList.empty()) continue;
         if (!platform->transform || !platform->transform->matrix) continue;
 
@@ -441,7 +441,7 @@ void IFF::interrogateTargets(Transform* source)
             QJsonObject resp = other->respondToInterrogation(this, distance);
             if (resp.isEmpty()) continue;
 
-            responsesArray.append(resp);
+           // responsesArray.append(resp);
             responded = true;
 
             std::string uid = resp["responderId"].toString().toStdString();
@@ -509,15 +509,15 @@ void IFF::interrogateTargets(Transform* source)
                         target.mode   = newMode;
                         target.code   = newCode;
 
-                        QJsonObject obj;
-                        obj["responderId"]   = QString::fromStdString(target.responderId);
-                        obj["responderName"] = QString::fromStdString(target.responderName);
-                        obj["status"]        = (target.status == 1 ? "Friend" : "Foe");
-                        obj["mode"]          = QString::fromStdString(target.mode);
-                        obj["code"]          = QString::fromStdString(target.code);
+                        //QJsonObject obj;
+                        // obj["responderId"]   = QString::fromStdString(target.responderId);
+                        // obj["responderName"] = QString::fromStdString(target.responderName);
+                        // obj["status"]        = (target.status == 1 ? "Friend" : "Foe");
+                        // obj["mode"]          = QString::fromStdString(target.mode);
+                        // obj["code"]          = QString::fromStdString(target.code);
 
                         QJsonArray arr;
-                        arr.append(obj);
+                        //arr.append(obj);
 
                         emit iffContactsUpdated(arr);
                     }
@@ -569,16 +569,16 @@ QJsonObject IFF::respondToInterrogation(IFF* interrogator, float distanceMeters)
         }
     }
 
-    result["interrogatorId"] = QString::fromStdString(interrogator ? interrogator->ID : std::string(""));
-    result["interrogatorName"] = QString::fromStdString(interrogator ? interrogator->Name : std::string(""));
-    result["responderId"] = QString::fromStdString(this->ID);
-    result["responderName"] = QString::fromStdString(this->Name);
-    result["mode"] = modeStr;
-    result["code"] = codeStr;
-    result["distanceMeters"] = distanceMeters;
-    result["responseDelayMs"] = responseDelay;
-    result["status"] = status;
-    result["timestamp"] = QString::fromStdString(nowIsoString());
+    // result["interrogatorId"] = QString::fromStdString(interrogator ? interrogator->ID : std::string(""));
+    // result["interrogatorName"] = QString::fromStdString(interrogator ? interrogator->Name : std::string(""));
+    // result["responderId"] = QString::fromStdString(this->ID);
+    // result["responderName"] = QString::fromStdString(this->Name);
+    // result["mode"] = modeStr;
+    // result["code"] = codeStr;
+    // result["distanceMeters"] = distanceMeters;
+    // result["responseDelayMs"] = responseDelay;
+    // result["status"] = status;
+    // result["timestamp"] = QString::fromStdString(nowIsoString());
 
     lastInterrogationTime = nowIsoString();
 

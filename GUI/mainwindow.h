@@ -12,7 +12,7 @@
 #include "GUI/Editors/databaseeditor.h"           // For database editor
 #include "GUI/Editors/scenarioeditor.h"           // For scenario editor
 #include "GUI/Editors/runtimeeditor.h"            // For runtime editor
-
+#include <core/Config/scenarioconfig.h>
 // %%% Class Definition %%%
 /* Main application window */
 class MainWindow : public QMainWindow
@@ -24,10 +24,12 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     // Clean up resources
     ~MainWindow();
+   static ScenarioConfig* scenarioconfig;
 
 private slots:
-    // Switch to editor by key
+
     void switchEditor(const QString &editorKey);
+
 
 private:
     // %%% Utility Methods %%%

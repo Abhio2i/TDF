@@ -154,7 +154,6 @@ void RadarDisplay::updateFromJson(const QJsonObject &json)
     update();
 }
 
-// %%% Drawing Methods %%%
 /* Draw display background */
 void RadarDisplay::drawBackground(QPainter &painter)
 {
@@ -285,7 +284,7 @@ void RadarDisplay::drawTargetAndPath(QPainter &painter, int centerX, int centerY
 void RadarDisplay::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
+    //painter.setRenderHint(QPainter::Antialiasing);
     int centerX = width() / 2;
     int centerY = QWidget::height() - 30;
     int radius = (QWidget::height() - 100) / 2;

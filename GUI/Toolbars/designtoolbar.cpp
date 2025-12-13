@@ -3,6 +3,7 @@
 #include "GUI/Tacticaldisplay/Gis/custommapdialog.h"
 #include "GUI/Tacticaldisplay/Gis/layerinformationdialog.h"
 #include "GUI/Tacticaldisplay/canvaswidget.h"
+#include "GUI/Editors/recentprojectsmanager.h"
 #include "core/Debug/console.h"
 #include <QLineEdit>
 #include <QIcon>
@@ -154,6 +155,8 @@ void DesignToolBar::createActions() {
     QAction* informationAction = new QAction("Information", this);
     QAction* fpsAction = new QAction("FPS", this);
     QAction* imageAction = new QAction("Image", this);
+    QAction* sensorsAction = new QAction("Sensors", this);
+    QAction* radioAction = new QAction("Radio", this);
 
     colliderAction->setCheckable(true);
     colliderAction->setChecked(true);
@@ -167,6 +170,10 @@ void DesignToolBar::createActions() {
     fpsAction->setChecked(true);
     imageAction->setCheckable(true);
     imageAction->setChecked(true);
+    sensorsAction->setCheckable(true);
+    sensorsAction->setChecked(true);
+    radioAction->setCheckable(true);
+    radioAction->setChecked(true);
 
     layerMenu->addAction(colliderAction);
     layerMenu->addAction(meshAction);
@@ -174,6 +181,9 @@ void DesignToolBar::createActions() {
     layerMenu->addAction(informationAction);
     layerMenu->addAction(fpsAction);
     layerMenu->addAction(imageAction);
+    layerMenu->addSeparator();
+    layerMenu->addAction(sensorsAction);
+    layerMenu->addAction(radioAction);
 
     layerSelectAction->setMenu(layerMenu);
 
@@ -194,6 +204,12 @@ void DesignToolBar::createActions() {
     });
     connect(imageAction, &QAction::triggered, this, [=](bool checked) {
         emit layerOptionToggled("Image", checked);
+    });
+    connect(sensorsAction, &QAction::triggered, this, [=](bool checked) {
+        emit layerOptionToggled("Sensors", checked);
+    });
+    connect(radioAction, &QAction::triggered, this, [=](bool checked) {
+        emit layerOptionToggled("Radio", checked);
     });
 
     // for measure distance

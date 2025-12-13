@@ -10,7 +10,7 @@
 #include "core/Hierarchy/hierarchy.h"             // For hierarchy data structure
 #include <QWidget>                                // For widget base class
 #include <QVector>                                // For vector container
-
+#include <core/Debug/profiler.h>
 // %%% Data Structures %%%
 /* Structure for electronic warfare target */
 struct ESMTarget {

@@ -14,6 +14,14 @@ Hierarchy::Hierarchy()
 {
     Folders = new std::unordered_map<std::string, Folder*>();
     Entities = new std::unordered_map<std::string, Entity*>();
+    Platforms = new std::unordered_map<std::string, Platform*>();
+    Radios = new std::unordered_map<std::string, Radio*>();
+    Sensors = new std::unordered_map<std::string, Sensor*>();
+    FixedPointes = new std::unordered_map<std::string, FixedPoints*>();
+    Formations = new std::unordered_map<std::string, Formation*>();
+    Specialzones = new std::unordered_map<std::string, Specialzone*>();
+    Iffs = new std::unordered_map<std::string, IFF*>();
+
     setCurrentContext(this);
 }
 

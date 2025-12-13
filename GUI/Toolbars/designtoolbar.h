@@ -168,7 +168,7 @@ signals:
     // Signal search coordinates triggered
     void searchCoordinatesTriggered(double latitude, double longitude);
     void addTrajectoryTriggered();
-    void coordinateSystemChanged(const QString& crsId);  // NEW SIGNAL
+    void coordinateSystemChanged(const QString& crsId);
 
 public slots:
     // Handle mode change

@@ -21,6 +21,7 @@
 #include "GUI/Hierarchytree/contextmenu.h"
 #include <QSettings>
 #include <core/Utility/uuid.h>
+
 // %%% Static Instance %%%
 /* Singleton instance */
 HierarchyConnector* HierarchyConnector::m_instance = nullptr;
@@ -516,74 +517,65 @@ void HierarchyConnector::initializeDummyData(Hierarchy* hierarchy)
     hierarchy->addProfileCategaory("FixedPoints")->setProfileType(Constants::EntityType::FixedPoint);
 }
 
-/* Setup file operations */
+
 void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hierarchy, TacticalDisplay* tacticalDisplay)
 {
-    // Get menu bar
     MenuBar* menuBar = qobject_cast<MenuBar*>(parent->menuBar());
     if (!menuBar) {
         qWarning() << "MenuBar not found for file operations setup";
         return;
     }
-    // Retrieve actions
+
+    // Determine editor type
+    RecentProjectsManager::EditorType editorType;
+    if (qobject_cast<DatabaseEditor*>(parent)) {
+        editorType = RecentProjectsManager::DatabaseEditor;
+    } else if (qobject_cast<ScenarioEditor*>(parent)) {
+        editorType = RecentProjectsManager::ScenarioEditor;
+    } else if (qobject_cast<RuntimeEditor*>(parent)) {
+        editorType = RecentProjectsManager::RuntimeEditor;
+    } else {
+        qWarning() << "Unknown editor type";
+        return;
+    }
+
     QAction* loadAction = menuBar->getLoadAction();
     QAction* loadToLibraryAction = menuBar->getLoadToLibraryAction();
     QAction* saveAction = menuBar->getSaveAction();
     QAction* sameSaveAction = menuBar->getSameSaveAction();
+
+    // Connect load action
     connect(loadAction, &QAction::triggered, this, [=]() {
-        QString filePath = QFileDialog::getOpenFileName(parent, "Open JSON", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), "JSON Files (*.json)");
+        QString filePath = QFileDialog::getOpenFileName(parent, "Open JSON",
+                                                        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+                                                        "JSON Files (*.json)");
+
         if (!filePath.isEmpty()) {
-            QFile file(filePath);
-            if (file.open(QIODevice::ReadOnly)) {
-                QByteArray data = file.readAll();
-                file.close();
-                QJsonParseError err;
-                QJsonDocument doc = QJsonDocument::fromJson(data, &err);
-                if (err.error == QJsonParseError::NoError && doc.isObject()) {
-                    QJsonObject obj = doc.object();
-                    if (obj.contains("hierarchy")) {
-                        QJsonObject hier = obj["hierarchy"].toObject();
-                        hierarchy->fromJson(hier);
-                    }
-                    if (tacticalDisplay != nullptr) {
-                        if (obj.contains("tactical")) {
-                            QJsonObject tac = obj["tactical"].toObject();
-                            tacticalDisplay->canvas->fromJson(tac);
-                        }
-                    }
-                    qDebug() << "JSON loaded into Hierarchy successfully";
-
-                    // ✅ ADD TO RECENT PROJECTS
-                    this->addToRecentProjects(filePath);
-
-                    if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(parent)) {
-                        dbEditor->lastSavedFilePath = filePath;
-                        dbEditor->clearUnsavedChanges();
-                        qDebug() << "DatabaseEditor lastSavedFilePath set to:" << filePath;
-                    } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(parent)) {
-                        scEditor->lastSavedFilePath = filePath;
-                        scEditor->clearUnsavedChanges();
-                        qDebug() << "ScenarioEditor lastSavedFilePath set to:" << filePath;
-                    } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(parent)) {
-                        rtEditor->lastSavedFilePath = filePath;
-                        rtEditor->clearUnsavedChanges();
-                        qDebug() << "RuntimeEditor lastSavedFilePath set to:" << filePath;
-                    }
-                } else {
-                    QMessageBox::warning(parent, "Error", QString("Failed to parse JSON: %1").arg(err.errorString()));
-                }
+            // Call editor-specific load function
+            if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(parent)) {
+                dbEditor->loadFromJsonFile(filePath);
+                RecentProjectsManager::instance()->addToRecentProjects(filePath,
+                                                                       RecentProjectsManager::DatabaseEditor);
+            } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(parent)) {
+                scEditor->loadFromJsonFile(filePath);
+                RecentProjectsManager::instance()->addToRecentProjects(filePath,
+                                                                       RecentProjectsManager::ScenarioEditor);
+            } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(parent)) {
+                rtEditor->loadFromJsonFile(filePath);
+                RecentProjectsManager::instance()->addToRecentProjects(filePath,
+                                                                       RecentProjectsManager::RuntimeEditor);
             }
         }
     });
-    // Connect load to library action
-    connect(loadToLibraryAction, &QAction::triggered, this, [=]() {
-        this->loadToLibrary(parent);
-    });
 
-
+    // Connect save action
     connect(saveAction, &QAction::triggered, this, [=]() {
-        QString filePath = QFileDialog::getSaveFileName(parent, "Save JSON", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), "JSON Files (*.json)");
+        QString filePath = QFileDialog::getSaveFileName(parent, "Save JSON",
+                                                        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+                                                        "JSON Files (*.json)");
+
         if (!filePath.isEmpty()) {
+            // Save file
             QFile file(filePath);
             if (file.open(QIODevice::WriteOnly)) {
                 QJsonObject obj;
@@ -593,72 +585,57 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
                 } else {
                     obj["tactical"] = QJsonObject();
                 }
+
                 QJsonDocument doc(obj);
                 file.write(doc.toJson(QJsonDocument::Indented));
                 file.close();
-                qDebug() << "JSON saved successfully";
 
-                // ✅ ADD TO RECENT PROJECTS
-                this->addToRecentProjects(filePath);
+                // Add to appropriate recent projects list
+                RecentProjectsManager::instance()->addToRecentProjects(filePath, editorType);
 
+                // Set last saved path in appropriate editor
                 if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(parent)) {
                     dbEditor->lastSavedFilePath = filePath;
                     dbEditor->clearUnsavedChanges();
-                    qDebug() << "DatabaseEditor lastSavedFilePath set to:" << filePath;
                 } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(parent)) {
                     scEditor->lastSavedFilePath = filePath;
                     scEditor->clearUnsavedChanges();
-                    qDebug() << "ScenarioEditor lastSavedFilePath set to:" << filePath;
                 } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(parent)) {
                     rtEditor->lastSavedFilePath = filePath;
                     rtEditor->clearUnsavedChanges();
-                    qDebug() << "RuntimeEditor lastSavedFilePath set to:" << filePath;
                 }
-            } else {
-                qWarning() << "Failed to open file for writing:" << filePath;
-                QMessageBox::warning(parent, "Error", QString("Failed to save JSON: %1").arg(file.errorString()));
             }
         }
     });
-    // Connect save action
+
+    // Connect same save action
     connect(sameSaveAction, &QAction::triggered, this, [=]() {
-        QString filePath = this->getLastSavedFilePath(parent);
+        QString filePath = getLastSavedFilePath(parent);
         if (filePath.isEmpty()) {
-            qDebug() << "No last saved file path, falling back to Save As";
             emit saveAction->triggered();
             return;
         }
+
         QFile file(filePath);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-            qWarning() << "Failed to open file for writing:" << file.errorString();
-            QMessageBox::warning(parent, "Error", QString("Failed to save JSON: %1").arg(file.errorString()));
+            QMessageBox::warning(parent, "Error", "Failed to save file");
             return;
         }
+
         QJsonObject obj;
         obj["hierarchy"] = hierarchy->toJson();
-        obj["tactical"] = tacticalDisplay ? tacticalDisplay->canvas->toJson() : QJsonObject();
-        QJsonDocument doc(obj);
-        qint64 bytesWritten = file.write(doc.toJson(QJsonDocument::Indented));
-        file.close();
-        if (bytesWritten == -1) {
-            qWarning() << "Failed to write JSON to file";
-            QMessageBox::warning(parent, "Error", "Failed to write JSON to file");
-        } else {
-            qDebug() << "JSON saved successfully to:" << filePath;
-            if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(parent)) {
-                dbEditor->clearUnsavedChanges();
-                qDebug() << "DatabaseEditor unsaved changes cleared";
-            } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(parent)) {
-                scEditor->clearUnsavedChanges();
-                qDebug() << "ScenarioEditor unsaved changes cleared";
-            } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(parent)) {
-                rtEditor->clearUnsavedChanges();
-                qDebug() << "RuntimeEditor unsaved changes cleared";
-            }
+        if (tacticalDisplay != nullptr) {
+            obj["tactical"] = tacticalDisplay->canvas->toJson();
         }
+
+        QJsonDocument doc(obj);
+        file.write(doc.toJson(QJsonDocument::Indented));
+        file.close();
+
+        // Add to appropriate recent projects list
+        RecentProjectsManager::instance()->addToRecentProjects(filePath, editorType);
     });
 }
-
 /* Load JSON to library */
 void HierarchyConnector::loadToLibrary(QMainWindow* parent)
 {

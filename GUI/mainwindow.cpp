@@ -1,12 +1,14 @@
-
 #include "mainwindow.h"
 #include <QDockWidget>
 #include <QVBoxLayout>
 #include <QMessageBox>
 #include <QDebug>
 
+ScenarioConfig* MainWindow::scenarioconfig = nullptr;
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
+    MainWindow::scenarioconfig = new ScenarioConfig();
     setWindowTitle("Editor Application");
     resize(1900, 1000);
     setupUI();
@@ -51,6 +53,9 @@ void MainWindow::setupUI()
     connect(navigationPage, &NavigationPage::editorRequested, this, &MainWindow::switchEditor);
     // Set initial editor
     stackedWidget->setCurrentWidget(databaseEditor);
+
+    // Initial signal emit (जब app start होता है तो database editor active होता है)
+    // emit databaseEditorActivated();
 }
 
 QMainWindow* MainWindow::getCurrentEditor() const
@@ -132,8 +137,8 @@ bool MainWindow::handleUnsavedChanges()
         else if (currentEditor == runtimeEditor)
             runtimeEditor->clearUnsavedChanges();
         return true;
-    } else { // Cancel
-        return false; // Cancel the switch
+    } else {
+        return false;
     }
 }
 
@@ -149,6 +154,11 @@ void MainWindow::switchEditor(const QString &editorKey)
     if (editorKey == "database") {
         stackedWidget->setCurrentWidget(databaseEditor);
         qDebug() << "Switched to Database Editor";
+
+        // Database editor के लिए signal emit करें
+        qDebug() << "DEBUG: Emitting databaseEditorActivated() signal";
+        emit databaseEditor->Activated();
+
     } else if (editorKey == "scenario") {
         if (!databaseEditor->lastSavedFilePath.isEmpty()) {
             scenarioEditor->loadFromJsonFile(databaseEditor->lastSavedFilePath);
@@ -156,6 +166,11 @@ void MainWindow::switchEditor(const QString &editorKey)
         }
         stackedWidget->setCurrentWidget(scenarioEditor);
         qDebug() << "Switched to Scenario Editor";
+
+        // Scenario editor के लिए signal emit करें
+        qDebug() << "DEBUG: Emitting scenarioEditorActivated() signal";
+        emit scenarioEditor->Activated();
+
     } else if (editorKey == "runtime") {
         if (!scenarioEditor->lastSavedFilePath.isEmpty()) {
             runtimeEditor->loadFromJsonFile(scenarioEditor->lastSavedFilePath);
@@ -163,5 +178,10 @@ void MainWindow::switchEditor(const QString &editorKey)
         }
         stackedWidget->setCurrentWidget(runtimeEditor);
         qDebug() << "Switched to Runtime Editor";
+
+        // Runtime editor के लिए signal emit करें
+        qDebug() << "DEBUG: Emitting runtimeEditorActivated() signal";
+        emit runtimeEditor->Activated();
     }
 }
+

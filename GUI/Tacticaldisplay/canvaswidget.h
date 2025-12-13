@@ -6,6 +6,7 @@
 // Include necessary libraries and headers
 #include "GUI/Tacticaldisplay/Gis/gislib.h"
 #include "GUI/measuredistance/measuredistancedialog.h"
+#include "qnamespace.h"
 #include <QWidget>
 #include <QPainter>
 #include <core/Hierarchy/Struct/vector.h>
@@ -42,6 +43,8 @@ struct MeshEntry {
     DynamicModel* dynamicModel;
     QString bitmapPath;                     // Path to bitmap image
     QString text;                           // Text content for text entities
+    QPolygonF polyline;
+    QVector<QPointF> pointsToDraw;
     bool detection = true;
       bool radioVisible = true;
     // NEW: Text-specific properties
@@ -73,7 +76,12 @@ class CanvasWidget : public QWidget {
 public:
     /* Constructor section */
 
-       double getMetersPerPixel() const; // Add this line
+    QPixmap* cacheimg;
+    QPixmap scaledimg;
+    QPen pointPen; // रंग सेट करें
+    const int pointRadius = 3;
+    int ImageScale = 50;
+    double getMetersPerPixel() const; // Add this line
     CanvasWidget(QWidget *parent = nullptr);  // Constructor
     GISlib* gislib;  // GIS library instance for geographic operations
 
@@ -84,9 +92,11 @@ public:
 
     /* Rendering and mode control section */
     void Render(float deltatime);  // Main rendering function
+    void Refresh();
     void setTransformMode(TransformMode mode);  // Set transformation mode
     void setTrajectoryDrawingMode(bool enabled);  // Enable/disable trajectory drawing
     void saveTrajectory();  // Save current trajectory
+    void setImageScale(int value);
 
     /* Simulation and editor control section */
     void simulation();  // Enter simulation mode
@@ -137,6 +147,7 @@ public:
         bool m_isBeingDestroyed = false;
 
 public slots:
+    void ReInit();
     // GIS event forwarding slots
     void onGISKeyPressed(QKeyEvent *event) { keyPressEvent(event); }
     void onGISMousePressed(QMouseEvent *event) { mousePressEvent(event); }
@@ -204,7 +215,7 @@ private:
     void drawCollider(QPainter& painter,std::string id , MeshEntry entry);  // Draw collision boundaries
     void drawSelectionOutline(QPainter& painter);  // Draw selection outline
     void drawImage(QPainter& painter,std::string id , MeshEntry entry);  // Draw entity images
-    void drawTrajectory(QPainter& painter,std::string id , MeshEntry entry);  // Draw trajectory paths
+    void drawTrajectory(QPainter& painter,const std::string& id , MeshEntry& entry);  // Draw trajectory paths
     void drawTrail(QPainter& painter,std::string id , MeshEntry entry);  // Draw trajectory paths
     void drawMesh(QPainter& painter);  // Draw mesh geometries
     // void drawMesh(QPainter& painter,std::string id , MeshEntry entry);  // Draw mesh geometries
@@ -228,6 +239,10 @@ private:
     bool showOutline = true; // Show selection outlines
     bool showInformation = true;  // Show information overlay
     bool showFPS = true;     // Show FPS counter
+    bool showSensors = true;     // Default sensors visible
+    bool showRadio = true;       // Default radio visible
+
+     bool showImage = true;
 
     // Mode and state flags
     bool isDrawingTrajectory = false;  // Currently drawing trajectory

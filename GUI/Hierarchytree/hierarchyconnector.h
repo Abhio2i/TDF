@@ -12,6 +12,7 @@
 #include <core/Hierarchy/hierarchy.h>             // For hierarchy data structure
 #include <QObject>                                // For QObject base class
 #include <QVariantMap>                            // For key-value data mapping
+#include <GUI/Editors/recentprojectsmanager.h>
 
 // %%% Forward Declarations %%%
 class QMainWindow;

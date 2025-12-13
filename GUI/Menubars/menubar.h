@@ -72,6 +72,8 @@ public:
     // QAction* getAdd3DViewAction();
     // // Get remove 3D view action
     // QAction* getRemove3DViewAction();
+       QAction* getProfileAction();
+        QAction* getApplicationAction() { return applicationAction; }
 
 signals:
     // Signal feedback action triggered
@@ -120,6 +122,8 @@ signals:
     // void add3DViewTriggered();
     // // Signal remove 3D view action triggered
     // void remove3DViewTriggered();
+     void profileTriggered();
+         void applicationTriggered();
 
 private:
     // %%% Menu Components %%%
@@ -177,6 +181,8 @@ private:
     QMenu* feedbackMenu;
     // Feedback action
     QAction* feedbackAction;
+       QAction* profileAction;
+     QAction *applicationAction;
 };
 
 #endif // MENUBAR_H

@@ -63,10 +63,15 @@ private:
     int rate = 1;
 
 public slots:
+    void init();
+    void ReInit();
+    void startf();
+    void pausef();
     void entityAdded(QString parentID, Entity* entity);
     void entityRemoved(QString ID);
     void entityUpdate(QString ID);
     void handleReplayFrame(const QJsonObject& frame);
+    void setFps(int value);
 
 signals:
     void Awake();

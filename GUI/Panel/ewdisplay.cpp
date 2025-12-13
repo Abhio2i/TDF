@@ -105,7 +105,7 @@ void EWDisplay::paintEvent(QPaintEvent * /*event*/)
     if (width() <= 0 || height() <= 0) return;
     // Initialize painter
     QPainter p(this);
-    p.setRenderHint(QPainter::Antialiasing);
+    //p.setRenderHint(QPainter::Antialiasing);
     // Draw display components
     drawBackground(p);
     int w = width();

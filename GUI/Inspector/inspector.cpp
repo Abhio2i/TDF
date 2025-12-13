@@ -1,11 +1,4 @@
 
-// // %%% Utility Function %%%
-// // Capitalize the first letter of a string
-// static QString capitalizeFirstLetter(const QString &str)
-// {
-//     if (str.isEmpty()) return str;
-//     return str[0].toUpper() + str.mid(1);
-// }
 /* ========================================================================= */
 /* File: inspector.cpp                                                     */
 /* Purpose: Implements inspector widget for editing component properties     */
@@ -35,6 +28,20 @@
 #include <GUI/Inspector/template/geocordstemplate.h> // For geocoordinates template
 #include <GUI/Inspector/template/optiontemplate.h> // For option template
 #include <GUI/Inspector/template/vectortemplate.h> // For vector template
+
+// Helper function to safely add widgets to layouts
+static bool safeAddWidget(QLayout* layout, QWidget* widget, const QString& context = "") {
+    if (!layout) {
+        qDebug() << "safeAddWidget: Layout is null in context:" << context;
+        return false;
+    }
+    if (!widget) {
+        qDebug() << "safeAddWidget: Widget is null in context:" << context;
+        return false;
+    }
+    layout->addWidget(widget);
+    return true;
+}
 
 // %%% Utility Functions %%%
 /* Format number for UI display */
@@ -109,28 +116,66 @@ void Inspector::setupTitleBar()
 {
     // Create title bar widget
     titleBarWidget = new QWidget(this);
+    if (!titleBarWidget) {
+        qDebug() << "setupTitleBar: Failed to create titleBarWidget";
+        return;
+    }
+
     QHBoxLayout *titleLayout = new QHBoxLayout(titleBarWidget);
+    if (!titleLayout) {
+        qDebug() << "setupTitleBar: Failed to create titleLayout";
+        delete titleBarWidget;
+        return;
+    }
+
     titleLayout->setContentsMargins(0, 0, 0, 0);
     titleLayout->setSpacing(0);
+
     // Create title label
     titleLabel = new QLabel("Inspector", titleBarWidget);
+    if (!titleLabel) {
+        qDebug() << "setupTitleBar: Failed to create titleLabel";
+        delete titleLayout;
+        delete titleBarWidget;
+        return;
+    }
+
     titleLabel->setStyleSheet(
         "font-size: 16px; font-weight: bold; color: black; background-color: white; padding: 5px;"
         );
     titleLabel->setAlignment(Qt::AlignCenter);
+
     // Create menu button
     menuButton = new QPushButton("⋮", titleBarWidget);
+    if (!menuButton) {
+        qDebug() << "setupTitleBar: Failed to create menuButton";
+        delete titleLabel;
+        delete titleLayout;
+        delete titleBarWidget;
+        return;
+    }
+
     menuButton->setStyleSheet(
         "QPushButton { font-size: 16px; color: black; background-color: white; border: 1px solid #ccc; padding: 5px 10px; }"
         "QPushButton:hover { background-color: #f0f0f0; }"
         );
     menuButton->setFixedWidth(30);
-    titleLayout->addWidget(titleLabel, 1);
-    titleLayout->addWidget(menuButton);
+
+    if (!safeAddWidget(titleLayout, titleLabel, "setupTitleBar - titleLabel") ||
+        !safeAddWidget(titleLayout, menuButton, "setupTitleBar - menuButton")) {
+        delete menuButton;
+        delete titleLabel;
+        delete titleLayout;
+        delete titleBarWidget;
+        return;
+    }
+
     // Connect menu button to show context menu
     connect(menuButton, &QPushButton::clicked, this, [this]() {
         QMenu *menu = createContextMenu();
-        menu->exec(menuButton->mapToGlobal(QPoint(0, menuButton->height())));
+        if (menu && menuButton) {
+            menu->exec(menuButton->mapToGlobal(QPoint(0, menuButton->height())));
+        }
     });
 }
 
@@ -139,6 +184,11 @@ QMenu* Inspector::createContextMenu()
 {
     // Create menu
     QMenu *menu = new QMenu(this);
+    if (!menu) {
+        qDebug() << "createContextMenu: Failed to create menu";
+        return nullptr;
+    }
+
     QAction *copyAction = menu->addAction("Copy Component");
     QAction *pasteAction = menu->addAction("Paste Component");
     pasteAction->setEnabled(!copiedComponentData.isEmpty());
@@ -147,11 +197,13 @@ QMenu* Inspector::createContextMenu()
     QAction *addTabAction = menu->addAction("Add Tab");
     menu->addSeparator();
     QAction *closeAction = menu->addAction("Close");
+
     // Connect menu actions
     connect(copyAction, &QAction::triggered, this, &Inspector::copyCurrentComponent);
     connect(pasteAction, &QAction::triggered, this, &Inspector::pasteToCurrentComponent);
     connect(addTabAction, &QAction::triggered, this, &Inspector::handleAddTab);
     connect(closeAction, &QAction::triggered, this, [](){});
+
     return menu;
 }
 
@@ -191,21 +243,41 @@ void Inspector::handleAddTab()
     emit addTabRequested();
 }
 
-/* Setup main UI */
+
 void Inspector::setupUI()
 {
     // Create container widget
     QWidget *container = new QWidget(this);
+    if (!container) {
+        qDebug() << "setupUI: Failed to create container";
+        return;
+    }
+
     QVBoxLayout *layout = new QVBoxLayout(container);
+    if (!layout) {
+        qDebug() << "setupUI: Failed to create main layout";
+        delete container;
+        return;
+    }
+
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
     // Setup title bar
     setupTitleBar();
-    setTitleBarWidget(titleBarWidget);
+    if (titleBarWidget) {
+        setTitleBarWidget(titleBarWidget);
+    }
 
     // Create table widget
     tableWidget = new QTableWidget(5, 2, this);
+    if (!tableWidget) {
+        qDebug() << "setupUI: Failed to create tableWidget";
+        delete layout;
+        delete container;
+        return;
+    }
+
     tableWidget->horizontalHeader()->setVisible(false);
     tableWidget->verticalHeader()->setVisible(false);
     tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -218,33 +290,91 @@ void Inspector::setupUI()
     tableWidget->setStyleSheet("alternate-background-color: #f9f9f9; background-color: white;");
 
     // Add table to layout
-    layout->addWidget(tableWidget);
+    if (!safeAddWidget(layout, tableWidget, "setupUI - tableWidget")) {
+        delete tableWidget;
+        delete layout;
+        delete container;
+        return;
+    }
 
     // Create button layout
     QHBoxLayout *buttonLayout = new QHBoxLayout();
+    if (!buttonLayout) {
+        qDebug() << "setupUI: Failed to create buttonLayout";
+        delete tableWidget;
+        delete layout;
+        delete container;
+        return;
+    }
 
-    // Info button
+    // Info button - LEFT SIDE
     QPushButton *infoButton = new QPushButton("Info", this);
-    infoButton->setFixedSize(30, 20);
+    if (!infoButton) {
+        qDebug() << "setupUI: Failed to create infoButton";
+        delete buttonLayout;
+        delete tableWidget;
+        delete layout;
+        delete container;
+        return;
+    }
+
+    infoButton->setFixedSize(40, 25);
     infoButton->setStyleSheet(
-        "QPushButton { color: black; border: 1px solid #ccc; border-radius: 3px; }"
-        "QPushButton:hover { background-color: #45a049; }"
+        "QPushButton { color: black; border: 1px solid #ccc; border-radius: 3px; background-color: #e9ecef; }"
+        "QPushButton:hover { background-color: #dde1e4; }"
         );
     infoButton->setToolTip("Show component information");
 
-    // Add button
+    // Add stretch to push Add button to the right
+    QSpacerItem *spacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+    // Add button - RIGHT SIDE
     QPushButton *addButton = new QPushButton("Add", this);
-    addButton->setFixedSize(30, 20);
+    if (!addButton) {
+        qDebug() << "setupUI: Failed to create addButton";
+        delete infoButton;
+        delete buttonLayout;
+        delete tableWidget;
+        delete layout;
+        delete container;
+        return;
+    }
+
+    addButton->setFixedSize(40, 25);
     addButton->setStyleSheet(
         "QPushButton { color: black; border: 1px solid #ccc; border-radius: 3px; background-color: #e9ecef; }"
         "QPushButton:hover { background-color: #dde1e4; }"
         );
+    addButton->setToolTip("Add new parameter");
 
-    buttonLayout->setSpacing(5);
-    buttonLayout->addWidget(infoButton);
-    buttonLayout->addStretch();
-    buttonLayout->addWidget(addButton);
+    // Add widgets to button layout: Info (left) -> Spacer -> Add (right)
+    if (!safeAddWidget(buttonLayout, infoButton, "setupUI - infoButton to buttonLayout")) {
+        delete addButton;
+        delete infoButton;
+        delete buttonLayout;
+        delete tableWidget;
+        delete layout;
+        delete container;
+        return;
+    }
 
+    buttonLayout->addSpacerItem(spacer);
+
+    if (!safeAddWidget(buttonLayout, addButton, "setupUI - addButton to buttonLayout")) {
+        delete addButton;
+        delete infoButton;
+        delete buttonLayout;
+        delete tableWidget;
+        delete layout;
+        delete container;
+        return;
+    }
+
+    // Set spacing for button layout
+    buttonLayout->setSpacing(10);
+    buttonLayout->setContentsMargins(10, 5, 10, 5);
+
+    // Add button layout to main layout
     layout->addLayout(buttonLayout);
 
     // Set container as dock widget
@@ -273,12 +403,18 @@ QPushButton* Inspector::createRemoveButton(const QString &parameterName)
 {
     // Create remove button
     QPushButton *removeButton = new QPushButton("❌", this);
+    if (!removeButton) {
+        qDebug() << "createRemoveButton: Failed to create removeButton";
+        return nullptr;
+    }
+
     removeButton->setFixedSize(20, 20);
     removeButton->setStyleSheet(
         "QPushButton { color: black; border-radius: 3px; background-color: #e9ecef; border: 1px solid #ccc; }"
         "QPushButton:hover { background-color: #dde1e4; }"
         );
     removeButton->setProperty("parameterName", parameterName);
+
     // Connect remove button signal
     connect(removeButton, &QPushButton::clicked, this, [=]() {
         QPushButton *senderButton = qobject_cast<QPushButton*>(sender());
@@ -311,6 +447,7 @@ QPushButton* Inspector::createRemoveButton(const QString &parameterName)
         // Emit parameter changed signal
         emit parameterChanged(ConnectedID, Name, key, "", false);
     });
+
     return removeButton;
 }
 
@@ -321,15 +458,17 @@ void Inspector::addParameterRow(const QString &parameterName, int row)
     tableWidget->setRowCount(row + 1);
     rowToKeyPath[row] = parameterName;
     customParameterKeys.insert(parameterName);
+
     // Create key item
     QTableWidgetItem *keyItem = new QTableWidgetItem(parameterName);
-    keyItem->setFlags(Qt::ItemIsEnabled);
-    keyItem->setBackground(QColor("#f8f9fa"));
-    keyItem->setForeground(Qt::black);
-    tableWidget->setItem(row, 0, keyItem);
+    if (keyItem) {
+        keyItem->setFlags(Qt::ItemIsEnabled);
+        keyItem->setBackground(QColor("#f8f9fa"));
+        keyItem->setForeground(Qt::black);
+        tableWidget->setItem(row, 0, keyItem);
+    }
 }
 
-/* Handle add parameter action */
 /* Handle add parameter action */
 void Inspector::handleAddParameter()
 {
@@ -427,13 +566,26 @@ void Inspector::handleAddParameter()
         }
     }
 }
+
 /* Setup boolean cell */
 void Inspector::setupBooleanCell(int row, const QString &fullKey, bool value)
 {
     qDebug() << "setupBooleanCell: Setting row:" << row << "for key:" << fullKey << "value:" << value;
+
     // Create checkbox widget
     QWidget *checkboxWidget = new QWidget();
+    if (!checkboxWidget) {
+        qDebug() << "setupBooleanCell: Failed to create checkboxWidget";
+        return;
+    }
+
     QCheckBox *checkBox = new QCheckBox();
+    if (!checkBox) {
+        qDebug() << "setupBooleanCell: Failed to create checkBox";
+        delete checkboxWidget;
+        return;
+    }
+
     checkBox->setChecked(value);
     // Style checkbox
     checkBox->setStyleSheet(
@@ -443,11 +595,25 @@ void Inspector::setupBooleanCell(int row, const QString &fullKey, bool value)
         "QCheckBox::indicator:unchecked { image: none; background-color: white; }"
         "QCheckBox::indicator:hover { border: 1px solid #007bff; }"
         );
+
     // Create layout for checkbox
     QHBoxLayout *layout = new QHBoxLayout(checkboxWidget);
-    layout->addWidget(checkBox);
+    if (!layout) {
+        qDebug() << "setupBooleanCell: Failed to create layout";
+        delete checkBox;
+        delete checkboxWidget;
+        return;
+    }
+
+    if (!safeAddWidget(layout, checkBox, "setupBooleanCell - checkBox to layout")) {
+        delete checkBox;
+        delete checkboxWidget;
+        return;
+    }
+
     layout->setAlignment(Qt::AlignCenter);
     layout->setContentsMargins(0, 0, 0, 0);
+
     // Connect checkbox toggle
     connect(checkBox, &QCheckBox::toggled, this, [=](bool checked) {
         QStringList parts = fullKey.split(".");
@@ -459,24 +625,35 @@ void Inspector::setupBooleanCell(int row, const QString &fullKey, bool value)
         }
         emit valueChanged(ConnectedID, Name, delta);
     });
+
     // Set row height and add widget
     tableWidget->setRowHeight(row, 30);
     tableWidget->setCellWidget(row, 1, checkboxWidget);
     qDebug() << "setupBooleanCell: Assigned checkbox to row:" << row << "for key:" << fullKey << "visible:" << checkBox->isVisible();
 }
 
-
-
+/* Setup array cell */
 void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray &array)
 {
     qDebug() << "setupArrayCell: Setting row:" << row << "for key:" << fullKey;
 
     // Create array widget
     QWidget *arrayWidget = new QWidget();
+    if (!arrayWidget) {
+        qDebug() << "setupArrayCell: Failed to create arrayWidget";
+        return;
+    }
+
     arrayWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     // Create dropdown button for right side
     QPushButton *dropdownButton = new QPushButton("▼", this);
+    if (!dropdownButton) {
+        qDebug() << "setupArrayCell: Failed to create dropdownButton";
+        delete arrayWidget;
+        return;
+    }
+
     dropdownButton->setStyleSheet(
         "QPushButton { color: black;  border-radius: 3px; padding: 2px 8px; background-color: #e9ecef; border: 1px solid #ccc; }"
         "QPushButton:hover { background: #dde1e4; }"
@@ -486,6 +663,13 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
 
     // Create list widget but initially hide it
     QListWidget *listWidget = new QListWidget();
+    if (!listWidget) {
+        qDebug() << "setupArrayCell: Failed to create listWidget";
+        delete dropdownButton;
+        delete arrayWidget;
+        return;
+    }
+
     listWidget->setProperty("row", row);
     listWidget->viewport()->installEventFilter(this);
     listWidget->setAcceptDrops(true);
@@ -537,49 +721,104 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
 
     // Create main layout for array widget
     QVBoxLayout *mainLayout = new QVBoxLayout(arrayWidget);
+    if (!mainLayout) {
+        qDebug() << "setupArrayCell: Failed to create mainLayout";
+        delete listWidget;
+        delete dropdownButton;
+        delete arrayWidget;
+        return;
+    }
+
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(4);
 
     // Create top row with dropdown button aligned to right
-    QWidget *topRowWidget = new QWidget();
+    QWidget *topRowWidget = new QWidget(arrayWidget);
+    if (!topRowWidget) {
+        qDebug() << "setupArrayCell: Failed to create topRowWidget";
+        delete mainLayout;
+        delete listWidget;
+        delete dropdownButton;
+        delete arrayWidget;
+        return;
+    }
+
     QHBoxLayout *topRowLayout = new QHBoxLayout(topRowWidget);
+    if (!topRowLayout) {
+        qDebug() << "setupArrayCell: Failed to create topRowLayout";
+        delete topRowWidget;
+        delete mainLayout;
+        delete listWidget;
+        delete dropdownButton;
+        delete arrayWidget;
+        return;
+    }
+
     topRowLayout->setContentsMargins(0, 0, 0, 0);
     topRowLayout->setSpacing(0);
 
     // Add stretch to push button to right
     topRowLayout->addStretch();
-    topRowLayout->addWidget(dropdownButton);
+    if (!safeAddWidget(topRowLayout, dropdownButton, "setupArrayCell - dropdownButton to topRowLayout")) {
+        delete topRowLayout;
+        delete topRowWidget;
+        delete mainLayout;
+        delete listWidget;
+        delete dropdownButton;
+        delete arrayWidget;
+        return;
+    }
 
-    mainLayout->addWidget(topRowWidget);
-    mainLayout->addWidget(listWidget); // Initially hidden
+    // Add top row widget to main layout
+    if (!safeAddWidget(mainLayout, topRowWidget, "setupArrayCell - topRowWidget to mainLayout")) {
+        delete topRowLayout;
+        delete topRowWidget;
+        delete mainLayout;
+        delete listWidget;
+        delete dropdownButton;
+        delete arrayWidget;
+        return;
+    }
+
+    // Add list widget to main layout
+    if (!safeAddWidget(mainLayout, listWidget, "setupArrayCell - listWidget to mainLayout")) {
+        delete topRowLayout;
+        delete topRowWidget;
+        delete mainLayout;
+        delete listWidget;
+        delete dropdownButton;
+        delete arrayWidget;
+        return;
+    }
 
     // Add buttons for non-entity arrays (initially hidden)
     QWidget *buttonWidget = nullptr;
-    QPushButton *addBtn = nullptr;
     QPushButton *removeBtn = nullptr;
 
     if (fullKey != "entity") {
         buttonWidget = new QWidget();
-        QHBoxLayout *btnLayout = new QHBoxLayout(buttonWidget);
-        // addBtn = new QPushButton("Add");
-        removeBtn = new QPushButton("Remove");
+        if (!buttonWidget) {
+            qDebug() << "setupArrayCell: Failed to create buttonWidget";
+            // Continue without buttons
+        } else {
+            QHBoxLayout *btnLayout = new QHBoxLayout(buttonWidget);
+            if (btnLayout) {
+                removeBtn = new QPushButton("Remove");
+                if (removeBtn) {
+                    removeBtn->setStyleSheet(
+                        "QPushButton { color: black; border-radius: 3px; background-color: #e9ecef; border: 1px solid #ccc; padding: 3px 8px; }"
+                        "QPushButton:hover { background-color: #dde1e4; }"
+                        );
 
-        // addBtn->setStyleSheet(
-        //     "QPushButton { color: black; border-radius: 3px; background-color: #e9ecef; border: 1px solid #ccc; padding: 3px 8px; }"
-        //     "QPushButton:hover { background-color: #dde1e4; }"
-        //     );
-        removeBtn->setStyleSheet(
-            "QPushButton { color: black; border-radius: 3px; background-color: #e9ecef; border: 1px solid #ccc; padding: 3px 8px; }"
-            "QPushButton:hover { background-color: #dde1e4; }"
-            );
-
-        btnLayout->addWidget(addBtn);
-        btnLayout->addWidget(removeBtn);
-        btnLayout->setContentsMargins(0, 0, 0, 0);
-        btnLayout->setSpacing(5);
-
-        buttonWidget->setVisible(false); // Initially hidden
-        mainLayout->addWidget(buttonWidget);
+                    if (safeAddWidget(btnLayout, removeBtn, "setupArrayCell - removeBtn to btnLayout")) {
+                        btnLayout->setContentsMargins(0, 0, 0, 0);
+                        btnLayout->setSpacing(5);
+                        buttonWidget->setVisible(false); // Initially hidden
+                        safeAddWidget(mainLayout, buttonWidget, "setupArrayCell - buttonWidget to mainLayout");
+                    }
+                }
+            }
+        }
     }
 
     // Lambda to emit array changes
@@ -626,9 +865,8 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
         }
     });
 
-    // Connect add and remove buttons
-    if (fullKey != "entity") {
-
+    // Connect remove button
+    if (fullKey != "entity" && removeBtn) {
         connect(removeBtn, &QPushButton::clicked, this, [=]() {
             QListWidgetItem *item = listWidget->currentItem();
             if (item) {
@@ -658,7 +896,7 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
     tableWidget->setRowHeight(row, 30);
     tableWidget->setCellWidget(row, 1, arrayWidget);
 }
-/* Setup string cell */
+
 /* Setup string cell */
 void Inspector::setupStringCell(int row, const QString &fullKey, const QString &value)
 {
@@ -670,14 +908,21 @@ void Inspector::setupStringCell(int row, const QString &fullKey, const QString &
         // Capitalize the visible key (last part of fullKey)
         QString displayKey = capitalizeFirstLetter(fullKey.split(".").last());
         keyItem = new QTableWidgetItem(displayKey);
-        keyItem->setBackground(QColor("#f8f9fa"));
-        keyItem->setForeground(QColor(Qt::black));
-        keyItem->setFlags(Qt::ItemIsEnabled);
-        tableWidget->setItem(row, 0, keyItem);
+        if (keyItem) {
+            keyItem->setBackground(QColor("#f8f9fa"));
+            keyItem->setForeground(QColor(Qt::black));
+            keyItem->setFlags(Qt::ItemIsEnabled);
+            tableWidget->setItem(row, 0, keyItem);
+        }
     }
 
     // Create input field
     QLineEdit *lineEdit = new QLineEdit();
+    if (!lineEdit) {
+        qDebug() << "setupStringCell: Failed to create lineEdit";
+        return;
+    }
+
     lineEdit->setText(value);
     lineEdit->setStyleSheet(
         "QLineEdit { color: black !important; background: white; border: 1px solid #ccc; padding: 2px; }"
@@ -706,24 +951,34 @@ void Inspector::setupStringCell(int row, const QString &fullKey, const QString &
         emit valueChanged(ConnectedID, Name, delta);
     });
 }
+
 /* Setup number cell */
 void Inspector::setupNumberCell(int row, const QString &fullKey, double value)
 {
     qDebug() << "setupNumberCell: Setting row:" << row << "for key:" << fullKey << "value:" << value;
+
     // Create input field
     WheelableLineEdit *lineEdit = new WheelableLineEdit();
+    if (!lineEdit) {
+        qDebug() << "setupNumberCell: Failed to create lineEdit";
+        return;
+    }
+
     lineEdit->setText(formatNumberForUI(value));
     lineEdit->setStyleSheet(
         "QLineEdit { background: white; border: 1px solid #ccc; border-radius: 3px; color: black; }"
         );
+
     // Set validator
     QDoubleValidator *validator = new QDoubleValidator(lineEdit);
     validator->setNotation(QDoubleValidator::StandardNotation);
     validator->setDecimals(4);
     lineEdit->setValidator(validator);
+
     // Set row height and add widget
     tableWidget->setRowHeight(row, 30);
     tableWidget->setCellWidget(row, 1, lineEdit);
+
     // Connect input changes
     connect(lineEdit, &QLineEdit::editingFinished, this, [=]() {
         QJsonObject delta;
@@ -863,12 +1118,17 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
     } else if (name.compare("meshRenderer2d", Qt::CaseInsensitive) == 0) {
         Name = QString("meshRenderer2d");
     }
-    titleLabel->setText(name);
+
+    if (titleLabel) {
+        titleLabel->setText(name);
+    }
+
     // Clear table
     tableWidget->clearContents();
     tableWidget->blockSignals(true);
     rowToKeyPath.clear();
     customParameterKeys.clear();
+
     // Fetch component data if empty
     if ((Name == QString("trajectory") || Name == QString("dynamicModel") ||
          Name == QString("meshRenderer2d") || Name == QString("collider")) &&
@@ -876,6 +1136,7 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
         QString dataType = Name;
         object = hierarchy->getComponentData(ID, dataType);
     }
+
     // Calculate row count
     int rowCount = 0;
     for (const QString &key : object.keys()) {
@@ -897,6 +1158,7 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
     }
     tableWidget->setRowCount(rowCount);
     qDebug() << "init: Setting row count to:" << rowCount;
+
     // Add rows
     int row = 0;
     for (const QString &key : object.keys()) {
@@ -910,6 +1172,7 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
     tableWidget->blockSignals(false);
     tableWidget->resizeRowsToContents();
     tableWidget->resizeColumnsToContents();
+
     // Scroll to last row if exists
     if (rowToKeyPath.contains(rowCount - 1)) {
         tableWidget->scrollToItem(tableWidget->item(rowCount - 1, 0), QAbstractItemView::PositionAtTop);
@@ -920,7 +1183,6 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
 }
 
 /* Add simple row to table */
-/* Add simple row to table */
 int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value)
 {
     qDebug() << "addSimpleRow: Adding row for key:" << key << "at row:" << row << "type:" << value.type();
@@ -928,10 +1190,12 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
 
     // Capitalize key label
     QTableWidgetItem *keyItem = new QTableWidgetItem(capitalizeFirstLetter(key));
-    keyItem->setFlags(Qt::ItemIsEnabled);
-    keyItem->setBackground(QColor("#f8f9fa"));
-    keyItem->setForeground(Qt::black);
-    tableWidget->setItem(row, 0, keyItem);
+    if (keyItem) {
+        keyItem->setFlags(Qt::ItemIsEnabled);
+        keyItem->setBackground(QColor("#f8f9fa"));
+        keyItem->setForeground(Qt::black);
+        tableWidget->setItem(row, 0, keyItem);
+    }
 
     if (value.isObject()) {
         QJsonObject obj = value.toObject();
@@ -947,10 +1211,12 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
                 QString fullKey = QString("modeConfiguration.%1").arg(subKey);
                 rowToKeyPath[currentRow] = fullKey;
                 QTableWidgetItem *subKeyItem = new QTableWidgetItem(capitalizeFirstLetter(fullKey.split(".").last()));
-                subKeyItem->setFlags(Qt::ItemIsEnabled);
-                subKeyItem->setBackground(QColor("#f8f9fa"));
-                subKeyItem->setForeground(Qt::black);
-                tableWidget->setItem(currentRow, 0, subKeyItem);
+                if (subKeyItem) {
+                    subKeyItem->setFlags(Qt::ItemIsEnabled);
+                    subKeyItem->setBackground(QColor("#f8f9fa"));
+                    subKeyItem->setForeground(Qt::black);
+                    tableWidget->setItem(currentRow, 0, subKeyItem);
+                }
                 setupStringCell(currentRow, fullKey, obj.value(subKey).toString());
                 currentRow++;
             }
@@ -1013,6 +1279,7 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
     }
     return row + 1;
 }
+
 /* Setup value cell based on type */
 void Inspector::setupValueCell(int row, const QString &fullKey, const QJsonValue &value)
 {
@@ -1067,22 +1334,48 @@ void Inspector::setupValueCell(int row, const QString &fullKey, const QJsonValue
 }
 
 /* Setup generic object cell */
-/* Setup generic object cell */
 void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJsonObject &obj)
 {
     qDebug() << "setupGenericObjectCell: Setting row:" << row << "for key:" << fullKey;
     QWidget *valueWidget = new QWidget();
+    if (!valueWidget) {
+        qDebug() << "setupGenericObjectCell: Failed to create valueWidget";
+        return;
+    }
+
     QVBoxLayout *layout = new QVBoxLayout(valueWidget);
+    if (!layout) {
+        qDebug() << "setupGenericObjectCell: Failed to create layout";
+        delete valueWidget;
+        return;
+    }
+
     layout->setContentsMargins(0, 0, 0, 0);
 
     for (const QString &subKey : obj.keys()) {
         QHBoxLayout *subLayout = new QHBoxLayout();
+        if (!subLayout) {
+            qDebug() << "setupGenericObjectCell: Failed to create subLayout for" << subKey;
+            continue;
+        }
+
         // Capitalize subfield label
         QLabel *label = new QLabel(capitalizeFirstLetter(subKey));
+        if (!label) {
+            delete subLayout;
+            continue;
+        }
+
         label->setStyleSheet("color: black; min-width: 20px;");
-        subLayout->addWidget(label);
+        safeAddWidget(subLayout, label, "setupGenericObjectCell - label to subLayout");
 
         WheelableLineEdit *edit = new WheelableLineEdit();
+        if (!edit) {
+            delete subLayout;
+            delete label;
+            continue;
+        }
+
         edit->setText(formatNumberForUI(obj[subKey].toDouble()));
         edit->setStyleSheet("QLineEdit { background: white; border: 1px solid #ccc; border-radius: 3px; color: black; }");
         QDoubleValidator *validator = new QDoubleValidator(edit);
@@ -1090,7 +1383,14 @@ void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJ
         validator->setDecimals(4);
         edit->setValidator(validator);
         edit->setObjectName(subKey);
-        subLayout->addWidget(edit);
+
+        if (!safeAddWidget(subLayout, edit, "setupGenericObjectCell - edit to subLayout")) {
+            delete edit;
+            delete subLayout;
+            delete label;
+            continue;
+        }
+
         layout->addLayout(subLayout);
 
         connect(edit, &QLineEdit::editingFinished, this, [=]() {
@@ -1103,6 +1403,7 @@ void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJ
     tableWidget->setRowHeight(row, 30 * obj.size());
     tableWidget->setCellWidget(row, 1, valueWidget);
 }
+
 /* Update trajectory waypoints */
 void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
 {
@@ -1121,10 +1422,12 @@ void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
         trajRow = tableWidget->rowCount() - 1;
         rowToKeyPath[trajRow] = "trajectories";
         QTableWidgetItem *keyItem = new QTableWidgetItem("trajectories");
-        keyItem->setFlags(Qt::ItemIsEnabled);
-        keyItem->setBackground(QColor("#f8f9fa"));
-        keyItem->setForeground(Qt::black);
-        tableWidget->setItem(trajRow, 0, keyItem);
+        if (keyItem) {
+            keyItem->setFlags(Qt::ItemIsEnabled);
+            keyItem->setBackground(QColor("#f8f9fa"));
+            keyItem->setForeground(Qt::black);
+            tableWidget->setItem(trajRow, 0, keyItem);
+        }
         setupArrayCell(trajRow, "trajectories", QJsonArray());
     }
     // Get array widget
@@ -1133,13 +1436,17 @@ void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
         setupArrayCell(trajRow, "trajectories", QJsonArray());
         arrayWidget = tableWidget->cellWidget(trajRow, 1);
     }
+    if (!arrayWidget) return;
+
     QListWidget *listWidget = arrayWidget->findChild<QListWidget*>();
     if (!listWidget) return;
     // Update inspector if needed
     if (ConnectedID != entityId || Name != "trajectory") {
         ConnectedID = entityId;
         Name = "trajectory";
-        titleLabel->setText("Trajectories");
+        if (titleLabel) {
+            titleLabel->setText("Trajectories");
+        }
         QJsonObject trajData = hierarchy ? hierarchy->getComponentData(entityId, "trajectory") : QJsonObject();
         init(entityId, "Trajectories", trajData);
         trajRow = -1;
@@ -1188,7 +1495,6 @@ void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
     // Update table viewport
     tableWidget->viewport()->update();
 }
-
 
 // %%% Utility Function %%%
 // Capitalize the first letter of a string
@@ -1343,6 +1649,6 @@ void Inspector::handleInfoButton()
 
     // Show dialog
     dialog->show();
-    dialog->raise();
-    dialog->activateWindow();
+    // dialog->raise();
+    // dialog->activateWindow();
 }

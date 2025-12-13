@@ -5,6 +5,9 @@
 #include <QObject>
 #include <unordered_map>
 #include "./profilecategaory.h"
+#include "core/Hierarchy/EntityProfiles/fixedpoints.h"
+#include "core/Hierarchy/EntityProfiles/formation.h"
+#include "core/Hierarchy/EntityProfiles/specialzone.h"
 
 class Hierarchy : public QObject
 {
@@ -23,6 +26,13 @@ public:
     std::unordered_map<std::string, std::list<std::string>> dictionry;
     std::unordered_map<std::string, Folder*> *Folders;
     std::unordered_map<std::string, Entity*> *Entities;
+    std::unordered_map<std::string, Platform*> *Platforms;
+    std::unordered_map<std::string, Radio*> *Radios;
+    std::unordered_map<std::string, Sensor*> *Sensors;
+    std::unordered_map<std::string, FixedPoints*> *FixedPointes;
+    std::unordered_map<std::string, Formation*> *Formations;
+    std::unordered_map<std::string, Specialzone*> *Specialzones;
+    std::unordered_map<std::string, IFF*> *Iffs;
 
     std::unordered_map<std::string, Component*> *Components;
     std::unordered_map<std::string, Mesh*> *Meshes;

@@ -31,7 +31,6 @@ signals:
     void renameItemRequested(QVariantMap data);
     void copyItemRequested(QVariantMap data);
     void removeComponentRequested(QString entityID, QString componentName);
-    //->CHANGE
     void addComponentRequested(QString entityID, QString componentType, QString componentName, QString sensorType = "Generic");
     void attchedEntity(QString parentID, QString name);
 

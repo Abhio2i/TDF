@@ -17,7 +17,7 @@ class Scenario : public QObject  // QObject se inherit kiya
 
 public:
     Scenario();
-    ScenarioConfig *scenarioconfig;
+    // ScenarioConfig *scenarioconfig;
     Hierarchy *hierarchy;
     Hierarchy *Library;
     SessionManager *sessionManager;
