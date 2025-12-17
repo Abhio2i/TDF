@@ -3390,10 +3390,11 @@ void CanvasWidget::drawImage(QPainter& painter,std::string id , MeshEntry entry)
             float y = point.y();
             float angle = entry.transform->rotation().toEulerAngles().y();
             painter.setPen(QPen(Qt::blue, 1));
-            auto [newLat, newLon] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)),-(entry.dynamicModel->moveSpeed/3.6f)*0.2f);
-            QPointF points = gislib->geoToCanvas(newLat, newLon);
-            painter.drawLine(point.x(), point.y(), points.x(), points.y());
-
+            if(entry.dynamicModel){
+                auto [newLat, newLon] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)),-(entry.dynamicModel->moveSpeed/3.6f)*0.2f);
+                QPointF points = gislib->geoToCanvas(newLat, newLon);
+                painter.drawLine(point.x(), point.y(), points.x(), points.y());
+            }
             painter.save();
             painter.translate(x, y);
             painter.rotate(-angle);

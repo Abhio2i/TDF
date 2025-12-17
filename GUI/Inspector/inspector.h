@@ -71,7 +71,7 @@ public slots:
     void setupValueCell(int row, const QString &fullKey, const QJsonValue &value);
     // Update trajectory waypoints
     void updateTrajectory(QString entityId, QJsonArray waypoints);
-  void handleInfoButton();
+    void handleInfoButton();
 signals:
     // Signal focus entity
     void foucsEntity(QString ID); // Note: Typo in code
@@ -97,9 +97,6 @@ private slots:
     void handleRemoveParameter();
 
 private:
-
-
-
     // %%% UI Components %%%
     // Table widget for data
     QTableWidget *tableWidget;
@@ -149,8 +146,36 @@ private:
     void addParameterRow(const QString &parameterName, int row);
     // Create remove button
     QPushButton *createRemoveButton(const QString &parameterName);
+    void setupSectionCell(int row, const QString &fullKey, const QJsonObject &sectionObj);
+    void setupUnitParamInSection(QVBoxLayout *parentLayout,
+                                 const QString &fullKey,
+                                 const QString &paramKey,
+                                 const QJsonObject &paramObj);
+    void setupRegularParamInSection(QVBoxLayout *parentLayout,
+                                    const QString &fullKey,
+                                    const QString &paramKey,
+                                    const QJsonValue &paramValue);
+    void setupUnitParameterCell(int row, const QString &fullKey, const QJsonObject &paramObj);
+    struct SectionInfo {
+        int headerRow;
+        int parameterCount;
+        bool isExpanded;
 
-    //  helper that capitalises the first letter of any string
+        SectionInfo() : headerRow(-1), parameterCount(0), isExpanded(true) {}
+        SectionInfo(int row, int count, bool expanded = true)
+            : headerRow(row), parameterCount(count), isExpanded(expanded) {}
+    };
+
+
+    QMap<QString, SectionInfo> sectionInfo;
+    QMap<int, QString> sectionRows;
+
+
+    QWidget* createSectionHeader(const QString &sectionKey, int headerRow, const QJsonObject &sectionObj);
+    void toggleSectionExpansion(const QString &sectionKey, int headerRow, QPushButton *dropdownButton);
+
+
+
 
     static QString capitalizeFirstLetter(const QString &s)
     {

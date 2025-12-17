@@ -12,7 +12,8 @@ enum class ComponentType {
     DynamicModel,
     Collider,
     Trajectory,
-    AttachedEnitities
+    AttachedEnitities,
+
 
     // aur bhi component types
 };

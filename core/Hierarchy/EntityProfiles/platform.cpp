@@ -124,8 +124,9 @@ std::vector<std::string> Platform::getSupportedComponents() {
     supported.push_back("rigidbody");
     supported.push_back("dynamicModel");
     supported.push_back("collider");
+    supported.push_back("crossSection");
     supported.push_back("networkObject");
-    supported.push_back("meshRenderer2d");
+    supported.push_back("bitmap");
     supported.push_back("mission");
     supported.push_back("radios");
     supported.push_back("sensors");
@@ -154,10 +155,11 @@ QJsonObject Platform::toJson() const {
 
     if (transform) obj["transform"] = transform->toJson();
     if (trajectory) obj["trajectory"] = trajectory->toJson();
+    if (crossSection) obj["crossSection"] = crossSection->toJson();
     if (rigidbody) obj["rigidbody"] = rigidbody->toJson();
     if (dynamicModel) obj["dynamicModel"] = dynamicModel->toJson();
     if (collider) obj["collider"] = collider->toJson();
-    if (meshRenderer2d) obj["meshRenderer2d"] = meshRenderer2d->toJson();
+    if (meshRenderer2d) obj["bitmap"] = meshRenderer2d->toJson();
     QJsonArray radioArray;
     for (Radio* r : radioList) {
         if (r) radioArray.append(r->toJson());
@@ -226,6 +228,11 @@ void Platform::fromJson(const QJsonObject& obj) {
         transform->fromJson(obj["transform"].toObject());
     }
 
+    if (obj.contains("crossSection") && obj["crossSection"].isObject()) {
+        if (!crossSection) addComponent("crossSection");
+        crossSection->fromJson(obj["crossSection"].toObject());
+    }
+
     if (obj.contains("trajectory") && obj["trajectory"].isObject()) {
         if (!trajectory) addComponent("trajectory");
         trajectory->fromJson(obj["trajectory"].toObject());
@@ -246,9 +253,9 @@ void Platform::fromJson(const QJsonObject& obj) {
         collider->fromJson(obj["collider"].toObject());
     }
 
-    if (obj.contains("meshRenderer2d") && obj["meshRenderer2d"].isObject()) { // Fix: Correct key
-        if (!meshRenderer2d) addComponent("meshRenderer2d");
-        meshRenderer2d->fromJson(obj["meshRenderer2d"].toObject());
+    if (obj.contains("bitmap") && obj["bitmap"].isObject()) { // Fix: Correct key
+        if (!meshRenderer2d) addComponent("bitmap");
+        meshRenderer2d->fromJson(obj["bitmap"].toObject());
     }
 
     if (obj.contains("radios") && obj["radios"].isArray()) {
@@ -296,6 +303,7 @@ void Platform::fromJson(const QJsonObject& obj) {
             it.key() != "trajectory" &&
             it.key() != "rigidbody" &&
             it.key() != "dynamicModel" &&
+            it.key() != "crossSection" &&
             it.key() != "collider" &&
             it.key() != "meshRenderer2d" &&
             it.key() != "radios" &&
@@ -315,6 +323,11 @@ void Platform::addComponent(std::string name) {
         if (!transform){
             transform = new Transform();
             emit parent->componentAdded(QString::fromStdString(ID), "transform");
+        }
+    } else if (name == "crossSection") {
+        if (!crossSection){
+            crossSection = new CrossSection();
+            emit parent->componentAdded(QString::fromStdString(ID), "crossSection");
         }
     } else if (name == "trajectory") {
         if (!trajectory){
@@ -356,14 +369,14 @@ void Platform::addComponent(std::string name) {
             emit parent->componentAdded(QString::fromStdString(ID), "collider");
         }
 
-    } else if (name == "meshRenderer2d") {
+    } else if (name == "bitmap") {
         if (!meshRenderer2d) {
             if (!transform)
                 addComponent("transform");
             if (!collider)
                 addComponent("collider");
             meshRenderer2d = new MeshRenderer2D();
-            emit parent->componentAdded(QString::fromStdString(ID), "meshRenderer2d");
+            emit parent->componentAdded(QString::fromStdString(ID), "bitmap");
             emit parent->entityMeshAdded(QString::fromStdString(parentID), this);
         }
 
@@ -385,6 +398,11 @@ void Platform::removeComponent(std::string name) {
         emit parent->componentRemoved(QString::fromStdString(ID), "transform");
         emit parent->entityMeshRemoved(QString::fromStdString(parentID));
         emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+    } else if (name == "crossSection") {
+        if (!crossSection) return;
+        delete crossSection;
+        crossSection = nullptr;
+        emit parent->componentRemoved(QString::fromStdString(ID), "crossSection");
     } else if (name == "trajectory") {
         if (!trajectory) return;
         delete trajectory;
@@ -409,11 +427,11 @@ void Platform::removeComponent(std::string name) {
         emit parent->componentRemoved(QString::fromStdString(ID), "collider");
         emit parent->entityMeshRemoved(QString::fromStdString(parentID));
         emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
-    } else if (name == "meshRenderer2d") {
+    } else if (name == "bitmap") {
         if (!meshRenderer2d) return;
         delete meshRenderer2d;
         meshRenderer2d = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "meshRenderer2d");
+        emit parent->componentRemoved(QString::fromStdString(ID), "bitmap");
         emit parent->entityMeshRemoved(QString::fromStdString(parentID));
     }
 }
@@ -422,6 +440,9 @@ QJsonObject Platform::getComponent(std::string name) {
     if (name == "transform") {
         if (!transform) { Console::error(name + ": not exist"); return QJsonObject(); }
         return transform->toJson();
+    } else if (name == "crossSection") {
+        if (!crossSection) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return crossSection->toJson();
     } else if (name == "trajectory") {
         if (!trajectory) { Console::error(name + ": not exist"); return QJsonObject(); }
         return trajectory->toJson();
@@ -434,7 +455,7 @@ QJsonObject Platform::getComponent(std::string name) {
     } else if (name == "collider") {
         if (!collider) { Console::error(name + ": not exist"); return QJsonObject(); }
         return collider->toJson();
-    } else if (name == "meshRenderer2d") {
+    } else if (name == "bitmap") {
         if (!meshRenderer2d) { Console::error(name + ": not exist"); return QJsonObject(); }
         return meshRenderer2d->toJson();
     }
@@ -487,6 +508,9 @@ void Platform::updateComponent(QString name, const QJsonObject& obj) {
     if (name == "transform") {
         if (!transform) { Console::error(name.toStdString() + ": not exist"); return; }
         transform->fromJson(obj);
+    } else if (name == "crossSection") {
+        if (!crossSection) { Console::error(name.toStdString() + ": not exist"); return; }
+        crossSection->fromJson(obj);
     } else if (name == "trajectory") {
         if (!trajectory) { Console::error(name.toStdString() + ": not exist"); return; }
         trajectory->fromJson(obj);
@@ -499,7 +523,7 @@ void Platform::updateComponent(QString name, const QJsonObject& obj) {
     } else if (name == "collider") {
         if (!collider) { Console::error(name.toStdString() + ": not exist"); return; }
         collider->fromJson(obj);
-    } else if (name == "meshRenderer2d") {
+    } else if (name == "bitmap") {
         if (!meshRenderer2d) { Console::error(name.toStdString() + ": not exist"); return; }
         meshRenderer2d->fromJson(obj);
     }

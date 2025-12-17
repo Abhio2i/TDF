@@ -10,6 +10,7 @@ Runtime::Runtime() {
     scenerenderer = new SceneRenderer();
     simulation = new Simulation();
     scriptengine = new ScriptEngine();
+     scriptengine->setRuntime(this);
     networkManager = new NetworkManager();
     console  = Console::internalInstance();
     profiler = new Profiler();

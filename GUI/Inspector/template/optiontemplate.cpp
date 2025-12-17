@@ -53,16 +53,40 @@ void OptionTemplate::setupOptionCell(int row, const QString &fullKey, const QJso
     layout->addWidget(combo);
     layout->addStretch();
 
-    // Connect dropdown selection change
+    // // Connect dropdown selection change
+    // connect(combo, &QComboBox::currentTextChanged, this, [=](const QString &text) {
+    //     // Emit value changed signal
+    //     QJsonObject delta;
+    //     QJsonObject optionObj;
+    //     optionObj["value"] = text;
+    //     delta[fullKey] = optionObj;
+    //     emit valueChanged(connectedID, name, delta);
+    // });
     connect(combo, &QComboBox::currentTextChanged, this, [=](const QString &text) {
-        // Emit value changed signal
-        QJsonObject delta;
         QJsonObject optionObj;
+        optionObj["type"] = "option";
         optionObj["value"] = text;
-        delta[fullKey] = optionObj;
+
+        // Preserve existing options
+        QJsonArray options = obj["options"].toArray();  // obj is captured from setup function
+        optionObj["options"] = options;
+
+        QJsonObject delta;
+
+        // Special handling for nested keys like "passabillity.terrainSurface"
+        QStringList parts = fullKey.split(".");
+        if (parts.size() == 2) {
+            // Nested case: e.g., "passabillity" -> "terrainSurface"
+            QJsonObject parentObj;
+            parentObj[parts[1]] = optionObj;
+            delta[parts[0]] = parentObj;
+        } else {
+            // Simple top-level case
+            delta[fullKey] = optionObj;
+        }
+
         emit valueChanged(connectedID, name, delta);
     });
-
     // Set row height and add widget to table
     tableWidget->setRowHeight(row, ROW_HEIGHT);
     tableWidget->setCellWidget(row, 1, this);

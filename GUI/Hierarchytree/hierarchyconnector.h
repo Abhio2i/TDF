@@ -52,10 +52,7 @@ public:
     QStringList getRecentProjects() const;
     void clearRecentProjects();
 public slots:
-    // Handle library to hierarchy drop
-    void handleLibraryToHierarchyDrop(QVariantMap sourceData, QVariantMap targetData);
-    // Handle hierarchy to library drop
-    void handleHierarchyToLibraryDrop(QVariantMap sourceData, QVariantMap targetData);
+
 
 private:
     // Initialize connector

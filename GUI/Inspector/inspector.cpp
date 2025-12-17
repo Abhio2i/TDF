@@ -6,6 +6,7 @@
 
 #include "inspector.h"                             // For inspector class
 #include "qjsondocument.h"                         // For JSON document handling
+#include "qtimer.h"
 #include <QVBoxLayout>                             // For vertical layout
 #include <QHBoxLayout>                             // For horizontal layout
 #include <QLabel>                                  // For labels
@@ -394,7 +395,6 @@ void Inspector::setupUI()
 
     // Connect add button
     connect(addButton, &QPushButton::clicked, this, &Inspector::handleAddParameter);
-
     // Connect info button
     connect(infoButton, &QPushButton::clicked, this, &Inspector::handleInfoButton);
 }
@@ -729,6 +729,7 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
         return;
     }
 
+
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(4);
 
@@ -821,7 +822,7 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
         }
     }
 
-    // Lambda to emit array changes
+// Lambda to emit array changes
     auto emitArrayChanged = [=]() {
         QJsonObject delta;
         if (fullKey == "entity") {
@@ -1103,7 +1104,6 @@ bool Inspector::eventFilter(QObject *watched, QEvent *event)
     return QDockWidget::eventFilter(watched, event);
 }
 
-/* Initialize inspector with data */
 void Inspector::init(QString ID, QString name, QJsonObject object)
 {
     qDebug() << "init: Initializing for ID:" << ID << "name:" << name << "object:" << object;
@@ -1117,17 +1117,21 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
         Name = QString("dynamicModel");
     } else if (name.compare("meshRenderer2d", Qt::CaseInsensitive) == 0) {
         Name = QString("meshRenderer2d");
+    } else if (name.compare("crossSection", Qt::CaseInsensitive) == 0) {
+        Name = QString("crossSection");
     }
 
     if (titleLabel) {
         titleLabel->setText(name);
     }
 
-    // Clear table
+    // Clear table and data structures
     tableWidget->clearContents();
     tableWidget->blockSignals(true);
     rowToKeyPath.clear();
     customParameterKeys.clear();
+    sectionInfo.clear();  // NEW: Clear section info
+    sectionRows.clear();  // NEW: Clear section rows
 
     // Fetch component data if empty
     if ((Name == QString("trajectory") || Name == QString("dynamicModel") ||
@@ -1137,25 +1141,38 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
         object = hierarchy->getComponentData(ID, dataType);
     }
 
-    // Calculate row count
+    // Calculate row count including section parameters
     int rowCount = 0;
     for (const QString &key : object.keys()) {
-        if (key == "modeConfiguration") {
-            QJsonObject subObj = object[key].toObject();
-            rowCount += subObj.size();
-        } else if (object[key].isArray()) {
-            rowCount += 1;
-        } else if (object[key].isObject()) {
-            QJsonObject subObj = object[key].toObject();
-            if (key == "entity" || subObj["type"].toString() == "reference") {
-                rowCount += 1;
-            } else {
+        QJsonValue value = object[key];
+
+        if (value.isObject()) {
+            QJsonObject obj = value.toObject();
+            QString type = obj["type"].toString().toLower();
+
+            if (type == "section") {
+                // Section header + each parameter in section
+                rowCount += 1 + (obj.keys().size() - 1); // -1 for "type" field
+            }
+            else if (key == "modeConfiguration") {
+                QJsonObject subObj = object[key].toObject();
                 rowCount += subObj.size();
             }
-        } else {
+            else if (key == "entity" || obj["type"].toString() == "reference") {
+                rowCount += 1;
+            }
+            else {
+                rowCount += 1;
+            }
+        }
+        else if (value.isArray()) {
+            rowCount += 1;
+        }
+        else {
             rowCount += 1;
         }
     }
+
     tableWidget->setRowCount(rowCount);
     qDebug() << "init: Setting row count to:" << rowCount;
 
@@ -1169,23 +1186,116 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
             customParameterKeys.insert(key);
         }
     }
+
     tableWidget->blockSignals(false);
     tableWidget->resizeRowsToContents();
     tableWidget->resizeColumnsToContents();
 
-    // Scroll to last row if exists
-    if (rowToKeyPath.contains(rowCount - 1)) {
-        tableWidget->scrollToItem(tableWidget->item(rowCount - 1, 0), QAbstractItemView::PositionAtTop);
-        qDebug() << "init: Scrolled to last row";
+    // FIX: Scroll to FIRST row instead of last row
+    if (tableWidget->rowCount() > 0) {
+        tableWidget->scrollToTop();
+        qDebug() << "init: Scrolled to top";
     }
+
     tableWidget->viewport()->update();
-    qDebug() << "init: Table updated, rows:" << tableWidget->rowCount() << "visible rows:" << tableWidget->visibleRegion().rects().size();
+    qDebug() << "init: Table updated, rows:" << tableWidget->rowCount();
 }
 
-/* Add simple row to table */
 int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value)
 {
     qDebug() << "addSimpleRow: Adding row for key:" << key << "at row:" << row << "type:" << value.type();
+
+    // Check if this is a Section type object
+    if (value.isObject()) {
+        QJsonObject obj = value.toObject();
+        QString type = obj["type"].toString().toLower();
+
+        if (type == "section") {
+            // Store section info
+            QString sectionKey = key;
+            int headerRow = row;
+
+            // Create section header with dropdown button
+            QWidget *headerWidget = createSectionHeader(sectionKey, headerRow, obj);
+
+            if (!headerWidget) {
+                return row + 1;
+            }
+
+            // Set the header widget
+            tableWidget->setCellWidget(row, 0, headerWidget);
+            tableWidget->setRowHeight(row, 35);
+
+            // Create an empty cell for the right side
+            QTableWidgetItem *emptyItem = new QTableWidgetItem("");
+            emptyItem->setFlags(Qt::ItemIsEnabled);
+            emptyItem->setBackground(QColor("#2c3e50"));
+            tableWidget->setItem(row, 1, emptyItem);
+
+            // Store section info for tracking
+            sectionInfo[sectionKey] = SectionInfo(
+                headerRow,
+                obj.keys().size() - 1, // number of parameters (-1 for type)
+                true // initially expanded
+                );
+
+            // Add parameters rows (initially visible)
+            int currentRow = row + 1;
+            for (const QString &paramKey : obj.keys()) {
+                if (paramKey == "type") continue;
+
+                // Insert row for parameter
+                tableWidget->insertRow(currentRow);
+                QString fullKey = QString("%1.%2").arg(sectionKey).arg(paramKey);
+                rowToKeyPath[currentRow] = fullKey;
+
+                // Parameter name with indentation
+                QString displayKey = paramKey;
+                // Convert camelCase to readable format
+                for (int i = 1; i < displayKey.length(); i++) {
+                    if (displayKey[i].isUpper() && displayKey[i-1].isLower()) {
+                        displayKey.insert(i, " ");
+                        i++;
+                    }
+                }
+
+                QTableWidgetItem *paramKeyItem = new QTableWidgetItem("    " + capitalizeFirstLetter(displayKey));
+                if (paramKeyItem) {
+                    paramKeyItem->setFlags(Qt::ItemIsEnabled);
+                    paramKeyItem->setBackground(QColor("#ecf0f1"));
+                    paramKeyItem->setForeground(Qt::black);
+                    tableWidget->setItem(currentRow, 0, paramKeyItem);
+                }
+
+                // Handle the parameter value
+                QJsonValue paramValue = obj[paramKey];
+
+                if (paramValue.isObject()) {
+                    QJsonObject paramObj = paramValue.toObject();
+
+                    if (paramObj.contains("type") && paramObj["type"].toString() == "unitParam") {
+                        // Create widget for unit parameter
+                        setupUnitParameterCell(currentRow, fullKey, paramObj);
+                    } else {
+                        // Regular object parameter
+                        setupValueCell(currentRow, fullKey, paramValue);
+                    }
+                } else {
+                    // Simple value parameter
+                    setupValueCell(currentRow, fullKey, paramValue);
+                }
+
+                // Store that this row belongs to this section
+                sectionRows[currentRow] = sectionKey;
+
+                currentRow++;
+            }
+
+            return currentRow;  // Return next available row
+        }
+    }
+
+    // Rest of the existing code for non-section objects...
     rowToKeyPath[row] = key;
 
     // Capitalize key label
@@ -1279,8 +1389,6 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
     }
     return row + 1;
 }
-
-/* Setup value cell based on type */
 void Inspector::setupValueCell(int row, const QString &fullKey, const QJsonValue &value)
 {
     qDebug() << "setupValueCell: Processing key:" << fullKey << "type:" << value.type();
@@ -1333,10 +1441,11 @@ void Inspector::setupValueCell(int row, const QString &fullKey, const QJsonValue
     }
 }
 
-/* Setup generic object cell */
 void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJsonObject &obj)
 {
     qDebug() << "setupGenericObjectCell: Setting row:" << row << "for key:" << fullKey;
+
+
     QWidget *valueWidget = new QWidget();
     if (!valueWidget) {
         qDebug() << "setupGenericObjectCell: Failed to create valueWidget";
@@ -1353,6 +1462,9 @@ void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJ
     layout->setContentsMargins(0, 0, 0, 0);
 
     for (const QString &subKey : obj.keys()) {
+        // Skip type field if it exists
+        if (subKey == "type") continue;
+
         QHBoxLayout *subLayout = new QHBoxLayout();
         if (!subLayout) {
             qDebug() << "setupGenericObjectCell: Failed to create subLayout for" << subKey;
@@ -1404,7 +1516,6 @@ void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJ
     tableWidget->setCellWidget(row, 1, valueWidget);
 }
 
-/* Update trajectory waypoints */
 void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
 {
     qDebug() << "updateTrajectory: Updating for entityId:" << entityId;
@@ -1496,8 +1607,7 @@ void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
     tableWidget->viewport()->update();
 }
 
-// %%% Utility Function %%%
-// Capitalize the first letter of a string
+
 static QString capitalizeFirstLetter(const QString &str)
 {
     if (str.isEmpty()) return str;
@@ -1651,4 +1761,159 @@ void Inspector::handleInfoButton()
     dialog->show();
     // dialog->raise();
     // dialog->activateWindow();
+}
+
+void Inspector::setupUnitParameterCell(int row, const QString &fullKey, const QJsonObject &paramObj)
+{
+    qDebug() << "setupUnitParameterCell: Setting row:" << row << "for key:" << fullKey;
+
+    // Create widget for unit parameter
+    QWidget *unitWidget = new QWidget();
+    if (!unitWidget) return;
+
+    QHBoxLayout *layout = new QHBoxLayout(unitWidget);
+    layout->setContentsMargins(5, 2, 5, 2);
+    layout->setSpacing(8);
+
+    // Value editor
+    WheelableLineEdit *valueEdit = new WheelableLineEdit();
+    valueEdit->setText(formatNumberForUI(paramObj["value"].toDouble()));
+    valueEdit->setStyleSheet(
+        "QLineEdit {"
+        "    background: white;"
+        "    border: 1px solid #ccc;"
+        "    border-radius: 3px;"
+        "    color: black;"
+        "    min-width: 80px;"
+        "}"
+        );
+
+    QDoubleValidator *validator = new QDoubleValidator(valueEdit);
+    validator->setNotation(QDoubleValidator::StandardNotation);
+    validator->setDecimals(4);
+    valueEdit->setValidator(validator);
+
+    // Unit label
+    QString unit = paramObj["unit"].toString();
+    QLabel *unitLabel = new QLabel(unit);
+    unitLabel->setStyleSheet(
+        "QLabel {"
+        "    color: #7f8c8d;"
+        "    font-style: italic;"
+        "    min-width: 50px;"
+        "}"
+        );
+
+    layout->addWidget(valueEdit);
+    layout->addWidget(unitLabel);
+    layout->addStretch();
+
+    tableWidget->setRowHeight(row, 30);
+    tableWidget->setCellWidget(row, 1, unitWidget);
+
+
+    connect(valueEdit, &QLineEdit::editingFinished, this, [=]() {
+        QJsonObject delta;
+        QJsonObject updatedParam = paramObj;
+        updatedParam["value"] = valueEdit->text().toDouble();
+
+       QStringList parts = fullKey.split(".");
+        if (parts.size() == 2) {
+            delta[parts[0]] = QJsonObject{{parts[1], updatedParam}};
+        } else {
+            delta[fullKey] = updatedParam;
+        }
+
+        emit valueChanged(ConnectedID, Name, delta);
+    });
+}
+
+QWidget* Inspector::createSectionHeader(const QString &sectionKey, int headerRow, const QJsonObject &sectionObj)
+{
+    QWidget *headerWidget = new QWidget();
+    if (!headerWidget) return nullptr;
+
+    QHBoxLayout *layout = new QHBoxLayout(headerWidget);
+    layout->setContentsMargins(5, 0, 5, 0);
+    layout->setSpacing(10);
+
+
+    QPushButton *dropdownButton = new QPushButton("▼", this);
+    dropdownButton->setFixedSize(20, 20);
+    dropdownButton->setStyleSheet(
+        "QPushButton {"
+        "    background: transparent;"
+        "    border: none;"
+        "    color: white;"
+        "    font-size: 12px;"
+        "    font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "    background: rgba(255, 255, 255, 0.1);"
+        "    border-radius: 3px;"
+        "}"
+        );
+    dropdownButton->setProperty("sectionKey", sectionKey);
+    dropdownButton->setProperty("headerRow", headerRow);
+
+
+    QLabel *sectionLabel = new QLabel(capitalizeFirstLetter(sectionKey));
+    sectionLabel->setStyleSheet(
+        "QLabel {"
+        "    color: white;"
+        "    font-size: 14px;"
+        "    font-weight: bold;"
+        "    background: transparent;"
+        "}"
+        );
+
+    layout->addWidget(dropdownButton);
+    layout->addWidget(sectionLabel);
+    layout->addStretch();
+
+
+    headerWidget->setStyleSheet(
+        "QWidget {"
+        "    background-color: #2c3e50;"
+        "    border-radius: 4px;"
+        "}"
+        );
+
+
+    connect(dropdownButton, &QPushButton::clicked, this, [=]() {
+        toggleSectionExpansion(sectionKey, headerRow, dropdownButton);
+    });
+
+    return headerWidget;
+}
+
+void Inspector::toggleSectionExpansion(const QString &sectionKey, int headerRow, QPushButton *dropdownButton)
+{
+    if (!sectionInfo.contains(sectionKey)) {
+        return;
+    }
+
+    SectionInfo &info = sectionInfo[sectionKey];
+    bool isExpanded = info.isExpanded;
+
+
+    info.isExpanded = !isExpanded;
+
+
+    if (info.isExpanded) {
+        dropdownButton->setText("▼");
+    } else {
+        dropdownButton->setText("▶");
+    }
+
+    int paramCount = info.parameterCount;
+
+    for (int i = 1; i <= paramCount; i++) {
+        int paramRow = headerRow + i;
+
+        if (paramRow < tableWidget->rowCount()) {
+            tableWidget->setRowHidden(paramRow, !info.isExpanded);
+        }
+    }
+    tableWidget->viewport()->update();
 }

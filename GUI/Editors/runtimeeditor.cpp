@@ -65,6 +65,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     hierarchy = runtime->hierarchy;
     SceneRenderer *renderer = runtime->scenerenderer;
     simulation = runtime->simulation;
+
     console = runtime->console;
     NetworkManager *networkManager = runtime->networkManager;
     library = runtime->Library;

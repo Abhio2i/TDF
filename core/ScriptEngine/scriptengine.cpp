@@ -121,15 +121,37 @@ static Simulation* GetSimulation(ScriptEngine* engine)
 // --- Wrapper Functions for AngelScript ---
 void AS_SimStart(ScriptEngine* engine)
 {
-    if (auto* sim = GetSimulation(engine))
-        sim->start();
+    if (!engine) return;
+
+    Runtime* runtime = engine->getRuntime();
+    if (!runtime) {
+        qWarning() << "[SimStart] Runtime is NULL";
+        return;
+    }
+
+    QMetaObject::invokeMethod(
+        runtime,
+        "handleStart",
+        Qt::QueuedConnection
+        );
 }
+
 
 void AS_SimPause(ScriptEngine* engine)
 {
-    if (auto* sim = GetSimulation(engine))
-        sim->pause();
+    if (!engine) return;
+
+    Runtime* runtime = engine->getRuntime();
+    if (!runtime) return;
+
+    QMetaObject::invokeMethod(
+        runtime,
+        "handleStop",
+        Qt::QueuedConnection
+        );
 }
+
+
 void Print(const std::string &msg)
 {
     qDebug() << "[AngelScript]:" << QString::fromStdString(msg);
@@ -827,6 +849,9 @@ ScriptEngine::ScriptEngine()
     s = engine->RegisterObjectType("Trajectory", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("Trajectory", "void addWaypoint(float,float,float)", asMETHOD(Trajectory, addWaypoint), asCALL_THISCALL); Q_ASSERT(s >= 0);
 
+    s = engine->RegisterObjectType("DynamicModel", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("DynamicModel", "float moveSpeed", asOFFSET(DynamicModel, moveSpeed)); Q_ASSERT(s >= 0);
+
     s = engine->RegisterObjectType("ProfileCategaory", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectProperty("ProfileCategaory", "string id", asOFFSET(ProfileCategaory, ID)); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectProperty("ProfileCategaory", "string name", asOFFSET(ProfileCategaory, Name)); Q_ASSERT(s >= 0);
@@ -838,7 +863,9 @@ ScriptEngine::ScriptEngine()
     s = engine->RegisterObjectType("Platform", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectProperty("Platform", "string id", asOFFSET(Entity, ID)); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectProperty("Platform", "string name", asOFFSET(Entity, Name)); Q_ASSERT(s >= 0);
+
     s = engine->RegisterObjectProperty("Platform", "Transform@ transform", asOFFSET(Platform, transform)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("Platform", "DynamicModel@ dynamicModel", asOFFSET(Platform, dynamicModel)); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectProperty("Platform", "Trajectory@ trajectory", asOFFSET(Platform, trajectory)); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("Platform", "void addParam(const string &in,const string &in)", asMETHOD(Platform, addParam), asCALL_THISCALL); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("Platform", "void editParam(const string &in,const string &in)", asMETHOD(Platform, editParam), asCALL_THISCALL); Q_ASSERT(s >= 0);

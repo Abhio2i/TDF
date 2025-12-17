@@ -17,36 +17,50 @@ class DynamicModel: public QObject, public Component
 {
     Q_OBJECT
 public:
+    enum TerrainSurface {
+        Generic,
+        Ground,
+        Sand,
+        Rock
+    };
+    Q_ENUM(TerrainSurface)
+
     DynamicModel();
     ComponentType Typo() const override { return ComponentType::DynamicModel; }
     void init();
     void start();
     bool controle;
     bool follow;
-    float maxEnginePower = 10;
-    float Lift = 0.002f;
-    float zeroLiftSpeed = 300;
-    float throttle = 0.0f;
-    float throttleInput = 0.0f;
-    bool airBrakes = false;
-
-    float dragIncreaseFactor = 0.001f;
-    float aerodynamicEffect = 1.0f;
-    float airBrakesEffect = 3.0f;
-    float rollEffect = 1.0f;
-    float pitchEffect = 1.0f;
-    float yawEffect = 0.2f;
-    float bankedTurnEffect = 0.5f;
-    float autoRollLevel = 0.2f;
-    float autoPitchLevel = 0.2f;
-
-    float altitude = 0.0f;
-    float forwardSpeed = 0.0f;
-    float enginePower = 0.0f;
-    float aeroFactor = 0.0f;
     float moveSpeed = 800;//km/h
-    float turnRadius = 100;//metre
-    float rotationSpeed = 1;
+    float turnRadius = 500;//metre
+    ///Maximums
+    float minSpeed = 1.000f;//m/s
+    float maxSpeed = 1.000f;//m/s
+    float Acceleration = 10.000f;//m/s^2
+    float Decceleration = 10.000f;//m/s^2
+    float turnRate = 71.620f;//deg/s
+    float Roll = 90.000;//deg
+    float Altitude = 10000;//m
+    float climbRate = 10.000;//m/s
+    float diveRate = 10.000;//m/s
+
+    ///Resposes
+    float deltaSpdCommandMaxAcc = 20.000;//m/s
+    float timeToReachMaxAcc = 1.000;//s
+    float deltaSpdCommandMaxDecel = 20.000;//m/s
+    float timeToReachMaxDecel = 1.000;//s
+    float deltaHdgCommandMaxRot = 90.000;//deg
+    float timeToReachMaxRot = 1.000;//s
+    float maximumPitchRate = 30.000;//deg/s
+    float maximumRollRate = 30.000;//deg/s
+    float deltaToReachMaxROC = 500.00;//m
+    float deltaToReachMaxROD = 500.00;//m
+
+    ///Passabillity
+    TerrainSurface terrainSurface = TerrainSurface::Generic;
+    float maximumSpeed = 100;//%
+    bool terrainIs = false;//Passable
+
     float angdeg = 1;
     float startTime = 0;
     float time = 0;

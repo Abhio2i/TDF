@@ -153,15 +153,7 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     HierarchyConnector::instance()->initializeLibraryData(library);
     HierarchyConnector::instance()->setupFileOperations(this, hierarchy, tacticalDisplay);
 
-    // Connect item drop signals
-    connect(libTreeView, &HierarchyTree::itemDropped, this, [=](QVariantMap sourceData, QVariantMap targetData) {
-        HierarchyConnector::instance()->handleLibraryToHierarchyDrop(sourceData, targetData);
-        markUnsavedChanges();
-    });
-    connect(treeView, &HierarchyTree::itemDropped, this, [=](QVariantMap sourceData, QVariantMap targetData) {
-        HierarchyConnector::instance()->handleHierarchyToLibraryDrop(sourceData, targetData);
-        markUnsavedChanges();
-    });
+
 
     // Connect canvas signals
     if (tacticalDisplay && tacticalDisplay->canvas) {
@@ -258,7 +250,7 @@ void ScenarioEditor::setupEnhancedDockWidgets()
     treeView = new HierarchyTree(this);
     hierarchyDock->setWidget(treeView);
     hierarchyDock->setMinimumWidth(150);
-    hierarchyDock->setTitleBarWidget(nullptr); // Use default title bar (top)
+    hierarchyDock->setTitleBarWidget(nullptr);
     addDockWidget(Qt::LeftDockWidgetArea, hierarchyDock);
 
     // Setup tactical display dock with enhanced features
@@ -375,11 +367,11 @@ void ScenarioEditor::setupEnhancedDockWidgets()
         int consoleHeight = static_cast<int>(totalHeight * 0.15);   // 15% for console
         // Verify total width adds up to 100%
         int totalCalculatedWidth = hierarchyWidth + tacticalWidth + sidebarWidth + inspectorWidth;
-        qDebug() << "Width distribution - Hierarchy:" << hierarchyWidth
-                 << "Tactical:" << tacticalWidth
-                 << "Sidebar:" << sidebarWidth
-                 << "Inspector:" << inspectorWidth
-                 << "Total:" << totalCalculatedWidth << "/" << totalWidth;
+        // qDebug() << "Width distribution - Hierarchy:" << hierarchyWidth
+        //          << "Tactical:" << tacticalWidth
+        //          << "Sidebar:" << sidebarWidth
+        //          << "Inspector:" << inspectorWidth
+        //          << "Total:" << totalCalculatedWidth << "/" << totalWidth;
 
         // Resize docks
         resizeDocks({hierarchyDock}, {hierarchyWidth}, Qt::Horizontal);
@@ -487,6 +479,8 @@ void ScenarioEditor::setupToolBars()
     // Allow toolbars to be movable
     // standardToolBar->setMovable(true);
     designToolBar->setMovable(true);
+    connect(menuBar->getSaveAction(), &QAction::triggered, this, &ScenarioEditor::clearUnsavedChanges);
+    connect(menuBar->getSameSaveAction(), &QAction::triggered, this, &ScenarioEditor::clearUnsavedChanges);
     connect(menuBar->getRecentProjectAction(), &QAction::triggered,
             this, &ScenarioEditor::onRecentProjectTriggered);
 
@@ -688,11 +682,11 @@ void ScenarioEditor::resetLayout()
 
         // Verify total width adds up to 100%
         int totalCalculatedWidth = hierarchyWidth + tacticalWidth + sidebarWidth + inspectorWidth;
-        qDebug() << "Reset Layout - Width distribution - Hierarchy:" << hierarchyWidth
-                 << "Tactical:" << tacticalWidth
-                 << "Sidebar:" << sidebarWidth
-                 << "Inspector:" << inspectorWidth
-                 << "Total:" << totalCalculatedWidth << "/" << totalWidth;
+        // qDebug() << "Reset Layout - Width distribution - Hierarchy:" << hierarchyWidth
+        //          << "Tactical:" << tacticalWidth
+        //          << "Sidebar:" << sidebarWidth
+        //          << "Inspector:" << inspectorWidth
+        //          << "Total:" << totalCalculatedWidth << "/" << totalWidth;
 
         // Resize docks
         resizeDocks({hierarchyDock}, {hierarchyWidth}, Qt::Horizontal);
@@ -986,6 +980,7 @@ void ScenarioEditor::onRecentProjectTriggered()
     RecentProjectsManager::instance()->showRecentProjectsMenu(this,
                                                               RecentProjectsManager::ScenarioEditor);
 }
+
 // void ScenarioEditor::clearRecentProjects()
 // {
 //     RecentProjectsManager::instance()->clearRecentProjects();
@@ -1003,7 +998,6 @@ void ScenarioEditor::showApplicationDialog()
     connect(&dialog,&ApplicationDialog::fpsState,simulation,&Simulation::setFps);
     connect(&dialog,&ApplicationDialog::canvasIconState,tacticalDisplay->canvas,&CanvasWidget::setImageScale);
     dialog.exec();
-
 
 }
 
