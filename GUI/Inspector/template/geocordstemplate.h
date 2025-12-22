@@ -1,3 +1,4 @@
+
 /* ========================================================================= */
 /* File: geocordstemplate.h                                                 */
 /* Purpose: Defines widget for managing geocoordinates templates             */
@@ -10,6 +11,9 @@
 #include <QJsonObject>                            // For JSON object handling
 #include <QTableWidget>                           // For table widget
 
+// Forward declaration
+class Inspector;
+
 // %%% Class Definition %%%
 /* Widget for geocoordinates template management */
 class GeocordsTemplate : public QWidget
@@ -17,8 +21,8 @@ class GeocordsTemplate : public QWidget
     Q_OBJECT
 
 public:
-    // Initialize geocoordinates template
-    explicit GeocordsTemplate(QWidget *parent = nullptr);
+    // Initialize geocoordinates template with Inspector reference
+    explicit GeocordsTemplate(Inspector *inspector, QWidget *parent = nullptr);  // CHANGED
     // Setup geocoordinates cell in table
     void setupGeocordsCell(int row, const QString &fullKey, const QJsonObject &obj, QTableWidget *tableWidget);
     // Set connected ID
@@ -27,7 +31,7 @@ public:
     void setName(const QString &n) { name = n; }
     // Constant for row height
     static constexpr int ROW_HEIGHT = 30;
-
+  void setMainID(const QString &id) { mainID = id; }
 signals:
     // Signal value change
     void valueChanged(QString ID, QString name, QJsonObject delta);
@@ -38,6 +42,9 @@ private:
     QString connectedID;
     // Template name
     QString name;
+    // Inspector reference
+    Inspector *inspectorRef;
+     QString mainID;
 };
 
 #endif // GEOCORDSTEMPLATE_H

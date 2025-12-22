@@ -60,7 +60,8 @@ void IFFDisplay::selectEntity(Entity* entit)
 
     // Select first valid IFF
     iff = nullptr;
-    for (IFF* i : entity->iffList) {
+    for (auto const& pair :  *entity->iffs->iffs) {
+        IFF* i = pair.second;
         if (i) {
             iff = i;
             setWindowTitle("IFF Display (" + QString::fromStdString(entity->Name) + ")");
@@ -94,7 +95,7 @@ void IFFDisplay::updateRadar()
     //return;
     if (entity && iff) {
         setRange(iff->emittingRange * 1.0f); // km to meters conversion
-
+        targets = iff->targets;
 
         update();
     } else {
@@ -128,9 +129,55 @@ void IFFDisplay::paintEvent(QPaintEvent * /*event*/)
     drawCenterMark(p, center);
     drawTopMarker(p, center, outerRadius);
     // drawTargetAndPath(p);
+    if (!targets.isEmpty()) {
 
+
+        for (const IFF::IFFTarget &t : targets) {
+            // FIX: Manual bound check
+            double per = t.radius / range;
+            if (per < 0.0) per = 0.0;
+            if (per > 1.0) per = 1.0;
+
+            double r = per * outerRadius;
+            double angleDeg = t.angle;
+            double theta = qDegreesToRadians(angleDeg - 90.0);
+            int tx = center.x() + int(r * cos(theta));
+            int ty = center.y() + int(r * sin(theta));
+
+            // Draw dotted line from center to target
+            p.setPen(QPen(radarGreen, 1, Qt::DotLine));
+            p.drawLine(center, QPoint(tx, ty));
+
+            // Draw red dot at target position
+            p.setBrush(Qt::red);
+            p.setPen(Qt::NoPen);
+            p.drawEllipse(QPointF(tx, ty), 4, 4);
+
+            // Draw labels
+            p.setPen(QPen(Qt::yellow, 1));
+            QFont font = p.font();
+            font.setPointSize(8);
+            p.setFont(font);
+
+            Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
+            QString targetName = targetPlatform ? QString::fromStdString(targetPlatform->Name) : "Unknown";
+
+            // QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
+            QString distText = QString("D:%1km").arg(t.radius, 0, 'f', 1);
+            // QString nameText = QString("N:%1").arg(targetName);
+
+            // Draw text at target position
+            // p.drawText(tx + 6, ty - 6, angleText);
+            p.drawText(tx + 6, ty + 12, distText);
+            // p.drawText(tx + 6, ty + 30, nameText);
+        }
+    } else if (entity && iff) {
+        // No targets message
+        p.setPen(Qt::white);
+        p.drawText(center, "No IFF Targets Detected");
+    }
     // Draw IFF targets
-    drawIFFTargets(p, center, outerRadius);
+    // drawIFFTargets(p, center, outerRadius);
 }
 
 void IFFDisplay::drawIFFTargets(QPainter &p, const QPoint &center, int outerRadius)

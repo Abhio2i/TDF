@@ -29,6 +29,7 @@ class Entity: public QObject
 public:
     Entity(Hierarchy* h);
     ~Entity();
+    Hierarchy* root;
     std::string Name;
     bool Active;
     std::string ID;

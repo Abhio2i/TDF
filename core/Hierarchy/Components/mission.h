@@ -13,11 +13,13 @@ public:
     ComponentType Typo() const override { return ComponentType::Mission; }
     std::string Name;
     bool Active;
-    std::string ID;
     Constants::EntityType type;
     std::unordered_map<std::string, Task> *taskGroup;
-
-    QJsonObject toJson()const override;
+    void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QString data3 = "") override;
+    void removeSubComponent(std::string ID) override;
+    QJsonObject getsubComponentData(std::string ID) const override;
+    void updateSubComponent(std::string ID, const QJsonObject& obj) override;
+    QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
 };
 

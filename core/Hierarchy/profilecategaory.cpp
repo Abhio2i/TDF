@@ -332,10 +332,12 @@ QJsonObject ProfileCategaory::toJson() {
 void ProfileCategaory::fromJson(const QJsonObject& obj)
 {
 
-    // Basic fields
-    Name = obj["name"].toString().toStdString();
-    ID = obj["id"].toString().toStdString();
-    Active = obj["active"].toBool();
+    if (obj.contains("active"))
+        Active = obj["active"].toBool();
+    if (obj.contains("name"))
+        Name = obj["name"].toString().toStdString();
+    if (obj.contains("id"))
+        ID = obj["id"].toString().toStdString();
 
     // Foldersid
     if (obj.contains("folders") && obj["folders"].isObject()) {

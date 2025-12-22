@@ -1,5 +1,22 @@
 #include "entityutils.h"
+#include "qjsonobject.h"
 #include "qmetaobject.h"
+
+QJsonObject toParm(float value,QString unit){
+    QJsonObject parm;
+    parm["type"] = "unitParam";
+    parm["value"] = value;
+    parm["unit"] = unit;
+    return parm;
+}
+
+float valueFromParm(const QJsonObject& parm) {
+    if (parm.contains("value") ) {
+        return parm["value"].toVariant().toDouble();
+    }
+    return 0.0f; // Default value if key is missing or not a double
+}
+
 
 double toRadians(double degree) {
     return degree * M_PI / 180.0;

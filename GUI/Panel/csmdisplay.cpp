@@ -60,7 +60,7 @@ void CSMDisplay::selectEntity(Entity* entit)
     if (!platform) {
         Console::error("Entity is not a Platform");
         setWindowTitle("CSM Display (No Platform)");
-        //update();
+        update();
         return;
     }
 
@@ -70,11 +70,10 @@ void CSMDisplay::selectEntity(Entity* entit)
 
 
     sensor = nullptr;
-    for (Sensor* s : entity->sensorList) {
+    for (auto const& pair :  *entity->sensors->sensors) {
+        Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::CSM) {
             sensor = s;
-
-
             setWindowTitle("CSM Display (" + QString::fromStdString(entity->Name) + ")");
             break;
         }
@@ -97,11 +96,8 @@ void CSMDisplay::RemoveEntity(QString ID)
 void CSMDisplay::updateRadar()
 {
     if (entity && sensor) {
-        setRange(sensor->csmrange);
-
-        targets = sensor->csmtargets;
-
-
+        setRange(sensor->range);
+        targets = sensor->ewtargets;
 
         update();
     } else {

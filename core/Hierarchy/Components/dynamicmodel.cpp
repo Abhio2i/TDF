@@ -3,6 +3,10 @@
 #include "dynamicmodel.h"
 #include <core/InputSystem/inputmanager.h>
 #include "core/Hierarchy/Utils/entityutils.h"
+#include "core/Hierarchy/EntityProfiles/platform.h"  // Include here
+#include "core/Hierarchy/Struct/formationposition.h" // Include here
+#include <QtGlobal>
+#include <cmath>
 #include "qjsonarray.h"
 #include "qmetaobject.h"
 #include <QDebug>
@@ -16,7 +20,7 @@ auto normalizeAngle = [](float angle) {
 
 
 
-DynamicModel::DynamicModel() {
+DynamicModel::DynamicModel():Component(nullptr) {
     controle = true;
     follow = true;
     moveSpeed = 800;
@@ -57,7 +61,7 @@ void DynamicModel::Update(float deltaTime) {
 
 void DynamicModel::FollowTrajectory() {
 
-    if (follow) {
+    // if (follow) {
         // QVector3D current = *transform->position;
 
         // // 🎯 Step 1: Base target is followEntity's position
@@ -90,7 +94,110 @@ void DynamicModel::FollowTrajectory() {
         // }
 
         // return; // Skip trajectory logic
+    // }
+
+    const float Kp = 1.5f;                      // Position correction sensitivity
+    const float rotationSmoothFactor = 10.0f;   // YAW (Heading) rotation speed.
+    const float rollSmoothFactor = 5.0f;        // ROLL (Bank) rotation speed. (Lower = smoother bank entry/exit)
+    const float G_ACCELERATION = 9.8f;          // Gravitational acceleration (m/s^2)
+    const float lookaheadTime = 1.0f;           // Wider Arc/Overshoot के लिए समय (1.0f अच्छा शुरुआती मान है)
+    const float pitchCompensationFactor = 0.05f; // टर्निंग के दौरान नोज-अप पिच (0.05f - 0.1f)
+
+    if (follow && followEntity && formationPosition && formationPosition->Offset) {
+
+        Transform* motherTransform = followEntity->transform;
+
+        // Mothership Velocity Retrieval (dynamic_cast आवश्यक है)
+        Platform* motherPlatform = dynamic_cast<Platform*>(followEntity);
+        DynamicModel* motherDynamicModel = motherPlatform ? motherPlatform->dynamicModel : nullptr;
+
+
+        if (motherTransform && motherDynamicModel) {
+
+            // --- 1. Calculate the Predictive Target World Position (प्रक्षेपण/Overshoot) ---
+
+            // 1a. Calculate Mothership's Predicted Position (Lookahead)
+            QVector3D motherVelocity = motherDynamicModel->velocity;
+            QVector3D motherPos = motherTransform->matrix->translation();
+            QVector3D motherPos_future = motherPos + motherVelocity * lookaheadTime;
+
+            // 1b. Calculate the Formation Offset (Rotation-Aware)
+            QVector3D localOffset(
+                formationPosition->Offset->x,
+                formationPosition->Offset->y,
+                formationPosition->Offset->z
+                );
+            QQuaternion motherRotation = motherTransform->rotation();
+            QVector3D worldOffset = motherRotation.rotatedVector(localOffset);
+
+            // Target position is offset from the predicted mother position
+            QVector3D targetPos = motherPos_future + worldOffset;
+
+
+            // --- 2. Smoothed Steering Force (सहज गति बल) ---
+            QVector3D currentPosition = transform->matrix->translation();
+            QVector3D error = targetPos - currentPosition;
+            QVector3D desiredVelocity = error * Kp;
+
+            if (desiredVelocity.length() > moveSpeed) {
+                desiredVelocity = desiredVelocity.normalized() * moveSpeed;
+            }
+            QVector3D steeringForce = desiredVelocity - velocity;
+            QVector3D acceleration = steeringForce / mass;
+            velocity += acceleration * delta;
+
+            // --- 3. Update Position (स्थिति अपडेट) ---
+            QVector3D newPosition = currentPosition + velocity * delta;
+            transform->setTranslation(newPosition);
+
+
+            // --- 4. Realistic Rotation (यथार्थवादी घुमाव) ---
+
+            QVector3D currentEuler = transform->toEulerAngles();
+            QVector3D motherEuler = motherTransform->toEulerAngles(); // पिच सिंकिंग के लिए
+
+            if (velocity.lengthSquared() > 0.001f) {
+
+                // 4a. Target YAW (Heading) based on Velocity Vector (गति की दिशा)
+                QVector3D horizontalVelocity(velocity.x(), 0, velocity.z());
+                float angleRad = atan2(horizontalVelocity.x(), horizontalVelocity.z());
+                float targetYaw = angleRad * (180.0f / M_PI);
+
+                float smoothedYaw = lerp(currentEuler.y(), targetYaw, delta * rotationSmoothFactor);
+
+                // 4b. Calculate Target ROLL (Bank/Z-axis) based on Physics (Coordinated Turn)
+                QVector3D currentRight = QQuaternion::fromEulerAngles(0, smoothedYaw, 0).rotatedVector(QVector3D(1, 0, 0));
+                float lateralAcc = QVector3D::dotProduct(acceleration, currentRight);
+
+                // यथार्थवादी बैंक एंगल (तात्कालिक लक्ष्य)
+                float targetRollRad = atan2(lateralAcc, G_ACCELERATION);
+                float targetRoll = targetRollRad * (180.0f / M_PI);
+
+                // 4c. Smoothly apply Pitch and Roll with Compensation
+
+                // टर्न में ऊँचाई बनाए रखने के लिए पिच क्षतिपूर्ति
+                float rollMagnitude = abs(targetRoll);
+                float pitchCompensation = rollMagnitude * pitchCompensationFactor;
+                float targetPitch = motherEuler.x() + pitchCompensation;
+
+                float smoothedPitch = lerp(currentEuler.x(), targetPitch, delta * rotationSmoothFactor);
+
+                // रोल को सीमित करें और धीमी गति से रोल स्मूथिंग फ़ैक्टर का उपयोग करें
+                targetRoll = qBound(-60.0f, targetRoll, 60.0f);
+                float smoothedRoll = lerp(currentEuler.z(), targetRoll, delta * rollSmoothFactor);
+
+                // 4d. अंतिम रोटेशन लागू करें (Pitch, Yaw, Roll)
+                transform->setFromEulerAngles(QVector3D(smoothedPitch, smoothedYaw, smoothedRoll));
+
+            } else {
+                // यदि विमान रुका हुआ है, तो मदरसिव की दिशा पर वापस जाएं
+                transform->setFromEulerAngles(QVector3D(motherEuler.x(), motherEuler.y(), 0));
+            }
+
+            return;
+        }
     }
+
     if(trajectory->Trajectories.size()<2) return;
     QVector3D current = transform->matrix->translation();
     Vector target = *trajectory->Trajectories[trajectory->current]->position;
@@ -202,22 +309,26 @@ QStringList surfaceTypeOptions() {
 }
 
 
-QJsonObject toParm(float value,QString unit){
-    QJsonObject parm;
-    parm["type"] = "unitParam";
-    parm["value"] = value;
-    parm["unit"] = unit;
-    return parm;
+
+void DynamicModel::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+
 }
 
-float valueFromParm(const QJsonObject& parm) {
-    if (parm.contains("value") ) {
-        return parm["value"].toVariant().toDouble();
-    }
-    return 0.0f; // Default value if key is missing or not a double
+void DynamicModel::removeSubComponent(std::string ID){
+
 }
+
+void DynamicModel::updateSubComponent(std::string ID, const QJsonObject& obj){
+
+}
+
+QJsonObject DynamicModel::getsubComponentData(std::string ID) const{
+    return QJsonObject();
+}
+
 QJsonObject DynamicModel::toJson() const {
     QJsonObject obj;
+    obj["id"] = QString::fromStdString(ID);
     obj["controle"] = controle;
     obj["moveSpeed"] = moveSpeed;
     obj["turnRadius"] = turnRadius;

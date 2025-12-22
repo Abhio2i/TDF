@@ -65,7 +65,7 @@ private:
     Hierarchy* hierarchy = nullptr;
     QPoint mousePos;
     int hoveredTargetIndex = -1;
-
+    QVector<IFF::IFFTarget> targets;
     // %%% Drawing Methods %%%
     void drawBackground(QPainter &p);
     void drawRadarRing(QPainter &p, const QPoint &center, int outerRadius);

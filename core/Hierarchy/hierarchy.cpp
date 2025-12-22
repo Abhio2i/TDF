@@ -21,7 +21,7 @@ Hierarchy::Hierarchy()
     Formations = new std::unordered_map<std::string, Formation*>();
     Specialzones = new std::unordered_map<std::string, Specialzone*>();
     Iffs = new std::unordered_map<std::string, IFF*>();
-
+    Components = new std::unordered_map<std::string, Component*>();
     setCurrentContext(this);
 }
 
@@ -177,7 +177,7 @@ void Hierarchy::renameEntity(QString Id, QString name)
 
 void Hierarchy::addComponent(QString ID, QString componentName)
 {
-    int i = Entities->count(ID.toStdString());
+    // int i = Entities->count(ID.toStdString());
     if (Entities->find(ID.toStdString()) != Entities->end()) {
         (*Entities)[ID.toStdString()]->addComponent(componentName.toStdString());
         //emit componentAdded(ID, componentName);
@@ -185,6 +185,17 @@ void Hierarchy::addComponent(QString ID, QString componentName)
         Console::log("Hierarchy::addComponent emitted getJsonData for " + ID.toStdString() + ", component: " + componentName.toStdString());
     }
 }
+
+void Hierarchy::addSubComponent(QString ID, ComponentType type, QString subComponentName, QString data1 , QString data2, QString data3){
+    // int i = Entities->count(ID.toStdString());
+    if (Components->find(ID.toStdString()) != Components->end()) {
+        (*Components)[ID.toStdString()]->addSubComponent(subComponentName.toStdString(),data1);
+        //emit componentAdded(ID, componentName);
+        //getCurrentJsonData(); // Emit updated JSON
+        Console::log("Hierarchy::addComponent emitted getJsonData for " + ID.toStdString() + ", component: " + subComponentName.toStdString());
+    }
+}
+
 
 //------------------IFF------------------------
 
@@ -326,6 +337,20 @@ QJsonObject Hierarchy::getComponentData(QString ID, QString componentName)
 
 void Hierarchy::UpdateComponent(QString ID, QString componentName, QJsonObject delta)
 {
+    if(componentName.contains("_sub")){
+        if(Components->find(ID.toStdString()) != Components->end()){
+            Component* component = (*Components)[ID.toStdString()];
+            QJsonObject currentData = component->getsubComponentData(delta["_id"].toString().toStdString());
+            // Merge delta into current data, preserving existing keys
+            QJsonObject mergedData = currentData;
+            for (auto it = delta.begin(); it != delta.end(); ++it) {
+                mergedData[it.key()] = it.value();
+            }
+            component->updateSubComponent(delta["_id"].toString().toStdString(),mergedData);
+            Console::log("Hierarchy::UpdateComponent merged data for " + componentName.toStdString() + ": " + QString(QJsonDocument(mergedData).toJson()).toStdString());
+
+        }
+    }else
     if (Entities->find(ID.toStdString()) != Entities->end()) {
         Entity* entity = (*Entities)[ID.toStdString()];
         QJsonObject currentData = entity->getComponent(componentName.toStdString());

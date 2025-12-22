@@ -1,7 +1,7 @@
 #include "crosssection.h"
 #include "qjsondocument.h"
 #include "core/Debug/console.h"
-CrossSection::CrossSection() {
+CrossSection::CrossSection():Component(nullptr) {
 
 }
 QJsonObject toParms(float value,QString unit){
@@ -36,8 +36,26 @@ void fromSection(CrossSection::data& d, const QJsonObject& section) {
     if (section.contains("modulationValue") && section["modulationValue"].isObject())
         d.modulationValue = valueFromParms(section["modulationValue"].toObject());
 }
+
+void CrossSection::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+
+}
+
+void CrossSection::removeSubComponent(std::string ID){
+
+}
+
+void CrossSection::updateSubComponent(std::string ID, const QJsonObject& obj){
+
+}
+
+QJsonObject CrossSection::getsubComponentData(std::string ID) const{
+    return QJsonObject();
+}
+
 QJsonObject CrossSection::toJson() const {
     QJsonObject obj;
+    obj["id"] = QString::fromStdString(ID);
     obj["type"] = "component"; // यह मानते हुए कि Component क्लास में 'type' नहीं है
 
     // --- Data Sections ---

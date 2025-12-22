@@ -147,56 +147,54 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(simulation, &Simulation::Update, radioDisplayUI, &RADIODisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, radioDisplayUI, &RADIODisplay::RemoveEntity);
 
-    // 🔥 PROPER IFF INTERROGATION TRIGGER
-    connect(simulation, &Simulation::Update, this, [=]() {
-        static int iffCounter = 0;
-        iffCounter++;
+    // // 🔥 PROPER IFF INTERROGATION TRIGGER
+    // connect(simulation, &Simulation::Update, this, [=]() {
+    //     static int iffCounter = 0;
+    //     iffCounter++;
 
-        // Interrogate every 30 frames (reduce frequency)
-        if (iffCounter % 30 == 0) {
-            // Trigger IFF interrogation for ALL platforms with IFF
-            for (auto& [key, entity] : *hierarchy->Entities) {
-                Platform* platform = dynamic_cast<Platform*>(entity);
-                if (!platform) continue;
+    //     // Interrogate every 30 frames (reduce frequency)
+    //     if (iffCounter % 30 == 0) {
+    //         // Trigger IFF interrogation for ALL platforms with IFF
+    //         for (auto& [key, entity] : *hierarchy->Entities) {
+    //             Platform* platform = dynamic_cast<Platform*>(entity);
+    //             if (!platform) continue;
 
-                // Interrogate for each IFF on this platform
-                for (IFF* iff : platform->iffList) {
-                    if (iff && iff->transponder &&
-                        (iff->operationalMode == IFF::OperationalMode::Active ||
-                         iff->operationalMode == IFF::OperationalMode::Simulation)) {
+    //             // Interrogate for each IFF on this platform
+    //             for (IFF* iff : platform->iffList) {
+    //                 if (iff && iff->transponder &&
+    //                     (iff->operationalMode == IFF::OperationalMode::Active ||
+    //                      iff->operationalMode == IFF::OperationalMode::Simulation)) {
 
-                        qDebug() << "🔄 Auto IFF interrogation for:"
-                                 << QString::fromStdString(platform->Name);
-                        iff->interrogateTargets(platform->transform);
-                    }
-                }
-            }
-        }
-    });
+    //                     qDebug() << "🔄 Auto IFF interrogation for:"
+    //                              << QString::fromStdString(platform->Name);
+    //                     iff->interrogateTargets(platform->transform);
+    //                 }
+    //             }
+    //         }
+    //     }
+    // });
 
+    // // 🔥 RADIO SCANNING TRIGGER (SIMILAR TO IFF)
+    // connect(simulation, &Simulation::Update, this, [=]() {
+    //     static int radioCounter = 0;
+    //     radioCounter++;
 
+    //     // Scan every 20 frames
+    //     if (radioCounter % 20 == 0) {
+    //         int totalScans = 0;
+    //         for (auto& [key, entity] : *hierarchy->Entities) {
+    //             Platform* platform = dynamic_cast<Platform*>(entity);
+    //             if (!platform) continue;
 
-    // 🔥 RADIO SCANNING TRIGGER (SIMILAR TO IFF)
-    connect(simulation, &Simulation::Update, this, [=]() {
-        static int radioCounter = 0;
-        radioCounter++;
-
-        // Scan every 20 frames
-        if (radioCounter % 20 == 0) {
-            int totalScans = 0;
-            for (auto& [key, entity] : *hierarchy->Entities) {
-                Platform* platform = dynamic_cast<Platform*>(entity);
-                if (!platform) continue;
-
-                for (Radio* radio : platform->radioList) {
-                    if (radio && radio->Active) {
-                        radio->updateAvailableConnections(platform->transform);
-                        totalScans++;
-                    }
-                }
-            }
-        }
-    });
+    //             for (Radio* radio : platform->radioList) {
+    //                 if (radio && radio->Active) {
+    //                     radio->updateAvailableConnections(platform->transform);
+    //                     totalScans++;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // });
 
     connect(displayDock, &QDockWidget::visibilityChanged, this, [=](bool visible) {
         if (!visible) {
@@ -564,12 +562,16 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             QString ID = data["parentId"].toString();
              QString displayName = capitalizeFirstLetter(name);
             for (Inspector* inspector : inspectors) {
-                if (type == "component") {
-                    QJsonObject componentData = hierarchy->getComponentData(ID, name);
-                    if (!componentData.isEmpty()) {
-                        inspector->init(ID, displayName, componentData);
-                    }
-                } else if (type == "profile") {
+                 if (type == "subcomponent") {
+                     QJsonObject componentData = (*hierarchy->Components)[data["parentId"].toString().toStdString()]->getsubComponentData(data["ID"].toString().toStdString());
+
+                     if (!componentData.isEmpty()) {
+                         inspector->init(ID, displayName + "_sub", componentData);
+                     }
+                     //inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
+                 }else if (type == "component") {
+                     inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
+                 }  else if (type == "profile") {
                     inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
                 } else if (type == "folder") {
                     inspector->init(ID, displayName + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());

@@ -59,6 +59,9 @@ public:
     Mode mode = Mode::Search;
     // --- Add below Mode enum ---
     SubType subType = SubType::Generic;
+    Entity* parentEntity = nullptr;
+    float frequency = 8;//ghz
+    float azimuth = 60;//deg
     bool csmEnabled = false;
     bool esmEnabled = false;
     float emissionPower = 0.0f; // Watts
@@ -72,7 +75,7 @@ public:
     float detectionCapabilities = 0.0f; // Quality Score or Signal Processing Strength
     float maxDetectionAngle = 60.0f; // degrees
     float range = 100.0f; // km or meters
-    float ewrange = 100.0f; // km or meters
+    // float ewrange = 100.0f; // km or meters
     float refreshRate = 0.0f; // Hz
     float noiseFigure = 0.0f; // dB
     bool clutterRejection = false;
@@ -95,11 +98,11 @@ public:
     float esmSensitivity = 1.0f;
     bool csmActive = true;
     bool esmActive = true;
-    void scan(std::string id, Transform *source);
-    void ewscan(std::string id , Transform *source);
+    virtual void scan();
+    //void ewscan(std::string id , Transform *source);
     bool detectCheck(QVector3D localPos,float distance);
-    void csmScan(std::string id, Transform* source);
-    void esmScan(std::string id, Transform* source);
+    //void csmScan(std::string id, Transform* source);
+    //void esmScan(std::string id, Transform* source);
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;

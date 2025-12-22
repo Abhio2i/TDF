@@ -153,7 +153,15 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     HierarchyConnector::instance()->initializeLibraryData(library);
     HierarchyConnector::instance()->setupFileOperations(this, hierarchy, tacticalDisplay);
 
-
+    // Connect item drop signals
+    connect(libTreeView, &HierarchyTree::itemDropped, this, [=](QVariantMap sourceData, QVariantMap targetData) {
+        HierarchyConnector::instance()->handleLibraryToHierarchyDrop(sourceData, targetData);
+        markUnsavedChanges();
+    });
+    connect(treeView, &HierarchyTree::itemDropped, this, [=](QVariantMap sourceData, QVariantMap targetData) {
+        HierarchyConnector::instance()->handleHierarchyToLibraryDrop(sourceData, targetData);
+        markUnsavedChanges();
+    });
 
     // Connect canvas signals
     if (tacticalDisplay && tacticalDisplay->canvas) {
@@ -179,11 +187,15 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
         QString ID = data["parentId"].toString();
                  QString displayName = capitalizeFirstLetter(name);
         for (Inspector* inspector : inspectors) {
-            if (type == "component") {
-                QJsonObject componentData = hierarchy->getComponentData(ID, name);
+            if (type == "subcomponent") {
+            QJsonObject componentData = (*hierarchy->Components)[data["parentId"].toString().toStdString()]->getsubComponentData(data["ID"].toString().toStdString());
+
                 if (!componentData.isEmpty()) {
-                    inspector->init(ID, displayName, componentData);
+                    inspector->init(ID, displayName + "_sub", componentData);
                 }
+            //inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
+            }else if (type == "component") {
+                inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
             } else if (type == "profile") {
                 inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
             } else if (type == "folder") {

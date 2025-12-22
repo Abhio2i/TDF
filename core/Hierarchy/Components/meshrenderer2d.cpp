@@ -5,7 +5,7 @@
 #include <QColor>
 #include <QDebug>
 
-MeshRenderer2D::MeshRenderer2D() {
+MeshRenderer2D::MeshRenderer2D():Component(nullptr) {
     Active = true;
     color = new QColor(Qt::red);
     color2 = std::make_shared<QColor>(Qt::blue);
@@ -22,6 +22,22 @@ MeshRenderer2D::MeshRenderer2D() {
     // mesh->addPoint(new Vector(10, -10, 0));
     // mesh->addPoint(new Vector(-10, -10, 0));
     Meshes.push_back(mesh);
+}
+
+void MeshRenderer2D::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+
+}
+
+void MeshRenderer2D::removeSubComponent(std::string ID){
+
+}
+
+void MeshRenderer2D::updateSubComponent(std::string ID, const QJsonObject& obj){
+
+}
+
+QJsonObject MeshRenderer2D::getsubComponentData(std::string ID) const{
+    return QJsonObject();
 }
 
 QJsonObject MeshRenderer2D::toJson() const {

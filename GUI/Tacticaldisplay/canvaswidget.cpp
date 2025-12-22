@@ -186,7 +186,7 @@ void CanvasWidget::Render(float /*deltatime*/) {
 
 void CanvasWidget::Refresh() {
     if(!simulate){
-        qDebug()<<"refresh";
+        // qDebug()<<"refresh";
         update();
     }
 }
@@ -2841,40 +2841,15 @@ void CanvasWidget::drawSelectionOutline(QPainter& painter) {
     painter.drawRect(outlineRect);
 }
 
-// void CanvasWidget::drawRadar(QPainter& painter,std::string id , MeshEntry entry){
-//     // for (auto& [id, entry] : Meshes) {
-//         Entity* entity = entry.entity;
-//         if(!entry.detection) return;
-//         if (!entity) return;
-//         for (Sensor* s : entity->sensorList) {
-//             if(s->subType == Sensor::SubType::Generic){
-//                 QPointF point = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
-//                 float centerX = point.x();
-//                 float centerY = point.y();
-//                 float radius = s->range;
-//                 float azimuth = s->maxDetectionAngle;
-//                 float angle = entry.transform->rotation().toEulerAngles().y();
 
-//                 painter.setPen(QPen(Qt::blue, 1));
-//                 double halfBeamWidth = azimuth / 2.0;
-//                 auto [newLat, newLon] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)-halfBeamWidth),-radius);
-//                 QPointF points = gislib->geoToCanvas(newLat, newLon);
-//                 painter.drawLine(centerX, centerY, points.x(), points.y());
-//                 auto [newLat2, newLon2] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)+halfBeamWidth),-radius);
-//                 QPointF points2 = gislib->geoToCanvas(newLat2, newLon2);
-//                 painter.drawLine(centerX, centerY, points2.x(), points2.y());
-//                 painter.drawLine(points.x(), points.y(), points2.x(), points2.y());
-//                 break;
-//             }
-//         }
-//     // }
-// }
 void CanvasWidget::drawRadar(QPainter& painter, std::string id, MeshEntry entry) {
-    Entity* entity = entry.entity;
+    Platform* entity = entry.platform;
     if (!entry.detection) return;
     if (!entity) return;
+    if (!entity->sensors) return;
 
-    for (Sensor* s : entity->sensorList) {
+    for (auto const& pair : *entity->sensors->sensors) {
+        Sensor* s = pair.second;
         if (s->subType == Sensor::SubType::Generic) {
             // Get entity position in GIS coordinates
             float entityX = entry.transform->translation().x();
@@ -2885,7 +2860,7 @@ void CanvasWidget::drawRadar(QPainter& painter, std::string id, MeshEntry entry)
             float centerX = centerPoint.x();
             float centerY = centerPoint.y();
 
-            float azimuth = s->maxDetectionAngle;
+            float azimuth = s->azimuth;
             float angle = entry.transform->rotation().toEulerAngles().y();
 
             // Calculate radius in canvas coordinates
@@ -2921,52 +2896,19 @@ void CanvasWidget::drawRadar(QPainter& painter, std::string id, MeshEntry entry)
             );
 
             painter.drawPie(boundingRect, startAngle * 16, sweepAngle * 16);
-
-
-
-            break;
         }
     }
 }
-// void CanvasWidget::drawRadio(QPainter& painter,std::string id , MeshEntry entry){
-//     // for (auto& [id, entry] : Meshes) {
-//         Entity* entity = entry.entity;
-//         if (!entity) return;
-//         for (Radio* s : entity->radioList) {
-//                 QPointF point = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
-//                 float centerX = point.x();
-//                 float centerY = point.y();
-//                 QPen pen(Qt::black, 1);
-//                 QVector<qreal> dashes;
-//                 dashes << 4 << 10;  // 4px dash, 2px gap
-//                 pen.setDashPattern(dashes);
-//                 painter.setPen(pen);
-//                 //painter.setPen(QPen(Qt::black, 1,Qt::DashLine));
-//                 for (int i = 0; i < s->targets.size(); ++i) {
-//                         QPointF points2 = gislib->geoToCanvas(s->targets[i].entity->transform->translation().x(), s->targets[i].entity->transform->translation().z());
-//                         painter.drawLine(centerX, centerY, points2.x(), points2.y());
-//                 }
 
-//                 // double halfBeamWidth = azimuth / 2.0;
-//                 // auto [newLat, newLon] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)-halfBeamWidth),-radius);
-//                 // QPointF points = gislib->geoToCanvas(newLat, newLon);
-//                 // painter.drawLine(centerX, centerY, points.x(), points.y());
-//                 // auto [newLat2, newLon2] = calculateNewLatLong(entry.transform->translation().x(), entry.transform->translation().z(), -((angle+90)+halfBeamWidth),-radius);
-//                 // QPointF points2 = gislib->geoToCanvas(newLat2, newLon2);
-
-//                 // painter.drawLine(points.x(), points.y(), points2.x(), points2.y());
-//         }
-//     // }
-// }
 void CanvasWidget::drawRadio(QPainter& painter, std::string id, MeshEntry entry) {
-    Entity* entity = entry.entity;
-
+    Platform* entity = entry.platform;
     // 🆕 EXACTLY JAISE drawRadar MEIN HAI
     if(!entry.radioVisible) return;  // YAHAN radioVisible CHECK KAREN
-
     if (!entity) return;
+    if (!entity->radios) return;
 
-    for (Radio* s : entity->radioList) {
+    for (auto const& pair : *entity->radios->radios) {
+        Radio* s = pair.second;
         QPointF point = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
         float centerX = point.x();
         float centerY = point.y();

@@ -9,6 +9,8 @@
 const double G_ACCELERATION = 9.8;
 #define EARTH_RADIUS 6371000.0 // in meters
 
+QJsonObject toParm(float value,QString unit);
+float valueFromParm(const QJsonObject& parm);
 double toRadians(double degree);
 QString entityTypeToString(Constants::EntityType type);
 Constants::EntityType stringToEntityType(const QString& str);

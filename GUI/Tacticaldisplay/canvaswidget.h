@@ -38,6 +38,7 @@ struct MeshEntry {
     QVector3D* size;                        // Size/scaling factors
     Mesh* mesh;                           // Mesh geometry data
     Entity* entity;
+    Platform* platform = nullptr;
     Collider* collider;                     // Collision detection component
     Trajectory* trajectory;               // Path/trajectory data
     DynamicModel* dynamicModel;

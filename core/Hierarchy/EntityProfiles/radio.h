@@ -39,9 +39,10 @@ public:
 
     RadioType radioType = RadioType::Transceiver;
     Modulation modulation;
+    Entity* parentEntity = nullptr;
     float Range=100.0f;
-    float frequencyMin = 1.0f; // MHz
-    float frequencyMax = 1.0f; // MHz
+    float frequencyMin = 8.0f; // MHz
+    float frequencyMax = 12.0f; // MHz
     float emittingPower = 1.0f; // Watts
     float bandwidth = 0.0f; // kHz
     float dataRate = 0.0f; // kbps
@@ -65,6 +66,7 @@ public:
         float range = 0.0f;   // This radio's max range (meters)
         float frequency = 1.0f; // Frequency used (MHz)
     };
+    void scan();
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;
@@ -77,7 +79,8 @@ public:
     float calculateRange() const;
     // --- Auto connections ---
     void updateAvailableConnections(Transform* source); // Scans hierarchy for compatible radios
-    std::vector<RadioTarget> targets;
+    std::unordered_set<Platform*> detects;
+    QVector<RadioTarget> targets;
 signals:
     void availableConnectionsUpdated(const QJsonArray& connArray); // <--- Add this
 private:

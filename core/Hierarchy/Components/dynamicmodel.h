@@ -81,9 +81,15 @@ public:
     Trajectory* trajectory;
     QJsonObject customParameters; // Added to store custom parameters
 
-    Platform* followEntity;
-    FormationPosition* formationPosition;
+    Platform *followEntity = nullptr;          // ADD '= nullptr'
+    FormationPosition *formationPosition = nullptr; // ADD '= nullptr'
     float lerp(float a, float b, float t);
+
+    void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QString data3 = "") override;
+    void removeSubComponent(std::string ID) override;
+    QJsonObject getsubComponentData(std::string ID) const override;
+    void updateSubComponent(std::string ID, const QJsonObject& obj) override;
+
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
 

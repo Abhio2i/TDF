@@ -1,3 +1,6 @@
+
+
+
 /* ========================================================================= */
 /* File: vectortemplate.h                                                   */
 /* Purpose: Defines widget for managing vector templates                     */
@@ -26,6 +29,10 @@ public:
     void setConnectedID(const QString &id) { connectedID = id; }
     // Set template name
     void setName(const QString &n) { name = n; }
+    // Set main ID
+    void setMainID(const QString &id) { mainID = id; }
+    // Set inspector reference
+    void setInspectorRef(Inspector *inspector) { inspectorRef = inspector; }
     // Constant for row height
     static constexpr int ROW_HEIGHT = 30;
 
@@ -39,9 +46,13 @@ private:
     QString connectedID;
     // Template name
     QString name;
+    // Main ID
+    QString mainID;
+    // Inspector reference
+    Inspector *inspectorRef;
     // Copied vector data
     QJsonObject copiedVectorData;
-     QString formatVectorNumber(double value);
+    QString formatVectorNumber(double value);
 };
 
 #endif // VECTORTEMPLATE_H

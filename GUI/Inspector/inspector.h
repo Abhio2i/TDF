@@ -1,7 +1,4 @@
-/* ========================================================================= */
-/* File: inspector.h                                                        */
-/* Purpose: Defines inspector widget for editing hierarchy data              */
-/* ========================================================================= */
+
 
 #ifndef INSPECTOR_H
 #define INSPECTOR_H
@@ -61,6 +58,7 @@ public:
     void setLocked(bool locked);
     // Get locked state
     bool isLocked() const;
+       QString getMainID() const { return mainID; }
 
 public slots:
     // Initialize with data
@@ -74,8 +72,8 @@ public slots:
     void handleInfoButton();
 signals:
     // Signal focus entity
-    void foucsEntity(QString ID); // Note: Typo in code
-    // Signal value change
+    void foucsEntity(QString ID);
+
     void valueChanged(QString ID, QString name, QJsonObject delta);
     // Signal add tab request
     void addTabRequested();
@@ -104,6 +102,8 @@ private:
     QLabel *titleLabel;
     // Connected item ID
     QString ConnectedID;
+
+    QString mainID;
     // Item name
     QString Name;
     // Map of row to key path

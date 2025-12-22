@@ -6,6 +6,9 @@
 // #include "core/Hierarchy/EntityProfiles/radio.h"
 // #include "core/Hierarchy/EntityProfiles/sensor.h"
 #include "core/Hierarchy/Components/crosssection.h"
+#include "core/Hierarchy/Components/iffprofile.h"
+#include "core/Hierarchy/Components/radioprofile.h"
+#include "core/Hierarchy/Components/sensorprofile.h"
 #include <core/Hierarchy/entity.h>
 #include <QObject>
 #include <QJsonObject>
@@ -40,6 +43,9 @@ public:
     MeshRenderer2D *meshRenderer2d = nullptr;
     Mission *mission = nullptr;
     CrossSection *crossSection = nullptr;
+    SensorProfile *sensors = nullptr;
+    RadioProfile *radios = nullptr;
+    IFFProfile *iffs = nullptr;
     // Pointers to multiple Radios, Sensors, IFFs
 
     std::unordered_map<std::string, std::function<void()>> componentMap;

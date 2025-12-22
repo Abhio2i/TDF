@@ -1,11 +1,10 @@
 
 #include "collider.h"
 #include "qjsonarray.h"
-#include "qjsondocument.h"
 #include <QMetaEnum>
 #include <core/Debug/console.h>
 
-Collider::Collider() {
+Collider::Collider():Component(nullptr) {
     Active = true;
     Radius = 1;
     Width = 1;
@@ -42,8 +41,25 @@ QStringList colliderTypeOptions() {
     return list;
 }
 
+void Collider::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+
+}
+
+void Collider::removeSubComponent(std::string ID){
+
+}
+
+void Collider::updateSubComponent(std::string ID, const QJsonObject& obj){
+
+}
+
+QJsonObject Collider::getsubComponentData(std::string ID) const{
+    return QJsonObject();
+}
+
 QJsonObject Collider::toJson() const {
     QJsonObject obj;
+    obj["id"] = QString::fromStdString(ID);
     obj["active"] = Active;
     obj["radius"] = Radius;
     obj["width"] = Width;

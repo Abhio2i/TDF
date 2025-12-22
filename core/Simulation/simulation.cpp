@@ -127,7 +127,7 @@ void Simulation::frame() {
         emit Update();
         emit Render(deltaTime * speed);
     });
-    isPlay = true;
+    //isPlay = true;
 }
 
 void Simulation::start() {

@@ -1,3 +1,4 @@
+
 /* ========================================================================= */
 /* File: iconsdialog.h                                                      */
 /* Purpose: Dialog for selecting images from resources                       */
@@ -9,6 +10,9 @@
 #include <QDialog>
 #include <QListWidget>
 
+// Forward declaration
+class Inspector;
+
 class IconsDialog : public QDialog
 {
     Q_OBJECT
@@ -16,6 +20,8 @@ class IconsDialog : public QDialog
 public:
     explicit IconsDialog(QWidget *parent = nullptr);
     QString selectedImagePath() const;
+    void setMainID(const QString &id) { mainID = id; }
+    void setInspectorRef(Inspector *inspector) { inspectorRef = inspector; }
 
 private:
     void loadAllImagesAutomatically();
@@ -23,6 +29,8 @@ private:
     bool addImageToList(const QString &imagePath, const QString &fileName);
 
     QListWidget *listWidget;
+    QString mainID;
+    Inspector *inspectorRef;
 };
 
 #endif // ICONSDIALOG_H

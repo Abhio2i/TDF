@@ -4,11 +4,27 @@
 #include <QJsonArray>
 #include <QDebug>
 
-Trajectory::Trajectory() {
+Trajectory::Trajectory():Component(nullptr) {
     Active = true; // Initialize Active
       FollowPath = true;
     current = 0;
     customParameters = QJsonObject(); // Initialize customParameters
+}
+
+void Trajectory::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+
+}
+
+void Trajectory::removeSubComponent(std::string ID){
+
+}
+
+void Trajectory::updateSubComponent(std::string ID, const QJsonObject& obj){
+
+}
+
+QJsonObject Trajectory::getsubComponentData(std::string ID) const{
+    return QJsonObject();
 }
 
 QJsonObject Trajectory::toJson() const {

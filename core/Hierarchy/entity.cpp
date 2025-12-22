@@ -11,6 +11,7 @@ Entity::Entity(Hierarchy* h) {
     if (hierarchy) {
         GlobalRegistry::registerEntity(this, hierarchy);
         hierarchy->dictionry[ID] = {};
+        root = hierarchy;
     }
 }
 

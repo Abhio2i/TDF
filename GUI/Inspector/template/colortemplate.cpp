@@ -1,3 +1,5 @@
+
+
 /* ========================================================================= */
 /* File: colortemplate.cpp                                                  */
 /* Purpose: Implements color picker widget for inspector table              */
@@ -6,11 +8,12 @@
 #include "GUI/Inspector/template/colortemplate.h"   // For color template class
 #include <QColorDialog>                            // For color dialog
 #include <QHBoxLayout>                             // For horizontal layout
+#include "GUI/Inspector/inspector.h"               // Include inspector for mainID access
 
 // %%% Constructor %%%
 /* Initialize color template widget */
-ColorTemplate::ColorTemplate(QWidget *parent)
-    : QWidget(parent)
+ColorTemplate::ColorTemplate(Inspector *inspector, QWidget *parent)  // CHANGED
+    : QWidget(parent), inspectorRef(inspector)  // CHANGED: Initialize inspectorRef
 {
     // No additional initialization needed
 }
@@ -44,11 +47,18 @@ void ColorTemplate::setupColorCell(int row, const QString &fullKey, const QJsonO
             QString hex = color.name();
             colorBtn->setText(hex);
             colorBtn->setStyleSheet(QString("background-color: %1; color: white; border: 1px solid #555; border-radius: 3px;").arg(hex));
+
             // Emit value changed signal
             QJsonObject delta;
             QJsonObject colorObj;
             colorObj["value"] = hex;
             delta[fullKey] = colorObj;
+
+            // Add mainID from inspector
+            if (inspectorRef) {
+                delta["_id"] = inspectorRef->getMainID();
+            }
+
             emit valueChanged(connectedID, name, delta);
         }
     });

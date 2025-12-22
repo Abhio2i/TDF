@@ -334,13 +334,14 @@ QJsonObject Folder::toJson() {
 
 void Folder::fromJson(const QJsonObject& obj)
 {
-
-    // Basic values
-    Name = obj["name"].toString().toStdString();
-    ID = obj["id"].toString().toStdString();
-    parentID = obj["parent_id"].toString().toStdString();
-    Active = obj["active"].toBool();
-
+    if (obj.contains("active"))
+        Active = obj["active"].toBool();
+    if (obj.contains("name"))
+        Name = obj["name"].toString().toStdString();
+    if (obj.contains("id"))
+        ID = obj["id"].toString().toStdString();
+    if (obj.contains("parent_id"))
+        parentID = obj["parent_id"].toString().toStdString();
     // 🔸 Deserialize nested folders
     if (obj.contains("folders") && obj["folders"].isObject()) {
         QJsonObject foldersObj = obj["folders"].toObject();

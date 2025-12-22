@@ -64,20 +64,20 @@ void RadarDisplay::selectEntity(Entity* entit)
     Platform* platform = dynamic_cast<Platform*>(entit);
     if (!platform) {
         Console::error("Entity is not a Platform");
+        update();
         return;
     }
-    qDebug() << "csdvfdsagdsb";
     // Set entity ID and pointer
     id = QString::fromStdString(platform->ID);
     entity = platform;
     // Select first valid sensor
-    for (Sensor* s : entity->sensorList) {
+    for (auto const& pair :  *entity->sensors->sensors) {
+        Sensor* s = pair.second;
         if (s) {
             if(s->subType == Sensor::SubType::Generic){
                 sensor = s;
                 // Set window title with platform name
                 setWindowTitle("Radar Display (" + QString::fromStdString(entity->Name) + ")");
-                qDebug() << "csdvfyjkygj";
                 break;
             }
         }
@@ -103,7 +103,7 @@ void RadarDisplay::updateRadar()
     if (entity && sensor) {
         // Set radar range and azimuth
         setRange(sensor->range);
-        setAzimuth(sensor->maxDetectionAngle);
+        setAzimuth(sensor->azimuth);
         // Trigger repaint
         update();
     }

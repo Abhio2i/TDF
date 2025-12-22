@@ -62,7 +62,12 @@ public:
     enum FormationType {
         Line,
         V,
-        Diamond
+        Diamond,
+        Column,
+        EchelonLeft,
+        EchelonRight,
+        StaggeredColumn,
+        Wedge
     };
     Q_ENUM(FormationType)
 

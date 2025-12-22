@@ -1,3 +1,4 @@
+
 /* ========================================================================= */
 /* File: imagetemplate.h                                                    */
 /* Purpose: Defines widget for managing image templates                      */
@@ -10,6 +11,9 @@
 #include <QJsonObject>                            // For JSON object handling
 #include <QTableWidget>                           // For table widget
 
+// Forward declaration
+class Inspector;
+
 // %%% Class Definition %%%
 /* Widget for image template management */
 class ImageTemplate : public QWidget
@@ -17,8 +21,8 @@ class ImageTemplate : public QWidget
     Q_OBJECT
 
 public:
-    // Initialize image template
-    explicit ImageTemplate(QWidget *parent = nullptr);
+    // Initialize image template with Inspector reference
+    explicit ImageTemplate(Inspector *inspector, QWidget *parent = nullptr);  // CHANGED
     // Setup image cell in table
     void setupImageCell(int row, const QString &fullKey, const QJsonObject &obj, QTableWidget *tableWidget);
     // Set connected ID
@@ -29,6 +33,7 @@ public:
     static constexpr int ROW_HEIGHT = 100;
     // Constant for image size
     static constexpr int IMAGE_SIZE = 60;
+      void setMainID(const QString &id) { mainID = id; }
 
 signals:
     // Signal value change
@@ -40,6 +45,9 @@ private:
     QString connectedID;
     // Template name
     QString name;
+    // Inspector reference
+    Inspector *inspectorRef;  // NEW
+        QString mainID;
 };
 
 #endif // IMAGETEMPLATE_H

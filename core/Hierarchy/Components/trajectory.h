@@ -14,12 +14,14 @@ public:
     ComponentType Typo() const override { return ComponentType::Trajectory; }
     bool Active;
      bool FollowPath;
-    std::string ID;
     // std::vector<QJsonObject> array;
     std::vector<Waypoints*> Trajectories;
     int current = 0;
     QJsonObject customParameters; // Added to store custom parameters
-
+    void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QString data3 = "") override;
+    void removeSubComponent(std::string ID) override;
+    QJsonObject getsubComponentData(std::string ID) const override;
+    void updateSubComponent(std::string ID, const QJsonObject& obj) override;
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
 

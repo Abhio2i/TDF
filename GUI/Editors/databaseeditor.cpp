@@ -123,11 +123,19 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
             QString displayName = capitalizeFirstLetter(name);
 
             for (Inspector* inspector : inspectors) {
-                if (type == "component") {
+                if (type == "subcomponent") {
+                    QJsonObject componentData = (*hierarchy->Components)[data["parentId"].toString().toStdString()]->getsubComponentData(data["ID"].toString().toStdString());
+
+                    if (!componentData.isEmpty()) {
+                        inspector->init(ID, displayName + "_sub", componentData);
+                    }
+                    //inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
+                }else if (type == "component") {
                     QJsonObject componentData = hierarchy->getComponentData(ID, name);
                     if (!componentData.isEmpty()) {
                         inspector->init(ID, displayName, componentData);
                     }
+                    //inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
                 } else if (type == "profile") {
                     inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
                 } else if (type == "folder") {

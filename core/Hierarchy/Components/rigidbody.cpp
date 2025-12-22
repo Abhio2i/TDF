@@ -3,7 +3,7 @@
 #include "qjsondocument.h"
 #include <QDebug>
 
-Rigidbody::Rigidbody() {
+Rigidbody::Rigidbody():Component(nullptr) {
     Active = true;
     Gravity = true;
     Kinematics = false;
@@ -57,22 +57,43 @@ Vector* Rigidbody::setAngularVelocity(const Vector& v) {
     return angularVelocity;
 }
 
+void Rigidbody::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+
+}
+
+void Rigidbody::removeSubComponent(std::string ID){
+
+}
+
+void Rigidbody::updateSubComponent(std::string ID, const QJsonObject& obj){
+
+}
+
+QJsonObject Rigidbody::getsubComponentData(std::string ID) const{
+    return QJsonObject();
+}
+
 QJsonObject Rigidbody::toJson() const {
     QJsonObject obj;
+    obj["id"] = QString::fromStdString(ID);
     obj["active"] = Active;
     obj["gravity"] = Gravity;
     obj["kinematics"] = Kinematics;
-    obj["freezePositionX"] = freezePositionX;
-    obj["freezePositionY"] = freezePositionY;
-    obj["freezePositionZ"] = freezePositionZ;
-    obj["freezeRotationX"] = freezeRotationX;
-    obj["freezeRotationY"] = freezeRotationY;
-    obj["freezeRotationZ"] = freezeRotationZ;
     obj["mass"] = Mass;
     obj["drag"] = Drag;
     obj["angulardrag"] = angularDrag;
     obj["deltaTime"] = deltaTime;
      obj["type"] = "component";
+
+    QJsonObject freezeObj;
+    freezeObj["type"] = "Section";
+    freezeObj["freezePositionX"] = freezePositionX;
+    freezeObj["freezePositionY"] = freezePositionY;
+    freezeObj["freezePositionZ"] = freezePositionZ;
+    freezeObj["freezeRotationX"] = freezeRotationX;
+    freezeObj["freezeRotationY"] = freezeRotationY;
+    freezeObj["freezeRotationZ"] = freezeRotationZ;
+    obj["freeze"] = freezeObj;
 
     if (velocity)
         obj["velocity"] = velocity->toJson();
@@ -98,18 +119,7 @@ void Rigidbody::fromJson(const QJsonObject& obj) {
         Gravity = obj["gravity"].toBool();
     if (obj.contains("kinematics"))
         Kinematics = obj["kinematics"].toBool();
-    if (obj.contains("freezePositionX"))
-        freezePositionX = obj["freezePositionX"].toBool();
-    if (obj.contains("freezePositionY"))
-        freezePositionY = obj["freezePositionY"].toBool();
-    if (obj.contains("freezePositionZ"))
-        freezePositionZ = obj["freezePositionZ"].toBool();
-    if (obj.contains("freezeRotationX"))
-        freezeRotationX = obj["freezeRotationX"].toBool();
-    if (obj.contains("freezeRotationY"))
-        freezeRotationY = obj["freezeRotationY"].toBool();
-    if (obj.contains("freezeRotationZ"))
-        freezeRotationZ = obj["freezeRotationZ"].toBool();
+
     if (obj.contains("mass"))
         Mass = obj["mass"].toVariant().toDouble();
     if (obj.contains("drag"))
@@ -127,6 +137,22 @@ void Rigidbody::fromJson(const QJsonObject& obj) {
         angularVelocity->fromJson(obj["angularVelocity"].toObject());
     }
 
+    if (obj.contains("freeze") && obj["freeze"].isObject()) {
+        QJsonObject freezeObj = obj["freeze"].toObject();
+
+        if (freezeObj.contains("freezePositionX"))
+            freezePositionX = freezeObj["freezePositionX"].toBool();
+        if (freezeObj.contains("freezePositionY"))
+            freezePositionY = freezeObj["freezePositionY"].toBool();
+        if (freezeObj.contains("freezePositionZ"))
+            freezePositionZ = freezeObj["freezePositionZ"].toBool();
+        if (freezeObj.contains("freezeRotationX"))
+            freezeRotationX = freezeObj["freezeRotationX"].toBool();
+        if (freezeObj.contains("freezeRotationY"))
+            freezeRotationY = freezeObj["freezeRotationY"].toBool();
+        if (freezeObj.contains("freezeRotationZ"))
+            freezeRotationZ = freezeObj["freezeRotationZ"].toBool();
+    }
     // Custom parameters
     QStringList standardKeys = {
         "active", "gravity", "kinematics",

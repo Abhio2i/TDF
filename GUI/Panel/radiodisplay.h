@@ -46,6 +46,7 @@ private:
     Hierarchy* hierarchy = nullptr;
     QPoint mousePos;
     int hoveredTargetIndex = -1;
+    QVector<Radio::RadioTarget> targets;
 
     // %%% Drawing Methods %%%
     void drawBackground(QPainter &p);

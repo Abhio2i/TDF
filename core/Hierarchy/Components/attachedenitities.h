@@ -16,6 +16,7 @@ public:
     Constants::EntityType entity;
     std::unordered_map<std::string, Entity> *entities;
 
+    QJsonObject getsubComponentData(std::string ID) const;
     QJsonObject toJson()const override;
     void fromJson(const QJsonObject &obj) override;
 };

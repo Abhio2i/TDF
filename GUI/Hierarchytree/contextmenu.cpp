@@ -182,7 +182,7 @@ void ContextMenu::setupMenu(QTreeWidgetItem *item)
         });
 
     } else if (type == "component") {
-        QStringList specialComponents = {"radios", "sensors", "iff"};
+        QStringList specialComponents = {"radios", "sensors", "iffs"};
         if (specialComponents.contains(name.toLower())) {
             QAction *addComponent = addAction("Add");
             QAction *removeComponent = addAction("Remove");
@@ -193,13 +193,13 @@ void ContextMenu::setupMenu(QTreeWidgetItem *item)
                     AddItemDialog dialog(AddItemDialog::EntityType, "sensors", this);
                     if (dialog.exec() == QDialog::Accepted && !dialog.getName().isEmpty()) {
 
-                        emit addComponentRequested(parentID, name.toLower(), dialog.getName(), dialog.getSensorType());
+                        emit addComponentRequested(ID, name.toLower(), dialog.getName(), dialog.getSensorType());
                     }
                 } else {
                     QString componentName = QInputDialog::getText(this, "Add Component", "Enter Component Name:",
                                                                   QLineEdit::Normal, name, &ok);
                     if (ok && !componentName.trimmed().isEmpty()) {
-                        emit addComponentRequested(parentID, name.toLower(), componentName);
+                        emit addComponentRequested(ID, name.toLower(), componentName);
                     }
                 }
             });

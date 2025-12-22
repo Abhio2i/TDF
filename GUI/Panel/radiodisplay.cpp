@@ -50,6 +50,7 @@ void RADIODisplay::selectEntity(Entity* entit)
     Platform* platform = dynamic_cast<Platform*>(entit);
     if (!platform) {
         Console::error("Entity is not a Platform");
+        update();
         return;
     }
 
@@ -59,18 +60,15 @@ void RADIODisplay::selectEntity(Entity* entit)
 
     // Select first valid Radio
     radio = nullptr;
-    for (Radio* r : entity->radioList) {
+    for (auto const& pair :  *entity->radios->radios) {
+        Radio* r = pair.second;
         if (r) {
             radio = r;
             setWindowTitle("RADIO Display (" + QString::fromStdString(entity->Name) + ")");
-
             break;
         }
     }
 
-    if (!radio) {
-
-    }
 }
 
 void RADIODisplay::RemoveEntity(QString ID)
@@ -86,9 +84,8 @@ void RADIODisplay::RemoveEntity(QString ID)
 void RADIODisplay::updateRadar()
 {
     if (entity && radio) {
-        setRange(radio->calculateRange()); // Use radio's calculated range
-
-
+        setRange(radio->Range); // Use radio's calculated range
+        targets = radio->targets;
         update();
     } else {
         if (!entity)"";
@@ -119,10 +116,56 @@ void RADIODisplay::paintEvent(QPaintEvent * /*event*/)
     drawTicksAndLabels(p, center, outerRadius);
     drawCenterMark(p, center);
     drawTopMarker(p, center, outerRadius);
-    drawTargetAndPath(p);
+    // drawTargetAndPath(p);
+    if (!targets.isEmpty()) {
 
-    // Draw Radio targets
-    drawRadioTargets(p, center, outerRadius);
+
+        for (const Radio::RadioTarget &t : targets) {
+            // FIX: Manual bound check
+            double per = t.radius / range;
+            if (per < 0.0) per = 0.0;
+            if (per > 1.0) per = 1.0;
+
+            double r = per * outerRadius;
+            double angleDeg = t.angle;
+            double theta = qDegreesToRadians(angleDeg - 90.0);
+            int tx = center.x() + int(r * cos(theta));
+            int ty = center.y() + int(r * sin(theta));
+
+            // Draw dotted line from center to target
+            p.setPen(QPen(radarGreen, 1, Qt::DotLine));
+            p.drawLine(center, QPoint(tx, ty));
+
+            // Draw red dot at target position
+            p.setBrush(Qt::red);
+            p.setPen(Qt::NoPen);
+            p.drawEllipse(QPointF(tx, ty), 4, 4);
+
+            // Draw labels
+            p.setPen(QPen(Qt::yellow, 1));
+            QFont font = p.font();
+            font.setPointSize(8);
+            p.setFont(font);
+
+            Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
+            QString targetName = targetPlatform ? QString::fromStdString(targetPlatform->Name) : "Unknown";
+
+            // QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
+            QString distText = QString("D:%1km").arg(t.radius, 0, 'f', 1);
+            // QString nameText = QString("N:%1").arg(targetName);
+
+            // Draw text at target position
+            // p.drawText(tx + 6, ty - 6, angleText);
+            p.drawText(tx + 6, ty + 12, distText);
+            // p.drawText(tx + 6, ty + 30, nameText);
+        }
+    } else if (entity && radio) {
+        // No targets message
+        p.setPen(Qt::white);
+        p.drawText(center, "No Radio Targets Detected");
+    }
+    // // Draw Radio targets
+    // drawRadioTargets(p, center, outerRadius);
 }
 
 
@@ -226,6 +269,7 @@ void RADIODisplay::drawRadioTargets(QPainter &p, const QPoint &center, int outer
         p.drawText(infoRect, Qt::AlignLeft | Qt::AlignTop, info);
     }
 }
+
 void RADIODisplay::mouseMoveEvent(QMouseEvent *event)
 {
     mousePos = event->pos();

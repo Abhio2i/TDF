@@ -1,3 +1,5 @@
+
+
 /* ========================================================================= */
 /* File: iconsdialog.cpp                                                    */
 /* Purpose: Implements image selection dialog                                */
@@ -16,6 +18,7 @@
 
 IconsDialog::IconsDialog(QWidget *parent)
     : QDialog(parent)
+    , inspectorRef(nullptr)  // Initialize inspectorRef to nullptr
 {
     setWindowTitle("Select Image");
     setFixedSize(900, 600); // Increased size for 6 images per row

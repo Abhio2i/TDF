@@ -1,4 +1,3 @@
-
 /* ========================================================================= */
 /* File: inspector.cpp                                                     */
 /* Purpose: Implements inspector widget for editing component properties     */
@@ -232,7 +231,13 @@ void Inspector::pasteToCurrentComponent()
     }
     // Paste if component types match
     if (Name == copiedComponentType) {
-        emit valueChanged(ConnectedID, Name, copiedComponentData);
+        // Add changed ID to delta
+        QString changedId = ConnectedID + "_paste_" + Name;
+        QJsonObject deltaWithId = copiedComponentData;
+        deltaWithId["_id"] = mainID;
+
+
+        emit valueChanged(ConnectedID, Name, deltaWithId);
         init(ConnectedID, Name, hierarchy->getComponentData(ConnectedID, Name));
     }
 }
@@ -390,6 +395,14 @@ void Inspector::setupUI()
         QJsonObject delta;
         if (parts.size() == 1) delta[parts[0]] = newValue;
         else delta[parts[0]] = QJsonObject{{parts[1], newValue}};
+
+        // Add changed ID information
+        QString changedId = ConnectedID + "_" + keyPath;
+        delta["_changedId"] = changedId;
+        delta["_entityId"] = ConnectedID;
+        delta["_component"] = Name;
+        delta["_parameter"] = keyPath;
+
         emit valueChanged(ConnectedID, Name, delta);
     });
 
@@ -444,8 +457,15 @@ QPushButton* Inspector::createRemoveButton(const QString &parameterName)
             }
         }
         rowToKeyPath = newRowToKeyPath;
+
+        // Create delta with ID information
+        QJsonObject delta;
+
+delta["_id"] = mainID;
+         delta[parameterName] = QJsonValue();
         // Emit parameter changed signal
         emit parameterChanged(ConnectedID, Name, key, "", false);
+        emit valueChanged(ConnectedID, Name, delta);
     });
 
     return removeButton;
@@ -469,7 +489,8 @@ void Inspector::addParameterRow(const QString &parameterName, int row)
     }
 }
 
-/* Handle add parameter action */
+
+
 void Inspector::handleAddParameter()
 {
     CustomParameterDialog dialog(this);
@@ -480,7 +501,10 @@ void Inspector::handleAddParameter()
         if (!parameterName.isEmpty()) {
             int row = rowToKeyPath.size();
             addParameterRow(parameterName, row);
+
+            // SIMPLIFIED delta
             QJsonObject delta;
+            delta["_id"] = mainID;
 
             if (parameterType == "string") {
                 setupStringCell(row, parameterName, parameterValue);
@@ -494,10 +518,19 @@ void Inspector::handleAddParameter()
                 setupBooleanCell(row, parameterName, parameterValue.toLower() == "true");
                 delta[parameterName] = (parameterValue.toLower() == "true");
             }
+            else if (parameterType == "unitParam") {
+                QJsonObject unitParamObj;
+                unitParamObj["type"] = "unitParam";
+                unitParamObj["value"] = parameterValue.toDouble();
+                unitParamObj["unit"] = "unit";
+                setupUnitParameterCell(row, parameterName, unitParamObj);
+                delta[parameterName] = unitParamObj;
+            }
             else if (parameterType == "vector") {
                 VectorTemplate *vector = new VectorTemplate(this);
                 vector->setConnectedID(ConnectedID);
                 vector->setName(Name);
+                vector->setMainID(mainID);
                 QJsonObject vectorData;
                 QStringList components = parameterValue.split(",");
                 vectorData["x"] = components.size() > 0 ? components[0].toDouble() : 0.0;
@@ -509,7 +542,8 @@ void Inspector::handleAddParameter()
                 delta[parameterName] = vectorData;
             }
             else if (parameterType == "geocord") {
-                GeocordsTemplate *geocords = new GeocordsTemplate(this);
+                // CHANGED: Pass this (Inspector pointer) to constructor
+                GeocordsTemplate *geocords = new GeocordsTemplate(this, this);
                 geocords->setConnectedID(ConnectedID);
                 geocords->setName(Name);
                 QJsonObject geocordsData;
@@ -527,6 +561,7 @@ void Inspector::handleAddParameter()
                 OptionTemplate *option = new OptionTemplate(this);
                 option->setConnectedID(ConnectedID);
                 option->setName(Name);
+                option->setMainID(mainID);
                 QJsonObject optionObj;
                 optionObj["value"] = parameterValue;
                 optionObj["options"] = QJsonArray{"Option1", "Option2"};
@@ -539,6 +574,7 @@ void Inspector::handleAddParameter()
                 ColorTemplate *color = new ColorTemplate(this);
                 color->setConnectedID(ConnectedID);
                 color->setName(Name);
+                color->setMainID(mainID);
                 QJsonObject colorObj;
                 colorObj["value"] = parameterValue;
                 colorObj["type"] = "color";
@@ -550,6 +586,7 @@ void Inspector::handleAddParameter()
                 ImageTemplate *image = new ImageTemplate(this);
                 image->setConnectedID(ConnectedID);
                 image->setName(Name);
+                image->setMainID(mainID);
                 QJsonObject spriteObj;
                 spriteObj["value"] = parameterValue;
                 spriteObj["type"] = "image";
@@ -566,7 +603,6 @@ void Inspector::handleAddParameter()
         }
     }
 }
-
 /* Setup boolean cell */
 void Inspector::setupBooleanCell(int row, const QString &fullKey, bool value)
 {
@@ -613,19 +649,20 @@ void Inspector::setupBooleanCell(int row, const QString &fullKey, bool value)
 
     layout->setAlignment(Qt::AlignCenter);
     layout->setContentsMargins(0, 0, 0, 0);
-
-    // Connect checkbox toggle
     connect(checkBox, &QCheckBox::toggled, this, [=](bool checked) {
-        QStringList parts = fullKey.split(".");
         QJsonObject delta;
-        if (parts.size() == 2) {
+
+        if (fullKey.contains(".")) {
+            QStringList parts = fullKey.split(".");
             delta[parts[0]] = QJsonObject{{parts[1], checked}};
         } else {
             delta[fullKey] = checked;
         }
+
+        delta["_id"] = mainID;
+
         emit valueChanged(ConnectedID, Name, delta);
     });
-
     // Set row height and add widget
     tableWidget->setRowHeight(row, 30);
     tableWidget->setCellWidget(row, 1, checkboxWidget);
@@ -821,10 +858,9 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
             }
         }
     }
-
-// Lambda to emit array changes
     auto emitArrayChanged = [=]() {
         QJsonObject delta;
+
         if (fullKey == "entity") {
             if (listWidget->count() > 0) {
                 QVariantMap itemData = listWidget->item(0)->data(Qt::UserRole).toMap();
@@ -840,7 +876,12 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
             }
             delta[fullKey] = updatedArray;
         }
+
+
+        delta["_id"] = mainID;
+
         emit valueChanged(ConnectedID, Name, delta);
+
         if (fullKey == "trajectories") {
             emit trajectoryWaypointsChanged(ConnectedID, delta[fullKey].toArray());
         }
@@ -872,6 +913,19 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
             QListWidgetItem *item = listWidget->currentItem();
             if (item) {
                 delete listWidget->takeItem(listWidget->row(item));
+
+                // Create delta with ID for removal
+                QJsonObject delta;
+                delta["_id"] = mainID;
+
+                // Update array
+                QJsonArray updatedArray;
+                for (int i = 0; i < listWidget->count(); ++i) {
+                    QVariantMap itemData = listWidget->item(i)->data(Qt::UserRole).toMap();
+                    updatedArray.append(QJsonObject::fromVariantMap(itemData));
+                }
+                delta[fullKey] = updatedArray;
+
                 emitArrayChanged();
             }
         });
@@ -939,16 +993,20 @@ void Inspector::setupStringCell(int row, const QString &fullKey, const QString &
 
     tableWidget->setRowHeight(row, 30);
     tableWidget->setCellWidget(row, 1, lineEdit);
-
     connect(lineEdit, &QLineEdit::editingFinished, this, [=]() {
         QString newValue = lineEdit->text();
-        QStringList parts = fullKey.split(".");
         QJsonObject delta;
-        if (parts.size() == 1) {
-            delta[parts[0]] = newValue;
-        } else {
+
+        if (fullKey.contains(".")) {
+            QStringList parts = fullKey.split(".");
             delta[parts[0]] = QJsonObject{{parts[1], newValue}};
+        } else {
+            delta[fullKey] = newValue;
         }
+
+
+        delta["_id"] = mainID;
+
         emit valueChanged(ConnectedID, Name, delta);
     });
 }
@@ -980,10 +1038,14 @@ void Inspector::setupNumberCell(int row, const QString &fullKey, double value)
     tableWidget->setRowHeight(row, 30);
     tableWidget->setCellWidget(row, 1, lineEdit);
 
-    // Connect input changes
     connect(lineEdit, &QLineEdit::editingFinished, this, [=]() {
         QJsonObject delta;
+
         delta[fullKey] = lineEdit->text().toDouble();
+
+
+        delta["_id"] = mainID;
+
         emit valueChanged(ConnectedID, Name, delta);
     });
 }
@@ -1004,8 +1066,13 @@ void Inspector::handleRemoveParameter()
             }
         }
         rowToKeyPath = newRowToKeyPath;
-        // Emit parameter changed signal
+
+        // Create delta with ID information
+        QJsonObject delta;
+        delta["_id"] = mainID;
+        delta[selectedKey] = QJsonValue();
         emit parameterChanged(ConnectedID, Name, selectedKey, "", false);
+        emit valueChanged(ConnectedID, Name, delta);
     }
 }
 
@@ -1030,8 +1097,89 @@ bool Inspector::eventFilter(QObject *watched, QEvent *event)
                     QString text = roleDataMap.value(Qt::DisplayRole).toString();
                     QVariantMap customData = roleDataMap.value(Qt::UserRole).toMap();
                     QJsonObject json = QJsonObject::fromVariantMap(customData);
+
+                    // Create delta with ID information
+
+                    QJsonObject delta;
+                    delta["_id"] = mainID;
+
+                    // Handle ENTITY drop specifically for formation
+                    if (key == "entity") {
+                        qDebug() << "ENTITY DROP DETECTED for formation";
+                        qDebug() << "Custom data keys:" << customData.keys();
+
+                        // CRITICAL: Check if listWidget is valid
+                        if (!listWidget) {
+                            qDebug() << "listWidget is null!";
+                            dropEvent->acceptProposedAction();
+                            return true;
+                        }
+
+                        // Check if this is an entity drop with proper validation
+                        if (customData.contains("type") && customData["type"].toString() == "entity") {
+                            // Get actual entity data - NOT DUMMY with safer access
+                            QString actualID = "";
+                            QString actualName = "";
+
+                            // Try to get actual ID from different possible keys
+                            if (customData.contains("ID") && customData["ID"].isValid()) {
+                                actualID = customData["ID"].toString();
+                            } else if (customData.contains("id") && customData["id"].isValid()) {
+                                actualID = customData["id"].toString();
+                            }
+
+                            // Try to get actual name from different possible keys
+                            if (customData.contains("name") && customData["name"].isValid()) {
+                                actualName = customData["name"].toString();
+                            } else if (customData.contains("Name") && customData["Name"].isValid()) {
+                                actualName = customData["Name"].toString();
+                            }
+
+                            qDebug() << "Actual entity ID:" << actualID;
+                            qDebug() << "Actual entity name:" << actualName;
+
+                            // Clear the list and add the actual entity
+                            listWidget->clear();
+
+                            QJsonObject entityObj;
+                            entityObj["type"] = "reference";
+                            entityObj["name"] = actualName.isEmpty() ? "Entity" : actualName;
+                            entityObj["id"] = actualID.isEmpty() ? "unknown_id" : actualID;
+
+                            QString displayText = entityObj["name"].toString() +
+                                                  (entityObj["id"].toString().isEmpty() ?
+                                                       "" : " (ID: " + entityObj["id"].toString() + ")");
+
+                            QListWidgetItem *newItem = new QListWidgetItem(displayText);
+                            if (newItem) {
+                                newItem->setData(Qt::UserRole, entityObj.toVariantMap());
+                                listWidget->addItem(newItem);
+
+                                // Create delta with the actual entity data
+                                QJsonObject delta;
+                                delta["entity"] = entityObj;
+
+                                qDebug() << "Emitting valueChanged for entity drop with:" << entityObj;
+
+                                // Check if ConnectedID and Name are valid
+                                if (!ConnectedID.isEmpty() && !Name.isEmpty()) {
+                                    emit valueChanged(ConnectedID, Name, delta);
+                                } else {
+                                    qDebug() << "Warning: ConnectedID or Name is empty!";
+                                }
+                            } else {
+                                qDebug() << "Failed to create QListWidgetItem!";
+                            }
+
+                            dropEvent->acceptProposedAction();
+                            return true;
+                        }
+                    }
+
+
+
                     // Handle entity drop
-                    if (key == "sensors" || key == "iffs" ||key == "radios") {
+                    else if (key == "sensors" || key == "iffs" ||key == "radios") {
                         if (customData["type"].toString() != "entity" ||
                             !customData.contains("name") || customData["name"].toString().isEmpty() ||
                             !customData.contains("ID") || customData["ID"].toString().isEmpty()) {
@@ -1047,8 +1195,8 @@ bool Inspector::eventFilter(QObject *watched, QEvent *event)
                         QListWidgetItem *newItem = new QListWidgetItem(displayText);
                         newItem->setData(Qt::UserRole, refObj.toVariantMap());
                         listWidget->addItem(newItem);
-                        QJsonObject delta;
                         delta["ref"] = refObj;
+
                         emit valueChanged(ConnectedID, Name, delta);
                     }
                     // Handle trajectory drop
@@ -1078,7 +1226,6 @@ bool Inspector::eventFilter(QObject *watched, QEvent *event)
                             QVariantMap itemData = listWidget->item(i)->data(Qt::UserRole).toMap();
                             updatedArray.append(QJsonObject::fromVariantMap(itemData));
                         }
-                        QJsonObject delta;
                         delta[key] = updatedArray;
                         emit valueChanged(ConnectedID, Name, delta);
                         emit trajectoryWaypointsChanged(ConnectedID, updatedArray);
@@ -1091,7 +1238,6 @@ bool Inspector::eventFilter(QObject *watched, QEvent *event)
                             QVariantMap itemData = listWidget->item(i)->data(Qt::UserRole).toMap();
                             updatedArray.append(QJsonObject::fromVariantMap(itemData));
                         }
-                        QJsonObject delta;
                         delta[key] = updatedArray;
                         emit valueChanged(ConnectedID, Name, delta);
                     }
@@ -1109,6 +1255,47 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
     qDebug() << "init: Initializing for ID:" << ID << "name:" << name << "object:" << object;
     // Set connected ID and name
     ConnectedID = ID;
+
+    // Check if this is a subcomponent (type = "subcomponent")
+    QString currentComponentId = "";
+
+    if (object.contains("type") && object["type"].toString().toLower() == "subcomponent") {
+        // This is a subcomponent, use its own ID
+        if (object.contains("id")) {
+            currentComponentId = object["id"].toString();
+        } else if (object.contains("ID")) {
+            currentComponentId = object["ID"].toString();
+        } else {
+            currentComponentId = ID + "_sub_" + name;
+        }
+        qDebug() << "This is a SUBCOMPONENT, using ID:" << currentComponentId;
+    } else {
+        // This is a regular component, use existing logic
+        if (object.contains("id")) {
+            currentComponentId = object["id"].toString();
+        } else if (object.contains("ID")) {
+            currentComponentId = object["ID"].toString();
+        } else if (object.contains("Id")) {
+            currentComponentId = object["Id"].toString();
+        } else {
+            for (const QString& key : object.keys()) {
+                if (object[key].isObject()) {
+                    QJsonObject subObj = object[key].toObject();
+                    if (subObj.contains("id")) {
+                        currentComponentId = subObj["id"].toString();
+                        break;
+                    }
+                }
+            }
+
+            if (currentComponentId.isEmpty()) {
+                currentComponentId = ID + "_" + name;
+            }
+        }
+    }
+
+    mainID = currentComponentId;
+
     Name = name.toLower();
     // Normalize specific component names
     if (name.compare("Trajectories", Qt::CaseInsensitive) == 0) {
@@ -1130,8 +1317,8 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
     tableWidget->blockSignals(true);
     rowToKeyPath.clear();
     customParameterKeys.clear();
-    sectionInfo.clear();  // NEW: Clear section info
-    sectionRows.clear();  // NEW: Clear section rows
+    sectionInfo.clear();
+    sectionRows.clear();
 
     // Fetch component data if empty
     if ((Name == QString("trajectory") || Name == QString("dynamicModel") ||
@@ -1200,6 +1387,8 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
     tableWidget->viewport()->update();
     qDebug() << "init: Table updated, rows:" << tableWidget->rowCount();
 }
+
+
 
 int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value)
 {
@@ -1293,6 +1482,22 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
 
             return currentRow;  // Return next available row
         }
+        // NEW: Check for unitParam type directly (not in section)
+        else if (type == "unitparam") {
+            rowToKeyPath[row] = key;
+
+            // Capitalize key label
+            QTableWidgetItem *keyItem = new QTableWidgetItem(capitalizeFirstLetter(key));
+            if (keyItem) {
+                keyItem->setFlags(Qt::ItemIsEnabled);
+                keyItem->setBackground(QColor("#f8f9fa"));
+                keyItem->setForeground(Qt::black);
+                tableWidget->setItem(row, 0, keyItem);
+            }
+
+            setupUnitParameterCell(row, key, obj);
+            return row + 1;
+        }
     }
 
     // Rest of the existing code for non-section objects...
@@ -1349,11 +1554,13 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
             VectorTemplate *vector = new VectorTemplate(this);
             vector->setConnectedID(ConnectedID);
             vector->setName(Name);
+            vector->setMainID(mainID);  // NEW: Pass mainID
             vector->setupVectorCell(row, key, obj, tableWidget);
             connect(vector, &VectorTemplate::valueChanged, this, &Inspector::valueChanged);
         }
         else if (type == "geocord" || type == "geooffset") {
-            GeocordsTemplate *geocords = new GeocordsTemplate(this);
+            // CHANGED: Pass this (Inspector pointer)
+            GeocordsTemplate *geocords = new GeocordsTemplate(this, this);
             geocords->setConnectedID(ConnectedID);
             geocords->setName(Name);
             geocords->setupGeocordsCell(row, key, obj, tableWidget);
@@ -1363,6 +1570,7 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
             OptionTemplate *option = new OptionTemplate(this);
             option->setConnectedID(ConnectedID);
             option->setName(Name);
+            option->setMainID(mainID);  // NEW: Pass mainID
             option->setupOptionCell(row, key, obj, tableWidget);
             connect(option, &OptionTemplate::valueChanged, this, &Inspector::valueChanged);
         }
@@ -1370,6 +1578,7 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
             ColorTemplate *color = new ColorTemplate(this);
             color->setConnectedID(ConnectedID);
             color->setName(Name);
+            color->setMainID(mainID);  // NEW: Pass mainID
             color->setupColorCell(row, key, obj, tableWidget);
             connect(color, &ColorTemplate::valueChanged, this, &Inspector::valueChanged);
         }
@@ -1377,6 +1586,7 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
             ImageTemplate *image = new ImageTemplate(this);
             image->setConnectedID(ConnectedID);
             image->setName(Name);
+            image->setMainID(mainID);  // NEW: Pass mainID
             image->setupImageCell(row, key, obj, tableWidget);
             connect(image, &ImageTemplate::valueChanged, this, &Inspector::valueChanged);
         }
@@ -1389,54 +1599,76 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
     }
     return row + 1;
 }
+
+
 void Inspector::setupValueCell(int row, const QString &fullKey, const QJsonValue &value)
 {
     qDebug() << "setupValueCell: Processing key:" << fullKey << "type:" << value.type();
+
     // Handle different value types
     if (value.isBool()) {
         setupBooleanCell(row, fullKey, value.toBool());
-    } else if (value.isArray()) {
+    }
+    else if (value.isArray()) {
         setupArrayCell(row, fullKey, value.toArray());
-    } else if (value.isObject()) {
+    }
+    else if (value.isObject()) {
         QJsonObject obj = value.toObject();
         QString type = obj["type"].toString().toLower();
-        // Setup specialized templates
-        if (type == "vector") {
+
+        // Check for unitParam type
+        if (type == "unitparam") {
+            setupUnitParameterCell(row, fullKey, obj);
+        }
+        // Setup other specialized templates
+        else if (type == "vector") {
             VectorTemplate *vector = new VectorTemplate(this);
             vector->setConnectedID(ConnectedID);
             vector->setName(Name);
+            vector->setMainID(mainID);  // NEW: Pass mainID
             vector->setupVectorCell(row, fullKey, obj, tableWidget);
             connect(vector, &VectorTemplate::valueChanged, this, &Inspector::valueChanged);
-        } else if (type == "geocord" || type == "geooffset") {
-            GeocordsTemplate *geocords = new GeocordsTemplate(this);
+        }
+        else if (type == "geocord" || type == "geooffset") {
+            // CHANGED: Pass this (Inspector pointer)
+            GeocordsTemplate *geocords = new GeocordsTemplate(this, this);
             geocords->setConnectedID(ConnectedID);
             geocords->setName(Name);
             geocords->setupGeocordsCell(row, fullKey, obj, tableWidget);
             connect(geocords, &GeocordsTemplate::valueChanged, this, &Inspector::valueChanged);
-        } else if (type == "option") {
+        }
+        else if (type == "option") {
             OptionTemplate *option = new OptionTemplate(this);
             option->setConnectedID(ConnectedID);
             option->setName(Name);
+            option->setMainID(mainID);  // NEW: Pass mainID
             option->setupOptionCell(row, fullKey, obj, tableWidget);
             connect(option, &OptionTemplate::valueChanged, this, &Inspector::valueChanged);
-        } else if (type == "color") {
+        }
+        else if (type == "color") {
             ColorTemplate *color = new ColorTemplate(this);
             color->setConnectedID(ConnectedID);
             color->setName(Name);
+            color->setMainID(mainID);  // NEW: Pass mainID
             color->setupColorCell(row, fullKey, obj, tableWidget);
             connect(color, &ColorTemplate::valueChanged, this, &Inspector::valueChanged);
-        } else if (type == "image") {
+        }
+        else if (type == "image") {
             ImageTemplate *image = new ImageTemplate(this);
             image->setConnectedID(ConnectedID);
             image->setName(Name);
+            image->setMainID(mainID);  // NEW: Pass mainID
             image->setupImageCell(row, fullKey, obj, tableWidget);
             connect(image, &ImageTemplate::valueChanged, this, &Inspector::valueChanged);
-        } else {
+        }
+        else {
             setupGenericObjectCell(row, fullKey, obj);
         }
-    } else if (value.isString()) {
+    }
+    else if (value.isString()) {
         setupStringCell(row, fullKey, value.toString());
-    } else {
+    }
+    else {
         setupNumberCell(row, fullKey, value.toDouble());
     }
 }
@@ -1444,7 +1676,6 @@ void Inspector::setupValueCell(int row, const QString &fullKey, const QJsonValue
 void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJsonObject &obj)
 {
     qDebug() << "setupGenericObjectCell: Setting row:" << row << "for key:" << fullKey;
-
 
     QWidget *valueWidget = new QWidget();
     if (!valueWidget) {
@@ -1481,41 +1712,151 @@ void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJ
         label->setStyleSheet("color: black; min-width: 20px;");
         safeAddWidget(subLayout, label, "setupGenericObjectCell - label to subLayout");
 
-        WheelableLineEdit *edit = new WheelableLineEdit();
-        if (!edit) {
-            delete subLayout;
-            delete label;
-            continue;
+        QJsonValue subValue = obj[subKey];
+
+        // Check if this is a modulation field - यहाँ change किया
+        bool isModulationField = fullKey.contains("modulation", Qt::CaseInsensitive);
+
+        if (isModulationField && subValue.isString()) {
+            // Modulation fields के लिए string input
+            QLineEdit *edit = new QLineEdit();
+            if (!edit) {
+                delete subLayout;
+                delete label;
+                continue;
+            }
+
+            edit->setText(subValue.toString());
+            edit->setStyleSheet("QLineEdit { background: white; border: 1px solid #ccc; border-radius: 3px; color: black; }");
+            edit->setObjectName(subKey);
+
+            if (!safeAddWidget(subLayout, edit, "setupGenericObjectCell - edit to subLayout")) {
+                delete edit;
+                delete subLayout;
+                delete label;
+                continue;
+            }
+
+            layout->addLayout(subLayout);
+
+            connect(edit, &QLineEdit::editingFinished, this, [=]() {
+                QJsonObject delta;
+                delta["_id"] = mainID;
+
+                delta[fullKey] = QJsonObject{{subKey, edit->text()}}; // ✅ String value
+                emit valueChanged(ConnectedID, Name, delta);
+            });
         }
+        else if (subValue.isDouble()) {
+            // Number values के लिए (original code)
+            WheelableLineEdit *edit = new WheelableLineEdit();
+            if (!edit) {
+                delete subLayout;
+                delete label;
+                continue;
+            }
 
-        edit->setText(formatNumberForUI(obj[subKey].toDouble()));
-        edit->setStyleSheet("QLineEdit { background: white; border: 1px solid #ccc; border-radius: 3px; color: black; }");
-        QDoubleValidator *validator = new QDoubleValidator(edit);
-        validator->setNotation(QDoubleValidator::StandardNotation);
-        validator->setDecimals(4);
-        edit->setValidator(validator);
-        edit->setObjectName(subKey);
+            edit->setText(formatNumberForUI(subValue.toDouble()));
+            edit->setStyleSheet("QLineEdit { background: white; border: 1px solid #ccc; border-radius: 3px; color: black; }");
+            QDoubleValidator *validator = new QDoubleValidator(edit);
+            validator->setNotation(QDoubleValidator::StandardNotation);
+            validator->setDecimals(4);
+            edit->setValidator(validator);
+            edit->setObjectName(subKey);
 
-        if (!safeAddWidget(subLayout, edit, "setupGenericObjectCell - edit to subLayout")) {
-            delete edit;
-            delete subLayout;
-            delete label;
-            continue;
+            if (!safeAddWidget(subLayout, edit, "setupGenericObjectCell - edit to subLayout")) {
+                delete edit;
+                delete subLayout;
+                delete label;
+                continue;
+            }
+
+            layout->addLayout(subLayout);
+
+            connect(edit, &QLineEdit::editingFinished, this, [=]() {
+                QJsonObject delta;
+                 delta["_id"] = mainID;
+
+                delta[fullKey] = QJsonObject{{subKey, edit->text().toDouble()}};
+                emit valueChanged(ConnectedID, Name, delta);
+            });
         }
+        else if (subValue.isBool()) {
+            // Boolean values के लिए - inline checkbox
+            QCheckBox *checkBox = new QCheckBox();
+            if (!checkBox) {
+                delete subLayout;
+                delete label;
+                continue;
+            }
 
-        layout->addLayout(subLayout);
+            checkBox->setChecked(subValue.toBool());
+            checkBox->setStyleSheet(
+                "QCheckBox { color: black; border: none; }"
+                "QCheckBox::indicator { width: 14px; height: 14px; border: 1px solid #666; background-color: white; }"
+                "QCheckBox::indicator:checked { image: url(:/icons/images/check-box.png); background-color: #007bff; }"
+                "QCheckBox::indicator:unchecked { image: none; background-color: white; }"
+                );
 
-        connect(edit, &QLineEdit::editingFinished, this, [=]() {
-            QJsonObject delta;
-            delta[fullKey] = QJsonObject{{subKey, edit->text().toDouble()}};
-            emit valueChanged(ConnectedID, Name, delta);
-        });
+            // Add checkbox to layout
+            QHBoxLayout *checkboxLayout = new QHBoxLayout();
+            checkboxLayout->addWidget(checkBox);
+            checkboxLayout->addStretch();
+
+            if (!safeAddWidget(subLayout, checkBox, "setupGenericObjectCell - checkBox to subLayout")) {
+                delete checkBox;
+                delete subLayout;
+                delete label;
+                continue;
+            }
+
+            layout->addLayout(subLayout);
+
+            connect(checkBox, &QCheckBox::toggled, this, [=](bool checked) {
+                QJsonObject delta;
+
+     delta["_id"] = mainID;
+
+                delta[fullKey] = QJsonObject{{subKey, checked}};
+                emit valueChanged(ConnectedID, Name, delta);
+            });
+        }
+        else {
+            // Other types (string, etc.)
+            QLineEdit *edit = new QLineEdit();
+            if (!edit) {
+                delete subLayout;
+                delete label;
+                continue;
+            }
+
+            edit->setText(subValue.toString());
+            edit->setStyleSheet("QLineEdit { background: white; border: 1px solid #ccc; border-radius: 3px; color: black; }");
+            edit->setObjectName(subKey);
+
+            if (!safeAddWidget(subLayout, edit, "setupGenericObjectCell - edit to subLayout")) {
+                delete edit;
+                delete subLayout;
+                delete label;
+                continue;
+            }
+
+            layout->addLayout(subLayout);
+
+            connect(edit, &QLineEdit::editingFinished, this, [=]() {
+                QJsonObject delta;
+
+                delta["_id"] = mainID;
+
+                delta[fullKey] = QJsonObject{{subKey, edit->text()}};
+                emit valueChanged(ConnectedID, Name, delta);
+            });
+        }
     }
 
     tableWidget->setRowHeight(row, 30 * obj.size());
     tableWidget->setCellWidget(row, 1, valueWidget);
 }
-
 void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
 {
     qDebug() << "updateTrajectory: Updating for entityId:" << entityId;
@@ -1811,23 +2152,23 @@ void Inspector::setupUnitParameterCell(int row, const QString &fullKey, const QJ
     tableWidget->setRowHeight(row, 30);
     tableWidget->setCellWidget(row, 1, unitWidget);
 
-
     connect(valueEdit, &QLineEdit::editingFinished, this, [=]() {
         QJsonObject delta;
         QJsonObject updatedParam = paramObj;
         updatedParam["value"] = valueEdit->text().toDouble();
 
-       QStringList parts = fullKey.split(".");
-        if (parts.size() == 2) {
+        if (fullKey.contains(".")) {
+            QStringList parts = fullKey.split(".");
             delta[parts[0]] = QJsonObject{{parts[1], updatedParam}};
         } else {
             delta[fullKey] = updatedParam;
         }
 
+        delta["_id"] = mainID;
+
         emit valueChanged(ConnectedID, Name, delta);
     });
 }
-
 QWidget* Inspector::createSectionHeader(const QString &sectionKey, int headerRow, const QJsonObject &sectionObj)
 {
     QWidget *headerWidget = new QWidget();

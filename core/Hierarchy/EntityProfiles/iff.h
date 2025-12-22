@@ -58,9 +58,9 @@ public:
     // Interrogation/response API
     void interrogateTargets(Transform* source); // actively interrogate nearby entities
     QJsonObject respondToInterrogation(IFF* interrogator, float distanceMeters); // called when this IFF is interrogated
-
+    Entity* parentEntity = nullptr;
     bool transponder = true;
-    float emittingRange = 5.0f; // km
+    float emittingRange = 100.0f; // km
     float emittingFrequency = 0.0f; // MHz
     std::string disType;
     std::string disName;
@@ -74,6 +74,7 @@ public:
     std::vector<Message> messages;
     QVector<IFFTarget> iffTargets;
     void spawn() override;
+    void scan();
     std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;
     void removeComponent(std::string name) override;
@@ -82,7 +83,9 @@ public:
     // ✅ ADD INSTANCE-SPECIFIC SET
     std::unordered_set<std::string> localIffSeen;
     // Track last known state per responder to detect status/code/mode changes
-    std::unordered_map<std::string, IFFTarget> lastTargetStates;
+    std::unordered_set<Platform*> detects;
+    QVector<IFFTarget> targets;
+    // std::unordered_map<std::string, IFFTarget> lastTargetStates;
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& obj) override;
 signals:

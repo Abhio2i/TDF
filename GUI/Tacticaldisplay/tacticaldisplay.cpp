@@ -297,6 +297,10 @@ void TacticalDisplay::addMesh(QString ID, MeshData meshData)
     entity.collider = meshData.collider;
     entity.trajectory = meshData.trajectory;
     entity.entity = meshData.entity;
+    Platform* platform = dynamic_cast<Platform*>(entity.entity);
+    if(platform){
+        entity.platform = platform;
+    }
     entity.dynamicModel = meshData.dynamicmodel;
     // Add to canvas and update
     canvas->Meshes[ID.toStdString()] = entity;

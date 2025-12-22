@@ -196,7 +196,7 @@ void HierarchyTree::entityAdded(QString parentID, QString ID, QString entityName
 }
 
 /* Add component to tree */
-void HierarchyTree::componentAdded(QString parentID, QString componentName)
+void HierarchyTree::componentAdded(QString parentID, QString ID, QString componentName)
 {
     // Validate parent ID
     if (!Items.contains(parentID)) {
@@ -213,17 +213,47 @@ void HierarchyTree::componentAdded(QString parentID, QString componentName)
     QTreeWidgetItem *component = new QTreeWidgetItem(Items[parentID]);
     // component->setText(0, componentName);
     component->setText(0, displayName);
-
     component->setIcon(0, QIcon(":/icons/images/component.png"));
+    Items.insert(ID, component);
     // Set item data
     QVariantMap data;
-    data["ID"] = "";
+    data["ID"] = ID;
     data["parentId"] = parentID;
     data["name"] = componentName;
     data["type"] = "component";
     component->setData(0, Qt::UserRole, data);
     qDebug() << "Component added to tree: Name=" << componentName << "ParentID=" << parentID;
 }
+
+void HierarchyTree::subComponentAdded(QString parentID, QString ID, QString subComponentName)
+{
+    // Validate parent ID
+    if (!Items.contains(parentID)) {
+        qWarning() << "Cannot add component: Parent ID" << parentID << "not found in Items";
+        return;
+    }
+
+
+    QString displayName = subComponentName;
+    if (!displayName.isEmpty()) {
+        displayName[0] = displayName[0].toUpper();
+    }
+    // Create component item
+    QTreeWidgetItem *component = new QTreeWidgetItem(Items[parentID]);
+    // component->setText(0, componentName);
+    component->setText(0, displayName);
+    component->setIcon(0, QIcon(":/icons/images/subcomponent.png"));
+    Items.insert(ID, component);
+    // Set item data
+    QVariantMap data;
+    data["ID"] = ID;
+    data["parentId"] = parentID;
+    data["name"] = subComponentName;
+    data["type"] = "subcomponent";
+    component->setData(0, Qt::UserRole, data);
+    qDebug() << "Component added to tree: Name=" << subComponentName << "ParentID=" << parentID;
+}
+
 
 /* Remove profile from tree */
 void HierarchyTree::profileRemoved(QString ID)
@@ -263,6 +293,29 @@ void HierarchyTree::entityRemoved(QString ID)
         qWarning() << "Cannot remove entity: ID" << ID << "not found in Items";
     }
 }
+
+/* Remove component from tree */
+void HierarchyTree::componentRemoved(QString entityID, QString componentName)
+{
+    // Check if entity exists
+    if (Items.contains(entityID)) {
+        QTreeWidgetItem *entityItem = Items[entityID];
+        for (int i = 0; i < entityItem->childCount(); ++i) {
+            QTreeWidgetItem *child = entityItem->child(i);
+            QVariantMap data = child->data(0, Qt::UserRole).toMap();
+            if (data["type"].toString() == "component" && data["name"].toString() == componentName) {
+                delete child;
+                qDebug() << "Component removed from tree: Name=" << componentName << "EntityID=" << entityID;
+                break;
+            }
+        }
+    } else {
+        qWarning() << "Cannot remove component: Entity ID" << entityID << "not found in Items";
+    }
+    // Emit remove component signal
+    emit removeComponentRequested(entityID, componentName);
+}
+
 
 /* Rename profile in tree */
 void HierarchyTree::profileRenamed(QString ID, QString name)
@@ -427,28 +480,6 @@ void HierarchyTree::dropEvent(QDropEvent *event)
         event->ignore();
         return;
     }
-}
-
-/* Remove component from tree */
-void HierarchyTree::componentRemoved(QString entityID, QString componentName)
-{
-    // Check if entity exists
-    if (Items.contains(entityID)) {
-        QTreeWidgetItem *entityItem = Items[entityID];
-        for (int i = 0; i < entityItem->childCount(); ++i) {
-            QTreeWidgetItem *child = entityItem->child(i);
-            QVariantMap data = child->data(0, Qt::UserRole).toMap();
-            if (data["type"].toString() == "component" && data["name"].toString() == componentName) {
-                delete child;
-                qDebug() << "Component removed from tree: Name=" << componentName << "EntityID=" << entityID;
-                break;
-            }
-        }
-    } else {
-        qWarning() << "Cannot remove component: Entity ID" << entityID << "not found in Items";
-    }
-    // Emit remove component signal
-    emit removeComponentRequested(entityID, componentName);
 }
 
 /* Select entity by ID */

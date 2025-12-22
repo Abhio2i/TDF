@@ -29,7 +29,8 @@ void Platform::update(){
     int esmTime = 0;
     int radarTime = 0;
     int ewTime = 0;
-    for (Sensor* s : sensorList) {
+    for (auto const& pair :*sensors->sensors) {
+        Sensor* s = pair.second;
         //qDebug() << "[Platform::update] platformID=" << QString::fromStdString(ID)
                  //<< "sensor=" << QString::fromStdString(s->Name)
                  //<< "subType=" << s->subTypeToString(s->subType);
@@ -38,7 +39,7 @@ void Platform::update(){
             //qDebug() << "[Platform::update] calling csmScan";
             QElapsedTimer timer;
             timer.start();  // Start measuring
-            s->csmScan(ID, transform);
+            s->scan();
             qint64 elapsedMs = timer.elapsed();
             csmTime +=elapsedMs;
 
@@ -47,19 +48,19 @@ void Platform::update(){
             QElapsedTimer timer;
             timer.start();  // Start measuring
             //qDebug() << "[Platform::update] calling esmScan";
-            s->esmScan(ID, transform);
+            s->scan();
             qint64 elapsedMs = timer.elapsed();
             esmTime +=elapsedMs;
         }else{
             //qDebug() << "[Platform::update] calling scan + ewscan (Generic)";
             QElapsedTimer timer;
             timer.start();  // Start measuring
-            s->scan(ID, transform);
+            s->scan();
             qint64 elapsedMs = timer.elapsed();
             radarTime +=elapsedMs;
 
             timer.start();  // Start measuring
-            s->ewscan(ID, transform);
+            //s->ewscan(ID, transform);
             elapsedMs = timer.elapsed();
             ewTime +=elapsedMs;
         }
@@ -73,20 +74,21 @@ void Platform::update(){
     QElapsedTimer timer;
     timer.start();  // Start measuring
 
-    for (Radio* r : radioList) { // assuming you have a list of radios on this platform
+    for (auto const& pair : *radios->radios) { // assuming you have a list of radios on this platform
+        Radio* r = pair.second;
         if (r) {
-            //qDebug()<<"found radio";
-            r->updateAvailableConnections(transform);
-            // qDebug()<<"found radio";
+            r->scan();
         }
     }
+
     qint64 elapsedMs = timer.elapsed();
     Profiler::currentFrame->RadioTime +=elapsedMs;
 
     timer.start();  // Start measuring
-    for (IFF* iff : iffList) {
+    for (auto const& pair : *iffs->iffs) {
+        IFF* iff = pair.second;
         if (iff) {
-            //iff->interrogateTargets(transform);
+            iff->scan();
         }
     }
     elapsedMs = timer.elapsed();
@@ -130,7 +132,7 @@ std::vector<std::string> Platform::getSupportedComponents() {
     supported.push_back("mission");
     supported.push_back("radios");
     supported.push_back("sensors");
-    supported.push_back("iff");
+    supported.push_back("iffs");
     return supported;
 }
 
@@ -160,23 +162,26 @@ QJsonObject Platform::toJson() const {
     if (dynamicModel) obj["dynamicModel"] = dynamicModel->toJson();
     if (collider) obj["collider"] = collider->toJson();
     if (meshRenderer2d) obj["bitmap"] = meshRenderer2d->toJson();
-    QJsonArray radioArray;
-    for (Radio* r : radioList) {
-        if (r) radioArray.append(r->toJson());
-    }
-    obj["radios"] = radioArray;
+    if (sensors) obj["sensors"] = sensors->toJson();
+    if (iffs) obj["iffs"] = iffs->toJson();
+    if (radios) obj["radios"] = radios->toJson();
+    // QJsonArray radioArray;
+    // for (Radio* r : radioList) {
+    //     if (r) radioArray.append(r->toJson());
+    // }
+    // obj["radios"] = radioArray;
 
-    QJsonArray sensorArray;
-    for (Sensor* s : sensorList) {
-        if (s) sensorArray.append(s->toJson());
-    }
-    obj["sensors"] = sensorArray;
+    // // QJsonArray sensorArray;
+    // // for (Sensor* s : sensorList) {
+    // //     if (s) sensorArray.append(s->toJson());
+    // // }
+    // // obj["sensors"] = sensorArray;
 
-    QJsonArray iffArray;
-    for (IFF* i : iffList) {
-        if (i) iffArray.append(i->toJson());
-    }
-    obj["iffs"] = iffArray;
+    // QJsonArray iffArray;
+    // for (IFF* i : iffList) {
+    //     if (i) iffArray.append(i->toJson());
+    // }
+    // obj["iffs"] = iffArray;
 
     QJsonObject entityObj;
     entityObj["type"] = "option";
@@ -199,10 +204,14 @@ QJsonObject Platform::toJson() const {
 
 void Platform::fromJson(const QJsonObject& obj) {
 
-    Name = obj["name"].toString().toStdString();
-    ID = obj["id"].toString().toStdString();
-    parentID = obj["parent_id"].toString().toStdString();
-    Active = obj["active"].toBool();
+    if (obj.contains("active"))
+        Active = obj["active"].toBool();
+    if (obj.contains("name"))
+        Name = obj["name"].toString().toStdString();
+    if (obj.contains("id"))
+        ID = obj["id"].toString().toStdString();
+    if (obj.contains("parent_id"))
+        parentID = obj["parent_id"].toString().toStdString();
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (obj.contains("parameters")) {
         QJsonObject parObj = obj["parameters"].toObject();
@@ -258,38 +267,58 @@ void Platform::fromJson(const QJsonObject& obj) {
         meshRenderer2d->fromJson(obj["bitmap"].toObject());
     }
 
-    if (obj.contains("radios") && obj["radios"].isArray()) {
-        QJsonArray arr = obj["radios"].toArray();
-        for (const QJsonValue& val : arr) {
-            Radio* r = new Radio(parent);
-            r->fromJson(val.toObject());
-            radioList.push_back(r);
-        }
-
-        addComponent("radios");
+    if (obj.contains("meshRenderer2d") && obj["meshRenderer2d"].isObject()) { // Fix: Correct key
+        if (!meshRenderer2d) addComponent("bitmap");
+        meshRenderer2d->fromJson(obj["meshRenderer2d"].toObject());
     }
 
-    if (obj.contains("sensors") && obj["sensors"].isArray()) {
-        QJsonArray arr = obj["sensors"].toArray();
-        for (const QJsonValue& val : arr) {
-            Sensor* s = new Sensor(parent);
-            s->fromJson(val.toObject());
-            sensorList.push_back(s);
-        }
-
-        addComponent("sensors");
+    if (obj.contains("sensors") && obj["sensors"].isObject()) { // Fix: Correct key
+        if (!sensors) addComponent("sensors");
+        sensors->fromJson(obj["sensors"].toObject());
     }
 
-    if (obj.contains("iffs") && obj["iffs"].isArray()) {
-        QJsonArray arr = obj["iffs"].toArray();
-        for (const QJsonValue& val : arr) {
-            IFF* i = new IFF(parent);
-            i->fromJson(val.toObject());
-            iffList.push_back(i);
-        }
-        addComponent( "iff");
-
+    if (obj.contains("iffs") && obj["iffs"].isObject()) { // Fix: Correct key
+        if (!iffs) addComponent("iffs");
+        iffs->fromJson(obj["iffs"].toObject());
     }
+
+    if (obj.contains("radios") && obj["radios"].isObject()) { // Fix: Correct key
+        if (!radios) addComponent("radios");
+        radios->fromJson(obj["radios"].toObject());
+    }
+
+    // if (obj.contains("radios") && obj["radios"].isArray()) {
+    //     QJsonArray arr = obj["radios"].toArray();
+    //     for (const QJsonValue& val : arr) {
+    //         Radio* r = new Radio(parent);
+    //         r->fromJson(val.toObject());
+    //         radioList.push_back(r);
+    //     }
+
+    //     addComponent("radios");
+    // }
+
+    // if (obj.contains("sensors") && obj["sensors"].isArray()) {
+    //     QJsonArray arr = obj["sensors"].toArray();
+    //     for (const QJsonValue& val : arr) {
+    //         Sensor* s = new Sensor(parent);
+    //         s->fromJson(val.toObject());
+    //         sensorList.push_back(s);
+    //     }
+
+    //     addComponent("sensors");
+    // }
+
+    // if (obj.contains("iffs") && obj["iffs"].isArray()) {
+    //     QJsonArray arr = obj["iffs"].toArray();
+    //     for (const QJsonValue& val : arr) {
+    //         IFF* i = new IFF(parent);
+    //         i->fromJson(val.toObject());
+    //         iffList.push_back(i);
+    //     }
+    //     addComponent( "iff");
+
+    // }
 
     // Merge custom parameters
     for (auto it = obj.begin(); it != obj.end(); ++it) {
@@ -322,24 +351,65 @@ void Platform::addComponent(std::string name) {
     if (name == "transform") {
         if (!transform){
             transform = new Transform();
-            emit parent->componentAdded(QString::fromStdString(ID), "transform");
+            transform->parentEntity = this;
+            parent->Components->insert({transform->ID, transform});
+            emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(transform->ID),"transform");
         }
     } else if (name == "crossSection") {
         if (!crossSection){
             crossSection = new CrossSection();
-            emit parent->componentAdded(QString::fromStdString(ID), "crossSection");
+            crossSection->parentEntity = this;
+            parent->Components->insert({crossSection->ID, crossSection});
+            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(crossSection->ID), "crossSection");
         }
     } else if (name == "trajectory") {
         if (!trajectory){
             trajectory = new Trajectory();
-            emit parent->componentAdded(QString::fromStdString(ID), "trajectory");
+            trajectory->parentEntity = this;
+            parent->Components->insert({trajectory->ID, trajectory});
+            emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(trajectory->ID),"trajectory");
         }
     } else if (name == "rigidbody") {
         if (!rigidbody) {
             if (!transform)
                 addComponent("transform");
             rigidbody = new Rigidbody();
-            emit parent->componentAdded(QString::fromStdString(ID), "rigidbody");
+            rigidbody->parentEntity = this;
+            parent->Components->insert({rigidbody->ID, rigidbody});
+            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(rigidbody->ID), "rigidbody");
+        }
+
+    } else if (name == "sensors") {
+        if (!sensors) {
+            if (!transform)
+                addComponent("transform");
+            sensors = new SensorProfile(parent);
+            sensors->parentEntity = this;
+            sensors->parentID = ID;
+            parent->Components->insert({sensors->ID, sensors});
+            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(sensors->ID), "sensors");
+        }
+
+    }else if (name == "iffs") {
+        if (!iffs) {
+            if (!transform)
+                addComponent("transform");
+            iffs = new IFFProfile(parent);
+            iffs->parentEntity = this;
+            iffs->parentID = ID;
+            parent->Components->insert({iffs->ID, iffs});
+            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(iffs->ID), "iffs");
+        }
+
+    }else if (name == "radios") {
+        if (!radios) {
+            if (!transform)
+                addComponent("transform");
+            radios = new RadioProfile(parent);
+            radios->parentEntity = this;
+            radios->parentID = ID;
+            parent->Components->insert({radios->ID, radios});
+            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(radios->ID), "radios");
         }
 
     } else if (name == "dynamicModel") {
@@ -353,11 +423,13 @@ void Platform::addComponent(std::string name) {
             if (!trajectory)
                 addComponent("trajectory");
             dynamicModel = new DynamicModel();
+            dynamicModel->parentEntity = this;
             dynamicModel->transform = transform;
             dynamicModel->rigidbody = rigidbody;
             dynamicModel->trajectory = trajectory;
             dynamicModel->init();
-            emit parent->componentAdded(QString::fromStdString(ID), "dynamicModel");
+            parent->Components->insert({dynamicModel->ID, dynamicModel});
+            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(dynamicModel->ID), "dynamicModel");
             emit parent->entityPhysicsAdded(QString::fromStdString(parentID), this);
         }
 
@@ -366,7 +438,9 @@ void Platform::addComponent(std::string name) {
             if (!transform)
                 addComponent("transform");
             collider = new Collider();
-            emit parent->componentAdded(QString::fromStdString(ID), "collider");
+            collider->parentEntity = this;
+            parent->Components->insert({collider->ID, collider});
+            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(collider->ID), "collider");
         }
 
     } else if (name == "bitmap") {
@@ -376,23 +450,26 @@ void Platform::addComponent(std::string name) {
             if (!collider)
                 addComponent("collider");
             meshRenderer2d = new MeshRenderer2D();
-            emit parent->componentAdded(QString::fromStdString(ID), "bitmap");
+            meshRenderer2d->parentEntity = this;
+            parent->Components->insert({meshRenderer2d->ID, meshRenderer2d});
+            emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(meshRenderer2d->ID),"bitmap");
             emit parent->entityMeshAdded(QString::fromStdString(parentID), this);
         }
 
-    }else if (name == "radios") {
-        emit parent->componentAdded(QString::fromStdString(ID), "radios");
+    }/*else if (name == "radios") {
+        emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString("transform->ID"), "radios");
     }else if (name == "sensors") {
-        emit parent->componentAdded(QString::fromStdString(ID), "sensors");
+        emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString("transform->ID"), "sensors");
     }else if (name == "iff") {
-        emit parent->componentAdded(QString::fromStdString(ID), "iff");
-    }
+        emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString("transform->ID"), "iff");
+    }*/
 }
 
 void Platform::removeComponent(std::string name) {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (name == "transform") {
         if (!transform) return;
+        parent->Components->erase(transform->ID);
         delete transform;
         transform = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "transform");
@@ -400,28 +477,51 @@ void Platform::removeComponent(std::string name) {
         emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
     } else if (name == "crossSection") {
         if (!crossSection) return;
+        parent->Components->erase(crossSection->ID);
         delete crossSection;
         crossSection = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "crossSection");
     } else if (name == "trajectory") {
         if (!trajectory) return;
+        parent->Components->erase(trajectory->ID);
         delete trajectory;
         trajectory = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "trajectory");
+    } else if (name == "sensors") {
+        if (!sensors) return;
+        parent->Components->erase(sensors->ID);
+        delete sensors;
+        sensors = nullptr;
+        emit parent->componentRemoved(QString::fromStdString(ID), "sensors");
+    } else if (name == "iffs") {
+        if (!iffs) return;
+        parent->Components->erase(iffs->ID);
+        delete iffs;
+        iffs = nullptr;
+        emit parent->componentRemoved(QString::fromStdString(ID), "iffs");
+    } else if (name == "radios") {
+        if (!radios) return;
+        parent->Components->erase(radios->ID);
+        delete radios;
+        radios = nullptr;
+        emit parent->componentRemoved(QString::fromStdString(ID), "radios");
     } else if (name == "rigidbody") {
         if (!rigidbody) return;
+        parent->Components->erase(rigidbody->ID);
         delete rigidbody;
         rigidbody = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "rigidbody");
         emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
     } else if (name == "dynamicModel") {
         if (!dynamicModel) return;
+        parent->Components->erase(dynamicModel->ID);
         delete dynamicModel;
         dynamicModel = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "dynamicModel");
         emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
     } else if (name == "collider") {
         if (!collider) return;
+        parent->Components->erase(collider->ID);
         delete collider;
         collider = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "collider");
@@ -429,6 +529,7 @@ void Platform::removeComponent(std::string name) {
         emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
     } else if (name == "bitmap") {
         if (!meshRenderer2d) return;
+        parent->Components->erase(meshRenderer2d->ID);
         delete meshRenderer2d;
         meshRenderer2d = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "bitmap");
@@ -458,49 +559,58 @@ QJsonObject Platform::getComponent(std::string name) {
     } else if (name == "bitmap") {
         if (!meshRenderer2d) { Console::error(name + ": not exist"); return QJsonObject(); }
         return meshRenderer2d->toJson();
+    } else if (name == "sensors") {
+        if (!sensors) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return sensors->toJson();
+    }else if (name == "iffs") {
+        if (!iffs) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return iffs->toJson();
+    }else if (name == "radios") {
+        if (!radios) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return radios->toJson();
     }
-    else if (name == "iff") {
-        //if (iffList) { Console::error(name + ": not exist"); return QJsonObject(); }
-        //return ififfListfs->toJson();
-        QJsonObject obj;
-        obj["id"] = QString::fromStdString(ID);
-        obj["active"] = Active;
-        obj["type"] = "component";
-        QJsonArray iffArray;
-        for (IFF* i : iffList) {
-            if (i) iffArray.append(i->toJson());
-        }
-        obj["iffs"] = iffArray;
-        return obj;
-    }
-    else if (name == "radios") {
+    // else if (name == "iff") {
+    //     //if (iffList) { Console::error(name + ": not exist"); return QJsonObject(); }
+    //     //return ififfListfs->toJson();
+    //     QJsonObject obj;
+    //     obj["id"] = QString::fromStdString(ID);
+    //     obj["active"] = Active;
+    //     obj["type"] = "component";
+    //     QJsonArray iffArray;
+    //     for (IFF* i : iffList) {
+    //         if (i) iffArray.append(i->toJson());
+    //     }
+    //     obj["iffs"] = iffArray;
+    //     return obj;
+    // }
+    // else if (name == "radios") {
 
-        QJsonObject obj;
-        obj["id"] = QString::fromStdString(ID);
-        obj["active"] = Active;
-        obj["type"] = "component";
-        QJsonArray radioArray;
-        for (Radio* r : radioList) {
-            if (r) radioArray.append(r->toJson());
-        }
-        obj["radios"] = radioArray;
-        return obj;
-    }
+    //     QJsonObject obj;
+    //     obj["id"] = QString::fromStdString(ID);
+    //     obj["active"] = Active;
+    //     obj["type"] = "component";
+    //     QJsonArray radioArray;
+    //     for (Radio* r : radioList) {
+    //         if (r) radioArray.append(r->toJson());
+    //     }
+    //     obj["radios"] = radioArray;
+    //     return obj;
+    // }
 
 
-    else if (name == "sensors") {
+    // else if (name == "sensors") {
 
-        QJsonObject obj;
-        obj["id"] = QString::fromStdString(ID);
-        obj["active"] = Active;
-        obj["type"] = "component";
-        QJsonArray sensorArray;
-        for (Sensor* r : sensorList) {
-            if (r) sensorArray.append(r->toJson());
-        }
-        obj["sensors"] = sensorArray;
-        return obj;
-    }
+    //     QJsonObject obj;
+    //     obj["id"] = QString::fromStdString(ID);
+    //     obj["active"] = Active;
+    //     obj["type"] = "component";
+    //     QJsonArray sensorArray;
+    //     for (Sensor* r : sensorList) {
+    //         if (r) sensorArray.append(r->toJson());
+    //     }
+    //     obj["sensors"] = sensorArray;
+    //     return obj;
+    // }
     return QJsonObject();
 }
 
@@ -526,6 +636,15 @@ void Platform::updateComponent(QString name, const QJsonObject& obj) {
     } else if (name == "bitmap") {
         if (!meshRenderer2d) { Console::error(name.toStdString() + ": not exist"); return; }
         meshRenderer2d->fromJson(obj);
+    } else if (name == "sensors") {
+        if (!sensors) { Console::error(name.toStdString() + ": not exist"); return; }
+        sensors->fromJson(obj);
+    } else if (name == "iffs") {
+        if (!iffs) { Console::error(name.toStdString() + ": not exist"); return; }
+        iffs->fromJson(obj);
+    } else if (name == "radios") {
+        if (!radios) { Console::error(name.toStdString() + ": not exist"); return; }
+        radios->fromJson(obj);
     }
 }
 

@@ -63,6 +63,7 @@ public:
     void fromJson(const QJsonObject& obj);
     void getCurrentJsonData();
     void addComponent(QString Id, QString ComponentName);
+    void addSubComponent(QString Id, ComponentType type, QString subComponentName, QString data1 = "", QString data2 = "", QString data3 = "");
     void attchedIff(QString Id, QString name);
     void attachSensors(QString ID, QString name, QString sensorType);
     void attachRadios(QString ID, QString name);
@@ -70,6 +71,9 @@ public:
 
     QJsonObject getComponentData(QString ID, QString componentName);
     void UpdateComponent(QString ID, QString name, QJsonObject delta);
+
+    QJsonObject getSubComponentData(QString ID, QString subComponentName);
+    void updateSubComponent(QString ID, QString name, QJsonObject delta);
 
     void onParameterChanged(const QString &entityID, const QString &componentName, const QString &key, const QString &parameterType, bool add);
     QJsonArray searchProfile();
@@ -90,13 +94,16 @@ signals:
     void profileAdded(QString ID, QString profileName);
     void folderAdded(QString parentID, QString ID, QString folderName);
     void entityAdded(QString parentID, QString ID, QString entityName);
-    void componentAdded(QString parentID, QString componentName);
+    void componentAdded(QString parentID,QString ID, QString componentName);
+    void subComponentAdded(QString parentID,QString ID, QString subComponentName);
 
     void profileRemoved(QString ID);
     void folderRemoved(QString ID);
     void entityRemoved(QString ID);
     void entityRemovedfull(QString parentId, QString ID, bool Profile);
     void componentRemoved(QString parentID, QString componentName);
+    void subComponentRemoved(QString parentID, QString subComponentName);
+
 
     void profileRenamed(QString Id, QString name);
     void folderRenamed(QString Id, QString name);
@@ -110,6 +117,7 @@ signals:
 
     void entityUpdate(QString ID);
     void entityComponentUpdate(QString ID, QString name, QJsonObject delta);
+    void entitySubComponentUpdate(QString ID, QString name, QJsonObject delta);
     void getJsonData(const QJsonObject& obj);
 };
 

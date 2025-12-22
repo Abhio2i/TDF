@@ -13,6 +13,7 @@
 /* Initialize option template widget */
 OptionTemplate::OptionTemplate(QWidget *parent)
     : QWidget(parent)
+    , inspectorRef(nullptr)  // Initialize inspectorRef to nullptr
 {
     // No additional initialization needed
 }
@@ -53,15 +54,7 @@ void OptionTemplate::setupOptionCell(int row, const QString &fullKey, const QJso
     layout->addWidget(combo);
     layout->addStretch();
 
-    // // Connect dropdown selection change
-    // connect(combo, &QComboBox::currentTextChanged, this, [=](const QString &text) {
-    //     // Emit value changed signal
-    //     QJsonObject delta;
-    //     QJsonObject optionObj;
-    //     optionObj["value"] = text;
-    //     delta[fullKey] = optionObj;
-    //     emit valueChanged(connectedID, name, delta);
-    // });
+    // Connect dropdown selection change
     connect(combo, &QComboBox::currentTextChanged, this, [=](const QString &text) {
         QJsonObject optionObj;
         optionObj["type"] = "option";
@@ -87,6 +80,7 @@ void OptionTemplate::setupOptionCell(int row, const QString &fullKey, const QJso
 
         emit valueChanged(connectedID, name, delta);
     });
+
     // Set row height and add widget to table
     tableWidget->setRowHeight(row, ROW_HEIGHT);
     tableWidget->setCellWidget(row, 1, this);

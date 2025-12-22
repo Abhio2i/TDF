@@ -35,7 +35,9 @@ public:
     // Add entity to tree
     void entityAdded(QString parentID, QString ID, QString entityName);
     // Add component to entity
-    void componentAdded(QString parentID, QString componentName);
+    void componentAdded(QString parentID, QString ID, QString componentName);
+    // Add subcomponent to entity
+    void subComponentAdded(QString parentID, QString ID, QString subComponentName);
     // Remove profile from tree
     void profileRemoved(QString ID);
     // Remove folder from tree

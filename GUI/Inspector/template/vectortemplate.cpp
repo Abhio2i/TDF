@@ -1,5 +1,4 @@
 
-
 #include "vectortemplate.h"                        // For vector template class
 #include <QHBoxLayout>                             // For horizontal layout
 #include <QLabel>                                  // For axis labels
@@ -12,6 +11,7 @@
 /* Initialize vector template widget */
 VectorTemplate::VectorTemplate(QWidget *parent)
     : QWidget(parent)
+    , inspectorRef(nullptr)  // Initialize inspectorRef to nullptr
 {
     // No additional initialization needed
 }

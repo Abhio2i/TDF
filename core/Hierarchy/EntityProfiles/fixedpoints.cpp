@@ -51,10 +51,14 @@ QJsonObject FixedPoints::toJson() const {
 }
 
 void FixedPoints::fromJson(const QJsonObject& obj) {
-    Name = obj["name"].toString().toStdString();
-    ID = obj["id"].toString().toStdString();
-    parentID = obj["parent_id"].toString().toStdString();
-    Active = obj["active"].toBool();
+    if (obj.contains("active"))
+        Active = obj["active"].toBool();
+    if (obj.contains("name"))
+        Name = obj["name"].toString().toStdString();
+    if (obj.contains("id"))
+        ID = obj["id"].toString().toStdString();
+    if (obj.contains("parent_id"))
+        parentID = obj["parent_id"].toString().toStdString();
 
     if (obj.contains("type") && obj["type"].isObject()) {
         QJsonObject entityObj = obj["type"].toObject();
@@ -83,7 +87,7 @@ void FixedPoints::addComponent(std::string name) {
     if (name == "transform") {
         if (!transform){
             transform = new Transform();
-            emit parent->componentAdded(QString::fromStdString(ID), "transform");
+            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(transform->ID), "transform");
         }
     }
     else if (name == "collider") {
@@ -91,7 +95,7 @@ void FixedPoints::addComponent(std::string name) {
             if (!transform)
                 addComponent("transform");
             collider = new Collider();
-            emit parent->componentAdded(QString::fromStdString(ID), "collider");
+            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(collider->ID), "collider");
         }
 
     }
@@ -103,7 +107,7 @@ void FixedPoints::addComponent(std::string name) {
             meshRenderer2d->Sprite = new std::string(":/texture/images/Texture/marker.png");
             meshRenderer2d->Meshes[0]->Sprite = meshRenderer2d->Sprite;
             meshRenderer2d->Meshes[0]->clear();
-            emit parent->componentAdded(QString::fromStdString(ID), "meshRenderer2d");
+            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(meshRenderer2d->ID), "meshRenderer2d");
             emit parent->entityMeshAdded(QString::fromStdString(parentID), this);
         }
 

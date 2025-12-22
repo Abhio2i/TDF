@@ -60,7 +60,7 @@ void ESMDisplay::selectEntity(Entity* entit)
     if (!platform) {
         Console::error("Entity is not a Platform");
         setWindowTitle("ESM Display (No Platform)");
-        //update();
+        update();
         return;
     }
 
@@ -70,48 +70,14 @@ void ESMDisplay::selectEntity(Entity* entit)
 
 
     sensor = nullptr;
-    for (Sensor* s : entity->sensorList) {
+    for (auto const& pair :  *entity->sensors->sensors) {
+        Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::ESM) {
             sensor = s;
-            // qDebug() << "🎯 ESM Sensor selected for platform:" << QString::fromStdString(entity->Name)
-            //          << "Sensor ID:" << QString::fromStdString(sensor->ID)
-            //          << "Range:" << sensor->esrange << "km";
-
-            // // Connect Sensor signals to this display
-            // connect(sensor, &Sensor::availableConnectionsUpdated, this, &ESMDisplay::updateRadar);
-
-            // // 🔥 IMMEDIATE UPDATE TRIGGER
-            // if (entity->transform) {
-            //     sensor->esmScan(entity->ID, entity->transform);
-            // }
-
             setWindowTitle("ESM Display (" + QString::fromStdString(entity->Name) + ")");
             break;
         }
     }
-
-    // if (!sensor) {
-    //     qDebug() << "❌ No ESM Sensor found for platform:" << QString::fromStdString(entity->Name);
-
-    //     // 🔥 Alternative: Check if any sensor can be used as ESM
-    //     for (Sensor* s : entity->sensorList) {
-    //         if (s) {
-    //             sensor = s;
-    //             qDebug() << "⚠️ Using generic sensor as ESM for:" << QString::fromStdString(entity->Name);
-    //             connect(sensor, &Sensor::availableConnectionsUpdated, this, &ESMDisplay::updateRadar);
-    //             setWindowTitle("ESM Display (" + QString::fromStdString(entity->Name) + " - Generic)");
-    //             break;
-    //         }
-    //     }
-
-    //     if (!sensor) {
-    //         setWindowTitle("ESM Display (No ESM Sensor)");
-    //     }
-    // }
-
-    // 🔥 FORCE UI UPDATE
-    // updateRadar();
-    // update();
 }
 /* Remove entity if ID matches */
 void ESMDisplay::RemoveEntity(QString ID)
@@ -130,33 +96,12 @@ void ESMDisplay::updateRadar()
 {
     if (entity && sensor) {
         // Set radar range and trigger repaint
-        setRange(sensor->esrange);
-
+        setRange(sensor->range);
         // 🔥 Ensure targets are properly updated
-        targets = sensor->esmtargets;
-
-        // // 🔥 DEBUG: Show current targets information
-        // qDebug() << "🔄 ESMDisplay update - Entity:" << QString::fromStdString(entity->Name)
-        //          << "Targets count:" << targets.size()
-        //          << "Range:" << range << "km";
-
-        // for (int i = 0; i < targets.size(); ++i) {
-        //     const Target &target = targets.at(i);
-        //     Platform* targetPlatform = dynamic_cast<Platform*>(target.entity);
-        //     if (targetPlatform) {
-        //         qDebug() << "  Target" << i << ":" << QString::fromStdString(targetPlatform->Name)
-        //                  << "Dist:" << target.radius << "km, Angle:" << target.angle << "°";
-        //     }
-        // }
+        targets = sensor->ewtargets;
 
         update();
     } else {
-        // if (!entity) {
-        //     //qDebug() << "❌ ESMDisplay - No entity selected";
-        // } else if (!sensor) {
-        //     //qDebug() << "❌ ESMDisplay - No ESM sensor component found";
-        // }
-        // // Clear display when no entity/sensor
         // update();
     }
 }

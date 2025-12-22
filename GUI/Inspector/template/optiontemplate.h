@@ -1,3 +1,4 @@
+
 /* ========================================================================= */
 /* File: optiontemplate.h                                                   */
 /* Purpose: Defines widget for managing option templates                     */
@@ -11,6 +12,9 @@
 #include <QJsonArray>                             // For JSON array handling
 #include <QTableWidget>                           // For table widget
 #include <QComboBox>                              // For combo box widget
+
+// Forward declaration
+class Inspector;
 
 // %%% Class Definition %%%
 /* Widget for option template management */
@@ -27,6 +31,10 @@ public:
     void setConnectedID(const QString &id) { connectedID = id; }
     // Set template name
     void setName(const QString &n) { name = n; }
+    // Set main ID
+    void setMainID(const QString &id) { mainID = id; }
+    // Set inspector reference
+    void setInspectorRef(Inspector *inspector) { inspectorRef = inspector; }
     // Constant for row height
     static constexpr int ROW_HEIGHT = 30;
 
@@ -40,6 +48,10 @@ private:
     QString connectedID;
     // Template name
     QString name;
+    // Main ID
+    QString mainID;
+    // Inspector reference
+    Inspector *inspectorRef;
 };
 
 #endif // OPTIONTEMPLATE_H

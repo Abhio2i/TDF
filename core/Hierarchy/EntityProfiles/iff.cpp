@@ -161,35 +161,42 @@ QJsonObject IFF::toJson() const {
     obj["parameters"] = parObj;
 
     // Serialize IFF attributes
-    obj["transponder"] = transponder;
-    obj["emittingRange"] = emittingRange;
-    obj["emittingFrequency"] = emittingFrequency;
-    obj["disType"] = QString::fromStdString(disType);
-    obj["disName"] = QString::fromStdString(disName);
-    obj["operationalMode"] = operationalModeToString(operationalMode);
-    QJsonObject modeConfigObj;
-    modeConfigObj["mode1"] = QString::fromStdString(modeConfiguration.mode1);
-    modeConfigObj["mode2"] = QString::fromStdString(modeConfiguration.mode2);
-    modeConfigObj["mode3A"] = QString::fromStdString(modeConfiguration.mode3A);
-    modeConfigObj["mode4"] = QString::fromStdString(modeConfiguration.mode4);
-    modeConfigObj["modeC"] = QString::fromStdString(modeConfiguration.modeC);
-    obj["modeConfiguration"] = modeConfigObj;
-    obj["codeSystem"] = codeSystemToString(codeSystem);
-    obj["encryptionType"] = encryptionTypeToString(encryptionType);
-    obj["spoofable"] = spoofable;
-    obj["responseDelay"] = responseDelay;
-    obj["lastInterrogationTime"] = QString::fromStdString(lastInterrogationTime);
+    // obj["transponder"] = transponder;
+    // obj["emittingRange"] = emittingRange;
+    // obj["emittingFrequency"] = emittingFrequency;
+    QJsonObject defaultObj;
+    defaultObj["type"] = "Section";
+    defaultObj["transponder"] = transponder;
+    defaultObj["emittingRange"] = toParm(emittingRange,"km");
+    defaultObj["emittingFrequency"] = toParm(emittingFrequency,"Mhz");
+    obj["default"] = defaultObj;
+
+    // obj["disType"] = QString::fromStdString(disType);
+    // obj["disName"] = QString::fromStdString(disName);
+    // obj["operationalMode"] = operationalModeToString(operationalMode);
+    // QJsonObject modeConfigObj;
+    // modeConfigObj["mode1"] = QString::fromStdString(modeConfiguration.mode1);
+    // modeConfigObj["mode2"] = QString::fromStdString(modeConfiguration.mode2);
+    // modeConfigObj["mode3A"] = QString::fromStdString(modeConfiguration.mode3A);
+    // modeConfigObj["mode4"] = QString::fromStdString(modeConfiguration.mode4);
+    // modeConfigObj["modeC"] = QString::fromStdString(modeConfiguration.modeC);
+    // obj["modeConfiguration"] = modeConfigObj;
+    // obj["codeSystem"] = codeSystemToString(codeSystem);
+    // obj["encryptionType"] = encryptionTypeToString(encryptionType);
+    // obj["spoofable"] = spoofable;
+    // obj["responseDelay"] = responseDelay;
+    // obj["lastInterrogationTime"] = QString::fromStdString(lastInterrogationTime);
     // --- Serialize message history ---
-    QJsonArray messagesArray;
-    for (const auto& message : messages) {
-        QJsonObject msgObj;
-        msgObj["timeStamp"] = QString::fromStdString(message.timeStamp);
-        msgObj["source"] = QString::fromStdString(message.source);
-        msgObj["destination"] = QString::fromStdString(message.destination);
-        msgObj["content"] = QString::fromStdString(message.content);
-        messagesArray.append(msgObj);
-    }
-    obj["messages"] = messagesArray;
+    // QJsonArray messagesArray;
+    // for (const auto& message : messages) {
+    //     QJsonObject msgObj;
+    //     msgObj["timeStamp"] = QString::fromStdString(message.timeStamp);
+    //     msgObj["source"] = QString::fromStdString(message.source);
+    //     msgObj["destination"] = QString::fromStdString(message.destination);
+    //     msgObj["content"] = QString::fromStdString(message.content);
+    //     messagesArray.append(msgObj);
+    // }
+    // obj["messages"] = messagesArray;
 
     return obj;
 }
@@ -221,77 +228,147 @@ void IFF::fromJson(const QJsonObject& obj) {
         }
     }
 
-    if (obj.contains("transponder")) {
-        transponder = obj["transponder"].toBool();
-        qDebug() << "[IFF] Updated transponder to" << transponder
-                 << "for:" << QString::fromStdString(Name);
-    } else {
-        qDebug() << "[IFF] No 'transponder' key in JSON for:"
-                 << QString::fromStdString(Name)
-                 << "| Keys are:" << obj.keys();
+    if (obj.contains("default") && obj["default"].isObject()) {
+        QJsonObject defaultObj = obj["default"].toObject();
+        if (defaultObj.contains("transponder"))
+            transponder = defaultObj["transponder"].isBool();
+
+        if (defaultObj.contains("emittingRange"))
+            emittingRange = valueFromParm(defaultObj["emittingRange"].toObject());
+
+        if (defaultObj.contains("emittingFrequency"))
+            emittingFrequency = valueFromParm(defaultObj["emittingFrequency"].toObject());
     }
 
+    // if (obj.contains("transponder")) {
+    //     transponder = obj["transponder"].toBool();
+    //     qDebug() << "[IFF] Updated transponder to" << transponder
+    //              << "for:" << QString::fromStdString(Name);
+    // } else {
+    //     qDebug() << "[IFF] No 'transponder' key in JSON for:"
+    //              << QString::fromStdString(Name)
+    //              << "| Keys are:" << obj.keys();
+    // }
 
-    if (obj.contains("emittingRange"))
-        emittingRange = static_cast<float>(obj["emittingRange"].toDouble());
 
-    if (obj.contains("emittingFrequency"))
-        emittingFrequency = static_cast<float>(obj["emittingFrequency"].toDouble());
+    // if (obj.contains("emittingRange"))
+    //     emittingRange = static_cast<float>(obj["emittingRange"].toDouble());
 
-    if (obj.contains("disType"))
-        disType = obj["disType"].toString().toStdString();
+    // if (obj.contains("emittingFrequency"))
+    //     emittingFrequency = static_cast<float>(obj["emittingFrequency"].toDouble());
 
-    if (obj.contains("disName"))
-        disName = obj["disName"].toString().toStdString();
+    // if (obj.contains("disType"))
+    //     disType = obj["disType"].toString().toStdString();
 
-    if (obj.contains("operationalMode"))
-        operationalMode = stringToOperationalMode(obj["operationalMode"].toString());
+    // if (obj.contains("disName"))
+    //     disName = obj["disName"].toString().toStdString();
 
-    if (obj.contains("modeConfiguration") && obj["modeConfiguration"].isObject()) {
-        QJsonObject modeConfigObj = obj["modeConfiguration"].toObject();
-        if (modeConfigObj.contains("mode1"))
-            modeConfiguration.mode1 = modeConfigObj["mode1"].toString().toStdString();
-        if (modeConfigObj.contains("mode2"))
-            modeConfiguration.mode2 = modeConfigObj["mode2"].toString().toStdString();
-        if (modeConfigObj.contains("mode3A"))
-            modeConfiguration.mode3A = modeConfigObj["mode3A"].toString().toStdString();
-        if (modeConfigObj.contains("mode4"))
-            modeConfiguration.mode4 = modeConfigObj["mode4"].toString().toStdString();
-        if (modeConfigObj.contains("modeC"))
-            modeConfiguration.modeC = modeConfigObj["modeC"].toString().toStdString();
-    }
+    // if (obj.contains("operationalMode"))
+    //     operationalMode = stringToOperationalMode(obj["operationalMode"].toString());
 
-    if (obj.contains("codeSystem"))
-        codeSystem = stringToCodeSystem(obj["codeSystem"].toString());
+    // if (obj.contains("modeConfiguration") && obj["modeConfiguration"].isObject()) {
+    //     QJsonObject modeConfigObj = obj["modeConfiguration"].toObject();
+    //     if (modeConfigObj.contains("mode1"))
+    //         modeConfiguration.mode1 = modeConfigObj["mode1"].toString().toStdString();
+    //     if (modeConfigObj.contains("mode2"))
+    //         modeConfiguration.mode2 = modeConfigObj["mode2"].toString().toStdString();
+    //     if (modeConfigObj.contains("mode3A"))
+    //         modeConfiguration.mode3A = modeConfigObj["mode3A"].toString().toStdString();
+    //     if (modeConfigObj.contains("mode4"))
+    //         modeConfiguration.mode4 = modeConfigObj["mode4"].toString().toStdString();
+    //     if (modeConfigObj.contains("modeC"))
+    //         modeConfiguration.modeC = modeConfigObj["modeC"].toString().toStdString();
+    // }
 
-    if (obj.contains("encryptionType"))
-        encryptionType = stringToEncryptionType(obj["encryptionType"].toString());
+    // if (obj.contains("codeSystem"))
+    //     codeSystem = stringToCodeSystem(obj["codeSystem"].toString());
 
-    if (obj.contains("spoofable"))
-        spoofable = obj["spoofable"].toBool();
+    // if (obj.contains("encryptionType"))
+    //     encryptionType = stringToEncryptionType(obj["encryptionType"].toString());
 
-    if (obj.contains("responseDelay"))
-        responseDelay = static_cast<float>(obj["responseDelay"].toDouble());
+    // if (obj.contains("spoofable"))
+    //     spoofable = obj["spoofable"].toBool();
 
-    if (obj.contains("lastInterrogationTime"))
-        lastInterrogationTime = obj["lastInterrogationTime"].toString().toStdString();
+    // if (obj.contains("responseDelay"))
+    //     responseDelay = static_cast<float>(obj["responseDelay"].toDouble());
 
-    // --- Deserialize message history ---
-    if (obj.contains("messages") && obj["messages"].isArray()) {
-        QJsonArray messagesArray = obj["messages"].toArray();
-        messages.clear();
-        for (const auto& msgVal : messagesArray) {
-            QJsonObject msgObj = msgVal.toObject();
-            Message msg;
-            msg.timeStamp = msgObj["timeStamp"].toString().toStdString();
-            msg.source = msgObj["source"].toString().toStdString();
-            msg.destination = msgObj["destination"].toString().toStdString();
-            msg.content = msgObj["content"].toString().toStdString();
-            messages.push_back(msg);
-        }
-    }
+    // if (obj.contains("lastInterrogationTime"))
+    //     lastInterrogationTime = obj["lastInterrogationTime"].toString().toStdString();
+
+    // // --- Deserialize message history ---
+    // if (obj.contains("messages") && obj["messages"].isArray()) {
+    //     QJsonArray messagesArray = obj["messages"].toArray();
+    //     messages.clear();
+    //     for (const auto& msgVal : messagesArray) {
+    //         QJsonObject msgObj = msgVal.toObject();
+    //         Message msg;
+    //         msg.timeStamp = msgObj["timeStamp"].toString().toStdString();
+    //         msg.source = msgObj["source"].toString().toStdString();
+    //         msg.destination = msgObj["destination"].toString().toStdString();
+    //         msg.content = msgObj["content"].toString().toStdString();
+    //         messages.push_back(msg);
+    //     }
+    // }
 
 }
+
+
+void IFF::scan(){
+    // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
+
+    Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
+    // C# foreach (Transform tr in targets) -> C++ range-based for loop
+    for (auto& [key, entity] : *root->Platforms)
+    {
+        // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
+        if(key == parentEntity->ID) continue;
+        Platform* platform = entity;
+        if (platform) {
+            QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
+            //float distance = localPos.length();
+            float metredis = distanceBetween(source->translation().x(),source->translation().z(),platform->transform->matrix->translation().x(),platform->transform->matrix->translation().z())/1000;
+
+            // horizontal angle (Y axis) : x vs z
+            float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
+            if (metredis<emittingRange) // .position() is assumed
+            {
+                //qDebug()<< "detect";
+                if (detects.count(platform) == 0)
+                {
+                    detects.insert(platform);
+                    IFFTarget target;
+                    target.entity = platform;
+                    target.angle = yAngle;
+                    target.radius = metredis;
+                    targets.append(target);
+                }else{
+                    for (int i = 0; i < targets.size(); ++i) {
+                        if (targets.at(i).entity == platform) {
+                            targets[i].angle = yAngle;
+                            targets[i].radius = metredis;
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (detects.count(platform) > 0)
+                {
+                    for (int i = 0; i < targets.size(); ++i) {
+                        if (targets.at(i).entity == platform) {
+                            targets.removeAt(i);
+                            break;
+                        }
+                    }
+                    detects.erase(platform);
+                }
+            }
+        }
+    }
+}
+
+
 
 QString IFF::operationalModeToString(OperationalMode om) const {
     switch (om) {

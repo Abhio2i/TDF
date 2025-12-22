@@ -1,5 +1,4 @@
 
-
 /* ========================================================================= */
 /* File: imagetemplate.cpp                                                  */
 /* Purpose: Implements image selection widget for inspector table            */
@@ -13,11 +12,12 @@
 #include <QLabel>
 #include <QFileDialog>
 #include <QDebug>
+#include "GUI/Inspector/inspector.h"  // Include inspector for mainID access
 
 // %%% Constructor %%%
 /* Initialize image template widget */
-ImageTemplate::ImageTemplate(QWidget *parent)
-    : QWidget(parent)
+ImageTemplate::ImageTemplate(Inspector *inspector, QWidget *parent)  // CHANGED
+    : QWidget(parent), inspectorRef(inspector)  // CHANGED: Initialize inspectorRef
 {
     // No additional initialization needed
 }
@@ -91,6 +91,12 @@ void ImageTemplate::setupImageCell(int row, const QString &fullKey, const QJsonO
                 spriteObj["value"] = selectedPath;
                 spriteObj["type"] = "image";
                 delta[fullKey] = spriteObj;
+
+                // Add mainID from inspector
+                if (inspectorRef) {
+                    delta["_id"] = inspectorRef->getMainID();
+                }
+
                 emit valueChanged(connectedID, name, delta);
             }
         }
@@ -120,6 +126,12 @@ void ImageTemplate::setupImageCell(int row, const QString &fullKey, const QJsonO
         spriteObj["value"] = filePath;
         spriteObj["type"] = "image";
         delta[fullKey] = spriteObj;
+
+        // Add mainID from inspector
+        if (inspectorRef) {
+            delta["_id"] = inspectorRef->getMainID();
+        }
+
         emit valueChanged(connectedID, name, delta);
     });
 

@@ -93,7 +93,7 @@ void EWDisplay::updateRadar()
 {
     if (entity && sensor) {
         // Set radar range and trigger repaint
-        setRange(sensor->ewrange);
+        setRange(sensor->range);
         update();
     }
 }

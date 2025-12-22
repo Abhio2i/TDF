@@ -8,13 +8,14 @@ class Hierarchy;
 class ProfileCategaory;
 class Folder;
 class Entity;
+class Component;
 
 class GlobalRegistry {
 public:
     static std::unordered_map<ProfileCategaory*, Hierarchy*> profileToHierarchyMap;
     static std::unordered_map<Folder*, Hierarchy*> folderToHierarchyMap;
     static std::unordered_map<Entity*, Hierarchy*> entityToHierarchyMap;
-
+    static std::unordered_map<Component*, Hierarchy*> componentToHierarchyMap;
     static void registerProfile(ProfileCategaory* profile, Hierarchy* hierarchy) {
         profileToHierarchyMap[profile] = hierarchy;
     }
@@ -46,6 +47,18 @@ public:
     static Hierarchy* getParentHierarchy(Entity* entity) {
         if (entityToHierarchyMap.count(entity)) {
             return entityToHierarchyMap[entity];
+        }
+        return nullptr;
+    }
+
+    ///////////////////////
+    static void registerComponent(Component* component, Hierarchy* hierarchy) {
+        componentToHierarchyMap[component] = hierarchy;
+    }
+
+    static Hierarchy* getParentHierarchy(Component* component) {
+        if (componentToHierarchyMap.count(component)) {
+            return componentToHierarchyMap[component];
         }
         return nullptr;
     }

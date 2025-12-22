@@ -6,7 +6,7 @@
 #include <QVector3D>
 #include <QQuaternion>
 
-Transform::Transform() {
+Transform::Transform():Component(nullptr) {
     ID = Uuid::generateShortUniqueID();
     Active = true;
 
@@ -113,6 +113,22 @@ void Transform::setScale3D(const QVector3D& vector) {
 
 QVector3D Transform::scale3D() {
     return matrix->scale3D();
+}
+
+void Transform::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+
+}
+
+void Transform::removeSubComponent(std::string ID){
+
+}
+
+void Transform::updateSubComponent(std::string ID, const QJsonObject& obj){
+
+}
+
+QJsonObject Transform::getsubComponentData(std::string ID) const{
+    return QJsonObject();
 }
 
 QJsonObject Transform::toJson() const {
