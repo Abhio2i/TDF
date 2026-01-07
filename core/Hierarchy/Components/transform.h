@@ -10,6 +10,8 @@
 #include <QMatrix4x4>
 #include <QVariant>
 #include <Qt3DCore/QTransform>
+#include <core/Network/transformpdu.h>
+
 class Transform : public QObject, public Component
 {
     Q_OBJECT
@@ -28,6 +30,23 @@ public:
     QJsonObject customParameters;
     std::vector<QVector3D> trailData;
 
+    void setGeoCord(float lat, float lon);
+    void setGeoCord(float lat, float lon, float alt);
+    void setGeoCord(float lat, float lon, float alt, float heading);
+
+    void setLatitude(float lat);
+    float getLatitude();
+
+    void setLongitude(float lon);
+    float getLongitude();
+
+    void setAltitude(float alt);
+    float getAltitude();
+
+    void setHeading(float heading);
+    float getHeading();
+
+
     void setTranslation(const QVector3D& vector);
     void addTranslation(const QVector3D& vector);
     QVector3D translation();
@@ -44,6 +63,9 @@ public:
     QVector3D left();
     QVector3D down();
 
+    void lookAt(const QVector3D& targetWorldPos);
+    void lookAt3D(const QVector3D& targetWorldPos);
+
     QVector3D inverseTransformDirection(const QVector3D& worldDir);
     QVector3D TransformDirection(const QVector3D& localDir);
 
@@ -56,6 +78,13 @@ public:
     void updateSubComponent(std::string ID, const QJsonObject& obj) override;
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
+    // --- Conversion for Network (TransformPDU) ---
+    void toPDU(TransformPDU& pdu, const std::string& entityID, const std::string& parentID) const;
+    void fromPDU(const TransformPDU& pdu);
+
+private:
+    void VectorChanged(QVector3D v);
+    void rotationChanged(QQuaternion r);
 };
 
 #endif // TRANSFORM_H

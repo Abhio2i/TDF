@@ -1,10 +1,12 @@
 
+
 /* ========================================================================= */
 /* File: RADIODisplay.cpp                                                    */
 /* Purpose: Implements Radio display for communication detection           */
 /* ========================================================================= */
 
 #include "radiodisplay.h"
+#include "core/Hierarchy/Utils/entityutils.h"
 #include <QPainter>
 #include <QPaintEvent>
 #include <QFont>
@@ -16,12 +18,12 @@
 // %%% Constructor %%%
 /* Initialize Radio display */
 RADIODisplay::RADIODisplay(QWidget *parent)
-    : QWidget(parent)
+    : QWidget(parent), hoveredTargetIndex(-1)
 {
     setStyleSheet("background-color: black;");
     QSizePolicy policy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     policy.setHeightForWidth(true);
-    setMouseTracking(true);
+    setMouseTracking(true); // Enable mouse tracking
     setSizePolicy(policy);
     padding = 40;
 }
@@ -42,6 +44,69 @@ QSize RADIODisplay::minimumSize() const
 int RADIODisplay::heightForWidth(int width) const
 {
     return qRound(width * ASPECT_RATIO);
+}
+
+/* Handle mouse move events for hover detection */
+void RADIODisplay::mouseMoveEvent(QMouseEvent *event)
+{
+    mousePos = event->pos();
+
+    if (targets.isEmpty()) {
+        hoveredTargetIndex = -1;
+        update();
+        return;
+    }
+
+    int w = width();
+    int h = height();
+    int outerDiameter = qMin(w - padding*2, h - padding*2);
+    int outerRadius = outerDiameter / 2;
+    QPoint center(w / 2, h / 2);
+
+    // Check if mouse is near any target
+    int closestIndex = -1;
+    double minDistance = 20.0; // Pixel threshold for hover detection
+
+    for (int i = 0; i < targets.size(); ++i) {
+        const Radio::RadioTarget &t = targets[i];
+
+        // Calculate target position on screen
+        double per = t.radius / range;
+        if (per < 0.0) per = 0.0;
+        if (per > 1.0) per = 1.0;
+
+        double r = per * outerRadius;
+        double angleDeg = t.angle;
+        double theta = qDegreesToRadians(angleDeg - 90.0);
+        int tx = center.x() + int(r * cos(theta));
+        int ty = center.y() + int(r * sin(theta));
+
+        // Calculate distance from mouse to target
+        double dx = mousePos.x() - tx;
+        double dy = mousePos.y() - ty;
+        double distance = sqrt(dx*dx + dy*dy);
+
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestIndex = i;
+        }
+    }
+
+    if (hoveredTargetIndex != closestIndex) {
+        hoveredTargetIndex = closestIndex;
+        update(); // Repaint to show/hide labels
+    }
+
+    QWidget::mouseMoveEvent(event);
+}
+
+/* Handle mouse leave events */
+void RADIODisplay::leaveEvent(QEvent *event)
+{
+    Q_UNUSED(event);
+    hoveredTargetIndex = -1;
+    update();
+    QWidget::leaveEvent(event);
 }
 
 // %%% Entity Management %%%
@@ -69,6 +134,9 @@ void RADIODisplay::selectEntity(Entity* entit)
         }
     }
 
+    // Reset hover state when entity changes
+    hoveredTargetIndex = -1;
+    update();
 }
 
 void RADIODisplay::RemoveEntity(QString ID)
@@ -77,6 +145,8 @@ void RADIODisplay::RemoveEntity(QString ID)
         entity = nullptr;
         radio = nullptr;
         setWindowTitle("RADIO Display");
+        // Reset hover state
+        hoveredTargetIndex = -1;
     }
 }
 
@@ -88,10 +158,9 @@ void RADIODisplay::updateRadar()
         targets = radio->targets;
         update();
     } else {
-        if (!entity)"";
-        //qDebug() << "❌ RADIODisplay updateRadar - No entity selected";
-        else if (!radio)"";
-        //qDebug() << "❌ RADIODisplay updateRadar - No RADIO component";
+        // Reset targets if no entity/radio
+        targets.clear();
+        hoveredTargetIndex = -1;
     }
 }
 
@@ -116,19 +185,20 @@ void RADIODisplay::paintEvent(QPaintEvent * /*event*/)
     drawTicksAndLabels(p, center, outerRadius);
     drawCenterMark(p, center);
     drawTopMarker(p, center, outerRadius);
-    // drawTargetAndPath(p);
+
+    // Draw targets with hover functionality
     if (!targets.isEmpty()) {
+        for (int i = 0; i < targets.size(); ++i) {
+            const Radio::RadioTarget &t = targets[i];
 
-
-        for (const Radio::RadioTarget &t : targets) {
             // FIX: Manual bound check
             double per = t.radius / range;
             if (per < 0.0) per = 0.0;
             if (per > 1.0) per = 1.0;
 
             double r = per * outerRadius;
-            double angleDeg = t.angle;
-            double theta = qDegreesToRadians(angleDeg - 90.0);
+            double angleDeg = t.angle-90;
+            double theta = qDegreesToRadians(angleDeg);
             int tx = center.x() + int(r * cos(theta));
             int ty = center.y() + int(r * sin(theta));
 
@@ -136,44 +206,52 @@ void RADIODisplay::paintEvent(QPaintEvent * /*event*/)
             p.setPen(QPen(radarGreen, 1, Qt::DotLine));
             p.drawLine(center, QPoint(tx, ty));
 
-            // Draw red dot at target position
-            p.setBrush(Qt::red);
+            // Draw target dot - red normally, cyan if hovered
+            if (i == hoveredTargetIndex) {
+                p.setBrush(Qt::cyan);
+            } else {
+                p.setBrush(Qt::red);
+            }
             p.setPen(Qt::NoPen);
             p.drawEllipse(QPointF(tx, ty), 4, 4);
 
-            // Draw labels
-            p.setPen(QPen(Qt::yellow, 1));
-            QFont font = p.font();
-            font.setPointSize(8);
-            p.setFont(font);
+            // Draw labels ONLY if this target is hovered
+            if (i == hoveredTargetIndex) {
+                p.setPen(QPen(Qt::yellow, 1));
+                QFont font = p.font();
+                font.setPointSize(8);
+                p.setFont(font);
 
-            Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
-            QString targetName = targetPlatform ? QString::fromStdString(targetPlatform->Name) : "Unknown";
+                Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
+                QString targetName = targetPlatform ? QString::fromStdString(targetPlatform->Name) : "Unknown";
 
-            // QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
-            QString distText = QString("D:%1km").arg(t.radius, 0, 'f', 1);
-            // QString nameText = QString("N:%1").arg(targetName);
+                // Show detailed info for hovered target
+                QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
+                QString distText = QString("D:%1m").arg(t.radius, 0, 'f', 1);
+                QString freqText = QString("F:%1MHz").arg(t.frequency, 0, 'f', 1);
+                QString nameText = QString("N:%1").arg(targetName);
 
-            // Draw text at target position
-            // p.drawText(tx + 6, ty - 6, angleText);
-            p.drawText(tx + 6, ty + 12, distText);
-            // p.drawText(tx + 6, ty + 30, nameText);
+                // Draw text at target position (offset slightly)
+                p.drawText(tx + 6, ty - 24, angleText);
+                p.drawText(tx + 6, ty - 12, distText);
+                p.drawText(tx + 6, ty + 0, freqText);
+                p.drawText(tx + 6, ty + 12, nameText);
+            }
         }
     } else if (entity && radio) {
         // No targets message
         p.setPen(Qt::white);
-        p.drawText(center, "No Radio Targets Detected");
+        QFont font = p.font();
+        font.setPointSize(10);
+        p.setFont(font);
+        QRect textRect = p.fontMetrics().boundingRect("No Radio Targets Detected");
+        p.drawText(center.x() - textRect.width()/2, center.y(), "No Radio Targets Detected");
     }
-    // // Draw Radio targets
-    // drawRadioTargets(p, center, outerRadius);
 }
-
-
 
 void RADIODisplay::drawRadioTargets(QPainter &p, const QPoint &center, int outerRadius)
 {
     if (!entity || !radio) {
-
         p.setPen(Qt::white);
         p.drawText(center, "No Radio Selected\nSelect an entity with Radio");
         return;
@@ -185,8 +263,6 @@ void RADIODisplay::drawRadioTargets(QPainter &p, const QPoint &center, int outer
         return;
     }
 
-    hoveredTargetIndex = -1;
-    QList<QPointF> positions;
     const int dotSize = 8;
 
     // Get current radio's frequency range for filtering
@@ -229,51 +305,21 @@ void RADIODisplay::drawRadioTargets(QPainter &p, const QPoint &center, int outer
 
         QPointF pos(center.x() + radius * cos(theta),
                     center.y() - radius * sin(theta));
-        positions.append(pos);
-
-        QRectF dotRect(pos.x() - dotSize / 2, pos.y() - dotSize / 2, dotSize, dotSize);
-        if (dotRect.contains(mousePos)) {
-            hoveredTargetIndex = i;
-        }
 
         p.setBrush(Qt::blue);
         p.setPen(Qt::NoPen);
-        p.drawEllipse(dotRect);
+        p.drawEllipse(QRectF(pos.x() - dotSize / 2, pos.y() - dotSize / 2, dotSize, dotSize));
 
         p.setPen(QPen(radarGreen, 1, Qt::DotLine));
         p.drawLine(center, QPoint(pos.x(), pos.y()));
 
-        p.setPen(QPen(Qt::white, 1));
-        QString info = QString("D:%1 A:%2 F:%3").arg(target.radius, 0, 'f', 1).arg(target.angle, 0, 'f', 1).arg(target.frequency, 0, 'f', 1);
-        p.drawText(pos.x() + 5, pos.y() - 5, info);
+        // Show labels only for hovered target
+        if (i == hoveredTargetIndex) {
+            p.setPen(QPen(Qt::yellow, 1));
+            QString info = QString("D:%1 A:%2 F:%3").arg(target.radius, 0, 'f', 1).arg(target.angle, 0, 'f', 1).arg(target.frequency, 0, 'f', 1);
+            p.drawText(pos.x() + 5, pos.y() - 5, info);
+        }
     }
-
-    if (hoveredTargetIndex >= 0 && hoveredTargetIndex < positions.size()) {
-        const Radio::RadioTarget &target = radio->targets.at(hoveredTargetIndex);
-        QPointF pos = positions[hoveredTargetIndex];
-        QString info = QString("Radio: %1\nDist: %2 m\nAngle: %3°\nFreq: %4 MHz\nRange: %5 m")
-                           .arg(QString::fromStdString(target.name))
-                           .arg(target.radius, 0, 'f', 1)
-                           .arg(target.angle, 0, 'f', 1)
-                           .arg(target.frequency, 0, 'f', 1)
-                           .arg(target.range, 0, 'f', 1);
-
-        QFontMetrics fm(p.font());
-        QRect infoRect = fm.boundingRect(QRect(), Qt::AlignLeft | Qt::AlignTop, info);
-        infoRect.moveTo(pos.x() + 12, pos.y() - infoRect.height() / 2);
-        infoRect.adjust(-6, -4, 6, 4);
-
-        p.setBrush(QColor(0, 0, 0, 220));
-        p.setPen(QPen(Qt::white, 1));
-        p.drawRect(infoRect);
-        p.drawText(infoRect, Qt::AlignLeft | Qt::AlignTop, info);
-    }
-}
-
-void RADIODisplay::mouseMoveEvent(QMouseEvent *event)
-{
-    mousePos = event->pos();
-    update();
 }
 
 void RADIODisplay::drawTargetAndPath(QPainter &painter)
@@ -287,7 +333,6 @@ void RADIODisplay::drawTargetAndPath(QPainter &painter)
 
     if (entity && radio) {
         ang = entity->transform->toEulerAngles().y();
-
         // Radio specific targets are now handled in drawRadioTargets
     }
 }
@@ -409,7 +454,7 @@ void RADIODisplay::drawTopMarker(QPainter &p, const QPoint &center, int outerRad
 
     QFont f("Arial", qMax(6, outerRadius/25), QFont::Bold);
     p.setFont(f);
-    QString txt = "N"; // North marker
+    QString txt = "N";
     QRect txtRect = QFontMetrics(f).boundingRect(txt);
     int tx = triCenterX - txtRect.width()/2;
     int ty = triCenterY + triW + txtRect.height() + 1;

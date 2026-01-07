@@ -12,21 +12,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
-// // Stub NetworkManager with packet signal
-// class NetworkManager {
-// public:
-//     bool startSession(const QString &, int) { return true; }
-//     bool stopSession() { return true; }
-//     bool connectClient(const QString &, const QString &, int, const QString &) { return true; }
-//     bool disconnectClient(const QString &) { return true; }
-//     QStringList getNetworkStatus() { return {"Client_01,192.168.1.10,Connected,90 ms", "Client_02,192.168.1.11,Disconnected,N/A"}; }
-//     bool runTest(const QString &, const QString &) { return true; }
-//     bool sendPDU(const QString &, const QString &, const QString &) { return true; }
-//     QStringList getPackets() {
-//         QString time = QDateTime::currentDateTime().toString("hh:mm:ss");
-//         return {time + ",Entity,192.168.1.10,Pos:100,200", time + ",Fire,192.168.1.11,Target:12345"};
-//     }
-// };
+
 
 
 

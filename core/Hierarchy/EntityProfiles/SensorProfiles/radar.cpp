@@ -1,6 +1,7 @@
 #include "radar.h"
 #include "core/Hierarchy/Utils/entityutils.h"
 #include "core/Hierarchy/hierarchy.h"
+#include "core/Hierarchy/EntityProfiles/sensor.h"
 const float RAD2DEG = 180.0f / M_PI;
 Radar::Radar(Hierarchy* h) : Sensor(h)  {
     subType = SubType::Generic;
@@ -14,9 +15,9 @@ void Radar::scan(){
         if(key == parentEntity->ID) continue;
         Platform* platform = entity;
         if (platform) {
-            QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
+            QVector3D localPos = source->inverseTransformPoint(platform->transform->translation());
             //float distance = localPos.length();
-            float metredis = distanceBetween(source->translation().x(),source->translation().z(),platform->transform->matrix->translation().x(),platform->transform->matrix->translation().z())/1000;
+            float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
             if (detectCheck(localPos,metredis)) // .position() is assumed
             {
@@ -25,6 +26,8 @@ void Radar::scan(){
                     detects.insert(platform);
                     Target target;
                     target.entity = platform;
+                    if(platform->dynamicModel)
+                        target.speed = platform->dynamicModel->currentSpeed;
                     target.angle = yAngle;
                     target.radius = metredis;
                     targets.append(target);
@@ -32,6 +35,8 @@ void Radar::scan(){
                     for (int i = 0; i < targets.size(); ++i) {
                         if (targets.at(i).entity == platform) {
                             targets[i].angle = yAngle;
+                            if(platform->dynamicModel)
+                                targets[i].speed = platform->dynamicModel->currentSpeed;
                             targets[i].radius = metredis;
                             break;
                         }
@@ -56,6 +61,7 @@ void Radar::scan(){
             }
         }
     }
+    // qDebug()<<targets.size();
 }
 
 QJsonObject Radar::toJson() const {
@@ -64,11 +70,22 @@ QJsonObject Radar::toJson() const {
     obj["name"] = QString::fromStdString(Name);
     obj["on"] = on;
     obj["SensorType"] = "Radar";
+
+    QJsonObject capabilitiesObj;
+    capabilitiesObj["type"] = "option";
+    QJsonArray optionsArray;
+    for (const QString& opt : DetectionCapabilitiesTypeOptions())
+        optionsArray.append(opt);
+    capabilitiesObj["options"] = optionsArray;
+    capabilitiesObj["value"] = detectionCapabilitiesToString(capabilities);
+
+
     QJsonObject defaultObj;
     defaultObj["type"] = "Section";
     defaultObj["range"] = toParm(range,"km");
     defaultObj["frequency"] = toParm(frequency,"Ghz");
     defaultObj["azimuth"] = toParm(azimuth,"deg");
+    defaultObj["DetectionCapabilities"] = capabilitiesObj;
     obj["default"] = defaultObj;
     return obj;
 }
@@ -89,5 +106,11 @@ void Radar::fromJson(const QJsonObject& obj) {
 
         if (defaultObj.contains("azimuth"))
             azimuth = valueFromParm(defaultObj["azimuth"].toObject());
+
+        if (defaultObj.contains("DetectionCapabilities") && defaultObj["DetectionCapabilities"].isObject()) {
+            QJsonObject capabilitiesObj = defaultObj["DetectionCapabilities"].toObject();
+            if (capabilitiesObj.contains("value"))
+                capabilities = stringTodetectionCapabilities(capabilitiesObj["value"].toString());
+        }
     }
 }

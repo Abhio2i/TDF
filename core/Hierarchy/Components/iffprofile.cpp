@@ -10,6 +10,13 @@ IFFProfile::IFFProfile(Hierarchy* h):Component(h) {
 void IFFProfile::addSubComponent(std::string name, QString data1, QString data2, QString data3){
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     IFF* iff = new IFF(parent);
+    if(!data2.isEmpty()){
+        std::string id = iff->ID;
+        QJsonObject obj = (*parent->Iffs)[data2.toStdString()]->toJson();
+        iff->fromJson(obj);
+        iff->ID = id;
+        iff->parentID = parentID;
+    }
     iff->parentEntity = parentEntity;
     iff->Name = name;
     iffs->insert({iff->ID,iff});
@@ -19,7 +26,15 @@ void IFFProfile::addSubComponent(std::string name, QString data1, QString data2,
 }
 
 void IFFProfile::removeSubComponent(std::string ID){
-
+    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    auto it = iffs->find(ID);
+    if (it != iffs->end() && it->second != nullptr) {
+        IFF *iff = it->second;
+        emit parent->subComponentRemoved(QString::fromStdString(this->ID),QString::fromStdString(ID),QString::fromStdString(iff->Name));
+        iffs->erase(iff->ID);
+        parent->Iffs->erase(iff->ID);
+        delete iff;
+    }
 }
 
 void IFFProfile::updateSubComponent(std::string ID, const QJsonObject& obj){

@@ -1,5 +1,6 @@
 #ifndef MESH_H
 #define MESH_H
+#include "qpixmap.h"
 #include <QObject>
 #include <core/Hierarchy/Struct/color.h>
 #include <core/Hierarchy/Struct/vector.h>
@@ -13,7 +14,10 @@ public:
     std::string ID;
     std::string* Sprite;
     std::string* Texture;
-
+    std::string lastpath;
+    QPixmap* cacheimg;
+    QPixmap scaledimg;
+    int ImageScale = 0;
     QColor *color;
     QColor *fillColor;
 
@@ -22,6 +26,7 @@ public:
     bool closePath;
     std::vector<Vector*> polygen;
 
+    QPixmap *getPixmap(int size);
     void addPoint(Vector* point);
     void removePoint();
     void clear();

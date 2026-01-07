@@ -29,20 +29,20 @@ public:
     ComponentType Typo() const override { return ComponentType::DynamicModel; }
     void init();
     void start();
-    bool controle;
+    bool control;
     bool follow;
-    float moveSpeed = 800;//km/h
     float turnRadius = 500;//metre
     ///Maximums
-    float minSpeed = 1.000f;//m/s
-    float maxSpeed = 1.000f;//m/s
-    float Acceleration = 10.000f;//m/s^2
-    float Decceleration = 10.000f;//m/s^2
+    float minSpeed = 1800.0f;//km/h
+    float moveSpeed = 800.0f;//km/h
+    float maxSpeed = 100.0f;//km/h
+    float Acceleration = 100.000f;//m/s^2
+    float Decceleration = 100.000f;//m/s^2
     float turnRate = 71.620f;//deg/s
     float Roll = 90.000;//deg
-    float Altitude = 10000;//m
-    float climbRate = 10.000;//m/s
-    float diveRate = 10.000;//m/s
+    float Altitude = 10000;//ft
+    float climbRate = 100.000;//ft/s
+    float diveRate = 100.000;//ft/s
 
     ///Resposes
     float deltaSpdCommandMaxAcc = 20.000;//m/s
@@ -65,12 +65,9 @@ public:
     float startTime = 0;
     float time = 0;
     float currentSpeed = 0;
+    float currentAltitude = 0;
 
-    float delta = 0;
-    float speeed = 0;
-    double lastLat = 0;
-    double lastLon = 0;
-    float lastdist = 0;
+
     // New member variables for 6-DoF simulation without Rigidbody
     QVector3D velocity;
     QVector3D angularVelocity;
@@ -98,6 +95,12 @@ public:
 public slots:
     void Update(float deltaTime);
     void setMoveSpeed(float speed);
+private:
+    float speed = 0;//km/s
+    float delta = 0;
+    double lastLat = 0;
+    double lastLon = 0;
+    float lastdist = 0;
 };
 
 #endif // DYNAMICMODEL_H

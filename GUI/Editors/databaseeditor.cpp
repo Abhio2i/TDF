@@ -35,7 +35,7 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
     setWindowTitle("Database Editor");
     resize(1100, 600);
 
-   setupEnhancedDockWidgets();
+    setupEnhancedDockWidgets();
     setupMenuBar();
     setupToolBars();
     setupStatusBar();
@@ -104,55 +104,12 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
         HierarchyConnector::instance()->setupFileOperations(this, hierarchy, nullptr);
     }
 
+    if (treeView && hierarchy)
+
     if (treeView && hierarchy) {
-        connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
-            QString type;
-            if (data["type"].type() == QVariant::Map) {
-                QVariantMap typeData = data["type"].toMap();
-                if (typeData.contains("type") && typeData["type"].toString() == "option") {
-                    type = "profile";
-                } else {
-                    return;
-                }
-            } else {
-                type = data["type"].toString();
-            }
-
-            QString name = data["name"].toString();
-            QString ID = data["parentId"].toString();
-            QString displayName = capitalizeFirstLetter(name);
-
-            for (Inspector* inspector : inspectors) {
-                if (type == "subcomponent") {
-                    QJsonObject componentData = (*hierarchy->Components)[data["parentId"].toString().toStdString()]->getsubComponentData(data["ID"].toString().toStdString());
-
-                    if (!componentData.isEmpty()) {
-                        inspector->init(ID, displayName + "_sub", componentData);
-                    }
-                    //inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
-                }else if (type == "component") {
-                    QJsonObject componentData = hierarchy->getComponentData(ID, name);
-                    if (!componentData.isEmpty()) {
-                        inspector->init(ID, displayName, componentData);
-                    }
-                    //inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
-                } else if (type == "profile") {
-                    inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
-                } else if (type == "folder") {
-                    inspector->init(ID, displayName + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
-                } else if (type == "entity") {
-                    inspector->init(data["ID"].toString(), displayName + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
-                } else {
-                    inspector->init(ID, displayName, QJsonObject());
-                }
-            }
-
-            if (!inspectorDock->isVisible()) {
-                addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
-                inspectorDock->show();
-            }
-        });
+        connect(treeView, &HierarchyTree::itemSelected, this, &DatabaseEditor::onTreeItemSelected);
     }
+
 
     if (inspector && hierarchy) {
         connect(inspector, &Inspector::valueChanged,
@@ -215,6 +172,7 @@ void DatabaseEditor::setupEnhancedDockWidgets()
     consoleDock->setMinimumHeight(100);
     consoleDock->setTitleBarWidget(nullptr);
     addDockWidget(Qt::BottomDockWidgetArea, consoleDock);
+    consoleDock->hide();
 
     connect(hierarchyDock, &QDockWidget::visibilityChanged, this, &DatabaseEditor::onDockVisibilityChanged);
     connect(inspectorDock, &QDockWidget::visibilityChanged, this, &DatabaseEditor::onDockVisibilityChanged);
@@ -234,8 +192,8 @@ void DatabaseEditor::setupEnhancedDockWidgets()
 
     QTimer::singleShot(100, this, [=]() {
         int totalWidth = width();
-        int hierarchyWidth = static_cast<int>(totalWidth * 0.25);
-        int inspectorWidth = static_cast<int>(totalWidth * 0.5);
+        int hierarchyWidth = static_cast<int>(totalWidth * 0.10);
+        int inspectorWidth = static_cast<int>(totalWidth * 0.85);
         int consoleHeight = static_cast<int>(height() * 0.3);
 
         resizeDocks({hierarchyDock}, {hierarchyWidth}, Qt::Horizontal);
@@ -281,7 +239,7 @@ void DatabaseEditor::setupMenuBar()
 
 void DatabaseEditor::resetLayout()
 {
-    console->log("Resetting layout to initial state...");
+
 
     for (int i = inspectorDocks.size() - 1; i >= 0; --i) {
         QDockWidget* dock = inspectorDocks[i];
@@ -322,8 +280,8 @@ void DatabaseEditor::resetLayout()
         int totalWidth = this->width();
         int totalHeight = this->height();
 
-        int hierarchyWidth = static_cast<int>(totalWidth * 0.25);
-        int inspectorWidth = static_cast<int>(totalWidth * 0.50);
+        int hierarchyWidth = static_cast<int>(totalWidth * 0.10);
+        int inspectorWidth = static_cast<int>(totalWidth * 0.85);
         int consoleHeight = static_cast<int>(totalHeight * 0.25);
 
         resizeDocks({hierarchyDock}, {hierarchyWidth}, Qt::Horizontal);
@@ -335,7 +293,7 @@ void DatabaseEditor::resetLayout()
         consoleDock->raise();
 
         updateStatusBar("Layout reset to initial state");
-        console->log("Layout successfully reset to initial configuration");
+
     });
 }
 
@@ -388,6 +346,7 @@ void DatabaseEditor::addInspectorTab()
     newInspectorDock->show();
     newInspectorDock->raise();
 }
+
 
 /* Show feedback window */
 void DatabaseEditor::showFeedbackWindow()
@@ -448,9 +407,9 @@ void DatabaseEditor::loadRecentProject(const QString& filePath)
     QProgressDialog* loadingDialog = new QProgressDialog("Loading data...", nullptr, 0, 0, this);
     loadingDialog->setWindowTitle("");
     loadingDialog->setWindowModality(Qt::WindowModal);
-    loadingDialog->setCancelButton(nullptr); // No cancel button
-    loadingDialog->setMinimumDuration(0); // Show immediately
-    loadingDialog->setRange(0, 0); // Indeterminate mode
+    loadingDialog->setCancelButton(nullptr);
+    loadingDialog->setMinimumDuration(0);
+    loadingDialog->setRange(0, 0);
     loadingDialog->setValue(0);
     loadingDialog->show();
 
@@ -544,22 +503,19 @@ void DatabaseEditor::showApplicationDialog()
 }
 void DatabaseEditor::loadFromJsonFile(const QString &filePath)
 {
-    // Create loading dialog with indeterminate progress
+
     QProgressDialog* loadingDialog = new QProgressDialog("Loading data...", nullptr, 0, 0, this);
     loadingDialog->setWindowTitle("");
     loadingDialog->setWindowModality(Qt::WindowModal);
-    loadingDialog->setCancelButton(nullptr); // No cancel button
-    loadingDialog->setMinimumDuration(0); // Show immediately
-    loadingDialog->setRange(0, 0); // Indeterminate mode
+    loadingDialog->setCancelButton(nullptr);
+    loadingDialog->setMinimumDuration(0);
+    loadingDialog->setRange(0, 0);
     loadingDialog->setValue(0);
     loadingDialog->show();
-
-    // Force UI update
     QCoreApplication::processEvents();
 
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
-        qWarning() << "Failed to open JSON file:" << filePath;
         QMessageBox::warning(this, "Error", QString("Failed to open JSON file: %1").arg(filePath));
         loadingDialog->deleteLater();
         return;
@@ -586,27 +542,647 @@ void DatabaseEditor::loadFromJsonFile(const QString &filePath)
 
         QCoreApplication::processEvents();
 
-        qDebug() << "Hierarchy loaded from file:" << filePath;
+
         if (treeView && treeView->getTreeWidget()) {
             treeView->getTreeWidget()->update();
-            qDebug() << "HierarchyTree updated after loading JSON";
+
         } else {
-            qWarning() << "Failed to update HierarchyTree: treeView or treeWidget is null";
+
         }
 
         QCoreApplication::processEvents();
     } else {
-        qWarning() << "JSON file does not contain 'hierarchy' key";
+
+    }
+    lastSavedFilePath = filePath;
+    clearUnsavedChanges();
+    loadingDialog->close();
+    loadingDialog->deleteLater();
+    updateStatusBar("Project loaded: " + QFileInfo(filePath).fileName());
+}
+
+void DatabaseEditor::onTreeItemSelected(QVariantMap data)
+{
+    QString type;
+    if (data["type"].type() == QVariant::Map) {
+        QVariantMap typeData = data["type"].toMap();
+        if (typeData.contains("type") && typeData["type"].toString() == "option") {
+            type = "profile";
+        } else {
+            return;
+        }
+    } else {
+        type = data["type"].toString();
+    }
+
+    QString name = data["name"].toString();
+    QString ID = data["parentId"].toString();
+    QString displayName = capitalizeFirstLetter(name);
+
+
+    cleanupExtraInspectors();
+
+    // ✅ Reset inspector state completely
+    if (inspector) {
+        inspector->resetState();
+    }
+
+    if (type == "entity") {
+        QString entityId = data["ID"].toString();
+        showAllEntityComponents(entityId, displayName);
+        auto entityIt = hierarchy->Entities->find(entityId.toStdString());
+        if (entityIt != hierarchy->Entities->end()) {
+            QJsonObject entityData = entityIt->second->toJson();
+            inspector->init(entityId, displayName + "_self", entityData);
+        }
+    }
+    else if (type == "subcomponent") {
+        QString subCompId = data["ID"].toString();
+        QString parentCompId = data["parentId"].toString();
+        QJsonObject subComponentData;
+        auto compIt = hierarchy->Components->find(parentCompId.toStdString());
+        if (compIt != hierarchy->Components->end()) {
+            auto compPtr = compIt->second;
+            if (compPtr) {
+                subComponentData = compPtr->getsubComponentData(subCompId.toStdString());
+            }
+        }
+
+        if (subComponentData.isEmpty()) {
+            QString componentType = name.toLower();
+            if (componentType.contains("sensor", Qt::CaseInsensitive)) {
+                componentType = "sensors";
+            } else if (componentType.contains("radio", Qt::CaseInsensitive)) {
+                componentType = "radios";
+            } else if (componentType.contains("iff", Qt::CaseInsensitive)) {
+                componentType = "iffs";
+            }
+
+            QJsonObject parentData = hierarchy->getComponentData(parentCompId, componentType);
+            if (parentData.contains(componentType) && parentData[componentType].isObject()) {
+                QJsonObject container = parentData[componentType].toObject();
+                if (container.contains(subCompId)) {
+                    subComponentData = container[subCompId].toObject();
+                }
+            }
+        }
+
+        if (!subComponentData.isEmpty()) {
+            inspector->init(ID, displayName + "_sub", subComponentData);
+        }
+    }
+    else if (type == "component") {
+        QJsonObject componentData = hierarchy->getComponentData(ID, name);
+        if (!componentData.isEmpty()) {
+            inspector->init(ID, displayName, componentData);
+        }
+    }
+    else if (type == "profile") {
+        auto profileIt = hierarchy->ProfileCategories.find(data["ID"].toString().toStdString());
+        if (profileIt != hierarchy->ProfileCategories.end()) {
+            inspector->init(ID, displayName + "_self", profileIt->second->toJson());
+        }
+    }
+    else if (type == "folder") {
+        auto folderIt = hierarchy->Folders->find(data["ID"].toString().toStdString());
+        if (folderIt != hierarchy->Folders->end()) {
+            inspector->init(ID, displayName + "_self", folderIt->second->toJson());
+        }
+    }
+    else {
+        inspector->init(ID, displayName, QJsonObject());
+    }
+
+    if (!inspectorDock->isVisible()) {
+        addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
+        inspectorDock->show();
+    }
+}
+
+void DatabaseEditor::cleanupExtraInspectors()
+{
+    // ✅ Check if we're in "All Components Mode"
+    bool isAllComponentsMode = inspectorDock->property("IsAllComponentsMode").toBool();
+
+    if (isAllComponentsMode) {
+        // Restore original inspector widget
+        inspectorDock->setWidget(inspector);
+        inspectorDock->setWindowTitle("Inspector");
+
+        // Clear all properties
+        inspectorDock->setProperty("AllComponentsWidget", QVariant());
+        inspectorDock->setProperty("IsAllComponentsMode", false);
+        inspectorDock->setProperty("EntityId", QVariant());
+
+        // Delete all temporary inspectors
+        QVariant inspectorsVar = inspectorDock->property("AllInspectors");
+        if (inspectorsVar.isValid()) {
+            QList<Inspector*> allInspectors = inspectorsVar.value<QList<Inspector*>>();
+            for (Inspector* insp : allInspectors) {
+                if (insp != inspector) {
+                    insp->deleteLater();
+                }
+            }
+            inspectorDock->setProperty("AllInspectors", QVariant());
+        }
+
+        // ✅ Reset the main inspector state
+        if (inspector) {
+            inspector->resetState();
+        }
+    }
+
+    // ✅ Remove any extra inspector docks (from Add Tab feature)
+    for (int i = inspectorDocks.size() - 1; i > 0; --i) {
+        QDockWidget* dock = inspectorDocks[i];
+        if (dock != inspectorDock) {
+            inspectorDocks.removeAt(i);
+            dock->deleteLater();
+        }
+    }
+
+    // Reset lists to only contain main inspector
+    inspectors = QList<Inspector*>{inspector};
+    inspectorCount = 0;
+
+    // ✅ Ensure inspector dock is visible and properly sized
+    if (!inspectorDock->isVisible()) {
+        inspectorDock->show();
+    }
+}
+void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QString& entityName)
+{
+
+    QString entityType = "";
+    auto entityIt = hierarchy->Entities->find(entityId.toStdString());
+    if (entityIt != hierarchy->Entities->end()) {
+        QJsonObject entityData = entityIt->second->toJson();
+        if (entityData.contains("type") && entityData["type"].isObject()) {
+            QJsonObject typeObj = entityData["type"].toObject();
+            if (typeObj.contains("value")) {
+                entityType = typeObj["value"].toString();
+            }
+        }
     }
 
 
+    if (entityType != "Platform") {
 
-    lastSavedFilePath = filePath;
-    clearUnsavedChanges();
+        if (entityIt != hierarchy->Entities->end()) {
+            QJsonObject entityData = entityIt->second->toJson();
+            QJsonObject displayData;
+            displayData["name"] = entityData["name"];
+            displayData["active"] = entityData["active"];
+            if (entityData.contains("default") && entityData["default"].isObject()) {
+                QJsonObject defaultData = entityData["default"].toObject();
+                for (auto it = defaultData.begin(); it != defaultData.end(); ++it) {
+                    displayData[it.key()] = it.value();
+                }
+            }
 
-    // Close loading dialog
-    loadingDialog->close();
-    loadingDialog->deleteLater();
+            inspector->init(entityId, entityName + "_self", displayData);
+        }
+        return;
+    }
+    QWidget *container = new QWidget();
+    QGridLayout *gridLayout = new QGridLayout(container);
+    gridLayout->setContentsMargins(10, 10, 10, 10);
+    gridLayout->setHorizontalSpacing(15);
+    gridLayout->setVerticalSpacing(15);
 
-    updateStatusBar("Project loaded: " + QFileInfo(filePath).fileName());
+
+    QMap<QString, int> componentMinHeights = {
+        {"entity", 400},
+        {"transform", 200},
+        {"trajectory", 200},
+        {"dynamicModel", 400},
+        {"collider", 250},
+        {"rigidbody", 800},
+        {"bitmap", 400},
+        {"crossSection", 800},
+        {"sensors", 800},
+        {"radios", 400},
+        {"iffs", 400},
+        {"parameters", 150}
+    };
+
+    // Components to hide
+    QStringList hiddenComponents = {
+        "collider",
+        "transform",
+        "trajectory",
+        "rigidbody",
+        "entity",
+        "crossSection"
+    };
+    QStringList dynamicModelBitmapColumn = {"dynamicModel", "bitmap"};
+    QStringList iffRadioColumnComponents = {"iffs", "radios"};
+    QStringList group1Components = {"transform", "sensors"};
+    QStringList group2Components = {"trajectory", "collider"};
+    QStringList exclusiveSingleColumnComponents = {
+        "crossSection",
+        "rigidbody",
+        "sensors"
+    };
+    QStringList componentOrder = {
+        "entity", "transform", "trajectory", "dynamicModel",
+        "collider", "rigidbody", "bitmap", "crossSection",
+        "sensors", "radios", "iffs", "parameters"
+    };
+
+
+    QList<QPair<QString, int>> availableComponents;
+    for (const QString& compType : componentOrder) {
+        if (hiddenComponents.contains(compType)) {
+            continue;
+        }
+
+        QJsonObject componentData;
+        if (compType == "entity") {
+            auto entityIt = hierarchy->Entities->find(entityId.toStdString());
+            if (entityIt != hierarchy->Entities->end()) {
+                componentData = entityIt->second->toJson();
+                availableComponents.append(qMakePair(compType, componentMinHeights[compType]));
+            }
+        } else {
+            componentData = hierarchy->getComponentData(entityId, compType);
+            if (!componentData.isEmpty()) {
+                availableComponents.append(qMakePair(compType, componentMinHeights[compType]));
+            }
+        }
+    }
+    QList<QPair<QString, int>> exclusiveComponents;
+    QList<QPair<QString, int>> dynamicModelBitmapList;
+    QList<QPair<QString, int>> iffRadioColumnList;
+    QList<QPair<QString, int>> group1ComponentsList;
+    QList<QPair<QString, int>> group2ComponentsList;
+    QList<QPair<QString, int>> otherComponents;
+
+    for (const auto& comp : availableComponents) {
+        QString compType = comp.first;
+
+        if (exclusiveSingleColumnComponents.contains(compType)) {
+            exclusiveComponents.append(comp);
+        }
+        else if (dynamicModelBitmapColumn.contains(compType) && !hiddenComponents.contains(compType)) {
+            dynamicModelBitmapList.append(comp);
+        }
+        else if (iffRadioColumnComponents.contains(compType) && !hiddenComponents.contains(compType)) {
+            iffRadioColumnList.append(comp);
+        }
+        else if (group1Components.contains(compType) && !hiddenComponents.contains(compType)) {
+            group1ComponentsList.append(comp);
+        } else if (group2Components.contains(compType) && !hiddenComponents.contains(compType)) {
+            group2ComponentsList.append(comp);
+        } else {
+            otherComponents.append(comp);
+        }
+    }
+
+
+    int totalColumns = 0;
+
+
+    int exclusiveColumns = exclusiveComponents.size();
+    totalColumns += exclusiveColumns;
+
+
+    int dynamicModelBitmapColumnCount = !dynamicModelBitmapList.isEmpty() ? 1 : 0;
+    totalColumns += dynamicModelBitmapColumnCount;
+
+
+    int iffRadioColumnCount = !iffRadioColumnList.isEmpty() ? 1 : 0;
+    totalColumns += iffRadioColumnCount;
+
+
+    int groupColumns = 0;
+    if (!group1ComponentsList.isEmpty()) {
+        groupColumns++;
+    }
+    if (!group2ComponentsList.isEmpty()) {
+        groupColumns++;
+    }
+    totalColumns += groupColumns;
+
+
+    int otherComponentCount = otherComponents.size();
+    int otherColumns = (otherComponentCount + 1) / 2;
+    totalColumns += otherColumns;
+
+
+    QVector<QWidget*> columnWidgets(totalColumns);
+    QVector<QVBoxLayout*> columnLayouts(totalColumns);
+
+    QMap<QString, int> componentColumnMap;
+    int currentColumn = 0;
+
+
+    for (const auto& comp : exclusiveComponents) {
+        QString compType = comp.first;
+
+        columnWidgets[currentColumn] = new QWidget();
+        columnLayouts[currentColumn] = new QVBoxLayout(columnWidgets[currentColumn]);
+        columnLayouts[currentColumn]->setContentsMargins(0, 0, 0, 0);
+        columnLayouts[currentColumn]->setSpacing(0);
+        columnLayouts[currentColumn]->addStretch(1);
+
+        componentColumnMap[compType] = currentColumn;
+        currentColumn++;
+    }
+
+
+    if (!dynamicModelBitmapList.isEmpty()) {
+        columnWidgets[currentColumn] = new QWidget();
+        columnLayouts[currentColumn] = new QVBoxLayout(columnWidgets[currentColumn]);
+        columnLayouts[currentColumn]->setContentsMargins(0, 0, 0, 0);
+        columnLayouts[currentColumn]->setSpacing(8);
+        columnLayouts[currentColumn]->addStretch(1);
+
+        for (const auto& comp : dynamicModelBitmapList) {
+            componentColumnMap[comp.first] = currentColumn;
+        }
+        currentColumn++;
+    }
+
+
+    if (!iffRadioColumnList.isEmpty()) {
+        columnWidgets[currentColumn] = new QWidget();
+        columnLayouts[currentColumn] = new QVBoxLayout(columnWidgets[currentColumn]);
+        columnLayouts[currentColumn]->setContentsMargins(0, 0, 0, 0);
+        columnLayouts[currentColumn]->setSpacing(8);
+        columnLayouts[currentColumn]->addStretch(1);
+
+        for (const auto& comp : iffRadioColumnList) {
+            componentColumnMap[comp.first] = currentColumn;
+        }
+        currentColumn++;
+    }
+
+
+    if (!group1ComponentsList.isEmpty()) {
+        columnWidgets[currentColumn] = new QWidget();
+        columnLayouts[currentColumn] = new QVBoxLayout(columnWidgets[currentColumn]);
+        columnLayouts[currentColumn]->setContentsMargins(0, 0, 0, 0);
+        columnLayouts[currentColumn]->setSpacing(8);
+        columnLayouts[currentColumn]->addStretch(1);
+
+        for (const auto& comp : group1ComponentsList) {
+            componentColumnMap[comp.first] = currentColumn;
+        }
+        currentColumn++;
+    }
+
+
+    if (!group2ComponentsList.isEmpty()) {
+        columnWidgets[currentColumn] = new QWidget();
+        columnLayouts[currentColumn] = new QVBoxLayout(columnWidgets[currentColumn]);
+        columnLayouts[currentColumn]->setContentsMargins(0, 0, 0, 0);
+        columnLayouts[currentColumn]->setSpacing(8);
+        columnLayouts[currentColumn]->addStretch(1);
+
+        for (const auto& comp : group2ComponentsList) {
+            componentColumnMap[comp.first] = currentColumn;
+        }
+        currentColumn++;
+    }
+
+
+    QVector<QList<QPair<QString, int>>> otherColumnComponents(otherColumns);
+
+    for (int i = 0; i < otherComponentCount; i++) {
+        int columnIndex = i % otherColumns;
+        otherColumnComponents[columnIndex].append(otherComponents[i]);
+    }
+
+    for (int col = 0; col < otherColumns; col++) {
+        int columnIndex = currentColumn + col;
+
+        columnWidgets[columnIndex] = new QWidget();
+        columnLayouts[columnIndex] = new QVBoxLayout(columnWidgets[columnIndex]);
+        columnLayouts[columnIndex]->setContentsMargins(0, 0, 0, 0);
+        columnLayouts[columnIndex]->setSpacing(10);
+        columnLayouts[columnIndex]->addStretch(1);
+
+        for (const auto& comp : otherColumnComponents[col]) {
+            componentColumnMap[comp.first] = columnIndex;
+        }
+    }
+
+
+    for (const auto& comp : availableComponents) {
+        QString compType = comp.first;
+        if (hiddenComponents.contains(compType)) {
+            continue;
+        }
+
+        int minHeight = componentMinHeights[compType];
+        int columnIndex = componentColumnMap[compType];
+
+        bool needsDynamicHeight = false;
+        int actualHeight = minHeight;
+
+
+        if (compType == "sensors" || compType == "radios" || compType == "iffs") {
+            needsDynamicHeight = true;
+            QJsonObject componentData = hierarchy->getComponentData(entityId, compType);
+
+            if (componentData.contains("items") && componentData["items"].isArray()) {
+                QJsonArray items = componentData["items"].toArray();
+                int itemCount = items.size();
+                int itemHeight = 35;
+                actualHeight = minHeight + (itemCount * itemHeight);
+                actualHeight = qMin(actualHeight, 500);
+                actualHeight = qMax(actualHeight, minHeight);
+            }
+        }
+
+        // Get component data
+        QJsonObject componentData;
+        QString displayName = capitalizeFirstLetter(compType);
+
+        if (compType == "entity") {
+            auto entityIt = hierarchy->Entities->find(entityId.toStdString());
+            if (entityIt != hierarchy->Entities->end()) {
+                componentData = entityIt->second->toJson();
+
+                Inspector *entityInspector = new Inspector();
+                entityInspector->setHierarchy(hierarchy);
+                entityInspector->init(entityId, "entity_self", componentData);
+
+                connect(entityInspector, &Inspector::valueChanged,
+                        hierarchy, &Hierarchy::UpdateComponent);
+                connect(entityInspector, &Inspector::valueChanged,
+                        this, &DatabaseEditor::markUnsavedChanges);
+
+                entityInspector->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+                entityInspector->setMinimumWidth(350);
+                entityInspector->setMinimumHeight(minHeight);
+                entityInspector->setMaximumHeight(minHeight * 1.1);
+
+
+                QFrame *frame = new QFrame();
+                frame->setFrameStyle(QFrame::Box | QFrame::Raised);
+                frame->setLineWidth(1);
+                frame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+                QVBoxLayout *frameLayout = new QVBoxLayout(frame);
+                frameLayout->setContentsMargins(0, 0, 0, 0);
+                frameLayout->setSpacing(1);
+                frameLayout->addWidget(entityInspector);
+
+                columnLayouts[columnIndex]->insertWidget(columnLayouts[columnIndex]->count() - 1, frame);
+                continue;
+            }
+        } else {
+            componentData = hierarchy->getComponentData(entityId, compType);
+        }
+
+
+        QWidget *compWidget = nullptr;
+        if (needsDynamicHeight) {
+            compWidget = createComponentInspectorWithDynamicHeight(
+                entityId, displayName, componentData, actualHeight);
+        } else {
+            compWidget = createComponentInspector(
+                entityId, displayName, componentData, actualHeight);
+        }
+
+
+        if (exclusiveSingleColumnComponents.contains(compType)) {
+            compWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        }
+        else if (dynamicModelBitmapColumn.contains(compType)) {
+
+            compWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+            compWidget->setMinimumHeight(minHeight);
+            compWidget->setMaximumHeight(minHeight * 1.2);
+        }
+        else if (iffRadioColumnComponents.contains(compType)) {
+            if (needsDynamicHeight) {
+                compWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+                compWidget->setMinimumHeight(actualHeight);
+            } else {
+                compWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+            }
+        }
+        else if (group1Components.contains(compType) || group2Components.contains(compType)) {
+            if (needsDynamicHeight) {
+                compWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+                compWidget->setMinimumHeight(actualHeight);
+            } else {
+                compWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+            }
+        } else {
+            compWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+        }
+
+        columnLayouts[columnIndex]->insertWidget(columnLayouts[columnIndex]->count() - 1, compWidget);
+    }
+
+
+    for (int col = 0; col < totalColumns; col++) {
+        if (columnWidgets[col]) {
+            gridLayout->addWidget(columnWidgets[col], 0, col, 1, 1);
+            gridLayout->setColumnStretch(col, 1);
+        }
+    }
+
+
+    gridLayout->setRowStretch(0, 0);
+    gridLayout->setRowStretch(1, 1);
+
+
+    QScrollArea *scrollArea = new QScrollArea();
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setWidget(container);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+    QString style = R"(
+        QScrollArea {
+            background-color: #f5f5f5;
+            border: none;
+        }
+        QScrollArea > QWidget > QWidget {
+            background-color: #f5f5f5;
+        }
+    )";
+    scrollArea->setStyleSheet(style);
+
+    QList<Inspector*> allInspectors;
+
+    QList<Inspector*> inspectorsInLayout = container->findChildren<Inspector*>();
+    for (Inspector* insp : inspectorsInLayout) {
+        allInspectors.append(insp);
+    }
+
+    inspectorDock->setWidget(scrollArea);
+    inspectorDock->setWindowTitle(entityName + " - All Components");
+
+    inspectorDock->setProperty("IsAllComponentsMode", true);
+    inspectorDock->setProperty("EntityId", entityId);
+    inspectorDock->setProperty("AllComponentsWidget", QVariant::fromValue(scrollArea));
+    inspectorDock->setProperty("AllInspectors", QVariant::fromValue(allInspectors));
 }
+QWidget* DatabaseEditor::createComponentInspector(
+    const QString& entityId,
+    const QString& title,
+    const QJsonObject& data,
+    int preferredHeight)
+{
+    Inspector *inspector = new Inspector();
+    inspector->setHierarchy(hierarchy);
+    QString componentName = title.toLower();
+    inspector->init(entityId, componentName, data);
+    inspector->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    inspector->setMinimumWidth(350);
+    inspector->setMinimumHeight(preferredHeight);
+    inspector->setMaximumHeight(preferredHeight * 1.1);
+    connect(inspector, &Inspector::valueChanged,
+            hierarchy, &Hierarchy::UpdateComponent);
+    connect(inspector, &Inspector::valueChanged,
+            this, &DatabaseEditor::markUnsavedChanges);
+    QFrame *frame = new QFrame();
+    frame->setFrameStyle(QFrame::Box | QFrame::Raised);
+    frame->setLineWidth(1);
+    frame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    QVBoxLayout *frameLayout = new QVBoxLayout(frame);
+    frameLayout->setContentsMargins(0, 0, 0, 0);
+    frameLayout->setSpacing(1);
+    frameLayout->addWidget(inspector);
+    return frame;
+}
+QWidget* DatabaseEditor::createComponentInspectorWithDynamicHeight(
+    const QString& entityId,
+    const QString& title,
+    const QJsonObject& data,
+    int initialHeight)
+{
+    Inspector *inspector = new Inspector();
+    inspector->setHierarchy(hierarchy);
+    QString componentName = title.toLower();
+    if (componentName == "entity") {
+
+        componentName = "entity_self";
+    }
+    inspector->init(entityId, componentName, data);
+    inspector->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    inspector->setMinimumWidth(350);
+    inspector->setMinimumHeight(initialHeight);
+    inspector->setMaximumHeight(16777215);
+    connect(inspector, &Inspector::valueChanged,
+            hierarchy, &Hierarchy::UpdateComponent);
+    connect(inspector, &Inspector::valueChanged,
+            this, &DatabaseEditor::markUnsavedChanges);
+    QFrame *frame = new QFrame();
+    frame->setFrameStyle(QFrame::Box | QFrame::Raised);
+    frame->setLineWidth(1);
+    frame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    QVBoxLayout *frameLayout = new QVBoxLayout(frame);
+    frameLayout->setContentsMargins(0, 0, 0, 0);
+    frameLayout->setSpacing(1);
+    frameLayout->addWidget(inspector);
+    return frame;
+}
+
+

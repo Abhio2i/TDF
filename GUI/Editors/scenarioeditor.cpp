@@ -111,12 +111,13 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     });
 
     // Connect tactical display signals
-    if (tacticalDisplay && tacticalDisplay->canvas) {
+   // if (tacticalDisplay && tacticalDisplay->canvas) {
         // Set canvas for script engine
-        if (tacticalDisplay && tacticalDisplay->canvas) {
+       if (tacticalDisplay && tacticalDisplay->canvas && tacticalDisplay->mapWidget) {
             scriptengine->setCanvas(tacticalDisplay->canvas);
-            qDebug() << "ScriptEngine canvas set successfully!";
-        }
+            scriptengine->setGIS(tacticalDisplay->mapWidget);    // set for map GIS
+            qDebug() << "ScriptEngine canvas and map set successfully!";
+     //   }
         // Connect trajectory signals
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated, inspector, &Inspector::updateTrajectory);
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated, this, [=](QString entityId, QJsonArray /*waypoints*/) {
@@ -186,26 +187,32 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
         QString name = data["name"].toString();
         QString ID = data["parentId"].toString();
                  QString displayName = capitalizeFirstLetter(name);
-        for (Inspector* inspector : inspectors) {
-            if (type == "subcomponent") {
-            QJsonObject componentData = (*hierarchy->Components)[data["parentId"].toString().toStdString()]->getsubComponentData(data["ID"].toString().toStdString());
 
-                if (!componentData.isEmpty()) {
-                    inspector->init(ID, displayName + "_sub", componentData);
-                }
-            //inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
-            }else if (type == "component") {
-                inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
-            } else if (type == "profile") {
-                inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
-            } else if (type == "folder") {
-                inspector->init(ID, displayName + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
-            } else if (type == "entity") {
-                inspector->init(data["ID"].toString(), displayName + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
-            } else {
-                inspector->init(ID, displayName, QJsonObject());
-            }
-        }
+                 for (Inspector* inspector : inspectors) {
+                     if (type == "subcomponent") {
+                         QJsonObject componentData = (*hierarchy->Components)[data["parentId"].toString().toStdString()]->getsubComponentData(data["ID"].toString().toStdString());
+
+                         if (!componentData.isEmpty()) {
+                             inspector->init(ID, displayName + "_sub", componentData);
+                         }
+                         //inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
+                     }else if (type == "component") {
+                         QJsonObject componentData = hierarchy->getComponentData(ID, name);
+                         if (!componentData.isEmpty()) {
+                             inspector->init(ID, displayName, componentData);
+                         }
+                         //inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
+                     } else if (type == "profile") {
+                         inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
+                     } else if (type == "folder") {
+                         inspector->init(ID, displayName + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
+                     } else if (type == "entity") {
+                         inspector->init(data["ID"].toString(), displayName + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
+                     } else {
+                         inspector->init(ID, displayName, QJsonObject());
+                     }
+                 }
+
         if (!inspectorDock->isVisible()) {
             addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
             splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
@@ -236,10 +243,12 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     connect(hierarchy, &Hierarchy::folderAdded, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::entityAdded, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::componentAdded, this, &ScenarioEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::subComponentAdded, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::profileRemoved, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::folderRemoved, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::entityRemoved, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::componentRemoved, this, &ScenarioEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::subComponentRemoved, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::profileRenamed, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::folderRenamed, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::entityRenamed, this, &ScenarioEditor::markUnsavedChanges);
@@ -288,15 +297,15 @@ void ScenarioEditor::setupEnhancedDockWidgets()
     addDockWidget(Qt::BottomDockWidgetArea, consoleDock);
     consoleDock->hide();
 
-    // Setup sidebar dock with enhanced features - CHANGED HERE
-    sidebarDock = new QDockWidget("Sidebar", this);  // Title add kiya
+
+    sidebarDock = new QDockWidget("Sidebar", this);
     sidebarDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
                                  Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
     sidebarDock->setFeatures(fullDockFeatures);
     SidebarWidget *sidebar = new SidebarWidget(this);
 
-    // REMOVED: sidebarDock->setTitleBarWidget(new QWidget()); // Title bar enable kiya
-    sidebarDock->setTitleBarWidget(nullptr); // Default title bar use karo
+
+    sidebarDock->setTitleBarWidget(nullptr);
 
     sidebarDock->setWidget(sidebar);
     sidebarDock->setMinimumWidth(80);
@@ -379,13 +388,7 @@ void ScenarioEditor::setupEnhancedDockWidgets()
         int consoleHeight = static_cast<int>(totalHeight * 0.15);   // 15% for console
         // Verify total width adds up to 100%
         int totalCalculatedWidth = hierarchyWidth + tacticalWidth + sidebarWidth + inspectorWidth;
-        // qDebug() << "Width distribution - Hierarchy:" << hierarchyWidth
-        //          << "Tactical:" << tacticalWidth
-        //          << "Sidebar:" << sidebarWidth
-        //          << "Inspector:" << inspectorWidth
-        //          << "Total:" << totalCalculatedWidth << "/" << totalWidth;
 
-        // Resize docks
         resizeDocks({hierarchyDock}, {hierarchyWidth}, Qt::Horizontal);
         resizeDocks({tacticalDisplayDock}, {tacticalWidth}, Qt::Horizontal);
         resizeDocks({sidebarDock}, {sidebarWidth}, Qt::Horizontal);
@@ -488,8 +491,7 @@ void ScenarioEditor::setupToolBars()
     designToolBar = new DesignToolBar(this);
     addToolBar(Qt::TopToolBarArea, designToolBar);
 
-    // Allow toolbars to be movable
-    // standardToolBar->setMovable(true);
+
     designToolBar->setMovable(true);
     connect(menuBar->getSaveAction(), &QAction::triggered, this, &ScenarioEditor::clearUnsavedChanges);
     connect(menuBar->getSameSaveAction(), &QAction::triggered, this, &ScenarioEditor::clearUnsavedChanges);
@@ -498,7 +500,7 @@ void ScenarioEditor::setupToolBars()
 
     qDebug() << "MenuBar actions connected successfully";
     qDebug() << "Recent Project Action:" << menuBar->getRecentProjectAction()->text();
-    connect(menuBar, &MenuBar::profileTriggered,  // Signal use करें
+    connect(menuBar, &MenuBar::profileTriggered,
             this, &ScenarioEditor::showProfileInfo);
     connect(menuBar, &MenuBar::applicationTriggered, this, &ScenarioEditor::showApplicationDialog);
 
@@ -621,7 +623,7 @@ void ScenarioEditor::resetLayout()
     // Close all additional inspector docks
     for (int i = inspectorDocks.size() - 1; i >= 0; --i) {
         QDockWidget* dock = inspectorDocks[i];
-        if (dock != inspectorDock) { // Keep the main inspector
+        if (dock != inspectorDock) {
             inspectors.removeAt(i);
             dock->deleteLater();
         }
@@ -692,15 +694,8 @@ void ScenarioEditor::resetLayout()
         int inspectorWidth = static_cast<int>(totalWidth * 0.09);   // 9% for inspector
         int consoleHeight = static_cast<int>(totalHeight * 0.15);   // 15% for console
 
-        // Verify total width adds up to 100%
         int totalCalculatedWidth = hierarchyWidth + tacticalWidth + sidebarWidth + inspectorWidth;
-        // qDebug() << "Reset Layout - Width distribution - Hierarchy:" << hierarchyWidth
-        //          << "Tactical:" << tacticalWidth
-        //          << "Sidebar:" << sidebarWidth
-        //          << "Inspector:" << inspectorWidth
-        //          << "Total:" << totalCalculatedWidth << "/" << totalWidth;
 
-        // Resize docks
         resizeDocks({hierarchyDock}, {hierarchyWidth}, Qt::Horizontal);
         resizeDocks({tacticalDisplayDock}, {tacticalWidth}, Qt::Horizontal);
         resizeDocks({sidebarDock}, {sidebarWidth}, Qt::Horizontal);

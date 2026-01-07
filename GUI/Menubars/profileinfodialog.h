@@ -18,7 +18,7 @@ public:
     explicit ProfileInfoDialog(QWidget *parent = nullptr);
     ~ProfileInfoDialog();
 
-    // Static function to show dialog
+
     static void showProfileInfo(QWidget *parent = nullptr);
 
 protected:

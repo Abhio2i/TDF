@@ -4,6 +4,8 @@
 /* ========================================================================= */
 
 #include "radardisplay.h"                          // For radar display class
+#include "core/Hierarchy/Utils/entityutils.h"
+#include "qmath.h"
 #include <cmath>                                   // For math functions
 #include <QDebug>                                  // For debug output
 #include <QJsonParseError>                         // For JSON parsing errors
@@ -70,6 +72,7 @@ void RadarDisplay::selectEntity(Entity* entit)
     // Set entity ID and pointer
     id = QString::fromStdString(platform->ID);
     entity = platform;
+    sensor = nullptr;
     // Select first valid sensor
     for (auto const& pair :  *entity->sensors->sensors) {
         Sensor* s = pair.second;
@@ -82,6 +85,7 @@ void RadarDisplay::selectEntity(Entity* entit)
             }
         }
     }
+    update();
 }
 
 /* Remove entity if ID matches */
@@ -255,14 +259,27 @@ void RadarDisplay::drawTargetAndPath(QPainter &painter, int centerX, int centerY
             int panelhigh = QWidget::height() - 60;
             float per = target.radius / range;
             float radius = panelhigh * per;
-            float angle = target.angle;
-            if (std::abs(angle) > (azimuth / 2)) continue;
-            double targetAngle = (angle + 90) * M_PI / 180;
+            float angle = target.angle+90;
+            qDebug()<<target.angle;
+            if (std::abs(target.angle) > (azimuth / 2)) continue;
+            double theta = qDegreesToRadians(angle);
             double targetRadius = radius;
-            int targetX = centerX + static_cast<int>(targetRadius * cos(targetAngle));
-            int targetY = centerY - static_cast<int>(targetRadius * sin(targetAngle));
+            int targetX = centerX - static_cast<int>(targetRadius * cos(theta));
+            int targetY = centerY - static_cast<int>(targetRadius * sin(theta));
             // Draw target point
             painter.drawEllipse(targetX - 3, targetY - 3, 6, 6);
+            // --- Triangle Draw Karne ka Code ---
+            // Triangle ke points define karein (base targetX, targetY par hoga)
+            if(target.speed>50){
+                QPolygon triangle;
+                int size = 10; // Triangle ka size
+                // Ye triangle target ke upar ek arrowhead ki tarah dikhega
+                triangle << QPoint(targetX, targetY - size)          // Top point
+                     << QPoint(targetX - size/2, targetY + size/2) // Bottom left
+                     << QPoint(targetX + size/2, targetY + size/2); // Bottom right
+                painter.setBrush(Qt::yellow); // Triangle ka color (aap change kar sakte hain)
+                painter.drawPolygon(triangle);
+            }
             // Draw path to target
             painter.setPen(QPen(Qt::cyan, 1, Qt::DotLine));
             QPointF pathPoints[] = {

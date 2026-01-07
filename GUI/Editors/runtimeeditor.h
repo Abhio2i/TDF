@@ -26,7 +26,7 @@
 #include "GUI/Testscript/textscriptwidget.h"      // For text script widget
 #include "GUI/Timing/graphwidgettime.h"           // For timing graph widget
 #include "GUI/Panel/radardisplay.h"               // For radar display
-#include "GUI/Panel/ewdisplay.h"                  // For EW display
+// #include "GUI/Panel/ewdisplay.h"                  // For EW display
 #include "GUI/Panel/iffdisplay.h"
 #include "GUI/Panel/radiodisplay.h"
 #include "GUI/Panel/csmdisplay.h"
@@ -63,7 +63,7 @@ public:
     bool hasUnsavedChanges = false;
     // Clear unsaved changes flag
     void clearUnsavedChanges();
-public slots:  // या public section में
+public slots:
     void showProfileInfo();
      void showApplicationDialog();
 private slots:
@@ -180,7 +180,7 @@ private:
     // Tab widget for displays
     QTabWidget *displayTabs;
     // EW display UI
-    EWDisplay *ewDisplayUI;
+    // EWDisplay *ewDisplayUI;
     // IFF display UI
     IFFDisplay *iffDisplayUI;
 

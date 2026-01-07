@@ -6,7 +6,7 @@
 #include <core/Hierarchy/hierarchy.h>
 #include <core/Debug/console.h>
 Specialzone::Specialzone(Hierarchy* h) : Entity(h) {
-
+    type = Constants::EntityType::SpecialZone;
 }
 
 void Specialzone::spawn() {
@@ -18,7 +18,9 @@ void Specialzone::spawn() {
 
 std::vector<std::string> Specialzone::getSupportedComponents() {
     std::vector<std::string> supported;
-
+    supported.push_back("transform");
+    supported.push_back("collider");
+    // supported.push_back("bitmap");
     return supported;
 }
 
@@ -33,7 +35,7 @@ QJsonObject Specialzone::toJson() const {
 
 
     if (transform) obj["transform"] = transform->toJson();
-    if (meshRenderer2d) obj["meshRenderer2d"] = meshRenderer2d->toJson();
+    if (meshRenderer2d) obj["bitmap"] = meshRenderer2d->toJson();
 
     QJsonObject entityObj;
     entityObj["type"] = "option";
@@ -69,9 +71,9 @@ void Specialzone::fromJson(const QJsonObject& obj) {
     }
 
 
-    if (obj.contains("meshRenderer2d") && obj["meshRenderer2d"].isObject()) { // Fix: Correct key
-        if (!meshRenderer2d) addComponent("meshRenderer2d");
-        meshRenderer2d->fromJson(obj["meshRenderer2d"].toObject());
+    if (obj.contains("bitmap") && obj["bitmap"].isObject()) { // Fix: Correct key
+        if (!meshRenderer2d) addComponent("bitmap");
+        meshRenderer2d->fromJson(obj["bitmap"].toObject());
     }
 
 }
@@ -87,11 +89,11 @@ void Specialzone::addComponent(std::string name) {
         if (!collider) {
             if (!transform)
                 addComponent("transform");
-            collider = new Collider();
+            collider = new Collider(parent);
             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(collider->ID), "collider");
         }
 
-    }else if (name == "meshRenderer2d") {
+    }else if (name == "bitmap") {
         if (!meshRenderer2d) {
             if (!transform)
                 addComponent("transform");
@@ -101,7 +103,7 @@ void Specialzone::addComponent(std::string name) {
             meshRenderer2d->Sprite = new std::string(":/texture/images/Texture/zone.png");
             meshRenderer2d->Meshes[0]->Sprite = meshRenderer2d->Sprite;
             meshRenderer2d->Meshes[0]->clear();
-            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(meshRenderer2d->ID), "meshRenderer2d");
+            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(meshRenderer2d->ID), "bitmap");
             emit parent->entityMeshAdded(QString::fromStdString(parentID), this);
         }
 
@@ -119,7 +121,7 @@ QJsonObject Specialzone::getComponent(std::string name) {
     } else if (name == "collider") {
         if (!collider) { Console::error(name + ": not exist"); return QJsonObject(); }
         return collider->toJson();
-    } else if (name == "meshRenderer2d") {
+    } else if (name == "bitmap") {
         if (!meshRenderer2d) { Console::error(name + ": not exist"); return QJsonObject(); }
         return meshRenderer2d->toJson();
     }
@@ -134,7 +136,7 @@ void Specialzone::updateComponent(QString name, const QJsonObject& obj) {
     } else if (name == "collider") {
         if (!collider) { Console::error(name.toStdString() + ": not exist"); return; }
         collider->fromJson(obj);
-    } else if (name == "meshRenderer2d") {
+    } else if (name == "bitmap") {
         if (!meshRenderer2d) { Console::error(name.toStdString() + ": not exist"); return; }
         meshRenderer2d->fromJson(obj);
     }

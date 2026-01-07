@@ -46,6 +46,8 @@ public:
     void entityRemoved(QString ID);
     // Remove component from entity
     void componentRemoved(QString entityID, QString componentName);
+    // Remove subcomponent from entity
+    void subComponentRemoved(QString compID,QString subCompID, QString componentName);
     // Rename profile in tree
     void profileRenamed(QString ID, QString name);
     // Rename folder in tree
@@ -53,7 +55,7 @@ public:
     // Rename entity in tree
     void entityRenamed(QString ID, QString name);
     // Get context menu
-    ContextMenu* getContextMenu() const { return contextMenu; }
+    ContextMenu* getContextMenu() const;
     // Select entity by ID
     void selectEntityById(const QString& entityId);
 
@@ -94,6 +96,7 @@ private:
     ContextMenu *contextMenu;
     // Map of items by ID
     QMap<QString, QTreeWidgetItem*> Items;
+    QVariantMap dragsourceData;
 };
 
 #endif // HIERARCHYTREE_H

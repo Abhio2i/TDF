@@ -43,6 +43,7 @@ public:
         std::string responderName;
         std::string mode;
         std::string code;
+        bool ally;
         float radius;
         float angle;
         int status;
@@ -60,8 +61,9 @@ public:
     QJsonObject respondToInterrogation(IFF* interrogator, float distanceMeters); // called when this IFF is interrogated
     Entity* parentEntity = nullptr;
     bool transponder = true;
-    float emittingRange = 100.0f; // km
+    float emittingRange = 10.0f; // km
     float emittingFrequency = 0.0f; // MHz
+    int code = 1001;
     std::string disType;
     std::string disName;
     OperationalMode operationalMode = OperationalMode::Active;

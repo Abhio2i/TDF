@@ -89,8 +89,8 @@ void ConsoleView::setupConsoleTabs()
 {
     // Lambda function for setting up each QTextEdit console
     auto setupConsole = [](QTextEdit *console) {
-        console->setReadOnly(true);                     // Make console read-only
-        console->setFont(QFont("Courier", 10));        // Monospace font for readability
+        console->setReadOnly(true);
+        console->setFont(QFont("Courier", 10));
         console->setStyleSheet(
             "QTextEdit { "
             "background-color: #1E1E1E; "
@@ -98,6 +98,7 @@ void ConsoleView::setupConsoleTabs()
             "border: none; "
             "}"
             );
+         console->document()->setMaximumBlockCount(1000);
     };
 
     // Apply setup to all consoles

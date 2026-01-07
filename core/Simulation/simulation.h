@@ -15,6 +15,9 @@
 #include <core/Hierarchy/Components/dynamicmodel.h> // Added for DynamicModel
 #include <unordered_map>
 #include <core/Recorder/recorder.h>
+#include <core/Network/networkmanager.h>
+#include <core/Network/libs/MessageBus.h>
+#include <core/Network/libs/TransformUpdate.h>
 
 struct PhysicsComponent {
     std::string name;
@@ -57,7 +60,10 @@ public:
 
     void replay(); // newly added overload
     void replay(const QVector<QJsonObject>& recordedFrames);
-
+    void setNetworkManager(NetworkManager* nm);//by Aman
+    MessageQueue<TransformUpdate> incomingTransforms;
+    void applyPendingNetworkUpdates();//by Aman
+    void enqueueTransformUpdate(const TransformUpdate& msg);
 private:
     void frame();
     int rate = 1;
@@ -83,6 +89,7 @@ signals:
     void speedUpdated(float speed);
 
 private:
+    NetworkManager *networkManager = nullptr;
     btBroadphaseInterface* broadphase;
     btDefaultCollisionConfiguration* collisionConfiguration;
     btCollisionDispatcher* dispatcher;
@@ -99,6 +106,9 @@ private:
     bool isReplaying = false;
     int replayIndex = 0;
     QVector<QJsonObject> replayFrames;
+
+    int simMin = 0;
+    int simCount = 50;
 };
 
 #endif // SIMULATION_H

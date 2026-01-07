@@ -18,6 +18,7 @@
 #include <QElapsedTimer>
 #include <Qt3DCore/QTransform>
 #include <core/Hierarchy/entity.h>
+#include <core/Hierarchy/Components/transform.h>
 // #include <GUI/Tacticaldisplay/entityinfodialog.h>
 
 class EntityInfoDialog;
@@ -27,7 +28,7 @@ class QSpinBox;
 class QPushButton;
 
 /* MeshEntry structure section */
-// Structure to hold mesh entity data including transform, mesh, collider, trajectory, etc.
+
 struct MeshEntry {
     QString name;                           // Name identifier for the mesh
     Qt3DCore::QTransform* transform;        // 3D transformation
@@ -79,17 +80,17 @@ public:
 
     QPixmap* cacheimg;
     QPixmap scaledimg;
-    QPen pointPen; // रंग सेट करें
+    QPen pointPen;
     const int pointRadius = 3;
     int ImageScale = 50;
-    double getMetersPerPixel() const; // Add this line
-    CanvasWidget(QWidget *parent = nullptr);  // Constructor
-    GISlib* gislib;  // GIS library instance for geographic operations
+    double getMetersPerPixel() const;
+    CanvasWidget(QWidget *parent = nullptr);
+    GISlib* gislib;
 
     /* Public members section */
-    std::unordered_map<std::string, MeshEntry> Meshes;  // Storage for all mesh entities
-    std::string selectedEntityId;  // Currently selected entity ID
-    TransformMode currentMode = Translate;  // Current transformation mode
+    std::unordered_map<std::string, MeshEntry> Meshes;
+    std::string selectedEntityId;
+    TransformMode currentMode = Translate;
 
     /* Rendering and mode control section */
     void Render(float deltatime);  // Main rendering function
@@ -123,8 +124,13 @@ public:
     void drawLine(const QPointF& geoPos, bool finalize);  // Draw line (multi-point)
     void drawPolygon(const QPointF& geoPos, bool finalize);  // Draw polygon (multi-point)
     void drawPoints(const QPointF& geoPos);  // Draw point marker
-    void handleShapeDrawing(const QString& shapeType, const QPointF& geoPos, bool finalize);  // Main shape drawing handler
+    void handleShapeDrawing(const QString& shapeType, const QPointF& geoPos, bool finalize);
     std::vector<MeshEntry> tempMeshes;  // Temporary meshes for shapes and bitmaps
+
+    // for automic line draw without click on canvas
+    void scriptStartLine();
+    void scriptAddLinePoint(const QPointF& geoPos);
+    void scriptFinishLine();
 
     // Bitmap/image related methods
     void onBitmapImageSelected(const QString& filePath);  // Handle user image selection
@@ -179,14 +185,14 @@ public slots:
     void clearShapeHistory() {
         shapeHistory.clear();
         showHistoryForShapes.clear();
-        dragStartPositions.clear(); // NEW: Clear drag start positions
+        dragStartPositions.clear(); // Clear drag start positions
         update();
     }
 
     void clearShapeHistory(const QString& shapeId) {
         shapeHistory.remove(shapeId);
         showHistoryForShapes.remove(shapeId);
-        dragStartPositions.remove(shapeId); // NEW: Clear drag start position for this shape
+        dragStartPositions.remove(shapeId); // Clear drag start position for this shape
         update();
     }
 
@@ -215,6 +221,7 @@ private:
     void drawTransformGizmo(QPainter& painter);  // Draw transformation gizmo
     void drawCollider(QPainter& painter,std::string id , MeshEntry entry);  // Draw collision boundaries
     void drawSelectionOutline(QPainter& painter);  // Draw selection outline
+    void drawCollision(QPainter& painter,std::string id , MeshEntry entry);
     void drawImage(QPainter& painter,std::string id , MeshEntry entry);  // Draw entity images
     void drawTrajectory(QPainter& painter,const std::string& id , MeshEntry& entry);  // Draw trajectory paths
     void drawTrail(QPainter& painter,std::string id , MeshEntry entry);  // Draw trajectory paths
@@ -303,7 +310,7 @@ signals:
     void airbaseLayerToggled(bool visible);  // Airbase layer toggle signal
 
     // GeoJSON signals
-    void geoJsonLayerAdded(const QString& layerName);  // New GeoJSON layer added
+    void geoJsonLayerAdded(const QString& layerName);  // GeoJSON layer added
     void pointsUpdated(const QList<QPointF>& points);  // Measurement points updated
 
 private:
@@ -412,7 +419,7 @@ private:
 
     QMap<QString, ShapeHistory> shapeHistory; // Maps shape ID to its history
     QSet<QString> showHistoryForShapes; // Which shapes should show their history
-    QMap<QString, QVector3D> dragStartPositions; // NEW: Store initial drag positions
+    QMap<QString, QVector3D> dragStartPositions; // Store initial drag positions
     void addToHistory(const QString& shapeId, const QVector3D& initialPos, const QVector3D& currentPos);
     void drawShapeHistory(QPainter& painter);
 };

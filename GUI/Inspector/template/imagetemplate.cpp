@@ -16,8 +16,8 @@
 
 // %%% Constructor %%%
 /* Initialize image template widget */
-ImageTemplate::ImageTemplate(Inspector *inspector, QWidget *parent)  // CHANGED
-    : QWidget(parent), inspectorRef(inspector)  // CHANGED: Initialize inspectorRef
+ImageTemplate::ImageTemplate(Inspector *inspector, QWidget *parent)
+    : QWidget(parent), inspectorRef(inspector)
 {
     // No additional initialization needed
 }

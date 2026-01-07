@@ -63,6 +63,7 @@ public:
         Line,
         V,
         Diamond,
+        Square,
         Column,
         EchelonLeft,
         EchelonRight,

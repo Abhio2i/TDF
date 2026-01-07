@@ -5,7 +5,7 @@
 #include "core/Hierarchy/hierarchy.h"
 #include <QWidget>
 #include <QVector>
-#include <QMouseEvent>  // ✅ ADD THIS
+#include <QMouseEvent>
 
 // %%% Class Definition %%%
 class RADIODisplay : public QWidget
@@ -23,7 +23,7 @@ public:
     void RemoveEntity(QString ID);
     void updateRadar();
 
-    // ✅ RADIO INSTANCE (NOT IFF)
+
     Radio* radio = nullptr;
     // Entity platform
     Platform* entity = nullptr;
@@ -31,6 +31,7 @@ public:
 protected:
     void paintEvent(QPaintEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
+    void leaveEvent(QEvent *event) override;
 
 private:
     // %%% Display Properties %%%
@@ -56,7 +57,7 @@ private:
     void drawCenterMark(QPainter &p, const QPoint &center);
     void drawTopMarker(QPainter &p, const QPoint &center, int outerRadius);
     void drawTargetAndPath(QPainter &painter);
-    void drawRadioTargets(QPainter &p, const QPoint &center, int outerRadius); // ✅ RENAME TO drawRadioTargets
+    void drawRadioTargets(QPainter &p, const QPoint &center, int outerRadius);
 };
 
 #endif

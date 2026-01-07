@@ -38,13 +38,11 @@ public:
     void clearUnsavedChanges();
     // Track unsaved changes
     bool hasUnsavedChanges = false;
-        void loadFromJsonFile(const QString &filePath);
+    void loadFromJsonFile(const QString &filePath);
+    Hierarchy* hierarchy = nullptr;
 public slots:
     void showProfileInfo();
     void showApplicationDialog();
-    // void onPerformanceClicked();
-    // void onSensorsClicked();
-
 private slots:
     // Add inspector tab
     void addInspectorTab();
@@ -52,22 +50,18 @@ private slots:
     void showFeedbackWindow();
     // Handle dock visibility changes
     void onDockVisibilityChanged(bool visible);
-
-     void resetLayout();
-
-    // NEW METHODS ADD HERE
-
+    void resetLayout();
     void onRecentProjectTriggered();
     // void clearRecentProjects();
     void loadRecentProject(const QString& filePath);
-
+    void onTreeItemSelected(QVariantMap data);
+    void cleanupExtraInspectors();
+    void showAllEntityComponents(const QString& entityId, const QString& entityName);
 signals:
     // Signal unsaved changes state
     void unsavedChangesChanged(bool hasChanges);
     void Activated();
-
 private:
-
     // %%% UI Setup Methods %%%
     // Configure menu bar
     void setupMenuBar();
@@ -82,7 +76,7 @@ private:
     // Scenario data structure
     Scenario* scenario = nullptr;
     // Hierarchy data structure
-    Hierarchy* hierarchy = nullptr;
+    // Hierarchy* hierarchy = nullptr;
     // Console for debugging
     Console* console = nullptr;
 
@@ -116,6 +110,18 @@ private:
     // Update status bar message
     void updateStatusBar(const QString &message);
     // Status bar widget
+
+    QWidget* createComponentInspector(
+        const QString& entityId,
+        const QString& title,
+        const QJsonObject& data,
+        int preferredHeight);
+
+    QWidget* createComponentInspectorWithDynamicHeight(
+        const QString& entityId,
+        const QString& title,
+        const QJsonObject& data,
+        int initialHeight);
     QStatusBar *statusBar;
 };
 

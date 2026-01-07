@@ -1,28 +1,23 @@
 
-/* ========================================================================= */
-/* File: IFFDisplay.cpp                                                    */
-/* Purpose: Implements IFF display for friend/foe identification           */
-/* ========================================================================= */
-
 #include "iffdisplay.h"
+#include "core/Hierarchy/Utils/entityutils.h"
 #include <QPainter>
 #include <QPaintEvent>
 #include <QFont>
 #include <QtMath>
 #include <QDebug>
 #include <core/Debug/console.h>
-#include <core/Hierarchy/EntityProfiles/iff.h>  // IFF प्रोफाइल include करें
+#include <core/Hierarchy/EntityProfiles/iff.h>
 
 // %%% Constructor %%%
 /* Initialize IFF display */
 IFFDisplay::IFFDisplay(QWidget *parent)
-    : QWidget(parent)
+    : QWidget(parent), hoveredTargetIndex(-1)
 {
     setStyleSheet("background-color: black;");
     QSizePolicy policy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     policy.setHeightForWidth(true);
     setMouseTracking(true);
-
     setSizePolicy(policy);
     padding = 40;
 }
@@ -46,6 +41,68 @@ int IFFDisplay::heightForWidth(int width) const
 }
 
 
+void IFFDisplay::mouseMoveEvent(QMouseEvent *event)
+{
+    mousePos = event->pos();
+
+    if (targets.isEmpty()) {
+        hoveredTargetIndex = -1;
+        update();
+        return;
+    }
+
+    int w = width();
+    int h = height();
+    int outerDiameter = qMin(w - padding*2, h - padding*2);
+    int outerRadius = outerDiameter / 2;
+    QPoint center(w / 2, h / 2);
+
+    // Check if mouse is near any target
+    int closestIndex = -1;
+    double minDistance = 15.0; // Reduced threshold for better sensitivity
+
+    for (int i = 0; i < targets.size(); ++i) {
+        const IFF::IFFTarget &t = targets[i];
+
+        // Calculate target position on screen - USE SAME CALCULATION AS paintEvent
+        double per = t.radius / range;
+        if (per < 0.0) per = 0.0;
+        if (per > 1.0) per = 1.0;
+
+        double r = per * outerRadius;
+        double angleDeg = t.angle - 90; // FIX: Same as paintEvent
+        double theta = qDegreesToRadians(angleDeg); // FIX: No -90 adjustment here
+        int tx = center.x() + int(r * cos(theta));
+        int ty = center.y() + int(r * sin(theta));
+
+        // Calculate distance from mouse to target
+        double dx = mousePos.x() - tx;
+        double dy = mousePos.y() - ty;
+        double distance = sqrt(dx*dx + dy*dy);
+
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestIndex = i;
+        }
+    }
+
+    if (hoveredTargetIndex != closestIndex) {
+        hoveredTargetIndex = closestIndex;
+        update();
+        qDebug() << "Hovered target index:" << hoveredTargetIndex; // Debug
+    }
+
+    QWidget::mouseMoveEvent(event);
+}
+/* Handle mouse leave events */
+void IFFDisplay::leaveEvent(QEvent *event)
+{
+    Q_UNUSED(event);
+    hoveredTargetIndex = -1;
+    update();
+    QWidget::leaveEvent(event);
+}
+
 void IFFDisplay::selectEntity(Entity* entit)
 {
     Platform* platform = dynamic_cast<Platform*>(entit);
@@ -65,11 +122,7 @@ void IFFDisplay::selectEntity(Entity* entit)
         if (i) {
             iff = i;
             setWindowTitle("IFF Display (" + QString::fromStdString(entity->Name) + ")");
-            qDebug() << "🎯 IFF selected for platform:" << QString::fromStdString(entity->Name)
-                     << "IFF targets count:" << iff->iffTargets.size();
 
-            // 🔥 CONNECT IFF SIGNALS TO THIS DISPLAY
-            //connect(iff, &IFF::iffContactsUpdated, this, &IFFDisplay::updateRadar);
             break;
         }
     }
@@ -77,6 +130,10 @@ void IFFDisplay::selectEntity(Entity* entit)
     if (!iff) {
         qDebug() << "❌ No IFF found for platform:" << QString::fromStdString(entity->Name);
     }
+
+    // Reset hover state when entity changes
+    hoveredTargetIndex = -1;
+    update();
 }
 
 void IFFDisplay::RemoveEntity(QString ID)
@@ -85,35 +142,30 @@ void IFFDisplay::RemoveEntity(QString ID)
         entity = nullptr;
         iff = nullptr;
         setWindowTitle("IFF Display");
+        // Reset hover state
+        hoveredTargetIndex = -1;
     }
 }
-
-
 
 void IFFDisplay::updateRadar()
 {
-    //return;
     if (entity && iff) {
         setRange(iff->emittingRange * 1.0f); // km to meters conversion
         targets = iff->targets;
-
         update();
     } else {
-        if (!entity)"";
-        //qDebug() << "❌ IFFDisplay updateRadar - No entity selected";
-        else if (!iff)"";
-        //qDebug() << "❌ IFFDisplay updateRadar - No IFF component";
+        // Reset targets if no entity/iff
+        targets.clear();
+        hoveredTargetIndex = -1;
     }
 }
 
-// %%% Paint Event %%%
 void IFFDisplay::paintEvent(QPaintEvent * /*event*/)
 {
-    //return;
     if (width() <= 0 || height() <= 0) return;
 
     QPainter p(this);
-    //p.setRenderHint(QPainter::Antialiasing);
+    //p.setRenderHint(QPainter::Antialiasing); // Optional: smoother edges
 
     drawBackground(p);
 
@@ -128,74 +180,121 @@ void IFFDisplay::paintEvent(QPaintEvent * /*event*/)
     drawTicksAndLabels(p, center, outerRadius);
     drawCenterMark(p, center);
     drawTopMarker(p, center, outerRadius);
-    // drawTargetAndPath(p);
+
+    // Draw targets with hover functionality
     if (!targets.isEmpty()) {
+        for (int i = 0; i < targets.size(); ++i) {
+            const IFF::IFFTarget &t = targets[i];
 
-
-        for (const IFF::IFFTarget &t : targets) {
             // FIX: Manual bound check
             double per = t.radius / range;
             if (per < 0.0) per = 0.0;
             if (per > 1.0) per = 1.0;
 
             double r = per * outerRadius;
-            double angleDeg = t.angle;
-            double theta = qDegreesToRadians(angleDeg - 90.0);
+            double angleDeg = t.angle - 90;
+            double theta = qDegreesToRadians(angleDeg);
             int tx = center.x() + int(r * cos(theta));
             int ty = center.y() + int(r * sin(theta));
 
             // Draw dotted line from center to target
-            p.setPen(QPen(radarGreen, 1, Qt::DotLine));
+            p.setPen(QPen(Qt::yellow, 1, Qt::DotLine));
             p.drawLine(center, QPoint(tx, ty));
 
-            // Draw red dot at target position
-            p.setBrush(Qt::red);
-            p.setPen(Qt::NoPen);
+            // Draw target dot with color based on friend/foe status
+            if (i == hoveredTargetIndex) {
+                // Highlight hovered target
+                p.setPen(QPen(Qt::white, 2));
+                p.setBrush(Qt::white);
+                p.drawEllipse(QPointF(tx, ty), 6, 6); // Larger white circle for hover
+            }
+
+            // Draw colored dot (non-transparent)
+            if (t.status == 1 || t.ally) {
+                // Friend/ally - solid green
+                p.setBrush(Qt::blue);
+                p.setPen(QPen(Qt::blue, 1));
+            } else {
+                // Foe/unknown - solid red
+                p.setBrush(QBrush(QColor(255, 0, 0, 255))); // Alpha 255 = solid
+                p.setPen(QPen(Qt::red, 1));
+            }
+
             p.drawEllipse(QPointF(tx, ty), 4, 4);
 
-            // Draw labels
-            p.setPen(QPen(Qt::yellow, 1));
-            QFont font = p.font();
-            font.setPointSize(8);
-            p.setFont(font);
+            // Draw labels ONLY if this target is hovered
+            if (i == hoveredTargetIndex) {
+                p.setPen(QPen(Qt::cyan, 1));
+                QFont font = p.font();
+                font.setPointSize(9);
+                font.setBold(true);
+                p.setFont(font);
 
-            Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
-            QString targetName = targetPlatform ? QString::fromStdString(targetPlatform->Name) : "Unknown";
+                Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
+                QString targetName = targetPlatform ? QString::fromStdString(targetPlatform->Name) : "Unknown";
 
-            // QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
-            QString distText = QString("D:%1km").arg(t.radius, 0, 'f', 1);
-            // QString nameText = QString("N:%1").arg(targetName);
+                // Determine friend/foe status text
+                QString statusText = (t.status == 1 || t.ally) ? "Friend" :
+                                         (t.status == 0 ? "Unknown" : "Foe");
 
-            // Draw text at target position
-            // p.drawText(tx + 6, ty - 6, angleText);
-            p.drawText(tx + 6, ty + 12, distText);
-            // p.drawText(tx + 6, ty + 30, nameText);
+                // Show detailed info for hovered target
+                QString angleText = QString("Angle: %1°").arg(t.angle, 0, 'f', 1);
+                QString distText = QString("Dist: %1 km").arg(t.radius, 0, 'f', 1);
+                QString statusLabel = QString("Status: %1").arg(statusText);
+                QString nameText = QString("Name: %1").arg(targetName);
+
+                // Draw text background for better visibility
+                p.setBrush(QColor(0, 0, 0, 180));
+                p.setPen(Qt::NoPen);
+
+                // Calculate text positions
+                QFontMetrics fm(p.font());
+                int textWidth = fm.horizontalAdvance(nameText) + 8;
+                int textHeight = 80;
+                p.drawRect(tx + 8, ty - 40, textWidth, textHeight);
+
+                // Draw text
+                p.setPen(QPen(Qt::cyan, 1));
+                p.drawText(tx + 12, ty - 28, angleText);
+                p.drawText(tx + 12, ty - 16, distText);
+                p.drawText(tx + 12, ty - 4, statusLabel);
+                p.drawText(tx + 12, ty + 8, nameText);
+
+                // Additional IFF info if available
+                if (!t.mode.empty() || !t.code.empty()) {
+                    QString modeText = QString("Mode: %1").arg(QString::fromStdString(t.mode));
+                    QString codeText = QString("Code: %1").arg(QString::fromStdString(t.code));
+                    p.drawText(tx + 12, ty + 20, modeText);
+                    p.drawText(tx + 12, ty + 32, codeText);
+                }
+            }
         }
     } else if (entity && iff) {
         // No targets message
         p.setPen(Qt::white);
-        p.drawText(center, "No IFF Targets Detected");
+        QFont font = p.font();
+        font.setPointSize(10);
+        p.setFont(font);
+        QRect textRect = p.fontMetrics().boundingRect("No IFF Targets Detected");
+        p.drawText(center.x() - textRect.width()/2, center.y(), "No IFF Targets Detected");
     }
-    // Draw IFF targets
-    // drawIFFTargets(p, center, outerRadius);
 }
-
 void IFFDisplay::drawIFFTargets(QPainter &p, const QPoint &center, int outerRadius)
 {
     if (!entity || !iff) return;
     if (iff->iffTargets.isEmpty()) return;
 
-    hoveredTargetIndex = -1; // reset per frame
     QList<QPointF> positions;
     QList<int> drawnIndices; // map drawn dot index → iffTargets index
     const int dotSize = 8;
 
     for (int i = 0; i < iff->iffTargets.size(); ++i) {
         const IFF::IFFTarget &target = iff->iffTargets.at(i);
-        // ✅ FIX: Skip drawing if target is out of radar range
+        // Skip drawing if target is out of radar range
         if (target.radius > range) {
-            continue;  // Don't draw, don't clamp to border
+            continue;
         }
+
         // Convert polar coordinates to screen coordinates
         float per = qBound(0.0f, target.radius / range, 1.0f);
         float radius = outerRadius * per;
@@ -214,42 +313,20 @@ void IFFDisplay::drawIFFTargets(QPainter &p, const QPoint &center, int outerRadi
         }
 
         // Draw color dot (green for friend, red for foe/unknown)
-        QColor color = (target.status == 1) ? Qt::green : Qt::red;
+        QColor color = (target.status == 1) ? Qt::blue : Qt::red;
         p.setBrush(color);
         p.setPen(Qt::NoPen);
         p.drawEllipse(dotRect);
-    }
 
-    // --- Draw tooltip if mouse is hovering a target ---
-    if (hoveredTargetIndex >= 0 && hoveredTargetIndex < drawnIndices.size() && hoveredTargetIndex < positions.size()) {
-        const IFF::IFFTarget &target = iff->iffTargets.at(drawnIndices[hoveredTargetIndex]);
-        QPointF pos = positions[hoveredTargetIndex];
-        QString info = QString("ID: %1\nMode: %2\nCode: %3\nDist: %4 m\nAngle: %5°")
-                           .arg(QString::fromStdString(target.responderName.empty() ? target.responderId : target.responderName))
-                           .arg(QString::fromStdString(target.mode))
-                           .arg(QString::fromStdString(target.code))
-                           .arg(target.radius, 0, 'f', 1)
-                           .arg(target.angle, 0, 'f', 1);
-
-        // Draw tooltip box
-        QFontMetrics fm(p.font());
-        QRect infoRect = fm.boundingRect(QRect(), Qt::AlignLeft | Qt::AlignVCenter, info);
-        infoRect.moveTo(pos.x() + 12, pos.y() - infoRect.height() / 2);
-        infoRect.adjust(-6, -4, 6, 4);
-
-        p.setBrush(QColor(0, 0, 0, 180));
-        p.setPen(QPen(Qt::white, 1));
-        p.drawRect(infoRect);
-        p.drawText(infoRect, Qt::AlignLeft | Qt::AlignVCenter, info);
+        // Draw label only for hovered target
+        if (i == hoveredTargetIndex) {
+            p.setPen(QPen(Qt::yellow, 1));
+            QString info = QString("ID: %1").arg(QString::fromStdString(
+                target.responderName.empty() ? target.responderId : target.responderName));
+            p.drawText(pos.x() + 5, pos.y() - 5, info);
+        }
     }
 }
-void IFFDisplay::mouseMoveEvent(QMouseEvent *event)
-{
-    mousePos = event->pos();
-    update(); // Repaint so tooltip updates as mouse moves
-}
-
-
 
 void IFFDisplay::drawTargetAndPath(QPainter &painter)
 {
@@ -262,7 +339,6 @@ void IFFDisplay::drawTargetAndPath(QPainter &painter)
 
     if (entity && iff) {
         ang = entity->transform->toEulerAngles().y();
-
     }
 }
 
@@ -302,8 +378,6 @@ void IFFDisplay::drawConcentricCircles(QPainter &p, const QPoint &center, int ou
         double r = outerRadius * (double(i) / double(ringCount + 1));
         QRectF ring(center.x() - r, center.y() - r, r * 2.0, r * 2.0);
         p.drawEllipse(ring);
-
-
     }
     p.restore();
 }

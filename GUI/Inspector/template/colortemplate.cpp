@@ -13,7 +13,7 @@
 // %%% Constructor %%%
 /* Initialize color template widget */
 ColorTemplate::ColorTemplate(Inspector *inspector, QWidget *parent)  // CHANGED
-    : QWidget(parent), inspectorRef(inspector)  // CHANGED: Initialize inspectorRef
+    : QWidget(parent), inspectorRef(inspector)
 {
     // No additional initialization needed
 }

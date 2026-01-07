@@ -1,11 +1,11 @@
 #include "transform.h"
 #include "core/Hierarchy/Struct/geocords.h"
+#include "core/Hierarchy/Utils/entityutils.h"
 #include "qjsonarray.h"
 #include <core/Utility/uuid.h>
 #include <cmath>
 #include <QVector3D>
 #include <QQuaternion>
-
 Transform::Transform():Component(nullptr) {
     ID = Uuid::generateShortUniqueID();
     Active = true;
@@ -15,7 +15,91 @@ Transform::Transform():Component(nullptr) {
     matrix = new Qt3DCore::QTransform();
 
     customParameters = QJsonObject();
-    setTranslation(QVector3D(2842341234.70418974987,0,772344123.1025413276));
+    //Delhi 28.6139∘ N 77.2090∘ E
+    setGeoCord(2842341234.70418974987,772344123.1025413276);
+    // setTranslation(QVector3D(2842341234.70418974987,0,772344123.1025413276));
+    connect(matrix,&Qt3DCore::QTransform::translationChanged,this,&Transform::VectorChanged);
+    connect(matrix,&Qt3DCore::QTransform::rotationChanged,this,&Transform::rotationChanged);
+}
+
+void Transform::VectorChanged(QVector3D v){
+    GeoPos geo = flatXYZToGeo(v.x(), v.y()*KMtoFT, v.z());
+    geocord->latitude = geo.lat;
+    geocord->longitude = geo.lon;
+    geocord->altitude = geo.alt;
+}
+
+void Transform::rotationChanged(QQuaternion r){
+    geocord->Heading = toEulerAngles().y();
+}
+
+void Transform::setGeoCord(float lat,float lon){
+    geocord->latitude = lat;
+    geocord->longitude = lon;
+    FlatXYZ xyz = geoToFlatXYZ(lat,lon,geocord->altitude*FTtoKM);
+    setTranslation(QVector3D(xyz.x,xyz.y,xyz.z));
+    //qDebug()<<geocord->latitude<<","<<geocord->longitude<<","<<geocord->altitude;
+}
+
+void Transform::setGeoCord(float lat,float lon, float alt){
+    geocord->latitude = lat;
+    geocord->longitude = lon;
+    geocord->altitude = alt;
+    FlatXYZ xyz = geoToFlatXYZ(lat,lon,alt*FTtoKM);
+    setTranslation(QVector3D(xyz.x,xyz.y,xyz.z));
+}
+
+void Transform::setGeoCord(float lat,float lon, float alt, float heading){
+    geocord->latitude = lat;
+    geocord->longitude = lon;
+    geocord->altitude = alt;
+    geocord->Heading = heading;
+    FlatXYZ xyz = geoToFlatXYZ(lat,lon,alt*FTtoKM);
+    setTranslation(QVector3D(xyz.x,xyz.y,xyz.z));
+    QVector3D euAngle = toEulerAngles();
+    euAngle.setY(heading);
+    setFromEulerAngles(euAngle);
+}
+
+void Transform::setHeading(float heading){
+    geocord->Heading = heading;
+    QVector3D euAngle = toEulerAngles();
+    euAngle.setY(heading);
+    setFromEulerAngles(euAngle);
+}
+
+float Transform::getHeading(){
+    return geocord->Heading;
+}
+
+void Transform::setLatitude(float lat){
+    geocord->latitude = lat;
+    FlatXYZ xyz = geoToFlatXYZ(geocord->latitude,geocord->longitude,geocord->altitude*FTtoKM);
+    //qDebug()<<geocord->latitude<<","<<geocord->longitude<<","<<geocord->altitude;
+    setTranslation(QVector3D(xyz.x,xyz.y,xyz.z));
+}
+
+float Transform::getLatitude(){
+    return geocord->latitude;
+}
+
+void Transform::setLongitude(float lon){
+    geocord->longitude = lon;
+    FlatXYZ xyz = geoToFlatXYZ(geocord->latitude,geocord->longitude,geocord->altitude);
+    setTranslation(QVector3D(xyz.x,xyz.y,xyz.z));
+}
+float Transform::getLongitude(){
+    return geocord->longitude;
+}
+
+void Transform::setAltitude(float alt){
+    geocord->altitude = alt;
+    FlatXYZ xyz = geoToFlatXYZ(geocord->latitude,geocord->longitude,geocord->altitude*FTtoKM);
+    setTranslation(QVector3D(xyz.x,xyz.y,xyz.z));
+}
+
+float Transform::getAltitude(){
+    return geocord->altitude;
 }
 
 // ===== Unity-like Directional Methods (using QQuaternion) =====
@@ -79,15 +163,41 @@ QVector3D Transform::inverseTransformVector(const QVector3D& worldVec) {
 QVector3D Transform::inverseTransformPoint(const QVector3D& worldPos) {
     // 1. First, apply the inverse of translation (subtract the world position).
     QVector3D relativePosition = worldPos - matrix->translation();
-
+    //relativePosition.setZ(-relativePosition.z());
+    QVector3D final = matrix->rotation().inverted().rotatedVector(relativePosition);
     // 2. Then, apply the inverse of rotation.
-    return matrix->rotation().inverted().rotatedVector(relativePosition);
+    //final.setZ(-final.z());
+    return final;
+}
+
+void Transform::lookAt(const QVector3D& targetWorldPos) {
+    QVector3D diff = targetWorldPos - this->translation();
+
+    // Standard Heading (Yaw): Z+ forward hai isliye atan2(x, z) use hoga
+    // atan2(right, forward)
+    float heading = std::atan2(diff.x(), diff.z()) * (180.0f / M_PI);
+
+    this->setHeading(heading);
+}
+
+void Transform::lookAt3D(const QVector3D& targetWorldPos) {
+    QVector3D direction = (targetWorldPos - this->translation()).normalized();
+
+    // Agar direction zero hai toh rotate na karein (prevents crash)
+    if (direction.lengthSquared() < 0.001f) return;
+
+    // FromDirection(forward_vector, up_vector)
+    // Yeh function Z+ ko forward maan kar rotation banata hai
+    QQuaternion targetRot = QQuaternion::fromDirection(direction, QVector3D(0, 1, 0));
+
+    this->setRotation(targetRot);
 }
 
 // ===== Other Methods =====
 
 void Transform::setTranslation(const QVector3D& vector) {
     matrix->setTranslation(vector);
+    // qDebug()<< vector;
 }
 
 void Transform::addTranslation(const QVector3D& vector) {
@@ -155,11 +265,13 @@ QJsonObject Transform::toJson() const {
 }
 
 void Transform::fromJson(const QJsonObject &obj) {
-    if (obj.contains("id")) ID = obj["id"].toString().toStdString();
+    // if (obj.contains("id")) ID = obj["id"].toString().toStdString();
     if (obj.contains("active")) Active = obj["active"].toBool();
 
-    if (obj.contains("geocord") && obj["geocord"].isObject())
+    if (obj.contains("geocord") && obj["geocord"].isObject()){
         geocord->fromJson(obj["geocord"].toObject());
+        // setGeoCord(geocord->latitude,geocord->longitude,geocord->altitude,geocord->Heading);
+    }
     if (obj.contains("position") && obj["position"].isObject())
     {   Vector* v = new Vector();
         v->fromJson(obj["position"].toObject());
@@ -204,4 +316,60 @@ void Transform::fromJson(const QJsonObject &obj) {
             customParameters[it.key()] = it.value();
         }
     }
+}
+
+void Transform::toPDU(TransformPDU& pdu, const std::string& entityID, const std::string& parentID) const {
+    pdu.entityID = entityID;
+    pdu.parentID = parentID;
+    //pdu.active = Active;
+
+    // // Geo info
+    // pdu.latitude  = geocord->latitude;
+    // pdu.longitude = geocord->longitude;
+    // pdu.altitude  = geocord->altitude;
+    // pdu.heading   = geocord->Heading;
+
+    // Local transform
+    QVector3D pos = matrix->translation();
+    QVector3D rot = toEulerAngles();
+    QVector3D scale = matrix->scale3D();
+
+    pdu.posX = pos.x();
+    pdu.posY = pos.y();
+    pdu.posZ = pos.z();
+
+    pdu.rotX = rot.x();
+    pdu.rotY = rot.y();
+    pdu.rotZ = rot.z();
+
+    pdu.sizeX = scale.x();
+    pdu.sizeY = scale.y();
+    pdu.sizeZ = scale.z();
+
+    // Optional: you can serialize customParameters to PDU if needed
+}
+
+void Transform::fromPDU(const TransformPDU& pdu) {
+    //Active = pdu.active;
+
+    // // Geo info
+    // geocord->latitude  = pdu.latitude;
+    // geocord->longitude = pdu.longitude;
+    // geocord->altitude  = pdu.altitude;
+    // geocord->Heading   = pdu.heading;
+
+    // Local transform
+    QVector3D pos(pdu.posX, pdu.posY, pdu.posZ);
+    QVector3D rot(pdu.rotX, pdu.rotY, pdu.rotZ);
+    QVector3D scale(pdu.sizeX, pdu.sizeY, pdu.sizeZ);
+
+    matrix->setTranslation(pos);
+    setFromEulerAngles(rot);
+
+    // Apply scale to UI
+    matrix->scale3D().setX(scale.x());
+    matrix->scale3D().setY(scale.y());
+    matrix->scale3D().setZ(scale.z());
+
+    // Optional: update UI/custom parameters if stored in PDU
 }

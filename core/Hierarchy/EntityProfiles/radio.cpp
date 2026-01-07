@@ -14,6 +14,7 @@ std::unordered_set<std::string> Radio::radioSeen;
 const float RAD2DEG = 180.0f / M_PI;
 
 Radio::Radio(Hierarchy* h) : Entity(h) {
+    type = Constants::EntityType::Radio;
     // Initialize default parameter (similar to Platform and Sensor)
     std::shared_ptr<Parameter> par = std::make_shared<Parameter>();
     par->Name = "radio_param";
@@ -289,18 +290,22 @@ void Radio::scan(){
 
     Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
-    for (auto& [key, entity] : *root->Platforms)
+    for (auto& [key, entity] : *root->Radios)
     {
-        // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
-        if(key == parentEntity->ID) continue;
-        Platform* platform = entity;
-        if (platform) {
-            QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
+        auto it = root->Platforms->find(entity->parentEntity->ID);
+        if (it != root->Platforms->end()) {
+            Platform* platform = it->second;
+            // Aapka aage ka logic yahan aaye
+            // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
+            if(platform->ID == parentEntity->ID) continue;
+            QVector3D localPos = source->inverseTransformPoint(platform->transform->translation());
             //float distance = localPos.length();
-            float metredis = distanceBetween(source->translation().x(),source->translation().z(),platform->transform->matrix->translation().x(),platform->transform->matrix->translation().z())/1000;
+            float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
+
 
             // horizontal angle (Y axis) : x vs z
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
+            //qDebug()<<localPos<<","<<yAngle;
             if (metredis<Range) // .position() is assumed
             {
                 //qDebug()<< "detect";

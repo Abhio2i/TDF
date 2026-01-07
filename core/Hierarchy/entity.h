@@ -31,7 +31,9 @@ public:
     ~Entity();
     Hierarchy* root;
     std::string Name;
-    bool Active;
+    bool Active = true;
+    bool isDestroy = false;
+    bool collisionWarning = false;
     std::string ID;
     std::string parentID;
     Constants::EntityType type;

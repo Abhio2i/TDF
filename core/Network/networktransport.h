@@ -6,6 +6,7 @@
 #include <QUdpSocket>
 #include <QHostAddress>
 #include <QObject>
+#include <QSslError>
 
 class NetworkTransport: public QObject
 {
@@ -14,13 +15,13 @@ class NetworkTransport: public QObject
 public:
     NetworkTransport();
     ~NetworkTransport();
-    void init(const QString& ip, int port);
-    void start(bool server = false);
-    void sendMessage(QString message);
+    //void init(const QString& ip, int port);
+   // void start(bool server = false);
+    //void sendMessage(QString message);
     void sendUDPMessage(const QString &message);
     void sendBinaryMessage(QByteArray byteMessage);
     bool isServer();
-
+    //void sendBinaryUDPMessage(const QByteArray &byteMessage);
 private slots:
     void readyUDPRead();
     void NewConnection();
@@ -37,6 +38,13 @@ signals:
     void onErrorOccurred(QString error);
     void onReceivedMessage(QString message);
     void onBinaryMessage(QByteArray byteMessage);
+
+public slots:
+    void init(const QString& ip, int port);
+    void start(bool server);
+    void sendMessage(const QString& message);
+    void sendBinaryUDPMessage(const QByteArray& byteMessage);
+
 private:
     QWebSocket *m_webSocket = nullptr;
     QWebSocketServer *m_server = nullptr;

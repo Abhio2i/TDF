@@ -34,7 +34,7 @@ IconsDialog::IconsDialog(QWidget *parent)
     // Create list widget for images
     listWidget = new QListWidget(this);
     listWidget->setViewMode(QListWidget::IconMode);
-    listWidget->setIconSize(QSize(100, 100)); // Fixed equal size for all icons
+    listWidget->setIconSize(QSize(100, 100));
     listWidget->setResizeMode(QListWidget::Adjust);
     listWidget->setMovement(QListWidget::Static);
     listWidget->setGridSize(QSize(120, 120)); // Grid size for 6 items per row

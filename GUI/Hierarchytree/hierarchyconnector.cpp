@@ -19,8 +19,16 @@
 #include "GUI/Editors/scenarioeditor.h"            // For scenario editor
 #include "GUI/Editors/runtimeeditor.h"             // For runtime editor
 #include "GUI/Hierarchytree/contextmenu.h"
+#include "qapplication.h"
+#include "GUI/Tacticaldisplay/canvaswidget.h"
 #include <QSettings>
 #include <core/Utility/uuid.h>
+#include <QRandomGenerator>
+#include <core/Hierarchy/Utils/entityutils.h>
+
+
+
+
 
 // %%% Static Instance %%%
 /* Singleton instance */
@@ -71,7 +79,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
         qWarning() << "Cannot connect signals - null hierarchy or treeView";
         return;
     }
-
+    treeView->getContextMenu()->m_hierarchy = hierarchy;
     // Connect hierarchy to tree view
     connect(hierarchy, &Hierarchy::profileAdded, treeView, &HierarchyTree::profileAdded);
     connect(hierarchy, &Hierarchy::folderAdded, treeView, &HierarchyTree::folderAdded);
@@ -82,6 +90,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
     connect(hierarchy, &Hierarchy::componentAdded, treeView, &HierarchyTree::componentAdded);
     connect(hierarchy, &Hierarchy::componentRemoved, treeView, &HierarchyTree::componentRemoved);
     connect(hierarchy, &Hierarchy::subComponentAdded, treeView, &HierarchyTree::subComponentAdded);
+    connect(hierarchy, &Hierarchy::subComponentRemoved, treeView, &HierarchyTree::subComponentRemoved);
 
     // Connect tree view context menu to hierarchy
     connect(treeView->getContextMenu(), &ContextMenu::addProfileRequested,
@@ -92,12 +101,29 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
             hierarchy, &Hierarchy::addFolder);
     connect(treeView->getContextMenu(), &ContextMenu::removeFolderRequested,
             hierarchy, &Hierarchy::removeFolder);
-
-    // Connect add entity action
+    connect(treeView->getContextMenu(), &ContextMenu::removeSubComponentRequested,
+            hierarchy, &Hierarchy::removeSubComponent);
     connect(treeView->getContextMenu(), &ContextMenu::addEntityRequested,
-            this, [=](QString parentId, QString entityName, bool isProfileParent, QVariantMap components) {
+            this, [=](QString parentId, QString entityName, bool isProfileParent, QVariantMap components,AddItemDialog* dialog) {
+
+                // ✅ DEBUG: Dialog check
+                if (!dialog) {
+                    qDebug() << "❌ Dialog is NULL!";
+                    return;
+                }
+                QString sensorType = dialog->getSensorType();
+                qDebug() << "Dialog Sensor Type:" << sensorType;
+
                 qDebug() << "Creating entity:" << entityName;
                 Entity* newEntity = hierarchy->addEntity(parentId, entityName, isProfileParent);
+                if (sensorType != "Generic" && newEntity) {
+                    Sensor* sensorEntity = dynamic_cast<Sensor*>(newEntity);
+                    if (sensorEntity) {
+                        Sensor::SubType subTypeEnum = Sensor::getSubTypeFromString(sensorType);
+                        sensorEntity->subType = subTypeEnum;
+                        qDebug() << "✅ Sensor Type set to:" << sensorType;
+                    }
+                }
                 QSet<QString> addedComponents;
                 for (const auto& component : components.keys()) {
                     if (components.value(component).toBool() && !addedComponents.contains(component)) {
@@ -114,6 +140,79 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
                 }
                 addedComponents.insert("transform");
                 addedComponents.insert("rigidbody");
+                Platform* platform = dynamic_cast<Platform*>(newEntity);
+                if(platform && dialog->isScEnabled()){
+                    const float range = dialog->getRange()/2;
+                    double lat = 28.6139+((QRandomGenerator::global()->generateDouble()-0.5)*2*(range/111.111));
+                    double lon = 77.2090 +((QRandomGenerator::global()->generateDouble()-0.5)*2*(range/100));
+                    double heading = 360 * QRandomGenerator::global()->generateDouble();
+                    //Delhi 28.6139∘ N 77.2090∘
+                    platform->transform->setGeoCord(lat,lon);
+                    // platform->transform->setTranslation(QVector3D(lat,0,lon));
+                    platform->transform->setFromEulerAngles(QVector3D(0,heading,0));
+
+                    for(int i=0;i<10;i++){
+                        auto [latAtRadius, lonAtRadius] = calculateNewLatLong(lat,lon,heading,5);
+                        Waypoints* newWaypoint = new Waypoints();
+                        newWaypoint->position = new Vector(latAtRadius, 0, lonAtRadius);
+                        platform->trajectory->addTrajectory(newWaypoint);
+                        if(dialog && dialog->getTrajectory() == "Zigzag"){
+                            lat = latAtRadius+(QRandomGenerator::global()->generateDouble()-0.5)*0.1;
+                            lon = lonAtRadius+(QRandomGenerator::global()->generateDouble()-0.5)*0.1;
+                        }else{
+                            lat = latAtRadius;
+                            lon = lonAtRadius;
+                        }
+                    }
+
+
+                    std::string id = platform->sensors->ID;
+                    //Sensor
+                    hierarchy->addSubComponent(QString::fromStdString(id),ComponentType::SensorProfile,"Radar_"+entityName,"Generic");
+                    hierarchy->addSubComponent(QString::fromStdString(id),ComponentType::SensorProfile,"ESM_"+entityName,"ESM");
+                    hierarchy->addSubComponent(QString::fromStdString(id),ComponentType::SensorProfile,"CSM_"+entityName,"CSM");
+                    //iff
+                    id = platform->iffs->ID;
+                    hierarchy->addSubComponent(QString::fromStdString(id),ComponentType::IFFProfile,"IFF_"+entityName);
+                    //Radio
+                    id = platform->radios->ID;
+                    hierarchy->addSubComponent(QString::fromStdString(id),ComponentType::RadioProfile,"Radio"+entityName);
+
+                    if(dialog){
+                        //set Speed
+                        const int minspd = dialog->getMinPlaneSpeed();
+                        const int maxspd = dialog->getMinPlaneSpeed();
+                        const int minturn = dialog->getMinPlaneSpeed();
+                        const int maxturn = dialog->getMaxTurnRadius();
+                        const int speed = minspd +(QRandomGenerator::global()->generateDouble() * (maxspd-minspd));
+                        const int turnRad = minturn +(QRandomGenerator::global()->generateDouble() * (maxturn-minturn));
+
+                        platform->dynamicModel->minSpeed = minspd;
+                        platform->dynamicModel->maxSpeed = maxspd;
+                        platform->dynamicModel->moveSpeed = speed;
+                        platform->dynamicModel->turnRadius = turnRad;
+
+                        //set RadarRange
+                        const int minRadRng= dialog->getMinRadarRange();
+                        const int maxRadRng = dialog->getMaxRadarRange();
+                        for (auto const& pair :*platform->sensors->sensors) {
+                            Sensor* s = pair.second;
+                            const int RadarRng = minRadRng +(QRandomGenerator::global()->generateDouble() * (maxRadRng-minRadRng));
+                            s->range = RadarRng;
+                        }
+
+                        //set RadioRange
+                        const int minRadioRng= dialog->getMinRadioRange();
+                        const int maxRadioRng = dialog->getMaxRadioRange();
+                        for (auto const& pair :*platform->radios->radios) {
+                            Radio* r = pair.second;
+                            const int RadioRng = minRadioRng +(QRandomGenerator::global()->generateDouble()* (maxRadioRng-minRadioRng));
+                            r->Range = RadioRng;
+                        }
+                    }
+
+                    QCoreApplication::processEvents();
+                }
             });
 
     // Connect remove entity and component actions
@@ -121,20 +220,27 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
             hierarchy, &Hierarchy::removeEntity);
     connect(treeView->getContextMenu(), &ContextMenu::removeComponentRequested,
             hierarchy, &Hierarchy::removeComponent);
-    //->CHANGE
-    // Connect add component action
     connect(treeView->getContextMenu(), &ContextMenu::addComponentRequested, this,
-            [=](QString entityID, QString componentType, QString componentName, QString sensorType) {
+            [=](QString entityID, QString componentType, QString componentName,
+                QString sensorType, QString sensorProfileId = "") {  // ✅ NEW parameter
                 if (componentType == "iffs") {
-                    hierarchy->addSubComponent(entityID,ComponentType::IFFProfile, componentName, sensorType);
-                    hierarchy->attchedIff(entityID, componentName);
+                    hierarchy->addSubComponent(entityID, ComponentType::IFFProfile, componentName, sensorType, sensorProfileId);
+                    // hierarchy->attchedIff(entityID, componentName);
                 } else if (componentType == "sensors") {
-                    hierarchy->addSubComponent(entityID,ComponentType::SensorProfile, componentName, sensorType);
+                    hierarchy->addSubComponent(entityID, ComponentType::SensorProfile, componentName, sensorType, sensorProfileId);
+
+
+                    if (!sensorProfileId.isEmpty()) {
+                        // Here you can copy settings from the selected sensor profile
+                        qDebug() << "Using sensor profile ID:" << sensorProfileId;
+                        // You can implement copying of sensor parameters from profile
+                    }
+
                     hierarchy->attachSensors(entityID, componentName, sensorType);
                 }
                 else if (componentType == "radios") {
-                    hierarchy->addSubComponent(entityID,ComponentType::RadioProfile, componentName, sensorType);
-                    hierarchy->attachRadios(entityID, componentName);
+                    hierarchy->addSubComponent(entityID, ComponentType::RadioProfile, componentName, sensorType, sensorProfileId);
+                    // hierarchy->attachRadios(entityID, componentName);
                 } else {
                     qWarning() << "Unsupported component type for addComponentRequested:" << componentType;
                 }
@@ -227,23 +333,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
             QJsonObject entityJson = entityIt->second->toJson();
             QString newId = QString::fromStdString( Uuid::generateShortUniqueID());
             entityJson["id"] = newId;
-            // QStringList componentNames;
-            // for (auto it = entityJson.begin(); it != entityJson.end(); ++it) {
-            //     QString key = it.key();
-            //     if (true) {
-            //         componentNames << key;
-            //         qDebug()<<key;
-            //     }
-            // }
-            // qDebug()<<"/////////////////////////////////////////////"<<newId;
             Entity* newEntity = hierarchy->addEntityFromJson(targetId, entityJson, targetType == "profile");
-            // if (newEntity) {
-            //     for (const QString& compName : componentNames) {
-            //         newEntity->addComponent(compName.toStdString());
-            //     }
-            // } else {
-            //     qWarning() << "Failed to create new entity during paste";
-            // }
             copydata.clear();
             copySource = nullptr;
         } catch (const std::exception& e) {
@@ -256,7 +346,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
         if (sourceData["type"].toString() == "entity") {
             QString sourceId = sourceData["ID"].toString();
             QString targetId = targetData["ID"].toString();
-            bool isProfile = (targetData["type"].toString() == "profile");
+            bool isProfile = (targetData["type"].toString() == "profile")||targetData["type"].type() == QVariant::Map;
+
             try {
                 if (!copySource) {
                     qWarning() << "No copy source available for drop!";
@@ -268,23 +359,67 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, HierarchyTree* tre
                     return;
                 }
                 QJsonObject entityJson = entityIt->second->toJson();
-                QString newId = QUuid::createUuid().toString();
-                entityJson["id"] = newId;
-                QStringList componentNames;
-                for (auto it = entityJson.begin(); it != entityJson.end(); ++it) {
-                    QString key = it.key();
-                    if (key != "id" && key != "name" && key != "parent_id" && key != "branch" &&
-                        key != "active" && key != "parameters" && key != "type") {
-                        componentNames << key;
+                Constants::EntityType sourcetype = entityIt->second->type;
+                Constants::EntityType type;
+                ////////////////////////////////////////
+                bool iscomp = targetData["type"].toString() == "component";
+                QString trname = targetData["name"].toString();
+                if(!iscomp){
+                    if(isProfile){
+                        type = copySource->ProfileCategories[targetId.toStdString()]->type;
+                    }else{
+                        type = (*copySource->Folders)[targetId.toStdString()]->type;
                     }
                 }
-                Entity* newEntity = hierarchy->addEntityFromJson(targetId, entityJson, isProfile);
-                if (newEntity) {
-                    for (const QString& compName : componentNames) {
-                        emit hierarchy->componentAdded(QString::fromStdString(newEntity->ID),"ID", compName);
+
+                if((trname == "sensors" || type == Constants::EntityType::Platform) && sourcetype == Constants::EntityType::Sensor){
+                    hierarchy->addSubComponent(targetId,ComponentType::SensorProfile,"Radar_","Generic",sourceId);
+                }else
+                if((trname == "iffs" || type == Constants::EntityType::Platform) && sourcetype == Constants::EntityType::IFF){
+                    hierarchy->addSubComponent(targetId,ComponentType::IFFProfile,"IFF_","",sourceId);
+                }else
+                if((trname == "radios" || type == Constants::EntityType::Platform) && sourcetype == Constants::EntityType::Radio){
+                    hierarchy->addSubComponent(targetId,ComponentType::RadioProfile,"Radio_","",sourceId);
+                }
+                if(iscomp)return;
+                ///////////////////////////////////////
+
+                if(sourcetype != type)return;
+                Hierarchy* parent = copySource;
+                Entity *entity;
+                if(type == Constants::EntityType::Radio){
+                    entity = new Radio(parent);
+                }else
+                if(type == Constants::EntityType::Sensor){
+                    entity = new Sensor(parent);
+                }else
+                if(type == Constants::EntityType::FixedPoint){
+                    entity = new FixedPoints(parent);
+                }else
+                if(type == Constants::EntityType::Formation){
+                    entity = new Formation(parent);
+                }else
+                if(type == Constants::EntityType::SpecialZone){
+                    entity = new Specialzone(parent);
+                }else
+                if(type == Constants::EntityType::IFF){
+                    entity = new IFF(parent);
+                }else{
+                    entity = new Platform(parent);
+                }
+                entityJson["id"] = QString::fromStdString(Uuid::generateShortUniqueID());
+                entityJson["parent_id"] = targetId;
+                entity->Name = entityJson["name"].toString().toStdString();
+                entity->ID = entityJson["id"].toString().toStdString();
+                entity->parentID = entityJson["parent_id"].toString().toStdString();
+                if (entity) {
+                    if(isProfile){
+                        copySource->ProfileCategories[targetId.toStdString()]->addEntityWithObject(entity);
+                    }else{
+                        (*copySource->Folders)[targetId.toStdString()]->addEntityWithObject(entity);
                     }
-                } else {
-                    qWarning() << "Failed to create new entity during drop";
+                    entity->fromJson(entityJson);
+                    QCoreApplication::processEvents();
                 }
             } catch (const std::exception& e) {
                 qCritical() << "Failed to drop entity:" << e.what();
@@ -434,6 +569,7 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
 
     // Handle drag-and-drop
     connect(libTree, &HierarchyTree::itemDropped, this, [=](QVariantMap sourceData, QVariantMap targetData) {
+        return;
         if (sourceData["type"].toString() == "entity") {
             QString sourceId = sourceData["ID"].toString();
             QString targetId = targetData["ID"].toString();
@@ -479,6 +615,7 @@ void HierarchyConnector::initializeLibraryData(Hierarchy* library)
     }
     // Add platform profile
     ProfileCategaory* platform = library->addProfileCategaory("Platform");
+
     if (!platform) {
         return;
     }
@@ -1026,9 +1163,6 @@ void HierarchyConnector::addToRecentProjects(const QString& filePath)
     }
 
     settings.setValue("recentProjects", recentProjects);
-
-    qDebug() << "✅ Added to recent projects:" << filePath;
-    qDebug() << "📋 Recent projects list now:" << recentProjects;
 }
 
 /* Get recent projects list */

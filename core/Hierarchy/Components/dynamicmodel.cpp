@@ -17,18 +17,15 @@ auto normalizeAngle = [](float angle) {
     return angle;
 };
 
-
-
-
 DynamicModel::DynamicModel():Component(nullptr) {
-    controle = true;
+    control = true;
     follow = true;
     moveSpeed = 800;
     customParameters = QJsonObject(); // Initialize customParameters
 }
 
 void DynamicModel::init(){
-    controle = true;
+    control = true;
 
     follow = true;
 
@@ -43,12 +40,8 @@ void DynamicModel::start(){
 }
 
 void DynamicModel::Update(float deltaTime) {
-    if (!controle || !transform || !rigidbody || !trajectory) return;
+    if (!control || !transform || !rigidbody || !trajectory) return;
 
-    // Direction vectors
-    // QVector3D forwardDir = transform->forward(); // x-axis (forward)
-    // QVector3D upDir = transform->up();           // z-axis (up)
-    // QVector3D rightDir = transform->right();     // y-axis (right)
     time += deltaTime;
     delta = deltaTime;
     //qDebug() << time;
@@ -61,218 +54,245 @@ void DynamicModel::Update(float deltaTime) {
 
 void DynamicModel::FollowTrajectory() {
 
-    // if (follow) {
-        // QVector3D current = *transform->position;
+    // // dynamic perfect but fly fully
 
-        // // 🎯 Step 1: Base target is followEntity's position
-        // QVector3D target = *followEntity->transform->position;
+    // // --- 1. Realistic Physics Constants ---
+    // const float Kp = 2.5f;                       // Aggressiveness of position correction
+    // const float rotationSmoothFactor = 8.0f;    // How fast the nose turns (Yaw)
+    // const float rollSmoothFactor = 4.5f;         // How fast the wings tilt (Roll)
+    // const float G_ACCELERATION = 9.81f;          // Earth Gravity
+    // const float lookaheadTime = 0.2f;            // Seconds to project into the future
+    // const float pitchCompensationFactor = 0.08f; // Nose-up pull to maintain lift in turns
+    // const float G_ACCELERATION_VAL = 9.81f;
 
-        // // 🎯 Step 2: Apply Offset if formationPosition is available
-        // if (formationPosition && formationPosition->Offset) {
-        //     //target += *formationPosition->Offset;
-        //     target += QVector3D(formationPosition->Offset->x, formationPosition->Offset->y, formationPosition->Offset->z);
-        // }
+    // if (follow && followEntity && formationPosition && formationPosition->Offset) {
+    //     Transform* mTransform = followEntity->transform;
+    //     Platform* mPlatform = dynamic_cast<Platform*>(followEntity);
+    //     DynamicModel* mModel = mPlatform ? mPlatform->dynamicModel : nullptr;
 
-        // // 🔁 Step 3: Move towards target
-        // QVector3D diff = target - current;
-        // float distance = diff.length();
+    //     if (mTransform && mModel) {
+    //         // --- 2. PREDICTIVE GEOMETRY (The "Pro" Secret) ---
+    //         // We don't follow where the leader IS. We follow where the leader WILL BE.
+    //         QVector3D mPos = mTransform->matrix->translation();
+    //         mPos.setY(0);
+    //         QVector3D mVel = mModel->velocity;
+    //         QQuaternion mRot = mTransform->rotation();
 
-        // if (distance > 0.001f) {
-        //     QVector3D dir = diff.normalized();
-        //     current += dir * moveSpeed * 0.01f;
-        // }
+    //         // Predict the Leader's Future Heading (Angular Velocity)
+    //         // This ensures the wingman starts turning *with* the leader
+    //         QVector3D mAngularVel = mModel->angularVelocity;
+    //         QQuaternion rotPredict = QQuaternion::fromEulerAngles(mAngularVel * lookaheadTime);
+    //         QQuaternion predictedRot = mRot * rotPredict;
 
-        // *transform->position = current;
+    //         // Calculate the 3D Slot (Meters) relative to predicted orientation
+    //         QVector3D localOffset(
+    //             formationPosition->Offset->x,
+    //             formationPosition->Offset->y,
+    //             formationPosition->Offset->z
+    //             );
+    //         QVector3D worldOffset = predictedRot.rotatedVector(localOffset);
 
-        // // 🔄 Step 4: Update rotation
-        // QVector3D direction = target - current;
-        // if (direction.length() > 0.001f) {
-        //     direction = direction.normalized();
-        //     float angleRad = atan2(direction.y(), direction.x());
-        //     float angleDeg = angleRad * (180.0f / M_PI);
-        //     *transform->rotation = QQuaternion::fromAxisAndAngle(angleDeg, 0, 0, 1);
-        // }
+    //         // Target Position = Future Leader Center + Predicted Offset
+    //         QVector3D targetPos = (mPos + mVel * lookaheadTime) + worldOffset;
 
-        // return; // Skip trajectory logic
+    //         // --- 3. SMOOTH STEERING ---
+    //         QVector3D currentPos = transform->matrix->translation();
+    //         currentPos.setY(0);
+    //         QVector3D error = targetPos - currentPos;
+
+    //         // PID-style Velocity calculation
+    //         QVector3D desiredVel = error * Kp;
+    //         float maxSpeedMS = moveSpeed / 3.6f; // Convert km/h to m/s
+    //         if (desiredVel.length() > maxSpeedMS) {
+    //             desiredVel = desiredVel.normalized() * maxSpeedMS;
+    //         }
+
+    //         QVector3D steering = desiredVel - velocity;
+    //         QVector3D force = steering / mass;
+    //         velocity += force * delta;
+
+    //         // Final Position Update
+    //         transform->setTranslation(currentPos + velocity * delta);
+
+    //         // 7. Handle 6-DOF Rotation
+    //         if (velocity.lengthSquared() > 0.001f) {
+    //             QVector3D currentEuler = transform->toEulerAngles();
+
+    //             // Calculate Yaw based on velocity vector in the flat plane
+    //             float targetYaw = atan2(velocity.x(), velocity.z()) * (180.0f / M_PI);
+    //             float smoothedYaw = lerp(currentEuler.y(), targetYaw, delta * rotationSmoothFactor);
+
+    //             // Calculate Bank/Roll based on centrifugal force (centripetal acceleration)
+    //             QVector3D shipRight = QQuaternion::fromEulerAngles(0, smoothedYaw, 0).rotatedVector(QVector3D(1, 0, 0));
+    //             float lateralForce = QVector3D::dotProduct(steering / mass, shipRight);
+
+    //             // Bank angle = atan(v^2 / (rg)) -> derived from lateral force
+    //             float targetRoll = qBound(-65.0f, float(atan2(lateralForce, G_ACCELERATION_VAL) * (180.0 / M_PI)), 65.0f);
+    //             float smoothedRoll = lerp(currentEuler.z(), targetRoll, delta * rollSmoothFactor);
+
+    //             // Keep pitch relative to leader's pitch to look natural
+    //             float targetPitch = mTransform->toEulerAngles().x();
+    //             float smoothedPitch = lerp(currentEuler.x(), targetPitch, delta * rotationSmoothFactor);
+
+    //             transform->setFromEulerAngles(QVector3D(smoothedPitch, smoothedYaw, smoothedRoll));
+    //         }
+    //     }
     // }
 
-    const float Kp = 1.5f;                      // Position correction sensitivity
-    const float rotationSmoothFactor = 10.0f;   // YAW (Heading) rotation speed.
-    const float rollSmoothFactor = 5.0f;        // ROLL (Bank) rotation speed. (Lower = smoother bank entry/exit)
-    const float G_ACCELERATION = 9.8f;          // Gravitational acceleration (m/s^2)
-    const float lookaheadTime = 1.0f;           // Wider Arc/Overshoot के लिए समय (1.0f अच्छा शुरुआती मान है)
-    const float pitchCompensationFactor = 0.05f; // टर्निंग के दौरान नोज-अप पिच (0.05f - 0.1f)
+    // --- 1. Refined Physics Constants for Smoothness almost working ---
+    const float Kp = 1.2f;                       // Lowered from 2.0 to stop "snapping"/oscillations
+    const float rotationSmoothFactor = 5.0f;     // Slightly slower for heavy aircraft feel
+    const float rollSmoothFactor = 3.5f;         // Slower roll for cinematic turns
+    const float G_ACCELERATION_VAL = 9.81f;
+    const float lookaheadTime = 1.5f;            // Increased lookahead to anticipate turns earlier
+    const float dampingFactor = 0.95f;           // Helps smooth out jittery velocity changes
 
     if (follow && followEntity && formationPosition && formationPosition->Offset) {
+        Transform* mTransform = followEntity->transform;
+        Platform* mPlatform = dynamic_cast<Platform*>(followEntity);
+        DynamicModel* mModel = mPlatform ? mPlatform->dynamicModel : nullptr;
 
-        Transform* motherTransform = followEntity->transform;
+        if (mTransform && mModel) {
+            // --- 2. PREDICTIVE GEOMETRY ---
+            QVector3D mPos = mTransform->matrix->translation();
+            mPos.setY(0);
+            QVector3D mVel = mModel->velocity;
+            QQuaternion mRot = mTransform->rotation();
 
-        // Mothership Velocity Retrieval (dynamic_cast आवश्यक है)
-        Platform* motherPlatform = dynamic_cast<Platform*>(followEntity);
-        DynamicModel* motherDynamicModel = motherPlatform ? motherPlatform->dynamicModel : nullptr;
+            // Predict where the leader will be based on their current turn rate (Angular Velocity)
+            QVector3D mAngularVel = mModel->angularVelocity;
+            QQuaternion rotPredict = QQuaternion::fromEulerAngles(mAngularVel * lookaheadTime);
+            QQuaternion predictedRot = mRot * rotPredict;
 
-
-        if (motherTransform && motherDynamicModel) {
-
-            // --- 1. Calculate the Predictive Target World Position (प्रक्षेपण/Overshoot) ---
-
-            // 1a. Calculate Mothership's Predicted Position (Lookahead)
-            QVector3D motherVelocity = motherDynamicModel->velocity;
-            QVector3D motherPos = motherTransform->matrix->translation();
-            QVector3D motherPos_future = motherPos + motherVelocity * lookaheadTime;
-
-            // 1b. Calculate the Formation Offset (Rotation-Aware)
+            // Calculate the slot position in the future
             QVector3D localOffset(
                 formationPosition->Offset->x,
                 formationPosition->Offset->y,
                 formationPosition->Offset->z
                 );
-            QQuaternion motherRotation = motherTransform->rotation();
-            QVector3D worldOffset = motherRotation.rotatedVector(localOffset);
+            QVector3D worldOffset = predictedRot.rotatedVector(localOffset);
 
-            // Target position is offset from the predicted mother position
-            QVector3D targetPos = motherPos_future + worldOffset;
+            // Target Position = Predicted Leader Pos + Predicted World Offset
+            QVector3D targetPos = (mPos + mVel * lookaheadTime) + worldOffset;
 
+            // --- 3. SMOOTH STEERING (Anti-Oscillation) ---
+            QVector3D currentPos = transform->matrix->translation();
+            currentPos.setY(0);
+            QVector3D error = targetPos - currentPos;
 
-            // --- 2. Smoothed Steering Force (सहज गति बल) ---
-            QVector3D currentPosition = transform->matrix->translation();
-            QVector3D error = targetPos - currentPosition;
-            QVector3D desiredVelocity = error * Kp;
-
-            if (desiredVelocity.length() > moveSpeed) {
-                desiredVelocity = desiredVelocity.normalized() * moveSpeed;
+            // Calculate desired velocity but blend it with current velocity to dampen "springing"
+            QVector3D desiredVel = error * Kp;
+            float maxSpeedMS = moveSpeed / 3.6f;
+            if (desiredVel.length() > maxSpeedMS) {
+                desiredVel = desiredVel.normalized() * maxSpeedMS;
             }
-            QVector3D steeringForce = desiredVelocity - velocity;
-            QVector3D acceleration = steeringForce / mass;
-            velocity += acceleration * delta;
 
-            // --- 3. Update Position (स्थिति अपडेट) ---
-            QVector3D newPosition = currentPosition + velocity * delta;
-            transform->setTranslation(newPosition);
+            // Apply damping to steering to prevent the left-right jitter
+            QVector3D steering = (desiredVel - velocity) * dampingFactor;
+            QVector3D force = steering / mass;
+            velocity += force * delta;
 
+            // Final Position Update
+            transform->setTranslation(currentPos + velocity * delta);
 
-            // --- 4. Realistic Rotation (यथार्थवादी घुमाव) ---
-
-            QVector3D currentEuler = transform->toEulerAngles();
-            QVector3D motherEuler = motherTransform->toEulerAngles(); // पिच सिंकिंग के लिए
-
+            // --- 4. 6-DOF ROTATION (Using Slerp for Smoothness) ---
             if (velocity.lengthSquared() > 0.001f) {
+                // Determine heading from movement
+                float targetYaw = atan2(velocity.x(), velocity.z()) * (180.0f / M_PI);
 
-                // 4a. Target YAW (Heading) based on Velocity Vector (गति की दिशा)
-                QVector3D horizontalVelocity(velocity.x(), 0, velocity.z());
-                float angleRad = atan2(horizontalVelocity.x(), horizontalVelocity.z());
-                float targetYaw = angleRad * (180.0f / M_PI);
+                // Calculate roll from lateral steering force
+                QVector3D shipRight = QQuaternion::fromEulerAngles(0, targetYaw, 0).rotatedVector(QVector3D(1, 0, 0));
+                float lateralForce = QVector3D::dotProduct(steering / mass, shipRight);
 
-                float smoothedYaw = lerp(currentEuler.y(), targetYaw, delta * rotationSmoothFactor);
+                // Limit the bank to 60 degrees for stability
+                float targetRoll = qBound(-60.0f, float(atan2(lateralForce, G_ACCELERATION_VAL) * (180.0 / M_PI)), 60.0f);
 
-                // 4b. Calculate Target ROLL (Bank/Z-axis) based on Physics (Coordinated Turn)
-                QVector3D currentRight = QQuaternion::fromEulerAngles(0, smoothedYaw, 0).rotatedVector(QVector3D(1, 0, 0));
-                float lateralAcc = QVector3D::dotProduct(acceleration, currentRight);
+                // Match leader's pitch (usually 0 or slight climb)
+                float targetPitch = mTransform->toEulerAngles().x();
 
-                // यथार्थवादी बैंक एंगल (तात्कालिक लक्ष्य)
-                float targetRollRad = atan2(lateralAcc, G_ACCELERATION);
-                float targetRoll = targetRollRad * (180.0f / M_PI);
+                // SLERP (Spherical Linear Interpolation) handles the 0/360 wrap-around perfectly
+                QQuaternion targetRotation = QQuaternion::fromEulerAngles(targetPitch, targetYaw, targetRoll);
+                QQuaternion currentRotation = transform->rotation();
 
-                // 4c. Smoothly apply Pitch and Roll with Compensation
-
-                // टर्न में ऊँचाई बनाए रखने के लिए पिच क्षतिपूर्ति
-                float rollMagnitude = abs(targetRoll);
-                float pitchCompensation = rollMagnitude * pitchCompensationFactor;
-                float targetPitch = motherEuler.x() + pitchCompensation;
-
-                float smoothedPitch = lerp(currentEuler.x(), targetPitch, delta * rotationSmoothFactor);
-
-                // रोल को सीमित करें और धीमी गति से रोल स्मूथिंग फ़ैक्टर का उपयोग करें
-                targetRoll = qBound(-60.0f, targetRoll, 60.0f);
-                float smoothedRoll = lerp(currentEuler.z(), targetRoll, delta * rollSmoothFactor);
-
-                // 4d. अंतिम रोटेशन लागू करें (Pitch, Yaw, Roll)
-                transform->setFromEulerAngles(QVector3D(smoothedPitch, smoothedYaw, smoothedRoll));
-
-            } else {
-                // यदि विमान रुका हुआ है, तो मदरसिव की दिशा पर वापस जाएं
-                transform->setFromEulerAngles(QVector3D(motherEuler.x(), motherEuler.y(), 0));
+                QQuaternion smoothedRot = QQuaternion::slerp(currentRotation, targetRotation, delta * rotationSmoothFactor);
+                transform->setRotation(smoothedRot);
             }
 
-            return;
+            return; // Stay in Follow Mode logic only
         }
     }
 
     if(trajectory->Trajectories.size()<2) return;
     QVector3D current = transform->matrix->translation();
+    // current.setZ(transform->getLatitude());
+    // current.setX(transform->getLongitude());
     Vector target = *trajectory->Trajectories[trajectory->current]->position;
-    QVector3D target_qvec(target.x, target.y, target.z);
-    float metredis =  distanceBetween(target.x,target.z,current.x(),current.z());
-
-    //if((trajectory->Trajectories.size()-1) == trajectory->current && distance <0.05f ) return;
-    if (metredis > 100) {
-        QVector3D last(current.x(), current.y(), current.z());
-
-        current += transform->forward() * speeed * 0.0001f;
-        float deltaDis = distanceBetween(last.x(),last.z(),current.x(),current.z());
-        float time = 1/delta;
-        currentSpeed = deltaDis*time;
-
-        speeed += (currentSpeed<(moveSpeed/3.6f))?0.02f:-0.02f;
-        //qDebug()<<currentSpeed;
-        QVector3D targetAsQVector3D(target.x, target.y, target.z);
-        QVector3D direction = targetAsQVector3D - current;
-
-        direction = direction.normalized();
-
-        float angleRad = atan2(direction.x(), direction.z());
-        float angleDeg = angleRad * (180.0f / M_PI);
-
-        float deltaang = normalizeAngle(angleDeg - angdeg);
-        float turnrad = turnRadius>metredis?((metredis/turnRadius)* turnRadius * 0.5f):turnRadius;
-        turnrad = turnrad<50?50:turnrad;
-        double tangent_argument = pow(speeed, 2) / (turnrad * G_ACCELERATION);
-
-        // 2. arctan का उपयोग करके बैंक कोण (रेडियन में) की गणना
-        float bank_angle_radians = atan(tangent_argument);
-
-        // 3. रेडियन को डिग्री में बदलना
-        // 1 रेडियन = 180 / PI डिग्री
-        float bank_angle_degrees = bank_angle_radians * (180.0 / M_PI);
-        float f_ang = deltaang * bank_angle_degrees;
-        angdeg += ((f_ang*50)>(60/50))?(60/50):f_ang;//1 * 0.04f;turnRadius
-        //qDebug()<<deltaang * bank_angle_degrees;
-        angdeg = normalizeAngle(angdeg);
-
-        //angdeg = lerp(angdeg,angleDeg,moveSpeed * 0.004f
-        transform->setFromEulerAngles(QVector3D(0,angdeg,0));
-        // Smoothly interpolate between the current rotation and the target rotation.
-        //*transform->rotation = QQuaternion::slerp(*transform->rotation, targetRotation, moveSpeed * 0.05f);
+    FlatXYZ targt = geoToFlatXYZ(target.x,target.z,target.y);
+    QVector3D target_qvec(targt.x, targt.y, targt.z);
+    float movespd = moveSpeed/3600.0f;//km/h to km/s
+    float accel = Acceleration/1000.0f;//m/s to km/s
+    float dccel = Decceleration/1000.0f;//m/s to km/s
+    float alt = Altitude * FTtoKM;//ft to km
+    float clmbrate = climbRate * FTminToKMs;//ft/min to km/s
+    float divrate = diveRate * FTminToKMs;//ft/min to km/s
+    currentAltitude = current.y();
+    if(target_qvec.y() > 0){
+        alt = target_qvec.y() * FTtoKM;
+        Altitude = target_qvec.y();
     }
+    if(speed<movespd){
+        speed += accel*delta;
+    }else{
+        speed -= dccel*delta;
+    }
+    // qDebug()<<currentAltitude<<","<<alt;
+    if(currentAltitude<alt){
+        currentAltitude += clmbrate*delta;
+    }else{
+        currentAltitude -= divrate*delta;
+    }
+    QVector3D direction = target_qvec - current;
+    direction = direction.normalized();
 
+    float angleRad = atan2(direction.x(), direction.z());
+    float angleDeg = angleRad * (180.0f / M_PI);
+    float deltaang = normalizeAngle(angleDeg - angdeg);
+    float dis = current.distanceToPoint(target_qvec)*1000;
+    float turnrad = turnRadius>dis?((dis/turnRadius)* turnRadius * 0.9f):turnRadius;
+    turnrad = turnrad<50?50:turnrad;
+    double tangent_argument = pow(speed, 2) / (turnrad * G_ACCELERATION);
+    float bank_angle_radians = atan(tangent_argument);
+    float bank_angle_degrees = bank_angle_radians * (180.0 / M_PI);
+    float f_ang = deltaang * bank_angle_degrees;
+    angdeg += ((f_ang*50)>(60/50))?(60/50):f_ang;//1 * 0.04f;turnRadius
+    angdeg = normalizeAngle(angdeg);
+    transform->setFromEulerAngles(QVector3D(0,angdeg,0));
+
+    // transform->lookAt(target_qvec);
+    current += transform->forward() * speed * delta;
+    current.setY(currentAltitude);
     transform->setTranslation(current);
+    currentSpeed = speed*3600;
 
-    if(distanceBetween(lastLat,lastLon,current.x(),current.z())>1){
-        transform->trailData.push_back(current);
-    }
-    lastLat = current.x();
-    lastLon = current.z();
-
+    // // ////////////////////////////////////////////////////
+    // // if( transform->trailData.capacity()>4000){
+    // //     transform->trailData.erase(transform->trailData.begin());
+    // // }
     // ////////////////////////////////////////////////////
-    // if( transform->trailData.capacity()>4000){
-    //     transform->trailData.erase(transform->trailData.begin());
-    // }
-    ////////////////////////////////////////////////////
-    //*transform->position = Vector::Lerp(*tran7sform->position, *trajectory->Trajectories[trajectory->current]->position, moveSpeed * 0.1);
-    metredis = distanceBetween(trajectory->Trajectories[trajectory->current]->position->x,
+    // //*transform->position = Vector::Lerp(*tran7sform->position, *trajectory->Trajectories[trajectory->current]->position, moveSpeed * 0.1);
+    current.setZ(transform->getLatitude());
+    current.setX(transform->getLongitude());
+    float metredis = distanceBetween(trajectory->Trajectories[trajectory->current]->position->x,
                                trajectory->Trajectories[trajectory->current]->position->z,
-                               current.x(),
-                               current.z());
-    if (trajectory->Trajectories.size() > trajectory->current && /*(transform->matrix->translation()).distanceToPoint(QVector3D(
-                                                                     trajectory->Trajectories[trajectory->current]->position->x,
-                                                                     trajectory->Trajectories[trajectory->current]->position->y,
-                                                                     trajectory->Trajectories[trajectory->current]->position->z
-                                                                     )*/ metredis
-                                                                     < 1000) {
+                               current.z(),
+                               current.x());
+    // qDebug()<<metredis;
+    if (trajectory->Trajectories.size() > trajectory->current &&  metredis < 100) {
         trajectory->current += 1;
-        //trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? (trajectory->Trajectories.size()-1) : trajectory->current;
+        qDebug()<<"time :"<<time;
         trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? 0: trajectory->current;
     }
+
 }
 
 float DynamicModel::lerp(float a, float b, float t){
@@ -329,23 +349,24 @@ QJsonObject DynamicModel::getsubComponentData(std::string ID) const{
 QJsonObject DynamicModel::toJson() const {
     QJsonObject obj;
     obj["id"] = QString::fromStdString(ID);
-    obj["controle"] = controle;
-    obj["moveSpeed"] = moveSpeed;
-    obj["turnRadius"] = turnRadius;
-    obj["start"] = startTime;
+    obj["control"] = control;
+    // obj["moveSpeed"] = moveSpeed;
+    // obj["turnRadius"] = turnRadius;
+    obj["takeoff"] = toParm(startTime,"s");
     obj["type"] = "component";
 
     QJsonObject maximumObj;
     maximumObj["type"] = "Section";
-    maximumObj["minSpeed"] = toParm(minSpeed,"m/s");
-    maximumObj["maxSpeed"] = toParm(maxSpeed,"m/s");
+    // maximumObj["minSpeed"] = toParm(minSpeed,"Km/h");
+    // maximumObj["maxSpeed"] = toParm(maxSpeed,"Km/h");
+    maximumObj["moveSpeed"] = toParm(moveSpeed,"Km/h");
     maximumObj["Acceleration"] = toParm(Acceleration,"m/s^2");
     maximumObj["Decceleration"] = toParm(Decceleration,"m/s^2");
-    maximumObj["turnRate"] = toParm(turnRate,"deg/s");
-    maximumObj["Roll"] = toParm(Roll,"deg");
-    maximumObj["Altitude"] = toParm(Altitude,"m");
-    maximumObj["climbRate"] = toParm(climbRate,"m/s");
-    maximumObj["diveRate"] = toParm(diveRate,"m/s");
+    maximumObj["turnRadius"] = toParm(turnRadius,"m");
+    // maximumObj["Roll"] = toParm(Roll,"deg");
+    maximumObj["Altitude"] = toParm(Altitude,"ft");
+    maximumObj["climbRate"] = toParm(climbRate,"ft/min");
+    maximumObj["diveRate"] = toParm(diveRate,"ft/min");
     obj["maximums"] = maximumObj;
 
     QJsonObject responsesObj;
@@ -360,7 +381,7 @@ QJsonObject DynamicModel::toJson() const {
     responsesObj["maximumRollRate"] = toParm(maximumRollRate,"deg/s");
     responsesObj["deltaToReachMaxROC"] = toParm(deltaToReachMaxROC,"m");
     responsesObj["deltaToReachMaxROD"] = toParm(deltaToReachMaxROD,"m");
-    obj["responses"] = responsesObj;
+    //obj["responses"] = responsesObj;
 
     QJsonObject passabillityObj;
     passabillityObj["type"] = "Section";
@@ -371,9 +392,9 @@ QJsonObject DynamicModel::toJson() const {
         terrainSurfaceObj["options"] = optionsArray;
         terrainSurfaceObj["value"] = surfaceTypeToString(terrainSurface);
         passabillityObj["terrainSurface"] = terrainSurfaceObj;
-    passabillityObj["maximumSpeed"] = toParm(maximumSpeed,"%");
-    passabillityObj["terrainIsPassable"] = terrainIs;
-    obj["passabillity"] = passabillityObj;
+        passabillityObj["maximumSpeed"] = toParm(maximumSpeed,"%");
+        passabillityObj["terrainIsPassable"] = terrainIs;
+    //obj["passabillity"] = passabillityObj;
 
 
     // Add custom parameters
@@ -389,14 +410,14 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
     //qDebug() << "DynamicModel::fromJson input:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
 
     // Standard fields
-    if (obj.contains("controle"))
-        controle = obj["controle"].toBool();
-    if (obj.contains("moveSpeed"))
-        moveSpeed = obj["moveSpeed"].toVariant().toDouble();
-    if (obj.contains("turnRadius"))
-        turnRadius = obj["turnRadius"].toVariant().toDouble();
-    if (obj.contains("start"))
-        startTime = obj["start"].toVariant().toDouble();
+    if (obj.contains("control"))
+        control = obj["control"].toBool();
+    // if (obj.contains("moveSpeed"))
+    //     moveSpeed = obj["moveSpeed"].toVariant().toDouble();
+    // if (obj.contains("turnRadius"))
+    //     turnRadius = obj["turnRadius"].toVariant().toDouble();
+    if (obj.contains("takeoff"))
+        startTime = valueFromParm(obj["takeoff"].toObject());
 
     // --- maximums Section ---
     if (obj.contains("maximums") && obj["maximums"].isObject()) {
@@ -406,12 +427,14 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
             minSpeed = valueFromParm(maximumObj["minSpeed"].toObject());
         if (maximumObj.contains("maxSpeed") && maximumObj["maxSpeed"].isObject())
             maxSpeed = valueFromParm(maximumObj["maxSpeed"].toObject());
+        if (maximumObj.contains("moveSpeed") && maximumObj["moveSpeed"].isObject())
+            moveSpeed = valueFromParm(maximumObj["moveSpeed"].toObject());
         if (maximumObj.contains("Acceleration") && maximumObj["Acceleration"].isObject())
             Acceleration = valueFromParm(maximumObj["Acceleration"].toObject());
         if (maximumObj.contains("Decceleration") && maximumObj["Decceleration"].isObject())
             Decceleration = valueFromParm(maximumObj["Decceleration"].toObject());
-        if (maximumObj.contains("turnRate") && maximumObj["turnRate"].isObject())
-            turnRate = valueFromParm(maximumObj["turnRate"].toObject());
+        if (maximumObj.contains("turnRadius") && maximumObj["turnRadius"].isObject())
+            turnRadius = valueFromParm(maximumObj["turnRadius"].toObject());
         if (maximumObj.contains("Roll") && maximumObj["Roll"].isObject())
             Roll = valueFromParm(maximumObj["Roll"].toObject());
         if (maximumObj.contains("Altitude") && maximumObj["Altitude"].isObject())
@@ -447,6 +470,7 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
         if (responsesObj.contains("deltaToReachMaxROD") && responsesObj["deltaToReachMaxROD"].isObject())
             deltaToReachMaxROD = valueFromParm(responsesObj["deltaToReachMaxROD"].toObject());
     }
+
     if (obj.contains("passabillity") && obj["passabillity"].isObject()) {
         QJsonObject passabillityObj = obj["passabillity"].toObject();
         if (passabillityObj.contains("terrainSurface") && passabillityObj["terrainSurface"].isObject()) {
@@ -467,7 +491,7 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
 
     // Custom parameters
     QStringList standardKeys = {
-        "controle", "turnRadius", "start", "moveSpeed","responses","maximums","passabillity"
+        "control", "turnRadius", "start", "moveSpeed","responses","maximums","passabillity"
     };
     for (auto it = obj.begin(); it != obj.end(); ++it) {
         if (!standardKeys.contains(it.key())) {
@@ -481,113 +505,3 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
 void DynamicModel::setMoveSpeed(float speed) {
     //moveSpeed = qBound(1.0f, speed, 10.0f);
 }
-
-
-// void DynamicModel::Update(float deltaTime) {
-//     if (!controle || !transform || !trajectory) return;
-
-//     // Get input from InputManager (or use autopilot values if `follow` is true)
-//     float throttleInput = 1.0f;
-//     float pitchInput = 0.0f;
-//     float rollInput = 0.0f;
-//     float yawInput = 0.0f;
-//     bool brakes = false;
-
-// /*    // Get input from InputManager (assuming it exists and provides values)
-//     float throttleInput = InputManager::getThrottleInput(); // Assuming a value between 0 and 1
-//     float pitchInput = InputManager::getPitchInput();     // Assuming a value between -1 and 1
-//     float rollInput = InputManager::getRollInput();       // Assuming a value between -1 and 1
-//     float yawInput = InputManager::getYawInput();         // Assuming a value between -1 and 1
-//     bool brakes = InputManager::getAirBrakes();     */      // Assuming a boolean value
-
-
-//     // --- Autopilot Logic to follow trajectory ---
-//     if (follow && trajectory->Trajectories.size() > 0) {
-//         // Get the current and target positions
-//         QVector3D currentPosition = transform->translation();
-//         Vector targetVector = *trajectory->Trajectories[trajectory->current]->position;
-//         QVector3D targetPosition(targetVector.x, targetVector.y, targetVector.z);
-
-//         // Check if we have reached the current waypoint
-//         if (currentPosition.distanceToPoint(targetPosition) < 5.0f) { // Use a small radius
-//             trajectory->current++;
-//             if (trajectory->current >= trajectory->Trajectories.size()) {
-//                 trajectory->current = 0; // Loop the trajectory
-//             }
-//         }
-
-//         // Calculate the direction to the next waypoint
-//         QVector3D directionToTarget = (targetPosition - currentPosition).normalized();
-//         QVector3D localDirection = transform->inverseTransformDirection(directionToTarget);
-
-//         // Calculate pitch and yaw inputs from the local direction
-//         pitchInput = -localDirection.y() * 2.0f; // Scale factor for responsiveness
-//         yawInput = localDirection.x() * 2.0f;   // Scale factor for responsiveness
-
-//         // Auto-leveling for roll
-//         rollInput = -transform->toEulerAngles().z() * autoRollLevel;
-//     }
-
-//     // Direction vectors based on the aircraft's current orientation
-//     QVector3D forwardDir = transform->forward();
-//     QVector3D upDir = transform->up();
-//     QVector3D rightDir = transform->right();
-
-//     // 1. Calculate and apply forces
-//     QVector3D totalForce(0.0f, 0.0f, 0.0f);
-
-//     // Thrust
-//     enginePower = throttleInput * maxEnginePower;
-//     totalForce += forwardDir * enginePower;
-
-//     // Drag
-//     forwardSpeed = velocity.length();
-//     float drag = forwardSpeed * forwardSpeed * dragIncreaseFactor;
-//     if (brakes) {
-//         drag += forwardSpeed * airBrakesEffect;
-//     }
-//     if (forwardSpeed > 0) {
-//         totalForce -= velocity.normalized() * drag;
-//     }
-
-//     // Lift
-//     float lift = forwardSpeed * forwardSpeed * Lift;
-//     if (forwardSpeed < zeroLiftSpeed) {
-//         lift = 0;
-//     }
-//     totalForce += upDir * lift;
-
-//     // Gravity (assuming a constant downward force)
-//     //totalForce += QVector3D(0.0f, -9.8f, 0.0f); // Adjust gravity as needed
-
-//     // 2. Update velocity and position
-//     QVector3D acceleration = totalForce / mass;
-//     velocity += acceleration * deltaTime;
-//     transform->addTranslation(velocity * deltaTime);
-
-//     // 3. Calculate and apply torques
-//     QVector3D totalTorque(0.0f, 0.0f, 0.0f);
-//     QVector3D localVelocity = transform->inverseTransformDirection(velocity);
-
-//     // Pitch control (up/down)
-//     float pitchTorque = pitchInput * pitchEffect*500;
-//     pitchTorque += -localVelocity.y() * autoPitchLevel; // Auto-leveling
-//     totalTorque += rightDir * pitchTorque * aerodynamicEffect;
-
-//     qDebug()<<pitchInput <<","<<totalTorque;
-//     // Roll control (left/right)
-//     float rollTorque = rollInput * rollEffect*500;
-//     rollTorque += -localVelocity.x() * autoRollLevel; // Auto-leveling
-//     totalTorque += forwardDir * rollTorque * aerodynamicEffect;
-
-//     // Yaw control (left/right turning)
-//     float yawTorque = yawInput * yawEffect*500;
-//     yawTorque += -rollInput * bankedTurnEffect;
-//     totalTorque += upDir * yawTorque * aerodynamicEffect;
-
-//     // 4. Update angular velocity and rotation
-//     angularVelocity += totalTorque * deltaTime * rotationSpeed;
-//     transform->setRotation(transform->rotation() * QQuaternion::fromEulerAngles(angularVelocity * deltaTime));
-
-// }
-

@@ -1,7 +1,4 @@
-/* ========================================================================= */
-/* File: CSMDisplay.h                                                        */
-/* Purpose: Defines widget for electronic warfare display                    */
-/* ========================================================================= */
+
 
 #ifndef CSMDisplay_H
 #define CSMDisplay_H
@@ -52,6 +49,10 @@ public:
 protected:
     // Handle paint events
     void paintEvent(QPaintEvent *event) override;
+    // Handle mouse move for hover detection
+    void mouseMoveEvent(QMouseEvent *event) override;
+    // Handle mouse leave
+    void leaveEvent(QEvent *event) override;
 
 private:
     // %%% Display Properties %%%
@@ -77,6 +78,10 @@ private:
     QString id = "";
     // Hierarchy instance
     Hierarchy* hierarchy = nullptr;
+
+    // Hover tracking
+    int hoveredTargetIndex = -1;
+    QPoint lastMousePos;
 
     // %%% Drawing Methods %%%
     // Draw background

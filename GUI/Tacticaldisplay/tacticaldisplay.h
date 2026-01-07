@@ -32,6 +32,8 @@ public:
     // Hide 3D view
     void hide3DView();
 
+    QWidget* mapCanvasContainer = nullptr;  // for map
+
 public slots:
     // Add mesh with ID and data
     void addMesh(QString ID, MeshData meshData);
@@ -73,14 +75,14 @@ public:
     // GIS map widget
     GISlib* mapWidget;
     // Scale bar widget
-    ScaleBar *scaleBar;  // Add this line
+    ScaleBar *scaleBar;
 
     // Zoom in on map
     void zoomIn() {
         if (mapWidget) {
             currentZoom++;
             mapWidget->setZoom(currentZoom);
-            updateScaleBar();  // Add this call
+            updateScaleBar();
         }
     }
     // Zoom out on map
@@ -88,7 +90,7 @@ public:
         if (mapWidget) {
             currentZoom--;
             mapWidget->setZoom(currentZoom);
-            updateScaleBar();  // Add this call
+            updateScaleBar();
         }
     }
 
@@ -96,7 +98,7 @@ private:
     // %%% Data Members %%%
     // Current zoom level
     int currentZoom = 3;
-    // 3D view visibility flag
+
     bool is3DViewVisible = false;
     // Overlay label
     QLabel *overlayLabel;
@@ -104,7 +106,7 @@ private:
     QComboBox *crsComboBox;
 
     // Private method to update scale bar
-    void updateScaleBar();  // Add this line
+    void updateScaleBar();
 };
 
 #endif // TACTICALDISPLAY_H

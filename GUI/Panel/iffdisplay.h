@@ -1,6 +1,5 @@
 
 
-
 /* ========================================================================= */
 /* File: IFFDisplay.h                                                        */
 /* Purpose: Defines widget for IFF (Identification Friend or Foe) display    */
@@ -9,7 +8,7 @@
 #ifndef IFFDISPLAY_H
 #define IFFDISPLAY_H
 
-#include "core/Hierarchy/EntityProfiles/iff.h"    // IFF प्रोफाइल include करें
+#include "core/Hierarchy/EntityProfiles/iff.h"
 #include "core/Hierarchy/hierarchy.h"
 #include <QWidget>
 #include <QVector>
@@ -23,7 +22,7 @@ struct IFFDisplayTarget {
     std::string code;
     float radius;
     float angle;
-    int status;  // 1 = Friend, 0 = Unknown/Foe
+    int status;
 };
 
 // %%% Class Definition %%%
@@ -50,6 +49,7 @@ public:
 protected:
     void paintEvent(QPaintEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
+    void leaveEvent(QEvent *event) override;
 
 private:
     // %%% Display Properties %%%
@@ -66,6 +66,7 @@ private:
     QPoint mousePos;
     int hoveredTargetIndex = -1;
     QVector<IFF::IFFTarget> targets;
+
     // %%% Drawing Methods %%%
     void drawBackground(QPainter &p);
     void drawRadarRing(QPainter &p, const QPoint &center, int outerRadius);

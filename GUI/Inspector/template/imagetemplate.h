@@ -22,7 +22,7 @@ class ImageTemplate : public QWidget
 
 public:
     // Initialize image template with Inspector reference
-    explicit ImageTemplate(Inspector *inspector, QWidget *parent = nullptr);  // CHANGED
+    explicit ImageTemplate(Inspector *inspector, QWidget *parent = nullptr);
     // Setup image cell in table
     void setupImageCell(int row, const QString &fullKey, const QJsonObject &obj, QTableWidget *tableWidget);
     // Set connected ID

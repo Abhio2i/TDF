@@ -37,6 +37,7 @@ public:
 protected:
     // Handle wheel events
     void wheelEvent(QWheelEvent *event) override;
+
 };
 
 // %%% Inspector Class %%%
@@ -58,7 +59,8 @@ public:
     void setLocked(bool locked);
     // Get locked state
     bool isLocked() const;
-       QString getMainID() const { return mainID; }
+    QString getMainID() const { return mainID; }
+
 
 public slots:
     // Initialize with data
@@ -69,7 +71,8 @@ public slots:
     void setupValueCell(int row, const QString &fullKey, const QJsonValue &value);
     // Update trajectory waypoints
     void updateTrajectory(QString entityId, QJsonArray waypoints);
-    void handleInfoButton();
+    void refreshForDeveloperMode();
+    void resetState();
 signals:
     // Signal focus entity
     void foucsEntity(QString ID);
@@ -93,6 +96,7 @@ private slots:
     void handleAddParameter();
     // Handle remove parameter action
     void handleRemoveParameter();
+
 
 private:
     // %%% UI Components %%%
@@ -125,6 +129,12 @@ private:
     // Locked state flag
     bool m_locked;
 
+    QPushButton *currentlyExpandedButton = nullptr;
+    void handleMultiComponentContainer(QString ID, QString name, QJsonObject object);
+    int addMultiComponentContainerRow(int row, const QString &key, const QJsonObject &containerObj, const QString &componentName);
+    QWidget* createSubcomponentWidget(const QString &subKey, const QJsonObject &subObj, const QString &parentComponentName);
+    QWidget* createValueWidgetForJson(const QString &key, const QJsonValue &value, const QString &subComponentId, const QString &parentKey);
+    void addSectionToLayout(const QString &sectionName, const QJsonObject &sectionObj, QVBoxLayout *parentLayout, const QString &subComponentId);
     // %%% UI Setup Methods %%%
     // Configure UI components
     void setupUI();
@@ -165,18 +175,10 @@ private:
         SectionInfo(int row, int count, bool expanded = true)
             : headerRow(row), parameterCount(count), isExpanded(expanded) {}
     };
-
-
     QMap<QString, SectionInfo> sectionInfo;
     QMap<int, QString> sectionRows;
-
-
     QWidget* createSectionHeader(const QString &sectionKey, int headerRow, const QJsonObject &sectionObj);
     void toggleSectionExpansion(const QString &sectionKey, int headerRow, QPushButton *dropdownButton);
-
-
-
-
     static QString capitalizeFirstLetter(const QString &s)
     {
         if (s.isEmpty()) return s;

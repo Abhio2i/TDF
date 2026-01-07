@@ -70,7 +70,7 @@ public:
     void setCurrentRecordingTime(qint64 t)
     {
         if (recordingPaused) {
-            currentReplayTimeMs = pausedTimeMs;  // freeze timeline during pause
+            currentReplayTimeMs = pausedTimeMs;
         } else {
             currentReplayTimeMs = t;
         }
@@ -145,9 +145,9 @@ protected:
             QString rightTime;
 
             if (replayMode) {
-                leftTime = formatTime(currentReplayTimeMs);   // show replay position
+                leftTime = formatTime(currentReplayTimeMs);
             } else {
-                leftTime = "00:00:00";                        // recording mode
+                leftTime = "00:00:00";
             }
 
             rightTime = formatTime(recordingDurationMs);
@@ -245,7 +245,7 @@ private:
     qint64 recordingDurationMs = 0;
     QList<QPair<QString, qint64>> bookmarks;
     QList<QPushButton*> bookmarkButtons;
-    //By Him
+
     bool recordingPaused = false;
 
 };
@@ -259,7 +259,7 @@ public:
     void updateRecordingDuration(qint64 durationMs);
     void addBookmarkWithTimestamp(const QString &note, qint64 timestampMs);
     void updateRecordingDurationLabel(qint64 durationMs);
-    //By Him
+
     TimelineWidget* getTimelineWidget() const { return timelineWidget; }
 
 public slots:
@@ -293,13 +293,13 @@ signals:
     void timestampToggled(bool enabled);
     void bookmarkClicked(const QString &note, qint64 timestampMs);
     void bookmarkButtonClicked(const QString &note, qint64 timestampMs);
-    //Start Himan
+
     void toggleReplayPause();
     void previousFrame();
     void nextFrame();
     void pressPlayAgain();
     void requestReplayReset();
-    //End Himan
+
 private:
     void setupUi();
     void setupMenuBar();

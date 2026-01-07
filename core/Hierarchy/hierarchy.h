@@ -64,6 +64,7 @@ public:
     void getCurrentJsonData();
     void addComponent(QString Id, QString ComponentName);
     void addSubComponent(QString Id, ComponentType type, QString subComponentName, QString data1 = "", QString data2 = "", QString data3 = "");
+    void removeSubComponent(QString ID, QString subComponentID, QString subComponentName);
     void attchedIff(QString Id, QString name);
     void attachSensors(QString ID, QString name, QString sensorType);
     void attachRadios(QString ID, QString name);
@@ -102,7 +103,7 @@ signals:
     void entityRemoved(QString ID);
     void entityRemovedfull(QString parentId, QString ID, bool Profile);
     void componentRemoved(QString parentID, QString componentName);
-    void subComponentRemoved(QString parentID, QString subComponentName);
+    void subComponentRemoved(QString parentID,QString ID, QString subComponentName);
 
 
     void profileRenamed(QString Id, QString name);

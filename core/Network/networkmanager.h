@@ -5,21 +5,30 @@
 #include <unordered_map>
 #include <string>
 #include <atomic>
-
+#include<QThread>
 #include "core/Hierarchy/profilecategaory.h"
 #include "core/Network/networktransport.h"
 #include <core/Hierarchy/hierarchy.h> // <-- Add or confirm this line
 // or whatever the correct path is, e.g., #include "hierarchy.h"
+#include <core/Network/libs/TransformUpdate.h>
 class NetworkManager : public QObject {
     Q_OBJECT
 
 public:
     explicit NetworkManager(QObject* parent = nullptr);
-
+    ~NetworkManager();
     // Server controls
     Q_INVOKABLE bool startServer(int port);
     // Q_INVOKABLE void sendServerMessage(const QString& msg);
     // Q_INVOKABLE void sendClientMessage(const QString& message);
+    bool networkActive = false;   // NEW
+    bool connected = false;       // NEW
+    bool isServer() const {
+        return network && network->isServer();
+    }
+    bool isActive() const {
+        return networkActive && connected;
+    }
 
     void setHierarchy(Hierarchy* h) { hierarchy = h; }
     void init(const QString& ip, int port);
@@ -31,6 +40,7 @@ public:
     bool stopClient();
 
     void onMessaageRecevied(QString message);
+    void onBinaryMessage(QByteArray byteMessage);
     void onConnect();
     void onNewConnction();
     // Global network access
@@ -71,6 +81,9 @@ public:
     void entityUpdate(QString ID);
     void getJsonData(const QJsonObject& obj);
 signals:
+    void initSyncComplete();
+
+
     void addFolder(QString parentId,QString ID,QString FolderName,bool Profile);
     void addEntity(QString parentId,QString ID,QString EntityName,bool Profile);
     void addEntityFromJson(QString parentId,QJsonObject obj,bool Profile);
@@ -81,6 +94,13 @@ signals:
     void getCurrentJsonData();
     void initData(const QJsonObject& obj);
     void updateScene(float deltaTime);
+    void renameEntity(QString id, QString newName);
+    void requestInit(const QString& ip, int port);
+    void requestStart(bool server);
+    void requestSendText(const QString& msg);
+    void requestSendBinary(const QByteArray& data);   
+    void transformReceived(const TransformUpdate& msg);
+
 private:
     // static std::unique_ptr<Server> ser;
     // static std::unique_ptr<Client> cli;
@@ -93,9 +113,31 @@ private:
     void sendJson(const QJsonObject& obj);
     NetworkTransport* network;
     Hierarchy* hierarchy = nullptr;
+    struct TransformState {
+        float posX, posY, posZ;
+        float rotX, rotY, rotZ;
+        float sizeX, sizeY, sizeZ;
+    };
+
+    // Global map tracking all entities' previous transforms
+    std::unordered_map<std::string, TransformState> previousTransforms;
+    QThread* networkThread = nullptr;
+
+
 };
 
 #endif
     // NETWORKMANAGER_H
 // NETWORKMANAGER_H
 // NETWORKMANAGER_H
+// NetworkTransport Thread
+//     |
+//     v   (Qt queued signal)
+//     NetworkManager::binaryFrameReceived(TransformUpdate)
+//     |
+//     v
+//     SimulationThread::enqueueTransform()
+//     |
+//     v
+//     SimulationThread applies updates during frame()
+

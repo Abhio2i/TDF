@@ -76,7 +76,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     HierarchyConnector::instance()->setLibrary(library);
     HierarchyConnector::instance()->setLibTreeView(libTreeView);
 
-    // 🔥 FIX: let Run in RuntimeEditor actually trigger the ScriptEngine
+
     connect(textScriptView, &TextScriptWidget::runScriptstring,
             runtime->scriptengine, &ScriptEngine::loadAndCompileScript);
 
@@ -104,9 +104,9 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     radarDisplayUI->setHierarchy(hierarchy);
     displayTabs->addTab(radarDisplayUI, "Radar");
 
-    ewDisplayUI = new EWDisplay(displayTabs);
-    ewDisplayUI->setHierarchy(hierarchy);
-    displayTabs->addTab(ewDisplayUI, "EW");
+    // ewDisplayUI = new EWDisplay(displayTabs);
+    // ewDisplayUI->setHierarchy(hierarchy);
+    // displayTabs->addTab(ewDisplayUI, "EW");
 
     iffDisplayUI = new IFFDisplay(displayTabs);
     iffDisplayUI->setHierarchy(hierarchy);
@@ -130,8 +130,8 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(simulation, &Simulation::Update, radarDisplayUI, &RadarDisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, radarDisplayUI, &RadarDisplay::RemoveEntity);
 
-    connect(simulation, &Simulation::Update, ewDisplayUI, &EWDisplay::updateRadar);
-    connect(hierarchy, &Hierarchy::entityRemoved, ewDisplayUI, &EWDisplay::RemoveEntity);
+    // connect(simulation, &Simulation::Update, ewDisplayUI, &EWDisplay::updateRadar);
+    // connect(hierarchy, &Hierarchy::entityRemoved, ewDisplayUI, &EWDisplay::RemoveEntity);
 
     connect(simulation, &Simulation::Update, csmDisplayUI, &CSMDisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, csmDisplayUI, &CSMDisplay::RemoveEntity);
@@ -146,56 +146,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     // RADIO DISPLAY CONNECTIONS
     connect(simulation, &Simulation::Update, radioDisplayUI, &RADIODisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, radioDisplayUI, &RADIODisplay::RemoveEntity);
-
-    // // 🔥 PROPER IFF INTERROGATION TRIGGER
-    // connect(simulation, &Simulation::Update, this, [=]() {
-    //     static int iffCounter = 0;
-    //     iffCounter++;
-
-    //     // Interrogate every 30 frames (reduce frequency)
-    //     if (iffCounter % 30 == 0) {
-    //         // Trigger IFF interrogation for ALL platforms with IFF
-    //         for (auto& [key, entity] : *hierarchy->Entities) {
-    //             Platform* platform = dynamic_cast<Platform*>(entity);
-    //             if (!platform) continue;
-
-    //             // Interrogate for each IFF on this platform
-    //             for (IFF* iff : platform->iffList) {
-    //                 if (iff && iff->transponder &&
-    //                     (iff->operationalMode == IFF::OperationalMode::Active ||
-    //                      iff->operationalMode == IFF::OperationalMode::Simulation)) {
-
-    //                     qDebug() << "🔄 Auto IFF interrogation for:"
-    //                              << QString::fromStdString(platform->Name);
-    //                     iff->interrogateTargets(platform->transform);
-    //                 }
-    //             }
-    //         }
-    //     }
-    // });
-
-    // // 🔥 RADIO SCANNING TRIGGER (SIMILAR TO IFF)
-    // connect(simulation, &Simulation::Update, this, [=]() {
-    //     static int radioCounter = 0;
-    //     radioCounter++;
-
-    //     // Scan every 20 frames
-    //     if (radioCounter % 20 == 0) {
-    //         int totalScans = 0;
-    //         for (auto& [key, entity] : *hierarchy->Entities) {
-    //             Platform* platform = dynamic_cast<Platform*>(entity);
-    //             if (!platform) continue;
-
-    //             for (Radio* radio : platform->radioList) {
-    //                 if (radio && radio->Active) {
-    //                     radio->updateAvailableConnections(platform->transform);
-    //                     totalScans++;
-    //                 }
-    //             }
-    //         }
-    //     }
-    // });
-
     connect(displayDock, &QDockWidget::visibilityChanged, this, [=](bool visible) {
         if (!visible) {
             if (runtimeToolBar) {
@@ -240,8 +190,8 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 loggerDialog->updateRecordingDuration(durationMs);
             }
         });
-        recordingTimer->start(100); // Update every 100ms
-        qDebug() << "Recording started from LoggerDialog";
+        recordingTimer->start(100);
+
     });
     connect(runtime->recorder, &Recorder::recordingPaused,
             loggerDialog->getTimelineWidget(), &TimelineWidget::pauseRecording);
@@ -260,7 +210,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         }
         recordingStartTime = QDateTime();
         loggerDialog->updateRecordingDuration(0);
-        qDebug() << "Recording stopped from LoggerDialog";
+
     });
 
     connect(loggerDialog, &LoggerDialog::saveRecording, this, [=](const QString &filePath) {
@@ -364,7 +314,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(displayWindow, &QObject::destroyed, this, [=]() {
         displayWindow = nullptr;
         radarDisplayUI = nullptr;
-        ewDisplayUI = nullptr;
+        // ewDisplayUI = nullptr;
         iffDisplayUI = nullptr;
         esmDisplayUI = nullptr;
         csmDisplayUI = nullptr;
@@ -393,7 +343,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(displayWindow, &QObject::destroyed, this, [=]() {
         displayWindow = nullptr;
         radarDisplayUI = nullptr;
-        ewDisplayUI = nullptr;
+        // ewDisplayUI = nullptr;
         esmDisplayUI = nullptr;
         csmDisplayUI = nullptr;
         if (runtimeToolBar) {
@@ -405,7 +355,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         }
     });
 
-    // IFF interrogation trigger करने के लिए
+
     connect(simulation, &Simulation::Update, this, [=]() {
         if (iffDisplayUI && iffDisplayUI->entity && iffDisplayUI->iff) {
             // Regular IFF interrogation
@@ -417,12 +367,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
 
     // Connect tactical display signals
     if (tacticalDisplay && tacticalDisplay->canvas) {
-        // // Set canvas for script engine
-        // if (tacticalDisplay && tacticalDisplay->canvas) {
-        //     scriptengine->setCanvas(tacticalDisplay->canvas);
-        //     qDebug() << "ScriptEngine canvas set successfully!";
-        // }
-        // Connect trajectory signals
+
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated, inspector, &Inspector::updateTrajectory);
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated, this, [=](QString entityId, QJsonArray /*waypoints*/) {
             auto it = tacticalDisplay->canvas->Meshes.find(entityId.toStdString());
@@ -448,6 +393,8 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     }
 
     connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
+    connect(inspector, &Inspector::valueChanged, this, [=]{ renderer->Render(0.01f); markUnsavedChanges(); });
+
 
     if (runtimeToolBar && tacticalDisplay && tacticalDisplay->canvas && simulation) {
         connect(simulation, &Simulation::Render, runtimeToolBar, &RuntimeToolBar::onElapsedTime);
@@ -570,7 +517,11 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                      }
                      //inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
                  }else if (type == "component") {
-                     inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
+                     QJsonObject componentData = hierarchy->getComponentData(ID, name);
+                     if (!componentData.isEmpty()) {
+                         inspector->init(ID, displayName, componentData);
+                     }
+                     // inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
                  }  else if (type == "profile") {
                     inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
                 } else if (type == "folder") {
@@ -580,9 +531,9 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                     if (radarDisplayUI) {
                         radarDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
                     }
-                    if (ewDisplayUI) {
-                        ewDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                    }
+                    // if (ewDisplayUI) {
+                    //     ewDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                    // }
                     if (iffDisplayUI) {
                         iffDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
                     }
@@ -763,21 +714,21 @@ void RuntimeEditor::setupEnhancedDockWidgets()
                    QMainWindow::GroupedDragging |
                    QMainWindow::AnimatedDocks);
 
-    // Remove central widget to use only docks - JUST LIKE SCENARIO EDITOR
+
     setCentralWidget(nullptr);
 
-    // Create initial splits - similar to RuntimeEditor layout
+
     splitDockWidget(hierarchyDock, tacticalDisplayDock, Qt::Horizontal);
     splitDockWidget(tacticalDisplayDock, sidebarDock, Qt::Horizontal);
     splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
     splitDockWidget(tacticalDisplayDock, consoleDock, Qt::Vertical);
 
-    // Set initial sizes with delay - JUST LIKE SCENARIO EDITOR
+
     QTimer::singleShot(100, this, [=]() {
         int totalWidth = width();
         int totalHeight = height();
 
-        // Similar distribution as RuntimeEditor
+
         int hierarchyWidth = static_cast<int>(totalWidth * 0.10);   // 10% for hierarchy
         int tacticalWidth = static_cast<int>(totalWidth * 0.78);    // 78% for tactical display
         int sidebarWidth = static_cast<int>(totalWidth * 0.05);     // 5% for sidebar
@@ -792,7 +743,7 @@ void RuntimeEditor::setupEnhancedDockWidgets()
         resizeDocks({consoleDock}, {consoleHeight}, Qt::Vertical);
     });
 
-    // Connect sidebar view selection - UPDATED FOR RUNTIME EDITOR
+
     connect(sidebar, &SidebarWidget::viewSelected, this, [this](const QString &viewName) {
         qDebug() << "Sidebar viewSelected emitted, viewName:" << viewName;
 
@@ -865,7 +816,7 @@ void RuntimeEditor::setupEnhancedDockWidgets()
         }
     });
 }
-/* Setup dock widgets - legacy method, using enhanced version instead */
+
 void RuntimeEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures)
 {
     // This method is replaced by setupEnhancedDockWidgets()
@@ -949,7 +900,7 @@ void RuntimeEditor::setupMenuBar()
     setMenuBar(menuBar);
     connect(menuBar, &MenuBar::feedbackTriggered, this, &RuntimeEditor::showFeedbackWindow);
 
-    // Get the Edit menu from MenuBar and add reset layout action - JUST LIKE SCENARIO EDITOR
+
     QMenu *editMenu = menuBar->getEditMenu();
     if (editMenu) {
         // Create reset layout action
@@ -1274,7 +1225,7 @@ void RuntimeEditor::clearUnsavedChanges()
     }
 }
 
-// Add reset layout function to RuntimeEditor - JUST LIKE SCENARIO EDITOR
+
 void RuntimeEditor::resetLayout()
 {
     // Show message in console

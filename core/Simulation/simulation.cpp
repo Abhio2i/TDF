@@ -77,6 +77,8 @@ Simulation::~Simulation() {
     delete collisionConfiguration;
     delete broadphase;
     delete Gravity;
+    //added by Aman to avoid crash during stop
+    if (updateTimer) updateTimer->stop();
 }
 
 void Simulation::setFps(int value){
@@ -93,6 +95,7 @@ void Simulation::frame() {
         deltaTime = 0.02f;
     }
     lastTime = currentTime;
+    applyPendingNetworkUpdates();//by Aman to apply recived update via network
     calculatePhysics();
 
     QJsonObject frameData;
@@ -275,7 +278,7 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
                 platform->transform->matrix->scale3D().y() * platform->collider->Length * 0.5f,
                 platform->transform->matrix->scale3D().z() * platform->collider->Height * 0.5f));
         } else if (platform->collider && platform->collider->collider == Constants::ColliderType::Sphere) {
-            shape = new btSphereShape(platform->collider->Radius * platform->transform->matrix->scale3D().length());
+            shape = new btSphereShape(platform->collider->CollideRadius * platform->transform->matrix->scale3D().length());
         }
 
         if (shape) {
@@ -370,13 +373,71 @@ void Simulation::entityRemoved(QString ID) {
 
     emit HierarchyUpdate();
 }
+//fixed:to inialise the netwrok when instance is clinet
+          void Simulation::setNetworkManager(NetworkManager* nm)
+{
+    networkManager = nm;
+}
 
+//fix: to resolve the crash issue beacuse both network thread and simulation thread were changing the transform..now only simulation does this
+void Simulation::applyPendingNetworkUpdates()
+{
+    while (!incomingTransforms.empty())
+    {
+        auto msg = incomingTransforms.pop();
+        if (!msg) break;
+
+        auto it = physicsComponent.find(msg->id);
+        if (it == physicsComponent.end()) continue;
+
+        auto& comp = it->second;
+        if (!comp.transform) continue;
+
+        comp.transform->setTranslation(msg->pos);
+        comp.transform->setFromEulerAngles(msg->rot);
+    }
+}
+void Simulation::enqueueTransformUpdate(const TransformUpdate& msg)
+{
+    incomingTransforms.push(msg);
+}
+/*
+    Network / Simulation Authority Rules
+
+    We distinguish 3 modes:
+      1) Stand-alone (no networking)
+      2) Server (master simulation authority)
+      3) Client (receives updates only)
+
+    Behavior summary:
+
+    | Case                     | networkActive | connected | isServer() | isMaster |
+    | ------------------------ | ------------- | --------- | ---------- | -------- |
+    | Stand-alone              | false         | false     |   n/a      |  true    |
+    | Server                   | true          | true      |   true     |  true    |
+    | Client                   | true          | true      |   false    |  false   |
+    | Client not connected yet | true          | false     |   false    |  true*   |
+
+    * Clients that are not yet connected should temporarily behave as
+      master for safety — once sync completes, isMaster becomes false.
+
+    Result:
+      - Stand-alone mode runs full simulation locally
+      - Server runs authoritative simulation
+      - Clients only receive updates (no physics)
+*/
 void Simulation::calculatePhysics() {
     const float dt = deltaTime * speed;
     const float maxDt = 1.0f / PhysicsUpdateFrameRate;
     const float clampedDt = std::min(dt, maxDt);
     //dynamicsWorld->stepSimulation(clampedDt, 10);
     emit Physics();
+
+    simMin +=simCount;
+    if(physicsComponent.size() <= simMin){
+        simMin = 0;
+    }
+
     Profiler::currentFrame->RadarTime = 0;
     Profiler::currentFrame->EWTime = 0;
     Profiler::currentFrame->CSMTime = 0;
@@ -385,12 +446,22 @@ void Simulation::calculatePhysics() {
     Profiler::currentFrame->RadioTime = 0;
     int dynamicTime = 0;
     int sensorTime = 0;
-
+    int num = 0;
+    int simMax = simMin+simCount;
+    // qDebug()<<simMin<<","<<simMax;
     for (auto& [id, comp] : physicsComponent) {
+        if(!comp.entity->Active) continue;
         if (!comp.transform || !comp.rigidbody) continue;
         comp.rigidbody->deltaTime = deltaTime;
 
-        if (comp.dynamicModel){
+        if(comp.collider){
+            comp.collider->Update(dt);
+        }
+        //fix:we are keeping dynamic only to server
+        bool isMaster = true;
+        if (networkManager && networkManager->isActive())
+            isMaster = networkManager->isServer();
+        if (isMaster && comp.dynamicModel){
             QElapsedTimer timer;
             timer.start();  // Start measuring
             comp.dynamicModel->Update(dt);
@@ -399,14 +470,14 @@ void Simulation::calculatePhysics() {
         }
 
 
-        if (comp.entity){
+        if (comp.entity /*&& simMin<num && num< simMax*/){
             QElapsedTimer timer;
             timer.start();  // Start measuring
             comp.entity->update();
             qint64 elapsedMs = timer.elapsed();
             sensorTime +=elapsedMs;
         }
-
+        num++;
         // auto it = bulletBodies.find(id);
         // if (it != bulletBodies.end()) {
         //     btRigidBody* body = it->second;

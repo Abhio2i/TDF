@@ -1,7 +1,7 @@
 #include "networktransport.h"
 
 NetworkTransport::NetworkTransport(){
-    udpSocket = new QUdpSocket(this);
+    udpSocket = nullptr;
 }
 
 NetworkTransport::~NetworkTransport(){
@@ -21,8 +21,10 @@ void NetworkTransport::readyUDPRead()
         udpSocket->readDatagram(datagram.data(), datagram.size(), &senderAddress, &senderPort);
 
         qDebug() << "Message from:" << senderAddress.toString() << ":" << senderPort;
-        qDebug() << "Content:" << QString::fromUtf8(datagram);
-        emit onReceivedMessage( QString::fromUtf8(datagram));
+        //qDebug() << "Content:" << QString::fromUtf8(datagram);
+        //emit onReceivedMessage( QString::fromUtf8(datagram));
+        emit onBinaryMessage(datagram);
+
     }
 }
 
@@ -53,6 +55,47 @@ void NetworkTransport::sendUDPMessage(const QString &message)
 
 }
 
+/// @brief Send a binary datagram (UDP) to all connected clients
+/// @param byteMessage Binary data to send (already serialized or marshalled)
+void NetworkTransport::sendBinaryUDPMessage(const QByteArray &byteMessage)
+{
+    if (!udpSocket)
+    {
+        qWarning() << "UDP socket not initialized. Cannot send binary message.";
+        return;
+    }
+
+    // Iterate through connected WebSocket clients (used for their peer info)
+    for (QWebSocket *client : m_clients)
+    {
+        // CRITICAL CHECK: Ensure valid client with proper connection state
+        if (client && (client->state() == QAbstractSocket::ConnectedState))
+        {
+            // Write the binary datagram to the destination (UDP)
+            qint64 bytesSent = udpSocket->writeDatagram(
+                byteMessage,
+                client->peerAddress(),
+                DESTINATION_PORT
+                );
+
+            // Logging and error handling
+            if (bytesSent == -1)
+            {
+                qWarning() << "Error sending binary datagram:"
+                           << udpSocket->errorString();
+            }
+            else
+            {
+                qDebug() << "Sent binary message (" << bytesSent << "bytes) to"
+                         << client->peerAddress().toString() << ":" << DESTINATION_PORT;
+            }
+        }
+        else
+        {
+            qWarning() << "Skipping client: WebSocket not connected or invalid";
+        }
+    }
+}
 
 bool NetworkTransport::isServer(){
     return Server;
@@ -60,6 +103,8 @@ bool NetworkTransport::isServer(){
 
 void NetworkTransport::start(bool server){
     if(m_server||m_webSocket)return;
+    // now we are in the correct thread
+    udpSocket = new QUdpSocket(this);
     if(server){
         m_server = new QWebSocketServer(QStringLiteral("My Server"), QWebSocketServer::NonSecureMode    );
 
@@ -100,7 +145,7 @@ void NetworkTransport::init(const QString& ip, int por){
     port = por;
 }
 
-void NetworkTransport::sendMessage(QString message){
+void NetworkTransport::sendMessage(const QString &message){
     if(m_webSocket){
         // CRITICAL: Check if the socket is in the ConnectedState
         if (m_webSocket->state() == QAbstractSocket::ConnectedState) {
@@ -140,6 +185,8 @@ void NetworkTransport::sendBinaryMessage(QByteArray byteMessage){
             // CRITICAL CHECK: Ensure the socket is connected before sending data
             if (client && (client->state() == QAbstractSocket::ConnectedState))
             {
+                qDebug() << "Sent message (" << byteMessage.size() << "bytes) to"
+                         << DESTINATION_ADDRESS.toString() << ":" << DESTINATION_PORT;
                 client->sendBinaryMessage(byteMessage);
             }
         }

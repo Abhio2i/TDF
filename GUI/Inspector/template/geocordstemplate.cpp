@@ -8,8 +8,8 @@
 
 // %%% Constructor %%%
 /* Initialize geocoordinates template widget */
-GeocordsTemplate::GeocordsTemplate(Inspector *inspector, QWidget *parent)  // CHANGED
-    : QWidget(parent), inspectorRef(inspector)  // CHANGED: Initialize inspectorRef
+GeocordsTemplate::GeocordsTemplate(Inspector *inspector, QWidget *parent)
+    : QWidget(parent), inspectorRef(inspector)
 {
     // No additional initialization needed
 }
@@ -104,7 +104,7 @@ void GeocordsTemplate::setupGeocordsCell(int row, const QString &fullKey, const 
         // Get mainID from inspector and add to delta
         if (inspectorRef) {
             // We need to access inspector's mainID - add getter in inspector.h
-            delta["_id"] = inspectorRef->getMainID();  // Add getMainID() to Inspector
+            delta["_id"] = inspectorRef->getMainID();
         }
 
         emit valueChanged(connectedID, name, delta);

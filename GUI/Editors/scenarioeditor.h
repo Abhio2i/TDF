@@ -52,6 +52,7 @@ public:
     void clearUnsavedChanges();
     // Tactical display widget
     TacticalDisplay *tacticalDisplay;
+      Hierarchy* hierarchy;
 
 
 public slots:
@@ -95,7 +96,7 @@ private:
     // Console for debugging
     Console *console;
     // Hierarchy data structure
-    Hierarchy* hierarchy;
+    // Hierarchy* hierarchy;
     // Store copied data
     QVariantMap copydata;
     // Store copied hierarchy

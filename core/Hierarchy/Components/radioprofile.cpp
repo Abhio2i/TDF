@@ -10,6 +10,13 @@ RadioProfile::RadioProfile(Hierarchy* h):Component(h) {
 void RadioProfile::addSubComponent(std::string name, QString data1, QString data2, QString data3){
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     Radio* radio = new Radio(parent);
+    if(!data2.isEmpty()){
+        std::string id = radio->ID;
+        QJsonObject obj = (*parent->Radios)[data2.toStdString()]->toJson();
+        radio->fromJson(obj);
+        radio->ID = id;
+        radio->parentID = parentID;
+    }
     radio->parentEntity = parentEntity;
     radio->Name = name;
     radios->insert({radio->ID,radio});
@@ -19,7 +26,15 @@ void RadioProfile::addSubComponent(std::string name, QString data1, QString data
 }
 
 void RadioProfile::removeSubComponent(std::string ID){
-
+    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    auto it = radios->find(ID);
+    if (it != radios->end() && it->second != nullptr) {
+        Radio *radio = it->second;
+        emit parent->subComponentRemoved(QString::fromStdString(this->ID),QString::fromStdString(ID),QString::fromStdString(radio->Name));
+        radios->erase(radio->ID);
+        parent->Radios->erase(radio->ID);
+        delete radio;
+    }
 }
 
 void RadioProfile::updateSubComponent(std::string ID, const QJsonObject& obj){

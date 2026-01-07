@@ -54,6 +54,7 @@ Hierarchy::~Hierarchy()
 ProfileCategaory* Hierarchy::addProfileCategaory(QString profileName)
 {
     ProfileCategaory* profile = new ProfileCategaory(this);
+    profile->setProfileType(Constants::EntityType::Platform);
     profile->Name = profileName.toStdString();
     ProfileCategories.insert({profile->ID, profile});
     emit profileAddedPointer(profile);
@@ -189,13 +190,20 @@ void Hierarchy::addComponent(QString ID, QString componentName)
 void Hierarchy::addSubComponent(QString ID, ComponentType type, QString subComponentName, QString data1 , QString data2, QString data3){
     // int i = Entities->count(ID.toStdString());
     if (Components->find(ID.toStdString()) != Components->end()) {
-        (*Components)[ID.toStdString()]->addSubComponent(subComponentName.toStdString(),data1);
+        (*Components)[ID.toStdString()]->addSubComponent(subComponentName.toStdString(),data1,data2);
         //emit componentAdded(ID, componentName);
         //getCurrentJsonData(); // Emit updated JSON
-        Console::log("Hierarchy::addComponent emitted getJsonData for " + ID.toStdString() + ", component: " + subComponentName.toStdString());
+        Console::log("Hierarchy::addSubComponent emitted getJsonData for " + ID.toStdString() + ", component: " + subComponentName.toStdString());
     }
 }
 
+void Hierarchy::removeSubComponent(QString ID, QString subComponentID, QString subComponentName){
+    // int i = Entities->count(ID.toStdString());
+    if (Components->find(ID.toStdString()) != Components->end()) {
+        (*Components)[ID.toStdString()]->removeSubComponent(subComponentID.toStdString());
+        Console::log("Hierarchy::RemoveSubComponent emitted getJsonData for " + ID.toStdString() + ", component: " + subComponentName.toStdString());
+    }
+}
 
 //------------------IFF------------------------
 

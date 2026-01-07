@@ -11,9 +11,9 @@
 /* Initialize vector template widget */
 VectorTemplate::VectorTemplate(QWidget *parent)
     : QWidget(parent)
-    , inspectorRef(nullptr)  // Initialize inspectorRef to nullptr
+    , inspectorRef(nullptr)
 {
-    // No additional initialization needed
+
 }
 
 // %%% Utility Function %%%
@@ -40,14 +40,12 @@ QString VectorTemplate::formatVectorNumber(double value)
 
     return result;
 }
-
-// %%% Setup Vector Cell %%%
-/* Setup vector input cell in table */
 void VectorTemplate::setupVectorCell(int row, const QString &fullKey, const QJsonObject &obj, QTableWidget *tableWidget)
 {
-    // Create main horizontal layout
-    QHBoxLayout *vectorLayout = new QHBoxLayout(this);
+
+    QVBoxLayout *vectorLayout = new QVBoxLayout(this);
     vectorLayout->setContentsMargins(0, 0, 0, 0);
+    vectorLayout->setSpacing(2);
 
     // Enable context menu
     setContextMenuPolicy(Qt::CustomContextMenu);
@@ -147,36 +145,37 @@ void VectorTemplate::setupVectorCell(int row, const QString &fullKey, const QJso
             emit valueChanged(connectedID, name, delta);
         }
     });
-
-    // Process each axis in JSON object
     QStringList keys = obj.keys();
-    for (const QString &axis : keys) {
-        if (axis.contains("type")) continue;
-
-        // Create axis label
-        QLabel *lbl = new QLabel(axis);
-        lbl->setStyleSheet("color: black; min-width: 20px;");
-
-        // Create input field with proper formatting
+    // Process axes in order: x, y, z
+    QStringList orderedKeys = {"x", "y", "z"};
+    for (const QString &axis : orderedKeys) {
+        if (!obj.contains(axis) || axis.contains("type")) continue;
+        // Create horizontal layout for each axis
+        QHBoxLayout *axisLayout = new QHBoxLayout();
+        axisLayout->setContentsMargins(0, 0, 0, 0);
+        axisLayout->setSpacing(5);
+        QLabel *lbl = new QLabel(axis + ":");
+        lbl->setStyleSheet("color: black;");
+        lbl->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         WheelableLineEdit *edit = new WheelableLineEdit();
         double axisValue = obj[axis].toDouble();
         edit->setText(formatVectorNumber(axisValue));
-
         QDoubleValidator *validator = new QDoubleValidator(edit);
         validator->setNotation(QDoubleValidator::StandardNotation);
         validator->setDecimals(6);
         edit->setValidator(validator);
         edit->setObjectName(axis);
         edit->setStyleSheet(
-            "QLineEdit { background: white; border: 1px solid #ccc; border-radius: 3px; min-width: 60px; max-width: 60px; color: black; }"
+            "QLineEdit { background: white; border: 1px solid #ccc; border-radius: 3px; color: black; text-align: left; }"
             "QLineEdit:focus { border: 1px solid #007bff; }"
             );
-
-        // Add widgets to layout
-        vectorLayout->addWidget(lbl);
-        vectorLayout->addWidget(edit);
-
-        // Connect input field changes
+        edit->setAlignment(Qt::AlignLeft);
+        edit->setMinimumWidth(100);
+        edit->setMaximumWidth(150);
+        axisLayout->addWidget(lbl);
+        axisLayout->addWidget(edit);
+        axisLayout->addStretch();
+        vectorLayout->addLayout(axisLayout);
         connect(edit, &QLineEdit::editingFinished, this, [=]() {
             QJsonObject vectorDelta;
             for (QObject *child : children()) {
@@ -190,11 +189,9 @@ void VectorTemplate::setupVectorCell(int row, const QString &fullKey, const QJso
             emit valueChanged(connectedID, name, delta);
         });
     }
-
-    // Add stretch to layout
-    vectorLayout->addStretch();
-
-    // Set row height and add widget to table
-    tableWidget->setRowHeight(row, ROW_HEIGHT);
+    vectorLayout->setAlignment(Qt::AlignLeft);
+    int axesCount = orderedKeys.size();
+    int rowHeight = 30 + (axesCount * 25);
+    tableWidget->setRowHeight(row, rowHeight);
     tableWidget->setCellWidget(row, 1, this);
 }

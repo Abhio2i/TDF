@@ -60,8 +60,8 @@ void Trajectory::fromJson(const QJsonObject& obj) {
     //qDebug() << "Trajectory::fromJson input:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
 
     // Standard fields
-    if (obj.contains("id"))
-        ID = obj["id"].toString().toStdString();
+    // if (obj.contains("id"))
+    //     ID = obj["id"].toString().toStdString();
     if (obj.contains("active"))
         Active = obj["active"].toBool();
     // if (obj.contains("array") && obj["array"].isArray()) {

@@ -33,6 +33,8 @@ public:
     enum class Type { Active, Passive };
     enum class Mode { Search, Track, TrackWhileScan, FireControl };
     enum class SubType { Generic, CSM, ESM };
+    enum class DetectionCapabilities { All, MovingOnly };
+    Q_ENUM(DetectionCapabilities);
     struct Detection {
         struct GeoCoords {
             double latitude;
@@ -55,10 +57,11 @@ public:
         std::string destination;
         std::string content;
     };
-    Type type = Type::Active;
+    Type sensortype = Type::Active;
     Mode mode = Mode::Search;
     // --- Add below Mode enum ---
     SubType subType = SubType::Generic;
+    DetectionCapabilities capabilities = DetectionCapabilities::All;
     Entity* parentEntity = nullptr;
     float frequency = 8;//ghz
     float azimuth = 60;//deg
@@ -72,7 +75,6 @@ public:
     float scanningRate = 0.0f; // degrees/sec
     float beamWidth = 0.0f; // degrees
     float antennaGain = 0.0f; // dBi
-    float detectionCapabilities = 0.0f; // Quality Score or Signal Processing Strength
     float maxDetectionAngle = 60.0f; // degrees
     float range = 100.0f; // km or meters
     // float ewrange = 100.0f; // km or meters
@@ -117,6 +119,8 @@ public:
         if (str == "ESM") return SubType::ESM;
         return SubType::Generic;
     }
+    QString detectionCapabilitiesToString(DetectionCapabilities t) const;
+    Sensor::DetectionCapabilities stringTodetectionCapabilities(const QString& str) const;
     QString subTypeToString(SubType t) const;
     SubType stringToSubType(const QString& str) const;
 signals:
@@ -127,3 +131,4 @@ private:
 };
 
 #endif // SENSOR_H
+QStringList DetectionCapabilitiesTypeOptions();

@@ -14,6 +14,13 @@ void SensorProfile::addSubComponent(std::string name, QString data1, QString dat
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if(data1 == "Generic"){
         Radar* radar = new Radar(parent);
+        if(!data2.isEmpty()){
+            std::string id = radar->ID;
+            QJsonObject obj = (*parent->Sensors)[data2.toStdString()]->toJson();
+            radar->fromJson(obj);
+            radar->ID = id;
+            radar->parentID = parentID;
+        }
         radar->parentEntity = parentEntity;
         radar->Name = name;
         sensors->insert({radar->ID,radar});
@@ -22,6 +29,13 @@ void SensorProfile::addSubComponent(std::string name, QString data1, QString dat
     }else
     if(data1 == "CSM"){
         CSM* csm = new CSM(parent);
+        if(!data2.isEmpty()){
+            std::string id = csm->ID;
+            QJsonObject obj = (*parent->Sensors)[data2.toStdString()]->toJson();
+            csm->fromJson(obj);
+            csm->ID = id;
+            csm->parentID = parentID;
+        }
         csm->parentEntity = parentEntity;
         csm->Name = name;
         sensors->insert({csm->ID,csm});
@@ -30,6 +44,13 @@ void SensorProfile::addSubComponent(std::string name, QString data1, QString dat
     }else
     if(data1 == "ESM"){
         ESM* esm = new ESM(parent);
+        if(!data2.isEmpty()){
+            std::string id = esm->ID;
+            QJsonObject obj = (*parent->Sensors)[data2.toStdString()]->toJson();
+            esm->fromJson(obj);
+            esm->ID = id;
+            esm->parentID = parentID;
+        }
         esm->parentEntity = parentEntity;
         esm->Name = name;
         sensors->insert({esm->ID,esm});
@@ -40,7 +61,15 @@ void SensorProfile::addSubComponent(std::string name, QString data1, QString dat
 }
 
 void SensorProfile::removeSubComponent(std::string ID){
-
+    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    auto it = sensors->find(ID);
+    if (it != sensors->end() && it->second != nullptr) {
+        Sensor *sensor = it->second;
+        emit parent->subComponentRemoved(QString::fromStdString(this->ID),QString::fromStdString(ID),QString::fromStdString(sensor->Name));
+        sensors->erase(sensor->ID);
+        parent->Sensors->erase(sensor->ID);
+        delete sensor;
+    }
 }
 
 void SensorProfile::updateSubComponent(std::string ID, const QJsonObject& obj){

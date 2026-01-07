@@ -75,8 +75,8 @@ void MeshRenderer2D::fromJson(const QJsonObject& obj) {
     // Standard fields
     if (obj.contains("active"))
         Active = obj["active"].toBool();
-    if (obj.contains("id"))
-        ID = obj["id"].toString().toStdString();
+    // if (obj.contains("id"))
+    //     ID = obj["id"].toString().toStdString();
     if (obj.contains("sprite")) {
         Sprite->clear();
         QJsonObject spriteObj = obj["sprite"].toObject();
@@ -107,6 +107,7 @@ void MeshRenderer2D::fromJson(const QJsonObject& obj) {
             customParameters[it.key()] = it.value();
         }
     }
+
 
     //qDebug() << "MeshRenderer2D::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);
 }

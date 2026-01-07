@@ -10,6 +10,7 @@
 #include "core/Hierarchy/EntityProfiles/sensor.h"
 #include "core/Hierarchy/EntityProfiles/radio.h"
 #include "core/Hierarchy/EntityProfiles/iff.h"
+#include "core/Hierarchy/Utils/entityutils.h"
 #include "qtimer.h"
 
 EntityInfoDialog::EntityInfoDialog(QWidget *parent)
@@ -18,7 +19,7 @@ EntityInfoDialog::EntityInfoDialog(QWidget *parent)
     setupUI();
 
 
-    // EntityInfoDialog constructor में connection अपडेट करें:
+
     connect(followTrajectoryCheckBox, &QCheckBox::clicked, this, [=](bool checked) {
         if(!currentEntityId.isEmpty() && entryInfo) {
             if (entryInfo->dynamicModel) {
@@ -26,7 +27,7 @@ EntityInfoDialog::EntityInfoDialog(QWidget *parent)
 
                 if (!checked) {
 
-                    entryInfo->dynamicModel->speeed = 0;
+                    // entryInfo->dynamicModel->speeed = 0;
                     entryInfo->dynamicModel->currentSpeed = 0;
 
                 }
@@ -84,7 +85,7 @@ void EntityInfoDialog::setupUI()
 
     scrollArea->setWidget(scrollWidget);
 
-    // Close button - aapka existing waise hi
+
     closeButton = new QPushButton("Close");
     closeButton->setStyleSheet(
         "QPushButton { "
@@ -233,7 +234,7 @@ void EntityInfoDialog::createTrackSection()
 {
     // Horizontal layout for one line
     QHBoxLayout *trackLayout = new QHBoxLayout();
-    trackLayout->setSpacing(0); // No space between checkboxes
+    trackLayout->setSpacing(0);
 
     trackCheckBox = new QCheckBox("Track");
     centreCheckBox = new QCheckBox("Center");
@@ -406,60 +407,376 @@ void EntityInfoDialog::setEntityInfo(const QString& entityId,  MeshEntry* info)
     }
 }
 
-void EntityInfoDialog::updateEntityInfo(){
-    if(currentEntityId.isEmpty())return;
-    if(entryInfo){
-        if(entryInfo->entity){
-            // Convert entity type to string
-            QString typeStr = "Unknown";
-            switch(entryInfo->entity->type) {
-            case Constants::EntityType::Platform: typeStr = "Platform"; break;
-            case Constants::EntityType::Sensor: typeStr = "Sensor"; break;
-            case Constants::EntityType::Weapon: typeStr = "Weapon"; break;
-            // Add other entity types as needed
-            default: typeStr = "Unknown"; break;
+// void EntityInfoDialog::updateEntityInfo(){
+//     if(currentEntityId.isEmpty()) return;
+//     if(entryInfo){
+//         if(entryInfo->entity){
+//             // Convert entity type to string
+//             QString typeStr = "Unknown";
+//             switch(entryInfo->entity->type) {
+//             case Constants::EntityType::Platform: typeStr = "Platform"; break;
+//             case Constants::EntityType::Sensor: typeStr = "Sensor"; break;
+//             case Constants::EntityType::Weapon: typeStr = "Weapon"; break;
+//             default: typeStr = "Unknown"; break;
+//             }
+
+//             // Update attribute table
+//             if (attributeTable) {
+//                 attributeTable->item(0, 1)->setText(typeStr);
+//                 attributeTable->item(1, 1)->setText(entryInfo->name);
+//                 attributeTable->item(2, 1)->setText("-");
+//                 attributeTable->item(3, 1)->setText("0 %");
+//                 attributeTable->item(4, 1)->setText("Not Embarked");
+//             }
+
+//             // Get current values
+//             float lat = entryInfo->coreTransform->getLatitude();
+//             float lon = entryInfo->coreTransform->getLongitude();
+//             float x = entryInfo->transform->translation().x();
+//             float z = entryInfo->transform->translation().z();
+
+//             // IMPORTANT: Get altitude from TRAJECTORY, not transform
+//             float y = 0.0f; // Default altitude
+
+//             // Debug: Check what's in trajectory
+//             if (entryInfo->trajectory) {
+
+
+//                 // Check if we have waypoints
+//                 if (!entryInfo->trajectory->Trajectories.empty()) {
+//                     // If current index is valid, use that waypoint's altitude
+//                     if (entryInfo->trajectory->current >= 0 &&
+//                         entryInfo->trajectory->current < entryInfo->trajectory->Trajectories.size()) {
+
+//                         Waypoints* wp = entryInfo->trajectory->Trajectories[entryInfo->trajectory->current];
+//                         if (wp && wp->position) {
+//                             y = wp->position->y; // This is the altitude from trajectory
+
+//                         }
+//                     }
+//                     // Otherwise use first waypoint's altitude
+//                     else {
+//                         Waypoints* wp = entryInfo->trajectory->Trajectories[0];
+//                         if (wp && wp->position) {
+//                             y = wp->position->y;
+
+//                         }
+//                     }
+
+//                     // Debug all waypoints
+//                     for (int i = 0; i < entryInfo->trajectory->Trajectories.size(); i++) {
+//                         Waypoints* wp = entryInfo->trajectory->Trajectories[i];
+//                         if (wp && wp->position) {
+
+//                         }
+//                     }
+//                 }
+
+//             }
+//             else {
+
+//             }
+
+//             // Update position display
+//             QString currentPos = QString("Lat: %1, Long: %2, X: %3, Z: %4")
+//                                      .arg(lat, 0, 'f', 6)
+//                                      .arg(lon, 0, 'f', 6)
+//                                      .arg(x, 0, 'f', 2)
+//                                      .arg(z, 0, 'f', 2);
+
+//             positionLabel->setText("Position: " + currentPos);
+
+//             if (speedAltTable) {
+//                 // Speed update
+//                 if (entryInfo->dynamicModel) {
+//                     QString RequstSpeed = QString("%1 km/h").arg((entryInfo->dynamicModel->moveSpeed), 0, 'f', 2);
+//                     QString currentSpeed = QString("%1 km/h").arg((entryInfo->dynamicModel->currentSpeed), 0, 'f', 2);
+//                     speedAltTable->item(0, 1)->setText(currentSpeed);
+//                     speedAltTable->item(0, 2)->setText(RequstSpeed);
+//                 } else {
+//                     speedAltTable->item(0, 1)->setText("-");
+//                     speedAltTable->item(0, 2)->setText("-");
+//                 }
+
+//                 // Altitude - FROM TRAJECTORY
+//                 QString Altitude = QString("%1 ft").arg(entryInfo->dynamicModel->Altitude, 0, 'f', 2);
+//                 QString currentAltitude = QString("%1 ft").arg((entryInfo->dynamicModel->currentAltitude * 3280.84f), 0, 'f', 2);
+//                 speedAltTable->item(1, 1)->setText(currentAltitude);
+//                 speedAltTable->item(1, 2)->setText(Altitude);
+
+
+//             }
+//         }
+//     }
+// }
+
+// void EntityInfoDialog::updateEntityInfo(){
+// void EntityInfoDialog::updateEntityInfo() {
+//     qDebug() << "=== DEBUG UPDATE ENTITY INFO ===";
+//     qDebug() << "Entity ID:" << currentEntityId;
+//     qDebug() << "entryInfo:" << (entryInfo ? "NOT NULL" : "NULL");
+
+//     if(entryInfo) {
+//         qDebug() << "dynamicModel:" << (entryInfo->dynamicModel ? "NOT NULL" : "NULL");
+//         if(entryInfo->dynamicModel) {
+//             qDebug() << "  moveSpeed:" << entryInfo->dynamicModel->moveSpeed;
+//             qDebug() << "  Altitude:" << entryInfo->dynamicModel->Altitude;
+//         }
+//         qDebug() << "platform:" << (entryInfo->platform ? "NOT NULL" : "NULL");
+//         if(entryInfo->platform && entryInfo->platform->dynamicModel) {
+//             qDebug() << "  Platform moveSpeed:" << entryInfo->platform->dynamicModel->moveSpeed;
+//             qDebug() << "  Platform Altitude:" << entryInfo->platform->dynamicModel->Altitude;
+//         }
+//     }
+//     if(currentEntityId.isEmpty()) return;
+//     if(entryInfo){
+//         if(entryInfo->entity){
+//             // Convert entity type to string
+//             QString typeStr = "Unknown";
+//             switch(entryInfo->entity->type) {
+//             case Constants::EntityType::Platform: typeStr = "Platform"; break;
+//             case Constants::EntityType::Sensor: typeStr = "Sensor"; break;
+//             case Constants::EntityType::Weapon: typeStr = "Weapon"; break;
+//             default: typeStr = "Unknown"; break;
+//             }
+
+//             // Update attribute table
+//             if (attributeTable) {
+//                 attributeTable->item(0, 1)->setText(typeStr);
+//                 attributeTable->item(1, 1)->setText(entryInfo->name);
+//                 attributeTable->item(2, 1)->setText("-");
+//                 attributeTable->item(3, 1)->setText("0 %");
+//                 attributeTable->item(4, 1)->setText("Not Embarked");
+//             }
+
+//             // Get current values
+//             float lat = entryInfo->coreTransform->getLatitude();
+//             float lon = entryInfo->coreTransform->getLongitude();
+//             float x = entryInfo->transform->translation().x();
+//             float z = entryInfo->transform->translation().z();
+
+//             // Get altitude from trajectory
+//             float y = 0.0f; // Default altitude
+
+//             if (entryInfo->trajectory) {
+//                 // Check if we have waypoints
+//                 if (!entryInfo->trajectory->Trajectories.empty()) {
+//                     // If current index is valid, use that waypoint's altitude
+//                     if (entryInfo->trajectory->current >= 0 &&
+//                         entryInfo->trajectory->current < entryInfo->trajectory->Trajectories.size()) {
+
+//                         Waypoints* wp = entryInfo->trajectory->Trajectories[entryInfo->trajectory->current];
+//                         if (wp && wp->position) {
+//                             y = wp->position->y; // This is the altitude from trajectory
+//                         }
+//                     }
+//                     // Otherwise use first waypoint's altitude
+//                     else {
+//                         Waypoints* wp = entryInfo->trajectory->Trajectories[0];
+//                         if (wp && wp->position) {
+//                             y = wp->position->y;
+//                         }
+//                     }
+//                 }
+//             }
+
+//             // Update position display
+//             QString currentPos = QString("Lat: %1, Long: %2, X: %3, Z: %4")
+//                                      .arg(lat, 0, 'f', 6)
+//                                      .arg(lon, 0, 'f', 6)
+//                                      .arg(x, 0, 'f', 2)
+//                                      .arg(z, 0, 'f', 2);
+
+//             positionLabel->setText("Position: " + currentPos);
+
+//             if (speedAltTable) {
+//                 // Speed update - WITH NULL CHECK
+//                 if (entryInfo->dynamicModel) {
+//                     QString RequstSpeed = QString("%1 km/h").arg((entryInfo->dynamicModel->moveSpeed), 0, 'f', 2);
+//                     QString currentSpeed = QString("%1 km/h").arg((entryInfo->dynamicModel->currentSpeed), 0, 'f', 2);
+//                     speedAltTable->item(0, 1)->setText(currentSpeed);
+//                     speedAltTable->item(0, 2)->setText(RequstSpeed);
+//                 } else {
+//                     speedAltTable->item(0, 1)->setText("-");
+//                     speedAltTable->item(0, 2)->setText("-");
+//                 }
+
+//                 // Altitude - WITH NULL CHECK
+//                 if (entryInfo->dynamicModel) {
+//                     QString Altitude = QString("%1 ft").arg(entryInfo->dynamicModel->Altitude, 0, 'f', 2);
+//                     QString currentAltitude = QString("%1 ft").arg((entryInfo->dynamicModel->currentAltitude * 3280.84f), 0, 'f', 2);
+//                     speedAltTable->item(1, 1)->setText(currentAltitude);
+//                     speedAltTable->item(1, 2)->setText(Altitude);
+//                 } else {
+//                     speedAltTable->item(1, 1)->setText("-");
+//                     speedAltTable->item(1, 2)->setText("-");
+//                 }
+//             }
+
+//             // Update follow trajectory checkbox - WITH NULL CHECK
+//             if (followTrajectoryCheckBox) {
+//                 if (entryInfo->trajectory) {
+//                     followTrajectoryCheckBox->setChecked(entryInfo->trajectory->FollowPath);
+//                 } else {
+//                     followTrajectoryCheckBox->setChecked(false);
+//                 }
+//             }
+
+//             // Update show detection checkbox - WITH NULL CHECK
+//             if (showDetectionCheckBox) {
+//                 if (entryInfo->entity) {
+//                     entryInfo->detection = showDetectionCheckBox->isChecked();
+//                 }
+//             }
+//         }
+//     }
+// }
+
+void EntityInfoDialog::updateEntityInfo() {
+    if(currentEntityId.isEmpty()) {
+        // qDebug() << "updateEntityInfo: No entity selected";
+        return;
+    }
+
+    if(!entryInfo) {
+        qDebug() << "updateEntityInfo: entryInfo is null for entity" << currentEntityId;
+        clearInfo();
+        return;
+    }
+
+    qDebug() << "=== DEBUG UPDATE ENTITY INFO ===";
+    qDebug() << "Entity ID:" << currentEntityId;
+    qDebug() << "entryInfo:" << (entryInfo ? "NOT NULL" : "NULL");
+
+    // Get dynamicModel pointer - pehle entry se, phir platform se
+    DynamicModel* dynModel = nullptr;
+
+    if(entryInfo->dynamicModel) {
+        dynModel = entryInfo->dynamicModel;
+        qDebug() << "Using dynamicModel from entryInfo";
+    } else if(entryInfo->platform && entryInfo->platform->dynamicModel) {
+        dynModel = entryInfo->platform->dynamicModel;
+        qDebug() << "Using dynamicModel from platform";
+    } else {
+        qDebug() << "No dynamicModel found anywhere";
+    }
+
+    // Debug platform data
+    if(entryInfo->platform) {
+        qDebug() << "platform:" << "NOT NULL";
+        qDebug() << "Platform dynamicModel:" << (entryInfo->platform->dynamicModel ? "NOT NULL" : "NULL");
+        if(entryInfo->platform->dynamicModel) {
+            qDebug() << "  Platform moveSpeed:" << entryInfo->platform->dynamicModel->moveSpeed;
+            qDebug() << "  Platform Altitude:" << entryInfo->platform->dynamicModel->Altitude;
+        }
+    }
+
+    // Convert entity type to string
+    QString typeStr = "Unknown";
+    if(entryInfo->entity) {
+        switch(entryInfo->entity->type) {
+        case Constants::EntityType::Platform: typeStr = "Platform"; break;
+        case Constants::EntityType::Sensor: typeStr = "Sensor"; break;
+        case Constants::EntityType::Weapon: typeStr = "Weapon"; break;
+        default: typeStr = "Unknown"; break;
+        }
+    }
+
+    // Update attribute table
+    if (attributeTable) {
+        attributeTable->item(0, 1)->setText(typeStr);
+        attributeTable->item(1, 1)->setText(entryInfo->name);
+        attributeTable->item(2, 1)->setText("-");
+        attributeTable->item(3, 1)->setText("0 %");
+        attributeTable->item(4, 1)->setText("Not Embarked");
+    }
+
+    // Get current values with null checks
+    float lat = 0.0f, lon = 0.0f, x = 0.0f, z = 0.0f;
+
+    if(entryInfo->coreTransform) {
+        lat = entryInfo->coreTransform->getLatitude();
+        lon = entryInfo->coreTransform->getLongitude();
+    }
+
+    if(entryInfo->transform) {
+        x = entryInfo->transform->translation().x();
+        z = entryInfo->transform->translation().z();
+    }
+
+    // Get altitude from trajectory
+    float y = 0.0f; // Default altitude
+
+    if (entryInfo->trajectory && !entryInfo->trajectory->Trajectories.empty()) {
+        // If current index is valid, use that waypoint's altitude
+        if (entryInfo->trajectory->current >= 0 &&
+            entryInfo->trajectory->current < entryInfo->trajectory->Trajectories.size()) {
+
+            Waypoints* wp = entryInfo->trajectory->Trajectories[entryInfo->trajectory->current];
+            if (wp && wp->position) {
+                y = wp->position->y;
             }
-
-            // Update attribute table - NEW FIELDS
-            if (attributeTable) {
-                attributeTable->item(0, 1)->setText(typeStr); // Type
-                attributeTable->item(1, 1)->setText(entryInfo->name); // Name
-                attributeTable->item(2, 1)->setText("-"); // DIS name - empty for now
-                attributeTable->item(3, 1)->setText("0 %"); // Damages
-                attributeTable->item(4, 1)->setText("Not Embarked"); // Carrier
+        }
+        // Otherwise use first waypoint's altitude
+        else {
+            Waypoints* wp = entryInfo->trajectory->Trajectories[0];
+            if (wp && wp->position) {
+                y = wp->position->y;
             }
+        }
+    }
 
+    // Update position display
+    QString currentPos = QString("Lat: %1, Long: %2, X: %3, Z: %4")
+                             .arg(lat, 0, 'f', 6)
+                             .arg(lon, 0, 'f', 6)
+                             .arg(x, 0, 'f', 2)
+                             .arg(z, 0, 'f', 2);
 
-            // Update position section - show only current position
-            QString currentPos = QString("Lat: %1, Long: %2")
-                                     .arg(entryInfo->transform->translation().x())
-                                     .arg(entryInfo->transform->translation().z());
+    positionLabel->setText("Position: " + currentPos);
 
-            positionLabel->setText("Position: " + currentPos);
+    if (speedAltTable) {
+        // Speed update - Check dynModel (which could be from entryInfo OR platform)
+        if (dynModel) {
+            QString requestSpeed = QString("%1 km/h").arg(dynModel->moveSpeed, 0, 'f', 2);
+            QString currentSpeed = QString("%1 km/h").arg(dynModel->currentSpeed, 0, 'f', 2);
+            speedAltTable->item(0, 1)->setText(currentSpeed);
+            speedAltTable->item(0, 2)->setText(requestSpeed);
+        } else {
+            // Display default values if no dynamicModel found
+            speedAltTable->item(0, 1)->setText("0.0 km/h");
+            speedAltTable->item(0, 2)->setText("0.0 km/h");
+        }
 
+        // Altitude - Same logic
+        if (dynModel) {
+            QString requestAltitude = QString("%1 ft").arg(dynModel->Altitude, 0, 'f', 2);
+            QString currentAltitude = QString("%1 ft").arg((dynModel->currentAltitude * KMtoFT), 0, 'f', 2);
+            speedAltTable->item(1, 1)->setText(currentAltitude);
+            speedAltTable->item(1, 2)->setText(requestAltitude);
+        } else {
+            // Display default values
+            speedAltTable->item(1, 1)->setText("0.0 ft");
+            speedAltTable->item(1, 2)->setText("0.0 ft");
+        }
+    }
 
-            if (speedAltTable) {
-                if (entryInfo->dynamicModel) {
-                    // Current speed
-                    QString currentSpeed = QString("%1 km/h").arg(entryInfo->dynamicModel->moveSpeed);
-                    speedAltTable->item(0, 1)->setText(currentSpeed);
+    // Update follow trajectory checkbox
+    if (followTrajectoryCheckBox) {
+        if (entryInfo->trajectory) {
+            followTrajectoryCheckBox->setChecked(entryInfo->trajectory->FollowPath);
+        } else {
+            followTrajectoryCheckBox->setChecked(false);
+        }
+    }
 
-                    // Requested speed (same as current for now, or you can add requested speed logic)
-                    speedAltTable->item(0, 2)->setText(currentSpeed);
-                } else {
-                    speedAltTable->item(0, 1)->setText("-");
-                    speedAltTable->item(0, 2)->setText("-");
-                }
-
-                QString currentLongitude = QString("%1").arg(entryInfo->transform->translation().z());
-                speedAltTable->item(1, 1)->setText(currentLongitude);
-                speedAltTable->item(1, 2)->setText(currentLongitude); // Same as current for now
-            }
-
+    // Update show detection checkbox
+    if (showDetectionCheckBox) {
+        if (entryInfo->entity) {
+            entryInfo->detection = showDetectionCheckBox->isChecked();
         }
     }
 }
-
 void EntityInfoDialog::clearInfo()
 {
     titleLabel->setText("Entity Information");
@@ -514,12 +831,14 @@ void EntityInfoDialog::onWeaponsClicked()
                                  .arg(currentEntityData.value("weapons", "No weapons data").toString()));
 }
 
-
 void EntityInfoDialog::onSensorsClicked()
 {
     if(!currentEntityId.isEmpty()){
         if(entryInfo){
-            if(entryInfo->entity){
+            // Platform check करें (Radios और IFF की तरह)
+            if(entryInfo->platform){
+                qDebug() << "Opening sensors dialog for platform:" << currentEntityId;
+
                 // Create a simple clean dialog for sensors
                 QDialog *sensorsDialog = new QDialog(this);
                 sensorsDialog->setWindowTitle("Sensors - " + currentEntityId);
@@ -529,7 +848,7 @@ void EntityInfoDialog::onSensorsClicked()
                 // Simple window flags
                 sensorsDialog->setWindowFlags(Qt::Dialog);
 
-                // Minimal styling - clean and professional
+                // Minimal styling
                 sensorsDialog->setStyleSheet(
                     "QDialog { background-color: white; border: 1px solid #ccc; }"
                     "QLabel { color: #333; font-weight: normal; }"
@@ -564,22 +883,22 @@ void EntityInfoDialog::onSensorsClicked()
                 sensorsTable->setShowGrid(true);
                 sensorsTable->setAlternatingRowColors(false);
 
-                // Real-time update timer
+                // Real-time update timer - Platform pass करें
                 QTimer *sensorsUpdateTimer = new QTimer(sensorsDialog);
                 QObject::connect(sensorsUpdateTimer, &QTimer::timeout, sensorsDialog, [=]() {
-                    updateSensorsTable(sensorsTable, entryInfo->entity);
+                    updateSensorsTable(sensorsTable, entryInfo->platform);
                 });
                 sensorsUpdateTimer->start(100);
 
                 // Initial population
-                updateSensorsTable(sensorsTable, entryInfo->entity);
+                updateSensorsTable(sensorsTable, entryInfo->platform);
 
                 // Simple column sizing
                 sensorsTable->horizontalHeader()->setStretchLastSection(false);
-                sensorsTable->setColumnWidth(0, 120); // Name
-                sensorsTable->setColumnWidth(1, 80);  // Type
-                sensorsTable->setColumnWidth(2, 80);  // Range
-                sensorsTable->setColumnWidth(3, 60);  // FOV
+                sensorsTable->setColumnWidth(0, 120);
+                sensorsTable->setColumnWidth(1, 80);
+                sensorsTable->setColumnWidth(2, 80);
+                sensorsTable->setColumnWidth(3, 60);
 
                 layout->addWidget(sensorsTable);
 
@@ -588,16 +907,13 @@ void EntityInfoDialog::onSensorsClicked()
                 summaryLabel->setStyleSheet("QLabel { color: #666; font-size: 11px; }");
                 layout->addWidget(summaryLabel);
 
-                // Update summary
+
                 QObject::connect(sensorsUpdateTimer, &QTimer::timeout, sensorsDialog, [=]() {
                     int total = 0;
-                    if(entryInfo && entryInfo->entity) {
-                        for (Sensor* s : entryInfo->entity->sensorList) {
-                            if(s->subType == Sensor::SubType::Generic ||
-                                s->subType == Sensor::SubType::CSM ||
-                                s->subType == Sensor::SubType::ESM) {
-                                total++;
-                            }
+                    if(entryInfo && entryInfo->platform) {
+                        Platform* platform = dynamic_cast<Platform*>(entryInfo->platform);
+                        if(platform && platform->sensors && platform->sensors->sensors) {
+                            total = platform->sensors->sensors->size();
                         }
                     }
                     summaryLabel->setText(QString("Total: %1 sensors").arg(total));
@@ -618,6 +934,9 @@ void EntityInfoDialog::onSensorsClicked()
                 sensorsDialog->show();
                 sensorsDialog->setAttribute(Qt::WA_DeleteOnClose);
 
+            } else {
+                QMessageBox::information(this, "Sensors", "No platform data available.");
+                qDebug() << "No platform found for entity:" << currentEntityId;
             }
         }
     } else {
@@ -625,57 +944,121 @@ void EntityInfoDialog::onSensorsClicked()
     }
 }
 
-void EntityInfoDialog::updateSensorsTable(QTableWidget* sensorsTable, Entity* entity)
+void EntityInfoDialog::updateSensorsTable(QTableWidget* sensorsTable, Entity* platform)
 {
-    if(!sensorsTable || !entity) return;
+    if(!sensorsTable || !platform) {
+        qDebug() << "updateSensorsTable: Invalid input parameters!";
+        return;
+    }
 
     sensorsTable->setRowCount(0);
     int row = 0;
 
-    for (Sensor* s : entity->sensorList) {
-        if(s->subType == Sensor::SubType::Generic ||
-            s->subType == Sensor::SubType::CSM ||
-            s->subType == Sensor::SubType::ESM) {
 
+    Platform* platformPtr = dynamic_cast<Platform*>(platform);
+    if(!platformPtr) {
+        qDebug() << "updateSensorsTable: Failed to cast to Platform!";
+        return;
+    }
+
+
+    if(platformPtr->sensors && platformPtr->sensors->sensors) {
+        // Debug log
+        qDebug() << "Sensors map size:" << platformPtr->sensors->sensors->size();
+
+
+        for (const auto& pair : *platformPtr->sensors->sensors) {
+            Sensor* sensor = pair.second;
+
+            if(!sensor) {
+                qDebug() << "Found null sensor in map!";
+                continue;
+            }
+
+            qDebug() << "Processing sensor:" << QString::fromStdString(sensor->Name)
+                     << "Type:" << sensor->subTypeToString(sensor->subType);
+
+            // Insert new row
             sensorsTable->insertRow(row);
 
-            // Name
-            QString sensorName = QString::fromStdString(s->Name);
+            // 1. Name
+            QString sensorName = QString::fromStdString(sensor->Name);
             sensorsTable->setItem(row, 0, new QTableWidgetItem(sensorName));
 
-            // Type
-            QString typeStr;
-            if(s->subType == Sensor::SubType::Generic) typeStr = "Radar";
-            else if(s->subType == Sensor::SubType::CSM) typeStr = "CSM";
-            else if(s->subType == Sensor::SubType::ESM) typeStr = "ESM";
+            // 2. Type
+            QString typeStr = "Unknown";
+            switch(sensor->subType) {
+            case Sensor::SubType::Generic:
+                typeStr = "Radar";
+                break;
+            case Sensor::SubType::CSM:
+                typeStr = "CSM";
+                break;
+            case Sensor::SubType::ESM:
+                typeStr = "ESM";
+                break;
+            default:
+                typeStr = "Other";
+                break;
+            }
             sensorsTable->setItem(row, 1, new QTableWidgetItem(typeStr));
 
-            // Range
-            QString rangeStr;
-            if(s->subType == Sensor::SubType::Generic) rangeStr = QString("%1").arg(s->range, 0, 'f', 1);
-            else if(s->subType == Sensor::SubType::CSM) rangeStr = QString("%1").arg(s->csmrange, 0, 'f', 1);
-            else if(s->subType == Sensor::SubType::ESM) rangeStr = QString("%1").arg(s->esrange, 0, 'f', 1);
+            // 3. Range
+            QString rangeStr = "-";
+            switch(sensor->subType) {
+            case Sensor::SubType::Generic:
+                if(sensor->range > 0) {
+                    rangeStr = QString("%1 km").arg(sensor->range, 0, 'f', 1);
+                }
+                break;
+            case Sensor::SubType::CSM:
+                if(sensor->range > 0) {
+                    rangeStr = QString("%1 km").arg(sensor->range, 0, 'f', 1);
+                }
+                break;
+            case Sensor::SubType::ESM:
+                if(sensor->range > 0) {
+                    rangeStr = QString("%1 km").arg(sensor->range, 0, 'f', 1);
+                }
+                break;
+            default:
+                rangeStr = "-";
+                break;
+            }
             sensorsTable->setItem(row, 2, new QTableWidgetItem(rangeStr));
 
-            // FOV
-            QString fovStr;
-            if(s->subType == Sensor::SubType::Generic) fovStr = QString("%1°").arg(s->maxDetectionAngle, 0, 'f', 0);
-            else fovStr = "-";
+            // 4. FOV (Field of View)
+            QString fovStr = "-";
+            if(sensor->subType == Sensor::SubType::Generic) {
+                if(sensor->maxDetectionAngle > 0) {
+                    fovStr = QString("%1°").arg(sensor->maxDetectionAngle, 0, 'f', 0);
+                }
+            }
             sensorsTable->setItem(row, 3, new QTableWidgetItem(fovStr));
 
             row++;
         }
+    } else {
+        qDebug() << "No sensors profile found or sensors map is null!";
+        qDebug() << "Platform sensors pointer:" << platformPtr->sensors;
+        if(platformPtr->sensors) {
+            qDebug() << "Sensors map pointer:" << platformPtr->sensors->sensors;
+        }
     }
+
 
     if (row == 0) {
         sensorsTable->setRowCount(1);
-        sensorsTable->setItem(0, 0, new QTableWidgetItem("No sensors"));
+        sensorsTable->setItem(0, 0, new QTableWidgetItem("No sensors available"));
         sensorsTable->setItem(0, 1, new QTableWidgetItem(""));
         sensorsTable->setItem(0, 2, new QTableWidgetItem(""));
         sensorsTable->setItem(0, 3, new QTableWidgetItem(""));
+
+        qDebug() << "No sensors found in platform!";
+    } else {
+        qDebug() << "Successfully displayed" << row << "sensors";
     }
 }
-
 void EntityInfoDialog::onFormationClicked()
 {
     // Show formation details popup
@@ -731,12 +1114,13 @@ void EntityInfoDialog::onRadiosClicked()
                 // Real-time update timer - ALL CODE INSIDE LAMBDA
                 QTimer *radiosUpdateTimer = new QTimer(radiosDialog);
                 QObject::connect(radiosUpdateTimer, &QTimer::timeout, radiosDialog, [=]() {
-                    if(!radiosTable || !entryInfo->entity) return;
+                    if(!radiosTable || !entryInfo->platform) return;
 
                     radiosTable->setRowCount(0);
                     int row = 0;
 
-                    for (Radio* radio : entryInfo->entity->radioList) {
+                    for (auto pair: *entryInfo->platform->radios->radios) {
+                        Radio* radio = pair.second;
                         radiosTable->insertRow(row);
 
                         // NAME - First field
@@ -773,8 +1157,8 @@ void EntityInfoDialog::onRadiosClicked()
 
                 QObject::connect(radiosUpdateTimer, &QTimer::timeout, radiosDialog, [=]() {
                     int total = 0;
-                    if(entryInfo && entryInfo->entity) {
-                        total = entryInfo->entity->radioList.size();
+                    if(entryInfo && entryInfo->platform) {
+                        total = entryInfo->platform->radios->radios->size();
                     }
                     summaryLabel->setText(QString("Total: %1 radios").arg(total));
                 });
@@ -845,12 +1229,13 @@ void EntityInfoDialog::onIFFClicked()
                 // Real-time update timer
                 QTimer *iffUpdateTimer = new QTimer(iffDialog);
                 QObject::connect(iffUpdateTimer, &QTimer::timeout, iffDialog, [=]() {
-                    if(!iffTable || !entryInfo->entity) return;
+                    if(!iffTable || !entryInfo->platform) return;
 
                     iffTable->setRowCount(0);
                     int row = 0;
 
-                    for (IFF* iff : entryInfo->entity->iffList) {
+                    for (auto pair : *entryInfo->platform->iffs->iffs) {
+                        IFF* iff = pair.second;
                         iffTable->insertRow(row);
 
                         // NAME - First field
@@ -889,7 +1274,6 @@ void EntityInfoDialog::onIFFClicked()
                 iffTable->setColumnWidth(0, 120); // Name
                 iffTable->setColumnWidth(1, 80);  // Mode
                 iffTable->setColumnWidth(2, 80);  // Range
-
                 layout->addWidget(iffTable);
 
                 // Simple summary

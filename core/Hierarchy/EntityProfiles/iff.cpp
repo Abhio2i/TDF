@@ -7,17 +7,19 @@
 #include <QJsonArray>
 #include <core/Hierarchy/Components/transform.h>
 #include "core/Hierarchy/Utils/entityutils.h"
+#include "core/Hierarchy/EntityProfiles/iff.h"
 #include <unordered_set>
 #include <QVector3D>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-// C# Mathf.Rad2Deg के बराबर
+
 const float RAD2DEG = 180.0f / M_PI;
 // std::unordered_set<std::string> IFF::iffSeen;
 
 IFF::IFF(Hierarchy* h) : Entity(h) {
+    type = Constants::EntityType::IFF;
     std::shared_ptr<Parameter> par = std::make_shared<Parameter>();
     par->Name = "iff_param";
     par->type = Constants::ParameterType::FLOAT;
@@ -169,6 +171,7 @@ QJsonObject IFF::toJson() const {
     defaultObj["transponder"] = transponder;
     defaultObj["emittingRange"] = toParm(emittingRange,"km");
     defaultObj["emittingFrequency"] = toParm(emittingFrequency,"Mhz");
+    defaultObj["code"] = toParm(code,"code");
     obj["default"] = defaultObj;
 
     // obj["disType"] = QString::fromStdString(disType);
@@ -238,6 +241,9 @@ void IFF::fromJson(const QJsonObject& obj) {
 
         if (defaultObj.contains("emittingFrequency"))
             emittingFrequency = valueFromParm(defaultObj["emittingFrequency"].toObject());
+
+        if (defaultObj.contains("code"))
+            code = valueFromParm(defaultObj["code"].toObject());
     }
 
     // if (obj.contains("transponder")) {
@@ -318,19 +324,21 @@ void IFF::scan(){
 
     Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
-    for (auto& [key, entity] : *root->Platforms)
+    for (auto& [key, entity] : *root->Iffs)
     {
-        // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
-        if(key == parentEntity->ID) continue;
-        Platform* platform = entity;
-        if (platform) {
-            QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
+        auto it = root->Platforms->find(entity->parentEntity->ID);
+        if (it != root->Platforms->end()) {
+            Platform* platform = it->second;
+            // Aapka aage ka logic yahan aaye
+            // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
+            if(platform->ID == parentEntity->ID) continue;
+            QVector3D localPos = source->inverseTransformPoint(platform->transform->translation());
             //float distance = localPos.length();
-            float metredis = distanceBetween(source->translation().x(),source->translation().z(),platform->transform->matrix->translation().x(),platform->transform->matrix->translation().z())/1000;
+            float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
 
-            // horizontal angle (Y axis) : x vs z
+                        // horizontal angle (Y axis) : x vs z
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
-            if (metredis<emittingRange) // .position() is assumed
+            if (metredis<emittingRange && entity->emittingFrequency==emittingFrequency) // .position() is assumed
             {
                 //qDebug()<< "detect";
                 if (detects.count(platform) == 0)
@@ -339,12 +347,14 @@ void IFF::scan(){
                     IFFTarget target;
                     target.entity = platform;
                     target.angle = yAngle;
+                    target.ally = entity->code == code;
                     target.radius = metredis;
                     targets.append(target);
                 }else{
                     for (int i = 0; i < targets.size(); ++i) {
                         if (targets.at(i).entity == platform) {
                             targets[i].angle = yAngle;
+                            targets[i].ally = entity->code == code;
                             targets[i].radius = metredis;
                             break;
                         }
@@ -418,13 +428,13 @@ IFF::EncryptionType IFF::stringToEncryptionType(const QString& str) const {
     if (str == "SecureID") return EncryptionType::SecureID;
     return EncryptionType::None;
 }
-// Helper to get ISO timestamp string
+
 static std::string nowIsoString() {
     return QDateTime::currentDateTimeUtc().toString(Qt::ISODate).toStdString();
 }
 void IFF::interrogateTargets(Transform* source)
 {
-    // Critical call trace — keep
+
     // qWarning() << "IFF::interrogateTargets for:" << QString::fromStdString(Name);
 
     if (!transponder) {
@@ -531,7 +541,6 @@ void IFF::interrogateTargets(Transform* source)
 
                 float angle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
                 if (angle < 0.0f) angle += 360.0f;
-
                 int status = (resp["status"].toString().compare("friend", Qt::CaseInsensitive) == 0) ? 1 : 0;
 
                 IFFTarget tgt;

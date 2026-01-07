@@ -313,6 +313,10 @@ public slots:
     /* Slot to change the current coordinate reference system */
     // void setCoordinateSystem(const QString& crsId);
 
+
+    void fitToBounds(double minLat, double minLon,    // new for autozoom
+                     double maxLat, double maxLon, int zoomOffset);
+
 protected:
     /*
      * Protected Event Handlers

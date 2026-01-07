@@ -69,7 +69,7 @@ void RecentProjectsManager::clearRecentProjects(EditorType editorType)
     QSettings settings;
     QString key = getSettingsKey(editorType);
     settings.remove(key);
-    qDebug() << "🗑️ Recent projects list cleared for" << key;
+    qDebug() << " Recent projects list cleared for" << key;
 }
 
 void RecentProjectsManager::showRecentProjectsMenu(QWidget *parent, EditorType editorType)
@@ -138,7 +138,7 @@ void RecentProjectsManager::showRecentProjectsMenu(QWidget *parent, EditorType e
     recentMenu.addSeparator();
 
     // Connect clear action
-    QAction* clearAction = recentMenu.addAction("🗑️ Clear All Recent Projects");
+    QAction* clearAction = recentMenu.addAction("🗑 Clear All Recent Projects");
 
     // Show menu at cursor position
     QPoint menuPos = QCursor::pos();

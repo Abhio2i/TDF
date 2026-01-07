@@ -7,15 +7,16 @@
 #include <QJsonObject>
 #include <core/Hierarchy/Struct/vector.h>
 #include <core/Hierarchy/Struct/constants.h>
-
+class Hierarchy;
 class Collider : public QObject, public Component
 {
     Q_OBJECT
 public:
-    Collider();
+    Collider(Hierarchy* h);
     ComponentType Typo() const override { return ComponentType::Collider; }
     bool Active;
-    float Radius;
+    float CollideRadius;
+    float WarningRadius;
     float Width;
     float Length;
     float Height;
@@ -33,6 +34,9 @@ public:
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
 signals:
+
+public slots:
+    void Update(float deltaTime = 0.01f);
 };
 
 #endif // COLLIDER_H

@@ -11,19 +11,21 @@ void ESM::scan(){
 
     Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
-    for (auto& [key, entity] : *root->Platforms)
+    for (auto& [key, entity] : *root->Sensors)
     {
-        // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
-        if(key == parentEntity->ID) continue;
-        Platform* platform = entity;
-        if (platform) {
-            QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
+        auto it = root->Platforms->find(entity->parentEntity->ID);
+        if (it != root->Platforms->end()) {
+            Platform* platform = it->second;
+            // Aapka aage ka logic yahan aaye
+            // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
+            if(platform->ID == parentEntity->ID || entity->subType != Sensor::SubType::Generic ) continue;
+            QVector3D localPos = source->inverseTransformPoint(platform->transform->translation());
             //float distance = localPos.length();
-            float metredis = distanceBetween(source->translation().x(),source->translation().z(),platform->transform->matrix->translation().x(),platform->transform->matrix->translation().z())/1000;
+            float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
 
             // horizontal angle (Y axis) : x vs z
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
-            if (metredis<range) // .position() is assumed
+            if (detectCheck(localPos,metredis) && entity->frequency==frequency) // .position() is assumed
             {
                 //qDebug()<< "detect";
                 if (ewdetects.count(platform) == 0)

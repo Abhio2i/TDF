@@ -40,7 +40,7 @@ public:
     RadioType radioType = RadioType::Transceiver;
     Modulation modulation;
     Entity* parentEntity = nullptr;
-    float Range=100.0f;
+    float Range=10.0f;
     float frequencyMin = 8.0f; // MHz
     float frequencyMax = 12.0f; // MHz
     float emittingPower = 1.0f; // Watts

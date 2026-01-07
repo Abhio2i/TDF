@@ -148,313 +148,180 @@ void Formation::fromJson(const QJsonObject& obj) {
 }
 
 void Formation::formationCreate() {
-    // First, safely remove existing positions
+    // 1. Cleanup: Safely remove existing positions
     std::vector<std::string> keysToRemove;
     for (const auto& pair : *formationPositions) {
         keysToRemove.push_back(pair.first);
     }
-
     for (const auto& name : keysToRemove) {
         removeComponent(name);
     }
-
-    // Clear the map to ensure no dangling pointers
     if (formationPositions) {
         formationPositions->clear();
     }
 
-    // Create formation based on type
-    if (formationType == Constants::FormationType::V) {
-        float rearDistance = 0.01f;
-        float sideDistance = 0.01f;
+    // 2. Dynamic Generation
+    float spacing = 0.5f;
 
-        // Ally_0: Behind and LEFT of mothership
-        std::string name = "ally_" + std::to_string(0);
+    for (int i = 0; i < count; i++) {
+        std::string name = "ally_" + std::to_string(i);
         addComponent(name);
 
-        // SAFETY CHECK: Ensure the position was created
-        if (formationPositions->find(name) != formationPositions->end()) {
-            FormationPosition* pos = (*formationPositions)[name];
-            if (pos) {
-                // Ensure Offset exists
-                if (!pos->Offset) {
-                    pos->Offset = new Vector();
-                }
-                pos->Offset->x = -sideDistance;
-                pos->Offset->y = 0;
-                pos->Offset->z = -rearDistance;
-            }
+        FormationPosition* pos = (*formationPositions)[name];
+        if (!pos || !pos->Offset) continue;
+
+        pos->Offset->y = 0;
+
+        // 1. LINE (Horizontal spread)
+        if (formationType == Constants::FormationType::Line) {
+            float side = (i % 2 == 0) ? -1.0f : 1.0f;
+            float multiplier = (i / 2) + 1;
+            pos->Offset->x = side * spacing * multiplier;
+            pos->Offset->z = 0;
         }
 
-        // Ally_1: Behind and RIGHT of mothership
-        name = "ally_" + std::to_string(1);
-        addComponent(name);
-
-        // SAFETY CHECK: Ensure the position was created
-        if (formationPositions->find(name) != formationPositions->end()) {
-            FormationPosition* pos = (*formationPositions)[name];
-            if (pos) {
-                // Ensure Offset exists
-                if (!pos->Offset) {
-                    pos->Offset = new Vector();
-                }
-                pos->Offset->x = sideDistance;
-                pos->Offset->y = 0;
-                pos->Offset->z = -rearDistance;
-            }
+        // 2. V (Trailing edges)
+        else if (formationType == Constants::FormationType::V) {
+            float side = (i % 2 == 0) ? -1.0f : 1.0f;
+            float multiplier = (i / 2) + 1;
+            pos->Offset->x = side * spacing * multiplier;
+            pos->Offset->z = -spacing * multiplier;
         }
 
-        count = 2;
-    }
-    else if (formationType == Constants::FormationType::Line) {
-        // Line formation: aircraft side by side
-        float horizontalSpacing = 0.01f;
+        // --- DIAMOND FORMATION (HOLLOW / OUTLINE) ---
+        else if (formationType == Constants::FormationType::Diamond) {
 
-        // Ally_0 on LEFT side of mothership
-        std::string name = "ally_" + std::to_string(0);
-        addComponent(name);
 
-        // SAFETY CHECK
-        if (formationPositions->find(name) != formationPositions->end()) {
-            FormationPosition* pos = (*formationPositions)[name];
-            if (pos) {
-                if (!pos->Offset) {
-                    pos->Offset = new Vector();
-                }
-                pos->Offset->x = -horizontalSpacing;
-                pos->Offset->y = 0;
-                pos->Offset->z = 0;
-            }
-        }
-
-        // Ally_1 on RIGHT side of mothership
-        name = "ally_" + std::to_string(1);
-        addComponent(name);
-
-        // SAFETY CHECK
-        if (formationPositions->find(name) != formationPositions->end()) {
-            FormationPosition* pos = (*formationPositions)[name];
-            if (pos) {
-                if (!pos->Offset) {
-                    pos->Offset = new Vector();
-                }
-                pos->Offset->x = horizontalSpacing;
-                pos->Offset->y = 0;
-                pos->Offset->z = 0;
-            }
-        }
-
-        count = 2;
-    }
-    else if (formationType == Constants::FormationType::Diamond) {
-        float firstRowDistance = 0.01f;
-        float secondRowDistance = 0.02f;
-        float sideDistance = 0.01f;
-
-        // Ally_0: First row, LEFT side
-        std::string name = "ally_" + std::to_string(0);
-        addComponent(name);
-
-        // SAFETY CHECK
-        if (formationPositions->find(name) != formationPositions->end()) {
-            FormationPosition* pos = (*formationPositions)[name];
-            if (pos) {
-                if (!pos->Offset) {
-                    pos->Offset = new Vector();
-                }
-                pos->Offset->x = -sideDistance;
-                pos->Offset->y = 0;
-                pos->Offset->z = -firstRowDistance;
-            }
-        }
-
-        // Ally_1: First row, RIGHT side
-        name = "ally_" + std::to_string(1);
-        addComponent(name);
-
-        // SAFETY CHECK
-        if (formationPositions->find(name) != formationPositions->end()) {
-            FormationPosition* pos = (*formationPositions)[name];
-            if (pos) {
-                if (!pos->Offset) {
-                    pos->Offset = new Vector();
-                }
-                pos->Offset->x = sideDistance;
-                pos->Offset->y = 0;
-                pos->Offset->z = -firstRowDistance;
-            }
-        }
-
-        // Ally_2: Second row, CENTER (behind Ally_0 and Ally_1)
-        name = "ally_" + std::to_string(2);
-        addComponent(name);
-
-        // SAFETY CHECK
-        if (formationPositions->find(name) != formationPositions->end()) {
-            FormationPosition* pos = (*formationPositions)[name];
-            if (pos) {
-                if (!pos->Offset) {
-                    pos->Offset = new Vector();
-                }
+            // Minimum points to form a diamond
+            if (count == 1) {
                 pos->Offset->x = 0;
-                pos->Offset->y = 0;
-                pos->Offset->z = -secondRowDistance;
+                pos->Offset->z = 0;
+                return;
             }
+
+            float radius = spacing * (count / 4.0f + 1);
+
+            // Normalize index to [0, 1)
+            float t = (float)i / (float)count;
+
+            float x = 0.0f;
+            float z = 0.0f;
+
+            if (t < 0.25f) {
+                // Top → Right
+                float u = t / 0.25f;
+                x =  u * radius;
+                z = -radius + u * radius;
+            }
+            else if (t < 0.50f) {
+                // Right → Bottom
+                float u = (t - 0.25f) / 0.25f;
+                x =  radius - u * radius;
+                z =  u * radius;
+            }
+            else if (t < 0.75f) {
+                // Bottom → Left
+                float u = (t - 0.50f) / 0.25f;
+                x = -u * radius;
+                z =  radius - u * radius;
+            }
+            else {
+                // Left → Top
+                float u = (t - 0.75f) / 0.25f;
+                x = -radius + u * radius;
+                z = -u * radius;
+            }
+
+            pos->Offset->x = x;
+            pos->Offset->z = z;
         }
 
-        count = 3;
-    }
-    else if(formationType == Constants::FormationType::Column) {
-        float spacing = -0.01f; // Adjust this value for the distance behind
+        // 5. SQUARE (FIXED: Added float x, z declaration)
+        else if (formationType == Constants::FormationType::Square) {
+            int pointsPerSide = std::ceil((float)count / 4.0f);
+            float sideLength = pointsPerSide * spacing;
+            float halfSide = sideLength / 2.0f;
 
-        for(int i = 0; i < 2; i++) {
-            std::string name = "ally_" + std::to_string(i);
-            addComponent(name);
+            int side = i / pointsPerSide;
+            int indexOnSide = i % pointsPerSide;
+            float step = (float)indexOnSide / (float)pointsPerSide * sideLength;
 
-            if (formationPositions->count(name) && (*formationPositions)[name]) {
-                FormationPosition* pos = (*formationPositions)[name];
-                if (!pos->Offset) pos->Offset = new Vector();
+            // Variables declare karna zaroori hai
+            float x = 0;
+            float z = 0;
 
-                // EXPLICITLY set every value to clear "Line" values
-                pos->Offset->x = 0;             // Center horizontally
-                pos->Offset->y = 0;             // Same height
-                pos->Offset->z = spacing * (i + 1); // Move BEHIND (Z axis)
+            switch (side) {
+            case 0: // TOP
+                x = -halfSide + step;
+                z = halfSide;
+                break;
+            case 1: // RIGHT
+                x = halfSide;
+                z = halfSide - step;
+                break;
+            case 2: // BOTTOM
+                x = halfSide - step;
+                z = -halfSide;
+                break;
+            case 3: // LEFT
+                x = -halfSide;
+                z = -halfSide + step;
+                break;
             }
+            pos->Offset->x = x;
+            pos->Offset->z = z;
         }
-        count = 2;
-    }
-    // else if (formationType == Constants::FormationType::EchelonLeft) {
-    //     float sideDistance = -0.015f; // Negative X moves to the Left
-    //     float rearDistance = -0.015f; // Negative Z moves Behind
 
-    //     for (int i = 0; i < 3; i++) {
-    //         std::string name = "ally_" + std::to_string(i);
-    //         addComponent(name);
-
-    //         if (formationPositions->count(name) && (*formationPositions)[name]) {
-    //             FormationPosition* pos = (*formationPositions)[name];
-    //             if (!pos->Offset) pos->Offset = new Vector();
-
-    //             // Each ally moves further left and further back than the one before it
-    //             pos->Offset->x = sideDistance * (i + 1);
-    //             pos->Offset->y = 0;
-    //             pos->Offset->z = rearDistance * (i + 1);
-    //         }
-    //     }
-    //     count = 3;
-    // }
-    else if (formationType == Constants::FormationType::EchelonLeft) {
-        // If -0.015 put them on the right, then +0.015 will put them on the LEFT
-        float sideDistance = 0.015f;
-        float rearDistance = -0.015f; // Keep negative to stay BEHIND
-
-        for (int i = 0; i < 3; i++) {
-            std::string name = "ally_" + std::to_string(i);
-            addComponent(name);
-
-            if (formationPositions->count(name) && (*formationPositions)[name]) {
-                FormationPosition* pos = (*formationPositions)[name];
-                if (!pos->Offset) pos->Offset = new Vector();
-
-                // Each aircraft steps further Left and further Back
-                pos->Offset->x = sideDistance * (i + 1);
-                pos->Offset->y = 0;
-                pos->Offset->z = rearDistance * (i + 1);
-            }
+        // 4. COLUMN (Single file)
+        else if (formationType == Constants::FormationType::Column) {
+            pos->Offset->x = 0;
+            pos->Offset->z = -spacing * (i + 1);
         }
-        count = 3;
-    }
-    else if (formationType == Constants::FormationType::EchelonRight) {
-        // sideDistance is negative because your engine uses Positive X for Left
-        float sideDistance = -0.015f;
-        float rearDistance = -0.015f;
 
-        for (int i = 0; i < 3; i++) {
-            std::string name = "ally_" + std::to_string(i);
-            addComponent(name);
-
-            if (formationPositions->count(name) && (*formationPositions)[name]) {
-                FormationPosition* pos = (*formationPositions)[name];
-                if (!pos->Offset) pos->Offset = new Vector();
-
-                // Ally 0: x = -0.015, z = -0.015 (Right and Back)
-                // Ally 1: x = -0.030, z = -0.030 (Further Right and Back)
-                pos->Offset->x = sideDistance * (i + 1);
-                pos->Offset->y = 0;
-                pos->Offset->z = rearDistance * (i + 1);
-            }
+        // 5. ECHELON LEFT (Staircase Left)
+        else if (formationType == Constants::FormationType::EchelonLeft) {
+            pos->Offset->x = spacing * (i + 1);
+            pos->Offset->z = -spacing * (i + 1);
         }
-        count = 3;
-    }
 
-    else if (formationType == Constants::FormationType::StaggeredColumn) {
-        float sideOffset = 0.010f;  // Distance to the side
-        float rearSpacing = -0.020f; // Distance behind
-
-        for (int i = 0; i < 3; i++) {
-            std::string name = "ally_" + std::to_string(i);
-            addComponent(name);
-
-            if (formationPositions->count(name) && (*formationPositions)[name]) {
-                FormationPosition* pos = (*formationPositions)[name];
-                if (!pos->Offset) pos->Offset = new Vector();
-
-                // Alternate sides: Ally 0 (Left), Ally 1 (Right), Ally 2 (Left)
-                // Based on your engine: Positive X = Left, Negative X = Right
-                if (i % 2 == 0) {
-                    pos->Offset->x = sideOffset;     // Left side
-                } else {
-                    pos->Offset->x = -sideOffset;    // Right side
-                }
-
-                pos->Offset->y = 0;
-                pos->Offset->z = rearSpacing * (i + 1); // Progressively further back
-            }
+        // 6. ECHELON RIGHT (Staircase Right)
+        else if (formationType == Constants::FormationType::EchelonRight) {
+            pos->Offset->x = -spacing * (i + 1);
+            pos->Offset->z = -spacing * (i + 1);
         }
-        count = 3;
-    }
-    else if (formationType == Constants::FormationType::Wedge) {
-        float sideSpacing = 0.010f;  // Horizontal distance
-        float rearSpacing = -0.010f; // Distance behind leader
 
-        for (int i = 0; i < 3; i++) {
-            std::string name = "ally_" + std::to_string(i);
-            addComponent(name);
-
-            if (formationPositions->count(name) && (*formationPositions)[name]) {
-                FormationPosition* pos = (*formationPositions)[name];
-                if (!pos->Offset) pos->Offset = new Vector();
-
-                pos->Offset->y = 0;
-
-                if (i == 0) {
-                    // First ally: Left and Back
-                    pos->Offset->x = sideSpacing;
-                    pos->Offset->z = rearSpacing;
-                }
-                else if (i == 1) {
-                    // Second ally: Right and Back
-                    pos->Offset->x = -sideSpacing;
-                    pos->Offset->z = rearSpacing;
-                }
-                else if (i == 2) {
-                    // Third ally: Further Left and Further Back
-                    pos->Offset->x = sideSpacing * 2;
-                    pos->Offset->z = rearSpacing * 2;
-                }
-            }
+        // 7. STAGGERED COLUMN (Zig-Zag)
+        else if (formationType == Constants::FormationType::StaggeredColumn) {
+            pos->Offset->x = (i % 2 == 0) ? spacing : -spacing;
+            pos->Offset->z = -spacing * (i + 1);
         }
-        count = 3;
+
+        // 8. WEDGE (Filled triangle/Arrowhead)
+        // else if (formationType == Constants::FormationType::Wedge) {
+        //     // To differentiate from V: Use a tiered "filling" logic
+        //     int row = (int)sqrt(i + 1);
+        //     int colInRow = i - (row * row - 1);
+        //     float rowWidth = row * spacing;
+
+        //     pos->Offset->x = -rowWidth/2.0f + (colInRow * spacing);
+        //     pos->Offset->z = -row * spacing;
+        // }
+        else if (formationType == Constants::FormationType::Wedge) {
+            // Determine side: Even indices (0, 2, 4...) go Left (-1), Odd (1, 3, 5...) go Right (1)
+            float side = (i % 2 == 0) ? -1.0f : 1.0f;
+
+            // Calculate how far back they are:
+            // Ally 0 (Left) -> Row 1
+            // Ally 1 (Right) -> Row 1
+            // Ally 2 (Left) -> Row 2
+            // Ally 3 (Right) -> Row 2
+            int row = (i / 2) + 1;
+
+            pos->Offset->x = side * spacing * row;
+            pos->Offset->z = -spacing * row;
+            pos->Offset->y = 0;
+        }
     }
-
-    // else {
-    //     // Default to line formation if unknown type
-    //     qDebug() << "Unknown formation type, defaulting to Line";
-    //     formationType = Constants::FormationType::Line;
-
-    //     // Recursively call with default type
-    //     formationCreate();
-    // }
 }
 
 
@@ -491,19 +358,29 @@ QJsonObject Formation::getComponent(std::string name) {
 }
 
 void Formation::updateComponent(QString name, const QJsonObject& obj) {
-    // 1. Handle Formation Type change from UI Dropdown
+    // 1. Handle Formation Type change
     if (name == "type") {
         if (obj.contains("value")) {
-            // Translate string "Column" to the Enum value
             formationType = stringToFormationType(obj["value"].toString());
-            // Force recreation of allies with new Column offsets (X=0, Y=-0.1)
-            formationCreate();
+            formationCreate(); // Re-apply geometric logic to existing count
         }
         return;
     }
 
-    // 2. Handle Mothership updates
-    if(name == "mothership"){
+    // 2. Handle Count change (Integration for increasing allies)
+    if (name == "count") {
+        if (obj.contains("value")) {
+            int newCount = obj["value"].toString().toInt();
+            if (newCount >= 0) {
+                this->count = newCount;
+                formationCreate(); // Dynamically add/remove ally slots
+            }
+        }
+        return;
+    }
+
+    // 3. Handle Mothership updates
+    if (name == "mothership") {
         if (obj.contains("entity") && obj["entity"].isObject()) {
             QJsonObject entityObj = obj["entity"].toObject();
             if (entityObj.contains("id")) {
@@ -518,7 +395,7 @@ void Formation::updateComponent(QString name, const QJsonObject& obj) {
         return;
     }
 
-    // 3. Handle Ally updates
+    // 4. Handle Individual Ally updates (Assignment of entities to slots)
     if (!formationPositions) return;
     std::string key = name.toStdString();
     auto it = formationPositions->find(key);
@@ -532,6 +409,8 @@ void Formation::updateComponent(QString name, const QJsonObject& obj) {
             Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
             if (parent && parent->Entities->find(id) != parent->Entities->end()) {
                 pos->entity = (*parent->Entities)[id];
+
+                // Link the platform's dynamic model to the formation logic
                 Platform* platform = dynamic_cast<Platform*>(pos->entity);
                 Platform* mother = dynamic_cast<Platform*>(mothership->entity);
                 if (platform && platform->dynamicModel && mother) {
@@ -545,13 +424,12 @@ void Formation::updateComponent(QString name, const QJsonObject& obj) {
     pos->fromJson(obj);
 }
 
-// formation.cpp
-
 QString Formation::formationTypeToString(Constants::FormationType type) const {
     switch (type) {
     case Constants::FormationType::Line:    return "Line";
     case Constants::FormationType::V:       return "V";
     case Constants::FormationType::Diamond: return "Diamond";
+    case Constants::FormationType::Square:  return "Square"; // Added
     case Constants::FormationType::Column:  return "Column";
     case Constants::FormationType::EchelonLeft: return "Echelon Left";
     case Constants::FormationType::EchelonRight: return "Echelon Right"; // Add this
@@ -565,6 +443,7 @@ Constants::FormationType Formation::stringToFormationType(QString str) const {
     if (str == "Line")    return Constants::FormationType::Line;
     if (str == "V")       return Constants::FormationType::V;
     if (str == "Diamond") return Constants::FormationType::Diamond;
+    if (str == "Square")  return Constants::FormationType::Square; // Added
     if (str == "Column")  return Constants::FormationType::Column;
     if (str == "Echelon Left") return Constants::FormationType::EchelonLeft;
     if (str == "Echelon Right") return Constants::FormationType::EchelonRight; // Add this
@@ -574,7 +453,7 @@ Constants::FormationType Formation::stringToFormationType(QString str) const {
 }
 
 QStringList Formation::formationTypeOptions() const {
-    return {"Line", "V", "Diamond", "Column", "Echelon Left", "Echelon Right", "Staggered Column", "Wedge"};
+    return {"Line", "V", "Diamond", "Square","Column", "Echelon Left", "Echelon Right", "Staggered Column", "Wedge"};
 }
 
 void Formation::resolveEntityReference(FormationPosition* position, const QJsonObject& obj) {

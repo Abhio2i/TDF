@@ -463,6 +463,38 @@ void GISlib::receivePlace(QString url, QByteArray data) {
     }
 }
 
+//for bound cheking
+void GISlib::fitToBounds(double minLat, double minLon,
+                         double maxLat, double maxLon, int zoomOffset)
+{
+    // Center point
+    double centerLat = (minLat + maxLat) / 2.0;
+    double centerLon = (minLon + maxLon) / 2.0;
+
+    // Move map to center
+    setCenter(centerLat, centerLon);
+
+    // --- AUTO ZOOM LOGIC ---
+    double latSpan = std::abs(maxLat - minLat);
+
+    // ---- base zoom (auto) ----
+    int baseZoom;
+    if (latSpan > 12)      baseZoom = 5;   // country
+    else if (latSpan > 6)  baseZoom = 6;   // big state
+    else if (latSpan > 3)  baseZoom = 7;   // state
+    else if (latSpan > 1.5)baseZoom = 8;
+    else if (latSpan > 0.7)baseZoom = 9;
+    else                   baseZoom = 10; // city
+
+    // ---- APPLY OFFSET ----
+    int finalZoom = baseZoom + zoomOffset;
+
+    // ---- clamp ----
+    finalZoom = std::clamp(finalZoom, 4, 10);
+
+    setZoom(finalZoom);
+}
+
 /*
  * serachPlace: Initiate place search by query string
  * Forwards search request to network component
@@ -522,7 +554,7 @@ void GISlib::searchByCoordinates(double lat, double lon) {
  * Adjusts zoom based on layer capabilities and clears tile cache
  */
 void GISlib::setZoom(int level) {
-    int maxZoom = 11;  // Default maximum zoom
+    int maxZoom = 12;  // Default maximum zoom
 
     // Adjust max zoom based on active layers
     if (activeLayers.contains("opentopo")) maxZoom = 17;
@@ -1230,26 +1262,44 @@ void GISlib::keyPressEvent(QKeyEvent* event) {
  * wheelEvents: Handle mouse wheel events for zooming
  * Zooms in/out based on wheel direction with bounds checking
  */
-void GISlib::wheelEvents(QWheelEvent *event)
-{
-    // Zoom in on scroll up
-    if (event->angleDelta().y() > 0) {
-        setZoom(zoom + 1);
-    }
-    // Zoom out on scroll down
-    else {
-        setZoom(zoom - 1);
+void GISlib::wheelEvents(QWheelEvent *event) {
+    // 1. Capture the geographic coordinate currently under the mouse cursor
+    QPointF mousePos = event->position();
+    QPointF geoPointBefore = canvasToGeo(mousePos);
+
+    // 2. Determine new zoom level
+    int delta = event->angleDelta().y();
+    int newZoom = zoom;
+    if (delta > 0) {
+        newZoom++;
+    } else {
+        newZoom--;
     }
 
-    // Clamp zoom level to valid range [1, 19]
-    if(zoom > 19){
-        setZoom(19);
-    } else if(zoom < 1){
-        setZoom(1);
-    }
-    update();  // Refresh display
+    // 3. Apply the zoom (this updates the internal 'zoom' variable)
+    setZoom(newZoom);
+
+    // 4. Calculate where that same geographic point is NOW after zooming
+    // Since center haven't changed yet, geoToCanvas will show where it shifted to.
+    QPointF canvasPointAfter = geoToCanvas(geoPointBefore.y(), geoPointBefore.x());
+
+    // 5. Calculate the pixel displacement (offset)
+    // We want the point to be at 'mousePos', but it's currently at 'canvasPointAfter'
+    double dx = canvasPointAfter.x() - mousePos.x();
+    double dy = canvasPointAfter.y() - mousePos.y();
+
+    // 6. Convert that pixel displacement back to geographic coordinates
+    // to find the new center that compensates for the shift
+    int tileSize = 256;
+    double centerX = lonToX(centerLon, zoom);
+    double centerY = latToY(centerLat, zoom);
+
+    double newTileCenterX = centerX + dx / tileSize;
+    double newTileCenterY = centerY + dy / tileSize;
+
+    // 7. Set the new center
+    setCenter(yToLat(newTileCenterY, zoom), xToLon(newTileCenterX, zoom));
 }
-
 /*
  * setInitialOffset: Set initial map offset for positioning
  * Used for initial map alignment and calibration

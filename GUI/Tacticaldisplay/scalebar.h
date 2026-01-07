@@ -26,7 +26,7 @@ private:
 
     ScaleConfig getOptimalScale(double metersPerPixel, int containerWidth) const;
     bool isNiceNumber(double num) const;
-    QString formatDistance(double distance) const; // REMOVED unit parameter
+    QString formatDistance(double distance) const;
 
     ScaleConfig m_currentConfig;
 };

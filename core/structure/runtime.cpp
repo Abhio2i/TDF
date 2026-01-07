@@ -1,7 +1,10 @@
 #include "runtime.h"
 #include <QDebug>
 #include <QThread>
+#include <core/Network/libs/TransformUpdate.h> //for qued connnection
+#include <QMetaType>//by aman
 Runtime::Runtime() {
+    qRegisterMetaType<TransformUpdate>("TransformUpdate");//by Aman
 
     simulationThread = new QThread(this);
     Library = new Hierarchy();
@@ -12,6 +15,8 @@ Runtime::Runtime() {
     scriptengine = new ScriptEngine();
      scriptengine->setRuntime(this);
     networkManager = new NetworkManager();
+     simulation->setNetworkManager(networkManager);
+
     console  = Console::internalInstance();
     profiler = new Profiler();
     recorder = new Recorder(hierarchy, simulation);
@@ -20,6 +25,13 @@ Runtime::Runtime() {
     QObject::connect(simulationThread, &QThread::started, simulation, &Simulation::init);
     connect(simulationThread,&QThread::finished,simulationThread,&QThread::deleteLater);
     simulationThread->start();
+
+    //fix:the hirarchy updated now only touched by simualtion thread to avoid race condition
+    connect(networkManager,
+            &NetworkManager::transformReceived,
+            simulation,
+            &Simulation::enqueueTransformUpdate,
+            Qt::QueuedConnection);
 
     // Rendering pipeline
     connect(hierarchy,&Hierarchy::entityMeshAdded,scenerenderer,&SceneRenderer::entityAdded);
@@ -80,6 +92,24 @@ Runtime::Runtime() {
     connect(networkManager,&NetworkManager::entityComponentUpdate,hierarchy,&Hierarchy::UpdateComponent);
     connect(networkManager,&NetworkManager::removeEntity,hierarchy,&Hierarchy::removeEntity);
     connect(networkManager,&NetworkManager::updateScene,scenerenderer,&SceneRenderer::Render);
+    connect(networkManager,
+            &NetworkManager::renameEntity,
+            hierarchy,
+            &Hierarchy::renameEntity);
+
+    // --- START CLIENT SIMULATION AUTOMATICALLY ---
+    connect(networkManager, &NetworkManager::initSyncComplete,
+            this, [this]() {
+
+                if (!networkManager->isServer()) {
+                    qDebug() << "[CLIENT] Starting simulation loop";
+                    simulation->start();
+                }
+            });
+
+
+
+
 }
 
 Runtime::~Runtime() {
@@ -91,6 +121,11 @@ Runtime::~Runtime() {
     delete simulation;
     delete Library;
     delete hierarchy;
+    //Added by aman
+    if (simulationThread && simulationThread->isRunning()) {
+        simulationThread->quit();
+        simulationThread->wait();
+    }
 }
 
 void Runtime::handleStart() {

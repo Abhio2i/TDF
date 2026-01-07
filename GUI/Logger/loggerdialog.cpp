@@ -653,8 +653,7 @@ void LoggerDialog::showBookmarkOnReplay(const QString& note, qint64 timestamp)
 void LoggerDialog::onReplayBookmarkLoaded(const QString& note, qint64 timestamp)
 {
     if (timelineWidget) {
-        // Only visually add bookmark marker during loading
-        /*timelineWidget->clearBookmarks();*/     // Clear old markers
+
 
         timelineWidget->addBookmark(note, timestamp);     // now markers appear
 

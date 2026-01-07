@@ -1,18 +1,38 @@
 
 #include "collider.h"
+#include "core/Hierarchy/Utils/entityutils.h"
 #include "qjsonarray.h"
 #include <QMetaEnum>
 #include <core/Debug/console.h>
+#include "core/Hierarchy/hierarchy.h"
 
-Collider::Collider():Component(nullptr) {
+Collider::Collider(Hierarchy* h):Component(h) {
     Active = true;
-    Radius = 1;
+    CollideRadius = 200;
+    WarningRadius = 1000;
     Width = 1;
     Length = 1;
     Height = 1;
     collider = Constants::ColliderType::Box;
     vector = nullptr; // Initialize pointer
     type = Constants::EntityType::Platform; // Use Platform as default
+}
+
+void Collider::Update(float deltaTime){
+    if(parentEntity && parentEntity->root){
+        Transform* source =(*parentEntity->root->Platforms)[parentEntity->ID]->transform;
+        for (auto& [key, entity] : *parentEntity->root->Platforms){
+            if(!entity->Active || entity->isDestroy || key == parentEntity->ID) continue;
+            float distance = source->translation().distanceToPoint(entity->transform->translation())*1000;
+            // qDebug()<<distance;
+            if(distance<WarningRadius){
+                parentEntity->collisionWarning = true;
+                // entity->isDestroy = true;
+            }else{
+                parentEntity->collisionWarning = false;
+            }
+        }
+    }
 }
 
 QString colliderTypeToString(Constants::ColliderType type) {
@@ -61,11 +81,17 @@ QJsonObject Collider::toJson() const {
     QJsonObject obj;
     obj["id"] = QString::fromStdString(ID);
     obj["active"] = Active;
-    obj["radius"] = Radius;
-    obj["width"] = Width;
-    obj["length"] = Length;
-    obj["height"] = Height;
-     obj["type"] = "component";
+    obj["type"] = "component";
+
+    QJsonObject dimensionObj;
+    dimensionObj["type"] = "Section";
+    dimensionObj["CollideRadius"] = toParm(CollideRadius,"m");
+    dimensionObj["WarningRadius"] = toParm(WarningRadius,"m");
+    dimensionObj["width"] = toParm(Width,"m");
+    dimensionObj["length"] = toParm(Length,"m");
+    dimensionObj["height"] = toParm(Height,"m");
+    obj["dimension"] = dimensionObj;
+
 
     QJsonObject colliderObj;
     colliderObj["type"] = "option";
@@ -89,14 +115,21 @@ QJsonObject Collider::toJson() const {
 void Collider::fromJson(const QJsonObject& obj) {
     if (obj.contains("active"))
         Active = obj["active"].toBool();
-    if (obj.contains("radius"))
-        Radius = obj["radius"].toDouble();
-    if (obj.contains("width"))
-        Width = obj["width"].toDouble();
-    if (obj.contains("length"))
-        Length = obj["length"].toDouble();
-    if (obj.contains("height"))
-        Height = obj["height"].toDouble();
+
+    if (obj.contains("dimension") && obj["dimension"].isObject()) {
+        QJsonObject dimensionObj = obj["dimension"].toObject();
+        if (dimensionObj.contains("CollideRadius") && dimensionObj["CollideRadius"].isObject())
+            CollideRadius = valueFromParm(dimensionObj["CollideRadius"].toObject());
+        if (dimensionObj.contains("WarningRadius") && dimensionObj["WarningRadius"].isObject())
+            WarningRadius = valueFromParm(dimensionObj["WarningRadius"].toObject());
+        if (dimensionObj.contains("width") && dimensionObj["width"].isObject())
+            Width = valueFromParm(dimensionObj["width"].toObject());
+        if (dimensionObj.contains("length") && dimensionObj["length"].isObject())
+            Length = valueFromParm(dimensionObj["length"].toObject());
+        if (dimensionObj.contains("height") && dimensionObj["height"].isObject())
+            Height = valueFromParm(dimensionObj["height"].toObject());
+    }
+
     if (obj.contains("collider") && obj["collider"].isObject()) {
         QJsonObject colliderObj = obj["collider"].toObject();
         if (colliderObj.contains("value"))
@@ -106,7 +139,7 @@ void Collider::fromJson(const QJsonObject& obj) {
     // Merge custom parameters
     for (auto it = obj.begin(); it != obj.end(); ++it) {
         if (it.key() != "active" && it.key() != "radius" && it.key() != "width" &&
-            it.key() != "length" && it.key() != "height" && it.key() != "collider") {
+            it.key() != "length" && it.key() != "height" && it.key() != "collider" && it.key() != "dimension") {
             customParameters[it.key()] = it.value();
         }
     }

@@ -13,7 +13,7 @@
 /* Initialize option template widget */
 OptionTemplate::OptionTemplate(QWidget *parent)
     : QWidget(parent)
-    , inspectorRef(nullptr)  // Initialize inspectorRef to nullptr
+    , inspectorRef(nullptr)
 {
     // No additional initialization needed
 }
@@ -61,7 +61,7 @@ void OptionTemplate::setupOptionCell(int row, const QString &fullKey, const QJso
         optionObj["value"] = text;
 
         // Preserve existing options
-        QJsonArray options = obj["options"].toArray();  // obj is captured from setup function
+        QJsonArray options = obj["options"].toArray();
         optionObj["options"] = options;
 
         QJsonObject delta;

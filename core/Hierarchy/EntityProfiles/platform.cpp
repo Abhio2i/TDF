@@ -14,6 +14,7 @@
 #include "core/Debug/profiler.h"
 
 Platform::Platform(Hierarchy* h) : Entity(h) {
+    type = Constants::EntityType::Platform;
     std::shared_ptr<Parameter> par = std::make_shared<Parameter>();
     par->Name = "roll";
     par->type = Constants::ParameterType::FLOAT;
@@ -240,6 +241,8 @@ void Platform::fromJson(const QJsonObject& obj) {
     if (obj.contains("crossSection") && obj["crossSection"].isObject()) {
         if (!crossSection) addComponent("crossSection");
         crossSection->fromJson(obj["crossSection"].toObject());
+    }else{
+        if (!crossSection) addComponent("crossSection");
     }
 
     if (obj.contains("trajectory") && obj["trajectory"].isObject()) {
@@ -275,16 +278,22 @@ void Platform::fromJson(const QJsonObject& obj) {
     if (obj.contains("sensors") && obj["sensors"].isObject()) { // Fix: Correct key
         if (!sensors) addComponent("sensors");
         sensors->fromJson(obj["sensors"].toObject());
+    }else{
+        if (!sensors) addComponent("sensors");
     }
 
     if (obj.contains("iffs") && obj["iffs"].isObject()) { // Fix: Correct key
         if (!iffs) addComponent("iffs");
         iffs->fromJson(obj["iffs"].toObject());
+    }else{
+        if (!iffs) addComponent("iffs");
     }
 
     if (obj.contains("radios") && obj["radios"].isObject()) { // Fix: Correct key
         if (!radios) addComponent("radios");
         radios->fromJson(obj["radios"].toObject());
+    }else{
+        if (!radios) addComponent("radios");
     }
 
     // if (obj.contains("radios") && obj["radios"].isArray()) {
@@ -437,8 +446,9 @@ void Platform::addComponent(std::string name) {
         if (!collider) {
             if (!transform)
                 addComponent("transform");
-            collider = new Collider();
+            collider = new Collider(parent);
             collider->parentEntity = this;
+            collider->parentID = ID;
             parent->Components->insert({collider->ID, collider});
             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(collider->ID), "collider");
         }

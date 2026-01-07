@@ -222,6 +222,7 @@ void HierarchyTree::componentAdded(QString parentID, QString ID, QString compone
     data["name"] = componentName;
     data["type"] = "component";
     component->setData(0, Qt::UserRole, data);
+    component->setFlags(component->flags() & ~Qt::ItemIsDragEnabled);
     qDebug() << "Component added to tree: Name=" << componentName << "ParentID=" << parentID;
 }
 
@@ -239,21 +240,21 @@ void HierarchyTree::subComponentAdded(QString parentID, QString ID, QString subC
         displayName[0] = displayName[0].toUpper();
     }
     // Create component item
-    QTreeWidgetItem *component = new QTreeWidgetItem(Items[parentID]);
+    QTreeWidgetItem *subcomponent = new QTreeWidgetItem(Items[parentID]);
     // component->setText(0, componentName);
-    component->setText(0, displayName);
-    component->setIcon(0, QIcon(":/icons/images/subcomponent.png"));
-    Items.insert(ID, component);
+    subcomponent->setText(0, displayName);
+    subcomponent->setIcon(0, QIcon(":/icons/images/subcomponent.png"));
+    Items.insert(ID, subcomponent);
     // Set item data
     QVariantMap data;
     data["ID"] = ID;
     data["parentId"] = parentID;
     data["name"] = subComponentName;
     data["type"] = "subcomponent";
-    component->setData(0, Qt::UserRole, data);
+    subcomponent->setData(0, Qt::UserRole, data);
+    subcomponent->setFlags(subcomponent->flags() & ~Qt::ItemIsDragEnabled);
     qDebug() << "Component added to tree: Name=" << subComponentName << "ParentID=" << parentID;
 }
-
 
 /* Remove profile from tree */
 void HierarchyTree::profileRemoved(QString ID)
@@ -316,6 +317,21 @@ void HierarchyTree::componentRemoved(QString entityID, QString componentName)
     emit removeComponentRequested(entityID, componentName);
 }
 
+/* Remove subcomponent from tree */
+void HierarchyTree::subComponentRemoved(QString compID,QString subCompID, QString componentName)
+{
+    // Check if entity exists
+    if (Items.contains(subCompID)) {
+        QTreeWidgetItem *entityItem = Items[subCompID];
+        Items.remove(subCompID);
+        delete entityItem;
+    } else {
+        qWarning() << "Cannot remove subcomponent: Entity ID" << compID << "not found in Items";
+    }
+    // Emit remove component signal
+    // emit removeComponentRequested(entityID, componentName);
+}
+
 
 /* Rename profile in tree */
 void HierarchyTree::profileRenamed(QString ID, QString name)
@@ -352,6 +368,8 @@ void HierarchyTree::entityRenamed(QString ID, QString name)
         qWarning() << "Cannot rename entity: ID" << ID << "not found in Items";
     }
 }
+
+ContextMenu *HierarchyTree::getContextMenu() const { return contextMenu; }
 /* Show context menu */
 void HierarchyTree::showContextMenu(const QPoint &pos)
 {
@@ -389,6 +407,8 @@ void HierarchyTree::dragEnterEvent(QDragEnterEvent *event)
     if (event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist") ||
         event->mimeData()->hasFormat("application/x-entity")) {
         event->acceptProposedAction();
+        QTreeWidgetItem *item = tree->currentItem();
+        dragsourceData = item->data(0, Qt::UserRole).toMap();
     } else {
         event->ignore();
     }
@@ -417,9 +437,9 @@ void HierarchyTree::dragMoveEvent(QDragMoveEvent *event)
                 type = data["type"].toString();
             }
             // Accept if target is profile or folder
-            if (type == "profile" || type == "folder" || type == "entity") {
+            if (type == "profile" || type == "folder" || type == "entity" || type == "component") {
                 event->acceptProposedAction();
-                qDebug()<<"i am working";
+                //qDebug()<<"i am working";
 
                 return;
             }
@@ -431,51 +451,55 @@ void HierarchyTree::dragMoveEvent(QDragMoveEvent *event)
 /* Handle drop event */
 void HierarchyTree::dropEvent(QDropEvent *event)
 {
-   qDebug()<<"i am done";
+    qDebug()<<"i am done";
     // Validate MIME data
     if (event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist") ||
         event->mimeData()->hasFormat("application/x-entity")) {
 
+        qDebug()<<"i am ok";
+        // Get target item
 
-    // Get target item
-    QTreeWidgetItem *targetItem = tree->itemAt(event->pos());
-    if (!targetItem) {
-        event->ignore();
-        return;
-    }
-    // Get target data
-    QVariantMap targetData = targetItem->data(0, Qt::UserRole).toMap();
-    QString targetType;
-    if (targetData["type"].type() == QVariant::Map) {
-        QVariantMap typeData = targetData["type"].toMap();
-        if (typeData.contains("type") && typeData["type"].toString() == "option") {
-            targetType = "profile";
-        } else {
-            qWarning() << "Invalid nested type structure in dropEvent:" << targetData["type"];
+        QPoint viewportPos = tree->viewport()->mapFrom(this, event->pos());
+
+        // 2. Ab item find karein
+        QTreeWidgetItem *targetItem = tree->itemAt(viewportPos);
+        if (!targetItem) {
             event->ignore();
             return;
         }
-    } else {
-        targetType = targetData["type"].toString();
-    }
-    // Validate target type
-    if (targetType != "profile" && targetType != "folder") {
-        //event->ignore();
-        //return;
-    }
-    // Read source data
-    QByteArray itemData = event->mimeData()->data("application/x-entity-data");
-    QDataStream stream(&itemData, QIODevice::ReadOnly);
-    QVariantMap sourceData;
-    stream >> sourceData;
-    // Validate source type
-    if (sourceData["type"].toString() != "entity") {
-        event->ignore();
-        return;
-    }
-    // Emit drop signal
-    emit itemDropped(sourceData, targetData);
-    event->acceptProposedAction();
+        // Get target data
+        QVariantMap targetData = targetItem->data(0, Qt::UserRole).toMap();
+        QString targetType;
+        if (targetData["type"].type() == QVariant::Map) {
+            QVariantMap typeData = targetData["type"].toMap();
+            if (typeData.contains("type") && typeData["type"].toString() == "option") {
+                targetType = "profile";
+            } else {
+                qWarning() << "Invalid nested type structure in dropEvent:" << targetData["type"];
+                event->ignore();
+                return;
+            }
+        } else {
+            targetType = targetData["type"].toString();
+        }
+        // Validate target type
+        if (targetType == "entity" || targetType == "subcomponent") {
+            event->ignore();
+            return;
+        }
+        // Read source data
+        QByteArray itemData = event->mimeData()->data("application/x-entity");
+        QDataStream stream(&itemData, QIODevice::ReadOnly);
+        QVariantMap sourceData = dragsourceData;
+        // stream >> sourceData;
+        // Validate source type
+        if (sourceData["type"].toString() != "entity") {
+            event->ignore();
+            return;
+        }
+        // Emit drop signal
+        emit itemDropped(sourceData, targetData);
+        event->acceptProposedAction();
     }else{
         event->ignore();
         return;

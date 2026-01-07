@@ -1,9 +1,7 @@
-/* ========================================================================= */
-/* File: CSMDisplay.cpp                                                    */
-/* Purpose: Implements electronic warfare display for radar visualization   */
-/* ========================================================================= */
+
 
 #include "csmdisplay.h"                            // For EW display class
+#include "core/Hierarchy/Utils/entityutils.h"
 #include "qelapsedtimer.h"
 #include <QPainter>                                // For painting operations
 #include <QPaintEvent>                             // For paint events
@@ -15,7 +13,7 @@
 // %%% Constructor %%%
 /* Initialize electronic warfare display */
 CSMDisplay::CSMDisplay(QWidget *parent)
-    : QWidget(parent)
+    : QWidget(parent), hoveredTargetIndex(-1)
 {
     // Set background color
     setStyleSheet("background-color: black;");
@@ -25,6 +23,9 @@ CSMDisplay::CSMDisplay(QWidget *parent)
     setSizePolicy(policy);
     // Set padding
     padding = 40;
+
+    // Enable mouse tracking for hover detection
+    setMouseTracking(true);
 }
 
 // %%% Size Management %%%
@@ -48,11 +49,72 @@ int CSMDisplay::heightForWidth(int width) const
     return qRound(width * ASPECT_RATIO);
 }
 
+/* Handle mouse move events for hover detection */
+void CSMDisplay::mouseMoveEvent(QMouseEvent *event)
+{
+    lastMousePos = event->pos();
 
+    if (targets.isEmpty()) {
+        hoveredTargetIndex = -1;
+        update();
+        return;
+    }
+
+    int w = width();
+    int h = height();
+    int outerDiameter = qMin(w - padding*2, h - padding*2);
+    int outerRadius = outerDiameter / 2;
+    QPoint center(w / 2, h / 2);
+
+    // Check if mouse is near any target
+    int closestIndex = -1;
+    double minDistance = 20.0; // Pixel threshold for hover detection
+
+    for (int i = 0; i < targets.size(); ++i) {
+        const Target &t = targets[i];
+
+        // Calculate target position on screen
+        double per = t.radius / range;
+        if (per < 0.0) per = 0.0;
+        if (per > 1.0) per = 1.0;
+
+        double r = per * outerRadius;
+        double angleDeg = t.angle;
+        double theta = qDegreesToRadians(angleDeg - 90.0);
+        int tx = center.x() + int(r * cos(theta));
+        int ty = center.y() + int(r * sin(theta));
+
+        // Calculate distance from mouse to target
+        double dx = lastMousePos.x() - tx;
+        double dy = lastMousePos.y() - ty;
+        double distance = sqrt(dx*dx + dy*dy);
+
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestIndex = i;
+        }
+    }
+
+    if (hoveredTargetIndex != closestIndex) {
+        hoveredTargetIndex = closestIndex;
+        update(); // Repaint to show/hide labels
+    }
+
+    QWidget::mouseMoveEvent(event);
+}
+
+/* Handle mouse leave events */
+void CSMDisplay::leaveEvent(QEvent *event)
+{
+    Q_UNUSED(event);
+    hoveredTargetIndex = -1;
+    update();
+    QWidget::leaveEvent(event);
+}
+
+/* Select entity for display */
 void CSMDisplay::selectEntity(Entity* entit)
 {
-
-
     entity = nullptr;
     id = "";
 
@@ -68,7 +130,6 @@ void CSMDisplay::selectEntity(Entity* entit)
     id = QString::fromStdString(platform->ID);
     entity = platform;
 
-
     sensor = nullptr;
     for (auto const& pair :  *entity->sensors->sensors) {
         Sensor* s = pair.second;
@@ -79,8 +140,12 @@ void CSMDisplay::selectEntity(Entity* entit)
         }
     }
 
+    // Reset hover state when entity changes
+    hoveredTargetIndex = -1;
+        update();
 }
 
+/* Remove entity from display */
 void CSMDisplay::RemoveEntity(QString ID)
 {
     if (id == ID) {
@@ -88,23 +153,27 @@ void CSMDisplay::RemoveEntity(QString ID)
         entity = nullptr;
         sensor = nullptr;
         // Reset window title
-        setWindowTitle("Radar Display");
+        setWindowTitle("CSM Display");
+        // Reset hover state
+        hoveredTargetIndex = -1;
     }
 }
 
-
+/* Update radar display with new data */
 void CSMDisplay::updateRadar()
 {
     if (entity && sensor) {
         setRange(sensor->range);
         targets = sensor->ewtargets;
-
         update();
     } else {
-
+        // Reset targets if no entity/sensor
+        targets.clear();
+        hoveredTargetIndex = -1;
     }
 }
 
+/* Main paint event handler */
 void CSMDisplay::paintEvent(QPaintEvent * /*event*/)
 {
     QElapsedTimer timer;
@@ -128,19 +197,18 @@ void CSMDisplay::paintEvent(QPaintEvent * /*event*/)
     drawCenterMark(p, center);
     drawTopMarker(p, center, outerRadius);
 
-
     if (!targets.isEmpty()) {
+        for (int i = 0; i < targets.size(); ++i) {
+            const Target &t = targets[i];
 
-
-        for (const Target &t : targets) {
             // FIX: Manual bound check
             double per = t.radius / range;
             if (per < 0.0) per = 0.0;
             if (per > 1.0) per = 1.0;
 
             double r = per * outerRadius;
-            double angleDeg = t.angle;
-            double theta = qDegreesToRadians(angleDeg - 90.0);
+            double angleDeg = t.angle - 90;
+            double theta = qDegreesToRadians(angleDeg);
             int tx = center.x() + int(r * cos(theta));
             int ty = center.y() + int(r * sin(theta));
 
@@ -148,72 +216,51 @@ void CSMDisplay::paintEvent(QPaintEvent * /*event*/)
             p.setPen(QPen(radarGreen, 1, Qt::DotLine));
             p.drawLine(center, QPoint(tx, ty));
 
-            // Draw red dot at target position
-            p.setBrush(Qt::red);
+            // Draw target dot - blue normally, red if hovered
+            if (i == hoveredTargetIndex) {
+                p.setBrush(Qt::red);
+            } else {
+                p.setBrush(Qt::blue);
+            }
             p.setPen(Qt::NoPen);
             p.drawEllipse(QPointF(tx, ty), 4, 4);
 
-            // Draw labels
-            p.setPen(QPen(Qt::yellow, 1));
-            QFont font = p.font();
-            font.setPointSize(8);
-            p.setFont(font);
+            // Draw labels ONLY if this target is hovered
+            if (i == hoveredTargetIndex) {
+                p.setPen(QPen(Qt::yellow, 1));
+                QFont font = p.font();
+                font.setPointSize(8);
+                p.setFont(font);
 
-            Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
-            QString targetName = targetPlatform ? QString::fromStdString(targetPlatform->Name) : "Unknown";
+                Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
+                QString targetName = targetPlatform ? QString::fromStdString(targetPlatform->Name) : "Unknown";
 
-            // QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
-            QString distText = QString("D:%1km").arg(t.radius, 0, 'f', 1);
-            // QString nameText = QString("N:%1").arg(targetName);
+                // Show angle, distance, and name for hovered target
+                QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
+                QString distText = QString("D:%1km").arg(t.radius, 0, 'f', 1);
+                QString nameText = QString("N:%1").arg(targetName);
 
-            // Draw text at target position
-            // p.drawText(tx + 6, ty - 6, angleText);
-            p.drawText(tx + 6, ty + 12, distText);
-            // p.drawText(tx + 6, ty + 30, nameText);
+                // Draw text at target position (offset slightly)
+                p.drawText(tx + 6, ty - 6, angleText);
+                p.drawText(tx + 6, ty + 12, distText);
+                p.drawText(tx + 6, ty + 30, nameText);
+            }
         }
     } else if (entity && sensor) {
         // No targets message
         p.setPen(Qt::white);
-        p.drawText(center, "No CSM Targets Detected");
+        QFont font = p.font();
+        font.setPointSize(10);
+        p.setFont(font);
+        QRect textRect = p.fontMetrics().boundingRect("No CSM Targets Detected");
+        p.drawText(center.x() - textRect.width()/2, center.y(), "No CSM Targets Detected");
     }
 
     qint64 elapsedMs = timer.elapsed();
     Profiler::currentFrame->csmdisplay = elapsedMs;
 }
-// %%% Drawing Methods %%%
-/* Draw targets and their paths */
-void CSMDisplay::drawTargetAndPath(QPainter &painter)
-{
-    int w = width();
-    int h = height();
-    int centerX = w/2;
-    int centerY = h/2;
-    int outerDiameter = qMin(w - padding*2, h - padding*2);
-    int outerRadius = outerDiameter / 2;
-    if (entity && sensor) {
-        // Get entity angle
-        ang = entity->transform->toEulerAngles().y();
-        painter.setBrush(Qt::red);
-        for (const Target &target : sensor->csmtargets) {
-            // Calculate target position
-            int panelhigh = outerRadius;
-            float per = target.radius/range;
-            float radius = panelhigh*per;
-            float angle = target.angle;
-            double targetAngle = (angle + 90) * M_PI / 180;
-            double targetRadius = radius;
-            int targetX = centerX + static_cast<int>(targetRadius * cos(targetAngle));
-            int targetY = centerY - static_cast<int>(targetRadius * sin(targetAngle));
-            // Draw target point
-            painter.drawEllipse(targetX - 3, targetY - 3, 6, 6);
-            // Draw target labels
-            painter.setPen(QPen(Qt::green, 1));
-            painter.drawText(targetX - 20, targetY - 10, QString("%1").arg(angle));
-            painter.drawText(targetX - 20, targetY + 5, QString("%1").arg(radius));
-        }
-    }
-}
 
+// %%% Drawing Methods %%%
 /* Draw display background */
 void CSMDisplay::drawBackground(QPainter &p)
 {
@@ -333,4 +380,41 @@ void CSMDisplay::drawTopMarker(QPainter &p, const QPoint &center, int outerRadiu
     p.setPen(radarGreen);
     p.drawText(tx, ty, txt);
     p.restore();
+}
+
+/* Draw targets and their paths */
+void CSMDisplay::drawTargetAndPath(QPainter &painter)
+{
+    int w = width();
+    int h = height();
+    int centerX = w/2;
+    int centerY = h/2;
+    int outerDiameter = qMin(w - padding*2, h - padding*2);
+    int outerRadius = outerDiameter / 2;
+
+    if (entity && sensor) {
+        // Get entity angle
+        ang = entity->transform->toEulerAngles().y();
+        painter.setBrush(Qt::red);
+
+        for (const Target &target : sensor->csmtargets) {
+            // Calculate target position
+            int panelhigh = outerRadius;
+            float per = target.radius/range;
+            float radius = panelhigh*per;
+            float angle = target.angle;
+            double targetAngle = (angle + 90) * M_PI / 180;
+            double targetRadius = radius;
+            int targetX = centerX + static_cast<int>(targetRadius * cos(targetAngle));
+            int targetY = centerY - static_cast<int>(targetRadius * sin(targetAngle));
+
+            // Draw target point
+            painter.drawEllipse(targetX - 3, targetY - 3, 6, 6);
+
+            // Draw target labels
+            painter.setPen(QPen(Qt::green, 1));
+            painter.drawText(targetX - 20, targetY - 10, QString("%1").arg(angle));
+            painter.drawText(targetX - 20, targetY + 5, QString("%1").arg(radius));
+        }
+    }
 }

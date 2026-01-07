@@ -73,6 +73,7 @@ void EWDisplay::selectEntity(Entity* entit)
             }
         }
     }
+        update();
 }
 
 /* Remove entity if ID matches */

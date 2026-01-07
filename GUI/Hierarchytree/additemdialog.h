@@ -1,73 +1,112 @@
 
-
-/* ========================================================================= */
-/* File: additemdialog.h                                                    */
-/* Purpose: Defines dialog for adding items to hierarchy                     */
-/* ========================================================================= */
-
 #ifndef ADDITEMDIALOG_H
 #define ADDITEMDIALOG_H
 
-#include <QDialog>                                // For dialog base class
-#include <QVBoxLayout>                            // For vertical layout
-#include <QHBoxLayout>                             // For horizontal layout
-#include <QLabel>                                 // For label widget
-#include <QLineEdit>                              // For text input widget
-#include <QCheckBox>                              // For checkbox widget
-#include <QDialogButtonBox>                       // For dialog buttons
-#include <QGroupBox>                              // For group box widget
-#include <QComboBox>                              // For dropdown widget
-#include <QMap>                                   // For key-value mapping
+#include <QDialog>
+#include <QVariantMap>
+#include <QHBoxLayout>
 
-// %%% Class Definition %%%
-/* Dialog for adding entities or folders */
+class QLineEdit;
+class QComboBox;
+class QCheckBox;
+class QGroupBox;
+class QSpinBox;
+class Hierarchy;
+
 class AddItemDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    // Enum for dialog types
     enum DialogType {
         EntityType,
-        Folder
+        FolderType
     };
 
-    // Get item number
-    int getNumber() const;
-    // Get item names
-    QStringList getNames() const;
-    // Initialize dialog
-    explicit AddItemDialog(DialogType type, const QString &specificType = "", QWidget *parent = nullptr);
-    // Get item name
+    enum DialogMode {
+        NormalMode,
+        ComponentSensorMode,
+        ComponentIFFMode,
+        ComponentRadioMode
+    };
+
+    AddItemDialog(DialogType type,
+                  const QString &specificType = QString(),
+                  DialogMode dialogMode = NormalMode,
+                  Hierarchy* hierarchy = nullptr,
+                  QWidget *parent = nullptr);
+
     QString getName() const;
-    // Get selected components
+    int getNumber() const;
     QVariantMap getComponents() const;
-    // Get selected sensor type
-    //-> CHANGE ✅ Only keep this single getter for sensor type
-    QString getSensorType() const {
-        if (sensorTypeComboBox)
-            return sensorTypeComboBox->currentText();
-        return "Generic";
-    }
-    // Get default components
-    static QMap<QString, bool> defaultComponents();
+    QString getSensorType() const;
+    QString getProfileId() const;
+    QString getProfileName() const;
+    QString getComponentType() const;
+
+    // Scenarioconfig methods
+    bool isScenarioconfigEnabled() const;
+    QString getScType() const;
+    int getScRange() const;
+    int getMinRadioRange() const;
+    int getMaxRadioRange() const;
+    int getMinRadarRange() const;
+    int getMaxRadarRange() const;
+    QString getTrajectory() const;
+    int getMinPlaneSpeed() const;
+    int getMaxPlaneSpeed() const;
+    int getMinTurnRadius() const;
+    int getMaxTurnRadius() const;
+
+    // ✅ OLD METHOD NAMES FOR BACKWARD COMPATIBILITY
+    bool isScEnabled() const { return isScenarioconfigEnabled(); }
+    int getRange() const { return getScRange(); }
+
+private slots:
+    void onScCheckBoxStateChanged(int state);
 
 private:
-    // %%% UI Setup Methods %%%
-    // Configure dialog UI
     void setupUI(DialogType type);
+    void setupScSection();
+    QHBoxLayout* createMinMaxSpinBoxPair(const QString& label,
+                                         QSpinBox*& minSpinBox,
+                                         QSpinBox*& maxSpinBox,
+                                         int minDefault,
+                                         int maxDefault,
+                                         int minRange,
+                                         int maxRange,
+                                         QString unit = " m");
 
-    // %%% UI Components %%%
-    // Name input field
+    void populateSensorProfiles();
+    void populateIFFProfiles();
+    void populateRadioProfiles();
+    void populateProfiles(const QString& profileType);
+
     QLineEdit *nameLineEdit;
-    // Number input field
-    QLineEdit* numberLineEdit;
-    // Component checkboxes
+    QLineEdit *numberLineEdit;
+    QComboBox *sensorTypeComboBox;
+    QComboBox *profileComboBox;
+
+    // Scenarioconfig widgets
+    QCheckBox *scCheckBox;
+    QGroupBox *scOptionsGroup;
+    QComboBox *scTypeComboBox;
+    QLineEdit *rangeLineEdit;
+    QSpinBox *minRadioRangeSpinBox;
+    QSpinBox *maxRadioRangeSpinBox;
+    QSpinBox *minRadarRangeSpinBox;
+    QSpinBox *maxRadarRangeSpinBox;
+    QComboBox *trajectoryComboBox;
+    QSpinBox *minPlaneSpeedSpinBox;
+    QSpinBox *maxPlaneSpeedSpinBox;
+    QSpinBox *minTurnRadiusSpinBox;
+    QSpinBox *maxTurnRadiusSpinBox;
+
     QMap<QString, QCheckBox*> componentCheckboxes;
-    // Sensor type dropdown
-    QComboBox *sensorTypeComboBox=nullptr;
-    // Specific item type
+
     QString specificType;
+    DialogMode m_dialogMode;
+    Hierarchy* m_hierarchy;
 };
 
 #endif // ADDITEMDIALOG_H

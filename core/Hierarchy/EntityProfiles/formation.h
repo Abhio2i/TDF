@@ -35,6 +35,8 @@ public:
     Constants::FormationType stringToFormationType(QString str) const;
     QStringList formationTypeOptions() const;
 
+    void generatePositions(int targetCount);
+
 private:  // Add this private section
     void resolveEntityReference(FormationPosition* position, const QJsonObject& obj);
 

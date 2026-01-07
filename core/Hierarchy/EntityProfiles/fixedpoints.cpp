@@ -6,7 +6,7 @@
 #include <core/GlobalRegistry.h>
 
 FixedPoints::FixedPoints(Hierarchy *h):Entity(h) {
-
+    type = Constants::EntityType::FixedPoint;
 }
 
 
@@ -14,13 +14,14 @@ FixedPoints::FixedPoints(Hierarchy *h):Entity(h) {
 void FixedPoints::spawn() {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
-    addComponent("transform");
-    addComponent("collider");
-    addComponent("meshRenderer2d");
 }
 
 std::vector<std::string>FixedPoints:: getSupportedComponents() {
-    return std::vector<std::string>{};
+    std::vector<std::string> supported;
+    supported.push_back("transform");
+    supported.push_back("collider");
+    supported.push_back("bitmap");
+    return supported;
 }
 
 
@@ -36,7 +37,7 @@ QJsonObject FixedPoints::toJson() const {
 
     if (transform) obj["transform"] = transform->toJson();
     if (collider) obj["collider"] = collider->toJson();
-    if (meshRenderer2d) obj["meshRenderer2d"] = meshRenderer2d->toJson();
+    if (meshRenderer2d) obj["bitmap"] = meshRenderer2d->toJson();
 
     QJsonObject entityObj;
     entityObj["type"] = "option";
@@ -76,9 +77,9 @@ void FixedPoints::fromJson(const QJsonObject& obj) {
         collider->fromJson(obj["collider"].toObject());
     }
 
-    if (obj.contains("meshRenderer2d") && obj["meshRenderer2d"].isObject()) { // Fix: Correct key
-        if (!meshRenderer2d) addComponent("meshRenderer2d");
-        meshRenderer2d->fromJson(obj["meshRenderer2d"].toObject());
+    if (obj.contains("bitmap") && obj["bitmap"].isObject()) { // Fix: Correct key
+        if (!meshRenderer2d) addComponent("bitmap");
+        meshRenderer2d->fromJson(obj["bitmap"].toObject());
     }
 }
 
@@ -94,12 +95,12 @@ void FixedPoints::addComponent(std::string name) {
         if (!collider) {
             if (!transform)
                 addComponent("transform");
-            collider = new Collider();
+            collider = new Collider(parent);
             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(collider->ID), "collider");
         }
 
     }
-    else if (name == "meshRenderer2d") {
+    else if (name == "bitmap") {
         if (!meshRenderer2d) {
             if (!transform)
                 addComponent("transform");
@@ -107,7 +108,7 @@ void FixedPoints::addComponent(std::string name) {
             meshRenderer2d->Sprite = new std::string(":/texture/images/Texture/marker.png");
             meshRenderer2d->Meshes[0]->Sprite = meshRenderer2d->Sprite;
             meshRenderer2d->Meshes[0]->clear();
-            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(meshRenderer2d->ID), "meshRenderer2d");
+            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(meshRenderer2d->ID), "bitmap");
             emit parent->entityMeshAdded(QString::fromStdString(parentID), this);
         }
 
@@ -125,7 +126,7 @@ QJsonObject FixedPoints::getComponent(std::string name) {
     } else if (name == "collider") {
         if (!collider) { Console::error(name + ": not exist"); return QJsonObject(); }
         return collider->toJson();
-    } else if (name == "meshRenderer2d") {
+    } else if (name == "bitmap") {
         if (!meshRenderer2d) { Console::error(name + ": not exist"); return QJsonObject(); }
         return meshRenderer2d->toJson();
     }
@@ -140,7 +141,7 @@ void FixedPoints::updateComponent(QString name, const QJsonObject& obj) {
     } else if (name == "collider") {
         if (!collider) { Console::error(name.toStdString() + ": not exist"); return; }
         collider->fromJson(obj);
-    } else if (name == "meshRenderer2d") {
+    } else if (name == "bitmap") {
         if (!meshRenderer2d) { Console::error(name.toStdString() + ": not exist"); return; }
         meshRenderer2d->fromJson(obj);
     }
