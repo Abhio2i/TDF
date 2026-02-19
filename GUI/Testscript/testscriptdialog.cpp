@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: testscriptdialog.cpp                                             */
 /* Purpose: Implements dialog for editing and managing AngelScript files   */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #include "testscriptdialog.h"                      // For test script dialog class

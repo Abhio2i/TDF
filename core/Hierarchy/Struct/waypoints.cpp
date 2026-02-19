@@ -1,10 +1,15 @@
 #include "waypoints.h"
 
-Waypoints::Waypoints() {}
+Waypoints::Waypoints() {
+    geocord = new Geocords();
+    position = new Vector();
+}
 
 QJsonObject Waypoints::toJson()const {
     QJsonObject obj;
 
+    obj["sensor"] = sensor;
+    obj["formation"] = formation;
     obj["speed"] = speed;
 
     if (geocord)
@@ -18,6 +23,10 @@ QJsonObject Waypoints::toJson()const {
 
 void Waypoints::fromJson(const QJsonObject& obj) {
 
+    if (obj.contains("sensor"))
+        sensor = obj["sensor"].toBool();
+    if (obj.contains("formation"))
+        sensor = obj["formation"].toBool();
     if (obj.contains("speed"))
         speed = obj["speed"].toVariant().toDouble();
 

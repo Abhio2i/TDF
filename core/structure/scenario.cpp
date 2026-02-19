@@ -8,6 +8,7 @@
 Scenario::Scenario() {
     hierarchy = new Hierarchy();
     Library = new Hierarchy();
+    Library->fixedProfiles = false;
     scenerenderer = new SceneRenderer();
     console  = Console::internalInstance();
     scriptengine = new ScriptEngine();

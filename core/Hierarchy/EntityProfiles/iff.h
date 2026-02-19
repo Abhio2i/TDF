@@ -90,6 +90,18 @@ public:
     // std::unordered_map<std::string, IFFTarget> lastTargetStates;
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& obj) override;
+    int getIFFTargetCount() const;
+
+    bool getIFFTarget(
+        int index,
+        std::string& outResponderId,
+        std::string& outResponderName,
+        std::string& outMode,
+        std::string& outCode,
+        float& outDistance,
+        float& outAngle,
+        int& outStatus
+        ) const;
 signals:
     void iffContactsUpdated(const QJsonArray& responses); // UI/listeners get QJsonArray of results
 private:

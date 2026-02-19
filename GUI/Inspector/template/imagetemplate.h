@@ -46,7 +46,7 @@ private:
     // Template name
     QString name;
     // Inspector reference
-    Inspector *inspectorRef;  // NEW
+    Inspector *inspectorRef;
         QString mainID;
 };
 

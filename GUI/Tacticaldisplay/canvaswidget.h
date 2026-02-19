@@ -1,12 +1,11 @@
-
-
 #ifndef CANVASWIDGET_H
 #define CANVASWIDGET_H
 
-// Include necessary libraries and headers
 #include "GUI/Tacticaldisplay/Gis/gislib.h"
 #include "GUI/measuredistance/measuredistancedialog.h"
+#include "GUI/Tacticaldisplay/Gis/shapes_feature.h"
 #include "qnamespace.h"
+#include "qtimer.h"
 #include <QWidget>
 #include <QPainter>
 #include <core/Hierarchy/Struct/vector.h>
@@ -19,13 +18,16 @@
 #include <Qt3DCore/QTransform>
 #include <core/Hierarchy/entity.h>
 #include <core/Hierarchy/Components/transform.h>
+#include <GUI/Tacticaldisplay/Gis/layerpanel.h>
 // #include <GUI/Tacticaldisplay/entityinfodialog.h>
+class EntityContextMenu;
 
 class EntityInfoDialog;
 // Forward declarations
 class QDialog;
 class QSpinBox;
 class QPushButton;
+class ShapesFeature;
 
 /* MeshEntry structure section */
 
@@ -48,12 +50,12 @@ struct MeshEntry {
     QPolygonF polyline;
     QVector<QPointF> pointsToDraw;
     bool detection = true;
-      bool radioVisible = true;
-    // NEW: Text-specific properties
+    bool radioVisible = false;
     QColor textColor;          // Text color
     QFont textFont;           // Text font
     int textSize;             // Font size
     bool isTextSelected;      // Selection flag for text
+    int individualImageSize = -1;
 };
 
 /* TransformMode enumeration section */
@@ -74,10 +76,10 @@ enum TransformMode {
 // Main canvas widget class for rendering and interaction
 class CanvasWidget : public QWidget {
     Q_OBJECT  // Qt macro for signals/slots
+    friend class ShapesFeature;
 
 public:
     /* Constructor section */
-
     QPixmap* cacheimg;
     QPixmap scaledimg;
     QPen pointPen;
@@ -90,6 +92,7 @@ public:
     /* Public members section */
     std::unordered_map<std::string, MeshEntry> Meshes;
     std::string selectedEntityId;
+    std::vector<std::string> selectedEntityIds;
     TransformMode currentMode = Translate;
 
     /* Rendering and mode control section */
@@ -119,23 +122,15 @@ public:
     // Shape drawing related members and methods
     QString selectedShape;  // Currently selected shape type
     void setShapeDrawingMode(bool enabled, const QString& shapeType = "");  // Set shape drawing mode
-    void drawCircle(const QPointF& geoPos);  // Draw circle at geographic position
-    void drawRectangle(const QPointF& geoPos);  // Draw rectangle at geographic position
-    void drawLine(const QPointF& geoPos, bool finalize);  // Draw line (multi-point)
-    void drawPolygon(const QPointF& geoPos, bool finalize);  // Draw polygon (multi-point)
-    void drawPoints(const QPointF& geoPos);  // Draw point marker
-    void handleShapeDrawing(const QString& shapeType, const QPointF& geoPos, bool finalize);
+    // void handleShapeDrawing(const QString& shapeType, const QPointF& geoPos, bool finalize);
     std::vector<MeshEntry> tempMeshes;  // Temporary meshes for shapes and bitmaps
-
-    // for automic line draw without click on canvas
-    void scriptStartLine();
-    void scriptAddLinePoint(const QPointF& geoPos);
-    void scriptFinishLine();
 
     // Bitmap/image related methods
     void onBitmapImageSelected(const QString& filePath);  // Handle user image selection
     QString getBitmapImagePath(const QString& bitmapType);  // Get path for preset bitmaps
     void onBitmapSelected(const QString& bitmapType);  // Handle preset bitmap selection
+    void onBitmapImageSelectedAtGeo(const QString& path, const QPointF& geo); // Script / deterministic geo based //
+    void onBitmapSelectedAtGeo(const QString& bitmapType, const QPointF& geo);  // Script / deterministic geo based //
 
     // Waypoint and trajectory methods
     void selectWaypoint(int index);  // Select specific waypoint
@@ -151,7 +146,25 @@ public:
     void deleteText(const QString& textId);
     //=============info
     EntityInfoDialog *entityInfoDialog = NULL;
-        bool m_isBeingDestroyed = false;
+    bool m_isBeingDestroyed = false;
+
+    void updateShapeProperties(const QString& shapeId, const QColor& color, int borderThickness);
+
+    ShapesFeature* getShapesFeature() const;  // getter for shape feature
+
+
+    /////////// move shape by coordinate ////////
+    bool moveShapeByName(const std::string& shapeName,
+                         const QPointF& geoPos);
+
+    // add text using script ///////
+    void addTextAtGeo(const QString& text, const QPointF& geo);
+
+    /////// delete shapes ////////////
+    bool deleteObjectById(const QString& id);
+    void centerOnEntity(const QString& entityId, bool adjustZoom = false);
+    void centerOnEntityWithZoom(const QString& entityId, int zoomLevel);
+    double calculateTrajectoryCompletionTime(const MeshEntry& entry) const;
 
 public slots:
     void ReInit();
@@ -174,28 +187,24 @@ public slots:
 private slots:
     void onMeasurementTypeChanged(bool isEll);  // Handle measurement type change (ellipsoidal vs planar)
 
+private:
+    // Add this member variable
+    EntityContextMenu* m_entityContextMenu;
+    // Add this method declaration
+    void handleEntityDoubleClick(const QString& entityId, MeshEntry& entry);
+    void showEntityContextMenu(const QPoint& globalPos, const QString& entityId, MeshEntry& entry);
+    QString checkEntityHover(const QPoint& mousePos);
+    void updateHoverTooltip();
+    QString m_hoveredEntityId;
+    QTimer m_tooltipTimer;
+
+    LayerPanel* m_layerPanel = nullptr;
 
 public slots:
 
-
-    //------info
     void showEntityInfo(const QString& entityId);
     void hideEntityInfo();
-
-    void clearShapeHistory() {
-        shapeHistory.clear();
-        showHistoryForShapes.clear();
-        dragStartPositions.clear(); // Clear drag start positions
-        update();
-    }
-
-    void clearShapeHistory(const QString& shapeId) {
-        shapeHistory.remove(shapeId);
-        showHistoryForShapes.remove(shapeId);
-        dragStartPositions.remove(shapeId); // Clear drag start position for this shape
-        update();
-    }
-
+    // void setTooltipOptions(const QSet<QString>& options);
 public:
     // Drag and drop event handlers
     void dragEnterEvents(QDragEnterEvent *event);
@@ -212,6 +221,13 @@ public:
     void setMeasurementUnit(const QString &unit);  // Set measurement unit (e.g., "m", "km", "ft", "mile")
     QString measurementUnit = "m";      // Default: meters
     double conversionFactor = 1.0;      // Default factor for meters
+    EntityInfoDialog* getEntityInfoDialog() const { return entityInfoDialog; }
+    void selectMultipleEntities(const QList<QString>& entityIds);
+    void clearSelection();
+    void setTooltipOptions(const QSet<QString>& options);
+
+    void setLayerPanel(LayerPanel* panel);
+    LayerPanel* getLayerPanel() const { return m_layerPanel; }
 
 private:
     // Drawing methods for different canvas elements
@@ -237,6 +253,26 @@ private:
     void handleKeyPress(QKeyEvent *event);
     void handlePaint(QPaintEvent *event);
 
+    void handleShapesMousePress(QMouseEvent *event);
+    void handleBitmapsMousePress(QMouseEvent *event);
+    void handleTextMousePress(QMouseEvent *event);  // NEW: Text handling function
+
+    void handleShapesMouseMove(QMouseEvent *event);
+    void handleTextMouseMove(QMouseEvent *event);
+    void handleBitmapsMouseMove(QMouseEvent *event);
+
+    void handleShapesMouseRelease(QMouseEvent *event);
+    void handleTextMouseRelease(QMouseEvent *event);
+    void handleBitmapsMouseRelease(QMouseEvent *event);
+
+    void handleShapesKeyPress(QKeyEvent *event);
+    void handleTextKeyPress(QKeyEvent *event);
+    void handleBitmapsKeyPress(QKeyEvent *event);
+
+    void handleShapesPaint(QPainter& painter);
+    void handleTextPaint(QPainter& painter);
+    void handleBitmapsPaint(QPainter& painter);
+
     // View and display settings
     float zoomLevel = 1.0f;  // Current zoom level
     bool showXGrid = true;   // Show X grid lines
@@ -245,13 +281,12 @@ private:
     bool showColliders = true;  // Show collision boundaries
     bool showMesh = true;    // Show mesh geometries
     bool showOutline = true; // Show selection outlines
-    bool showInformation = true;  // Show information overlay
+    bool showInformation = false;  // Show information overlay
     bool showFPS = true;     // Show FPS counter
     bool showSensors = true;     // Default sensors visible
     bool showRadio = true;       // Default radio visible
-
-     bool showImage = true;
-
+    bool showImage = true;
+    bool showTooltip = true;
     // Mode and state flags
     bool isDrawingTrajectory = false;  // Currently drawing trajectory
     QString selectedBitmapType;  // Selected bitmap type for placement
@@ -281,18 +316,27 @@ private:
     void handleTrajectoryRightClick(QMouseEvent *event);
     void handleShapeRightClick(QMouseEvent *event);
 
-    // Airbase layer functionality (preset layer)
-    std::vector<std::pair<double, double>> airbasePositions;  // lon, lat pairs
-    bool showAirbases = false;  // Toggle flag for airbase visibility
-    QString airbaseIconPath = ":/icons/images/airbase.png";  // Airbase icon path
-    QPixmap airbasePixmap;  // Cached pixmap for efficiency
-
-    void loadAirbaseData();  // Load static/dynamic airbase data
-    void drawAirbases(QPainter& painter);  // Draw airbase icons
-
     // Distance measurement
     MeasureDistanceDialog* measureDialog = nullptr;  // Measurement dialog
     QList<QPointF> measurePoints; // geo points (lon, lat) for measurement
+
+    ShapesFeature* shapesFeature;
+    void updateResizeHandlesForRotation(const QString& shapeId);
+    QPolygonF getRotatedShapePolygon(const MeshEntry& entry) const;
+    // Box-zoom functionality
+    bool isBoxZooming = false;           // Currently performing box-zoom drag
+    bool boxZoomPending = false;         // Double-click detected, waiting for drag
+    QPoint boxZoomStart;                 // Start point of box-zoom (canvas coordinates)
+    QPoint boxZoomCurrent;               // Current mouse position during box-zoom
+    QElapsedTimer doubleClickTimer;      // Timer to track double-click timing
+    static constexpr int DOUBLE_CLICK_TIMEOUT = 500;  // Max time between clicks (ms)
+
+    // Helper function to check if click is on empty canvas (no entities/shapes/bitmaps)
+    bool isClickOnEmptyCanvas(const QPoint& pos);
+
+    QSet<QString> activeTooltipOptions;
+
+    bool shouldDrawShape(const QString& shapeId) const;
 
 protected:
     // Qt event overrides
@@ -312,6 +356,7 @@ signals:
     // GeoJSON signals
     void geoJsonLayerAdded(const QString& layerName);  // GeoJSON layer added
     void pointsUpdated(const QList<QPointF>& points);  // Measurement points updated
+    void requestAddEntityAtPosition(double longitude, double latitude);
 
 private:
 
@@ -361,6 +406,8 @@ private:
     void handleShapeDragging(QMouseEvent *event);  // Handle shape dragging
     void stopShapeDragging();  // Stop shape dragging
 
+    void placeBitmapAtGeo(const QPointF& geo);  // bitmap plaing using geo //
+
     bool handleBitmapSelection(QMouseEvent *event);  // Handle bitmap selection
     void handleBitmapDragging(QMouseEvent *event);  // Handle bitmap dragging
     void stopBitmapDragging();  // Stop bitmap dragging
@@ -406,22 +453,8 @@ private:
 
     // Shape properties methods
     void showShapePropertiesDialog(const QString& shapeId);
-    void updateShapeProperties(const QString& shapeId, const QColor& color, int borderThickness);
     bool isShape(const QString& shapeId) const;
 
-    // History functionality
-    struct ShapeHistory {
-        QString shapeId;
-        QVector3D initialPosition;  // CHANGED: Store initial position where drag started
-        QVector3D currentPosition;
-        QDateTime timestamp;
-    };
-
-    QMap<QString, ShapeHistory> shapeHistory; // Maps shape ID to its history
-    QSet<QString> showHistoryForShapes; // Which shapes should show their history
-    QMap<QString, QVector3D> dragStartPositions; // Store initial drag positions
-    void addToHistory(const QString& shapeId, const QVector3D& initialPos, const QVector3D& currentPos);
-    void drawShapeHistory(QPainter& painter);
 };
 
 #endif // CANVASWIDGET_H

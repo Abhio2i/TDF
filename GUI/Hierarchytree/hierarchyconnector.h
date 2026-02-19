@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: hierarchyconnector.h                                               */
 /* Purpose: Defines connector for hierarchy and UI components               */
+// Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef HIERARCHYCONNECTOR_H
@@ -24,10 +25,11 @@ class HierarchyConnector : public QObject
     Q_OBJECT
 
 public:
+
     // Get singleton instance
     static HierarchyConnector* instance();
     // Connect signals for hierarchy and UI
-    void connectSignals(Hierarchy* hierarchy, HierarchyTree* treeView,
+    void connectSignals(Hierarchy* hierarchy, Hierarchy* library, HierarchyTree* treeView,
                         TacticalDisplay* tactical = nullptr,
                         Inspector* inspector = nullptr);
     // Connect library signals
@@ -51,12 +53,17 @@ public:
     void addToRecentProjects(const QString& filePath);
     QStringList getRecentProjects() const;
     void clearRecentProjects();
+    void newfile(Hierarchy* hierarchy);
+    void openXmlFile(Hierarchy* hierarchy,QString filePath);
+    QDomElement getDom(QString filePath);
+    Hierarchy* library = nullptr;
+
 public slots:
     // Handle library to hierarchy drop
-    void handleLibraryToHierarchyDrop(QVariantMap sourceData, QVariantMap targetData);
+    // void handleLibraryToHierarchyDrop(QVariantMap sourceData, QVariantMap targetData);
     // Handle hierarchy to library drop
-    void handleHierarchyToLibraryDrop(QVariantMap sourceData, QVariantMap targetData);
-
+    // void handleHierarchyToLibraryDrop(QVariantMap sourceData, QVariantMap targetData);
+    void loadToLibrary(QMainWindow* parent);
 private:
     // Initialize connector
     explicit HierarchyConnector(QObject* parent = nullptr);
@@ -69,15 +76,12 @@ private:
     // Main hierarchy instance
     Hierarchy* hierarchy = nullptr;
     // Library hierarchy instance
-    Hierarchy* library = nullptr;
+    // Hierarchy* library = nullptr;
     // Library tree view widget
     HierarchyTree* libTreeView = nullptr;
     // Hierarchy tree view widget
     HierarchyTree* treeView;
 
-private slots:
-    // Load data to library
-    void loadToLibrary(QMainWindow* parent);
 };
 
 #endif // HIERARCHYCONNECTOR_H

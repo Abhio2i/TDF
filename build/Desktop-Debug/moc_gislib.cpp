@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_GISlib_t {
-    QByteArrayData data[32];
-    char stringdata0[332];
+    QByteArrayData data[38];
+    char stringdata0[383];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -63,7 +63,13 @@ QT_MOC_LITERAL(27, 285, 11), // "QDropEvent*"
 QT_MOC_LITERAL(28, 297, 12), // "receiveImage"
 QT_MOC_LITERAL(29, 310, 3), // "url"
 QT_MOC_LITERAL(30, 314, 4), // "data"
-QT_MOC_LITERAL(31, 319, 12) // "receivePlace"
+QT_MOC_LITERAL(31, 319, 12), // "receivePlace"
+QT_MOC_LITERAL(32, 332, 11), // "fitToBounds"
+QT_MOC_LITERAL(33, 344, 6), // "minLat"
+QT_MOC_LITERAL(34, 351, 6), // "minLon"
+QT_MOC_LITERAL(35, 358, 6), // "maxLat"
+QT_MOC_LITERAL(36, 365, 6), // "maxLon"
+QT_MOC_LITERAL(37, 372, 10) // "zoomOffset"
 
     },
     "GISlib\0mouseCords\0\0lat\0lon\0crsId\0"
@@ -75,7 +81,8 @@ QT_MOC_LITERAL(31, 319, 12) // "receivePlace"
     "dragEnterEvents\0QDragEnterEvent*\0"
     "dragMoveEvents\0QDragMoveEvent*\0"
     "dropEvents\0QDropEvent*\0receiveImage\0"
-    "url\0data\0receivePlace"
+    "url\0data\0receivePlace\0fitToBounds\0"
+    "minLat\0minLon\0maxLat\0maxLon\0zoomOffset"
 };
 #undef QT_MOC_LITERAL
 
@@ -85,7 +92,7 @@ static const uint qt_meta_data_GISlib[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-      14,   14, // methods
+      15,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -93,22 +100,23 @@ static const uint qt_meta_data_GISlib[] = {
       12,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    3,   84,    2, 0x06 /* Public */,
-       6,    2,   91,    2, 0x06 /* Public */,
-       7,    1,   96,    2, 0x06 /* Public */,
-       9,    1,   99,    2, 0x06 /* Public */,
-      12,    1,  102,    2, 0x06 /* Public */,
-      14,    1,  105,    2, 0x06 /* Public */,
-      15,    1,  108,    2, 0x06 /* Public */,
-      16,    1,  111,    2, 0x06 /* Public */,
-      18,    3,  114,    2, 0x06 /* Public */,
-      22,    1,  121,    2, 0x06 /* Public */,
-      24,    1,  124,    2, 0x06 /* Public */,
-      26,    1,  127,    2, 0x06 /* Public */,
+       1,    3,   89,    2, 0x06 /* Public */,
+       6,    2,   96,    2, 0x06 /* Public */,
+       7,    1,  101,    2, 0x06 /* Public */,
+       9,    1,  104,    2, 0x06 /* Public */,
+      12,    1,  107,    2, 0x06 /* Public */,
+      14,    1,  110,    2, 0x06 /* Public */,
+      15,    1,  113,    2, 0x06 /* Public */,
+      16,    1,  116,    2, 0x06 /* Public */,
+      18,    3,  119,    2, 0x06 /* Public */,
+      22,    1,  126,    2, 0x06 /* Public */,
+      24,    1,  129,    2, 0x06 /* Public */,
+      26,    1,  132,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-      28,    2,  130,    2, 0x0a /* Public */,
-      31,    2,  135,    2, 0x0a /* Public */,
+      28,    2,  135,    2, 0x0a /* Public */,
+      31,    2,  140,    2, 0x0a /* Public */,
+      32,    5,  145,    2, 0x0a /* Public */,
 
  // signals: parameters
     QMetaType::Void, QMetaType::Double, QMetaType::Double, QMetaType::QString,    3,    4,    5,
@@ -127,6 +135,7 @@ static const uint qt_meta_data_GISlib[] = {
  // slots: parameters
     QMetaType::Void, QMetaType::QString, QMetaType::QByteArray,   29,   30,
     QMetaType::Void, QMetaType::QString, QMetaType::QByteArray,   29,   30,
+    QMetaType::Void, QMetaType::Double, QMetaType::Double, QMetaType::Double, QMetaType::Double, QMetaType::Int,   33,   34,   35,   36,   37,
 
        0        // eod
 };
@@ -151,6 +160,7 @@ void GISlib::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void
         case 11: _t->dropEvents((*reinterpret_cast< QDropEvent*(*)>(_a[1]))); break;
         case 12: _t->receiveImage((*reinterpret_cast< QString(*)>(_a[1])),(*reinterpret_cast< QByteArray(*)>(_a[2]))); break;
         case 13: _t->receivePlace((*reinterpret_cast< QString(*)>(_a[1])),(*reinterpret_cast< QByteArray(*)>(_a[2]))); break;
+        case 14: _t->fitToBounds((*reinterpret_cast< double(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2])),(*reinterpret_cast< double(*)>(_a[3])),(*reinterpret_cast< double(*)>(_a[4])),(*reinterpret_cast< int(*)>(_a[5]))); break;
         default: ;
         }
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
@@ -303,13 +313,13 @@ int GISlib::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 14)
+        if (_id < 15)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 14;
+        _id -= 15;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 14)
+        if (_id < 15)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 14;
+        _id -= 15;
     }
     return _id;
 }

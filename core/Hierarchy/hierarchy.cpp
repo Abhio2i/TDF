@@ -1,8 +1,8 @@
 #include "hierarchy.h"
-#include "core/Debug/console.h"
 #include "core/Hierarchy/EntityProfiles/radio.h"
 #include "core/Hierarchy/EntityProfiles/iff.h"
 #include "core/Hierarchy/EntityProfiles/sensor.h"
+#include "core/Config/scenarioconfig.h"
 #include <QJsonArray>
 #include <QJsonDocument>
 
@@ -53,6 +53,7 @@ Hierarchy::~Hierarchy()
 
 ProfileCategaory* Hierarchy::addProfileCategaory(QString profileName)
 {
+    emit status("add");
     ProfileCategaory* profile = new ProfileCategaory(this);
     profile->setProfileType(Constants::EntityType::Platform);
     profile->Name = profileName.toStdString();
@@ -64,6 +65,7 @@ ProfileCategaory* Hierarchy::addProfileCategaory(QString profileName)
 
 void Hierarchy::addProfileCategaoryWithObject(ProfileCategaory *profile)
 {
+    emit status("add");
     ProfileCategories.insert({profile->ID, profile});
     emit profileAddedPointer(profile);
     emit profileAdded(QString::fromStdString(profile->ID), QString::fromStdString(profile->Name));
@@ -71,6 +73,7 @@ void Hierarchy::addProfileCategaoryWithObject(ProfileCategaory *profile)
 
 void Hierarchy::removeProfileCategaory(QString ID)
 {
+    emit status("delete");
     delete ProfileCategories[ID.toStdString()];
     ProfileCategories.erase(ID.toStdString());
     emit profileRemoved(ID);
@@ -78,12 +81,34 @@ void Hierarchy::removeProfileCategaory(QString ID)
 
 void Hierarchy::renameProfileCategaory(QString Id, QString name)
 {
+    emit status("rename");
     ProfileCategories[Id.toStdString()]->Name = name.toStdString();
     emit profileRenamed(Id, name);
 }
 
+ProfileCategaory* Hierarchy::getProfileById(QString ID){
+    if (ProfileCategories.find(ID.toStdString()) != ProfileCategories.end()) {
+        return (ProfileCategories)[ID.toStdString()];
+    }else{
+        return nullptr;
+    }
+}
+
+ProfileCategaory* Hierarchy::getProfileByName(QString name){
+    for (const auto& [key, profilePtr] : ProfileCategories) {
+        if (profilePtr) {
+            if(QString::fromStdString(profilePtr->Name).contains(name)){
+                return profilePtr;
+            }
+        }
+    }
+    return nullptr;
+}
+
+
 Folder* Hierarchy::addFolder(QString parentId, QString FolderName, bool Profile)
 {
+    emit status("add");
     if (Profile) {
         return ProfileCategories[parentId.toStdString()]->addFolder(FolderName.toStdString());
     } else {
@@ -93,6 +118,7 @@ Folder* Hierarchy::addFolder(QString parentId, QString FolderName, bool Profile)
 
 void Hierarchy::addFolderViaNetwork(QString parentId, QString ID, QString FolderName, bool Profile)
 {
+    emit status("add");
     if (Profile && ProfileCategories.count(parentId.toStdString()) == 1) {
         ProfileCategories[parentId.toStdString()]->addFolder(FolderName.toStdString(),ID.toStdString());
     } else {
@@ -102,6 +128,7 @@ void Hierarchy::addFolderViaNetwork(QString parentId, QString ID, QString Folder
 
 void Hierarchy::removeFolder(QString parentId, QString ID, bool Profile)
 {
+    emit status("remove");
     if (ProfileCategories.count(parentId.toStdString())) {
         ProfileCategories[parentId.toStdString()]->removeFolder(ID.toStdString());
     } else {
@@ -110,6 +137,7 @@ void Hierarchy::removeFolder(QString parentId, QString ID, bool Profile)
 }
 
 void Hierarchy::removeFolderViaNetwork(QString ID){
+    emit status("renove");
     std::string parentId = (*Folders)[ID.toStdString()]->parentID;
     if (ProfileCategories.count(parentId)) {
         ProfileCategories[parentId]->removeFolder(ID.toStdString());
@@ -120,12 +148,14 @@ void Hierarchy::removeFolderViaNetwork(QString ID){
 
 void Hierarchy::renameFolder(QString Id, QString name)
 {
+    emit status("rename");
     (*Folders)[Id.toStdString()]->Name = name.toStdString();
     emit folderRenamed(Id, name);
 }
 
 Entity* Hierarchy::addEntity(QString parentId, QString EntityName, bool Profile)
 {
+    emit status("add");
     if (Profile) {
         return ProfileCategories[parentId.toStdString()]->addEntity(EntityName.toStdString());
     } else {
@@ -135,6 +165,7 @@ Entity* Hierarchy::addEntity(QString parentId, QString EntityName, bool Profile)
 
 void Hierarchy::addEntityViaNetwork(QString parentId, QString ID, QString EntityName, bool Profile)
 {
+    emit status("add");
     if (Profile && ProfileCategories.count(parentId.toStdString()) == 1) {
         ProfileCategories[parentId.toStdString()]->addEntity(EntityName.toStdString(),ID.toStdString());
     } else {
@@ -144,6 +175,7 @@ void Hierarchy::addEntityViaNetwork(QString parentId, QString ID, QString Entity
 
 Entity* Hierarchy::addEntityFromJson(QString parentId, QJsonObject obj, bool Profile)
 {
+    emit status("add");
     QString EntityName = obj["name"].toString();
     Entity* entity;
     if (Profile) {
@@ -163,6 +195,7 @@ Entity* Hierarchy::addEntityFromJson(QString parentId, QJsonObject obj, bool Pro
 
 void Hierarchy::removeEntity(QString parentId, QString ID, bool Profile)
 {
+    emit status("remove");
     if (ProfileCategories.count(parentId.toStdString())) {
         ProfileCategories[parentId.toStdString()]->removeEntity(ID.toStdString());
     } else {
@@ -172,36 +205,47 @@ void Hierarchy::removeEntity(QString parentId, QString ID, bool Profile)
 
 void Hierarchy::renameEntity(QString Id, QString name)
 {
+    emit status("rename");
     (*Entities)[Id.toStdString()]->Name = name.toStdString();
     emit entityRenamed(Id, name);
 }
 
+Entity* Hierarchy::getEntityById(QString ID){
+    if (Entities->find(ID.toStdString()) != Entities->end()) {
+        return (*Entities)[ID.toStdString()];
+    }else{
+        return nullptr;
+    }
+}
+
 void Hierarchy::addComponent(QString ID, QString componentName)
 {
+    emit status("add");
     // int i = Entities->count(ID.toStdString());
     if (Entities->find(ID.toStdString()) != Entities->end()) {
         (*Entities)[ID.toStdString()]->addComponent(componentName.toStdString());
         //emit componentAdded(ID, componentName);
         //getCurrentJsonData(); // Emit updated JSON
-        Console::log("Hierarchy::addComponent emitted getJsonData for " + ID.toStdString() + ", component: " + componentName.toStdString());
+        //Console::log("Hierarchy::addComponent emitted getJsonData for " + ID.toStdString() + ", component: " + componentName.toStdString());
     }
 }
 
 void Hierarchy::addSubComponent(QString ID, ComponentType type, QString subComponentName, QString data1 , QString data2, QString data3){
+    emit status("add");
     // int i = Entities->count(ID.toStdString());
     if (Components->find(ID.toStdString()) != Components->end()) {
         (*Components)[ID.toStdString()]->addSubComponent(subComponentName.toStdString(),data1,data2);
         //emit componentAdded(ID, componentName);
         //getCurrentJsonData(); // Emit updated JSON
-        Console::log("Hierarchy::addSubComponent emitted getJsonData for " + ID.toStdString() + ", component: " + subComponentName.toStdString());
+        //Console::log("Hierarchy::addSubComponent emitted getJsonData for " + ID.toStdString() + ", component: " + subComponentName.toStdString());
     }
 }
 
 void Hierarchy::removeSubComponent(QString ID, QString subComponentID, QString subComponentName){
-    // int i = Entities->count(ID.toStdString());
+    emit status("remove");
     if (Components->find(ID.toStdString()) != Components->end()) {
         (*Components)[ID.toStdString()]->removeSubComponent(subComponentID.toStdString());
-        Console::log("Hierarchy::RemoveSubComponent emitted getJsonData for " + ID.toStdString() + ", component: " + subComponentName.toStdString());
+        //Console::log("Hierarchy::RemoveSubComponent emitted getJsonData for " + ID.toStdString() + ", component: " + subComponentName.toStdString());
     }
 }
 
@@ -290,7 +334,7 @@ void Hierarchy::attachSensors(QString ID, QString name, QString sensorType)
         sensor->subType = Sensor::SubType::Generic;
     }
 
-    qDebug() << "✅ Sensor attached:" << name << "Subtype:" << sensorType;
+    //qDebug() << "✅ Sensor attached:" << name << "Subtype:" << sensorType;
 
     // ✅ Attach to entity
     (*Entities)[ID.toStdString()]->addSensor(sensor);
@@ -355,7 +399,7 @@ void Hierarchy::UpdateComponent(QString ID, QString componentName, QJsonObject d
                 mergedData[it.key()] = it.value();
             }
             component->updateSubComponent(delta["_id"].toString().toStdString(),mergedData);
-            Console::log("Hierarchy::UpdateComponent merged data for " + componentName.toStdString() + ": " + QString(QJsonDocument(mergedData).toJson()).toStdString());
+            //Console::log("Hierarchy::UpdateComponent merged data for " + componentName.toStdString() + ": " + QString(QJsonDocument(mergedData).toJson()).toStdString());
 
         }
     }else
@@ -404,10 +448,10 @@ void Hierarchy::UpdateComponent(QString ID, QString componentName, QJsonObject d
         emit entityUpdate(ID);
         emit entityComponentUpdate(ID,componentName,delta);
         //getCurrentJsonData(); // Emit updated JSON
-        Console::log("Hierarchy::UpdateComponent merged data for " + componentName.toStdString() + ": " + QString(QJsonDocument(mergedData).toJson()).toStdString());
-        Console::log("Hierarchy::UpdateComponent emitted getJsonData for " + ID.toStdString());
+        //Console::log("Hierarchy::UpdateComponent merged data for " + componentName.toStdString() + ": " + QString(QJsonDocument(mergedData).toJson()).toStdString());
+        //Console::log("Hierarchy::UpdateComponent emitted getJsonData for " + ID.toStdString());
     } else {
-        Console::log("Entity not found: " + ID.toStdString());
+        //Console::log("Entity not found: " + ID.toStdString());
     }
 }
 
@@ -418,40 +462,43 @@ void Hierarchy::onParameterChanged(const QString &entityID, const QString &compo
         QJsonObject currentData = entity->getComponent(componentName.toStdString());
         if (add) {
             // Parameter addition is handled by UpdateComponent via valueChanged signal
-            Console::log("Hierarchy::onParameterChanged added parameter " + key.toStdString() + " for " + componentName.toStdString());
+            //Console::log("Hierarchy::onParameterChanged added parameter " + key.toStdString() + " for " + componentName.toStdString());
         } else {
             // Remove parameter
             if (currentData.contains(key)) {
                 QJsonObject mergedData = currentData;
                 mergedData.remove(key);
                 entity->updateComponent(componentName, mergedData);
-                Console::log("Hierarchy::onParameterChanged removed parameter " + key.toStdString() + " from " + componentName.toStdString());
+                //Console::log("Hierarchy::onParameterChanged removed parameter " + key.toStdString() + " from " + componentName.toStdString());
             } else {
-                Console::log("Parameter not found: " + key.toStdString());
+                //Console::log("Parameter not found: " + key.toStdString());
             }
         }
         emit entityUpdate(entityID);
         //getCurrentJsonData(); // Emit updated JSON
-        Console::log("Hierarchy::onParameterChanged emitted getJsonData for " + entityID.toStdString());
+        //Console::log("Hierarchy::onParameterChanged emitted getJsonData for " + entityID.toStdString());
     } else {
-        Console::log("Entity not found: " + entityID.toStdString());
+        //Console::log("Entity not found: " + entityID.toStdString());
     }
 }
 
 void Hierarchy::removeComponent(QString entityId, QString componentName)
 {
+    emit status("remove");
     if (Entities->find(entityId.toStdString()) != Entities->end()) {
         (*Entities)[entityId.toStdString()]->removeComponent(componentName.toStdString());
         emit componentRemoved(entityId, componentName);
         emit entityUpdate(entityId);
         //getCurrentJsonData(); // Emit updated JSON
-        Console::log("Hierarchy::removeComponent emitted getJsonData for " + entityId.toStdString() + ", component: " + componentName.toStdString());
+        //Console::log("Hierarchy::removeComponent emitted getJsonData for " + entityId.toStdString() + ", component: " + componentName.toStdString());
     }
 }
 
 QJsonObject Hierarchy::toJson()
 {
     QJsonObject obj;
+    obj["software_version"] = ScenarioConfig::software_version;
+    obj["file_Version"] = ScenarioConfig::software_version;
 
     // Serialize Profile Categories
     QJsonObject profileCategoriesObj;
@@ -465,49 +512,13 @@ QJsonObject Hierarchy::toJson()
     }
     obj["profileCategories"] = profileCategoriesObj;
 
-    // // Serialize Folders
-    // if (Folders) {
-    //     QJsonObject foldersObj;
-    //     for (const auto& [key, folderPtr] : *Folders) {
-    //         if (folderPtr) {
-    //             foldersObj[QString::fromStdString(key)] = QString::fromStdString(folderPtr->Name);
-    //         }
-    //     }
-    //     obj["folders"] = foldersObj;
-    // }
-
-    // Serialize Entities
-    // if (Entities) {
-    //     QJsonObject entitiesObj;
-    //     static const QStringList componentNames = {
-    //         "transform",  // Added transform component
-    //         "collider",
-    //         "trajectory",
-    //         "dynamicModel",
-    //         "meshRenderer2d"
-    //     };
-    //     for (const auto& [key, entityPtr] : *Entities) {
-    //         if (entityPtr) {
-    //             QJsonObject entityObj;
-    //             entityObj["name"] = QString::fromStdString(entityPtr->Name);
-    //             for (const QString& compName : componentNames) {
-    //                 QJsonObject compData = entityPtr->getComponent(compName.toStdString());
-    //                 if (!compData.isEmpty()) {
-    //                     entityObj[compName] = compData;
-    //                 }
-    //             }
-    //             entitiesObj[QString::fromStdString(key)] = entityObj;
-    //         }
-    //     }
-    //     obj["entities"] = entitiesObj;
-    // }
-
-    //Console::log("Hierarchy::toJson output: " + QString(QJsonDocument(obj).toJson()).toStdString());
+    ////Console::log("Hierarchy::toJson output: " + QString(QJsonDocument(obj).toJson()).toStdString());
     return obj;
 }
 
 void Hierarchy::fromJson(const QJsonObject& obj)
 {
+
     std::vector<std::string> keys;
     for (const auto& [key, profilePtr] : ProfileCategories) {
         if (profilePtr) {
@@ -520,6 +531,10 @@ void Hierarchy::fromJson(const QJsonObject& obj)
     for (const QString& key : tempData.keys()) {
         tempData.remove(key);
     }
+    emit Init();
+    emit status("load");
+    if (obj.contains("file_Version"))
+        ScenarioConfig::file_Version = obj["file_Version"].toString();
 
     if (obj.contains("profileCategories") && obj["profileCategories"].isObject()) {
         QJsonObject profileCategoriesObj = obj["profileCategories"].toObject();
@@ -535,14 +550,14 @@ void Hierarchy::fromJson(const QJsonObject& obj)
                     profile->fromJson(catObj);
                 }
             }else{
-                if(name.contains("Platform")||
+                if((name.contains("Platform")||
                     name.contains("Radio")||
                     name.contains("Sensor")||
                     name.contains("SpecialZone")||
                     name.contains("Formation")||
                     name.contains("IFF")||
                     name.contains("Supply")||
-                    name.contains("FixedPoints"))
+                     name.contains("FixedPoints")) || !fixedProfiles)
                 {
                     ProfileCategaory* profile = new ProfileCategaory(this);
                     profile->Name = catObj["name"].toString().toStdString();
@@ -559,6 +574,7 @@ void Hierarchy::fromJson(const QJsonObject& obj)
 
         }
     }
+
 }
 
 void Hierarchy::getCurrentJsonData()
@@ -581,12 +597,12 @@ QJsonArray Hierarchy::searchProfile()
                     indexKeys.append(QString::fromStdString(indexKey));
                 }
             } else {
-                Console::log("Hierarchy::searchProfile: No indexKeys found for profile " + key);
+                //Console::log("Hierarchy::searchProfile: No indexKeys found for profile " + key);
             }
             profileObj["indexKey"] = indexKeys;
             profilesArray.append(profileObj);
         }
     }
-    Console::log("Hierarchy::searchProfile found " + std::to_string(profilesArray.size()) + " profiles");
+    //Console::log("Hierarchy::searchProfile found " + std::to_string(profilesArray.size()) + " profiles");
     return profilesArray;
 }

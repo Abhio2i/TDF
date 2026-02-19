@@ -1,53 +1,105 @@
 
+/* ========================================================================= */
+/* File: contextmenu.h                                                      */
+/* Purpose: Context-sensitive menu for hierarchy tree operations            */
+// Written by   : Arti Rajpoot
+/* ========================================================================= */
+
 #ifndef CONTEXTMENU_H
 #define CONTEXTMENU_H
 
-#include <QMenu>
-#include <QTreeWidgetItem>
-#include <QVariantMap>
-#include "GUI/Hierarchytree/additemdialog.h"
+#include <QMenu>                         // For menu base class
+#include <QTreeWidgetItem>               // For tree item handling
+#include <QVariantMap>                   // For data storage and transfer
+#include <QList>                         // For list of items
+#include "GUI/Hierarchytree/additemdialog.h"  // For add item dialog integration
 
+// Forward declarations
 class Hierarchy;
 class AddItemDialog;
 
+// %%% Class Definition %%%
+/* Context-sensitive menu that adapts to different hierarchy item types */
 class ContextMenu : public QMenu
 {
     Q_OBJECT
 
 public:
+    // %%% Constructor %%%
+    /* Initialize context menu with optional parent widget */
     explicit ContextMenu(QWidget *parent = nullptr);
+
+    // %%% Menu Setup Method %%%
+    /* Configure menu options based on selected tree item */
     void setupMenu(QTreeWidgetItem *item);
 
+    // %%% Hierarchy Accessor %%%
+    /* Set hierarchy reference for profile and data access */
     void setHierarchy(Hierarchy* hierarchy) { m_hierarchy = hierarchy; }
-    Hierarchy* m_hierarchy = nullptr;
+
+    // %%% Hierarchy Reference %%%
+    Hierarchy* m_hierarchy = nullptr;  // Pointer to hierarchy data structure
+
+    // %%% Multi-Select Support %%%
+    QList<QVariantMap> m_copiedItems;  // Store copied items for multi-paste
 
 signals:
-    void addFolderRequested(QString parentID, QString folderName, bool isProfileParent, const QVariantMap& components = QVariantMap());
-    // void addEntityRequested(QString parentID, QString entityName, bool isProfileParent, QVariantMap components = QVariantMap(), AddItemDialog* dialog = nullptr);
+    // %%% Folder Operations Signals %%%
+    /* Request to add new folder */
+    void addFolderRequested(QString parentID, QString folderName, bool isProfileParent,
+                            const QVariantMap& components = QVariantMap());
+    /* Request to remove existing folder */
+    void removeFolderRequested(QString parentID, QString ID, bool isProfileParent);
+
+    // %%% Entity Operations Signals %%%
+    /* Request to add new entity with components */
     void addEntityRequested(QString parentID, QString entityName,
                             bool isProfileParent,
                             QVariantMap components = QVariantMap(),
                             AddItemDialog* dialog = nullptr,
-                            QString sensorType = "Generic");
-    void addProfileRequested(QString profileName);
-    void removeProfileRequested(QString ID);
-    void removeFolderRequested(QString parentID, QString ID, bool isProfileParent);
+                            QString sensorType = "Generic",double initLat = 20000,double initlon = 20000,float heading = 20000);
+    /* Request to remove existing entity */
     void removeEntityRequested(QString parentID, QString ID, bool isProfileParent);
-    void pasteItemRequested(QVariantMap data);
-    void renameItemRequested(QVariantMap data);
-    void copyItemRequested(QVariantMap data);
-    void removeComponentRequested(QString entityID, QString componentName);
+
+    // %%% Profile Operations Signals %%%
+    /* Request to add new profile */
+    void addProfileRequested(QString profileName);
+    /* Request to remove existing profile */
+    void removeProfileRequested(QString ID);
+
+    // %%% Component Operations Signals %%%
+    /* Request to add component to entity */
     void addComponentRequested(QString entityID, QString componentType, QString componentName,
                                QString sensorType = "Generic", QString profileId = "");
-    void attchedEntity(QString parentID, QString name);
-    void removeSubComponentRequested(QString parentComponentID, QString subComponentID, QString subComponentName);
+    /* Request to remove component from entity */
+    void removeComponentRequested(QString entityID, QString componentName);
+    /* Request to remove sub-component from parent component */
+    void removeSubComponentRequested(QString parentComponentID, QString subComponentID,
+                                     QString subComponentName);
+
+    // %%% Clipboard Operations Signals %%%
+    /* Request to copy item to clipboard */
+    void copyItemRequested(QVariantMap data);
+    /* Request to paste item from clipboard */
+    void pasteItemRequested(QVariantMap data);
+    /* Request to paste multiple items from clipboard */
+    void pasteItemsRequested(QVariantMap targetData, QList<QVariantMap> itemsToPaste);
+    /* Request to rename existing item */
+    void renameItemRequested(QVariantMap data);
 
 private:
+    // %%% Menu Setup Methods %%%
+    /* Configure menu options for profile items */
     void setupProfileMenu(const QVariantMap &data);
+    /* Configure menu options for folder items */
     void setupFolderMenu(const QVariantMap &data);
+    /* Configure menu options for entity items */
     void setupEntityMenu(const QVariantMap &data);
+    /* Configure menu options for component items */
     void setupComponentMenu(const QVariantMap &data);
+    /* Configure menu options for sub-component items */
     void setupSubComponentMenu(const QVariantMap &data);
+
 };
 
 #endif // CONTEXTMENU_H

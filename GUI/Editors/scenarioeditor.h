@@ -3,6 +3,7 @@
 /* ========================================================================= */
 /* File: scenarioeditor.h                                                   */
 /* Purpose: Defines the main window for the scenario editor application      */
+// Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef SCENARIOEDITOR_H
@@ -25,6 +26,9 @@
 #include <QStatusBar>                             // For status bar display
 #include "core/ScriptEngine/scriptengine.h"       // For script engine
 #include "core/Simulation/simulation.h"
+#include <core/Config/scenarioconfig.h>
+#include <GUI/Tacticaldisplay/Gis/layerpanel.h>
+#include "GUI/Editors/customresizableoverlaydock.h"
 
 // %%% Class Definition %%%
 /* Main window class for the scenario editor */
@@ -40,6 +44,8 @@ public:
     QString lastSavedFilePath;
     // Library hierarchy data
     Hierarchy* library;
+    // Hierarchy tree view widget
+    HierarchyTree *treeView;
     // Library tree view widget
     HierarchyTree* libTreeView;
     // Canvas widget for display
@@ -52,13 +58,13 @@ public:
     void clearUnsavedChanges();
     // Tactical display widget
     TacticalDisplay *tacticalDisplay;
-      Hierarchy* hierarchy;
-
-
+    Hierarchy* hierarchy;
 public slots:
     void showProfileInfo();
     void showApplicationDialog();
-
+protected:
+    void resizeEvent(QResizeEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 private slots:
     // Handle item selection
     void onItemSelected(QVariantMap data);
@@ -74,23 +80,27 @@ private slots:
     void onDockVisibilityChanged(bool visible);
     // Reset layout to initial state
     void resetLayout();
-
     void onRecentProjectTriggered();
     void loadRecentProject(const QString& filePath);
+    void onRecentLibraryTriggered();
     // void clearRecentProjects();
 
 signals:
     // Signal unsaved changes state
     void unsavedChangesChanged(bool hasChanges);
     void Activated();
-
-
 private:
     // %%% Core Components %%%
+
+    CustomResizableOverlayDock *hierarchyDock;        // ✅ Custom class
+    CustomResizableOverlayDock *tacticalDisplayDock;  // ✅ Custom class
+    CustomResizableOverlayDock *consoleDock;          // ✅ Custom class
+    CustomResizableOverlayDock *inspectorDock;        // ✅ Custom class
+    CustomResizableOverlayDock *libraryDock;          // ✅ Custom class
+    CustomResizableOverlayDock *sidebarDock;          // ✅ Custom class
+    CustomResizableOverlayDock *textScriptDock;       // ✅ Custom class
     // Script engine instance
     ScriptEngine* scriptengine = nullptr;
-    // Hierarchy tree view widget
-    HierarchyTree *treeView;
     // Inspector panel widget
     Inspector *inspector;
     // Console for debugging
@@ -101,27 +111,27 @@ private:
     QVariantMap copydata;
     // Store copied hierarchy
     Hierarchy* copyhirarchy = nullptr;
-
     // %%% UI Components %%%
     // Dock widget for hierarchy
-    QDockWidget *hierarchyDock;
+    // QDockWidget *hierarchyDock;
     // Dock widget for tactical display
-    QDockWidget *tacticalDisplayDock;
+    // QDockWidget *tacticalDisplayDock;
     // Dock widget for console
-    QDockWidget *consoleDock;
+    // QDockWidget *consoleDock;
+    LayerPanel *layerPanel = nullptr;
+CustomResizableOverlayDock *layerDock = nullptr;
     // Dock widget for inspector
-    QDockWidget *inspectorDock;
+    // QDockWidget *inspectorDock;
     // Dock widget for library
-    QDockWidget *libraryDock;
+    // QDockWidget *libraryDock;
     // Dock widget for sidebar
-    QDockWidget *sidebarDock;
+    // QDockWidget *sidebarDock;
     // Dock widget for text script
-    QDockWidget *textScriptDock;
+    // QDockWidget *textScriptDock;
     // Console view widget
     ConsoleView *consoleView;
     // Text script view widget
     TextScriptWidget *textScriptView;
-
     // %%% UI Setup Methods %%%
     // Configure menu bar
     void setupMenuBar();
@@ -129,19 +139,14 @@ private:
     void setupToolBars();
     // Configure dock widgets
     void setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures);
-    // Enhanced dock widget setup for Linux compatibility
     void setupEnhancedDockWidgets();
     // Connect toolbar signals
     void setupToolBarConnections();
-
     // %%% Toolbar Components %%%
     // Design toolbar
     DesignToolBar *designToolBar;
-    // Standard toolbar
-    // StandardToolBar *standardToolBar;
     // Menu bar
-    MenuBar *menuBar;
-
+    // MenuBar *menuBar;
     // %%% Inspector Management %%%
     // List of inspector docks
     QList<QDockWidget*> inspectorDocks;
@@ -149,7 +154,6 @@ private:
     int inspectorCount = 0;
     // List of inspectors
     QList<Inspector*> inspectors;
-
     // %%% Status Bar %%%
     // Configure status bar
     void setupStatusBar();
@@ -157,7 +161,14 @@ private:
     void updateStatusBar(const QString &message);
     // Status bar widget
     QStatusBar *statusBar;
-         Simulation *simulation;
+    Simulation *simulation;
+    ScenarioConfig* m_scenarioConfig;
+void showPanelContextMenu(const QPoint &pos);
+
+    // LayerPanel* layerPanel;
+
+private slots:
+    void onRunScriptFileRequested(const QString& filePath);
 
 };
 

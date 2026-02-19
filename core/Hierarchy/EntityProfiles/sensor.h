@@ -93,6 +93,18 @@ public:
     QVector<Target> csmtargets;
     std::unordered_set<Platform*> esmdetects;
     QVector<Target> esmtargets;
+    // --- Generic Radar Targets ---
+    int getTargetCount() const;                  // Number of Generic targets
+    Target getTarget(int index) const;           // Get Generic target by index
+
+    // --- CSM Targets ---
+    int getCSMTargetCount() const;               // Number of CSM targets
+    Target getCSMTarget(int index) const;        // Get CSM target by index
+
+    // --- ESM Targets ---
+    int getESMTargetCount() const;               // Number of ESM targets
+    Target getESMTarget(int index) const;        // Get ESM target by index
+
 
     float csmrange = 5000.0f;
     float esrange = 8000.0f;
@@ -101,10 +113,8 @@ public:
     bool csmActive = true;
     bool esmActive = true;
     virtual void scan();
-    //void ewscan(std::string id , Transform *source);
-    bool detectCheck(QVector3D localPos,float distance);
-    //void csmScan(std::string id, Transform* source);
-    //void esmScan(std::string id, Transform* source);
+    void clearTargets();
+    bool detectCheck(QVector3D localPos, float distance, float multi = 1.0f);
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;

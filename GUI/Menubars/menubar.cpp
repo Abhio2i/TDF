@@ -1,9 +1,11 @@
 /* ========================================================================= */
 /* File: menubar.cpp                                                      */
 /* Purpose: Implements menu bar with file, edit, view, and feedback menus   */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #include "menubar.h"                               // For menu bar class
+#include "menubar-styles.h"                        // Include separate CSS file
 #include <QMenu>                                   // For menu creation
 #include <QAction>                                 // For menu actions
 #include <QKeySequence>                            // For keyboard shortcuts
@@ -13,35 +15,45 @@
 MenuBar::MenuBar(QWidget *parent)
     : QMenuBar(parent)
 {
+    // Apply dark theme to menu bar
+    setStyleSheet(MenuBarStyles::MenuBar);
+
     // Create file menu
     fileMenu = addMenu("File");
+    fileMenu->setStyleSheet(MenuBarStyles::Menu);
+
     newFileAction = new QAction("New File", this);
     // newFileAction->setShortcut(QKeySequence("Ctrl+N"));
     recentProjectAction = new QAction("Recent Project", this);
+    recentProjectLibraryAction = new QAction("Recent Library", this);
     loadJsonAction = new QAction("Open File", this);
+    loadXmlAction = new QAction("Open XML File", this);
     // loadJsonAction->setShortcut(QKeySequence("Ctrl+O"));
     loadToLibraryAction = new QAction("Open File to Library", this);
+    openRuntimeInstanceAction = new QAction("Open Runtime Instance", this);
     sameSaveAction = new QAction("Save", this);
     sameSaveAction->setShortcut(QKeySequence("Ctrl+S"));
     saveJsonAction = new QAction("Save As", this);
-    // saveJsonAction->setShortcut(QKeySequence("Ctrl+Shift+S"));
-    // runAction = new QAction("Run", this);
-    // runAction->setShortcut(QKeySequence("F5"));
     exitAction = new QAction("Exit", this);
-    // exitAction->setShortcut(QKeySequence("Ctrl+Q"));
+
     fileMenu->addAction(newFileAction);
     fileMenu->addAction(recentProjectAction);
+    fileMenu->addAction(recentProjectLibraryAction);
     fileMenu->addSeparator();
     fileMenu->addAction(loadJsonAction);
+    fileMenu->addAction(loadXmlAction);
     fileMenu->addAction(loadToLibraryAction);
+    fileMenu->addAction(openRuntimeInstanceAction);
     fileMenu->addAction(sameSaveAction);
     fileMenu->addAction(saveJsonAction);
     fileMenu->addSeparator();
     // fileMenu->addAction(runAction);
     fileMenu->addAction(exitAction);
 
-    // Create edit menu
-    editMenu = addMenu("Edit");
+    // Create edit menu (commented out in original)
+    // editMenu = addMenu("Edit");
+    // editMenu->setStyleSheet(MenuBarStyles::Menu);
+
     undoAction = new QAction("Undo", this);
     // undoAction->setShortcut(QKeySequence("Ctrl+Z"));
     redoAction = new QAction("Redo", this);
@@ -61,38 +73,27 @@ MenuBar::MenuBar(QWidget *parent)
     renameAction = new QAction("Rename", this);
     // renameAction->setShortcut(QKeySequence("F2"));
     deleteAction = new QAction("Delete", this);
-    // // deleteAction->setShortcut(QKeySequence("Del"));
-    // playAction = new QAction("Play", this);
-    // // playAction->setShortcut(QKeySequence("Space"));
-    // pauseAction = new QAction("Pause", this);
-    // // pauseAction->setShortcut(QKeySequence("Ctrl+P"));
-    editMenu->addAction(undoAction);
-    editMenu->addAction(redoAction);
-    editMenu->addSeparator();
-    editMenu->addAction(selectAllAction);
-    editMenu->addAction(deselectAllAction);
-    editMenu->addSeparator();
-    editMenu->addAction(cutAction);
-    editMenu->addAction(copyAction);
-    editMenu->addAction(pasteAction);
-    editMenu->addAction(duplicateAction);
-    editMenu->addSeparator();
-    editMenu->addAction(renameAction);
-    editMenu->addAction(deleteAction);
-    editMenu->addSeparator();
-    // Create feedback menu
-    feedbackMenu = addMenu("Feedback");
-    feedbackAction = new QAction("Open Feedback Page", this);
-    feedbackMenu->addAction(feedbackAction);
-    profileAction = addAction("Profile");
-     applicationAction = addAction("Settings");
-    // Connect actions to signals
-    connect(profileAction, &QAction::triggered, this, &MenuBar::profileTriggered);
-        connect(applicationAction, &QAction::triggered, this, &MenuBar::applicationTriggered);
 
+    // Create feedback menu
+    feedbackMenu = addMenu("About");
+    feedbackMenu->setStyleSheet(MenuBarStyles::Menu);
+    feedbackAction = new QAction("Open About Page", this);
+    feedbackMenu->addAction(feedbackAction);
+
+    profileAction = addAction("Performance");
+    profileAction->setMenuRole(QAction::NoRole);  // Ensure it's in the menu bar
+
+    applicationAction = addAction("Settings");
+    applicationAction->setMenuRole(QAction::NoRole);  // Ensure it's in the menu bar
+
+    // Connect actions to signals
+    connect(loadXmlAction, &QAction::triggered, this, &MenuBar::loadXmlTriggered);
+    connect(profileAction, &QAction::triggered, this, &MenuBar::profileTriggered);
+    connect(applicationAction, &QAction::triggered, this, &MenuBar::applicationTriggered);
     connect(feedbackAction, &QAction::triggered, this, &MenuBar::feedbackTriggered);
     connect(newFileAction, &QAction::triggered, this, &MenuBar::newFileTriggered);
     connect(recentProjectAction, &QAction::triggered, this, &MenuBar::recentProjectTriggered);
+    connect(recentProjectLibraryAction, &QAction::triggered, this, &MenuBar::recentProjectLibraryTriggered);
     connect(loadJsonAction, &QAction::triggered, this, &MenuBar::loadTriggered);
     connect(loadToLibraryAction, &QAction::triggered, this, &MenuBar::loadToLibraryTriggered);
     connect(sameSaveAction, &QAction::triggered, this, &MenuBar::sameSaveTriggered);
@@ -109,7 +110,8 @@ MenuBar::MenuBar(QWidget *parent)
     connect(duplicateAction, &QAction::triggered, this, &MenuBar::duplicateTriggered);
     connect(renameAction, &QAction::triggered, this, &MenuBar::renameTriggered);
     connect(deleteAction, &QAction::triggered, this, &MenuBar::deleteTriggered);
-
+    connect(openRuntimeInstanceAction, &QAction::triggered,
+            this, &MenuBar::openRuntimeInstanceTriggered);
 }
 
 // %%% Getter Methods %%%
@@ -119,11 +121,11 @@ QMenu* MenuBar::getFileMenu()
     return fileMenu;
 }
 
-/* Get edit menu */
-QMenu* MenuBar::getEditMenu()
-{
-    return editMenu;
-}
+// /* Get edit menu */
+// QMenu* MenuBar::getEditMenu()
+// {
+//     return editMenu;
+// }
 
 /* Get view menu */
 QMenu* MenuBar::getViewMenu()
@@ -171,6 +173,11 @@ QAction* MenuBar::getNewFileAction()
 QAction* MenuBar::getRecentProjectAction()
 {
     return recentProjectAction;
+}
+
+QAction* MenuBar::getrecentProjectLibraryAction()
+{
+    return recentProjectLibraryAction;
 }
 
 /* Get exit action */
@@ -239,20 +246,21 @@ QAction* MenuBar::getDeleteAction()
     return deleteAction;
 }
 
-// /* Get play action */
-// QAction* MenuBar::getPlayAction()
-// {
-//     return playAction;
-// }
+QAction* MenuBar::getLoadXmlAction()
+{
+    return loadXmlAction;
+}
 
-// /* Get pause action */
-// QAction* MenuBar::getPauseAction()
-// {
-//     return pauseAction;
-// }
+QAction* MenuBar::getOpenRuntimeInstanceAction()
+{
+    return openRuntimeInstanceAction;
+}
 
-// /* Get add 3D view action */
-// QAction* MenuBar::getAdd3DViewAction()
-// {
-//     return add3DViewAction;
-// }
+// %%% Set Library Actions Visibility %%%
+/* Show or hide library-related actions */
+void MenuBar::setLibraryActionsVisible(bool visible)
+{
+    recentProjectLibraryAction->setVisible(visible);
+    loadToLibraryAction->setVisible(visible);
+    openRuntimeInstanceAction->setVisible(visible);
+}

@@ -1,11 +1,11 @@
-
-
 /* ========================================================================= */
 /* File: iconsdialog.cpp                                                    */
 /* Purpose: Implements image selection dialog                                */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #include "iconsdialog.h"
+#include "qlineedit.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPushButton>
@@ -15,131 +15,103 @@
 #include <QPixmap>
 #include <QDebug>
 #include <QToolTip>
+#include <QFileDialog>
+#include "GUI/Inspector/inspector-styles.h"
 
 IconsDialog::IconsDialog(QWidget *parent)
     : QDialog(parent)
-    , inspectorRef(nullptr)  // Initialize inspectorRef to nullptr
+    , inspectorRef(nullptr)
+    , searchBox(nullptr)
+    , listWidget(nullptr)
 {
     setWindowTitle("Select Image");
-    setFixedSize(900, 600); // Increased size for 6 images per row
-
-    // Set dark background for dialog and tooltip
-    setStyleSheet(
-        "QDialog { background-color: #2b2b2b; color: white; }"
-        "QToolTip { color: white; background-color: #333; border: 1px solid #555; }"
-        );
+    setFixedSize(900, 600);
+    setStyleSheet(InspectorStyles::IconsDialog_main);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
-    // Create list widget for images
+    // ========== SEARCH BAR WITH BROWSE BUTTON ==========
+    QHBoxLayout *searchLayout = new QHBoxLayout();
+
+    QPushButton *browseBtn = new QPushButton("Browse", this);
+    browseBtn->setStyleSheet(InspectorStyles::IconsDialog_browseButton);
+
+    QLabel *searchLabel = new QLabel("Search:", this);
+    searchLabel->setStyleSheet(InspectorStyles::IconsDialog_searchLabel);
+
+    searchBox = new QLineEdit(this);
+    searchBox->setPlaceholderText("Type image name to search...");
+    searchBox->setStyleSheet(InspectorStyles::IconsDialog_searchBox);
+
+    searchLayout->addWidget(browseBtn);
+    searchLayout->addWidget(searchLabel);
+    searchLayout->addWidget(searchBox, 1);
+    mainLayout->addLayout(searchLayout);
+
     listWidget = new QListWidget(this);
     listWidget->setViewMode(QListWidget::IconMode);
     listWidget->setIconSize(QSize(100, 100));
     listWidget->setResizeMode(QListWidget::Adjust);
     listWidget->setMovement(QListWidget::Static);
-    listWidget->setGridSize(QSize(120, 120)); // Grid size for 6 items per row
-    listWidget->setWordWrap(true); // Enable word wrap for long file names
+    listWidget->setGridSize(QSize(120, 120));
+    listWidget->setWordWrap(true);
+    listWidget->setStyleSheet(InspectorStyles::IconsDialog_listWidget);
 
-    // Apply stylesheet for white text and dark background
-    listWidget->setStyleSheet(
-        "QListWidget {"
-        "    background-color: #2b2b2b;"
-        "    color: white;"
-        "    border: 1px solid #555;"
-        "    border-radius: 5px;"
-        "    outline: none;"
-        "}"
-        "QListWidget::item {"
-        "    background-color: #333;"
-        "    border: 1px solid #555;"
-        "    border-radius: 3px;"
-        "    margin: 2px;"
-        "    padding: 5px;"
-        "    color: white;"
-        "    text-align: center;"
-        "}"
-        "QListWidget::item:selected {"
-        "    background-color: #0078d4;"
-        "    border: 1px solid #0078d4;"
-        "}"
-        "QListWidget::item:hover {"
-        "    background-color: #444;"
-        "    border: 1px solid #666;"
-        "}"
-        );
-
-    // Automatically load all images from resources
     loadAllImagesAutomatically();
 
-    // If no images found
-    if (listWidget->count() == 0) {
+    if (allImages.isEmpty()) {
         QLabel *noImagesLabel = new QLabel("No images found in resources.", this);
-        noImagesLabel->setStyleSheet("QLabel { color: white; background: transparent; font-size: 14px; }");
+        noImagesLabel->setStyleSheet(InspectorStyles::IconsDialog_noImagesLabel);
         noImagesLabel->setAlignment(Qt::AlignCenter);
         listWidget->hide();
         mainLayout->addWidget(noImagesLabel);
     }
 
-    // OK and Cancel buttons
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     QPushButton *okButton = new QPushButton("OK", this);
     QPushButton *cancelButton = new QPushButton("Cancel", this);
 
-    // Style buttons
-    okButton->setStyleSheet(
-        "QPushButton {"
-        "    background-color: #0078d4;"
-        "    color: white;"
-        "    border: none;"
-        "    border-radius: 3px;"
-        "    padding: 8px 16px;"
-        "    font-weight: bold;"
-        "    min-width: 80px;"
-        "}"
-        "QPushButton:hover {"
-        "    background-color: #106ebe;"
-        "}"
-        "QPushButton:pressed {"
-        "    background-color: #005a9e;"
-        "}"
-        );
+    okButton->setStyleSheet(InspectorStyles::IconsDialog_okButton);
+    cancelButton->setStyleSheet(InspectorStyles::IconsDialog_cancelButton);
 
-    cancelButton->setStyleSheet(
-        "QPushButton {"
-        "    background-color: #6d6d6d;"
-        "    color: white;"
-        "    border: none;"
-        "    border-radius: 3px;"
-        "    padding: 8px 16px;"
-        "    font-weight: bold;"
-        "    min-width: 80px;"
-        "}"
-        "QPushButton:hover {"
-        "    background-color: #5d5d5d;"
-        "}"
-        "QPushButton:pressed {"
-        "    background-color: #4d4d4d;"
-        "}"
-        );
-
-    buttonLayout->addStretch(); // Add stretch to push buttons to center
+    buttonLayout->addStretch();
     buttonLayout->addWidget(okButton);
     buttonLayout->addWidget(cancelButton);
-    buttonLayout->addStretch(); // Add stretch to push buttons to center
+    buttonLayout->addStretch();
 
-    if (listWidget->count() > 0) {
+    if (!allImages.isEmpty()) {
         mainLayout->addWidget(listWidget);
     }
     mainLayout->addLayout(buttonLayout);
 
-    // Connect signals
+    connect(browseBtn, &QPushButton::clicked, this, [this]() {
+        QString filePath = QFileDialog::getOpenFileName(
+            this,
+            "Select Image File",
+            "",
+            "Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)"
+            );
+
+        if (!filePath.isEmpty()) {
+            m_selectedPath = filePath;
+            accept();
+        }
+    });
+
     connect(okButton, &QPushButton::clicked, this, &QDialog::accept);
     connect(cancelButton, &QPushButton::clicked, this, &QDialog::reject);
     connect(listWidget, &QListWidget::itemDoubleClicked, this, &QDialog::accept);
+    connect(searchBox, &QLineEdit::textChanged, this, &IconsDialog::onSearchTextChanged);
 }
 
 QString IconsDialog::selectedImagePath() const
 {
+    // First check if we have a manually selected path (from Browse button)
+    if (!m_selectedPath.isEmpty()) {
+        return m_selectedPath;
+    }
+
+    // Otherwise return the selected item from list
     QListWidgetItem *item = listWidget->currentItem();
     if (item)
         return item->data(Qt::UserRole).toString();
@@ -150,24 +122,32 @@ void IconsDialog::loadAllImagesAutomatically()
 {
     qDebug() << "Automatically scanning for all images in resources...";
 
+    // Clear existing images
+    allImages.clear();
+
     // List of all resource prefixes to scan
     QStringList resourcePrefixes = {
         ":/icons",
         ":/texture",
         ":/images",
         ":/resources",
+        ":/air",
+        ":/ground",
         ":/"
     };
 
     // Image file extensions
-    QStringList imageExtensions = {"*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif"};
+    QStringList imageExtensions = {"*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif", "*.svg"};
 
     // Scan each resource prefix
     for (const QString &prefix : resourcePrefixes) {
         scanResourcePrefix(prefix, imageExtensions);
     }
 
-    qDebug() << "Total images found:" << listWidget->count();
+    qDebug() << "Total images found:" << allImages.count();
+
+    // Display all images initially
+    filterImages("");
 }
 
 void IconsDialog::scanResourcePrefix(const QString &prefix, const QStringList &extensions)
@@ -177,18 +157,27 @@ void IconsDialog::scanResourcePrefix(const QString &prefix, const QStringList &e
     // Use QDirIterator to recursively scan the resource prefix
     QDirIterator it(prefix, extensions, QDir::Files, QDirIterator::Subdirectories);
 
-    int foundCount = 0;
     while (it.hasNext()) {
         QString filePath = it.next();
         QString fileName = it.fileName();
 
-        // Add image to list
-        if (addImageToList(filePath, fileName)) {
-            foundCount++;
+        // Check for duplicates
+        bool isDuplicate = false;
+        for (const auto &pair : allImages) {
+            if (pair.second == filePath) {
+                isDuplicate = true;
+                break;
+            }
+        }
+
+        if (!isDuplicate) {
+            // Validate image
+            QPixmap pixmap(filePath);
+            if (!pixmap.isNull()) {
+                allImages.append(qMakePair(fileName, filePath));
+            }
         }
     }
-
-    qDebug() << "Found" << foundCount << "images in" << prefix;
 }
 
 bool IconsDialog::addImageToList(const QString &imagePath, const QString &fileName)
@@ -232,4 +221,36 @@ bool IconsDialog::addImageToList(const QString &imagePath, const QString &fileNa
     }
 
     return false;
+}
+
+void IconsDialog::filterImages(const QString &searchText)
+{
+    if (!listWidget) return;
+
+    listWidget->clear();
+
+    for (const auto &imagePair : allImages) {
+        QString fileName = imagePair.first;
+        QString filePath = imagePair.second;
+
+        // Filter by search text (case-insensitive)
+        if (searchText.isEmpty() || fileName.contains(searchText, Qt::CaseInsensitive)) {
+            addImageToList(filePath, fileName);
+        }
+    }
+
+    qDebug() << "Filtered images:" << listWidget->count() << "/ Total:" << allImages.count();
+}
+
+void IconsDialog::onSearchTextChanged(const QString &text)
+{
+    filterImages(text);
+}
+
+void IconsDialog::setSearchFilter(const QString &filter)
+{
+    if (searchBox) {
+        searchBox->setText(filter);
+        filterImages(filter);
+    }
 }

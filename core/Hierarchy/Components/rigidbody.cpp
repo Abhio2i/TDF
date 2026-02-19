@@ -83,7 +83,7 @@ QJsonObject Rigidbody::toJson() const {
     obj["drag"] = Drag;
     obj["angulardrag"] = angularDrag;
     obj["deltaTime"] = deltaTime;
-     obj["type"] = "component";
+    obj["type"] = "component";
 
     QJsonObject freezeObj;
     freezeObj["type"] = "Section";

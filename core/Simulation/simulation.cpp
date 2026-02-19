@@ -7,10 +7,14 @@
 #include <QtMath>
 #include <GUI/mainwindow.h>
 Simulation::Simulation() {
-
+    qRegisterMetaType<SimulationStateNS::State>("SimulationStateNS::State");
+    qRegisterMetaType<SimTypeOfUpdates::TypeOfUpdate>("SimTypeOfUpdates::TypeOfUpdate");
+    qRegisterMetaType<SimUpdateTypes::UpdateTypes>("SimUpdateTypes::UpdateTypes");
 }
 
 void Simulation::init(){
+    physicsComponent.clear();
+    simulationTime = 0;
     updateTimer = new QTimer(this);
     elapsedTimer = new QElapsedTimer();
     elapsedTimer->start();
@@ -58,10 +62,19 @@ void Simulation::init(){
     emit Begin();
 }
 
+void Simulation::Reset(){
+    physicsComponent.clear();
+    simulationTime = 0;
+}
+
 void Simulation::ReInit(){
     SimulationFrameRate = MainWindow::scenarioconfig->getSavedFPS();
     PhysicsUpdateFrameRate = MainWindow::scenarioconfig->getSavedFPS();
     UIUpdateFrameRate = 30;
+    /* Shared Memory By Himanshu */
+    Status = SimulationStateNS::REINITIALIZE;
+    emit sendMode(Status);
+    /* Shared Memory By Himanshu */
 }
 
 Simulation::~Simulation() {
@@ -111,9 +124,9 @@ void Simulation::frame() {
             {"z", comp.transform->matrix->translation().z()}
         };
         entityFrame["rotation"] = QJsonObject{
-            {"x", comp.transform->toEulerAngles().x()},
-            {"y", comp.transform->toEulerAngles().y()},
-            {"z", comp.transform->toEulerAngles().z()}
+            {"x", comp.transform->matrix->rotation().toEulerAngles().x()},
+            {"y", comp.transform->matrix->rotation().toEulerAngles().y()},
+            {"z", comp.transform->matrix->rotation().toEulerAngles().z()}
         };
 
         entitiesArray.append(entityFrame);
@@ -129,12 +142,15 @@ void Simulation::frame() {
     QTimer::singleShot(0, this, [=]() {
         emit Update();
         emit Render(deltaTime * speed);
+        /* Shared Memory By Himanshu */
+        Status = SimulationStateNS::UPDATE;
+        emit sendMode(Status);
+        /* Shared Memory By Himanshu */
     });
     //isPlay = true;
 }
 
 void Simulation::start() {
-
     QMetaObject::invokeMethod(this, "startf", Qt::QueuedConnection);
 }
 
@@ -143,6 +159,12 @@ void Simulation::startf() {
     updateTimer->start(1000 / SimulationFrameRate);
     isPlay = true;
     qDebug()<<"i am working";
+
+    /* Shared Memory By Himanshu */
+    Status = SimulationStateNS::START;
+    emit sendMode(Status);
+    /* Shared Memory By Himanshu */
+
     for (auto& [id, comp] : physicsComponent) {
         if (comp.dynamicModel) comp.dynamicModel->start();
     }
@@ -156,11 +178,23 @@ void Simulation::pause() {
 void Simulation::pausef() {
     updateTimer->stop();
     isPlay = false;
+
+    /* Shared Memory By Himanshu */
+    Status = SimulationStateNS::PAUSE;
+    emit sendMode(Status);
+    /* Shared Memory By Himanshu */
+
 }
+
 void Simulation::stop() {
     updateTimer->stop();
     isPlay = false;
     complete = true;
+
+    /* Shared Memory By Himanshu */
+    Status = SimulationStateNS::STOP;
+    emit sendMode(Status);
+    /* Shared Memory By Himanshu */
 }
 
 void Simulation::setSpeed(float value) {
@@ -177,6 +211,25 @@ void Simulation::nextStep() {
         frame();
     }
 }
+
+void Simulation::timeJump(int newTime){
+    int sec = newTime-simulationTime;
+    sec = sec<0?0:sec;
+    qDebug()<<sec;
+    float fps = 10.0;
+    sec = sec*fps;
+    float n = 0;
+    float dt= 1.0f/fps;
+    for(int i=0;i<sec;i++){
+        // simulationTime +=dt;
+        deltaTime = dt;
+        calculatePhysics();
+        // emit Render(dt);
+    }
+    qDebug()<<n;
+    emit Render(dt);
+}
+
 
 int Simulation::getRate() const {
     return this->rate;
@@ -252,103 +305,132 @@ void Simulation::handleReplayFrame(const QJsonObject& frame) {
 
 
 void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
-    Platform* platform = dynamic_cast<Platform*>(entity);
-    if (!platform) {
-        Console::error("Entity is not a Platform");
-        return;
+
+    // ✅ Store current state PEHLE
+    bool wasPlaying = isPlay;
+
+    // ✅ Pause if running
+    if (wasPlaying) {
+        pausef();
     }
 
-    PhysicsComponent component;
-    component.name = platform->Name;
-    component.entity = platform;
-    component.transform = platform->transform;
-    component.rigidbody = platform->rigidbody;
-    component.collider = platform->collider;
-    component.dynamicModel = platform->dynamicModel;
+    if (entity->type == Constants::EntityType::Platform) {
+        Platform* platform = dynamic_cast<Platform*>(entity);
 
-    physicsComponent[platform->ID] = component;
+        PhysicsComponent component;
+        component.name = platform->Name;
+        component.base = entity;
+        component.platform = platform;
+        component.transform = platform->transform;
+        component.rigidbody = platform->rigidbody;
+        component.collider = platform->collider;
+        component.dynamicModel = platform->dynamicModel;
+        physicsComponent[platform->ID] = component;
 
-    if (platform->transform && platform->rigidbody) {
-        btCollisionShape* shape = nullptr;
+        if (platform->transform && platform->rigidbody) {
+            btCollisionShape* shape = nullptr;
 
-        if (platform->collider && platform->collider->collider == Constants::ColliderType::Box) {
-            shape = new btBoxShape(btVector3(1, 1, 1));
-            shape->setLocalScaling(btVector3(
-                platform->transform->matrix->scale3D().x() * platform->collider->Width * 0.5f,
-                platform->transform->matrix->scale3D().y() * platform->collider->Length * 0.5f,
-                platform->transform->matrix->scale3D().z() * platform->collider->Height * 0.5f));
-        } else if (platform->collider && platform->collider->collider == Constants::ColliderType::Sphere) {
-            shape = new btSphereShape(platform->collider->CollideRadius * platform->transform->matrix->scale3D().length());
-        }
-
-        if (shape) {
-            btTransform transform;
-            transform.setIdentity();
-            transform.setOrigin(btVector3(
-                platform->transform->matrix->translation().x(),
-                platform->transform->matrix->translation().y(),
-                platform->transform->matrix->translation().z()));
-            btQuaternion quat;
-            quat.setEulerZYX(
-                qDegreesToRadians(platform->transform->toEulerAngles().z()),
-                qDegreesToRadians(platform->transform->toEulerAngles().y()),
-                qDegreesToRadians(platform->transform->toEulerAngles().x()));
-            transform.setRotation(quat);
-
-            float mass = platform->rigidbody->Mass;
-            btVector3 inertia(0, 0, 0);
-            if (mass > 0)
-                shape->calculateLocalInertia(mass, inertia);
-
-            btDefaultMotionState* motionState = new btDefaultMotionState(transform);
-            btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, inertia);
-            btRigidBody* body = new btRigidBody(rbInfo);
-
-            if (!platform->rigidbody->Gravity) {
-                body->setGravity(btVector3(0, 0, 0));
+            if (platform->collider && platform->collider->collider == Constants::ColliderType::Box) {
+                shape = new btBoxShape(btVector3(1, 1, 1));
+                shape->setLocalScaling(btVector3(
+                    platform->transform->matrix->scale3D().x() * platform->collider->Width * 0.5f,
+                    platform->transform->matrix->scale3D().y() * platform->collider->Length * 0.5f,
+                    platform->transform->matrix->scale3D().z() * platform->collider->Height * 0.5f));
+            } else if (platform->collider && platform->collider->collider == Constants::ColliderType::Sphere) {
+                shape = new btSphereShape(platform->collider->CollideRadius * platform->transform->matrix->scale3D().length());
             }
 
-            if (platform->rigidbody->Kinematics) {
-                body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-                body->setActivationState(DISABLE_DEACTIVATION);
+            if (shape) {
+                btTransform transform;
+                transform.setIdentity();
+                transform.setOrigin(btVector3(
+                    platform->transform->matrix->translation().x(),
+                    platform->transform->matrix->translation().y(),
+                    platform->transform->matrix->translation().z()));
+                btQuaternion quat;
+                quat.setEulerZYX(
+                    qDegreesToRadians(platform->transform->toEulerAngles().z()),
+                    qDegreesToRadians(platform->transform->toEulerAngles().y()),
+                    qDegreesToRadians(platform->transform->toEulerAngles().x()));
+                transform.setRotation(quat);
+
+                float mass = platform->rigidbody->Mass;
+                btVector3 inertia(0, 0, 0);
+                if (mass > 0)
+                    shape->calculateLocalInertia(mass, inertia);
+
+                btDefaultMotionState* motionState = new btDefaultMotionState(transform);
+                btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, inertia);
+                btRigidBody* body = new btRigidBody(rbInfo);
+
+                if (!platform->rigidbody->Gravity) {
+                    body->setGravity(btVector3(0, 0, 0));
+                }
+
+                if (platform->rigidbody->Kinematics) {
+                    body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+                    body->setActivationState(DISABLE_DEACTIVATION);
+                }
+
+                body->setLinearVelocity(btVector3(
+                    platform->rigidbody->velocity->x,
+                    platform->rigidbody->velocity->y,
+                    platform->rigidbody->velocity->z));
+
+                body->setAngularVelocity(btVector3(
+                    platform->rigidbody->angularVelocity->x,
+                    platform->rigidbody->angularVelocity->y,
+                    platform->rigidbody->angularVelocity->z));
+
+                connect(platform->rigidbody, &Rigidbody::setLinearVel, this, [body](const Vector& velocity) {
+                    body->setLinearVelocity(btVector3(velocity.x, velocity.y, velocity.z));
+                });
+
+                connect(platform->rigidbody, &Rigidbody::setAngularVel, this, [body](const Vector& velocity) {
+                    body->setAngularVelocity(btVector3(velocity.x, velocity.y, velocity.z));
+                });
+
+                btVector3 linearFactor(1, 1, 1);
+                if (platform->rigidbody->freezePositionX) linearFactor.setX(0);
+                if (platform->rigidbody->freezePositionY) linearFactor.setY(0);
+                if (platform->rigidbody->freezePositionZ) linearFactor.setZ(0);
+                body->setLinearFactor(linearFactor);
+
+                btVector3 angularFactor(1, 1, 1);
+                if (platform->rigidbody->freezeRotationX) angularFactor.setX(0);
+                if (platform->rigidbody->freezeRotationY) angularFactor.setY(0);
+                if (platform->rigidbody->freezeRotationZ) angularFactor.setZ(0);
+                body->setAngularFactor(angularFactor);
+
+                dynamicsWorld->addRigidBody(body);
+                bulletBodies[platform->ID] = body;
             }
-
-            body->setLinearVelocity(btVector3(
-                platform->rigidbody->velocity->x,
-                platform->rigidbody->velocity->y,
-                platform->rigidbody->velocity->z));
-
-            body->setAngularVelocity(btVector3(
-                platform->rigidbody->angularVelocity->x,
-                platform->rigidbody->angularVelocity->y,
-                platform->rigidbody->angularVelocity->z));
-
-            connect(platform->rigidbody, &Rigidbody::setLinearVel, this, [body](const Vector& velocity) {
-                body->setLinearVelocity(btVector3(velocity.x, velocity.y, velocity.z));
-            });
-
-            connect(platform->rigidbody, &Rigidbody::setAngularVel, this, [body](const Vector& velocity) {
-                body->setAngularVelocity(btVector3(velocity.x, velocity.y, velocity.z));
-            });
-
-            btVector3 linearFactor(1, 1, 1);
-            if (platform->rigidbody->freezePositionX) linearFactor.setX(0);
-            if (platform->rigidbody->freezePositionY) linearFactor.setY(0);
-            if (platform->rigidbody->freezePositionZ) linearFactor.setZ(0);
-            body->setLinearFactor(linearFactor);
-
-            btVector3 angularFactor(1, 1, 1);
-            if (platform->rigidbody->freezeRotationX) angularFactor.setX(0);
-            if (platform->rigidbody->freezeRotationY) angularFactor.setY(0);
-            if (platform->rigidbody->freezeRotationZ) angularFactor.setZ(0);
-            body->setAngularFactor(angularFactor);
-
-            dynamicsWorld->addRigidBody(body);
-            bulletBodies[platform->ID] = body;
         }
+    }
+
+    if (entity->type == Constants::EntityType::SpecialZone) {
+        Specialzone* zone = dynamic_cast<Specialzone*>(entity);
+        PhysicsComponent component;
+        component.name = zone->Name;
+        component.base = entity;
+        component.zone = zone;
+        component.platform = nullptr;
+        component.transform = zone->transform;
+        component.rigidbody = nullptr;
+        component.collider = zone->collider;
+        component.dynamicModel = nullptr;
+        physicsComponent[zone->ID] = component;
     }
 
     emit HierarchyUpdate();
+
+    // ✅ LAST ME - Auto-resume if was playing
+    if (wasPlaying) {
+        QTimer::singleShot(50, this, [this]() {
+            startf();
+            Console::log("Simulation auto-resumed after entity addition");
+        });
+    }
 }
 
 void Simulation::entityRemoved(QString ID) {
@@ -373,13 +455,13 @@ void Simulation::entityRemoved(QString ID) {
 
     emit HierarchyUpdate();
 }
-//fixed:to inialise the netwrok when instance is clinet
-          void Simulation::setNetworkManager(NetworkManager* nm)
+//fixed:to initialise the netwrok when instance is client::by Aman
+void Simulation::setNetworkManager(NetworkManager* nm)
 {
     networkManager = nm;
 }
 
-//fix: to resolve the crash issue beacuse both network thread and simulation thread were changing the transform..now only simulation does this
+//fix: to resolve the crash issue because both network thread and simulation thread were changing the transform..now only simulation does this by Aman
 void Simulation::applyPendingNetworkUpdates()
 {
     while (!incomingTransforms.empty())
@@ -393,11 +475,15 @@ void Simulation::applyPendingNetworkUpdates()
         auto& comp = it->second;
         if (!comp.transform) continue;
 
-        comp.transform->setTranslation(msg->pos);
-        comp.transform->setFromEulerAngles(msg->rot);
+
+        comp.transform->matrix->setTranslation(msg->pos);
+        comp.transform->matrix->rotation().fromEulerAngles(msg->rot);
+        //rotaion issue may be there
+        // comp.transform->setTranslation(msg->pos);
+        // comp.transform->setFromEulerAngles(msg->rot);
     }
 }
-void Simulation::enqueueTransformUpdate(const TransformUpdate& msg)
+void Simulation::enqueueTransformUpdate(const TransformUpdate& msg)//by Aman
 {
     incomingTransforms.push(msg);
 }
@@ -426,10 +512,19 @@ void Simulation::enqueueTransformUpdate(const TransformUpdate& msg)
       - Server runs authoritative simulation
       - Clients only receive updates (no physics)
 */
+
+void Simulation::calculateDynamic(float dt){
+    for (auto& [id, comp] : physicsComponent) {
+        if(!comp.base->Active) continue;
+        if(comp.dynamicModel)
+            comp.dynamicModel->Update(dt);
+    }
+}
 void Simulation::calculatePhysics() {
     const float dt = deltaTime * speed;
     const float maxDt = 1.0f / PhysicsUpdateFrameRate;
     const float clampedDt = std::min(dt, maxDt);
+    simulationTime += dt;
     //dynamicsWorld->stepSimulation(clampedDt, 10);
     emit Physics();
 
@@ -450,9 +545,13 @@ void Simulation::calculatePhysics() {
     int simMax = simMin+simCount;
     // qDebug()<<simMin<<","<<simMax;
     for (auto& [id, comp] : physicsComponent) {
-        if(!comp.entity->Active) continue;
-        if (!comp.transform || !comp.rigidbody) continue;
-        comp.rigidbody->deltaTime = deltaTime;
+        if(!comp.base->Active) continue;
+        if (!comp.transform) continue;
+
+        if(comp.rigidbody){
+            comp.rigidbody->deltaTime = deltaTime;
+        }
+
 
         if(comp.collider){
             comp.collider->Update(dt);
@@ -468,15 +567,23 @@ void Simulation::calculatePhysics() {
             qint64 elapsedMs = timer.elapsed();
             dynamicTime +=elapsedMs;
         }
+        bool opt = true;
+        if(physicsComponent.size()>70){
+            opt = simMin<num && num< simMax;
+        }
 
-
-        if (comp.entity /*&& simMin<num && num< simMax*/){
+        if (comp.platform && opt){
             QElapsedTimer timer;
             timer.start();  // Start measuring
-            comp.entity->update();
+            comp.platform->update();
             qint64 elapsedMs = timer.elapsed();
             sensorTime +=elapsedMs;
         }
+
+        if(comp.zone){
+            comp.zone->Update(dt);
+        }
+        comp.transform->sync();
         num++;
         // auto it = bulletBodies.find(id);
         // if (it != bulletBodies.end()) {

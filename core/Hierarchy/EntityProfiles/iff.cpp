@@ -321,18 +321,20 @@ void IFF::fromJson(const QJsonObject& obj) {
 
 void IFF::scan(){
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
-
+    if(!parentEntity) return;
     Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
+     if(!source) return;
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
     for (auto& [key, entity] : *root->Iffs)
     {
+        if(!entity || !entity->parentEntity) continue;
         auto it = root->Platforms->find(entity->parentEntity->ID);
         if (it != root->Platforms->end()) {
             Platform* platform = it->second;
             // Aapka aage ka logic yahan aaye
             // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
-            if(platform->ID == parentEntity->ID) continue;
-            QVector3D localPos = source->inverseTransformPoint(platform->transform->translation());
+            if(platform->ID == parentEntity->ID || !platform || !platform->transform) continue;
+            QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
             //float distance = localPos.length();
             float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
 
@@ -679,4 +681,36 @@ QJsonObject IFF::respondToInterrogation(IFF* interrogator, float distanceMeters)
     messages.push_back(msg);
 
     return result;
+}
+int IFF::getIFFTargetCount() const
+{
+    return targets.size();  // ✅ Changed from iffTargets to targets
+}
+
+bool IFF::getIFFTarget(
+    int index,
+    std::string& outResponderId,
+    std::string& outResponderName,
+    std::string& outMode,
+    std::string& outCode,
+    float& outDistance,
+    float& outAngle,
+    int& outStatus
+    ) const
+{
+    if (index < 0 || index >= targets.size())  // ✅ Changed from iffTargets to targets
+        return false;
+
+    const IFFTarget& t = targets[index];  // ✅ Changed from iffTargets to targets
+
+    // These fields might be empty/default, but that's okay!
+    outResponderId   = t.responderId;
+    outResponderName = t.responderName;
+    outMode          = t.mode;
+    outCode          = t.code;
+    outDistance      = t.distance;
+    outAngle         = t.angle;
+    outStatus        = t.status;
+
+    return true;
 }

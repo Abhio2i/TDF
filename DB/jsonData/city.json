@@ -1,0 +1,33 @@
+{
+  "indian_cities": [
+    { "name": "Amaravati", "lat": 16.5417, "lon": 80.5158 },
+    { "name": "Itanagar", "lat": 27.0844, "lon": 93.6053 },
+    { "name": "Dispur", "lat": 26.1433, "lon": 91.7898 },
+    { "name": "Patna", "lat": 25.5941, "lon": 85.1376 },
+    { "name": "Raipur", "lat": 21.2514, "lon": 81.6296 },
+    { "name": "Panaji", "lat": 15.4909, "lon": 73.8278 },
+    { "name": "Gandhinagar", "lat": 23.2156, "lon": 72.6369 },
+    { "name": "Chandigarh", "lat": 30.7333, "lon": 76.7794 },
+    { "name": "Shimla", "lat": 31.1048, "lon": 77.1734 },
+    { "name": "Ranchi", "lat": 23.3441, "lon": 85.3096 },
+    { "name": "Bengaluru", "lat": 12.9716, "lon": 77.5946 },
+    { "name": "Thiruvananthapuram", "lat": 8.5241, "lon": 76.9366 },
+    { "name": "Bhopal", "lat": 23.2599, "lon": 77.4126 },
+    { "name": "Mumbai", "lat": 19.0760, "lon": 72.8777 },
+    { "name": "Imphal", "lat": 24.8170, "lon": 93.9368 },
+    { "name": "Shillong", "lat": 25.5788, "lon": 91.8933 },
+    { "name": "Aizawl", "lat": 23.7271, "lon": 92.7176 },
+    { "name": "Kohima", "lat": 25.6747, "lon": 94.1100 },
+    { "name": "Bhubaneswar", "lat": 20.2961, "lon": 85.8245 },
+    { "name": "Jaipur", "lat": 26.9124, "lon": 75.7873 },
+    { "name": "Gangtok", "lat": 27.3314, "lon": 88.6138 },
+    { "name": "Chennai", "lat": 13.0827, "lon": 80.2707 },
+    { "name": "Hyderabad", "lat": 17.3850, "lon": 78.4867 },
+    { "name": "Agartala", "lat": 23.8315, "lon": 91.2868 },
+    { "name": "Lucknow", "lat": 26.8467, "lon": 80.9462 },
+    { "name": "Dehradun", "lat": 30.3165, "lon": 78.0322 },
+    { "name": "Kolkata", "lat": 22.5726, "lon": 88.3639 },
+    { "name": "Srinagar", "lat": 34.0837, "lon": 74.7973 },
+    { "name": "New Delhi", "lat": 28.6139, "lon": 77.2090 }
+  ]
+}

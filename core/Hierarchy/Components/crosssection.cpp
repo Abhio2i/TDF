@@ -70,8 +70,8 @@ QJsonObject CrossSection::toJson() const {
         obj[it.key()] = it.value();
     }
 
-    //Console::log("Collider::toJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
-    Console::log("Collider::toJson output: " + QString(QJsonDocument(obj).toJson()).toStdString());
+    //Console::log("CrossSection::toJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
+    //Console::log("CrossSection::toJson output: " + QString(QJsonDocument(obj).toJson()).toStdString());
     return obj;
 }
 

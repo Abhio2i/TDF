@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: angelscripthighlighter.h                                           */
 /* Purpose: Defines syntax highlighter for AngelScript code                  */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef ANGELSCRIPTHIGHLIGHTER_H
@@ -27,8 +28,8 @@ private:
     // %%% Data Structures %%%
     // Highlighting rule structure
     struct HighlightingRule {
-        QRegularExpression pattern;               // Pattern to match
-        QTextCharFormat format;                   // Format for matched text
+        QRegularExpression pattern;
+        QTextCharFormat format;
     };
     // List of highlighting rules
     QVector<HighlightingRule> highlightingRules;

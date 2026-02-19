@@ -31,6 +31,7 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
 
     // Configure canvas widget
     canvas = new CanvasWidget(mapCanvasContainer);
+
     canvas->setAttribute(Qt::WA_TranslucentBackground);
     canvas->setAttribute(Qt::WA_TransparentForMouseEvents);
     canvas->setStyleSheet("background: transparent;");
@@ -186,7 +187,11 @@ void TacticalDisplay::addMesh(QString ID, MeshData meshData)
     Platform* platform = dynamic_cast<Platform*>(entity.entity);
     if(platform){
         entity.platform = platform;
+    }else
+    {
+        entity.platform = nullptr;
     }
+
     entity.dynamicModel = meshData.dynamicmodel;
     // Add to canvas and update
     canvas->Meshes[ID.toStdString()] = entity;
@@ -216,11 +221,11 @@ void TacticalDisplay::selectedMesh(QString ID)
 void TacticalDisplay::setMapLayers(const QStringList& layerNames)
 {
     if (mapWidget) {
-        qDebug() << "Setting map layers:" << layerNames;
+       // qDebug() << "Setting map layers:" << layerNames;
         mapWidget->setLayers(layerNames);
         mapWidget->update();
     } else {
-        qDebug() << "Error: mapWidget is null";
+       // qDebug() << "Error: mapWidget is null";
     }
 }
 
@@ -247,7 +252,7 @@ bool TacticalDisplay::eventFilter(QObject *obj, QEvent *event)
 }
 void TacticalDisplay::onCoordinateSystemChanged(const QString& crsId) {
     if (mapWidget) {
-        mapWidget->setCoordinateSystem(crsId); // Call the new GISlib slot
-        qDebug() << "TacticalDisplay: Forwarded CRS change to GISlib:" << crsId;
+        mapWidget->setCoordinateSystem(crsId);
+       // qDebug() << "TacticalDisplay: Forwarded CRS change to GISlib:" << crsId;
     }
 }

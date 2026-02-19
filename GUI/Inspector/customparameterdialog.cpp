@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: customparameterdialog.cpp                                          */
 /* Purpose: Implements dialog for adding custom parameters                  */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #include "customparameterdialog.h"                 // For custom parameter dialog class

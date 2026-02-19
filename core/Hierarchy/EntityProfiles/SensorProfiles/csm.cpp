@@ -5,22 +5,25 @@
 const float RAD2DEG = 180.0f / M_PI;
 CSM::CSM(Hierarchy* h) : Sensor(h) {
     subType = SubType::CSM;
+    azimuth = 360;
+    frequency = 10.0f;
 }
 
 void CSM::scan(){
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
-
+    if(!parentEntity) return;
     Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
+    if(!source) return;
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
     for (auto& [key, entity] : *root->Radios)
     {
+        if(!entity || !entity->parentEntity) continue;
         auto it = root->Platforms->find(entity->parentEntity->ID);
         if (it != root->Platforms->end()) {
             Platform* platform = it->second;
-            // Aapka aage ka logic yahan aaye
             // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
-            if(platform->ID == parentEntity->ID) continue;
-            QVector3D localPos = source->inverseTransformPoint(platform->transform->translation());
+            if(platform->ID == parentEntity->ID || !platform || !platform->transform) continue;
+            QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
             //float distance = localPos.length();
             float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
 

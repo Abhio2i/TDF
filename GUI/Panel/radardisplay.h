@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: radardisplay.h                                                     */
 /* Purpose: Defines widget for radar display visualization                   */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef RADARDISPLAY_H

@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: overview.h                                                         */
 /* Purpose: Defines widget for displaying overview content                   */
+// Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef OVERVIEW_H
@@ -18,7 +19,6 @@ class Overview : public QWidget
 public:
     // Initialize overview widget
     explicit Overview(QWidget *parent = nullptr);
-
 private:
     // %%% UI Components %%%
     // Label for overview content

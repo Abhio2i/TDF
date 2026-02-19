@@ -4,6 +4,7 @@
 #include <QObject>
 #include "./component.h"
 #include "core/Hierarchy/Struct/geocords.h"
+#include "qmutex.h"
 #include <QJsonObject>
 #include <QVector3D>
 #include <QQuaternion>
@@ -49,13 +50,16 @@ public:
 
     void setTranslation(const QVector3D& vector);
     void addTranslation(const QVector3D& vector);
-    QVector3D translation();
+    QVector3D translation() const;
     void setRotation(const QQuaternion& quat);
     QQuaternion rotation();
     void setScale3D(const QVector3D& vector);
     QVector3D scale3D();
 
     // Directional methods using Quaternion math
+    float pitch();
+    float roll();
+    float yaw();
     QVector3D forward();
     QVector3D right();
     QVector3D up();
@@ -82,7 +86,15 @@ public:
     void toPDU(TransformPDU& pdu, const std::string& entityID, const std::string& parentID) const;
     void fromPDU(const TransformPDU& pdu);
 
+public slots:
+    void sync();
+    void invokesync();
+
 private:
+    QVector3D positionbuffer;
+    QQuaternion rotationbuffer;
+    bool PosUpdate = false;
+    bool RotUpdate = false;
     void VectorChanged(QVector3D v);
     void rotationChanged(QQuaternion r);
 };

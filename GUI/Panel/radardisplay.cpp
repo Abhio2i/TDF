@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: radardisplay.cpp                                                 */
 /* Purpose: Implements radar display widget for visualization              */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #include "radardisplay.h"                          // For radar display class
@@ -260,7 +261,7 @@ void RadarDisplay::drawTargetAndPath(QPainter &painter, int centerX, int centerY
             float per = target.radius / range;
             float radius = panelhigh * per;
             float angle = target.angle+90;
-            qDebug()<<target.angle;
+           // qDebug()<<target.angle;
             if (std::abs(target.angle) > (azimuth / 2)) continue;
             double theta = qDegreesToRadians(angle);
             double targetRadius = radius;
@@ -268,16 +269,15 @@ void RadarDisplay::drawTargetAndPath(QPainter &painter, int centerX, int centerY
             int targetY = centerY - static_cast<int>(targetRadius * sin(theta));
             // Draw target point
             painter.drawEllipse(targetX - 3, targetY - 3, 6, 6);
-            // --- Triangle Draw Karne ka Code ---
-            // Triangle ke points define karein (base targetX, targetY par hoga)
+
             if(target.speed>50){
                 QPolygon triangle;
-                int size = 10; // Triangle ka size
-                // Ye triangle target ke upar ek arrowhead ki tarah dikhega
-                triangle << QPoint(targetX, targetY - size)          // Top point
-                     << QPoint(targetX - size/2, targetY + size/2) // Bottom left
-                     << QPoint(targetX + size/2, targetY + size/2); // Bottom right
-                painter.setBrush(Qt::yellow); // Triangle ka color (aap change kar sakte hain)
+                int size = 10;
+
+                triangle << QPoint(targetX, targetY - size)
+                     << QPoint(targetX - size/2, targetY + size/2)
+                     << QPoint(targetX + size/2, targetY + size/2);
+                painter.setBrush(Qt::yellow);
                 painter.drawPolygon(triangle);
             }
             // Draw path to target
@@ -313,6 +313,5 @@ void RadarDisplay::paintEvent(QPaintEvent *event)
     drawAzimuth(painter, centerX, centerY, width() * 2);
     drawCenterSquare(painter, centerX, centerY);
     drawTargetAndPath(painter, centerX, centerY);
-    // Call base class paint event
     QWidget::paintEvent(event);
 }

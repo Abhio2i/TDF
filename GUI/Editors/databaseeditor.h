@@ -2,6 +2,7 @@
 /* ========================================================================= */
 /* File: databaseeditor.h                                                   */
 /* Purpose: Defines the main window for the database editor application      */
+// Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef DATABASEEDITOR_H
@@ -61,6 +62,7 @@ signals:
     // Signal unsaved changes state
     void unsavedChangesChanged(bool hasChanges);
     void Activated();
+      void hierarchyLoaded(QJsonObject hierarchyData);
 private:
     // %%% UI Setup Methods %%%
     // Configure menu bar
@@ -69,17 +71,12 @@ private:
     void setupToolBars();
     // Configure dock widgets
     void setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures);
-    // Enhanced dock widget setup for Linux compatibility
     void setupEnhancedDockWidgets();
-
     // %%% Core Components %%%
     // Scenario data structure
     Scenario* scenario = nullptr;
-    // Hierarchy data structure
-    // Hierarchy* hierarchy = nullptr;
     // Console for debugging
     Console* console = nullptr;
-
     // %%% UI Components %%%
     // Hierarchy tree view widget
     HierarchyTree *treeView = nullptr;
@@ -87,7 +84,6 @@ private:
     Inspector *inspector = nullptr;
     // Console view widget
     ConsoleView *consoleView = nullptr;
-
     // %%% Dock Widgets %%%
     // Dock widget for hierarchy
     QDockWidget *hierarchyDock = nullptr;
@@ -97,7 +93,6 @@ private:
     QDockWidget *inspectorDock = nullptr;
     // Dock widget for console
     QDockWidget *consoleDock = nullptr;
-
     // %%% Inspector Management %%%
     // List of inspector docks
     QList<QDockWidget*> inspectorDocks;
@@ -110,13 +105,11 @@ private:
     // Update status bar message
     void updateStatusBar(const QString &message);
     // Status bar widget
-
     QWidget* createComponentInspector(
         const QString& entityId,
         const QString& title,
         const QJsonObject& data,
         int preferredHeight);
-
     QWidget* createComponentInspectorWithDynamicHeight(
         const QString& entityId,
         const QString& title,
@@ -125,4 +118,4 @@ private:
     QStatusBar *statusBar;
 };
 
-#endif // DATABASEEDITOR_H
+#endif

@@ -35,7 +35,7 @@ void SceneRenderer::entityAdded(QString /*parentID*/, Entity* entity) {
         meshData.name = QString::fromStdString(zone->Name);
         meshData.transform = zone->transform;
         meshData.collider = zone->collider;
-        meshData.trajectory = nullptr;
+        meshData.trajectory = new Trajectory();
         meshData.Meshes = zone->meshRenderer2d->Meshes;
         meshData.entity = entity;
         meshData.dynamicmodel = new DynamicModel();
@@ -51,7 +51,7 @@ void SceneRenderer::entityAdded(QString /*parentID*/, Entity* entity) {
         meshData.name = QString::fromStdString(point->Name);
         meshData.transform = point->transform;
         meshData.collider = point->collider;
-        meshData.trajectory = nullptr;
+        meshData.trajectory = new Trajectory();;
         meshData.Meshes = point->meshRenderer2d->Meshes;
         meshData.entity = entity;
         meshData.dynamicmodel = new DynamicModel();

@@ -1,6 +1,8 @@
+
 /* ========================================================================= */
 /* File: hierarchytree.h                                                    */
 /* Purpose: Defines widget for displaying hierarchy tree                     */
+// Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef HIERARCHYTREE_H
@@ -10,6 +12,9 @@
 #include <QTreeWidget>                            // For tree widget
 #include <QMap>                                   // For key-value mapping
 #include <QVariant>                               // For variant data type
+#include <QComboBox>                              // For profile dropdown
+#include <QLineEdit>                              // For search bar
+#include <QHBoxLayout>                            // For horizontal layout
 #include "core/Hierarchy/entity.h"                // For entity data structure
 
 // %%% Forward Declarations %%%
@@ -26,6 +31,7 @@ public:
     explicit HierarchyTree(QWidget *parent = nullptr);
     // Clean up resources
     ~HierarchyTree();
+    bool islib = false;
     // Get tree widget
     QTreeWidget* getTreeWidget();
     // Add profile to tree
@@ -58,29 +64,58 @@ public:
     ContextMenu* getContextMenu() const;
     // Select entity by ID
     void selectEntityById(const QString& entityId);
+    // Get selected entities
+    QList<QVariantMap> getSelectedEntities() const;
+    // Remove multiple entities
+    void removeSelectedEntities();
+    // Get all profile names
+    QStringList getAllProfileNames() const;
+    // Filter hierarchy based on profile and search text
+    void filterHierarchy(const QString& profileFilter = "", const QString& searchText = "");
+    QList<QVariantMap> copiedItems;
+    void setLibraryFileName(const QString& fileName);
+    void selectMultipleEntitiesInTree(const QList<QString>& entityIds);
 
 signals:
+    void copyItemsRequested(QList<QVariantMap> data);
+    void pasteItemsRequested(QVariantMap targetData, QList<QVariantMap> itemsToPaste);
+    void removeEntitiesRequested(QList<QPair<QString, QString>> entityInfoList);
+    // Signal for profile filter change
+    void profileFilterChanged(const QString& profileName);
+    // Signal for search filter change
+    void searchFilterChanged(const QString& searchText);
     // Signal item selection
     void itemSelected(QVariantMap data);
+    // Signal multiple items selected
+    void itemsSelected(QList<QVariantMap> data);
     // Signal copy item request
     void copyItemRequested(QVariantMap data);
+    // Signal copy multiple items request
+    // void copyItemsRequested(QList<QVariantMap> data);
     // Signal paste item request
     void pasteItemRequested(QVariantMap targetData);
+    // Signal paste multiple items request
+    // void pasteItemsRequested(QVariantMap targetData, QList<QVariantMap> itemsToPaste);
     // Signal remove component request
     void removeComponentRequested(QString entityID, QString componentName);
+    // Signal remove multiple entities request
+    // void removeEntitiesRequested(QList<QPair<QString, QString>> entityInfoList);
     // Signal item drop event
     void itemDropped(QVariantMap sourceData, QVariantMap targetData);
     // Signal entity selection
     void entitySelected(Entity* entity, QVariantMap data);
+    //formation
+    void addFormationRequested(QList<QVariantMap> selectedEntities);
+    void libraryFileNameChanged(const QString& fileName);
 
 protected:
     // %%% Event Handlers %%%
     // Show context menu
     void showContextMenu(const QPoint &pos);
     // Handle context menu event
-    void contextMenuEvent(QContextMenuEvent *event);
-    // Handle event filtering (commented)
-    // bool eventFilter(QObject *watched, QEvent *event) override;
+    void contextMenuEvent(QContextMenuEvent *event) override;
+    // Handle key press event for multi-select operations
+    void keyPressEvent(QKeyEvent *event) override;
     // Handle drag enter event
     void dragEnterEvent(QDragEnterEvent *event) override;
     // Handle drag move event
@@ -88,15 +123,46 @@ protected:
     // Handle drop event
     void dropEvent(QDropEvent *event) override;
 
+private slots:
+    // Handle search text change
+    void onSearchTextChanged(const QString& text);
+    // Handle profile filter change
+    void onProfileFilterChanged(int index);
+    // Update profile dropdown with all available profiles
+    void updateProfileDropdown();
+
 private:
     // %%% UI Components %%%
-    // Tree widget
+    // Main tree widget
     QTreeWidget *tree;
+    // Search bar for filtering entities
+    QLineEdit *searchBar;
+    // Dropdown for profile filtering
+    QComboBox *profileFilterCombo;
     // Context menu
     ContextMenu *contextMenu;
+
+    // %%% Layouts %%%
+    QVBoxLayout *mainLayout;
+    QHBoxLayout *filterLayout;
+
+    // %%% Data Storage %%%
     // Map of items by ID
     QMap<QString, QTreeWidgetItem*> Items;
-    QVariantMap dragsourceData;
+    // Map of profile ID to profile name
+    QMap<QString, QString> profileMap;
+    // Original items backup for filtering
+    QMap<QString, QTreeWidgetItem*> originalItems;
+
+    static inline QVariantMap dragsourceData;
+
+    // %%% Helper Methods %%%
+    // Recursively show/hide items based on filters
+    void applyFilters(QTreeWidgetItem* item, const QString& profileFilter, const QString& searchText);
+    // Check if item matches search criteria
+    bool itemMatchesSearch(QTreeWidgetItem* item, const QString& searchText);
+    // Check if item belongs to profile
+    bool itemBelongsToProfile(QTreeWidgetItem* item, const QString& profileName);
 };
 
 #endif // HIERARCHYTREE_H

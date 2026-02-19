@@ -1,4 +1,10 @@
 
+//============================================================================
+// File        : CSMDisplay.h
+// Description : Header file for CSMDisplay class . target tracking,
+//               and interactive hover detection for sensor data.
+//               Written by Arti Rajpoot
+//============================================================================
 
 #ifndef CSMDisplay_H
 #define CSMDisplay_H

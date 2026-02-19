@@ -10,6 +10,7 @@
 #include "../../GUI/Toolbars/designtoolbar.h"
 #include <QtCore/qbytearray.h>
 #include <QtCore/qmetatype.h>
+#include <QtCore/QSet>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'designtoolbar.h' doesn't include <QObject>."
 #elif Q_MOC_OUTPUT_REVISION != 67
@@ -21,9 +22,79 @@
 QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
+struct qt_meta_stringdata_StayOpenMenu_t {
+    QByteArrayData data[1];
+    char stringdata0[13];
+};
+#define QT_MOC_LITERAL(idx, ofs, len) \
+    Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
+    qptrdiff(offsetof(qt_meta_stringdata_StayOpenMenu_t, stringdata0) + ofs \
+        - idx * sizeof(QByteArrayData)) \
+    )
+static const qt_meta_stringdata_StayOpenMenu_t qt_meta_stringdata_StayOpenMenu = {
+    {
+QT_MOC_LITERAL(0, 0, 12) // "StayOpenMenu"
+
+    },
+    "StayOpenMenu"
+};
+#undef QT_MOC_LITERAL
+
+static const uint qt_meta_data_StayOpenMenu[] = {
+
+ // content:
+       8,       // revision
+       0,       // classname
+       0,    0, // classinfo
+       0,    0, // methods
+       0,    0, // properties
+       0,    0, // enums/sets
+       0,    0, // constructors
+       0,       // flags
+       0,       // signalCount
+
+       0        // eod
+};
+
+void StayOpenMenu::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
+{
+    (void)_o;
+    (void)_id;
+    (void)_c;
+    (void)_a;
+}
+
+QT_INIT_METAOBJECT const QMetaObject StayOpenMenu::staticMetaObject = { {
+    QMetaObject::SuperData::link<QMenu::staticMetaObject>(),
+    qt_meta_stringdata_StayOpenMenu.data,
+    qt_meta_data_StayOpenMenu,
+    qt_static_metacall,
+    nullptr,
+    nullptr
+} };
+
+
+const QMetaObject *StayOpenMenu::metaObject() const
+{
+    return QObject::d_ptr->metaObject ? QObject::d_ptr->dynamicMetaObject() : &staticMetaObject;
+}
+
+void *StayOpenMenu::qt_metacast(const char *_clname)
+{
+    if (!_clname) return nullptr;
+    if (!strcmp(_clname, qt_meta_stringdata_StayOpenMenu.stringdata0))
+        return static_cast<void*>(this);
+    return QMenu::qt_metacast(_clname);
+}
+
+int StayOpenMenu::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
+{
+    _id = QMenu::qt_metacall(_c, _id, _a);
+    return _id;
+}
 struct qt_meta_stringdata_DesignToolBar_t {
-    QByteArrayData data[69];
-    char stringdata0[1055];
+    QByteArrayData data[75];
+    char stringdata0[1158];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -97,10 +168,16 @@ QT_MOC_LITERAL(61, 917, 9), // "longitude"
 QT_MOC_LITERAL(62, 927, 22), // "addTrajectoryTriggered"
 QT_MOC_LITERAL(63, 950, 23), // "coordinateSystemChanged"
 QT_MOC_LITERAL(64, 974, 5), // "crsId"
-QT_MOC_LITERAL(65, 980, 13), // "onModeChanged"
-QT_MOC_LITERAL(66, 994, 26), // "onMeasureDistanceTriggered"
-QT_MOC_LITERAL(67, 1021, 19), // "onGeoJsonLayerAdded"
-QT_MOC_LITERAL(68, 1041, 13) // "importGeoJson"
+QT_MOC_LITERAL(65, 980, 21), // "tooltipOptionsChanged"
+QT_MOC_LITERAL(66, 1002, 13), // "QSet<QString>"
+QT_MOC_LITERAL(67, 1016, 13), // "activeOptions"
+QT_MOC_LITERAL(68, 1030, 13), // "onModeChanged"
+QT_MOC_LITERAL(69, 1044, 26), // "onMeasureDistanceTriggered"
+QT_MOC_LITERAL(70, 1071, 19), // "onGeoJsonLayerAdded"
+QT_MOC_LITERAL(71, 1091, 13), // "importGeoJson"
+QT_MOC_LITERAL(72, 1105, 24), // "onAddBaseLayerToSelected"
+QT_MOC_LITERAL(73, 1130, 7), // "layerId"
+QT_MOC_LITERAL(74, 1138, 19) // "updateMapLayersMenu"
 
     },
     "DesignToolBar\0viewTriggered\0\0moveTriggered\0"
@@ -130,8 +207,12 @@ QT_MOC_LITERAL(68, 1041, 13) // "importGeoJson"
     "searchCoordinatesTriggered\0latitude\0"
     "longitude\0addTrajectoryTriggered\0"
     "coordinateSystemChanged\0crsId\0"
-    "onModeChanged\0onMeasureDistanceTriggered\0"
-    "onGeoJsonLayerAdded\0importGeoJson"
+    "tooltipOptionsChanged\0QSet<QString>\0"
+    "activeOptions\0onModeChanged\0"
+    "onMeasureDistanceTriggered\0"
+    "onGeoJsonLayerAdded\0importGeoJson\0"
+    "onAddBaseLayerToSelected\0layerId\0"
+    "updateMapLayersMenu"
 };
 #undef QT_MOC_LITERAL
 
@@ -141,60 +222,63 @@ static const uint qt_meta_data_DesignToolBar[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-      44,   14, // methods
+      47,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
        0,       // flags
-      40,       // signalCount
+      41,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    0,  234,    2, 0x06 /* Public */,
-       3,    0,  235,    2, 0x06 /* Public */,
-       4,    0,  236,    2, 0x06 /* Public */,
-       5,    0,  237,    2, 0x06 /* Public */,
-       6,    0,  238,    2, 0x06 /* Public */,
-       7,    0,  239,    2, 0x06 /* Public */,
-       8,    1,  240,    2, 0x06 /* Public */,
-       9,    1,  243,    2, 0x06 /* Public */,
-      10,    0,  246,    2, 0x06 /* Public */,
-      11,    0,  247,    2, 0x06 /* Public */,
-      12,    1,  248,    2, 0x06 /* Public */,
-      13,    1,  251,    2, 0x06 /* Public */,
-      14,    1,  254,    2, 0x06 /* Public */,
-      15,    1,  257,    2, 0x06 /* Public */,
-      16,    1,  260,    2, 0x06 /* Public */,
-      17,    1,  263,    2, 0x06 /* Public */,
-      18,    1,  266,    2, 0x06 /* Public */,
-      19,    1,  269,    2, 0x06 /* Public */,
-      20,    1,  272,    2, 0x06 /* Public */,
-      21,    1,  275,    2, 0x06 /* Public */,
-      24,    1,  278,    2, 0x06 /* Public */,
-      26,    1,  281,    2, 0x06 /* Public */,
-      28,    1,  284,    2, 0x06 /* Public */,
-      29,    1,  287,    2, 0x06 /* Public */,
-      30,    2,  290,    2, 0x06 /* Public */,
-      33,    1,  295,    2, 0x06 /* Public */,
-      35,    2,  298,    2, 0x06 /* Public */,
-      38,    1,  303,    2, 0x06 /* Public */,
-      40,    0,  306,    2, 0x06 /* Public */,
-      41,    5,  307,    2, 0x06 /* Public */,
-      47,    1,  318,    2, 0x06 /* Public */,
-      49,    1,  321,    2, 0x06 /* Public */,
-      51,    1,  324,    2, 0x06 /* Public */,
-      53,    0,  327,    2, 0x06 /* Public */,
-      54,    1,  328,    2, 0x06 /* Public */,
-      56,    1,  331,    2, 0x06 /* Public */,
-      57,    2,  334,    2, 0x06 /* Public */,
-      59,    2,  339,    2, 0x06 /* Public */,
-      62,    0,  344,    2, 0x06 /* Public */,
-      63,    1,  345,    2, 0x06 /* Public */,
+       1,    0,  249,    2, 0x06 /* Public */,
+       3,    0,  250,    2, 0x06 /* Public */,
+       4,    0,  251,    2, 0x06 /* Public */,
+       5,    0,  252,    2, 0x06 /* Public */,
+       6,    0,  253,    2, 0x06 /* Public */,
+       7,    0,  254,    2, 0x06 /* Public */,
+       8,    1,  255,    2, 0x06 /* Public */,
+       9,    1,  258,    2, 0x06 /* Public */,
+      10,    0,  261,    2, 0x06 /* Public */,
+      11,    0,  262,    2, 0x06 /* Public */,
+      12,    1,  263,    2, 0x06 /* Public */,
+      13,    1,  266,    2, 0x06 /* Public */,
+      14,    1,  269,    2, 0x06 /* Public */,
+      15,    1,  272,    2, 0x06 /* Public */,
+      16,    1,  275,    2, 0x06 /* Public */,
+      17,    1,  278,    2, 0x06 /* Public */,
+      18,    1,  281,    2, 0x06 /* Public */,
+      19,    1,  284,    2, 0x06 /* Public */,
+      20,    1,  287,    2, 0x06 /* Public */,
+      21,    1,  290,    2, 0x06 /* Public */,
+      24,    1,  293,    2, 0x06 /* Public */,
+      26,    1,  296,    2, 0x06 /* Public */,
+      28,    1,  299,    2, 0x06 /* Public */,
+      29,    1,  302,    2, 0x06 /* Public */,
+      30,    2,  305,    2, 0x06 /* Public */,
+      33,    1,  310,    2, 0x06 /* Public */,
+      35,    2,  313,    2, 0x06 /* Public */,
+      38,    1,  318,    2, 0x06 /* Public */,
+      40,    0,  321,    2, 0x06 /* Public */,
+      41,    5,  322,    2, 0x06 /* Public */,
+      47,    1,  333,    2, 0x06 /* Public */,
+      49,    1,  336,    2, 0x06 /* Public */,
+      51,    1,  339,    2, 0x06 /* Public */,
+      53,    0,  342,    2, 0x06 /* Public */,
+      54,    1,  343,    2, 0x06 /* Public */,
+      56,    1,  346,    2, 0x06 /* Public */,
+      57,    2,  349,    2, 0x06 /* Public */,
+      59,    2,  354,    2, 0x06 /* Public */,
+      62,    0,  359,    2, 0x06 /* Public */,
+      63,    1,  360,    2, 0x06 /* Public */,
+      65,    1,  363,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-      65,    1,  348,    2, 0x0a /* Public */,
-      66,    0,  351,    2, 0x0a /* Public */,
-      67,    1,  352,    2, 0x0a /* Public */,
-      68,    0,  355,    2, 0x08 /* Private */,
+      68,    1,  366,    2, 0x0a /* Public */,
+      69,    0,  369,    2, 0x0a /* Public */,
+      70,    1,  370,    2, 0x0a /* Public */,
+      71,    0,  373,    2, 0x08 /* Private */,
+      72,    1,  374,    2, 0x08 /* Private */,
+      74,    0,  377,    2, 0x08 /* Private */,
 
  // signals: parameters
     QMetaType::Void,
@@ -237,11 +321,14 @@ static const uint qt_meta_data_DesignToolBar[] = {
     QMetaType::Void, QMetaType::Double, QMetaType::Double,   60,   61,
     QMetaType::Void,
     QMetaType::Void, QMetaType::QString,   64,
+    QMetaType::Void, 0x80000000 | 66,   67,
 
  // slots: parameters
     QMetaType::Void, 0x80000000 | 22,   23,
     QMetaType::Void,
     QMetaType::Void, QMetaType::QString,   42,
+    QMetaType::Void,
+    QMetaType::Void, QMetaType::QString,   73,
     QMetaType::Void,
 
        0        // eod
@@ -293,11 +380,25 @@ void DesignToolBar::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
         case 37: _t->searchCoordinatesTriggered((*reinterpret_cast< double(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
         case 38: _t->addTrajectoryTriggered(); break;
         case 39: _t->coordinateSystemChanged((*reinterpret_cast< const QString(*)>(_a[1]))); break;
-        case 40: _t->onModeChanged((*reinterpret_cast< TransformMode(*)>(_a[1]))); break;
-        case 41: _t->onMeasureDistanceTriggered(); break;
-        case 42: _t->onGeoJsonLayerAdded((*reinterpret_cast< const QString(*)>(_a[1]))); break;
-        case 43: _t->importGeoJson(); break;
+        case 40: _t->tooltipOptionsChanged((*reinterpret_cast< const QSet<QString>(*)>(_a[1]))); break;
+        case 41: _t->onModeChanged((*reinterpret_cast< TransformMode(*)>(_a[1]))); break;
+        case 42: _t->onMeasureDistanceTriggered(); break;
+        case 43: _t->onGeoJsonLayerAdded((*reinterpret_cast< const QString(*)>(_a[1]))); break;
+        case 44: _t->importGeoJson(); break;
+        case 45: _t->onAddBaseLayerToSelected((*reinterpret_cast< const QString(*)>(_a[1]))); break;
+        case 46: _t->updateMapLayersMenu(); break;
         default: ;
+        }
+    } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
+        switch (_id) {
+        default: *reinterpret_cast<int*>(_a[0]) = -1; break;
+        case 40:
+            switch (*reinterpret_cast<int*>(_a[1])) {
+            default: *reinterpret_cast<int*>(_a[0]) = -1; break;
+            case 0:
+                *reinterpret_cast<int*>(_a[0]) = qRegisterMetaType< QSet<QString> >(); break;
+            }
+            break;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
         int *result = reinterpret_cast<int *>(_a[0]);
@@ -581,6 +682,13 @@ void DesignToolBar::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
                 return;
             }
         }
+        {
+            using _t = void (DesignToolBar::*)(const QSet<QString> & );
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&DesignToolBar::tooltipOptionsChanged)) {
+                *result = 40;
+                return;
+            }
+        }
     }
 }
 
@@ -613,13 +721,13 @@ int DesignToolBar::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 44)
+        if (_id < 47)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 44;
+        _id -= 47;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 44)
-            *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 44;
+        if (_id < 47)
+            qt_static_metacall(this, _c, _id, _a);
+        _id -= 47;
     }
     return _id;
 }
@@ -891,6 +999,13 @@ void DesignToolBar::coordinateSystemChanged(const QString & _t1)
 {
     void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
     QMetaObject::activate(this, &staticMetaObject, 39, _a);
+}
+
+// SIGNAL 40
+void DesignToolBar::tooltipOptionsChanged(const QSet<QString> & _t1)
+{
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    QMetaObject::activate(this, &staticMetaObject, 40, _a);
 }
 QT_WARNING_POP
 QT_END_MOC_NAMESPACE

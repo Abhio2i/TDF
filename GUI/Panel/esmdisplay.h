@@ -1,4 +1,11 @@
 
+//============================================================================
+// File        : ESMDisplay.h
+// Description : Header file for ESMDisplay class.
+//               including radar display, target tracking, and interactive
+//               hover detection for sensor data.
+//               Written by Arti Rajpoot
+//============================================================================
 
 #ifndef ESMDisplay_H
 #define ESMDisplay_H
@@ -11,8 +18,8 @@
 // %%% Data Structures %%%
 /* Structure for electronic warfare target */
 struct ESMTarget {
-    double angle = 0.0;                           // Target angle
-    double radius = 0.0;                          // Target radius
+    double angle = 0.0;
+    double radius = 0.0;
 };
 
 // %%% Class Definition %%%

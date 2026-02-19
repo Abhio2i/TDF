@@ -1,5 +1,13 @@
 
+//============================================================================
+// File        : runtimetoolbar.cpp
+// Description : Implementation of RuntimeToolBar class for simulation control toolbar.
+//               Provides controls for start/pause/stop, speed adjustment, timing graph,
+//               logger, and radar display toggle functionality.
+//============================================================================
+
 #include "runtimetoolbar.h"
+#include "runtimetoolbar-styles.h"  // Include separate CSS file
 #include <QIcon>
 #include <QPainter>
 #include <QPixmap>
@@ -17,10 +25,14 @@
 #include <QDialog>
 #include <QLineEdit>
 #include <QPushButton>
-#include <GUI/Timing/timingdialog.h>
+#include <QApplication>
+#include "GUI/Timing/graphwidget.h"
+#include "GUI/Editors/runtimeeditor.h"
 
-const QSize ICON_SIZE(24, 24);
+// Icon size constant for toolbar buttons (smaller - 16x16)
+const QSize ICON_SIZE(20, 20);
 
+// Helper function to create icons with white background
 QPixmap RuntimeToolBar::withWhiteBg(const QString &iconPath)
 {
     QPixmap pixmap(iconPath);
@@ -33,116 +45,159 @@ QPixmap RuntimeToolBar::withWhiteBg(const QString &iconPath)
     return newPixmap;
 }
 
+// Constructor for RuntimeToolBar
 RuntimeToolBar::RuntimeToolBar(QWidget *parent) : QToolBar(parent)
 {
     setWindowTitle("Runtime ToolBar");
+
+    // Apply toolbar styles
+    setStyleSheet(RuntimeToolbarStyles::Toolbar);
+
+    // Apply tooltip style
+    QToolTip::setPalette(QPalette());
+    setToolTipDuration(2000);
+
     elapsedSeconds = 0;
+    currentState = STOPPED;
+    blinkState = false;
     createActions();
     setupToolBar();
 }
 
+// Initialize toolbar state
+void RuntimeToolBar::Init(){
+    elapsedSeconds = 0;
+    currentState = STOPPED;
+    blinkState = false;
+    updateTimeDisplay();
+    updateStatusDisplay();
+}
+
+// Create all toolbar actions and their connections
 void RuntimeToolBar::createActions()
 {
     this->setIconSize(ICON_SIZE);
+
+    // Start Action (Play button)
     startAction = new QAction(QIcon(withWhiteBg(":/icons/images/play.png")), tr("Start"), this);
     startAction->setCheckable(true);
     startAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_P));
     connect(startAction, &QAction::triggered, this, [this](bool) {
         highlightAction(startAction);
+        setSimulationState(RUNNING);
         emit startTriggered();
-        if (timingDialog && timingDialog->isVisible()) {
-            timingDialog->startGraphSimulation();
-        }
     });
 
+    // Pause Action (Pause button)
     pauseAction = new QAction(QIcon(withWhiteBg(":/icons/images/pause.png")), tr("Pause"), this);
     pauseAction->setCheckable(true);
     connect(pauseAction, &QAction::triggered, this, [=]() {
         highlightAction(pauseAction);
+        setSimulationState(PAUSED);
         emit pauseTriggered();
     });
 
+    // Stop Action (Stop button)
     stopAction = new QAction(QIcon(withWhiteBg(":/icons/images/stop.png")), tr("Stop"), this);
     stopAction->setCheckable(true);
     stopAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_P));
     connect(stopAction, &QAction::triggered, this, [=]() {
         highlightAction(stopAction);
+        setSimulationState(STOPPED);
         emit stopTriggered();
     });
 
-    // replayAction = new QAction(QIcon(withWhiteBg(":/icons/images/replay.png")), tr("Replay"), this);
-    // replayAction->setCheckable(true);
-    // connect(replayAction, &QAction::triggered, this, [=]() {
-    //     highlightAction(replayAction);
-    //     emit replayTriggered();
-    // });
-
+    // Next Step Action (Step button)
     nextStepAction = new QAction(QIcon(withWhiteBg(":/icons/images/step.png")), tr("Next Step"), this);
     nextStepAction->setCheckable(false);
     connect(nextStepAction, &QAction::triggered, this, [=]() {
         emit nextStepTriggered();
     });
 
-    // bookmarkAction = new QAction(QIcon(withWhiteBg(":/icons/images/star.png")), tr("Bookmark"), this);
-    // bookmarkAction->setCheckable(false);
-    // connect(bookmarkAction, &QAction::triggered, this, [this]() {
-    //     emit bookmarkTriggered();
-    //     QDialog *bookmarkDialog = new QDialog(this);
-    //     bookmarkDialog->setWindowTitle(tr("Add Bookmark Comment"));
-    //     QVBoxLayout *layout = new QVBoxLayout(bookmarkDialog);
-    //     QLineEdit *commentInput = new QLineEdit(bookmarkDialog);
-    //     commentInput->setPlaceholderText(tr("Enter your comment"));
-    //     QPushButton *okButton = new QPushButton(tr("OK"), bookmarkDialog);
-    //     layout->addWidget(commentInput);
-    //     layout->addWidget(okButton);
-    //     bookmarkDialog->setLayout(layout);
-    //     connect(okButton, &QPushButton::clicked, this, [this, commentInput, bookmarkDialog]() {
-    //         QString comment = commentInput->text().trimmed();
-    //         if (!comment.isEmpty()) {
-    //             emit bookmarkCommentSubmitted(comment);
-    //         }
-    //         bookmarkDialog->accept();
-    //     });
-    //     bookmarkDialog->exec();
-    // });
+    // Timing Graph Action (Timing button)
+    timingAction = new QAction(QIcon(withWhiteBg(":/icons/images/timing.png")), tr("Timing Graph"), this);
+    timingAction->setCheckable(false);
+    connect(timingAction, &QAction::triggered, this, [this]() {
+        GraphWidget* existingGraph = nullptr;
+        QWidgetList topLevelWidgets = QApplication::topLevelWidgets();
+        for (QWidget* widget : topLevelWidgets) {
+            GraphWidget* graph = qobject_cast<GraphWidget*>(widget);
+            if (graph) {
+                existingGraph = graph;
+                break;
+            }
+        }
 
-    // timingAction = new QAction(QIcon(withWhiteBg(":/icons/images/timing.png")), tr("Timing Info"), this);
-    // timingAction->setCheckable(false);
-    // connect(timingAction, &QAction::triggered, this, [this]() {
-    //     if (!timingDialog) {
-    //         timingDialog = new TimingDialog(this);
-    //     }
-    //     timingDialog->show();
-    // });
+        if (existingGraph) {
+            existingGraph->show();
+            existingGraph->raise();
+            existingGraph->activateWindow();
+        } else {
+            QWidget* topParent = this->window();
+            GraphWidget* graph = new GraphWidget(topParent);
+            graph->setWindowTitle("Timing Graph");
+            graph->setWindowFlags(Qt::Tool |
+                                  Qt::WindowStaysOnTopHint |
+                                  Qt::WindowCloseButtonHint |
+                                  Qt::WindowTitleHint |
+                                  Qt::CustomizeWindowHint);
+            graph->setAttribute(Qt::WA_ShowWithoutActivating);
+            graph->resize(1000, 600);
+            graph->show();
+            graph->raise();
+            graph->activateWindow();
 
-loggerAction = new QAction(QIcon(withWhiteBg(":/icons/images/audit.png")), tr("Logger"), this);
-loggerAction->setCheckable(true);
-loggerAction->setObjectName("loggerAction");
-connect(loggerAction, &QAction::triggered, this, [this](bool checked) {
-    emit loggerTriggered(checked); // Emit with checked state
-    highlightAction(checked ? loggerAction : nullptr);
-});
+            QWidget* parentWidget = this->parentWidget();
+            while (parentWidget) {
+                RuntimeEditor* editor = qobject_cast<RuntimeEditor*>(parentWidget);
+                if (editor) {
+                    if (editor->hierarchy) {
+                        graph->setHierarchy(editor->hierarchy);
+                    }
+                    if (editor->simulation) {
+                        connect(editor->simulation, &Simulation::Render, graph, &GraphWidget::refresh);
+                    }
+                    break;
+                }
+                parentWidget = parentWidget->parentWidget();
+            }
+        }
+    });
 
+    // Logger Action (Audit button)
+    loggerAction = new QAction(QIcon(withWhiteBg(":/icons/images/audit.png")), tr("Logger"), this);
+    loggerAction->setCheckable(true);
+    loggerAction->setObjectName("loggerAction");
+    connect(loggerAction, &QAction::triggered, this, [this](bool checked) {
+        emit loggerTriggered(checked);
+        highlightAction(checked ? loggerAction : nullptr);
+    });
 
-    // New action for toggling RadarDisplay (initially unchecked)
+    // Radar Display Toggle Action (Database icon)
     radarToggleAction = new QAction(QIcon(withWhiteBg(":/icons/images/database (1).png")), tr("Toggle Radar Display"), this);
     radarToggleAction->setObjectName("radarToggleAction");
     radarToggleAction->setCheckable(true);
-    radarToggleAction->setChecked(false); // Initially unchecked (RadarDisplay hidden)
+    radarToggleAction->setChecked(false);
     connect(radarToggleAction, &QAction::triggered, this, [=](bool checked) {
-        qDebug() << "RadarDisplay toggle triggered, checked:" << checked;
         emit radarDisplayToggled();
     });
 
+    // Create speed control widget with slider and time display
     QWidget *speedControlWidget = new QWidget(this);
+    speedControlWidget->setStyleSheet("background-color: transparent;");
+
     QHBoxLayout *speedLayout = new QHBoxLayout(speedControlWidget);
     speedLayout->setContentsMargins(0, 0, 0, 0);
     speedLayout->setSpacing(5);
+
+    // Speed icon button
     QToolButton *speedIcon = new QToolButton(this);
     speedIcon->setIcon(QIcon(withWhiteBg(":/icons/images/speed.png")));
     speedIcon->setToolTip(tr("Adjust Speed"));
-    speedIcon->setStyleSheet("QToolButton { border: none; padding: 0px; }");
+    speedIcon->setStyleSheet(RuntimeToolbarStyles::SpeedIconButton);
     speedIcon->setIconSize(ICON_SIZE);
+
+    // Speed slider for adjusting simulation speed
     speedSlider = new QSlider(Qt::Horizontal, this);
     speedSlider->setRange(1, 10);
     speedSlider->setValue(1);
@@ -150,18 +205,38 @@ connect(loggerAction, &QAction::triggered, this, [this](bool checked) {
     speedSlider->setMaximumWidth(150);
     speedSlider->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     speedSlider->setToolTip(tr("Current Speed: %1").arg(speedSlider->value()));
+    speedSlider->setStyleSheet(RuntimeToolbarStyles::SpeedSlider);
+
+    // Time display label
     timeLabel = new QLabel("00:00:00", this);
-    timeLabel->setStyleSheet("QLabel { font-family: monospace; padding: 0 5px; }");
+    timeLabel->setStyleSheet(RuntimeToolbarStyles::TimeLabel);
     timeLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    timeLabel->installEventFilter(this);
+
+    // Simulation status bar
+    simulationStatusLabel = new QLabel("STOPPED", this);
+    simulationStatusLabel->setStyleSheet(RuntimeToolbarStyles::StatusStopped);
+    simulationStatusLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    simulationStatusLabel->setMinimumWidth(80);
+    simulationStatusLabel->setAlignment(Qt::AlignCenter);
+    simulationStatusLabel->setToolTip("Simulation Status");
+
+    speedLayout->addWidget(speedIcon);
+    speedLayout->addWidget(speedSlider);
+    speedLayout->addWidget(timeLabel);
+    speedLayout->addWidget(simulationStatusLabel);
+    speedControlWidget->setLayout(speedLayout);
+
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, [=]() {
         elapsedSeconds++;
         updateTimeDisplay();
     });
-    speedLayout->addWidget(speedIcon);
-    speedLayout->addWidget(speedSlider);
-    speedLayout->addWidget(timeLabel);
-    speedControlWidget->setLayout(speedLayout);
+
+    blinkTimer = new QTimer(this);
+    connect(blinkTimer, &QTimer::timeout, this, &RuntimeToolBar::updateSimulationStatus);
+
+    // Connect slider value change
     connect(speedSlider, &QSlider::valueChanged, this, [=](int value) {
         speedSlider->setToolTip(tr("Speed: %1").arg(value));
         QStyleOptionSlider opt;
@@ -180,42 +255,55 @@ connect(loggerAction, &QAction::triggered, this, [this](bool checked) {
     });
     speedSlider->setAttribute(Qt::WA_AlwaysShowToolTips);
 }
+
+bool RuntimeToolBar::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == timeLabel && event->type() == QEvent::MouseButtonPress) {
+        onTimeLabelClicked();
+        return true;
+    }
+    return QToolBar::eventFilter(obj, event);
+}
+
+// Setup toolbar layout by adding all actions and widgets
 void RuntimeToolBar::setupToolBar()
 {
     QToolButton* btn;
     for (QAction* action : this->actions()) {
         if ((btn = qobject_cast<QToolButton*>(widgetForAction(action)))) {
             btn->setFixedSize(ICON_SIZE.width() + 10, ICON_SIZE.height() + 10);
+            btn->setStyleSheet(RuntimeToolbarStyles::ToolbarButton);
         }
     }
+
     addAction(startAction);
     addAction(pauseAction);
     addAction(stopAction);
-    // addAction(replayAction);
     addAction(nextStepAction);
-    // addAction(bookmarkAction);
-    // addAction(timingAction);
+    addAction(timingAction);
     addAction(loggerAction);
-    addAction(radarToggleAction); // Add radar toggle action
+    addAction(radarToggleAction);
     addSeparator();
     addWidget(speedSlider->parentWidget());
     addSeparator();
 }
 
+// Highlight the currently active action
 void RuntimeToolBar::highlightAction(QAction *activeAction)
 {
-    QList<QAction*> actions = { startAction, pauseAction, stopAction, loggerAction, radarToggleAction };
+    QList<QAction*> actions = { startAction, pauseAction, stopAction, loggerAction, radarToggleAction};
     for (QAction *action : actions) {
         QWidget *btn = widgetForAction(action);
         if (!btn) continue;
         if (action == activeAction) {
-            btn->setStyleSheet("QToolButton { background-color: #d0e0ff; border: 1px solid #5070ff; border-radius: 4px; }");
+            btn->setStyleSheet(RuntimeToolbarStyles::ToolbarButtonHighlighted);
         } else {
-            btn->setStyleSheet("");
+            btn->setStyleSheet(RuntimeToolbarStyles::ToolbarButton);
         }
     }
 }
 
+// Update elapsed time from external source
 void RuntimeToolBar::onElapsedTime(float time)
 {
     elapsedSeconds += time;
@@ -232,4 +320,139 @@ void RuntimeToolBar::updateTimeDisplay()
                            .arg(hours, 2, 10, QChar('0'))
                            .arg(minutes, 2, 10, QChar('0'))
                            .arg(seconds, 2, 10, QChar('0')));
+}
+
+void RuntimeToolBar::onTimeLabelClicked()
+{
+    int totalSeconds = static_cast<int>(elapsedSeconds);
+    int hours = totalSeconds / 3600;
+    int minutes = (totalSeconds % 3600) / 60;
+    int seconds = totalSeconds % 60;
+
+    QDialog *dialog = new QDialog(this);
+    dialog->setWindowTitle("Set Time");
+    dialog->setModal(true);
+    dialog->setStyleSheet(RuntimeToolbarStyles::Dialog);
+
+    QVBoxLayout *layout = new QVBoxLayout(dialog);
+    QHBoxLayout *timeLayout = new QHBoxLayout();
+
+    QLineEdit *hoursEdit = new QLineEdit(dialog);
+    hoursEdit->setPlaceholderText("HH");
+    hoursEdit->setText(QString::number(hours));
+    hoursEdit->setMaxLength(2);
+    hoursEdit->setFixedWidth(50);
+
+    QLineEdit *minutesEdit = new QLineEdit(dialog);
+    minutesEdit->setPlaceholderText("MM");
+    minutesEdit->setText(QString::number(minutes));
+    minutesEdit->setMaxLength(2);
+    minutesEdit->setFixedWidth(50);
+
+    QLineEdit *secondsEdit = new QLineEdit(dialog);
+    secondsEdit->setPlaceholderText("SS");
+    secondsEdit->setMaxLength(2);
+    secondsEdit->setFixedWidth(50);
+    secondsEdit->setText(QString::number(seconds));
+
+    QLabel *timePrompt = new QLabel("Time:", dialog);
+    timePrompt->setStyleSheet("color: white;");
+
+    timeLayout->addWidget(timePrompt);
+    timeLayout->addWidget(hoursEdit);
+    timeLayout->addWidget(minutesEdit);
+    timeLayout->addWidget(secondsEdit);
+    layout->addLayout(timeLayout);
+
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    QPushButton *okButton = new QPushButton("OK", dialog);
+    QPushButton *cancelButton = new QPushButton("Cancel", dialog);
+    okButton->setStyleSheet(RuntimeToolbarStyles::PushButton);
+    cancelButton->setStyleSheet(RuntimeToolbarStyles::PushButton);
+
+    buttonLayout->addStretch();
+    buttonLayout->addWidget(okButton);
+    buttonLayout->addWidget(cancelButton);
+    layout->addLayout(buttonLayout);
+
+    connect(okButton, &QPushButton::clicked, dialog, &QDialog::accept);
+    connect(cancelButton, &QPushButton::clicked, dialog, &QDialog::reject);
+
+    if (dialog->exec() == QDialog::Accepted) {
+        int hours = hoursEdit->text().toInt();
+        int minutes = minutesEdit->text().toInt();
+        int seconds = secondsEdit->text().toInt();
+        float totalSeconds = hours * 3600 + minutes * 60 + seconds;
+        elapsedSeconds = totalSeconds;
+        updateTimeDisplay();
+        emit timeChanged(totalSeconds);
+
+    }
+
+    dialog->deleteLater();
+}
+
+void RuntimeToolBar::setSimulationState(SimulationState state)
+{
+    currentState = state;
+    updateStatusDisplay();
+    emit simulationStateChanged(state);
+
+    // Control timers based on state
+    if (state == RUNNING) {
+        if (!timer->isActive()) {
+            timer->start(1000);
+        }
+        blinkTimer->start(500);
+    } else if (state == PAUSED) {
+        timer->stop();
+        blinkTimer->start(1000);
+    } else { // STOPPED
+        timer->stop();
+        blinkTimer->stop();
+        blinkState = false;
+        updateStatusDisplay();
+    }
+}
+
+// Update status display
+void RuntimeToolBar::updateStatusDisplay()
+{
+    QString text;
+    QString styleSheet;
+
+    switch(currentState) {
+    case RUNNING:
+        text = "RUNNING";
+        if (blinkState) {
+            styleSheet = RuntimeToolbarStyles::StatusRunningBlink;
+        } else {
+            styleSheet = RuntimeToolbarStyles::StatusRunning;
+        }
+        break;
+
+    case PAUSED:
+        text = "PAUSED";
+        if (blinkState) {
+            styleSheet = RuntimeToolbarStyles::StatusPausedBlink;
+        } else {
+            styleSheet = RuntimeToolbarStyles::StatusPaused;
+        }
+        break;
+
+    case STOPPED:
+        text = "STOPPED";
+        styleSheet = RuntimeToolbarStyles::StatusStopped;
+        break;
+    }
+
+    simulationStatusLabel->setText(text);
+    simulationStatusLabel->setStyleSheet(styleSheet);
+}
+
+// Update simulation status (for blinking effect)
+void RuntimeToolBar::updateSimulationStatus()
+{
+    blinkState = !blinkState;
+    updateStatusDisplay();
 }

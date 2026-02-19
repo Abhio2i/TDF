@@ -1,3 +1,11 @@
+//============================================================================
+// File        : RADIODisplay.h
+// Description : Header file for RADIODisplay class . radar-style display,
+//               target tracking, and interactive hover detection for
+//               radio communication data.
+//               Written by Arti Rajpoot
+//============================================================================
+
 #ifndef RADIODISPLAY_H
 #define RADIODISPLAY_H
 

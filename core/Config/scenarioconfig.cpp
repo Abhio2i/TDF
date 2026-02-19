@@ -1,120 +1,4 @@
-// #include "scenarioconfig.h"
-// #include <QDebug>
-// #include <QCoreApplication>
 
-// ScenarioConfig::ScenarioConfig(QObject *parent)
-//     : QObject(parent), savedFPS(60), savedImageSize("100px")
-// {
-//     // Use organization and application name
-//     QString orgName = QCoreApplication::organizationName();
-//     QString appName = QCoreApplication::applicationName();
-
-//     if (orgName.isEmpty()) orgName = "YourCompany";
-//     if (appName.isEmpty()) appName = "YourApplication";
-
-//     settings = new QSettings(orgName, appName, this);
-
-//     // Load saved settings
-//     loadAppSettings();
-// }
-
-
-// ScenarioConfig::~ScenarioConfig()
-// {
-//     // Save settings before closing
-//     saveAppSettings(savedFPS, savedImageSize);
-// }
-
-// // Add file to recent projects list
-// void ScenarioConfig::addToRecentProjects(const QString &filePath)
-// {
-//     if (filePath.isEmpty()) return;
-
-//     QStringList recentProjects = settings->value("recentProjects").toStringList();
-
-//     // Remove if already exists
-//     recentProjects.removeAll(filePath);
-
-//     // Add to beginning
-//     recentProjects.prepend(filePath);
-
-//     // Keep only last 10 projects
-//     while (recentProjects.size() > 10) {
-//         recentProjects.removeLast();
-//     }
-
-//     settings->setValue("recentProjects", recentProjects);
-
-//     // Update last opened project
-//     lastOpenedProject = filePath;
-//     settings->setValue("lastOpenedProject", filePath);
-
-//     qDebug() << "✅ Added to recent projects:" << filePath;
-// }
-
-// // Get recent projects list
-// QStringList ScenarioConfig::getRecentProjects() const
-// {
-//     return settings->value("recentProjects").toStringList();
-// }
-
-// // Clear recent projects list
-// void ScenarioConfig::clearRecentProjects()
-// {
-//     settings->remove("recentProjects");
-//     qDebug() << "Recent projects list cleared";
-// }
-
-// // Save application settings
-// void ScenarioConfig::saveAppSettings(int fps, const QString &imageSize)
-// {
-//     if (fps >= 1 && fps <= 1000) {
-//         settings->setValue("appSettings/fps", fps);
-//         savedFPS = fps;
-//     }
-
-//     if (!imageSize.isEmpty()) {
-//         settings->setValue("appSettings/imageSize", imageSize);
-//         savedImageSize = imageSize;
-//     }
-
-//     // Force save to disk
-//     settings->sync();
-
-//     qDebug() << "💾 Application settings saved - FPS:" << fps << "Image Size:" << imageSize;
-// }
-
-// // Load application settings
-// void ScenarioConfig::loadAppSettings()
-// {
-//     // Load FPS with default value 60
-//     savedFPS = settings->value("appSettings/fps", 60).toInt();
-//     savedImageSize = settings->value("appSettings/imageSize", "100px").toString();
-//     qDebug() << "Application settings loaded - FPS:" << savedFPS << "Image Size:" << savedImageSize;
-// }
-
-// // Get saved FPS
-// int ScenarioConfig::getSavedFPS() const
-// {
-//     return savedFPS;
-// }
-
-// // Get saved Image Size
-// QString ScenarioConfig::getSavedImageSize() const
-// {
-//     return savedImageSize;
-// }
-
-// // Optional: JSON methods (if needed)
-// void ScenarioConfig::toJson()
-// {
-//     // Implement if needed
-// }
-
-// void ScenarioConfig::fromJson()
-// {
-//     // Implement if needed
-// }
 #include "scenarioconfig.h"
 #include <QDebug>
 #include <QCoreApplication>
@@ -127,6 +11,7 @@ ScenarioConfig::ScenarioConfig(QObject *parent)
     savedPhysicsFPS(60),
     savedImageSize("100px")
 {
+
     // Use organization and application name
     QString orgName = QCoreApplication::organizationName();
     QString appName = QCoreApplication::applicationName();
@@ -314,4 +199,32 @@ void ScenarioConfig::toJson()
 void ScenarioConfig::fromJson()
 {
     // Implement if needed
+}
+// Save tooltip field selections
+void ScenarioConfig::saveTooltipFields(const QSet<QString>& fields)
+{
+    QStringList fieldList = fields.values();
+    settings->setValue("tooltipSettings/selectedFields", fieldList);
+    settings->sync();
+
+    qDebug() << "💾 Tooltip fields saved:" << fieldList;
+}
+
+// Load tooltip field selections
+QSet<QString> ScenarioConfig::loadTooltipFields() const
+{
+    QStringList fieldList = settings->value("tooltipSettings/selectedFields").toStringList();
+
+    // Default fields if nothing saved
+    if (fieldList.isEmpty()) {
+        fieldList = QStringList{"Name", "Speed", "Altitude", "Latitude", "Longitude"};
+    }
+
+    QSet<QString> fields;
+    for (const QString& field : fieldList) {
+        fields.insert(field);
+    }
+
+    qDebug() << "📖 Tooltip fields loaded:" << fieldList;
+    return fields;
 }

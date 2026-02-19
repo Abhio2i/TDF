@@ -24,7 +24,7 @@ class ColorTemplate : public QWidget
 
 public:
     // Initialize color template with Inspector reference
-    explicit ColorTemplate(Inspector *inspector, QWidget *parent = nullptr);  // CHANGED
+    explicit ColorTemplate(Inspector *inspector, QWidget *parent = nullptr);
     // Setup color cell in table
     void setupColorCell(int row, const QString &fullKey, const QJsonObject &obj, QTableWidget *tableWidget);
     // Set connected ID

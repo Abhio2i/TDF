@@ -1,3 +1,4 @@
+//Author::Aman Negi
 #include "networktransport.h"
 
 NetworkTransport::NetworkTransport(){
@@ -8,6 +9,7 @@ NetworkTransport::~NetworkTransport(){
 
 }
 
+/// @brief Handle incoming UDP datagrams and forward them as binary messages
 void NetworkTransport::readyUDPRead()
 {
     while (udpSocket->hasPendingDatagrams()) {
@@ -28,6 +30,8 @@ void NetworkTransport::readyUDPRead()
     }
 }
 
+/// @brief Send a text message as a UDP datagram to all connected clients
+/// @param message The UTF-8 encoded text message to transmit
 void NetworkTransport::sendUDPMessage(const QString &message)
 {
     QByteArray datagram = message.toUtf8();
@@ -101,6 +105,8 @@ bool NetworkTransport::isServer(){
     return Server;
 }
 
+/// @brief Initialize and start the network transport in either server or client mode
+/// @param server If true, starts a WebSocket server; if false, starts a WebSocket client
 void NetworkTransport::start(bool server){
     if(m_server||m_webSocket)return;
     // now we are in the correct thread
@@ -140,11 +146,16 @@ void NetworkTransport::start(bool server){
     }
 }
 
+/// @brief Configure the network transport with target IP address and port
+/// @param ip IP address of the remote host or server
+/// @param por Port number to use for the WebSocket connection
 void NetworkTransport::init(const QString& ip, int por){
     address = ip;
     port = por;
 }
 
+/// @brief Send a text message over WebSocket to the server or all connected clients
+/// @param message The UTF-8 encoded text message to transmit
 void NetworkTransport::sendMessage(const QString &message){
     if(m_webSocket){
         // CRITICAL: Check if the socket is in the ConnectedState
@@ -168,6 +179,8 @@ void NetworkTransport::sendMessage(const QString &message){
     }
 }
 
+/// @brief Send a binary message over WebSocket to the server or all connected clients
+/// @param byteMessage Binary data to transmit
 void NetworkTransport::sendBinaryMessage(QByteArray byteMessage){
     if(m_webSocket){
         // CRITICAL: Check if the socket is in the ConnectedState
@@ -193,10 +206,11 @@ void NetworkTransport::sendBinaryMessage(QByteArray byteMessage){
     }
 }
 
+/// @brief Handle a new incoming WebSocket client connection
 void NetworkTransport::NewConnection(){
     // The server has a new connection, accept it and get the client socket
     QWebSocket *pSocket = m_server->nextPendingConnection();
-
+    ;
     qDebug() << "Client connected from:" << pSocket->peerAddress().toString();
     // 1. Connect signal to handle incoming text messages from the client
     // We connect to a generic slot like 'processTextMessage'
@@ -206,20 +220,23 @@ void NetworkTransport::NewConnection(){
     // We connect to a slot like 'socketDisconnected' which can clean up resources
     connect(pSocket, &QWebSocket::disconnected, this, &NetworkTransport::Disconnected);
 
-    emit onNewConnection();
+    emit onNewConnection(pSocket);//chnaged by Aman
     // If you were tracking multiple clients, you would add pSocket to a list here,
     m_clients.append(pSocket);
 }
 
-
+/// @brief Handle successful WebSocket connection
 void NetworkTransport::Connected(){
     emit onConnect();
 }
 
+/// @brief Handle WebSocket disconnection event
 void NetworkTransport::Disconnected(){
     emit onDisconnect();
 }
 
+/// @brief Handle and report WebSocket SSL errors
+/// @param errors List of SSL errors reported by the WebSocket connection
 void NetworkTransport::ErrorOccurred(const QList<QSslError> &errors){
     qWarning() << "WebSocket SSL Errors Occurred:";
     // Loop through the list to print all errors
@@ -229,11 +246,15 @@ void NetworkTransport::ErrorOccurred(const QList<QSslError> &errors){
     }
 }
 
+/// @brief Handle an incoming WebSocket text message
+/// @param message The received UTF-8 encoded text message
 void NetworkTransport::ReceivedMessage(QString message){
     qDebug()<<"Recive Text:" << message;
     emit onReceivedMessage(message);
 }
 
+/// @brief Handle an incoming WebSocket binary message
+/// @param byteMessage The received binary data
 void NetworkTransport::BinaryMessage(QByteArray byteMessage){
     qDebug()<<"Recive byte:" << byteMessage;
     emit onBinaryMessage(byteMessage);

@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_DynamicModel_t {
-    QByteArrayData data[6];
-    char stringdata0[50];
+    QByteArrayData data[11];
+    char stringdata0[90];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -37,11 +37,17 @@ QT_MOC_LITERAL(1, 13, 6), // "Update"
 QT_MOC_LITERAL(2, 20, 0), // ""
 QT_MOC_LITERAL(3, 21, 9), // "deltaTime"
 QT_MOC_LITERAL(4, 31, 12), // "setMoveSpeed"
-QT_MOC_LITERAL(5, 44, 5) // "speed"
+QT_MOC_LITERAL(5, 44, 5), // "speed"
+QT_MOC_LITERAL(6, 50, 14), // "TerrainSurface"
+QT_MOC_LITERAL(7, 65, 7), // "Generic"
+QT_MOC_LITERAL(8, 73, 6), // "Ground"
+QT_MOC_LITERAL(9, 80, 4), // "Sand"
+QT_MOC_LITERAL(10, 85, 4) // "Rock"
 
     },
     "DynamicModel\0Update\0\0deltaTime\0"
-    "setMoveSpeed\0speed"
+    "setMoveSpeed\0speed\0TerrainSurface\0"
+    "Generic\0Ground\0Sand\0Rock"
 };
 #undef QT_MOC_LITERAL
 
@@ -53,7 +59,7 @@ static const uint qt_meta_data_DynamicModel[] = {
        0,    0, // classinfo
        2,   14, // methods
        0,    0, // properties
-       0,    0, // enums/sets
+       1,   30, // enums/sets
        0,    0, // constructors
        0,       // flags
        0,       // signalCount
@@ -65,6 +71,15 @@ static const uint qt_meta_data_DynamicModel[] = {
  // slots: parameters
     QMetaType::Void, QMetaType::Float,    3,
     QMetaType::Void, QMetaType::Float,    5,
+
+ // enums: name, alias, flags, count, data
+       6,    6, 0x0,    4,   35,
+
+ // enum data: key, value
+       7, uint(DynamicModel::Generic),
+       8, uint(DynamicModel::Ground),
+       9, uint(DynamicModel::Sand),
+      10, uint(DynamicModel::Rock),
 
        0        // eod
 };

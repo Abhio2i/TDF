@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: testscriptdialog.h                                                 */
 /* Purpose: Defines widget for editing and running test scripts              */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef TESTSCRIPTDIALOG_H

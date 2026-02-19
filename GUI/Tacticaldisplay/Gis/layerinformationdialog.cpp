@@ -1,4 +1,12 @@
-
+//============================================================================
+// LayerInformationDialog
+// Written by: Waris
+//
+// Purpose:
+// - Displays information about available map layers
+// - Allows viewing properties of raster/vector layers
+// - Enables editing of custom layers via CustomMapDialog
+//============================================================================
 #include "layerinformationdialog.h"
 #include "GUI/Tacticaldisplay/Gis/custommapdialog.h"
 

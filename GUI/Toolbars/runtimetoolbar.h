@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: runtimetooolbar.h                                                  */
 /* Purpose: Defines toolbar for runtime control and monitoring               */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef RUNTIMETOOLBAR_H
@@ -10,8 +11,8 @@
 #include <QAction>                                // For action items
 #include <QSlider>                                // For slider widget
 #include <QLabel>                                 // For label widget
-#include "GUI/Timing/timingdialog.h"              // For timing dialog
 #include "GUI/Logger/loggerdialog.h"              // For logger dialog
+#include "GUI/Timing/graphwidget.h"
 
 // %%% Class Definition %%%
 /* Toolbar for runtime operations */
@@ -22,9 +23,16 @@ class RuntimeToolBar : public QToolBar
 public:
     // Initialize toolbar
     explicit RuntimeToolBar(QWidget *parent = nullptr);
-
+    void Init();
+    enum SimulationState {
+        STOPPED,
+        RUNNING,
+        PAUSED
+    };
 signals:
     // Signal start action triggered
+    void timingGraphClicked();
+    void timingGraphRequested();
     void startTriggered();
     // Signal pause action triggered
     void pauseTriggered();
@@ -36,10 +44,6 @@ signals:
     void speedChanged(int speed);
     // Signal replay action triggered
     void replayTriggered();
-    // Signal bookmark triggered (commented)
-    // void bookmarkTriggered();
-    // Signal bookmark comment submitted (commented)
-    // void bookmarkCommentSubmitted(QString comment);
     // Signal logger toggle
     void loggerTriggered(bool checked);
     // Signal start recording
@@ -52,29 +56,38 @@ signals:
     void eventTypesSelected(QStringList eventTypes);
     // Signal radar display toggle
     void radarDisplayToggled();
+    void timeChanged(float newTimeInSeconds);
+        void simulationStateChanged(SimulationState state);
 
 public:
     // Update elapsed time
     void onElapsedTime(float time);
-
-private:
-    // %%% UI Components %%%
-    // Start action
+    void highlightAction(QAction *action);
     QAction *startAction;
     // Pause action
     QAction *pauseAction;
     // Stop action
     QAction *stopAction;
+      void setSimulationState(SimulationState state);
     // Next step action
+private slots:
+    void timingActionTriggered() {
+        emit timingGraphClicked();
+    }
+    void onTimeLabelClicked();
+     void updateSimulationStatus();
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
+private:
+    // %%% UI Components %%%
+    // Start action
+    GraphWidget *graphWidget = nullptr;
     QAction *nextStepAction;
-    // Bookmark action (commented)
-    // QAction *bookmarkAction;
-    // Replay action
-    // QAction *replayAction;
     // Timing action
     QAction *timingAction;
     // Logger action
     QAction *loggerAction;
+
     // Radar toggle action
     QAction *radarToggleAction;
     // Speed slider
@@ -83,10 +96,11 @@ private:
     QLabel *timeLabel;
     // Timer for updates
     QTimer *timer;
+        QTimer *blinkTimer;
     // Elapsed time in seconds
     float elapsedSeconds;
     // Timing dialog instance
-    TimingDialog *timingDialog = nullptr;
+
 
     // %%% Utility Methods %%%
     // Create pixmap with white background
@@ -95,10 +109,12 @@ private:
     void createActions();
     // Setup toolbar
     void setupToolBar();
-    // Highlight action
-    void highlightAction(QAction *action);
     // Update time display
     void updateTimeDisplay();
+        QLabel *simulationStatusLabel;
+    SimulationState currentState;
+    bool blinkState;
+    void updateStatusDisplay();
 };
 
 #endif // RUNTIMETOOLBAR_H

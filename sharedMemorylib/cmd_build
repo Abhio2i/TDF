@@ -1,0 +1,3 @@
+g++ -c EntityHandler.cpp -o EntityHandler.o
+g++ -c sharedMemory.cpp -o sharedMemory.o
+ar rcs libSharedMemoryLib.a EntityHandler.o sharedMemory.o

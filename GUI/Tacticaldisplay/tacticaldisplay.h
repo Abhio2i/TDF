@@ -31,8 +31,9 @@ public:
     void show3DView();
     // Hide 3D view
     void hide3DView();
+    QWidget* mapCanvasContainer = nullptr;
+    CanvasWidget* getCanvasWidget() const { return canvas; };
 
-    QWidget* mapCanvasContainer = nullptr;  // for map
 
 public slots:
     // Add mesh with ID and data
@@ -76,7 +77,6 @@ public:
     GISlib* mapWidget;
     // Scale bar widget
     ScaleBar *scaleBar;
-
     // Zoom in on map
     void zoomIn() {
         if (mapWidget) {
@@ -98,14 +98,12 @@ private:
     // %%% Data Members %%%
     // Current zoom level
     int currentZoom = 3;
-
     bool is3DViewVisible = false;
     // Overlay label
     QLabel *overlayLabel;
     // Coordinate system combo box
     QComboBox *crsComboBox;
-
-    // Private method to update scale bar
+    //  scale bar
     void updateScaleBar();
 };
 

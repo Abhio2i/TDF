@@ -1,20 +1,24 @@
-
+/* ========================================================================= */
+/* File: inspector.h                                                        */
+/* Purpose: Inspector panel for viewing and editing hierarchical data       */
+// Written by   : Arti Rajpoot
+/* ========================================================================= */
 
 #ifndef INSPECTOR_H
 #define INSPECTOR_H
 
 #include <QDockWidget>                            // For dock widget base class
-#include <QTableWidget>                           // For table widget
+#include <QTableWidget>                           // For table widget display
 #include <QJsonObject>                            // For JSON object handling
-#include <QLabel>                                 // For label widget
-#include <QLineEdit>                              // For text input widget
+#include <QLabel>                                 // For label display
+#include <QLineEdit>                              // For text input
 #include <QWheelEvent>                            // For wheel event handling
-#include <QPushButton>                            // For push button widget
-#include <QMenu>                                  // For menu widget
-#include <QListWidget>                            // For list widget
+#include <QPushButton>                            // For button controls
+#include <QMenu>                                  // For context menus
+#include <QListWidget>                            // For list displays
 #include <QJsonArray>                             // For JSON array handling
 #include "core/Hierarchy/hierarchy.h"             // For hierarchy data structure
-#include "qboxlayout.h"
+#include "qboxlayout.h"                           // For layout management
 
 // %%% Forward Declarations %%%
 class ColorTemplate;
@@ -25,160 +29,205 @@ class VectorTemplate;
 class CustomParameterDialog;
 
 // %%% WheelableLineEdit Class %%%
-/* Custom line edit with wheel event handling */
+/* Custom line edit widget that supports value adjustment via mouse wheel */
 class WheelableLineEdit : public QLineEdit
 {
     Q_OBJECT
 
 public:
-    // Initialize line edit
+    // %%% Constructor %%%
+    /* Initialize wheelable line edit with optional parent */
     explicit WheelableLineEdit(QWidget *parent = nullptr);
 
 protected:
-    // Handle wheel events
+    // %%% Event Handler %%%
+    /* Handle mouse wheel events for value adjustment */
     void wheelEvent(QWheelEvent *event) override;
-
 };
 
 // %%% Inspector Class %%%
-/* Dock widget for inspecting and editing data */
+/* Dock widget for inspecting, editing, and managing hierarchical data */
 class Inspector : public QDockWidget
 {
     Q_OBJECT
 
 public:
-    // Initialize inspector
+    // %%% Constructor %%%
+    /* Initialize inspector panel */
     explicit Inspector(QWidget *parent = nullptr);
-    // Handle event filtering
+
+    // %%% Event Handling %%%
+    /* Filter and handle events */
     bool eventFilter(QObject *watched, QEvent *event) override;
-    // Set hierarchy instance
+
+    // %%% Hierarchy Management %%%
+    /* Set hierarchy data structure reference */
     void setHierarchy(Hierarchy* h) { hierarchy = h; }
-    // Format number for UI display
+
+    // %%% Utility Methods %%%
+    /* Format numeric values for UI display */
     static QString formatNumberForUI(double value);
-    // Set locked state
+
+    // %%% State Management %%%
+    /* Set locked state to prevent edits */
     void setLocked(bool locked);
-    // Get locked state
+    /* Check if inspector is locked */
     bool isLocked() const;
+    /* Get main ID of inspected item */
     QString getMainID() const { return mainID; }
 
-
 public slots:
-    // Initialize with data
+    // %%% Data Initialization %%%
+    /* Initialize inspector with specific data */
     void init(QString ID, QString name, QJsonObject obj);
-    // Add simple row to table
+
+    // %%% Table Management %%%
+    /* Add simple key-value row to table */
     int addSimpleRow(int row, const QString &key, const QJsonValue &value);
-    // Setup value cell in table
+    /* Setup value cell with appropriate widget */
     void setupValueCell(int row, const QString &fullKey, const QJsonValue &value);
-    // Update trajectory waypoints
+
+    // %%% Data Update Methods %%%
+    /* Update trajectory waypoints display */
     void updateTrajectory(QString entityId, QJsonArray waypoints);
+    /* Refresh inspector for developer mode */
     void refreshForDeveloperMode();
+    /* Reset inspector to initial state */
     void resetState();
+
 signals:
-    // Signal focus entity
+    // %%% Focus Signals %%%
+    /* Signal to focus on specific entity */
     void foucsEntity(QString ID);
 
+    // %%% Data Change Signals %%%
+    /* Signal value changes in inspected item */
     void valueChanged(QString ID, QString name, QJsonObject delta);
-    // Signal add tab request
+    /* Signal request to add new tab */
     void addTabRequested();
-    // Signal parameter change
-    void parameterChanged(QString ID, QString name, QString key, QString parameterType, bool add);
-    // Signal trajectory waypoints change
+    /* Signal parameter addition/removal */
+    void parameterChanged(QString ID, QString name, QString key,
+                          QString parameterType, bool add);
+    /* Signal trajectory waypoints modification */
     void trajectoryWaypointsChanged(QString entityId, QJsonArray waypoints);
 
 private slots:
-    // Copy current component
+    // %%% Clipboard Operations %%%
+    /* Copy current component data */
     void copyCurrentComponent();
-    // Paste to current component
+    /* Paste data to current component */
     void pasteToCurrentComponent();
-    // Handle add tab action
+
+    // %%% UI Action Handlers %%%
+    /* Handle add tab action */
     void handleAddTab();
-    // Handle add parameter action
+    /* Handle add parameter action */
     void handleAddParameter();
-    // Handle remove parameter action
+    /* Handle remove parameter action */
     void handleRemoveParameter();
 
-
 private:
-    // %%% UI Components %%%
-    // Table widget for data
-    QTableWidget *tableWidget;
-    // Title label
-    QLabel *titleLabel;
-    // Connected item ID
-    QString ConnectedID;
-
-    QString mainID;
-    // Item name
-    QString Name;
-    // Map of row to key path
-    QMap<int, QString> rowToKeyPath;
-    // Set of custom parameter keys
-    QSet<QString> customParameterKeys;
-    // Title bar widget
-    QWidget *titleBarWidget;
-    // Menu button
-    QPushButton *menuButton;
-    // Copied component data
-    QJsonObject copiedComponentData;
-    // Copied component type
-    QString copiedComponentType;
-    // Hierarchy instance
-    Hierarchy* hierarchy = nullptr;
-    // Copied vector data
-    QJsonObject copiedVectorData;
-    // Locked state flag
-    bool m_locked;
-
-    QPushButton *currentlyExpandedButton = nullptr;
+    // %%% UI Component Members %%%
+    QTableWidget *tableWidget;        // Main table for data display
+    QLabel *titleLabel;               // Title display label
+    QString ConnectedID;              // ID of currently connected item
+    QString mainID;                   // Main ID of inspected item
+    QString Name;                     // Name of inspected item
+    QMap<int, QString> rowToKeyPath;  // Map table rows to data key paths
+    QSet<QString> customParameterKeys;// Set of custom parameter keys
+    QWidget *titleBarWidget;          // Custom title bar widget
+    QPushButton *menuButton;          // Menu access button
+    QJsonObject copiedComponentData;  // Copied component data storage
+    QString copiedComponentType;      // Type of copied component
+    Hierarchy* hierarchy = nullptr;   // Reference to hierarchy structure
+    QJsonObject copiedVectorData;     // Copied vector data storage
+    bool m_locked;                    // Locked state flag
+    QPushButton *currentlyExpandedButton = nullptr; // Currently expanded section button
+    int m_itemHeight;
+    // %%% Multi-Component Handling %%%
+    /* Process multi-component container */
     void handleMultiComponentContainer(QString ID, QString name, QJsonObject object);
-    int addMultiComponentContainerRow(int row, const QString &key, const QJsonObject &containerObj, const QString &componentName);
-    QWidget* createSubcomponentWidget(const QString &subKey, const QJsonObject &subObj, const QString &parentComponentName);
-    QWidget* createValueWidgetForJson(const QString &key, const QJsonValue &value, const QString &subComponentId, const QString &parentKey);
-    void addSectionToLayout(const QString &sectionName, const QJsonObject &sectionObj, QVBoxLayout *parentLayout, const QString &subComponentId);
+    /* Add multi-component container row */
+    int addMultiComponentContainerRow(int row, const QString &key,
+                                      const QJsonObject &containerObj,
+                                      const QString &componentName);
+    /* Create subcomponent widget */
+    QWidget* createSubcomponentWidget(const QString &subKey,
+                                      const QJsonObject &subObj,
+                                      const QString &parentComponentName);
+    /* Create value widget for JSON data */
+    QWidget* createValueWidgetForJson(const QString &key, const QJsonValue &value,
+                                      const QString &subComponentId,
+                                      const QString &parentKey);
+    /* Add section to layout */
+    void addSectionToLayout(const QString &sectionName, const QJsonObject &sectionObj,
+                            QVBoxLayout *parentLayout, const QString &subComponentId);
+
     // %%% UI Setup Methods %%%
-    // Configure UI components
+    /* Setup user interface components */
     void setupUI();
-    // Setup title bar
+    /* Setup custom title bar */
     void setupTitleBar();
-    // Create context menu
+    /* Create context menu */
     QMenu *createContextMenu();
-    // Setup boolean cell
+
+    // %%% Cell Setup Methods %%%
+    /* Setup boolean value cell */
     void setupBooleanCell(int row, const QString &fullKey, bool value);
-    // Setup array cell
+    /* Setup array value cell */
     void setupArrayCell(int row, const QString &fullKey, const QJsonArray &array);
-    // Setup string cell
+    /* Setup string value cell */
     void setupStringCell(int row, const QString &fullKey, const QString &value);
-    // Setup number cell
+    /* Setup numeric value cell */
     void setupNumberCell(int row, const QString &fullKey, double value);
-    // Setup generic object cell
+    /* Setup generic object cell */
     void setupGenericObjectCell(int row, const QString &fullKey, const QJsonObject &obj);
-    // Add parameter row
-    void addParameterRow(const QString &parameterName, int row);
-    // Create remove button
-    QPushButton *createRemoveButton(const QString &parameterName);
+    /* Setup section cell with expandable content */
     void setupSectionCell(int row, const QString &fullKey, const QJsonObject &sectionObj);
+    /* Setup unit parameter in section */
     void setupUnitParamInSection(QVBoxLayout *parentLayout,
                                  const QString &fullKey,
                                  const QString &paramKey,
                                  const QJsonObject &paramObj);
+    /* Setup regular parameter in section */
     void setupRegularParamInSection(QVBoxLayout *parentLayout,
                                     const QString &fullKey,
                                     const QString &paramKey,
                                     const QJsonValue &paramValue);
+    /* Setup unit parameter cell */
     void setupUnitParameterCell(int row, const QString &fullKey, const QJsonObject &paramObj);
+
+    // %%% Parameter Management %%%
+    /* Add parameter row to table */
+    void addParameterRow(const QString &parameterName, int row);
+    /* Create remove button for parameters */
+    QPushButton *createRemoveButton(const QString &parameterName);
+
+    // %%% Section Information Structure %%%
+    /* Structure to track section state */
     struct SectionInfo {
-        int headerRow;
-        int parameterCount;
-        bool isExpanded;
+        int headerRow;          // Row number of section header
+        int parameterCount;     // Number of parameters in section
+        bool isExpanded;        // Expansion state
 
         SectionInfo() : headerRow(-1), parameterCount(0), isExpanded(true) {}
         SectionInfo(int row, int count, bool expanded = true)
             : headerRow(row), parameterCount(count), isExpanded(expanded) {}
     };
-    QMap<QString, SectionInfo> sectionInfo;
-    QMap<int, QString> sectionRows;
-    QWidget* createSectionHeader(const QString &sectionKey, int headerRow, const QJsonObject &sectionObj);
-    void toggleSectionExpansion(const QString &sectionKey, int headerRow, QPushButton *dropdownButton);
+
+    QMap<QString, SectionInfo> sectionInfo;  // Map of section keys to info
+    QMap<int, QString> sectionRows;          // Map of row numbers to section keys
+
+    // %%% Section Management Methods %%%
+    /* Create section header widget */
+    QWidget* createSectionHeader(const QString &sectionKey, int headerRow,
+                                 const QJsonObject &sectionObj);
+    /* Toggle section expansion state */
+    void toggleSectionExpansion(const QString &sectionKey, int headerRow,
+                                QPushButton *dropdownButton);
+
+    // %%% Utility Methods %%%
+    /* Capitalize first letter of string */
     static QString capitalizeFirstLetter(const QString &s)
     {
         if (s.isEmpty()) return s;

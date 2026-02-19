@@ -3,6 +3,7 @@
 // Description : Header file for DockTitleMenu class that provides a menu
 //               for QDockWidget title bars with actions like lock, copy, paste,
 //               and add inspector. Includes HoverEventFilter for button hover.
+// Written by   : Arti Rajpoot
 //============================================================================
 
 #ifndef DOCKTITLEMENU_H
@@ -90,4 +91,4 @@ private:
     QPushButton *m_button; ///< Button being monitored for hover events
 };
 
-#endif // DOCKTITLEMENU_H
+#endif

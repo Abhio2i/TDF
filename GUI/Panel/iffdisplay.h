@@ -3,6 +3,7 @@
 /* ========================================================================= */
 /* File: IFFDisplay.h                                                        */
 /* Purpose: Defines widget for IFF (Identification Friend or Foe) display    */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef IFFDISPLAY_H

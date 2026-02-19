@@ -24,18 +24,29 @@ Platform::Platform(Hierarchy* h) : Entity(h) {
 
 }
 
+Platform::~Platform(){
+    std::vector<std::string>supportedComponents =  Platform::getSupportedComponents();
+    for (const std::string &component : supportedComponents) {
+        removeComponent(component);
+    }
+}
+
 void Platform::update(){
     //qDebug()<<"update";
     int csmTime = 0;
     int esmTime = 0;
     int radarTime = 0;
     int ewTime = 0;
+    if(!sensors)return;
+    Waypoints* wp = trajectory->getCurrentWaypoint();
     for (auto const& pair :*sensors->sensors) {
         Sensor* s = pair.second;
-        //qDebug() << "[Platform::update] platformID=" << QString::fromStdString(ID)
-                 //<< "sensor=" << QString::fromStdString(s->Name)
-                 //<< "subType=" << s->subTypeToString(s->subType);
-
+        if(!s)continue;
+        if(wp){
+            s->Active = wp->sensor;
+            s->clearTargets();
+        }
+        if(!s->Active)continue;
         if(s->subType == Sensor::SubType::CSM){
             //qDebug() << "[Platform::update] calling csmScan";
             QElapsedTimer timer;
@@ -59,11 +70,6 @@ void Platform::update(){
             s->scan();
             qint64 elapsedMs = timer.elapsed();
             radarTime +=elapsedMs;
-
-            timer.start();  // Start measuring
-            //s->ewscan(ID, transform);
-            elapsedMs = timer.elapsed();
-            ewTime +=elapsedMs;
         }
     }
 
@@ -100,7 +106,7 @@ void Platform::update(){
 void Platform::spawn() {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
-
+    emit parent->entityAddedPointer(QString::fromStdString(parentID),this);
 }
 
 void Platform::addParam(std::string key,std::string value){
@@ -213,19 +219,8 @@ void Platform::fromJson(const QJsonObject& obj) {
         ID = obj["id"].toString().toStdString();
     if (obj.contains("parent_id"))
         parentID = obj["parent_id"].toString().toStdString();
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-    if (obj.contains("parameters")) {
-        QJsonObject parObj = obj["parameters"].toObject();
-        if (parObj.contains("value")) { // Fix: Check "value" instead of "array"
-            QJsonObject paramMap = parObj["value"].toObject();
-            for (const QString& key : paramMap.keys()) {
-                QJsonObject paramObj = paramMap[key].toObject();
-                std::shared_ptr<Parameter> param = std::make_shared<Parameter>();
-                param->fromJson(paramObj);
-                parameters[key.toStdString()] = param;
-            }
-        }
-    }
+
+
 
     if (obj.contains("type") && obj["type"].isObject()) {
         QJsonObject entityObj = obj["type"].toObject();
@@ -236,6 +231,8 @@ void Platform::fromJson(const QJsonObject& obj) {
     if (obj.contains("transform") && obj["transform"].isObject()) {
         if (!transform) addComponent("transform");
         transform->fromJson(obj["transform"].toObject());
+    }else{
+        if (!transform) addComponent("transform");
     }
 
     if (obj.contains("crossSection") && obj["crossSection"].isObject()) {
@@ -248,32 +245,42 @@ void Platform::fromJson(const QJsonObject& obj) {
     if (obj.contains("trajectory") && obj["trajectory"].isObject()) {
         if (!trajectory) addComponent("trajectory");
         trajectory->fromJson(obj["trajectory"].toObject());
+    }else{
+        if (!trajectory) addComponent("trajectory");
     }
 
     if (obj.contains("rigidbody") && obj["rigidbody"].isObject()) {
         if (!rigidbody) addComponent("rigidbody");
         rigidbody->fromJson(obj["rigidbody"].toObject());
+    }else{
+        if (!rigidbody) addComponent("rigidbody");
     }
 
     if (obj.contains("dynamicModel") && obj["dynamicModel"].isObject()) {
         if (!dynamicModel) addComponent("dynamicModel");
         dynamicModel->fromJson(obj["dynamicModel"].toObject());
+    }else{
+        if (!dynamicModel) addComponent("dynamicModel");
     }
 
     if (obj.contains("collider") && obj["collider"].isObject()) {
         if (!collider) addComponent("collider");
         collider->fromJson(obj["collider"].toObject());
+    }else{
+        if (!collider) addComponent("collider");
     }
 
     if (obj.contains("bitmap") && obj["bitmap"].isObject()) { // Fix: Correct key
         if (!meshRenderer2d) addComponent("bitmap");
         meshRenderer2d->fromJson(obj["bitmap"].toObject());
+    }else{
+        if (!meshRenderer2d) addComponent("bitmap");
     }
 
-    if (obj.contains("meshRenderer2d") && obj["meshRenderer2d"].isObject()) { // Fix: Correct key
-        if (!meshRenderer2d) addComponent("bitmap");
-        meshRenderer2d->fromJson(obj["meshRenderer2d"].toObject());
-    }
+    // if (obj.contains("meshRenderer2d") && obj["meshRenderer2d"].isObject()) { // Fix: Correct key
+    //     if (!meshRenderer2d) addComponent("bitmap");
+    //     meshRenderer2d->fromJson(obj["meshRenderer2d"].toObject());
+    // }
 
     if (obj.contains("sensors") && obj["sensors"].isObject()) { // Fix: Correct key
         if (!sensors) addComponent("sensors");
@@ -296,39 +303,18 @@ void Platform::fromJson(const QJsonObject& obj) {
         if (!radios) addComponent("radios");
     }
 
-    // if (obj.contains("radios") && obj["radios"].isArray()) {
-    //     QJsonArray arr = obj["radios"].toArray();
-    //     for (const QJsonValue& val : arr) {
-    //         Radio* r = new Radio(parent);
-    //         r->fromJson(val.toObject());
-    //         radioList.push_back(r);
-    //     }
-
-    //     addComponent("radios");
-    // }
-
-    // if (obj.contains("sensors") && obj["sensors"].isArray()) {
-    //     QJsonArray arr = obj["sensors"].toArray();
-    //     for (const QJsonValue& val : arr) {
-    //         Sensor* s = new Sensor(parent);
-    //         s->fromJson(val.toObject());
-    //         sensorList.push_back(s);
-    //     }
-
-    //     addComponent("sensors");
-    // }
-
-    // if (obj.contains("iffs") && obj["iffs"].isArray()) {
-    //     QJsonArray arr = obj["iffs"].toArray();
-    //     for (const QJsonValue& val : arr) {
-    //         IFF* i = new IFF(parent);
-    //         i->fromJson(val.toObject());
-    //         iffList.push_back(i);
-    //     }
-    //     addComponent( "iff");
-
-    // }
-
+    if (obj.contains("parameters")) {
+        QJsonObject parObj = obj["parameters"].toObject();
+        if (parObj.contains("value")) { // Fix: Check "value" instead of "array"
+            QJsonObject paramMap = parObj["value"].toObject();
+            for (const QString& key : paramMap.keys()) {
+                QJsonObject paramObj = paramMap[key].toObject();
+                std::shared_ptr<Parameter> param = std::make_shared<Parameter>();
+                param->fromJson(paramObj);
+                parameters[key.toStdString()] = param;
+            }
+        }
+    }
     // Merge custom parameters
     for (auto it = obj.begin(); it != obj.end(); ++it) {
         if (it.key() != "name" &&
@@ -344,6 +330,7 @@ void Platform::fromJson(const QJsonObject& obj) {
             it.key() != "crossSection" &&
             it.key() != "collider" &&
             it.key() != "meshRenderer2d" &&
+            it.key() != "bitmap" &&
             it.key() != "radios" &&
             it.key() != "sensors" &&
             it.key() != "iffs" &&
@@ -579,48 +566,7 @@ QJsonObject Platform::getComponent(std::string name) {
         if (!radios) { Console::error(name + ": not exist"); return QJsonObject(); }
         return radios->toJson();
     }
-    // else if (name == "iff") {
-    //     //if (iffList) { Console::error(name + ": not exist"); return QJsonObject(); }
-    //     //return ififfListfs->toJson();
-    //     QJsonObject obj;
-    //     obj["id"] = QString::fromStdString(ID);
-    //     obj["active"] = Active;
-    //     obj["type"] = "component";
-    //     QJsonArray iffArray;
-    //     for (IFF* i : iffList) {
-    //         if (i) iffArray.append(i->toJson());
-    //     }
-    //     obj["iffs"] = iffArray;
-    //     return obj;
-    // }
-    // else if (name == "radios") {
 
-    //     QJsonObject obj;
-    //     obj["id"] = QString::fromStdString(ID);
-    //     obj["active"] = Active;
-    //     obj["type"] = "component";
-    //     QJsonArray radioArray;
-    //     for (Radio* r : radioList) {
-    //         if (r) radioArray.append(r->toJson());
-    //     }
-    //     obj["radios"] = radioArray;
-    //     return obj;
-    // }
-
-
-    // else if (name == "sensors") {
-
-    //     QJsonObject obj;
-    //     obj["id"] = QString::fromStdString(ID);
-    //     obj["active"] = Active;
-    //     obj["type"] = "component";
-    //     QJsonArray sensorArray;
-    //     for (Sensor* r : sensorList) {
-    //         if (r) sensorArray.append(r->toJson());
-    //     }
-    //     obj["sensors"] = sensorArray;
-    //     return obj;
-    // }
     return QJsonObject();
 }
 
@@ -658,3 +604,44 @@ void Platform::updateComponent(QString name, const QJsonObject& obj) {
     }
 }
 
+Sensor* Platform::getSensorByName(const std::string& name) const
+{
+    if (!sensors || !sensors->sensors)
+        return nullptr;
+
+    for (const auto& [id, sensor] : *sensors->sensors)
+    {
+        if (sensor && sensor->Name == name)
+            return sensor;
+    }
+
+    return nullptr;
+}
+Radio* Platform::getRadioByName(const std::string& name) const
+{
+    if (!radios || !radios->radios)
+        return nullptr;
+
+    // Iterate through the radios map in the RadioProfile component
+    for (const auto& [id, radio] : *radios->radios)
+    {
+        if (radio && radio->Name == name)
+            return radio;
+    }
+
+    return nullptr;
+}
+IFF* Platform::getIFFByName(const std::string& name) const
+{
+    if (!iffs || !iffs->iffs)
+        return nullptr;
+
+    // Iterate through the iffs map in the IFFProfile component
+    for (const auto& [id, iff] : *iffs->iffs)
+    {
+        if (iff && iff->Name == name)
+            return iff;
+    }
+
+    return nullptr;
+}

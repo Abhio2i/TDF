@@ -15,10 +15,13 @@
 #include "core/GlobalRegistry.h"
 #include "core/Hierarchy/hierarchy.h"
 #include "core/Hierarchy/EntityProfiles/sensor.h"
+#include "core/Hierarchy/Components/sensorprofile.h"
 #include"core/Hierarchy/EntityProfiles/platform.h"
+#include "core/Hierarchy/EntityProfiles/radio.h"
 #include "core/Hierarchy/profilecategaory.h"
 #include "core/Simulation/simulation.h"
 #include "core/structure/runtime.h"
+#include "scriptenginegis.h"
 #include <fstream>
 #include <QPrinter>
 #include <QPainter>
@@ -34,6 +37,8 @@
 #include <QCoreApplication>
 #include <QThread>
 #include <QRectF>
+#include <QScreen>
+#include <QApplication>
 
 // Random number generator
 static float Math_Random()
@@ -47,31 +52,6 @@ static QString geoToString(double lat, double lon)
     .arg(lat, 0, 'f', 6)
         .arg(lon, 0, 'f', 6);
 }
-
-struct CityInfo {
-    QString name;
-    double lat;
-    double lon;
-};
-
-static const CityInfo CITY_DB[] = {
-    {"Bhopal",    23.278665, 77.369882},
-    {"Delhi",     28.613939, 77.209023},
-    {"Hyderabad", 17.385044, 78.486671},
-    {"Mumbai",    19.076090, 72.877426},
-    {"Bangalore", 12.9629, 77.5775},
-    {"Chennai", 13.0843, 80.2705},
-
-    };
-
-static void updateBounds(QRectF& r, double lat, double lon)
-{
-    if (r.isNull())
-        r = QRectF(QPointF(lon, lat), QSizeF(0, 0));
-    else
-        r = r.united(QRectF(QPointF(lon, lat), QSizeF(0, 0)));
-}
-
 
 // Trigonometric functions
 static float Math_Sin(float angle) { return sin(angle); }
@@ -156,13 +136,24 @@ public:
     }
 };
 
+// warpper AngelScript entry point
+void ScriptEngine::setCanvasSelectedShape(const std::string &shapeName)
+{
+    if (!gisEngine) {
+        qWarning() << "GIS Engine not available";
+        return;
+    }
+
+    gisEngine->setCanvasSelectedShape(shapeName);
+}
+
 
 // --- Simulation Access Helper ---
 static Simulation* GetSimulation(ScriptEngine* engine)
 {
     if (!engine) return nullptr;
 
-    Runtime* runtime = engine->getRuntime();  // ✅ use getter
+    Runtime* runtime = engine->getRuntime();  // suse getter
     if (!runtime) return nullptr;
 
     return runtime->simulation;  // direct access is fine
@@ -228,78 +219,6 @@ void ScriptEngine::logEvent(
         reason,
         screenshotPath
     });
-}
-
-// ================= GEO VERIFICATION (OFFLINE – INDIA REGION) =================
-
-// Simple India bounding box (defence-safe offline check)
-bool ScriptEngine::isLatLonInIndia(double lat, double lon) const
-{
-    // India approximate bounding box
-    const double MIN_LAT = 6.5;
-    const double MAX_LAT = 37.5;
-    const double MIN_LON = 68.0;
-    const double MAX_LON = 97.5;
-
-    return (lat >= MIN_LAT && lat <= MAX_LAT &&
-            lon >= MIN_LON && lon <= MAX_LON);
-}
-
-// Returns human-readable verification line
-QString ScriptEngine::geoVerificationLine(double lat, double lon) const
-{
-    if (isLatLonInIndia(lat, lon)) {
-        return "Geo Verification : VERIFIED (India Region)";
-    }
-    return "Geo Verification : FAILED (Outside India Region)";
-}
-
-void ScriptEngine::useCity(const std::string& cityName)
-{
-    QString name = QString::fromStdString(cityName);
-
-    for (const auto& c : CITY_DB) {
-        if (c.name.compare(name, Qt::CaseInsensitive) == 0) {
-
-            activeCity = c.name;
-            cityLat = c.lat;
-            cityLon = c.lon;
-            cityActive = true;
-
-            logEvent(
-                ReportCategory::SYSTEM,
-                "City Selected",
-                activeCity,
-                geoToString(cityLat, cityLon),
-                "",
-                "City context set",
-                "SUCCESS"
-                );
-            return;
-        }
-    }
-
-    cityActive = false;
-
-    logEvent(
-        ReportCategory::SYSTEM,
-        "City Selected",
-        name,
-        "",
-        "",
-        "FAILED",
-        "Unknown city"
-        );
-}
-
-QString ScriptEngine::cityLocationString() const
-{
-    if (!cityActive) return "City : NOT SET";
-
-    return QString("City : %1 | Lat : %2 | Lon : %3")
-        .arg(activeCity)
-        .arg(cityLat, 0, 'f', 6)
-        .arg(cityLon, 0, 'f', 6);
 }
 
 
@@ -635,936 +554,8 @@ void ScriptEngine::renameFolder(const std::string& folderID, const std::string& 
              << "renamed to:"
              << QString::fromStdString(newName);
 }
-// 1️⃣ Set selected shape type
-void ScriptEngine::setCanvasSelectedShape(const std::string &shapeName)
-{
-    if (!canvas) {
-        qWarning() << "Canvas not set! Cannot set selected shape.";
-        return;
-    }
 
-    QString qShape = QString::fromStdString(shapeName);
-    canvas->setShapeDrawingMode(true, qShape);
-    qDebug() << "[ScriptEngine] Shape drawing mode enabled for:" << qShape;
-}
 
-// 2️⃣ Add a line
-// void ScriptEngine::canvasAddLine(const std::string &name, CScriptArray* points)
-// {
-//     if (!canvas || !points || points->GetSize() < 2) {
-//         logEvent(
-//             ReportCategory::GIS,
-//             "Line Creation",
-//             QString::fromStdString(name),
-//             "",
-//             "Vertices<2",
-//             "Not Rendered",
-//             "FAILED",
-//             "Line needs minimum 2 points"
-//             );
-//         return;
-//     }
-
-//     bool geoOk = true;
-
-//     for (asUINT i = 0; i < points->GetSize(); i++) {
-//         QString pt = QString::fromStdString(*(std::string*)points->At(i));
-//         auto xy = pt.split(",");
-//         QPointF geo(xy[0].toDouble(), xy[1].toDouble());
-//         lastGeoCursor = geo;
-
-//         if (!isLatLonInIndia(geo.y(), geo.x())) {
-//             geoOk = false;
-//         }
-
-//         canvas->drawLine(geo, i == points->GetSize() - 1);
-//     }
-
-//     logEvent(
-//         ReportCategory::GIS,
-//         "Line Created",
-//         QString::fromStdString(name),
-//         "Auto From Points",
-//         QString("Points=%1").arg(points->GetSize()),
-//         geoOk ? "Geo Verification : VERIFIED (India Region)"
-//               : "Geo Verification : FAILED (Outside India Region)",
-//         geoOk ? "SUCCESS" : "FAILED",
-//         geoOk ? "" : "One or more vertices outside India"
-//         );
-// }
-
-void ScriptEngine::canvasAddLine(const std::string &name, CScriptArray* points)
-{
-    if (!canvas || !points || points->GetSize() < 2) {
-        logEvent(
-            ReportCategory::GIS,
-            "Line Creation",
-            QString::fromStdString(name),
-            "",
-            "Vertices < 2",
-            "Not Rendered",
-            "FAILED",
-            "Line needs minimum 2 points"
-            );
-        return;
-    }
-
-    bool geoOk = true;
-
-    // 🔹 RESET bounds for this shape
-    lastShapeBounds = QRectF();
-
-    // 🔹 DRAW LINE (incremental)
-    for (asUINT i = 0; i < points->GetSize(); i++) {
-        QString pt = QString::fromStdString(*(std::string*)points->At(i));
-        auto xy = pt.split(",");
-
-        if (xy.size() != 2)
-            continue;
-
-        double lon = xy[0].toDouble();
-        double lat = xy[1].toDouble();
-
-        QPointF geo(lon, lat);
-        lastGeoCursor = geo;
-
-        // 🔹 Update bounds (FOR AUTO ZOOM)
-        updateBounds(lastShapeBounds, lat, lon);
-
-        if (!isLatLonInIndia(lat, lon))
-            geoOk = false;
-
-        // last point = finish line
-        canvas->drawLine(geo, i == points->GetSize() - 1);
-    }
-
-    // 🔹 FORCE CANVAS + MAP UPDATE
-    canvas->update();
-    if (canvas->gislib)
-        canvas->gislib->update();
-
-    // 🔹 Let Qt finish paint + GIS tiles
-    QCoreApplication::processEvents();
-    QThread::msleep(180);
-    QCoreApplication::processEvents();
-
-    // 🔹 SCREENSHOT AFTER COMPLETE DRAW
-    QString screenshot = captureCanvasScreenshot("line");
-
-    // 🔹 FINAL LOG
-    logEvent(
-        ReportCategory::GIS,
-        "Line Created",
-        QString::fromStdString(name),
-        "Auto From Points",
-        QString("Points = %1").arg(points->GetSize()),
-        geoOk
-            ? "Geo Verification : VERIFIED (India Region)"
-            : "Geo Verification : FAILED (Outside India Region)",
-        geoOk ? "SUCCESS" : "FAILED",
-        geoOk ? "" : "One or more vertices outside India",
-        screenshot
-        );
-}
-
-
-
-// 3️⃣ Add a polygon
-// void ScriptEngine::canvasAddPolygon(const std::string &name, CScriptArray* points)
-// {
-//     if (!canvas || !points || points->GetSize() < 3) {
-//         logEvent(
-//             ReportCategory::GIS,
-//             "Polygon Creation",
-//             QString::fromStdString(name),
-//             "",
-//             "Vertices<3",
-//             "Not Rendered",
-//             "FAILED",
-//             "Polygon requires minimum 3 points"
-//             );
-//         return;
-//     }
-
-//     bool geoOk = true;
-
-//     for (asUINT i = 0; i < points->GetSize(); i++) {
-//         QString pt = QString::fromStdString(*(std::string*)points->At(i));
-//         auto xy = pt.split(",");
-//         QPointF geo(xy[0].toDouble(), xy[1].toDouble());
-//         lastGeoCursor = geo;
-
-//         if (!isLatLonInIndia(geo.y(), geo.x())) {
-//             geoOk = false;
-//         }
-
-//         canvas->drawPolygon(geo, i == points->GetSize() - 1);
-//     }
-
-//     logEvent(
-//         ReportCategory::GIS,
-//         "Polygon Created",
-//         QString::fromStdString(name),
-//         "Auto From Vertices",
-//         QString("Vertices=%1").arg(points->GetSize()),
-//         geoOk ? "Geo Verification : VERIFIED (India Region)"
-//               : "Geo Verification : FAILED (Outside India Region)",
-//         geoOk ? "SUCCESS" : "FAILED",
-//         geoOk ? "" : "Polygon has vertices outside India"
-//         );
-// }
-
-void ScriptEngine::canvasAddPolygon(const std::string &name, CScriptArray* points)
-{
-    if (!canvas || !points || points->GetSize() < 3) {
-        logEvent(
-            ReportCategory::GIS,
-            "Polygon Creation",
-            QString::fromStdString(name),
-            "",
-            "Vertices < 3",
-            "Not Rendered",
-            "FAILED",
-            "Polygon requires minimum 3 points"
-            );
-        return;
-    }
-
-    bool geoOk = true;
-
-    // 🔹 RESET bounds (VERY IMPORTANT)
-    lastShapeBounds = QRectF();
-
-    // 🔹 DRAW POLYGON
-    for (asUINT i = 0; i < points->GetSize(); i++) {
-        QString pt = QString::fromStdString(*(std::string*)points->At(i));
-        auto xy = pt.split(",");
-
-        if (xy.size() != 2)
-            continue;
-
-        double lon = xy[0].toDouble();
-        double lat = xy[1].toDouble();
-
-        QPointF geo(lon, lat);
-        lastGeoCursor = geo;
-
-        // 🔹 Update bounds (same helper as line/circle/rectangle)
-        updateBounds(lastShapeBounds, lat, lon);
-
-        // 🔹 India geo check
-        if (!isLatLonInIndia(lat, lon))
-            geoOk = false;
-
-        // 🔹 Draw polygon vertex
-        canvas->drawPolygon(geo, i == points->GetSize() - 1);
-    }
-
-    // 🔹 FORCE redraw before screenshot
-    canvas->update();
-    if (canvas->gislib)
-        canvas->gislib->update();
-
-    QCoreApplication::processEvents();
-    QThread::msleep(150);
-    QCoreApplication::processEvents();
-
-    // 🔹 SCREENSHOT (AUTO-ZOOM happens inside this)
-    QString screenshot = captureCanvasScreenshot("polygon");
-
-    // 🔹 LOG
-    logEvent(
-        ReportCategory::GIS,
-        "Polygon Created",
-        QString::fromStdString(name),
-        "Auto From Vertices",
-        QString("Vertices = %1").arg(points->GetSize()),
-        geoOk
-            ? "Geo Verification : VERIFIED (India Region)"
-            : "Geo Verification : FAILED (Outside India Region)",
-        geoOk ? "SUCCESS" : "FAILED",
-        geoOk ? "" : "Polygon has vertices outside India",
-        screenshot
-        );
-}
-
-
-
-// 4️⃣ Add a rectangle
-// void ScriptEngine::canvasAddRectangle(
-//     const std::string &name,
-//     float lon, float lat,
-//     float width, float height
-//     ) {
-//     lastGeoCursor = QPointF(lon, lat);
-
-//     bool geoOk = isLatLonInIndia(lat, lon);
-
-//     if (!canvas || width <= 0 || height <= 0) {
-//         logEvent(
-//             ReportCategory::GIS,
-//             "Rectangle Creation",
-//             QString::fromStdString(name),
-//             geoToString(lat, lon),
-//             QString("W=%1 H=%2").arg(width).arg(height),
-//             "Not Rendered",
-//             "FAILED",
-//             "Invalid dimensions"
-//             );
-//         return;
-//     }
-
-//     canvas->drawRectangle(lastGeoCursor);
-
-//     logEvent(
-//         ReportCategory::GIS,
-//         "Rectangle Created",
-//         QString::fromStdString(name),
-//         geoToString(lat, lon),
-//         QString("W=%1 H=%2").arg(width).arg(height),
-//         geoVerificationLine(lat, lon),
-//         geoOk ? "SUCCESS" : "FAILED",
-//         geoOk ? "" : "Rectangle origin outside India"
-//         );
-// }
-void ScriptEngine::canvasAddRectangle(
-    const std::string &name,
-    float width,
-    float height
-    )
-{
-    if (!cityActive || !canvas){
-        logEvent(
-            ReportCategory::GIS,
-            "Rectangle Creation",
-            QString::fromStdString(name),
-            "",
-            "",
-            "FAILED",
-            "City not selected"
-            );
-        return;
-    }
-
-    // Center of rectangle
-    QPointF center(cityLon, cityLat);
-    lastGeoCursor = center;
-
-    // Geo validation
-    bool geoOk = isLatLonInIndia(cityLat, cityLon);
-
-    // Draw rectangle (center-based)
-    canvas->drawRectangle(center);
-
-    // Reset previous bounds
-    lastShapeBounds = {};
-
-    // Convert meters → degrees (approx, screenshot-safe)
-    double halfWidthDeg  = (width  / 2.0) / 111000.0;
-    double halfHeightDeg = (height / 2.0) / 111000.0;
-
-    // Update bounding box
-    updateBounds(lastShapeBounds, cityLat + halfHeightDeg, cityLon + halfWidthDeg);
-    updateBounds(lastShapeBounds, cityLat - halfHeightDeg, cityLon - halfWidthDeg);
-
-    // Capture screenshot AFTER drawing & bounds update
-    QString screenshot = captureCanvasScreenshot("rectangle");
-
-    // Log event
-    logEvent(
-        ReportCategory::GIS,
-        "Rectangle Created",
-        QString::fromStdString(name),
-        cityLocationString(),
-        QString("Width : %1 m, Height : %2 m").arg(width).arg(height),
-        geoVerificationLine(cityLat, cityLon),
-        geoOk ? "SUCCESS" : "FAILED",
-        "",
-        screenshot
-        );
-}
-
-
-// 5️⃣ Add a circle
-// void ScriptEngine::canvasAddCircle(const std::string &name, float lon, float lat, float radius)
-// {
-//     lastGeoCursor = QPointF(lon, lat);
-
-//     bool geoOk = isLatLonInIndia(lat, lon);
-
-//     if (!canvas || radius <= 0) {
-//         logEvent(
-//             ReportCategory::GIS,
-//             "Circle Creation",
-//             QString::fromStdString(name),
-//             geoToString(lat, lon),
-//             "Radius=" + QString::number(radius),
-//             "Not Rendered",
-//             "FAILED",
-//             "Invalid radius or canvas not available"
-//             );
-//         return;
-//     }
-
-//     canvas->drawCircle(lastGeoCursor);
-
-//     logEvent(
-//         ReportCategory::GIS,
-//         "Circle Created",
-//         QString::fromStdString(name),
-//         geoToString(lat, lon),
-//         "Radius=" + QString::number(radius),
-//         geoVerificationLine(lat, lon),
-//         geoOk ? "SUCCESS" : "FAILED",
-//         geoOk ? "" : "Circle center outside India"
-//         );
-// }
-
-void ScriptEngine::canvasAddCircle(const std::string &name, float radius)
-{
-    if (!cityActive || !canvas) {
-        return;
-    }
-
-    //center
-    QPointF center(cityLon, cityLat);
-    lastGeoCursor = center;
-
-    bool geoOk = isLatLonInIndia(cityLat, cityLon);
-
-    canvas->drawCircle(center);
-
-    // Reset previous bounds
-    // lastShapeBounds = {};
-    lastShapeBounds = QRectF();
-
-    // Convert meters → degrees (approx, safe for screenshots)
-    double radiusDeg = radius / 111000.0;
-
-    updateBounds(lastShapeBounds, cityLat + radiusDeg, cityLon + radiusDeg);
-    updateBounds(lastShapeBounds, cityLat - radiusDeg, cityLon - radiusDeg);
-
-    // Screenshot AFTER draw
-    QString screenshot = captureCanvasScreenshot("circle");
-
-    logEvent(
-        ReportCategory::GIS,
-        "Circle Created",
-        QString::fromStdString(name),
-        cityLocationString(),
-        QString("Radius : %1").arg(radius),
-        geoVerificationLine(cityLat, cityLon),
-        geoOk ? "SUCCESS" : "FAILED",
-        "",
-        screenshot        // store path
-        );
-}
-
-
-
-// 6️⃣ Add a point
-// void ScriptEngine::canvasAddPoint(const std::string &name, float lon, float lat)
-// {
-//     lastGeoCursor = QPointF(lon, lat);
-
-//     if (!canvas) {
-//         logEvent(
-//             ReportCategory::GIS,
-//             "Point Creation",
-//             QString::fromStdString(name),
-//             geoToString(lat, lon),
-//             "",
-//             "Not Rendered",
-//             "FAILED",
-//             "Canvas not available"
-//             );
-//         return;
-//     }
-
-//     bool geoOk = isLatLonInIndia(lat, lon);
-
-//     canvas->drawPoints(lastGeoCursor);
-
-//     logEvent(
-//         ReportCategory::GIS,
-//         "Point Created",
-//         QString::fromStdString(name),
-//         geoToString(lat, lon),
-//         "",
-//         geoVerificationLine(lat, lon),
-//         geoOk ? "SUCCESS" : "FAILED",
-//         geoOk ? "" : "Invalid coordinates (Outside India)"
-//         );
-// }
-void ScriptEngine::expandPointBounds(QRectF &bounds, double lat, double lon)
-{
-    // 🔥 approx 15–20 km box (state / district level)
-    double pad = 0.15; // degrees (~16 km)
-
-    bounds = QRectF(
-        QPointF(lon - pad, lat - pad),
-        QPointF(lon + pad, lat + pad)
-        );
-}
-
-
-void ScriptEngine::canvasAddPoint(const std::string &name, float lon, float lat)
-{
-    if (!canvas || !canvas->gislib) {
-        logEvent(
-            ReportCategory::GIS,
-            "Point Creation",
-            QString::fromStdString(name),
-            geoToString(lat, lon),
-            "",
-            "Not Rendered",
-            "FAILED",
-            "Canvas or GIS not available"
-            );
-        return;
-    }
-
-    QPointF geo(lon, lat);
-    lastGeoCursor = geo;
-
-    bool geoOk = isLatLonInIndia(lat, lon);
-
-    // 🔹 Draw point
-    canvas->drawPoints(geo);
-
-    // 🔹 RESET & EXPAND BOUNDS (🔥 KEY FIX)
-    lastShapeBounds = QRectF();
-    expandPointBounds(lastShapeBounds, lat, lon);
-
-    // 🔹 FORCE AUTO ZOOM (state level)
-    canvas->gislib->fitToBounds(
-        lastShapeBounds.top(),
-        lastShapeBounds.left(),
-        lastShapeBounds.bottom(),
-        lastShapeBounds.right(),
-        -1   // slightly zoomed out
-        );
-
-    // 🔹 Force render
-    canvas->update();
-    canvas->gislib->update();
-    QCoreApplication::processEvents();
-    QThread::msleep(180);
-    QCoreApplication::processEvents();
-
-    // 🔹 SCREENSHOT (MAP + CANVAS)
-    QWidget* container = canvas->parentWidget();
-    if (!container) return;
-
-    QPixmap pixmap = container->grab();
-
-    QString dir = QDir::tempPath() + "/gis_reports";
-    QDir().mkpath(dir);
-
-    QString screenshot =
-        dir + "/" +
-        QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz") +
-        "_point.png";
-
-    pixmap.save(screenshot, "PNG");
-
-    // 🔹 LOG
-    logEvent(
-        ReportCategory::GIS,
-        "Point Created",
-        QString::fromStdString(name),
-        geoToString(lat, lon),
-        "",
-        geoVerificationLine(lat, lon),
-        geoOk ? "SUCCESS" : "FAILED",
-        geoOk ? "" : "Outside India",
-        screenshot
-        );
-}
-
-
-// Built-in bitmap placement (dropdown selection)
-void ScriptEngine::onBitmapSelected(const std::string &bitmapType)
-{
-    if (!canvas) return;
-    canvas->onBitmapSelected(QString::fromStdString(bitmapType));
-    qDebug() << "[ScriptEngine] Bitmap placement mode enabled for:" << QString::fromStdString(bitmapType);
-}
-
-// Get path of built-in bitmap
-std::string ScriptEngine::getBitmapImagePath(const std::string &bitmapType)
-{
-    if (!canvas) return "";
-    QString path = canvas->getBitmapImagePath(QString::fromStdString(bitmapType));
-    return path.toStdString();
-}
-
-// Place bitmap image from arbitrary file
-void ScriptEngine::onBitmapImageSelected(const std::string &filePath)
-{
-    if (!canvas) return;
-
-    canvas->onBitmapImageSelected(QString::fromStdString(filePath));
-
-    logEvent(
-        ReportCategory::UI,
-        "Bitmap Placed",
-        QFileInfo(QString::fromStdString(filePath)).fileName(),
-        geoToString(lastGeoCursor.y(), lastGeoCursor.x()),
-        "User Selected Bitmap",
-        "Bitmap Visible",
-        "SUCCESS"
-        );
-}
-
-
-void ScriptEngine::canvasStartLine()
-{
-    if (!canvas) return;
-
-    canvas->scriptStartLine();
-
-    // reset state
-    linePoints.clear();
-    lastShapeBounds = QRectF();
-}
-
-
-
-void ScriptEngine::canvasAddLinePoint(float lon, float lat)
-{
-    if (!canvas) return;
-
-    QPointF geo(lon, lat);
-    lastGeoCursor = geo;
-
-    canvas->scriptAddLinePoint(geo);
-
-    // collect point for final report
-    linePoints.push_back(geo);
-
-    updateBounds(lastShapeBounds, lat, lon);
-}
-
-
-
-// void ScriptEngine::canvasFinishLine()
-// {
-//     if (!canvas) return;
-
-//     canvas->scriptFinishLine();
-
-//     // ================= VALIDATION =================
-//     if (linePoints.size() < 2) {
-//         logEvent(
-//             ReportCategory::GIS,
-//             "Line Creation",
-//             "Line Tool",
-//             "",
-//             "Points < 2",
-//             "Line Not Created",
-//             "FAILED",
-//             "Minimum 2 points required"
-//             );
-//         return;
-//     }
-
-//     // ================= GEO VERIFICATION =================
-//     bool geoOk = true;
-
-//     for (const auto& p : linePoints) {
-//         if (!isLatLonInIndia(p.y(), p.x())) {
-//             geoOk = false;
-//             break;
-//         }
-//     }
-
-//     // ================= POINT SUMMARY =================
-//     QString pointsStr;
-//     for (int i = 0; i < linePoints.size(); ++i) {
-//         const auto& p = linePoints[i];
-//         pointsStr += QString("%1) Lat:%2 Lon:%3\n")
-//                          .arg(i + 1)
-//                          .arg(p.y(), 0, 'f', 6)
-//                          .arg(p.x(), 0, 'f', 6);
-//     }
-
-//     // ================= FINAL LOG =================
-//     logEvent(
-//         ReportCategory::GIS,
-//         "Line Created",
-//         "Line Tool",
-//         "Auto From Points",
-//         pointsStr.trimmed(),
-//         geoOk
-//             ? QString("Geo Verification : VERIFIED (India Region)\nTotal Points : %1")
-//                   .arg(linePoints.size())
-//             : QString("Geo Verification : FAILED (Outside India Region)\nTotal Points : %1")
-//                   .arg(linePoints.size()),
-//         geoOk ? "SUCCESS" : "FAILED",
-//         geoOk ? "" : "One or more line points outside India"
-//         );
-// }
-
-
-void ScriptEngine::canvasFinishLine()
-{
-    if (!canvas || linePoints.size() < 2)
-        return;
-
-    canvas->scriptFinishLine();
-
-    // lastShapeBounds = QRectF();
-    bool geoOk = true;
-
-    for (const auto& p : linePoints) {
-        updateBounds(lastShapeBounds, p.y(), p.x());
-        if (!isLatLonInIndia(p.y(), p.x()))
-            geoOk = false;
-    }
-
-
-    QString screenshot = captureCanvasScreenshot("line");
-
-    logEvent(
-        ReportCategory::GIS,
-        "Line Created",
-        "Line Tool",
-        "Auto From Points",
-        QString("Total Points : %1").arg(linePoints.size()),
-        geoOk ? "Geo Verification : VERIFIED (India Region)"
-              : "Geo Verification : FAILED (Outside India Region)",
-        geoOk ? "SUCCESS" : "FAILED",
-        "",
-        screenshot
-        );
-
-    linePoints.clear();
-}
-
-
-
-
-void ScriptEngine::canvasImportGeoJsonLayer(const std::string &filePath)
-{
-    if (!canvas) return;
-
-    canvas->importGeoJsonLayer(QString::fromStdString(filePath));
-
-    logEvent(
-        ReportCategory::GIS,
-        "GeoJSON Imported",
-        QFileInfo(QString::fromStdString(filePath)).fileName(),
-        "",
-        "File Import",
-        "Layer Loaded",
-        "SUCCESS"
-        );
-}
-
-
-void ScriptEngine::canvasToggleGeoJsonLayer(const std::string &layerName, bool visible)
-{
-    if (!canvas) return;
-
-    canvas->onGeoJsonLayerToggled(QString::fromStdString(layerName), visible);
-
-    logEvent(
-        ReportCategory::GIS,
-        "GeoJSON Layer Toggled",
-        QString::fromStdString(layerName),
-        "",
-        visible ? "ON" : "OFF",
-        visible ? "Visible" : "Hidden",
-        "SUCCESS"
-        );
-}
-
-// ScriptEngine.cpp
-void ScriptEngine::canvasStartDistanceMeasurement()
-{
-    if (!canvas) return;
-
-    canvas->startDistanceMeasurement();
-
-    // ✅ reset measurement session
-    measurementPoints.clear();
-
-    lastShapeBounds = QRectF();
-}
-
-
-
-void ScriptEngine::canvasAddMeasurePoint(double lon, double lat)
-{
-    lastGeoCursor = QPointF(lon, lat);
-    if (!canvas) return;
-
-    canvas->addMeasurePoint(lon, lat);
-
-    // ✅ collect points for final report
-    measurementPoints.push_back(QPointF(lon, lat));
-
-    updateBounds(lastShapeBounds, lat, lon);
-}
-
-
-double ScriptEngine::canvasGetLastSegmentDistance() {
-    return canvas ? canvas->getLastSegmentDistance() : 0.0;
-}
-
-// double ScriptEngine::canvasGetTotalDistance()
-// {
-//     if (!canvas || measurementPoints.size() < 2) {
-//         logEvent(
-//             ReportCategory::MEASUREMENT,
-//             "Distance Measurement",
-//             "Distance Tool",
-//             "",
-//             "",
-//             "FAILED",
-//             "At least 2 points required"
-//             );
-//         return 0.0;
-//     }
-
-//     bool geoOk = true;
-
-//     double dist = canvas->getTotalDistance(); // already in selected unit
-
-//     // ---- Build points list ----
-//     QString pointsStr;
-//     for (int i = 0; i < measurementPoints.size(); ++i) {
-//         auto p = measurementPoints[i];
-//         pointsStr += QString("%1) Lat:%2 Lon:%3\n")
-//                          .arg(i + 1)
-//                          .arg(p.y(), 0, 'f', 6)
-//                          .arg(p.x(), 0, 'f', 6);
-//     }
-
-//     // ---- Human readable unit ----
-//     QString unitLabel;
-//     if (measurementUnit == "meters")
-//         unitLabel = "meters";
-//     else if (measurementUnit == "kilometers")
-//         unitLabel = "kilometers";
-//     else if (measurementUnit == "feet")
-//         unitLabel = "feet";
-//     else if (measurementUnit == "miles")
-//         unitLabel = "miles";
-//     else if (measurementUnit == "degrees")
-//         unitLabel = "degrees";
-//     else
-//         unitLabel = measurementUnit; // fallback
-
-//     QString output =
-//         QString("Total Distance : %1 %2")
-//             .arg(dist, 0, 'f', 2)
-//             .arg(unitLabel);
-
-//     logEvent(
-//         ReportCategory::MEASUREMENT,
-//         "Distance Measurement",
-//         "Distance Tool",
-//         "Auto From Points",
-//         pointsStr.trimmed(),
-//         geoOk
-//             ? output + "\nGeo Verification : VERIFIED (India Region)"
-//             : output + "\nGeo Verification : FAILED (Outside India Region)",
-//         geoOk ? "SUCCESS" : "FAILED",
-//         geoOk ? "" : "One or more measurement points outside India"
-//         );
-
-//     return dist;
-// }
-
-
-double ScriptEngine::canvasGetTotalDistance()
-{
-    if (!canvas || measurementPoints.size() < 2) {
-        logEvent(
-            ReportCategory::MEASUREMENT,
-            "Distance Measurement",
-            "Distance Tool",
-            "",
-            "",
-            "FAILED",
-            "At least 2 points required"
-            );
-        return 0.0;
-    }
-
-    bool geoOk = true;
-
-    for (const auto& p : measurementPoints) {
-        if (!isLatLonInIndia(p.y(), p.x())) {
-            geoOk = false;
-            break;
-        }
-    }
-
-    double dist = canvas->getTotalDistance();
-
-    QString pointsStr;
-    for (int i = 0; i < measurementPoints.size(); ++i) {
-        auto p = measurementPoints[i];
-        pointsStr += QString("%1) Lat:%2 Lon:%3\n")
-                         .arg(i + 1)
-                         .arg(p.y(), 0, 'f', 6)
-                         .arg(p.x(), 0, 'f', 6);
-    }
-
-    QString unitLabel = measurementUnit;
-
-    QString output =
-        QString("Total Distance : %1 %2")
-            .arg(dist, 0, 'f', 2)
-            .arg(unitLabel);
-
-    logEvent(
-        ReportCategory::MEASUREMENT,
-        "Distance Measurement",
-        "Distance Tool",
-        "Auto From Points",
-        pointsStr.trimmed(),
-        geoOk
-            ? output + "\nGeo Verification : VERIFIED (India Region)"
-            : output + "\nGeo Verification : FAILED (Outside India Region)",
-        geoOk ? "SUCCESS" : "FAILED",
-        geoOk ? "" : "One or more measurement points outside India"
-        );
-
-    return dist;
-}
-
-void ScriptEngine::canvasSetMeasurementUnit(const std::string &unit)
-{
-    if (!canvas) return;
-
-    measurementUnit = QString::fromStdString(unit).toLower();
-    canvas->setMeasurementUnit(measurementUnit);
-}
-
-
-void ScriptEngine::canvasToggleAirbases()
-{
-    if (!canvas) return;
-
-    canvas->onPresetLayerSelected("Airbase");
-
-    // Toggle state locally
-    airbaseLayerVisible = !airbaseLayerVisible;
-
-    logEvent(
-        ReportCategory::UI,
-        "Airbase Layer Toggled",
-        "Airbase",
-        "",
-        "",
-        airbaseLayerVisible ? "ON" : "OFF",
-        "SUCCESS"
-        );
-}
 
 void ScriptEngine::generatePDFReport(const std::string &filePath)
 {
@@ -1640,7 +631,7 @@ void ScriptEngine::generatePDFReport(const std::string &filePath)
         }
         return "UNKNOWN";
     };
-
+    ////////////////////////////////////////////////////////////////////////////////
     auto drawImage = [&](const QString& imagePath) {
         if (imagePath.isEmpty()) return;
 
@@ -1648,14 +639,25 @@ void ScriptEngine::generatePDFReport(const std::string &filePath)
         if (img.isNull()) return;
 
         int maxWidth = pageWidth;
+        int maxHeight = printer.pageRect().height() - 200; // ✅ ADD HEIGHT LIMIT
+
+        // Scale image to fit page
         int imgHeight = (img.height() * maxWidth) / img.width();
 
-        painter.drawImage(QRect(x, y, maxWidth, imgHeight), img);
+        // ✅ If image too tall, scale down
+        if (imgHeight > maxHeight) {
+            imgHeight = maxHeight;
+            int imgWidth = (img.width() * maxHeight) / img.height();
+            painter.drawImage(QRect(x, y, imgWidth, imgHeight), img);
+        } else {
+            painter.drawImage(QRect(x, y, maxWidth, imgHeight), img);
+        }
+
         y += imgHeight + 14;
 
         newPageIfNeeded();
     };
-
+    //////////////////////////////////////////////////////////////////////////////
 
     // ================= TITLE =================
     painter.setFont(QFont("Arial", 18, QFont::Bold));
@@ -1668,67 +670,140 @@ void ScriptEngine::generatePDFReport(const std::string &filePath)
     drawLine("Report Mode  : AutoScript Driven");
     smallGap();
 
-
-    // =================================================
-    // 🔵 AUTOSCRIPT EXECUTION SUMMARY (PRIMARY)
-    // =================================================
     painter.setFont(QFont("Arial", 14, QFont::Bold));
     drawLine("AutoScript Execution Summary");
     divider();
     smallGap();
 
-    // painter.setFont(QFont("Arial", 11));
-    // drawLine("Total Script Actions : " + QString::number(executionReport.size()));
-    // smallGap();
-
-    // painter.setFont(QFont("Arial", 14, QFont::Bold));
-    // drawLine("AutoScript Execution Log");
-    // sectionGap();
-
     painter.setFont(QFont("Arial", 11));
+    if(executionReport.empty()){
+        logEvent(
+            ReportCategory::SIMULATION,
+            "",
+            "",
+            "",
+            "",
+            "",
+            "SUCCESS",
+            "screenshot",
+            captureCanvasScreenshot("Entity")
+            );
+    }
 
     if (executionReport.empty()) {
         drawLine("No AutoScript operations were recorded.");
     } else {
-        // for (const auto &e : executionReport) {
-
-        //     entryGap();
-
-        //     drawLine(QString("[%1] %2 | %3 | %4")
-        //                  .arg(categoryToString(e.category))
-        //                  .arg(e.action)
-        //                  .arg(e.name)
-        //                  .arg(e.status));
-
-        //     if (!e.location.isEmpty())
-        //         drawLine("   Location : " + e.location);
-
-        //     if (!e.input.isEmpty())
-        //         drawLine("   Input    : " + e.input);
-
-        //     if (!e.output.isEmpty())
-        //         drawLine("   Output   : " + e.output);
-
-        //     if (!e.reason.isEmpty())
-        //         drawLine("   Reason   : " + e.reason);
-
-        //     entryGap();
-
-        //     newPageIfNeeded();
-        // }
+        // ✅ SEPARATE CANVAS AND RADAR SCREENSHOTS
+        std::vector<ReportEvent> canvasEntries;
+        std::vector<ReportEvent> radarEntries;
+        std::vector<ReportEvent> otherEntries;
 
         for (const auto &e : executionReport) {
-
-            // Skip system-only logs
             if (e.category == ReportCategory::SYSTEM)
                 continue;
 
+            if (e.action.contains("Tactical Canvas", Qt::CaseInsensitive)) {
+                canvasEntries.push_back(e);
+            } else if (e.action.contains("Sensor Display", Qt::CaseInsensitive)) {
+                radarEntries.push_back(e);
+            } else {
+                otherEntries.push_back(e);
+            }
+        }
+
+        // ✅ 1. CANVAS FIRST (ONLY ONE)
+        if (!canvasEntries.empty()) {
+            const auto &e = canvasEntries[0];
+
+            // Draw header
+            painter.setFont(QFont("Arial", 12, QFont::Bold));
+            drawLine("📍 TACTICAL CANVAS (CONDITION REACHED)");
+            divider();
+            smallGap();
+
+            // ✅ NOW CHECK IF REMARKS + IMAGE FIT ON REMAINING SPACE
+            int imgHeight = 0;
+            QImage img(e.screenshotPath);
+            if (!img.isNull()) {
+                imgHeight = (img.height() * pageWidth) / img.width();
+                if (imgHeight > printer.pageRect().height() - 200) {
+                    imgHeight = printer.pageRect().height() - 200;
+                }
+            }
+
+            // Check current position - if not enough space, new page
+            int requiredSpace = 60 + imgHeight;
+            if (y + requiredSpace > printer.pageRect().height() - 100) {
+                printer.newPage();
+                y = 60;
+            }
+
+            // Draw remarks and image
+            painter.setFont(QFont("Arial", 11));
+            drawLine("Status      : " + e.status);
+            if (!e.reason.isEmpty())
+                drawLine("Remarks     : " + e.reason);
+
+            if (!e.screenshotPath.isEmpty()) {
+                smallGap();
+                drawImage(e.screenshotPath);
+            }
+
+            divider();
+            sectionGap();
+        }
+
+        // ✅ 2. RADAR SCREENSHOTS (MULTIPLE)
+        if (!radarEntries.empty()) {
+            painter.setFont(QFont("Arial", 12, QFont::Bold));
+            drawLine("📡 RADAR DISPLAY SCREENSHOTS");
+            divider();
+            smallGap();
+
+            int count = 1;
+            for (const auto &e : radarEntries) {
+                // ✅ PRE-CALCULATE IMAGE HEIGHT
+                int imgHeight = 0;
+                QImage img(e.screenshotPath);
+                if (!img.isNull()) {
+                    int radarSize = pageWidth * 0.5;
+                    imgHeight = (img.height() * radarSize) / img.width();
+                }
+
+                // ✅ CHECK IF REMARKS + IMAGE FIT TOGETHER
+                int requiredSpace = 80 + imgHeight;
+                if (y + requiredSpace > printer.pageRect().height() - 100) {
+                    printer.newPage();
+                    y = 60;
+                }
+
+                // Draw remarks and image together
+                painter.setFont(QFont("Arial", 11, QFont::Bold));
+                drawLine(QString("Screenshot #%1 - %2").arg(count++).arg(e.name));
+
+                painter.setFont(QFont("Arial", 10));
+                drawLine("Status      : " + e.status);
+
+                if (!img.isNull()) {
+                    smallGap();
+                    int radarSize = pageWidth * 0.5;
+                    int centerX = x + (pageWidth - radarSize) / 2;
+                    painter.drawImage(QRect(centerX, y, radarSize, imgHeight), img);
+                    y += imgHeight + 14;
+                }
+
+                divider();
+                smallGap();
+            }
+            sectionGap();
+        }
+
+        // ✅ 3. OTHER ENTRIES (IF ANY)
+        for (const auto &e : otherEntries) {
             painter.setFont(QFont("Arial", 11, QFont::Bold));
-            drawLine(QString("%1 CREATED")
-                         .arg(e.action.toUpper()));
+            drawLine(QString("%1 CREATED").arg(e.action.toUpper()));
 
             painter.setFont(QFont("Arial", 11));
-
             drawLine("Name        : " + e.name);
             drawLine("Status      : " + e.status);
 
@@ -1744,20 +819,15 @@ void ScriptEngine::generatePDFReport(const std::string &filePath)
             if (!e.reason.isEmpty())
                 drawLine("Remarks     : " + e.reason);
 
-            // ---- SCREENSHOT (NO PATH TEXT) ----
             if (!e.screenshotPath.isEmpty()) {
                 smallGap();
-                drawLine("Visual Evidence:");
                 drawImage(e.screenshotPath);
             }
 
-            // ONLY ONE divider AFTER complete shape
             divider();
             smallGap();
-
             newPageIfNeeded();
         }
-
     }
 
     // =================================================
@@ -1800,24 +870,17 @@ void ScriptEngine::generatePDFReport(const std::string &filePath)
 
     painter.end();
 
+    executionReport.clear();
     qDebug() << "[PDF] AutoScript-based report generated at:"
              << QString::fromStdString(filePath);
 }
+
 
 // canvas capture screenshot
 QString ScriptEngine::captureCanvasScreenshot(const QString& tag)
 {
     if (!canvas || !canvas->gislib)
         return "";
-
-    // 🔹 AUTO-ZOOM BEFORE SCREENSHOT
-    canvas->gislib->fitToBounds(
-        lastShapeBounds.top(),
-        lastShapeBounds.left(),
-        lastShapeBounds.bottom(),
-        lastShapeBounds.right(),
-        -2    // reduce acording to maximum zoom
-        );
 
     // Ensure map tiles & canvas render ho chuke ho
     QCoreApplication::processEvents();
@@ -1827,8 +890,6 @@ QString ScriptEngine::captureCanvasScreenshot(const QString& tag)
     QWidget* container = canvas->parentWidget();
     if (!container) return "";
 
-    // ✅ GISlib grab = map + all child widgets (canvas included)
-    // QPixmap pixmap = canvas->grab();   // Qt canvas snapshot
     QPixmap pixmap = container->grab(); // ✅ MAP + CANVAS
 
     QString dir = QDir::tempPath() + "/gis_reports";
@@ -1843,8 +904,6 @@ QString ScriptEngine::captureCanvasScreenshot(const QString& tag)
 
     return filePath;
 }
-
-
 
 
 // 1️⃣ Fetch existing profile by name (GUI-safe)
@@ -1924,6 +983,7 @@ void ScriptEngine::attachIFFToEntity(const std::string& entityID, const std::str
     if (!hierarchy) return;
     hierarchy->attchedIff(QString::fromStdString(entityID), QString::fromStdString(iffName));
 }
+
 void ScriptEngine::attachRadioToEntity(const std::string& entityID, const std::string& radioName)
 {
     if (!hierarchy) {
@@ -1934,6 +994,502 @@ void ScriptEngine::attachRadioToEntity(const std::string& entityID, const std::s
     hierarchy->attachRadios(QString::fromStdString(entityID), QString::fromStdString(radioName));
 }
 
+void ScriptEngine::addSubComponent(
+    const std::string& entityId,
+    ComponentType type,
+    const std::string& name,
+    const std::string& data1,
+    const std::string& data2,
+    const std::string& data3
+    ) {
+    if (!hierarchy) return;
+
+    hierarchy->addSubComponent(
+        QString::fromStdString(entityId),
+        type,
+        QString::fromStdString(name),
+        QString::fromStdString(data1),
+        QString::fromStdString(data2),
+        QString::fromStdString(data3)
+        );
+}
+
+void ScriptEngine::addSensorSubComponent(
+    Platform* platform,
+    const std::string& subName,
+    const std::string& sensorType
+    )
+{
+    if (!platform) {
+        Console::log("❌ Platform is null");
+        return;
+    }
+
+    Hierarchy* h = this->hierarchy;
+    if (!h) {
+        Console::log("❌ Hierarchy is null");
+        return;
+    }
+
+    // Ensure Sensor component exists
+    if (!platform->sensors) {
+        platform->addComponent("sensors");
+    }
+
+    if (!platform->sensors) {
+        Console::log("❌ Sensor component could not be created");
+        return;
+    }
+
+    // IMPORTANT: parent ID is SENSOR COMPONENT ID
+    QString sensorComponentID =
+        QString::fromStdString(platform->sensors->ID);
+
+    // ✅ data1 = sensorType (CRITICAL)
+    h->addSubComponent(
+        sensorComponentID,
+        ComponentType::SensorProfile,
+        QString::fromStdString(subName),
+        QString::fromStdString(sensorType)
+        );
+
+    Console::log(
+        "✅ Sensor subcomponent '" + subName +
+        "' [" + sensorType +
+        "] added under Sensor (" + platform->sensors->ID + ")"
+        );
+}
+Sensor* AS_SensorProfile_getSensor(
+    SensorProfile* self,
+    const std::string& id
+    )
+{
+    if (!self) return nullptr;
+    return self->getSensor(id);
+}
+
+void ScriptEngine::showSidebarView(const std::string &viewName) {
+    qDebug() << "ScriptEngine::showSidebarView called with:" << QString::fromStdString(viewName);
+    emit requestSidebarView(QString::fromStdString(viewName));
+}
+void ScriptEngine::selectEntityDisplay(Sensor* sensor) {
+    if (!sensor) {
+        qWarning() << "selectEntityDisplay: null sensor";
+        return;
+    }
+
+    // Get the sensor subType and convert to string
+    QString sensorType = sensor->subTypeToString(sensor->subType);
+
+    qDebug() << "Selecting display for sensor subType:" << sensorType;
+
+    // ✅ STEP 1: Show Sensors sidebar tab FIRST
+    qDebug() << "Step 1: Opening Sensors sidebar";
+    emit requestSidebarView("Sensors");
+
+    // ✅ STEP 2: Select the parent entity in hierarchy tree
+    if (sensor->parentEntity) {
+        QString entityId = QString::fromStdString(sensor->parentEntity->ID);
+        qDebug() << "Step 2: Selecting entity:" << entityId;
+        emit requestSelectEntity(entityId);
+    } else {
+        qWarning() << "Sensor has no parentEntity set!";
+        return;
+    }
+
+    // ✅ STEP 3: Map sensor subType to tab name and switch to it
+    qDebug() << "Step 3: Switching to" << sensorType << "tab";
+    if (sensorType == "Generic") {
+        emit requestDisplayTab("Radar");
+    } else if (sensorType == "CSM") {
+        emit requestDisplayTab("CSM");
+    } else if (sensorType == "ESM") {
+        emit requestDisplayTab("ESM");
+    } else {
+        qWarning() << "Unknown sensor subType:" << sensorType;
+        emit requestDisplayTab("Radar");
+    }
+}
+void ScriptEngine::selectEntityDisplay(Radio* radio) {
+    if (!radio) {
+        qWarning() << "selectEntityDisplay: null radio";
+        return;
+    }
+
+    qDebug() << "Selecting display for radio:" << QString::fromStdString(radio->Name);
+
+    // ✅ STEP 1: Show Sensors sidebar tab FIRST
+    qDebug() << "Step 1: Opening Sensors sidebar";
+    emit requestSidebarView("Sensors");
+
+    // ✅ STEP 2: Select the parent entity in hierarchy tree
+    if (radio->parentEntity) {
+        QString entityId = QString::fromStdString(radio->parentEntity->ID);
+        qDebug() << "Step 2: Selecting entity:" << entityId;
+        emit requestSelectEntity(entityId);
+    } else {
+        qWarning() << "Radio has no parentEntity set!";
+        return;
+    }
+
+    // ✅ STEP 3: Switch to Radio tab (UPPERCASE!)
+    qDebug() << "Step 3: Switching to RADIO tab";
+    emit requestDisplayTab("RADIO");  // ✅ Changed from "Radio" to "RADIO"
+}
+void ScriptEngine::captureSensorScreenshot(const std::string &filePath) {
+    QString qFilePath = QString::fromStdString(filePath);
+    qDebug() << "Requesting sensor display screenshot:" << qFilePath;
+    emit requestSensorScreenshot(qFilePath);
+}
+void ScriptEngine::addRadioSubComponent(
+    Platform* platform,
+    const std::string& subName)
+{
+    if (!platform) {
+        qWarning() << "Platform is null in addRadioSubComponent";
+        return;
+    }
+
+    if (!hierarchy) {
+        qWarning() << "Hierarchy is null in addRadioSubComponent";
+        return;
+    }
+
+    // RadioProfile is directly accessible from Platform
+    if (!platform->radios) {
+        qWarning() << "No RadioProfile component on platform:"
+                   << QString::fromStdString(platform->Name);
+        return;
+    }
+
+    // Add radio subcomponent using the RadioProfile's ID
+    QString qSubName = QString::fromStdString(subName);
+
+    hierarchy->addSubComponent(
+        QString::fromStdString(platform->radios->ID),
+        ComponentType::RadioProfile,
+        qSubName,
+        "",  // data1 - empty for radio
+        "",  // data2 - empty (or template ID if copying from existing)
+        ""   // data3 - empty
+        );
+
+    qDebug() << "Added radio subcomponent:" << qSubName
+             << "to platform:" << QString::fromStdString(platform->Name);
+}
+void ScriptEngine::addIFFSubComponent(
+    Platform* platform,
+    const std::string& subName)
+{
+    if (!platform) {
+        qWarning() << "Platform is null in addIFFSubComponent";
+        return;
+    }
+
+    if (!hierarchy) {
+        qWarning() << "Hierarchy is null in addIFFSubComponent";
+        return;
+    }
+
+    // IFFProfile is directly accessible from Platform
+    if (!platform->iffs) {
+        qWarning() << "No IFFProfile component on platform:"
+                   << QString::fromStdString(platform->Name);
+        return;
+    }
+
+    // Add IFF subcomponent using the IFFProfile's ID
+    QString qSubName = QString::fromStdString(subName);
+
+    hierarchy->addSubComponent(
+        QString::fromStdString(platform->iffs->ID),
+        ComponentType::IFFProfile,
+        qSubName,
+        "",  // data1 - empty for IFF
+        "",  // data2 - empty (or template ID if copying from existing)
+        ""   // data3 - empty
+        );
+
+    qDebug() << "Added IFF subcomponent:" << qSubName
+             << "to platform:" << QString::fromStdString(platform->Name);
+}
+void ScriptEngine::selectEntityDisplay(IFF* iff) {
+    if (!iff) {
+        qWarning() << "selectEntityDisplay: null iff";
+        return;
+    }
+
+    qDebug() << "Selecting display for IFF:" << QString::fromStdString(iff->Name);
+
+    // ✅ STEP 1: Show Sensors sidebar tab FIRST
+    qDebug() << "Step 1: Opening Sensors sidebar";
+    emit requestSidebarView("Sensors");
+
+    // ✅ STEP 2: Select the parent entity in hierarchy tree
+    if (iff->parentEntity) {
+        QString entityId = QString::fromStdString(iff->parentEntity->ID);
+        qDebug() << "Step 2: Selecting entity:" << entityId;
+        emit requestSelectEntity(entityId);
+    } else {
+        qWarning() << "IFF has no parentEntity set!";
+        return;
+    }
+
+    // ✅ STEP 3: Switch to IFF tab (check if uppercase or mixed case)
+    qDebug() << "Step 3: Switching to IFF tab";
+    emit requestDisplayTab("IFF");  // or "Iff" depending on your tab name
+}
+
+// Set active city in GIS engine using city name
+void ScriptEngine::useCity(const std::string& cityName)
+{
+    // Check if GIS engine is available
+    if (!gisEngine) {
+        qWarning() << "[useCity] GIS Engine not available";
+        return;
+    }
+    // Delegate city selection to GIS engine
+    gisEngine->useCity(cityName);
+}
+
+// Returns formatted city location string (e.g., lat/long info)
+QString ScriptEngine::cityLocationString() const
+{
+    // Return empty string if GIS engine is not available
+    if (!gisEngine) return "";
+
+    // Fetch city location string from GIS engine
+    return gisEngine->cityLocationString();
+}
+
+// Set canvas widget used for drawing GIS elements
+void ScriptEngine::setCanvas(CanvasWidget* c)
+{
+    canvas = c; // Store canvas reference
+
+    // Pass canvas to GIS engine if available
+    if (gisEngine)
+        gisEngine->setCanvas(c);
+}
+
+// Set GIS library reference
+void ScriptEngine::setGIS(GISlib* g)
+{
+    gis = g; // Store GIS library instance
+
+    if (gisEngine)
+        gisEngine->setGIS(g);
+}
+
+// Set container widget for map canvas
+void ScriptEngine::setMapCanvasContainer(QWidget* w)
+{
+    // Store map canvas container widget
+    mapCanvasContainer = w;
+
+    if (gisEngine)
+        gisEngine->setMapCanvasContainer(w);
+}
+
+// Add a circular shape on canvas
+void ScriptEngine::canvasAddCircle(const std::string &name, float radius)
+{
+    if (!gisEngine) return;  // Exit if GIS engine is not initialized
+    gisEngine->canvasAddCircle(name, radius);  // Delegate circle creation to GIS engine
+}
+
+
+// Add a rectangular shape on canvas
+void ScriptEngine::canvasAddRectangle(const std::string &name, float w, float h)
+{
+    if (!gisEngine) return; // Exit if GIS engine is not initialized
+    gisEngine->canvasAddRectangle(name, w, h); // Exit if GIS engine is not initialized
+}
+
+// Add a polygon using a list of points
+void ScriptEngine::canvasAddPolygon(const std::string &name, CScriptArray* pts)
+{
+    if (!gisEngine) return;
+    gisEngine->canvasAddPolygon(name, pts);
+}
+
+// ---------------- Add line APIs ----------------
+// Start drawing a polyline
+void ScriptEngine::canvasStartLine()
+{
+    if (!gisEngine) return;
+    gisEngine->canvasStartLine();  // Initialize line drawing
+}
+
+// Add a point to the currently drawn line
+void ScriptEngine::canvasAddLinePoint(float lon, float lat)
+{
+    if (!gisEngine) return;
+    gisEngine->canvasAddLinePoint(lon, lat);
+}
+
+// Finish drawing the current line
+void ScriptEngine::canvasFinishLine()
+{
+    if (!gisEngine) return;
+    gisEngine->canvasFinishLine();
+}
+
+// Add a single point marker on canvas
+void ScriptEngine::canvasAddPoint(const std::string &name, float lon, float lat)
+{
+    if (!gisEngine) return;
+    gisEngine->canvasAddPoint(name, lon, lat);
+}
+
+
+// Handle bitmap selection using predefined bitmap type
+void ScriptEngine::onBitmapSelected(const std::string &bitmapType, float lon, float lat)
+{
+    if (!gisEngine) return;
+    gisEngine->onBitmapSelected(bitmapType, lon, lat);
+}
+
+// Set bitmap image file path
+void ScriptEngine::getBitmapImagePath(const std::string &filePath)
+{
+    if (!gisEngine) return;
+    gisEngine->getBitmapImagePath(filePath);
+}
+
+// Handle bitmap image selection and placement
+void ScriptEngine::onBitmapImageSelected(const std::string &filePath, float lon, float lat)
+{
+    if (!gisEngine) return;
+    gisEngine->onBitmapImageSelected(filePath, lon, lat);
+}
+
+// Toggle visibility of airbase markers on canvas
+void ScriptEngine::canvasToggleAirbases()
+{
+    if (!gisEngine) return;
+    gisEngine->canvasToggleAirbases();    // Toggle airbase layer visibility
+}
+
+// Import a GeoJSON layer into the canvas
+void ScriptEngine::canvasImportGeoJsonLayer(const std::string &filePath)
+{
+    if (!gisEngine) return;
+    gisEngine->canvasImportGeoJsonLayer(filePath);
+}
+
+// Toggle visibility of a specific GeoJSON layer
+void ScriptEngine::canvasToggleGeoJsonLayer(const std::string &layerName, bool visible)
+{
+    if (!gisEngine) return;
+
+    // Show or hide specified GeoJSON layer
+    gisEngine->canvasToggleGeoJsonLayer(layerName, visible);
+}
+
+// ---------------- Measurement Distance APIs ----------------
+// Start distance measurement mode
+void ScriptEngine::canvasStartDistanceMeasurement()
+{
+    if (!gisEngine) return;
+    gisEngine->canvasStartDistanceMeasurement();   // Begin distance measurement
+}
+
+// Add a measurement point (lon/lat)
+void ScriptEngine::canvasAddMeasurePoint(double lon, double lat)
+{
+    if (!gisEngine) return;
+    gisEngine->canvasAddMeasurePoint(lon, lat);
+}
+
+// Get distance of the last measured segment
+double ScriptEngine::canvasGetLastSegmentDistance()
+{
+    // Return zero if GIS engine is not available
+    if (!gisEngine) return 0.0;
+    return gisEngine->canvasGetLastSegmentDistance();
+}
+
+// Get total measured distance
+double ScriptEngine::canvasGetTotalDistance()
+{
+    if (!gisEngine) return 0.0;
+    return gisEngine->canvasGetTotalDistance();
+}
+
+// Set unit for distance measurement (e.g., km, m, nm)
+void ScriptEngine::canvasSetMeasurementUnit(const std::string &unit)
+{
+    if (!gisEngine) return;
+    gisEngine->canvasSetMeasurementUnit(unit);    // Set measurement unit in GIS engine
+}
+
+void ScriptEngine :: canvasSwitchMap(const std::string& mapName){
+    if(!gisEngine) return;
+    gisEngine->canvasSwitchMap(mapName);
+}
+
+void ScriptEngine :: switchCoordinateSystem(const std::string& system){
+    if(!gisEngine) return;
+    gisEngine->switchCoordinateSystem(system);
+}
+
+void ScriptEngine::moveShape(const std::string& shapeName,
+                             double lon, double lat)
+{
+    if (!gisEngine) return;
+    gisEngine->moveShape(shapeName, lon, lat);
+}
+
+void ScriptEngine::rotateShape(const std::string& shapeName, double angleDeg)
+{
+    if (!gisEngine) return;
+    gisEngine->rotateShape(shapeName, angleDeg);
+}
+
+void ScriptEngine::showShapeHistory(const std::string& shapeName)
+{
+    if (!gisEngine) return;
+    gisEngine->showShapeHistory(shapeName);
+}
+
+void ScriptEngine::hideShapeHistory()
+{
+    if (!gisEngine) return;
+    gisEngine->hideShapeHistory();
+}
+
+void ScriptEngine::restoreShapeHistory(const std::string& shapeName)
+{
+    if (!gisEngine) return;
+    gisEngine->restoreShapeHistory(shapeName);
+}
+
+void ScriptEngine::addText(const std::string& text, double lon, double lat)
+{
+    if (!gisEngine) return;
+    gisEngine->addText(text, lon, lat);
+}
+
+void ScriptEngine::addShapeProperties(const std::string& shapeName,int r, int g, int b,int borderThickness)
+{
+    if (!gisEngine) return;
+
+    gisEngine->addShapeProperties(
+        shapeName,
+        r, g, b,
+        borderThickness
+        );
+}
+
+void ScriptEngine::deleteshape(const std::string& id)
+{
+    if (!gisEngine) return;
+
+    gisEngine->deleteshape(id);
+}
+
+
 ScriptEngine::ScriptEngine()
 {
     // AngelScript setup
@@ -1942,6 +1498,37 @@ ScriptEngine::ScriptEngine()
 
     RegisterStdString(engine);
     engine->RegisterGlobalFunction("float Random()", asFUNCTION(Math_Random), asCALL_CDECL);
+
+    gisEngine = new ScriptEngineGIS();
+
+    // Bind GIS → ScriptEngine report bridge by amjad
+    gisEngine->logFn = [this](
+                           ReportCategory category,
+                           const QString& action,
+                           const QString& name,
+                           const QString& location,
+                           const QString& input,
+                           const QString& output,
+                           const QString& status,
+                           const QString& reason,
+                           const QString& screenshot
+                           ) {
+        logEvent(
+            category,
+            action,
+            name,
+            location,
+            input,
+            output,
+            status,
+            reason,
+            screenshot
+            );
+    };
+
+    gisEngine->screenshotFn = [this](const QString& tag) {
+        return captureCanvasScreenshot(tag);
+    };
 
     // Trigonometric functions
     engine->RegisterGlobalFunction("float Sin(float)", asFUNCTION(Math_Sin), asCALL_CDECL);
@@ -2032,7 +1619,7 @@ ScriptEngine::ScriptEngine()
     s = engine->RegisterObjectMethod("Transform", "QVector3D translation()", asMETHOD(Transform, translation), asCALL_THISCALL); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("Transform", "void setTranslation(const QVector3D& in)", asMETHOD(Transform, setTranslation), asCALL_THISCALL); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("Transform", "void addTranslation(const QVector3D& in)", asMETHOD(Transform, addTranslation), asCALL_THISCALL); Q_ASSERT(s >= 0);
-
+    s = engine->RegisterObjectMethod("Transform", "void setGeoCord(float lat, float lon, float alt)", asMETHODPR(Transform, setGeoCord, (float, float, float), void), asCALL_THISCALL); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("Transform", "QQuaternion rotation() const", asMETHOD(Transform, rotation), asCALL_THISCALL); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("Transform", "void setRotation(const QQuaternion& in)", asMETHOD(Transform, setRotation), asCALL_THISCALL); Q_ASSERT(s >= 0);
 
@@ -2096,8 +1683,86 @@ ScriptEngine::ScriptEngine()
     s = engine->RegisterObjectMethod("Entity", "void removeComponent(const string &in)", asMETHOD(Entity, removeComponent), asCALL_THISCALL); Q_ASSERT(s >= 0);
 
     s = engine->RegisterObjectType("Sensor", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
+    r = engine->RegisterObjectProperty(
+        "Sensor",
+        "float azimuth",
+        asOFFSET(Sensor, azimuth)
+        );
+    Q_ASSERT(r >= 0);
+
+    r = engine->RegisterObjectProperty(
+        "Sensor",
+        "float frequency",
+        asOFFSET(Sensor, frequency)
+        );
+    Q_ASSERT(r >= 0);
+
+    r = engine->RegisterObjectProperty(
+        "Sensor",
+        "float range",
+        asOFFSET(Sensor, range)
+        );
+    Q_ASSERT(r >= 0);
     s = engine->RegisterObjectProperty("Sensor", "string name", asOFFSET(Sensor, Name)); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectProperty("Sensor", "string parentID", asOFFSET(Sensor, parentID)); Q_ASSERT(s >= 0);
+    // ================= SENSOR PROFILE =================
+    s = engine->RegisterObjectType(
+        "SensorProfile",
+        0,
+        asOBJ_REF | asOBJ_NOCOUNT
+        );
+    Q_ASSERT(s >= 0);
+    s = engine->RegisterEnum("ComponentType"); Q_ASSERT(s >= 0);
+
+    s = engine->RegisterEnumValue("ComponentType", "Unknown",           (int)ComponentType::Unknown); Q_ASSERT(s >= 0);
+    s = engine->RegisterEnumValue("ComponentType", "Transform",         (int)ComponentType::Transform); Q_ASSERT(s >= 0);
+    s = engine->RegisterEnumValue("ComponentType", "Rigidbody",         (int)ComponentType::Rigidbody); Q_ASSERT(s >= 0);
+    s = engine->RegisterEnumValue("ComponentType", "NetworkObject",     (int)ComponentType::NetworkObject); Q_ASSERT(s >= 0);
+    s = engine->RegisterEnumValue("ComponentType", "Mission",           (int)ComponentType::Mission); Q_ASSERT(s >= 0);
+    s = engine->RegisterEnumValue("ComponentType", "MeshRenderer2D",    (int)ComponentType::MeshRenderer2D); Q_ASSERT(s >= 0);
+    s = engine->RegisterEnumValue("ComponentType", "DynamicModel",      (int)ComponentType::DynamicModel); Q_ASSERT(s >= 0);
+    s = engine->RegisterEnumValue("ComponentType", "Collider",          (int)ComponentType::Collider); Q_ASSERT(s >= 0);
+    s = engine->RegisterEnumValue("ComponentType", "Trajectory",        (int)ComponentType::Trajectory); Q_ASSERT(s >= 0);
+    s = engine->RegisterEnumValue("ComponentType", "AttachedEnitities", (int)ComponentType::AttachedEnitities); Q_ASSERT(s >= 0);
+    s = engine->RegisterEnumValue("ComponentType", "CrossSection",      (int)ComponentType::CrossSection); Q_ASSERT(s >= 0);
+    s = engine->RegisterEnumValue("ComponentType", "SensorProfile",     (int)ComponentType::SensorProfile); Q_ASSERT(s >= 0);
+    s = engine->RegisterEnumValue("ComponentType", "IFFProfile",        (int)ComponentType::IFFProfile); Q_ASSERT(s >= 0);
+
+
+    // ================= TARGET =================
+    engine->RegisterObjectType(
+        "Target",
+        sizeof(Target),
+        asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<Target>()
+        );
+
+    // Properties
+    engine->RegisterObjectProperty("Target", "Platform@ entity", asOFFSET(Target, entity));
+    engine->RegisterObjectProperty("Target", "float radius",    asOFFSET(Target, radius));
+    engine->RegisterObjectProperty("Target", "float angle",     asOFFSET(Target, angle));
+    engine->RegisterObjectProperty("Target", "float speed",     asOFFSET(Target, speed));
+    engine->RegisterObjectProperty("Target", "float direction", asOFFSET(Target, direction));
+    engine->RegisterObjectProperty("Target", "float altitude",  asOFFSET(Target, altitude));
+    engine->RegisterObjectProperty("Target", "float lat",       asOFFSET(Target, lat));
+    engine->RegisterObjectProperty("Target", "float lon",       asOFFSET(Target, lon));
+    // Generic
+    engine->RegisterObjectMethod("Sensor", "int getTargetCount()",
+                                 asMETHOD(Sensor, getTargetCount), asCALL_THISCALL);
+    engine->RegisterObjectMethod("Sensor", "Target getTarget(int)",
+                                 asMETHOD(Sensor, getTarget), asCALL_THISCALL);
+
+    // CSM
+    engine->RegisterObjectMethod("Sensor", "int getCSMTargetCount()",
+                                 asMETHOD(Sensor, getCSMTargetCount), asCALL_THISCALL);
+    engine->RegisterObjectMethod("Sensor", "Target getCSMTarget(int)",
+                                 asMETHOD(Sensor, getCSMTarget), asCALL_THISCALL);
+
+    // ESM
+    engine->RegisterObjectMethod("Sensor", "int getESMTargetCount()",
+                                 asMETHOD(Sensor, getESMTargetCount), asCALL_THISCALL);
+    engine->RegisterObjectMethod("Sensor", "Target getESMTarget(int)",
+                                 asMETHOD(Sensor, getESMTarget), asCALL_THISCALL);
+
     // === 4️⃣ Register ScriptArray add-on AFTER all ref types ===
     RegisterScriptArray(engine, true); // true = array of references
     arrayEntityType = engine->GetTypeInfoByDecl("array<Entity@>");
@@ -2111,65 +1776,12 @@ ScriptEngine::ScriptEngine()
     s = engine->RegisterObjectMethod("ScriptEngine","array<Entity@>@ findEntitiesByType(int)",asMETHOD(ScriptEngine, findEntitiesByType),asCALL_THISCALL);assert(s >= 0);Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("ScriptEngine","array<string>@ getAllEntityIds()",asMETHOD(ScriptEngine, getAllEntityIds),asCALL_THISCALL);Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("ScriptEngine","array<Entity@>@ getAllEntities()",asMETHOD(ScriptEngine, getAllEntities),asCALL_THISCALL);Q_ASSERT(s >= 0);
-    s = engine->RegisterObjectMethod("ScriptEngine","void removeEntity(const string &in)",asMETHOD(ScriptEngine, removeEntity),asCALL_THISCALL);Q_ASSERT(s >= 0);
+    //s = engine->RegisterObjectMethod("ScriptEngine","void removeEntity(const string &in)",asMETHOD(ScriptEngine, removeEntity),asCALL_THISCALL);Q_ASSERT(s >= 0); // check same
     s = engine->RegisterObjectMethod("ScriptEngine","void removeProfile(const string &in)",asMETHOD(ScriptEngine, removeProfile),asCALL_THISCALL);Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("ScriptEngine","void removeFolder(const string &in, const string &in)",asMETHOD(ScriptEngine, removeFolder),asCALL_THISCALL);Q_ASSERT(s >= 0);
-    s = engine->RegisterObjectMethod("ScriptEngine","void removeEntity(const string &in, const string &in)",asMETHOD(ScriptEngine, removeEntity),asCALL_THISCALL);Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod("ScriptEngine","void removeEntity(const string &in, const string &in)",asMETHOD(ScriptEngine, removeEntity),asCALL_THISCALL);Q_ASSERT(s >= 0);  // check same
     s = engine->RegisterObjectMethod("ScriptEngine","void renameProfile(const string &in, const string &in)",asMETHOD(ScriptEngine, renameProfile),asCALL_THISCALL);Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("ScriptEngine","void renameFolder(const string &in, const string &in)",asMETHOD(ScriptEngine, renameFolder),asCALL_THISCALL);Q_ASSERT(s >= 0);
-    // === 5️⃣ CanvasWidget / Shape Drawing Bindings ===
-    s = engine->RegisterObjectMethod("ScriptEngine",
-                                     "void setCanvasSelectedShape(const string &in)",
-                                     asMETHOD(ScriptEngine, setCanvasSelectedShape), asCALL_THISCALL); Q_ASSERT(s >= 0);
-
-    s = engine->RegisterObjectMethod("ScriptEngine",
-                                     "void canvasAddLine(const string &in, array<string>@)",
-                                     asMETHOD(ScriptEngine, canvasAddLine), asCALL_THISCALL); Q_ASSERT(s >= 0);
-
-    s = engine->RegisterObjectMethod("ScriptEngine",
-                                     "void canvasAddPolygon(const string &in, array<string>@)",
-                                     asMETHOD(ScriptEngine, canvasAddPolygon), asCALL_THISCALL); Q_ASSERT(s >= 0);
-
-    // s = engine->RegisterObjectMethod("ScriptEngine",
-    //                                  "void canvasAddRectangle(const string &in, float, float, float, float)",
-    //                                  asMETHOD(ScriptEngine, canvasAddRectangle), asCALL_THISCALL); Q_ASSERT(s >= 0);
-
-    s = engine->RegisterObjectMethod("ScriptEngine",
-                                     "void canvasAddRectangle(const string &in, float, float)",
-                                     asMETHOD(ScriptEngine, canvasAddRectangle), asCALL_THISCALL); Q_ASSERT(s >= 0);
-
-    // s = engine->RegisterObjectMethod("ScriptEngine",
-    //                                  "void canvasAddCircle(const string &in, float, float, float)",
-    //                                  asMETHOD(ScriptEngine, canvasAddCircle), asCALL_THISCALL); Q_ASSERT(s >= 0);
-
-    s = engine->RegisterObjectMethod("ScriptEngine",
-                                     "void canvasAddCircle(const string &in, float)",
-                                     asMETHOD(ScriptEngine, canvasAddCircle), asCALL_THISCALL); Q_ASSERT(s >= 0);
-
-
-    s = engine->RegisterObjectMethod(
-        "ScriptEngine",
-        "void useCity(const string &in)",
-        asMETHOD(ScriptEngine, useCity),
-        asCALL_THISCALL
-        );
-    Q_ASSERT(r >= 0);
-
-    s = engine->RegisterObjectMethod("ScriptEngine",
-                                     "void canvasAddPoint(const string &in, float, float)",
-                                     asMETHOD(ScriptEngine, canvasAddPoint), asCALL_THISCALL); Q_ASSERT(s >= 0);
-
-    s = engine->RegisterObjectMethod("ScriptEngine",
-                                     "void canvasStartLine()", asMETHOD(ScriptEngine, canvasStartLine), asCALL_THISCALL);Q_ASSERT(s >= 0);
-
-    s = engine->RegisterObjectMethod("ScriptEngine",
-                                     "void canvasAddLinePoint(float, float)", asMETHOD(ScriptEngine, canvasAddLinePoint), asCALL_THISCALL); Q_ASSERT(s >= 0);
-
-    s = engine->RegisterObjectMethod("ScriptEngine",
-                                     "void canvasFinishLine()", asMETHOD(ScriptEngine, canvasFinishLine), asCALL_THISCALL); Q_ASSERT(s >= 0);
-
-
-    qDebug() << "[OK] Canvas wrapper methods registered successfully";
 
 
     // ✅ Bind SimStart/SimpPause after ScriptEngine is registered
@@ -2184,75 +1796,6 @@ ScriptEngine::ScriptEngine()
         asFUNCTION(AS_SimPause),
         asCALL_CDECL);
     Q_ASSERT(s >= 0);
-
-    // Built-in bitmap selection
-    r = engine->RegisterObjectMethod(
-        "ScriptEngine",
-        "void onBitmapSelected(const string &in)",
-        asMETHOD(ScriptEngine, onBitmapSelected),
-        asCALL_THISCALL
-        ); Q_ASSERT(r >= 0);
-
-    // Get built-in bitmap path
-    r = engine->RegisterObjectMethod(
-        "ScriptEngine",
-        "string getBitmapImagePath(const string &in)",
-        asMETHOD(ScriptEngine, getBitmapImagePath),
-        asCALL_THISCALL
-        ); Q_ASSERT(r >= 0);
-
-    // User-selected bitmap from disk
-    r = engine->RegisterObjectMethod(
-        "ScriptEngine",
-        "void onBitmapImageSelected(const string &in)",
-        asMETHOD(ScriptEngine, onBitmapImageSelected),
-        asCALL_THISCALL
-        ); Q_ASSERT(r >= 0);
-    qDebug() << "[OK] Bitmap wrapper methods registered successfully";
-
-    r = engine->RegisterObjectMethod("ScriptEngine",
-                                     "void canvasImportGeoJsonLayer(const string &in)",
-                                     asMETHOD(ScriptEngine, canvasImportGeoJsonLayer),
-                                     asCALL_THISCALL); Q_ASSERT(r >= 0);
-
-    r = engine->RegisterObjectMethod("ScriptEngine",
-                                     "void canvasToggleGeoJsonLayer(const string &in, bool)",
-                                     asMETHOD(ScriptEngine, canvasToggleGeoJsonLayer),
-                                     asCALL_THISCALL); Q_ASSERT(r >= 0);
-
-    r = engine->RegisterObjectMethod("ScriptEngine",
-                                     "void canvasStartDistanceMeasurement()",
-                                     asMETHOD(ScriptEngine, canvasStartDistanceMeasurement),
-                                     asCALL_THISCALL); Q_ASSERT(r >= 0);
-
-    r = engine->RegisterObjectMethod("ScriptEngine",
-                                     "void canvasAddMeasurePoint(double, double)",
-                                     asMETHOD(ScriptEngine, canvasAddMeasurePoint),
-                                     asCALL_THISCALL); Q_ASSERT(r >= 0);
-
-    r = engine->RegisterObjectMethod("ScriptEngine",
-                                     "double canvasGetLastSegmentDistance()",
-                                     asMETHOD(ScriptEngine, canvasGetLastSegmentDistance),
-                                     asCALL_THISCALL); Q_ASSERT(r >= 0);
-
-    r = engine->RegisterObjectMethod("ScriptEngine",
-                                     "double canvasGetTotalDistance()",
-                                     asMETHOD(ScriptEngine, canvasGetTotalDistance),
-                                     asCALL_THISCALL); Q_ASSERT(r >= 0);
-
-    r = engine->RegisterObjectMethod("ScriptEngine",
-                                     "void canvasSetMeasurementUnit(const string &in)",
-                                     asMETHOD(ScriptEngine, canvasSetMeasurementUnit),
-                                     asCALL_THISCALL);
-    Q_ASSERT(r >= 0);
-
-    r = engine->RegisterObjectMethod(
-        "ScriptEngine",
-        "void canvasToggleAirbases()",
-        asMETHOD(ScriptEngine, canvasToggleAirbases),
-        asCALL_THISCALL
-        );
-    Q_ASSERT(r >= 0);
 
     // Get profile by name
     r = engine->RegisterObjectMethod(
@@ -2301,77 +1844,354 @@ ScriptEngine::ScriptEngine()
         asCALL_THISCALL);
     Q_ASSERT(r >= 0);
 
-    // In ScriptEngine::bindToAngelScript()
+    //new//
+    s = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void addSubComponent(const string &in, ComponentType, const string &in, const string &in, const string &in, const string &in)",
+        asMETHOD(ScriptEngine, addSubComponent),
+        asCALL_THISCALL
+        );
+    Q_ASSERT(s >= 0);
+    // ✅ ADD THIS — exact signature match
+    s = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void addSensorSubComponent(Platform@, const string &in, const string &in)",
+        asMETHOD(ScriptEngine, addSensorSubComponent),
+        asCALL_THISCALL
+        );
+    Q_ASSERT(s >= 0);
 
-    // --- Add Parameter to Existing Entity ---
-    // s = engine->RegisterObjectMethod(
-    //     "ScriptEngine",
-    //     "void addParameterToEntity(const string &in, const string &in, int, const string &in)",
-    //     asMETHOD(ScriptEngine, addParameterToEntity),
-    //     asCALL_THISCALL
-    //     );
-    // Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod(
+        "SensorProfile",
+        "Sensor@ getSensor(const string &in)",
+        asFUNCTION(AS_SensorProfile_getSensor),
+        asCALL_CDECL_OBJFIRST
+        );
+    Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectMethod(
+        "Platform",
+        "Sensor@ getSensorByName(const string &in)",
+        asMETHOD(Platform, getSensorByName),
+        asCALL_THISCALL
+        );Q_ASSERT(s >= 0);
 
+    // Register selectEntityDisplay for Sensor
+    engine->RegisterObjectMethod("ScriptEngine",
+                                 "void selectEntityDisplay(Sensor@)",
+                                 asMETHODPR(ScriptEngine, selectEntityDisplay, (Sensor*), void),
+                                 asCALL_THISCALL);
+
+    engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void captureSensorScreenshot(const string &in)",
+        asMETHOD(ScriptEngine, captureSensorScreenshot),
+        asCALL_THISCALL
+        );
+
+    // ============= RADIO REGISTRATION =============
+    // Register Radio type ONCE
+    engine->RegisterObjectType("Radio", 0, asOBJ_REF | asOBJ_NOCOUNT);
+
+    // Register addRadioSubComponent
+    engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void addRadioSubComponent(Platform@, const string &in)",
+        asMETHOD(ScriptEngine, addRadioSubComponent),
+        asCALL_THISCALL
+        );
+
+    // // Register Radio methods
+    // engine->RegisterObjectMethod("Radio",
+    //                              "int getRadioTargetCount() const",
+    //                              asMETHOD(Radio, getRadioTargetCount),
+    //                              asCALL_THISCALL);
+
+    // engine->RegisterObjectMethod("Radio",
+    //                              "bool getRadioTarget(int, string &out, float &out, float &out, float &out, float &out) const",
+    //                              asMETHOD(Radio, getRadioTarget),
+    //                              asCALL_THISCALL);
+
+    // Register Platform::getRadioByName
+    engine->RegisterObjectMethod("Platform",
+                                 "Radio@ getRadioByName(const string &in) const",
+                                 asMETHOD(Platform, getRadioByName),
+                                 asCALL_THISCALL);
+
+    // Register selectEntityDisplay for Radio
+    engine->RegisterObjectMethod("ScriptEngine",
+                                 "void selectEntityDisplay(Radio@)",
+                                 asMETHODPR(ScriptEngine, selectEntityDisplay, (Radio*), void),
+                                 asCALL_THISCALL);
+    // Register IFF type
+    engine->RegisterObjectType("IFF", 0, asOBJ_REF | asOBJ_NOCOUNT);
+
+    // Register addIFFSubComponent
+    engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void addIFFSubComponent(Platform@, const string &in)",
+        asMETHOD(ScriptEngine, addIFFSubComponent),
+        asCALL_THISCALL
+        );
+
+    // Register IFF methods
+    engine->RegisterObjectMethod("IFF",
+                                 "int getIFFTargetCount() const",
+                                 asMETHOD(IFF, getIFFTargetCount),
+                                 asCALL_THISCALL);
+
+    engine->RegisterObjectMethod("IFF",
+                                 "bool getIFFTarget(int, string &out, string &out, string &out, string &out, float &out, float &out, int &out) const",
+                                 asMETHOD(IFF, getIFFTarget),
+                                 asCALL_THISCALL);
+
+    // Register Platform::getIFFByName
+    engine->RegisterObjectMethod("Platform",
+                                 "IFF@ getIFFByName(const string &in) const",
+                                 asMETHOD(Platform, getIFFByName),
+                                 asCALL_THISCALL);
+
+    // Register selectEntityDisplay for IFF
+    engine->RegisterObjectMethod("ScriptEngine",
+                                 "void selectEntityDisplay(IFF@)",
+                                 asMETHODPR(ScriptEngine, selectEntityDisplay, (IFF*), void),
+                                 asCALL_THISCALL);
+
+    // ================= GIS AUTOSCRIPT BINDINGS by amjad =================
+    // selected shap
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "void setCanvasSelectedShape(const string &in)",
+                                     asMETHOD(ScriptEngine, setCanvasSelectedShape), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    // Circle
+    // r = engine->RegisterObjectMethod("ScriptEngine",
+    //                                  "void canvasAddCircle(const string &in, float, float, float)",
+    //                                  asMETHOD(ScriptEngine, canvasAddCircle), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    r = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void canvasAddCircle(const string &in, float)",
+        asMETHOD(ScriptEngine, canvasAddCircle),
+        asCALL_THISCALL
+        );
+    Q_ASSERT(r >= 0);
+
+    // Rectangle
+    // r = engine->RegisterObjectMethod("ScriptEngine",
+    //                                  "void canvasAddRectangle(const string &in, float, float, float, float)",
+    //                                  asMETHOD(ScriptEngine, canvasAddRectangle), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    r = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void canvasAddRectangle(const string &in, float, float)",
+        asMETHOD(ScriptEngine, canvasAddRectangle),
+        asCALL_THISCALL
+        );
+    Q_ASSERT(r >= 0);
+
+    // Polygon
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "void canvasAddPolygon(const string &in, array<string>@)",
+                                     asMETHOD(ScriptEngine, canvasAddPolygon), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    // useCity
+    r = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void useCity(const string &in)",
+        asMETHOD(ScriptEngine, useCity),
+        asCALL_THISCALL
+        );
+    Q_ASSERT(r >= 0);
+
+    // cityLocationString
+    r = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "string cityLocationString() const",
+        asMETHOD(ScriptEngine, cityLocationString),
+        asCALL_THISCALL
+        );
+    Q_ASSERT(r >= 0);
+
+    // add point
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "void canvasAddPoint(const string &in, float, float)",
+                                     asMETHOD(ScriptEngine, canvasAddPoint), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    //canvasStartLine
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "void canvasStartLine()", asMETHOD(ScriptEngine, canvasStartLine), asCALL_THISCALL);Q_ASSERT(s >= 0);
+    //canvasAddLinePoint
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "void canvasAddLinePoint(float, float)", asMETHOD(ScriptEngine, canvasAddLinePoint), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    // // canvasFinishLine
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "void canvasFinishLine()", asMETHOD(ScriptEngine, canvasFinishLine), asCALL_THISCALL); Q_ASSERT(s >= 0);
+
+    qDebug() << "[OK] Canvas wrapper methods registered successfully";
+
+    r = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void onBitmapSelected(const string &in, float, float)",
+        asMETHOD(ScriptEngine, onBitmapSelected),
+        asCALL_THISCALL
+        ); Q_ASSERT(r >= 0);
+
+    // Get built-in bitmap path
+    r = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "string getBitmapImagePath(const string &in)",
+        asMETHOD(ScriptEngine, getBitmapImagePath),
+        asCALL_THISCALL
+        ); Q_ASSERT(r >= 0);
+
+    // User-selected bitmap from disk
+    r = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void onBitmapImageSelected(const string &in, float, float)",
+        asMETHOD(ScriptEngine, onBitmapImageSelected),
+        asCALL_THISCALL
+        ); Q_ASSERT(r >= 0);
+    qDebug() << "[OK] Bitmap wrapper methods registered successfully";
+
+    // canvasToggleAirbases
+    r = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void canvasToggleAirbases()",
+        asMETHOD(ScriptEngine, canvasToggleAirbases),
+        asCALL_THISCALL
+        );
+    Q_ASSERT(r >= 0);
+
+    // canvasImportGeoJsonLayer
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "void canvasImportGeoJsonLayer(const string &in)",
+                                     asMETHOD(ScriptEngine, canvasImportGeoJsonLayer),
+                                     asCALL_THISCALL); Q_ASSERT(r >= 0);
+
+    // canvasToggleGeoJsonLayer
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "void canvasToggleGeoJsonLayer(const string &in, bool)",
+                                     asMETHOD(ScriptEngine, canvasToggleGeoJsonLayer),
+                                     asCALL_THISCALL); Q_ASSERT(r >= 0);
+
+    //canvasStartDistanceMeasurement
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "void canvasStartDistanceMeasurement()",
+                                     asMETHOD(ScriptEngine, canvasStartDistanceMeasurement),
+                                     asCALL_THISCALL); Q_ASSERT(r >= 0);
+
+    // canvasAddMeasurePoint
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "void canvasAddMeasurePoint(double, double)",
+                                     asMETHOD(ScriptEngine, canvasAddMeasurePoint),
+                                     asCALL_THISCALL); Q_ASSERT(r >= 0);
+
+    // canvasGetLastSegmentDistance
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "double canvasGetLastSegmentDistance()",
+                                     asMETHOD(ScriptEngine, canvasGetLastSegmentDistance),
+                                     asCALL_THISCALL); Q_ASSERT(r >= 0);
+
+    // canvasGetTotalDistance
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "double canvasGetTotalDistance()",
+                                     asMETHOD(ScriptEngine, canvasGetTotalDistance),
+                                     asCALL_THISCALL); Q_ASSERT(r >= 0);
+
+    // canvasSetMeasurementUnit
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "void canvasSetMeasurementUnit(const string &in)",
+                                     asMETHOD(ScriptEngine, canvasSetMeasurementUnit),
+                                     asCALL_THISCALL);
+    Q_ASSERT(r >= 0);
+
+    // switch map
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "void canvasSwitchMap(const string &in)",
+                                     asMETHOD(ScriptEngine, canvasSwitchMap),
+                                     asCALL_THISCALL);
+    Q_ASSERT(r >= 0);
+
+    // switch coordinate system
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "void switchCoordinateSystem(const string &in)",
+                                     asMETHOD(ScriptEngine, switchCoordinateSystem),
+                                     asCALL_THISCALL);
+    Q_ASSERT(r >= 0);
+
+    // move shape
+    r = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void moveShape(const string &in, double, double)",
+        asMETHODPR(
+            ScriptEngine,
+            moveShape,
+            (const std::string&, double, double),
+            void
+            ),
+        asCALL_THISCALL
+        );
+    Q_ASSERT(r >= 0);
+
+    r = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void rotateShape(const string &in, double)",
+        asMETHODPR(
+            ScriptEngine,
+            rotateShape,
+            (const std::string&, double),
+            void
+            ),
+        asCALL_THISCALL
+        );
+    Q_ASSERT(r >= 0);
+
+
+    r = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void showShapeHistory(const string &in)",
+        asMETHOD(ScriptEngine, showShapeHistory),
+        asCALL_THISCALL
+        );
+
+    r = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void hideShapeHistory()",
+        asMETHOD(ScriptEngine, hideShapeHistory),
+        asCALL_THISCALL
+        );
+
+    r = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void restoreShapeHistory(const string &in)",
+        asMETHOD(ScriptEngine, restoreShapeHistory),
+        asCALL_THISCALL
+        );
+
+    r = engine->RegisterObjectMethod( "ScriptEngine","void addText(const string &in, double, double)",asMETHOD(ScriptEngine, addText), asCALL_THISCALL); Q_ASSERT(r >= 0);
+
+    r = engine->RegisterObjectMethod("ScriptEngine","void addShapeProperties(const string &in, int, int, int, int)", asMETHOD(ScriptEngine, addShapeProperties),asCALL_THISCALL);
+
+    r = engine->RegisterObjectMethod("ScriptEngine","void deleteshape(const string &in)", asMETHOD(ScriptEngine, deleteshape),asCALL_THISCALL);
+
+    // ================= GIS AUTOSCRIPT BINDINGS END=================
+
+    //=================== GENERAL AUTOSCRIPT BINDINGS ===============
 
 
     e = new MyObj();
     e->x = 10;
     e->y = 20;
 
-    // Sample script
-    // const char *script =
-    //     "void main() { \n"
-    //     "   Print('Hello from AngelScript + Qt!'); \n"
-    //     "   //NewProfile('TestProfile'); \n"
-    //     "}";
-
-
 
     mod = engine->GetModule("MyModule", asGM_ALWAYS_CREATE);
     // mod->AddScriptSection("script", script);
-
-    // int s = mod->Build();
-    // if (r < 0) {
-    //     qDebug() << "Failed to compile script";
-    //     return;
-    // }
-
-    // func = mod->GetFunctionByDecl("void main()");
-    // if (!func) {
-    //     qDebug() << "Function not found";
-    //     return;
-    // }
-
-    // ctx = engine->CreateContext();
-    // const char* script =
-    //     "void on_update(MyObj@ e) { \n"
-    //     "  Print('Before: x=' + e.x + ', y=' + e.y); \n"
-    //     "  e.x += 5; \n"
-    //     "  e.y += 10; \n"
-    //     "  e.moveBy(100,100); \n"
-    //     "  Print('After: x=' + e.x + ', y=' + e.y); \n"
-    //     "}";
-    // const char* script =
-    //     "void on_update(ScriptEngine@ e) { \n"
-    //     "  Print('Before'); \n"
-    //     "  string d = e.NewProfile('hello'); \n"
-    //     "  e.addEntity(d, 'entity',true); \n"
-    //     "  Print('After'); \n"
-    //     "}";
-    // mod = engine->GetModule("MyModule", asGM_ALWAYS_CREATE);
-    // mod->AddScriptSection("script", script);
-    // if (mod->Build() < 0) {
-    //     qDebug() << "Script Build Failed!";
-    //     return;
-    // } else {
-    //     qDebug() << "Script Compiled.";
-    // }
 
     ctx = engine->CreateContext();
 }
 
 ScriptEngine::~ScriptEngine()
 {
+    delete gisEngine;
+    gisEngine = nullptr;
 }
 
 void ScriptEngine::setHierarchy(Hierarchy *hiers, HierarchyTree *tr, SceneRenderer *rend)
@@ -2403,23 +2223,6 @@ bool ScriptEngine::loadAndCompileScript(QString scriptContent)
     ctx->SetArgObject(0, this);
     run();
 
-    // //addProfiles("hrgff");
-
-    // asIScriptFunction* func = mod->GetFunctionByName("on_update");
-    // if (!func) {
-    //     qDebug() << "on_update() function not found!";
-    //     return false;
-    // }
-
-    // ctx->Prepare(func);
-    // ctx->SetArgObject(0, this);
-    // int s = ctx->Execute();
-    // if (r != asEXECUTION_FINISHED) {
-    //     qDebug() << "Script execution failed!";
-    // } else {
-    //     qDebugz() << "Executed. Entity now: x =" << e->x << ", y =" << e->y;
-    // }
-    // //ctx->Release();
     return true;
 }
 

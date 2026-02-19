@@ -69,71 +69,81 @@
         <file>images/qgislayer.png</file>
         <file>images/geojson-layers.png</file>
         <file>images/check-box.png</file>
-        <file>images/AgustaWestland Apache.png</file>
-        <file>images/Antonov An-32.png</file>
-        <file>images/Dassault Mirage 2000 .png</file>
-        <file>images/Dassault Rafale.png</file>
-        <file>images/TATA Quick Reaction Fighting Vehicle-Photoroom.png</file>
-        <file>images/Tethered Aerostat Radar System-Photoroom.png</file>
+        <file>images/Antonov_An-32.png</file>
+        <file>images/Dassault_Mirage2000.png</file>
+        <file>images/Dassault_Rafale.png</file>
+        <file>images/TATA_Quick_Vehicle-Photoroom.png</file>
+        <file>images/Tethered_Aerostat_Radar_System-Photoroom.png</file>
         <file>images/TAPAS-BH-201.png</file>
-        <file>images/BMP-2 Sarath-Photoroom.png</file>
-        <file>images/INS Mysore (d60).png</file>
-        <file>images/EADS CASA C-295.png</file>
-        <file>images/Boeing AH-64 Apache.png</file>
-        <file>images/Boeing C-17 Globemaster II.png</file>
-        <file>images/Boeing CH-47 Chinook.png</file>
-        <file>images/Carrier Mortar Tracked-Photoroom.png</file>
-        <file>images/Casspir Armoured Personnel Carrier-Photoroom.png</file>
-        <file>images/DRDO Ghatak.png</file>
-        <file>images/DRDO Imperial Eagle.png</file>
-        <file>images/DRDO Nishant.png</file>
-        <file>images/DRDO Prahaar Missile-Photoroom.png</file>
-        <file>images/DRDO Rustom-1.png</file>
-        <file>images/DRDO Rustom-2.png</file>
-        <file>images/Fairchild C-119-.jpg</file>
-        <file>images/HAL Tejas.png</file>
-        <file>images/INS Chennai (D65.png</file>
-        <file>images/INS Delhi (D61.png</file>
-        <file>images/INS Imphal.png</file>
-        <file>images/INS Kochi (D64.png</file>
-        <file>images/INS Kolkata (D63.png</file>
-        <file>images/INS Mormugao (D67).png</file>
-        <file>images/INS Mumbai (D62 copy.png</file>
-        <file>images/INS Rana (D52).png</file>
-        <file>images/INS Ranvir (D54.png</file>
-        <file>images/INS Vikrant.png</file>
-        <file>images/INS Visakhapatnam.png</file>
-        <file>images/Kalyani M4-Photoroom.png</file>
+        <file>images/BMP-2_Sarath_Photoroom.png</file>
+        <file>images/INS_Mysore-(d60).png</file>
+        <file>images/EADS_CASA_C-295.png</file>
+        <file>images/Boeing_AH-64_Apache.png</file>
+        <file>images/Boeing_C-17_GlobemasterII.png</file>
+        <file>images/Boeing_CH-47_Chinook.png</file>
+        <file>images/Carrier_Mortar_Tracked-Photoroom.png</file>
+        <file>images/Casspir_Armoured_Personnel_Carrier-Photoroom.png</file>
+        <file>images/DRDO_Ghatak.png</file>
+        <file>images/DRDO_Imperial_Eagle.png</file>
+        <file>images/DRDO_Nishant.png</file>
+        <file>images/DRDO_Prahaar_Missile-Photoroom.png</file>
+        <file>images/DRDO_Rustom-1.png</file>
+        <file>images/DRDO_Rustom-2.png</file>
+        <file>images/HAL_Tejas.png</file>
+        <file>images/INS_Chennai-(D65).png</file>
+        <file>images/INS_Delhi-(D61).png</file>
+        <file>images/INS_Imphal.png</file>
+        <file>images/INS_Kochi-(D64).png</file>
+        <file>images/INS_Kolkata-(D63).png</file>
+        <file>images/INS_Mormugao-(D67).png</file>
+        <file>images/INS_Mumbai-(D62).png</file>
+        <file>images/INS_Rana-(D52).png</file>
+        <file>images/INS_Ranvir-(D54).png</file>
+        <file>images/INS_Vikrant.png</file>
+        <file>images/INS_Visakhapatnam.png</file>
+        <file>images/Kalyani_M4-Photoroom.png</file>
         <file>images/Kiev-Class.png</file>
         <file>images/lakshya.png</file>
-        <file>images/Long Range Tracking Radar-Photoroom.png</file>
+        <file>images/Long_Range_Tracking_Radar-Photoroom.png</file>
         <file>images/Magar-Class.png</file>
-        <file>images/Mahindra Armado Armoured Vehicle-Photoroom.png</file>
-        <file>images/Mahindra Marksman-Photoroom.png</file>
-        <file>images/Mahindra Rakshak Armoured Vehicle-Photoroom.png</file>
-        <file>images/Mig - 29.png</file>
-        <file>images/Mikoyan-Gurevich MiG-21.png</file>
+        <file>images/Mahindra_Armado_Armoured_Vehicle-Photoroom.png</file>
+        <file>images/Mahindra_Marksman-Photoroom.png</file>
+        <file>images/Mahindra_Rakshak_Armoured_Vehicle-Photoroom.png</file>
+        <file>images/Mig-29.png</file>
+        <file>images/Mikoyan-Gurevich_MiG-21.png</file>
         <file>images/mil_mi_24.png</file>
         <file>images/NAMICA-Photoroom.png</file>
         <file>images/NBC-Photoroom.png</file>
         <file>images/Netra.png</file>
-        <file>images/OFB Aditya-Photoroom.png</file>
-        <file>images/T-72 Ajeya-Photoroom.png</file>
-        <file>images/T-90S Bhishma-Photoroom.png</file>
-        <file>images/TATA Kestrel-Photoroom.png</file>
+        <file>images/OFB_Aditya-Photoroom.png</file>
+        <file>images/T-90S_Bhishma-Photoroom.png</file>
+        <file>images/TATA_Kestrel-Photoroom.png</file>
         <file>images/Shardul-Class.png</file>
-        <file>images/Sukhoi Su-30MKI.png</file>
-        <file>images/Swathi Weapon Locating-Photoroom.png</file>
-        <file>images/PJT-531 Battlefield Surveillance Radar-Photoroom.png</file>
+        <file>images/Sukhoi_Su-30MKI.png</file>
+        <file>images/Swathi_Weapon_Locating-Photoroom.png</file>
+        <file>images/PJT-531_Battlefield_Surveillance_Radar-Photoroom.png</file>
         <file>images/Indra.png</file>
-        <file>images/INDRA Mk-II-Photoroom.png</file>
-        <file>images/Rajendra radar (2)-Photoroom.png</file>
-        <file>images/Central Acquisition Radar-Photoroom.png</file>
-        <file>images/Ashwini Radar-Photoroom.png</file>
-        <file>images/Arjun-Photoroom.png</file>
-        <file>images/Armoured Ambulance vehicle-Photoroom.png</file>
-        <file>images/Renault Sherpa-Photoroom.png</file>
+        <file>images/INDRA_Mk-II-Photoroom.png</file>
+        <file>images/Rajendra_radar(2)-Photoroom.png</file>
+        <file>images/Central_Acquisition_Radar-Photoroom.png</file>
+        <file>images/Ashwini_Radar_Photoroom.png</file>
+        <file>images/Arjun_Photoroom.png</file>
+        <file>images/Armoured_Ambulance_vehicle.png</file>
+        <file>images/Renault_Sherpa-Photoroom.png</file>
         <file>images/coordinate-system.png</file>
+        <file>images/next-button.png</file>
+        <file>images/back.png</file>
+        <file>images/record-button.png</file>
+        <file>images/resume.png</file>
+        <file>images/subcomponent.png</file>
+        <file>images/Agusta_Westland_Apache.png</file>
+        <file>images/T-72_Ajeya-Photoroom.png</file>
+        <file>images/Fairchild_C-119.png</file>
+        <file>images/sd.png</file>
+        <file>DB/Aircraft.db</file>
+        <file>images/tree-closed.png</file>
+        <file>images/tree-open.png</file>
+        <file>images/check.png</file>
     </qresource>
     <qresource prefix="/texture">
         <file>images/Texture/bball.png</file>
@@ -170,4 +180,261 @@
         <file>Model/Airplane/11803_Airplane_wing_details_R_diff.jpg</file>
     </qresource>
     <qresource prefix="/new/prefix1"/>
+    <qresource prefix="/DB">
+        <file>DB/Aircraft.db</file>
+    </qresource>
+    <qresource prefix="/"/>
+    <qresource prefix="/jsonData">
+        <file>DB/jsonData/entity_DB.json</file>
+        <file>DB/jsonData/city.json</file>
+    </qresource>
+    <qresource prefix="/air">
+        <file>images/air/AgustaWestlandAW101.png</file>
+        <file>images/air/AirbusA330MRTT.png</file>
+        <file>images/air/AirbusA400MAtlas.png</file>
+        <file>images/air/AntonovAn-32.png</file>
+        <file>images/air/AntonovAn-124.png</file>
+        <file>images/air/AntonovAn-225.png</file>
+        <file>images/air/ATR-72MP.png</file>
+        <file>images/air/AvroLancaster.png</file>
+        <file>images/air/B-2Spirit.png</file>
+        <file>images/air/B-21Raider.png</file>
+        <file>images/air/BAEHawkmk132.png</file>
+        <file>images/air/BayraktarTB2.png</file>
+        <file>images/air/BeechcraftKingAir350.png</file>
+        <file>images/air/BellAH-1Cobraattackhelicopter.png</file>
+        <file>images/air/BoeingAH-64Apache.png</file>
+        <file>images/air/BoeingC-17GlobemasterIII.png</file>
+        <file>images/air/BoeingCH-47.png</file>
+        <file>images/air/BoeingE-3Sentry.png</file>
+        <file>images/air/BoeingE-7.png</file>
+        <file>images/air/boeingkc-135stratotanker.png</file>
+        <file>images/air/BoeingP-8Poseidon.png</file>
+        <file>images/air/BoeingX-37BExperimental.png</file>
+        <file>images/air/C-130JSuperHercules.png</file>
+        <file>images/air/CACPACJF-17.png</file>
+        <file>images/air/CAIGWingLoongII.png</file>
+        <file>images/air/ChengduJ-10.png</file>
+        <file>images/air/ChengduJ-20.png</file>
+        <file>images/air/DassaultMirage2000.png</file>
+        <file>images/air/DassaultRafaleFighter.png</file>
+        <file>images/air/Dornier228.png</file>
+        <file>images/air/DouglasDC-3.png</file>
+        <file>images/air/DRDOGhatak.png</file>
+        <file>images/air/DRDOImperialEagle.png</file>
+        <file>images/air/DRDOLakshya.png</file>
+        <file>images/air/DRDONishant.png</file>
+        <file>images/air/drdorustom.png</file>
+        <file>images/air/DRDORustom-2.png</file>
+        <file>images/air/E-2Hawkeye.png</file>
+        <file>images/air/EADSCASAC-295.png</file>
+        <file>images/air/EmbraerKC-390.png</file>
+        <file>images/air/EnglishElectricCanberra.png</file>
+        <file>images/air/EurofighterTyphoon.png</file>
+        <file>images/air/f16falcon.png</file>
+        <file>images/air/F-15Eagle.png</file>
+        <file>images/air/F-18SuperHornet.png</file>
+        <file>images/air/F-22Raptor.png</file>
+        <file>images/air/F-35Lightning.png</file>
+        <file>images/air/FairchildC-119FlyingBoxcar.png</file>
+        <file>images/air/GulfstreamG550.png</file>
+        <file>images/air/HALDhruv.png</file>
+        <file>images/air/HALHF-24Marut.png</file>
+        <file>images/air/HALHJT-16Kirantrainerjet.png</file>
+        <file>images/air/HALHJT-36Sitara.png</file>
+        <file>images/air/HALLightCombatHelicopter.png</file>
+        <file>images/air/HALPrachand.png</file>
+        <file>images/air/HALRudra.png</file>
+        <file>images/air/HALTejas.png</file>
+        <file>images/air/HALTejasMk2.png</file>
+        <file>images/air/HawkerHunter.png</file>
+        <file>images/air/HESAShahed136.png</file>
+        <file>images/air/IAIHeron.png</file>
+        <file>images/air/IAISearcher.png</file>
+        <file>images/air/IlyushinIl-76.png</file>
+        <file>images/air/KAIFA-50.png</file>
+        <file>images/air/KamovKa-31.png</file>
+        <file>images/air/L-39Albatros.png</file>
+        <file>images/air/LockheedP-3Orion.png</file>
+        <file>images/air/MiG-21.png</file>
+        <file>images/air/MiG-29.png</file>
+        <file>images/air/Mikoyan-GurevichMiG-23.png</file>
+        <file>images/air/MikoyanMiG-27.png</file>
+        <file>images/air/MikoyanMiG-35.png</file>
+        <file>images/air/MilMi-17transporthelicopter.png</file>
+        <file>images/air/MilMi-24.png</file>
+        <file>images/air/MilMi-26heavy.png</file>
+        <file>images/air/MitsubishiF-2.png</file>
+        <file>images/air/MQ-1Predator.png</file>
+        <file>images/air/MQ-9Reaper.png</file>
+        <file>images/air/NALSaras.png</file>
+        <file>images/air/NetraAEWC.png</file>
+        <file>images/air/NorthropT-38Talon.png</file>
+        <file>images/air/PhalconAWACS.png</file>
+        <file>images/air/PilatusPC-7.png</file>
+        <file>images/air/Saab2000Erieye.png</file>
+        <file>images/air/SaabJAS39Gripen.png</file>
+        <file>images/air/SEPECATJaguar.png</file>
+        <file>images/air/ShenyangJ-16.png</file>
+        <file>images/air/ShinMaywaUS-2.png</file>
+        <file>images/air/SikorskyUH-60BlackHawk.png</file>
+        <file>images/air/SR-71BlackbirdRecon.png</file>
+        <file>images/air/SukhoiSu-25.png</file>
+        <file>images/air/SukhoiSu-30MKI.png</file>
+        <file>images/air/SukhoiSu-34.png</file>
+        <file>images/air/SukhoiSu-57.png</file>
+        <file>images/air/T-6Texan.png</file>
+        <file>images/air/TAPAS-BH-201.png</file>
+        <file>images/air/Tu-95Bomber.png</file>
+        <file>images/air/Tu-160.png</file>
+        <file>images/air/YakovlevYak-130.png</file>
+    </qresource>
+    <qresource prefix="/ground">
+        <file>images/ground/Adobe_Express.png</file>
+        <file>images/ground/AkashMissileLauncher.png</file>
+        <file>images/ground/Akash-NG.png</file>
+        <file>images/ground/AkashSAMSystem.png</file>
+        <file>images/ground/AllTerrainVehicleATV.png</file>
+        <file>images/ground/ArjunMBT.png</file>
+        <file>images/ground/ArjunMk-1A.png</file>
+        <file>images/ground/ArmouredEngineerReconnaissance.png</file>
+        <file>images/ground/ArudhraRadar.png</file>
+        <file>images/ground/AshokLeylandMineProtectedVehicle.png</file>
+        <file>images/ground/AshwiniRadar.png</file>
+        <file>images/ground/AsleshaMk-IRadar.png</file>
+        <file>images/ground/ATAGS.png</file>
+        <file>images/ground/BattlefieldManagementSystem.png</file>
+        <file>images/ground/BharaniRadar.png</file>
+        <file>images/ground/BharatDynamicsMissileLauncher.png</file>
+        <file>images/ground/BiologicalReconnaissance.png</file>
+        <file>images/ground/BMP-2Ambulance.png</file>
+        <file>images/ground/BMP-2Command.png</file>
+        <file>images/ground/BMP-2NBCRecon.png</file>
+        <file>images/ground/BMP-2Repair.png</file>
+        <file>images/ground/BMP-2Sarath.png</file>
+        <file>images/ground/BridgeLayingTankVehicle.png</file>
+        <file>images/ground/CarrierMortarTracked.png</file>
+        <file>images/ground/Casspir.png</file>
+        <file>images/ground/CentralAcquisitionRadar.png</file>
+        <file>images/ground/ChemicalDetection.png</file>
+        <file>images/ground/CombatEngineeringTractor.png</file>
+        <file>images/ground/DhanushHowitzer.png</file>
+        <file>images/ground/DRDOArmouredAmbulance.png</file>
+        <file>images/ground/DRDOPrahaar.png</file>
+        <file>images/ground/FH-77BBofors.png</file>
+        <file>images/ground/FieldAmbulance.png</file>
+        <file>images/ground/ForwardObservation.png</file>
+        <file>images/ground/HeavyEquipmentTransporter.png</file>
+        <file>images/ground/HelinaATGMLauncher.png</file>
+        <file>images/ground/HighMobilityVehicle4x4.png</file>
+        <file>images/ground/HighMobilityVehicle6x6.png</file>
+        <file>images/ground/Igla-S.png</file>
+        <file>images/ground/INDRA.png</file>
+        <file>images/ground/INDRAMk-IIRadar.png</file>
+        <file>images/ground/K9Vajra-T.png</file>
+        <file>images/ground/KalyaniM4.png</file>
+        <file>images/ground/LightSpecialist.png</file>
+        <file>images/ground/LowLevelLightWeightRadar.png</file>
+        <file>images/ground/M777UltraLightHowitzer.png</file>
+        <file>images/ground/MahindraArmado.png</file>
+        <file>images/ground/MahindraMarksman.png</file>
+        <file>images/ground/MahindraRakshak.png</file>
+        <file>images/ground/MissileLaunchControl.png</file>
+        <file>images/ground/MobileCommandPost.png</file>
+        <file>images/ground/MobileEWJammerVehicle.png</file>
+        <file>images/ground/MobileRadarControlCentre.png</file>
+        <file>images/ground/MobileSurveillance.png</file>
+        <file>images/ground/MountedGunSystemMGS.png</file>
+        <file>images/ground/MPATGMLauncher.png</file>
+        <file>images/ground/Muntra-MUGV.png</file>
+        <file>images/ground/Muntra-NUGV.png</file>
+        <file>images/ground/Muntra-SUGV.png</file>
+        <file>images/ground/NagATGM.png</file>
+        <file>images/ground/NagMissileCarrier.png</file>
+        <file>images/ground/NAMICA.png</file>
+        <file>images/ground/NBCReconnaissance.png</file>
+        <file>images/ground/NuclearRadiationMonitoring.png</file>
+        <file>images/ground/OFBAditya.png</file>
+        <file>images/ground/PinakaCommandPost.png</file>
+        <file>images/ground/PinakaDiggi.png</file>
+        <file>images/ground/PinakaLoaderCum.png</file>
+        <file>images/ground/PinakaMk-I.png</file>
+        <file>images/ground/PinakaMk-II.png</file>
+        <file>images/ground/PinakaMulti-BarrelRocketLauncher.png</file>
+        <file>images/ground/PJT-531BattlefieldSurveillanceRadar.png</file>
+        <file>images/ground/QRSAM.png</file>
+        <file>images/ground/RajendraRadar.png</file>
+        <file>images/ground/RenaultSherpa.png</file>
+        <file>images/ground/RevathiRadar.png</file>
+        <file>images/ground/Rohini3DRadar.png</file>
+        <file>images/ground/SignalsIntelligence.png</file>
+        <file>images/ground/SnowScooterMilitary.png</file>
+        <file>images/ground/SoltamM-46.png</file>
+        <file>images/ground/SPYDERAirDefenceSystem.png</file>
+        <file>images/ground/Strela-10.png</file>
+        <file>images/ground/SwathiWeaponLocatingRadar.png</file>
+        <file>images/ground/SwordfishLongRangeTrackingRadar.png</file>
+        <file>images/ground/T-72Ajeya.png</file>
+        <file>images/ground/T-72ArmouredRecovery.png</file>
+        <file>images/ground/T-90ArmouredRecovery.png</file>
+        <file>images/ground/T-90BridgeLayer.png</file>
+        <file>images/ground/T-90SBhishma.png</file>
+        <file>images/ground/TacticalUAVGroundControlStation.png</file>
+        <file>images/ground/TankTransporter.png</file>
+        <file>images/ground/TATAKestrel.png</file>
+        <file>images/ground/TataMineProtected.png</file>
+        <file>images/ground/TATAQuickReactionFighting.png</file>
+        <file>images/ground/TetheredAerostatRadarSystem.png</file>
+        <file>images/ground/TruckMountedRadarUnit.png</file>
+        <file>images/ground/UnmannedGroundVehicleDRDO.png</file>
+        <file>images/ground/VehicleMountedJammer.png</file>
+        <file>images/ground/S-300.png</file>
+    </qresource>
+    <qresource prefix="/sea">
+        <file>images/sea/AUV.png</file>
+        <file>images/sea/INS_ABHAY.png</file>
+        <file>images/sea/INS_ARIHANT.png</file>
+        <file>images/sea/INS_BRAHMAPUTRA.png</file>
+        <file>images/sea/INS_DELHI.png</file>
+        <file>images/sea/INS_DHRUV.png</file>
+        <file>images/sea/INS_GHARIAL.png</file>
+        <file>images/sea/INS_JALASHWA.png</file>
+        <file>images/sea/INS_KALVARI.png</file>
+        <file>images/sea/INS_KAMORTA.png</file>
+        <file>images/sea/INS_KOLKATA.png</file>
+        <file>images/sea/INS_KORA.png</file>
+        <file>images/sea/INS_KUTHAR.png</file>
+        <file>images/sea/INS_NILGIRI.png</file>
+        <file>images/sea/INS_RANVIR.png</file>
+        <file>images/sea/INS_SANDHYAK.png</file>
+        <file>images/sea/INS_SARYU.png</file>
+        <file>images/sea/INS_SHARDUL.png</file>
+        <file>images/sea/INS_SHISHUMAR.png</file>
+        <file>images/sea/INS_SHIVALIK.png</file>
+        <file>images/sea/INS_SINDHUGHOSH.png</file>
+        <file>images/sea/INS_SUKANYA.png</file>
+        <file>images/sea/INS_TALWAR.png</file>
+        <file>images/sea/INS_VIBHUTI.png</file>
+        <file>images/sea/INS_VIKRANT.png</file>
+        <file>images/sea/INS_VISAKHAPATNAM.png</file>
+        <file>images/sea/SLAVA_CRUISER.png</file>
+        <file>images/sea/Chien-Lung-class.png</file>
+        <file>images/sea/Hai- Kun-class.png</file>
+        <file>images/sea/Type-039.png</file>
+        <file>images/sea/Type-094(Nuclear).png</file>
+        <file>images/sea/Shandong.png</file>
+        <file>images/sea/Type-003-Fujian.png</file>
+        <file>images/sea/Tareq-class.png</file>
+        <file>images/sea/Fateh-class.png</file>
+        <file>images/sea/Ohio-Class (SSGN Variant).png</file>
+        <file>images/sea/Seawolf-Class (SSN-21).png</file>
+        <file>images/sea/Virginia-Class (SSN-774).png</file>
+        <file>images/sea/USS-O'Kane.png</file>
+        <file>images/sea/Arleigh-Burke-class-destroyers.png</file>
+        <file>images/sea/USS-Abraham-Lincoln.png</file>
+        <file>images/sea/USS_Georgia.png</file>
+    </qresource>
+    <qresource prefix="/new/prefix2">
+        <file>DB/Aircraft.db</file>
+    </qresource>
 </RCC>

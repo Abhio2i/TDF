@@ -1,71 +1,73 @@
+/* ========================================================================= */
+/* File: runtimeeditor.cpp                                                   */
+/* Purpose: Implements runtime editor for simulation and visualization       */
+/* ========================================================================= */
 
-
-#include "runtimeeditor.h"
-#include "GUI/Menubars/menubar.h"
-#include "GUI/Panel/radardisplay.h"
-#include "GUI/Sidebar/sidebarwidget.h"
-#include "GUI/Toolbars/standardtoolbar.h"
-#include "GUI/Toolbars/networktoolbar.h"
-#include "GUI/Feedback/feedback.h"
-#include "qthread.h"
-#include <QFile>
-#include <QTextStream>
-#include <QDebug>
-#include <QListWidget>
-#include <QDockWidget>
-#include <core/structure/runtime.h>
-#include <core/structure/scenario.h>
-#include <core/Hierarchy/Components/transform.h>
-#include <core/Hierarchy/Components/mesh.h>
-#include <QSplitter>
-#include <QFileDialog>
-#include <QStandardPaths>
-#include <QJsonDocument>
-#include <QJsonParseError>
-#include <QMessageBox>
-#include <QApplication>
-#include <QGuiApplication>
-#include <QScreen>
-#include <QVBoxLayout>
-#include <QTimer>
-#include <GUI/Menubars/profileinfodialog.h>
-#include <GUI/Editors/recentprojectsmanager.h>
-#include <GUI/Settings/applicationdialog.h>
-#include <QProgressDialog>
-
+#include "runtimeeditor.h"                      // For runtime editor class
+#include "GUI/Menubars/menubar.h"               // For menu bar
+#include "GUI/Panel/radardisplay.h"             // For radar display
+#include "GUI/Sidebar/sidebarwidget.h"          // For sidebar widget
+#include "GUI/Timing/graphwidget.h"             // For timing graph widget
+#include "GUI/Toolbars/standardtoolbar.h"       // For standard toolbar
+#include "GUI/Toolbars/networktoolbar.h"        // For network toolbar
+#include "GUI/Feedback/projectinformation.h"    // For feedback window
+#include "qthread.h"                            // For thread operations
+#include <QFile>                                // For file operations
+#include <QTextStream>                          // For text streaming
+#include <QDebug>                               // For debug output
+#include <QListWidget>                          // For list widget
+#include <QDockWidget>                          // For dock widget
+#include <core/structure/runtime.h>             // For runtime structure
+#include <core/structure/scenario.h>            // For scenario structure
+#include <core/Hierarchy/Components/transform.h> // For transform component
+#include <core/Hierarchy/Components/mesh.h>     // For mesh component
+#include <QSplitter>                            // For splitter widget
+#include <QFileDialog>                          // For file dialogs
+#include <QStandardPaths>                       // For standard paths
+#include <QJsonDocument>                        // For JSON document handling
+#include <QJsonParseError>                      // For JSON parse errors
+#include <QMessageBox>                          // For message box
+#include <QApplication>                         // For application instance
+#include <QGuiApplication>                      // For GUI application
+#include <QScreen>                              // For screen information
+#include <QVBoxLayout>                          // For vertical layout
+#include <QTimer>                               // For timer operations
+#include <GUI/Menubars/profileinfodialog.h>     // For profile info dialog
+#include <GUI/Editors/recentprojectsmanager.h>  // For recent projects manager
+#include <GUI/Settings/applicationdialog.h>     // For application settings dialog
+#include <QProgressDialog>                      // For progress indication
+#include <GUI/Editors/customresizableoverlaydock.h>
+// %%% String Utility Function %%%
+/* Capitalize the first letter of a string */
 static QString capitalizeFirstLetter(const QString &str)
 {
     if (str.isEmpty()) return str;
     return str[0].toUpper() + str.mid(1);
 }
-
+// %%% Timing Data Getter %%%
+/* Get timing JSON data */
 QString RuntimeEditor::getTimingJsonData() const
 {
-    // return GraphWidgetTime::JSON_DATA;
     return "{}";
 }
-
-
+// %%% Constructor %%%
+/* Initialize runtime editor */
 RuntimeEditor::RuntimeEditor(QWidget *parent)
     : QMainWindow(parent)
 {
+    m_scenarioConfig = new ScenarioConfig(this);
     setWindowTitle("Runtime Editor");
     resize(1100, 600);
-
-    // Use enhanced dock widget setup for Linux compatibility - JUST LIKE SCENARIO EDITOR
     setupEnhancedDockWidgets();
-
-    setupMenuBar();
-    connect(menuBar, &MenuBar::exitTriggered, qApp, &QApplication::quit);
+    // setupMenuBar();
+    // connect(menuBar, &MenuBar::exitTriggered, qApp, &QApplication::quit);
     setupToolBars();
     setupStatusBar();
-    //connect(navi, &MenuBar::)
-
     runtime = new Runtime();
     hierarchy = runtime->hierarchy;
     SceneRenderer *renderer = runtime->scenerenderer;
     simulation = runtime->simulation;
-
+    scriptengine = runtime->scriptengine;
     console = runtime->console;
     NetworkManager *networkManager = runtime->networkManager;
     library = runtime->Library;
@@ -75,14 +77,42 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     HierarchyConnector::instance()->setHierarchy(hierarchy);
     HierarchyConnector::instance()->setLibrary(library);
     HierarchyConnector::instance()->setLibTreeView(libTreeView);
-
-
     connect(textScriptView, &TextScriptWidget::runScriptstring,
             runtime->scriptengine, &ScriptEngine::loadAndCompileScript);
-
     connect(this,&RuntimeEditor::Activated,simulation,&Simulation::ReInit);
     connect(this,&RuntimeEditor::Activated,tacticalDisplay->canvas,&CanvasWidget::ReInit);
-    // Initialize Display Window with QTabWidget
+    // Connect ScriptEngine sidebar view requests
+    connect(scriptengine, &ScriptEngine::requestSidebarView, this, &RuntimeEditor::triggerSidebarView);
+    // In constructor after scriptengine init:
+    connect(scriptengine, &ScriptEngine::requestDisplayTab, this, &RuntimeEditor::triggerDisplayTab);
+    // Connect ScriptEngine entity selection requests
+    // Connect ScriptEngine entity selection requests
+    connect(scriptengine, &ScriptEngine::requestSelectEntity, this, [=](const QString &entityId) {
+        // Select entity in tree (visual highlight)
+        treeView->selectEntityById(entityId);
+        if (hierarchy->Entities->count(entityId.toStdString())) {
+            Entity* entity = (*hierarchy->Entities)[entityId.toStdString()];
+            if (radarDisplayUI) {
+                radarDisplayUI->selectEntity(entity);
+            }
+            if (iffDisplayUI) {
+                iffDisplayUI->selectEntity(entity);
+            }
+            if (radioDisplayUI) {
+                radioDisplayUI->selectEntity(entity);
+            }
+            if (csmDisplayUI) {
+                csmDisplayUI->selectEntity(entity);
+            }
+            if (esmDisplayUI) {
+                esmDisplayUI->selectEntity(entity);
+            }
+        }
+    });
+    static bool canvasScreenshotTaken = false;
+    static int radarScreenshotCount = 0;
+    connect(textScriptView, &TextScriptWidget::runScriptFile,
+            this, &RuntimeEditor::onRunScriptFileRequested);
     displayWindow = new QWidget(this);
     displayWindow->setWindowTitle("Display Window");
     displayWindow->setWindowFlags(Qt::Dialog |
@@ -95,54 +125,35 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     displayWindow->resize(800, 600);
     QRect screenGeometry = QGuiApplication::primaryScreen()->geometry();
     displayWindow->move(screenGeometry.center() - displayWindow->rect().center());
-
-    // Setup display tabs for displayDock
+        // Setup display tabs
     displayTabs = new QTabWidget(displayDock);
     displayDock->setWidget(displayTabs);
-
     radarDisplayUI = new RadarDisplay(displayTabs);
     radarDisplayUI->setHierarchy(hierarchy);
     displayTabs->addTab(radarDisplayUI, "Radar");
-
-    // ewDisplayUI = new EWDisplay(displayTabs);
-    // ewDisplayUI->setHierarchy(hierarchy);
-    // displayTabs->addTab(ewDisplayUI, "EW");
-
     iffDisplayUI = new IFFDisplay(displayTabs);
     iffDisplayUI->setHierarchy(hierarchy);
     displayTabs->addTab(iffDisplayUI, "IFF");
-
     radioDisplayUI = new RADIODisplay(displayTabs);
     radioDisplayUI->setHierarchy(hierarchy);
     displayTabs->addTab(radioDisplayUI, "RADIO");
-
     esmDisplayUI = new ESMDisplay(displayTabs);
     esmDisplayUI->setHierarchy(hierarchy);
     displayTabs->addTab(esmDisplayUI, "ESM");
-
     csmDisplayUI = new CSMDisplay(displayTabs);
     csmDisplayUI->setHierarchy(hierarchy);
     displayTabs->addTab(csmDisplayUI, "CSM");
-
     displayTabs->setCurrentIndex(0);
-
     // Connect simulation updates to displays
     connect(simulation, &Simulation::Update, radarDisplayUI, &RadarDisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, radarDisplayUI, &RadarDisplay::RemoveEntity);
-
-    // connect(simulation, &Simulation::Update, ewDisplayUI, &EWDisplay::updateRadar);
-    // connect(hierarchy, &Hierarchy::entityRemoved, ewDisplayUI, &EWDisplay::RemoveEntity);
-
     connect(simulation, &Simulation::Update, csmDisplayUI, &CSMDisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, csmDisplayUI, &CSMDisplay::RemoveEntity);
-
     connect(simulation, &Simulation::Update, esmDisplayUI, &ESMDisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, esmDisplayUI, &ESMDisplay::RemoveEntity);
-
     // IFFDisplay connections
     connect(simulation, &Simulation::Update, iffDisplayUI, &IFFDisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, iffDisplayUI, &IFFDisplay::RemoveEntity);
-
     // RADIO DISPLAY CONNECTIONS
     connect(simulation, &Simulation::Update, radioDisplayUI, &RADIODisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, radioDisplayUI, &RADIODisplay::RemoveEntity);
@@ -152,169 +163,24 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 QAction* radarToggle = runtimeToolBar->findChild<QAction*>("radarToggleAction");
                 if (radarToggle) {
                     radarToggle->setChecked(false);
-                    qDebug() << "Display dock hidden, toggle action unchecked";
                 }
             }
         }
     });
-
     displayDock->hide();
-
-
+    connect(hierarchy, &Hierarchy::Init, runtimeToolBar, &RuntimeToolBar::Init);
     connect(runtimeToolBar, &RuntimeToolBar::radarDisplayToggled, this, &RuntimeEditor::toggleRadarDisplay);
-
-    // Connect loggerAction to toggleLoggerDisplay
-    connect(runtimeToolBar, &RuntimeToolBar::loggerTriggered, this, &RuntimeEditor::toggleLoggerDisplay);
-    connect(loggerDock, &QDockWidget::visibilityChanged, this, [=](bool visible) {
-        qDebug() << "Logger dock visibility changed, visible:" << visible;
-        if (!visible) {
-            SidebarWidget *sidebar = sidebarDock->widget()->findChild<SidebarWidget*>();
-            if (sidebar) {
-                sidebar->setActiveButton("");
-            }
-            QAction *loggerAction = runtimeToolBar->findChild<QAction*>("loggerAction");
-            if (loggerAction) {
-                loggerAction->setChecked(false);
-            }
-        }
-    });
-
-    //Logger connections
-    connect(loggerDialog, &LoggerDialog::startRecording, this, [=]() {
-        recordingStartTime = QDateTime::currentDateTime();
-        runtime->recorder->startRecording();
-        recordingTimer = new QTimer(this);
-        connect(recordingTimer, &QTimer::timeout, this, [=]() {
-            if (recordingStartTime.isValid()) {
-                qint64 durationMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
-                loggerDialog->updateRecordingDuration(durationMs);
-            }
-        });
-        recordingTimer->start(100);
-
-    });
-    connect(runtime->recorder, &Recorder::recordingPaused,
-            loggerDialog->getTimelineWidget(), &TimelineWidget::pauseRecording);
-
-    connect(runtime->recorder, &Recorder::recordingResumed,
-            loggerDialog->getTimelineWidget(), &TimelineWidget::resumeRecording);
-
-
-    //End Himan
-    connect(loggerDialog, &LoggerDialog::stopRecording, this, [=]() {
-        runtime->recorder->stopRecording();
-        if (recordingTimer) {
-            recordingTimer->stop();
-            delete recordingTimer;
-            recordingTimer = nullptr;
-        }
-        recordingStartTime = QDateTime();
-        loggerDialog->updateRecordingDuration(0);
-
-    });
-
-    connect(loggerDialog, &LoggerDialog::saveRecording, this, [=](const QString &filePath) {
-        if (runtime && runtime->recorder) {
-            bool saved = runtime->recorder->saveToFile(filePath);
-            if (saved)
-                qDebug() << "Recording successfully saved to:" << filePath;
-            else
-                qWarning() << "Failed to save recording to:" << filePath;
-        } else {
-            qWarning() << "Recorder instance not available!";
-        }
-    });
-    connect(loggerDialog, &LoggerDialog::loadRecording, this, [=](const QString &filePath) {
-        if (runtime && runtime->recorder) {
-            if (runtime->recorder->loadReplay(filePath)) {
-                qDebug() << "Replay loaded:" << filePath;
-            }
-        }
-    });
-    connect(loggerDialog, &LoggerDialog::startReplay, this, [=]() {
-        if (runtime && runtime->recorder) {
-            runtime->recorder->startReplay();
-        }
-    });
-
-    connect(loggerDialog, &LoggerDialog::toggleReplayPause, this, [=]() {
-        if (runtime && runtime->recorder) {
-            runtime->recorder->toggleReplayPause();
-        }
-    });
-    connect(loggerDialog, &LoggerDialog::previousFrame, this, [=]() {
-        if (runtime && runtime->recorder) {
-            runtime->recorder->goToPreviousFrame();
-        }
-    });
-
-    connect(loggerDialog, &LoggerDialog::nextFrame, this, [=]() {
-        if (runtime && runtime->recorder) {
-            runtime->recorder->goToNextFrame();
-        }
-    });
-
-    connect(loggerDialog, &LoggerDialog::pressPlayAgain, this, [=]() {
-        if (runtime && runtime->recorder) {
-            runtime->recorder->playAgain();
-        }
-    });
-
-    connect(loggerDialog, &LoggerDialog::replayRecording, this, [=](const QString &filePath) {
-        simulation->stop();
-        tacticalDisplay->canvas->Render(0.016f);
-        if (!filePath.isEmpty() && runtime->recorder->loadReplay(filePath)) {
-            QVector<QJsonObject> frames = runtime->recorder->getRecordedFrames();
-            if (!frames.isEmpty()) {
-                simulation->replay(frames);
-                qDebug() << "Replay started using file:" << filePath;
-            } else {
-                qWarning() << "Replay file loaded but contains no frames.";
-            }
-        } else {
-            qWarning() << "Replay cancelled or file failed to load.";
-        }
-    });
-
     connect(loggerDialog, &LoggerDialog::eventTypesSelected, this, [=](const QStringList &eventTypes) {
-        qDebug() << "Event types selected:" << eventTypes;
     });
-
-    connect(loggerDialog, &LoggerDialog::bookmarkAdded, this, [=](const QString &bookmarkNote) {
-        qDebug() << "Bookmark button clicked — note:" << bookmarkNote;
-
-        if (!runtime || !runtime->recorder) {
-            qWarning() << "Runtime or Recorder not available — cannot save bookmark.";
-            return;
-        }
-
-        if (recordingStartTime.isValid()) {
-            qint64 timestampMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
-            runtime->recorder->recordBookmark(bookmarkNote, timestampMs);
-            loggerDialog->addBookmarkWithTimestamp(bookmarkNote, timestampMs);
-
-            qDebug() << "Bookmark added at" << timestampMs << "ms — message:" << bookmarkNote;
-        } else {
-            qWarning() << "Cannot add bookmark — recording not started.";
-        }
-    });
-
-    connect(loggerDialog, &LoggerDialog::timestampToggled, this, [=](bool enabled) {
-        qDebug() << "Timestamp toggled:" << enabled;
-    });
-
-    connect(loggerDialog, &LoggerDialog::requestReplayReset,
-            runtime->recorder, &Recorder::resetReplayState);
-
-
-    connect(loggerDialog, &LoggerDialog::bookmarkClicked,this, [=](const QString &note, qint64 timestampMs) {
-        runtime->recorder->bookmarkReplay(note, timestampMs);
-    });
-
+    connect(runtime->recorder, &Recorder::replayBookmark,
+            loggerDialog, &LoggerDialog::onReplayBookmarkLoaded);
+    connect(runtime->recorder, &Recorder::replayFrameLoaded,
+            loggerDialog, &LoggerDialog::updateReplayProgress);
+    connect(runtime->recorder, &Recorder::setReplayDuration,
+            loggerDialog, &LoggerDialog::setTimelineDuration);
     connect(displayWindow, &QObject::destroyed, this, [=]() {
         displayWindow = nullptr;
         radarDisplayUI = nullptr;
-        // ewDisplayUI = nullptr;
         iffDisplayUI = nullptr;
         esmDisplayUI = nullptr;
         csmDisplayUI = nullptr;
@@ -322,118 +188,90 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             QAction* radarToggle = runtimeToolBar->findChild<QAction*>("radarToggleAction");
             if (radarToggle) {
                 radarToggle->setChecked(false);
-                qDebug() << "Display window destroyed, toggle action unchecked";
             }
         }
     });
-
     connect(loggerDialog, &LoggerDialog::eventTypesSelected, this, [=](const QStringList &eventTypes) {
-        qDebug() << "Event types selected:" << eventTypes;
+
     });
-
-    connect(runtime->recorder, &Recorder::replayBookmark,
-            loggerDialog, &LoggerDialog::onReplayBookmarkLoaded);
-    connect(runtime->recorder, &Recorder::replayFrameLoaded,
-            loggerDialog, &LoggerDialog::updateReplayProgress);
-    connect(runtime->recorder, &Recorder::setReplayDuration,
-            loggerDialog, &LoggerDialog::setTimelineDuration);
-
-
-    // Handle RadarDisplay closure to prevent crashes - now for displayWindow
     connect(displayWindow, &QObject::destroyed, this, [=]() {
         displayWindow = nullptr;
         radarDisplayUI = nullptr;
-        // ewDisplayUI = nullptr;
         esmDisplayUI = nullptr;
         csmDisplayUI = nullptr;
         if (runtimeToolBar) {
             QAction* radarToggle = runtimeToolBar->findChild<QAction*>("radarToggleAction");
             if (radarToggle) {
                 radarToggle->setChecked(false);
-                qDebug() << "Display window destroyed, toggle action unchecked";
             }
         }
     });
 
-
     connect(simulation, &Simulation::Update, this, [=]() {
         if (iffDisplayUI && iffDisplayUI->entity && iffDisplayUI->iff) {
-            // Regular IFF interrogation
             iffDisplayUI->iff->interrogateTargets(iffDisplayUI->entity->transform);
         }
     });
-
-
-
-    // Connect tactical display signals
-    if (tacticalDisplay && tacticalDisplay->canvas) {
-
+    if (tacticalDisplay && tacticalDisplay->canvas && tacticalDisplay->mapWidget) {
+        scriptengine->setCanvas(tacticalDisplay->canvas);
+        scriptengine->setGIS(tacticalDisplay->mapWidget);
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated, inspector, &Inspector::updateTrajectory);
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated, this, [=](QString entityId, QJsonArray /*waypoints*/) {
             auto it = tacticalDisplay->canvas->Meshes.find(entityId.toStdString());
             if (it != tacticalDisplay->canvas->Meshes.end() && it->second.trajectory) {
                 QJsonObject trajData = it->second.trajectory->toJson();
                 hierarchy->UpdateComponent(entityId, "Trajectory", trajData);
-                Console::log("Trajectory updated for entity: " + entityId.toStdString());
                 treeView->getTreeWidget()->update();
+                markUnsavedChanges();
             } else {
-                Console::error("Failed to update trajectory for entity: " + entityId.toStdString() +
-                               " - entity or trajectory not found");
             }
         });
         connect(inspector, &Inspector::trajectoryWaypointsChanged, tacticalDisplay->canvas, &CanvasWidget::updateWaypointsFromInspector);
     }
-
     connect(renderer, &SceneRenderer::addMesh, tacticalDisplay, &TacticalDisplay::addMesh);
     connect(hierarchy, &Hierarchy::entityRemoved, tacticalDisplay, &TacticalDisplay::removeMesh);
-
     if (tacticalDisplay && tacticalDisplay->canvas) {
         connect(renderer, &SceneRenderer::Render, tacticalDisplay->canvas, &CanvasWidget::Render);
         connect(renderer, &SceneRenderer::Render, tacticalDisplay->scene3dwidget, &Scene3DWidget::updateEntities);
     }
-
     connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
     connect(inspector, &Inspector::valueChanged, this, [=]{ renderer->Render(0.01f); markUnsavedChanges(); });
-
-
     if (runtimeToolBar && tacticalDisplay && tacticalDisplay->canvas && simulation) {
         connect(simulation, &Simulation::Render, runtimeToolBar, &RuntimeToolBar::onElapsedTime);
         connect(runtimeToolBar, &RuntimeToolBar::startTriggered, [=]() {
             tacticalDisplay->canvas->simulation();
             simulation->start();
-            qDebug() << "Simulation started.";
         });
         connect(runtimeToolBar, &RuntimeToolBar::nextStepTriggered, [=]() {
-            //tacticalDisplay->canvas->simulation();
             simulation->nextStep();
-            qDebug() << "Next Step Simulate.";
         });
         connect(runtimeToolBar, &RuntimeToolBar::pauseTriggered, this, [=]() {
+            tacticalDisplay->canvas->editor();
             simulation->pause();
-            qDebug() << "Simulation paused.";
         });
-        connect(runtimeToolBar, &RuntimeToolBar::replayTriggered, this, [=]() {
-            simulation->stop();
-            tacticalDisplay->canvas->Render(0.016f);
-            QString filePath = QFileDialog::getOpenFileName(
-                this,
-                "Select Replay File",
-                QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/recordings",
-                "*.json"
-                );
-            if (!filePath.isEmpty() && runtime->recorder->loadReplay(filePath)) {
-                QVector<QJsonObject> frames = runtime->recorder->getRecordedFrames();
-                if (!frames.isEmpty()) {
-                    simulation->replay(frames);
-                    qDebug() << "Replay started using file:" << filePath;
-                } else {
-                    qWarning() << "Replay file loaded but contains no frames.";
+
+        connect(simulation, &Simulation::sendMode, this, [=](SimulationStateNS::State state) {
+            if (runtimeToolBar) {
+                switch(state) {
+                case SimulationStateNS::START:
+                    runtimeToolBar->highlightAction(runtimeToolBar->startAction);
+                    runtimeToolBar->setSimulationState(RuntimeToolBar::RUNNING);
+                    break;
+                case SimulationStateNS::PAUSE:
+                    runtimeToolBar->highlightAction(runtimeToolBar->pauseAction);
+                    runtimeToolBar->setSimulationState(RuntimeToolBar::PAUSED);
+                    break;
+                case SimulationStateNS::STOP:
+                    runtimeToolBar->highlightAction(runtimeToolBar->stopAction);
+                    runtimeToolBar->setSimulationState(RuntimeToolBar::STOPPED);
+                    break;
+                default:
+                    break;
                 }
-            } else {
-                qWarning() << "Replay cancelled or file failed to load.";
             }
         });
         connect(runtimeToolBar, &RuntimeToolBar::speedChanged, simulation, &Simulation::setSpeed);
+        connect(runtimeToolBar, &RuntimeToolBar::timeChanged, simulation, &Simulation::timeJump);
         connect(runtimeToolBar, &RuntimeToolBar::speedChanged, this, [=](int speed) {
             float moveSpeed = static_cast<float>(speed);
             for (auto& [id, comp] : simulation->physicsComponent) {
@@ -441,14 +279,12 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                     comp.dynamicModel->setMoveSpeed(moveSpeed);
                 }
             }
-            qDebug() << "Simulation speed set to:" << speed << "(moveSpeed:" << moveSpeed << ")";
+
         });
         networkToolBar->setNetworkManager(networkManager);
     } else {
         qWarning() << "Failed to connect RuntimeToolBar signals - nullptr detected";
     }
-    // connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
-    //         this, &RuntimeEditor::loadRecentProject);
     connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
             this, [=](const QString& filePath, RecentProjectsManager::EditorType type) {
                 if (type == RecentProjectsManager::RuntimeEditor) {
@@ -481,342 +317,891 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         }
     });
 
-    HierarchyConnector::instance()->connectSignals(hierarchy, treeView, tacticalDisplay, inspector);
+    HierarchyConnector::instance()->connectSignals(hierarchy,library, treeView, tacticalDisplay, inspector);
     HierarchyConnector::instance()->connectLibrarySignals(library, libTreeView);
     HierarchyConnector::instance()->initializeDummyData(hierarchy);
     HierarchyConnector::instance()->initializeLibraryData(library);
     HierarchyConnector::instance()->setupFileOperations(this, hierarchy, tacticalDisplay);
-
     if (tacticalDisplay && tacticalDisplay->canvas) {
         connect(tacticalDisplay->canvas, &CanvasWidget::selectEntitybyCursor,
                 treeView, &HierarchyTree::selectEntityById);
     }
+    connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
+        QString type;
+        if (data["type"].type() == QVariant::Map) {
+            QVariantMap typeData = data["type"].toMap();
+            if (typeData.contains("type") && typeData["type"].toString() == "option") {
+                type = "profile";
+            } else {
+                qWarning() << "Invalid nested type structure in itemSelected:" << data["type"];
+                return;
+            }
+        } else {
+            type = data["type"].toString();
+        }
+        // ===== FORMATION MULTI-SELECT LOGIC =====
+        if (type == "entity") {
+            QString entityID = data["ID"].toString();
 
-        connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
+            // Check if this entity is a Formation
+            if (hierarchy && hierarchy->Entities &&
+                hierarchy->Entities->find(entityID.toStdString()) != hierarchy->Entities->end()) {
+
+                Entity* entity = (*hierarchy->Entities)[entityID.toStdString()];
+                Formation* formation = dynamic_cast<Formation*>(entity);
+
+                if (formation) {
+                    // Collect all formation-related entity IDs
+                    QList<QString> formationEntityIds;
+                    formationEntityIds.append(entityID); // Formation itself
+
+                    // Add mothership
+                    if (formation->mothership && formation->mothership->entity) {
+                        QString mothershipId = QString::fromStdString(formation->mothership->entity->ID);
+                        if (mothershipId != "dummy" && !mothershipId.isEmpty()) {
+                            formationEntityIds.append(mothershipId);
+                        }
+                    }
+
+                    // Add all allies
+                    if (formation->formationPositions) {
+                        for (const auto& pair : *formation->formationPositions) {
+                            FormationPosition* pos = pair.second;
+                            if (pos && pos->entity) {
+                                QString allyId = QString::fromStdString(pos->entity->ID);
+                                if (allyId != "dummy" && !allyId.isEmpty()) {
+                                    formationEntityIds.append(allyId);
+                                }
+                            }
+                        }
+                    }
+
+                    Console::log("Formation selected with " +
+                                 std::to_string(formationEntityIds.size()) + " entities");
+
+                    // Use HierarchyTree's method to select all
+                    treeView->selectMultipleEntitiesInTree(formationEntityIds);
+
+                    // Also select in tactical display
+                    if (tacticalDisplay && tacticalDisplay->canvas) {
+                        tacticalDisplay->canvas->selectMultipleEntities(formationEntityIds);
+                    }
+
+                    return; // Don't proceed with single selection
+                }
+            }
+        }
+        QString name = data["name"].toString();
+        QString ID = data["parentId"].toString();
+        QString displayName = capitalizeFirstLetter(name);
+        for (Inspector* inspector : inspectors) {
+            if (type == "subcomponent") {
+                QJsonObject componentData = (*hierarchy->Components)[data["parentId"].toString().toStdString()]->getsubComponentData(data["ID"].toString().toStdString());
+
+                if (!componentData.isEmpty()) {
+                    inspector->init(ID, displayName + "_sub", componentData);
+                }
+            }else if (type == "component") {
+                QJsonObject componentData = hierarchy->getComponentData(ID, name);
+                if (!componentData.isEmpty()) {
+                    inspector->init(ID, displayName, componentData);
+                }
+            }  else if (type == "profile") {
+                inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
+            } else if (type == "folder") {
+                inspector->init(ID, displayName + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
+            } else if (type == "entity") {
+                inspector->init(data["ID"].toString(), displayName + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
+                if (radarDisplayUI) {
+                    radarDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                }
+                if (iffDisplayUI) {
+                    iffDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                }
+                if (radioDisplayUI) {
+                    radioDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                }
+                if (csmDisplayUI) {
+                    csmDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                }
+                if (esmDisplayUI) {
+                    esmDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                }
+            } else {
+                inspector->init(ID, displayName, QJsonObject());
+            }
+        }
+        if (!inspectorDock->isVisible()) {
+            // Hide other right panel docks
+            if (libraryDock && libraryDock->isVisible()) {
+                libraryDock->hide();
+            }
+            if (textScriptDock && textScriptDock->isVisible()) {
+                textScriptDock->hide();
+            }
+
+            // Show inspector
+            addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
+            splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
+            inspectorDock->show();
+            inspectorDock->raise();
+        }
+
+        if (tacticalDisplay && type == "entity") {
+            tacticalDisplay->selectedMesh(data["ID"].toString());
+        } else {
+        }
+    });
+    connect(treeView, &HierarchyTree::itemsSelected, this, [=](QList<QVariantMap> dataList) {
+        QList<QString> entityIds;
+
+        for (const QVariantMap& data : dataList) {
             QString type;
             if (data["type"].type() == QVariant::Map) {
                 QVariantMap typeData = data["type"].toMap();
                 if (typeData.contains("type") && typeData["type"].toString() == "option") {
                     type = "profile";
-                } else {
-                    qWarning() << "Invalid nested type structure in itemSelected:" << data["type"];
-                    return;
                 }
             } else {
                 type = data["type"].toString();
             }
-            QString name = data["name"].toString();
-            QString ID = data["parentId"].toString();
-             QString displayName = capitalizeFirstLetter(name);
-            for (Inspector* inspector : inspectors) {
-                 if (type == "subcomponent") {
-                     QJsonObject componentData = (*hierarchy->Components)[data["parentId"].toString().toStdString()]->getsubComponentData(data["ID"].toString().toStdString());
-
-                     if (!componentData.isEmpty()) {
-                         inspector->init(ID, displayName + "_sub", componentData);
-                     }
-                     //inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
-                 }else if (type == "component") {
-                     QJsonObject componentData = hierarchy->getComponentData(ID, name);
-                     if (!componentData.isEmpty()) {
-                         inspector->init(ID, displayName, componentData);
-                     }
-                     // inspector->init(ID, displayName + "", (*hierarchy->Components)[data["ID"].toString().toStdString()]->toJson());
-                 }  else if (type == "profile") {
-                    inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
-                } else if (type == "folder") {
-                    inspector->init(ID, displayName + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
-                } else if (type == "entity") {
-                    inspector->init(data["ID"].toString(), displayName + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
-                    if (radarDisplayUI) {
-                        radarDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                    }
-                    // if (ewDisplayUI) {
-                    //     ewDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                    // }
-                    if (iffDisplayUI) {
-                        iffDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                    }
-                    if (radioDisplayUI) {
-                        radioDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                    }
-                    if (csmDisplayUI) {
-                        csmDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                    }
-                    if (esmDisplayUI) {
-                        esmDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                    }
-                } else {
-                    inspector->init(ID, displayName, QJsonObject());
-                }
+            if (type == "entity") {
+                entityIds.append(data["ID"].toString());
             }
-            if (!inspectorDock->isVisible()) {
-                addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
-                splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
-                inspectorDock->show();
-                qDebug() << "Inspector dock shown on item selection, geometry:" << inspectorDock->geometry();
-            }
-            // if (tacticalDisplay && type == "entity") {
-            //     tacticalDisplay->selectedMesh(data["ID"].toString());
-            //     Console::log("Entity selected: " + data["ID"].toString().toStdString());
-            // }
-            if (tacticalDisplay && type == "entity") {
-                tacticalDisplay->selectedMesh(data["ID"].toString());
-                // standardToolBar->getAddTrajectoryAction()->setEnabled(true);
-                Console::log("Entity selected: " + data["ID"].toString().toStdString());
+        }
+        if (tacticalDisplay && tacticalDisplay->canvas) {
+            if (entityIds.isEmpty()) {
+                tacticalDisplay->canvas->clearSelection();
             } else {
-                // standardToolBar->getAddTrajectoryAction()->setEnabled(false);
-                Console::log("Non-entity selected, addTrajectoryAction disabled");
+                tacticalDisplay->canvas->selectMultipleEntities(entityIds);
             }
-        });
-
-        connect(libTreeView, &HierarchyTree::itemSelected, this, &RuntimeEditor::onLibraryItemSelected);
-        connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
-        connect(inspector, &Inspector::addTabRequested, this, &RuntimeEditor::addInspectorTab);
-
-        inspectorDocks.append(inspectorDock);
-        inspectors.append(inspector);
-        inspector->setHierarchy(hierarchy);
-
-        setupToolBarConnections();
-    }
-
-void RuntimeEditor::setupEnhancedDockWidgets()
-{
-    // Full dock features for complete movability - JUST LIKE SCENARIO EDITOR
-    QDockWidget::DockWidgetFeatures fullDockFeatures =
-        QDockWidget::DockWidgetClosable |
-        QDockWidget::DockWidgetMovable |
-        QDockWidget::DockWidgetFloatable;
-
-    // Setup hierarchy dock with enhanced features
-    hierarchyDock = new QDockWidget("Editor", this);
-    hierarchyDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
-                                   Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
-    hierarchyDock->setFeatures(fullDockFeatures);
-    treeView = new HierarchyTree(this);
-    hierarchyDock->setWidget(treeView);
-    hierarchyDock->setMinimumWidth(150);
-    hierarchyDock->setTitleBarWidget(nullptr); // Use default title bar
-    addDockWidget(Qt::LeftDockWidgetArea, hierarchyDock);
-
-    // Setup tactical display dock with enhanced features
-    tacticalDisplayDock = new QDockWidget("Tactical Display", this);
-    tacticalDisplayDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
-                                         Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
-    tacticalDisplayDock->setFeatures(fullDockFeatures);
-    tacticalDisplay = new TacticalDisplay(this);
-    tacticalDisplayDock->setWidget(tacticalDisplay);
-    tacticalDisplayDock->setMinimumWidth(300);
-    tacticalDisplayDock->setTitleBarWidget(nullptr);
-    addDockWidget(Qt::RightDockWidgetArea, tacticalDisplayDock);
-
-    // Setup console dock with enhanced features - SIRF CONSOLE (NO TIMING GRAPH)
-    consoleDock = new QDockWidget("Console", this);
-    consoleDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
-                                 Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
-    consoleDock->setFeatures(fullDockFeatures);
-    consoleView = new ConsoleView(this);
-
-    // SIRF CONSOLE VIEW SET KARO - NO TABS, NO TIMING GRAPH
-    consoleDock->setWidget(consoleView);
-    consoleDock->setMinimumHeight(100);
-    consoleDock->setTitleBarWidget(nullptr);
-    addDockWidget(Qt::BottomDockWidgetArea, consoleDock);
-    consoleDock->hide();
-
-    // Setup sidebar dock with enhanced features
-    sidebarDock = new QDockWidget("Sidebar", this);
-    sidebarDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
-                                 Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
-    sidebarDock->setFeatures(fullDockFeatures);
-    SidebarWidget *sidebar = new SidebarWidget(this);
-    sidebarDock->setWidget(sidebar);
-    sidebarDock->setMinimumWidth(80);
-    sidebarDock->setMinimumHeight(40);
-    sidebarDock->setTitleBarWidget(nullptr);
-    addDockWidget(Qt::RightDockWidgetArea, sidebarDock);
-
-    // Setup inspector dock with enhanced features
-    inspectorDock = new QDockWidget("Inspector", this);
-    inspectorDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
-                                   Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
-    inspectorDock->setFeatures(fullDockFeatures);
-    inspector = new Inspector(this);
-    inspectorDock->setWidget(inspector);
-    inspectorDock->setMinimumWidth(200);
-    inspectorDock->setTitleBarWidget(nullptr);
-    addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
-
-    // Setup library dock with enhanced features
-    libraryDock = new QDockWidget("Library", this);
-    libraryDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
-                                 Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
-    libraryDock->setFeatures(fullDockFeatures);
-    libTreeView = new HierarchyTree(this);
-    libraryDock->setWidget(libTreeView);
-    libraryDock->setMinimumWidth(200);
-    libraryDock->setTitleBarWidget(nullptr);
-    addDockWidget(Qt::RightDockWidgetArea, libraryDock);
-    libraryDock->hide();
-
-    // Setup text script dock with enhanced features
-    textScriptDock = new QDockWidget("Test Script", this);
-    textScriptDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
-                                    Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
-    textScriptDock->setFeatures(fullDockFeatures);
-    textScriptView = new TextScriptWidget(this);
-    textScriptDock->setWidget(textScriptView);
-    textScriptDock->setMinimumWidth(200);
-    textScriptDock->setTitleBarWidget(nullptr);
-    addDockWidget(Qt::RightDockWidgetArea, textScriptDock);
-    textScriptDock->hide();
-
-    // Setup display dock with enhanced features
-    displayDock = new QDockWidget("Sensors", this);
-    displayDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
-                                 Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
-    displayDock->setFeatures(fullDockFeatures);
-    displayDock->setMinimumWidth(200);
-    displayDock->setTitleBarWidget(nullptr);
-
-    // Setup display tabs will be done in constructor
-    displayDock->hide();
-
-    // Setup logger dock with enhanced features
-    loggerDock = new QDockWidget("Logger", this);
-    loggerDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
-                                Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
-    loggerDock->setFeatures(fullDockFeatures);
-    loggerDialog = new LoggerDialog(this);
-    loggerDock->setWidget(loggerDialog);
-    loggerDock->setMinimumWidth(200);
-    loggerDock->setTitleBarWidget(nullptr);
-    loggerDock->hide();
-
-    // Connect dock visibility signals
-    connect(hierarchyDock, &QDockWidget::visibilityChanged, this, &RuntimeEditor::onDockVisibilityChanged);
-    connect(tacticalDisplayDock, &QDockWidget::visibilityChanged, this, &RuntimeEditor::onDockVisibilityChanged);
-    connect(consoleDock, &QDockWidget::visibilityChanged, this, &RuntimeEditor::onDockVisibilityChanged);
-    connect(inspectorDock, &QDockWidget::visibilityChanged, this, &RuntimeEditor::onDockVisibilityChanged);
-    connect(libraryDock, &QDockWidget::visibilityChanged, this, &RuntimeEditor::onDockVisibilityChanged);
-    connect(sidebarDock, &QDockWidget::visibilityChanged, this, &RuntimeEditor::onDockVisibilityChanged);
-    connect(textScriptDock, &QDockWidget::visibilityChanged, this, &RuntimeEditor::onDockVisibilityChanged);
-    connect(displayDock, &QDockWidget::visibilityChanged, this, &RuntimeEditor::onDockVisibilityChanged);
-    connect(loggerDock, &QDockWidget::visibilityChanged, this, &RuntimeEditor::onDockVisibilityChanged);
-
-    // Set tabified docking to allow tabbed interface when docks are stacked
-    setTabPosition(Qt::AllDockWidgetAreas, QTabWidget::North);
-
-    // Enable docking features
-    setDockOptions(QMainWindow::AllowNestedDocks |
-                   QMainWindow::AllowTabbedDocks |
-                   QMainWindow::GroupedDragging |
-                   QMainWindow::AnimatedDocks);
-
-
-    setCentralWidget(nullptr);
-
-
-    splitDockWidget(hierarchyDock, tacticalDisplayDock, Qt::Horizontal);
-    splitDockWidget(tacticalDisplayDock, sidebarDock, Qt::Horizontal);
-    splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
-    splitDockWidget(tacticalDisplayDock, consoleDock, Qt::Vertical);
-
-
-    QTimer::singleShot(100, this, [=]() {
-        int totalWidth = width();
-        int totalHeight = height();
-
-
-        int hierarchyWidth = static_cast<int>(totalWidth * 0.10);   // 10% for hierarchy
-        int tacticalWidth = static_cast<int>(totalWidth * 0.78);    // 78% for tactical display
-        int sidebarWidth = static_cast<int>(totalWidth * 0.05);     // 5% for sidebar
-        int inspectorWidth = static_cast<int>(totalWidth * 0.07);   // 7% for inspector
-        int consoleHeight = static_cast<int>(totalHeight * 0.15);   // 15% for console
-
-        // Resize docks
-        resizeDocks({hierarchyDock}, {hierarchyWidth}, Qt::Horizontal);
-        resizeDocks({tacticalDisplayDock}, {tacticalWidth}, Qt::Horizontal);
-        resizeDocks({sidebarDock}, {sidebarWidth}, Qt::Horizontal);
-        resizeDocks({inspectorDock}, {inspectorWidth}, Qt::Horizontal);
-        resizeDocks({consoleDock}, {consoleHeight}, Qt::Vertical);
-    });
-
-
-    connect(sidebar, &SidebarWidget::viewSelected, this, [this](const QString &viewName) {
-        qDebug() << "Sidebar viewSelected emitted, viewName:" << viewName;
-
-        if (viewName == "Inspector") {
-            qDebug() << "Showing Inspector dock";
-            libraryDock->hide();
-            textScriptDock->hide();
-            displayDock->hide();
-            loggerDock->hide();
-            if (!inspectorDock->isVisible()) {
-                addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
-                splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
-                inspectorDock->show();
-                qDebug() << "Inspector dock geometry:" << inspectorDock->geometry();
-            }
-        } else if (viewName == "Library") {
-            qDebug() << "Showing Library dock";
-            inspectorDock->hide();
-            textScriptDock->hide();
-            displayDock->hide();
-            loggerDock->hide();
-            if (!libraryDock->isVisible()) {
-                addDockWidget(Qt::RightDockWidgetArea, libraryDock);
-                splitDockWidget(sidebarDock, libraryDock, Qt::Vertical);
-                libraryDock->show();
-                qDebug() << "Library dock geometry:" << libraryDock->geometry();
-            }
-        } else if (viewName == "TextScript") {
-            qDebug() << "Showing TextScript dock";
-            inspectorDock->hide();
-            libraryDock->hide();
-            displayDock->hide();
-            loggerDock->hide();
-            if (!textScriptDock->isVisible()) {
-                addDockWidget(Qt::RightDockWidgetArea, textScriptDock);
-                splitDockWidget(sidebarDock, textScriptDock, Qt::Vertical);
-                textScriptDock->show();
-                qDebug() << "TextScript dock geometry:" << textScriptDock->geometry();
-            }
-        } else if (viewName == "Sensors") {
-            qDebug() << "Showing Sensors dock";
-            inspectorDock->hide();
-            libraryDock->hide();
-            textScriptDock->hide();
-            loggerDock->hide();
-            if (!displayDock->isVisible()) {
-                addDockWidget(Qt::RightDockWidgetArea, displayDock);
-                splitDockWidget(sidebarDock, displayDock, Qt::Vertical);
-                displayDock->show();
-                qDebug() << "Display dock geometry:" << displayDock->geometry();
-            }
-        } else if (viewName == "Logger") {
-            qDebug() << "Showing Logger dock";
-            inspectorDock->hide();
-            libraryDock->hide();
-            textScriptDock->hide();
-            displayDock->hide();
-            if (!loggerDock->isVisible()) {
-                addDockWidget(Qt::RightDockWidgetArea, loggerDock);
-                splitDockWidget(sidebarDock, loggerDock, Qt::Vertical);
-                loggerDock->show();
-                qDebug() << "Logger dock geometry:" << loggerDock->geometry();
-            }
-        } else if (viewName == "Console") {
-            qDebug() << "Toggling Console dock, current visibility:" << consoleDock->isVisible();
-            consoleDock->setVisible(!consoleDock->isVisible());
-            qDebug() << "Console dock geometry:" << consoleDock->geometry();
-        } else {
-            qDebug() << "Unknown viewName received:" << viewName;
         }
     });
-}
+    connect(libTreeView, &HierarchyTree::itemSelected, this, &RuntimeEditor::onLibraryItemSelected);
+    connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
+    connect(inspector, &Inspector::addTabRequested, this, &RuntimeEditor::addInspectorTab);
+    inspectorDocks.append(inspectorDock);
+    inspectors.append(inspector);
+    inspector->setHierarchy(hierarchy);
+    setupToolBarConnections();
+    connect(hierarchy, &Hierarchy::profileAdded, this, &RuntimeEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::folderAdded, this, &RuntimeEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::entityAdded, this, &RuntimeEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::componentAdded, this, &RuntimeEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::subComponentAdded, this, &RuntimeEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::profileRemoved, this, &RuntimeEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::folderRemoved, this, &RuntimeEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::entityRemoved, this, &RuntimeEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::componentRemoved, this, &RuntimeEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::subComponentRemoved, this, &RuntimeEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::profileRenamed, this, &RuntimeEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::folderRenamed, this, &RuntimeEditor::markUnsavedChanges);
+    connect(hierarchy, &Hierarchy::entityRenamed, this, &RuntimeEditor::markUnsavedChanges);
 
+
+    //==============================================scriptengine(Raj &Amjad)========================================
+    connect(scriptengine, &ScriptEngine::requestSensorScreenshot, this, [=](const QString &filePath) mutable {
+        if (!displayTabs) {
+            qWarning() << "displayTabs not available for screenshot";
+            return;
+        }
+        if (!displayDock || !displayDock->isVisible()) {
+            qWarning() << "Sensor display dock is not visible";
+            return;
+        }
+        QWidget *currentDisplay = displayTabs->currentWidget();
+        if (!currentDisplay || !currentDisplay->isVisible()) {
+            qWarning() << "No sensor display is currently visible";
+            return;
+        }
+
+        // ✅ CREATE PROPER DIRECTORY PATHS
+        QString sensorDir = QDir::tempPath() + "/sensor_screenshots";
+        QString canvasDir = QDir::tempPath() + "/gis_reports";
+        QDir().mkpath(sensorDir);
+        QDir().mkpath(canvasDir);
+
+        QString tabName = displayTabs->tabText(displayTabs->currentIndex());
+        QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz");
+
+
+        QString sensorPath = sensorDir + "/" + timestamp + "_" + tabName + "_" + QString::number(radarScreenshotCount) + ".png";
+        QPixmap sensorScreenshot = currentDisplay->grab();
+
+        if (sensorScreenshot.save(sensorPath)) {
+            radarScreenshotCount++;
+            qDebug() << "✅ Captured" << tabName << "display screenshot #" << radarScreenshotCount << ":" << sensorPath;
+
+            // LOG SENSOR SCREENSHOT TO PDF
+            scriptengine->logEvent(
+                ReportCategory::SIMULATION,
+                "Sensor Display Captured",
+                tabName + " Display",
+                "",
+                "Display Screenshot #" + QString::number(radarScreenshotCount),
+                "Screenshot Saved",
+                "SUCCESS",
+                "",
+                sensorPath
+                );
+        }
+        // ✅ 2. CAPTURE CANVAS SCREENSHOT (ONLY ONCE, WHEN CONDITION REACHED)
+        // Only capture if not already taken AND filePath indicates condition reached
+        if (!canvasScreenshotTaken && filePath.contains("detection", Qt::CaseInsensitive)) {
+            if (tacticalDisplay && tacticalDisplay->canvas) {
+                QWidget* canvasContainer = tacticalDisplay->canvas->parentWidget();
+                if (canvasContainer) {
+                    // Force render
+                    tacticalDisplay->canvas->update();
+                    if (tacticalDisplay->canvas->gislib) {
+                        tacticalDisplay->canvas->gislib->update();
+                    }
+                    QCoreApplication::processEvents();
+                    QThread::msleep(150);
+                    QCoreApplication::processEvents();
+                    // Capture canvas + map
+                    QPixmap canvasScreenshot = canvasContainer->grab();
+                    QString canvasPath = canvasDir + "/" + timestamp + "_tactical_canvas_CONDITION_REACHED.png";
+                    if (canvasScreenshot.save(canvasPath)) {
+                        canvasScreenshotTaken = true;
+                        // LOG CANVAS SCREENSHOT TO PDF
+                        scriptengine->logEvent(
+                            ReportCategory::SIMULATION,
+                            "Tactical Canvas Captured",
+                            "Tactical Display",
+                            "",
+                            "Canvas Screenshot (Condition Reached)",
+                            "Screenshot Saved",
+                            "SUCCESS",
+                            "85% Detection Threshold Reached",
+                            canvasPath
+                            );
+                    }
+                }
+            }
+        }
+    });
+
+    //=================================================================================================
+    //===================Logger (Himanshu)==========================================
+    connect(runtimeToolBar, &RuntimeToolBar::loggerTriggered, this, &RuntimeEditor::toggleLoggerDisplay);
+    connect(loggerDock, &QDockWidget::visibilityChanged, this, [=](bool visible) {
+        if (!visible) {
+            SidebarWidget *sidebar = sidebarDock->widget()->findChild<SidebarWidget*>();
+            if (sidebar) {
+                sidebar->setActiveButton("");
+            }
+            QAction *loggerAction = runtimeToolBar->findChild<QAction*>("loggerAction");
+            if (loggerAction) {
+                loggerAction->setChecked(false);
+            }
+        }
+    });
+    // Logger connections
+    //Logger mode changing Command
+    connect(loggerDialog, &LoggerDialog::loggerModeSend,
+            runtime->recorder, &Recorder::loggerModeCheck);
+    //Recorder Information Connection Start
+    //Logger Update Recorder Information Recorder =>
+    //M
+    connect(runtime->recorder, &Recorder::recorderInfoSendOnce,
+            loggerDialog, &LoggerDialog::recorderInfoReceiveOnce);
+    connect(runtime->recorder, &Recorder::recorderInfoSend,
+            loggerDialog, &LoggerDialog::recorderInfoReceive);
+    // connect(runtime->recorder, &Recorder::recorderInfoSendOnce,
+    //         loggerDialog, &LoggerDialog::recorderInfoReceiveOnce);
+    //2nd one for Whole without Date and
+    connect(runtime->recorder, &Recorder::recorderInfoSendUsual,
+            loggerDialog, &LoggerDialog::recorderInfoReceiveUsual);
+    //3rd one for Only for
+    connect(runtime->recorder, &Recorder::recorderInfoSendDuration,
+            loggerDialog, &LoggerDialog::recorderInfoReceiveDuration);
+    connect(loggerDialog, &LoggerDialog::recordingStart, this, [this]() {
+        // set/reset timing state
+        pausedTimeMs = 0;
+        recordingStartTime = QDateTime::currentDateTime();
+        // Start recording engine
+        runtime->recorder->getRecording()->start();
+        // Create UI timer once
+        if (!recordingTimer) {
+            recordingTimer = new QTimer(this);
+            connect(recordingTimer, &QTimer::timeout, this, [this]() {
+                if (recordingStartTime.isValid()) {
+                    qint64 durationMs = pausedTimeMs + recordingStartTime.msecsTo(QDateTime::currentDateTime());
+                    loggerDialog->updateRecordingDuration(durationMs);
+                }
+            });
+        }
+        // Start or restart the timer
+        if (!recordingTimer->isActive())
+            recordingTimer->start(100);
+    });
+    // PAUSE
+    connect(loggerDialog, &LoggerDialog::recordingPause, this, [this]() {
+        // Pause engine
+        runtime->recorder->getRecording()->pause();
+        // Stop UI timer
+        if (recordingTimer && recordingTimer->isActive())
+            recordingTimer->stop();
+        // accumulate elapsed time since last start/resume
+        if (recordingStartTime.isValid()) {
+            pausedTimeMs += recordingStartTime.msecsTo(QDateTime::currentDateTime());
+        }
+        recordingStartTime = QDateTime();
+        // show paused duration
+        loggerDialog->updateRecordingDuration(pausedTimeMs);
+    });
+
+    // RESUME
+    connect(loggerDialog, &LoggerDialog::recordingResume, this, [this]() {
+        // Resume engine
+        runtime->recorder->getRecording()->resume();
+
+        // reset start reference to now; pausedTimeMs already contains past time
+        recordingStartTime = QDateTime::currentDateTime();
+
+        // restart UI timer
+        if (recordingTimer && !recordingTimer->isActive())
+            recordingTimer->start(100);
+    });
+
+    // STOP
+    connect(loggerDialog, &LoggerDialog::recordingStop, this, [this]() {
+        // Stop engine
+        runtime->recorder->getRecording()->stop();
+
+        // stop UI timer
+        if (recordingTimer && recordingTimer->isActive())
+            recordingTimer->stop();
+
+        // reset state
+        loggerDialog->updateRecordingDuration(0);
+        loggerDialog->getTimelineWidget()->clearBookmarks();
+        pausedTimeMs = 0;
+        recordingStartTime = QDateTime();
+    });
+    connect(loggerDialog, &LoggerDialog::bookmarkAdded, this, [this](const QString &bookmarkNote) {
+        if (!runtime || !runtime->recorder->getRecording()) {
+            qWarning() << "Runtime or Recorder not available — cannot save bookmark.";
+            return;
+        }
+
+        // compute total time = accumulated paused time + current running segment
+        qint64 currentSegmentMs = 0;
+        if (recordingStartTime.isValid()) {
+            currentSegmentMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
+        }
+        qint64 timestampMs = pausedTimeMs + currentSegmentMs;
+
+        runtime->recorder->getRecording()->recordingBookmark(bookmarkNote, timestampMs);
+        loggerDialog->addBookmarkWithTimestamp(bookmarkNote, timestampMs);
+    });
+    //Recorder: Recording End
+    //Recorder: Replay Start
+    connect(loggerDialog, &LoggerDialog::replayStart,
+            runtime->recorder->getReplay(), &Replay::start);
+    connect(loggerDialog, &LoggerDialog::replayPause,
+            runtime->recorder->getReplay(), &Replay::pause);
+    connect(loggerDialog, &LoggerDialog::replayResume,
+            runtime->recorder->getReplay(), &Replay::resume);
+    connect(loggerDialog, &LoggerDialog::replayStop,
+            runtime->recorder->getReplay(), &Replay::stop);
+
+    // connect(loggerDialog, &LoggerDialog::replayFileLoaded,
+    //         runtime->recorder->getReplay(), &Replay::fileLoaded);
+    connect(loggerDialog, &LoggerDialog::loadRecording, this, [=](const QString &filePath) {
+        if (runtime && runtime->recorder) {
+            if (runtime->recorder->getReplay()->replayLoaded(filePath)) {
+            }
+        }
+    });
+
+
+    connect(runtime->recorder->getReplay(), &Replay::replayBookmark,
+            loggerDialog, &LoggerDialog::onReplayBookmarkLoaded);
+
+    connect(runtime->recorder->getReplay(), &Replay::setReplayDuration,
+            loggerDialog, &LoggerDialog::setTimelineDuration);
+
+    connect(loggerDialog, &LoggerDialog::replayFileUnloaded,
+            runtime->recorder->getReplay(), &Replay::fileUnloaded);
+
+    connect(runtime->recorder->getReplay(), &Replay::replayFrameLoaded,
+            loggerDialog, &LoggerDialog::updateReplayProgress);
+    connect(loggerDialog, &LoggerDialog::nextFrame, this, [=]() {
+        if (runtime && runtime->recorder) {
+            runtime->recorder->getReplay()->goToNextFrame();
+        }
+    });
+    connect(loggerDialog, &LoggerDialog::previousFrame, this, [=]() {
+        if (runtime && runtime->recorder) {
+            runtime->recorder->getReplay()->goToPreviousFrame();
+        }
+    });
+    connect(loggerDialog, &LoggerDialog::pressPlayAgain, this, [=]() {
+        if (runtime && runtime->recorder) {
+            runtime->recorder->getReplay()->playAgain();
+        }
+    });
+    connect(loggerDialog, &LoggerDialog::bookmarkClicked,this, [=](const QString &note, qint64 timestampMs) {
+        runtime->recorder->getReplay()->bookmarkReplay(note, timestampMs);
+    });
+    //Recorder: Replay End
+    //Logger Recoding command
+    connect(loggerDialog, &LoggerDialog::startRecording, this, [=]() {
+        recordingStartTime = QDateTime::currentDateTime();
+        runtime->recorder->startRecording();
+        recordingTimer = new QTimer(this);
+        connect(recordingTimer, &QTimer::timeout, this, [=]() {
+            if (recordingStartTime.isValid()) {
+                qint64 durationMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
+                loggerDialog->updateRecordingDuration(durationMs);
+            }
+        });
+        recordingTimer->start(100); // Update every 100ms
+    });
+    //Start Himan
+    // Logger Pause/Resume connection
+    connect(loggerDialog, &LoggerDialog::pauseRecording, this, [=]() {
+        runtime->recorder->togglePause();
+    });
+    //End Himan
+    connect(loggerDialog, &LoggerDialog::stopRecording, this, [=]() {
+        runtime->recorder->stopRecording();
+        if (recordingTimer) {
+            recordingTimer->stop();
+            delete recordingTimer;
+            recordingTimer = nullptr;
+        }
+        recordingStartTime = QDateTime();
+        loggerDialog->updateRecordingDuration(0);
+    });
+
+    connect(loggerDialog, &LoggerDialog::saveRecording, this, [=](const QString &filePath) {
+        if (runtime && runtime->recorder) {
+            bool saved = runtime->recorder->saveToFile(filePath);
+            qWarning() << "Failed to save recording to:" << filePath;
+        } else {
+            qWarning() << "Recorder instance not available!";
+        }
+    });
+
+    connect(loggerDialog, &LoggerDialog::startReplay, this, [=]() {
+        if (runtime && runtime->recorder) {
+            runtime->recorder->startReplay();
+        }
+    });
+
+
+    connect(loggerDialog, &LoggerDialog::replayRecording, this, [=](const QString &filePath) {
+        simulation->stop();
+        tacticalDisplay->canvas->Render(0.016f);
+        if (!filePath.isEmpty() && runtime->recorder->loadReplay(filePath)) {
+            QVector<QJsonObject> frames = runtime->recorder->getRecordedFrames();
+            if (!frames.isEmpty()) {
+                simulation->replay(frames);
+            } else {
+                qWarning() << "Replay file loaded but contains no frames.";
+            }
+        } else {
+            qWarning() << "Replay cancelled or file failed to load.";
+        }
+    });
+    //=================================================================================================
+
+    // ===== AUTO-CENTER MAP ON ENTITY SELECTION (Waris)================================================
+    // When user selects an entity from hierarchy tree, automatically center map on it
+    connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
+        // Determine the type of item selected
+        QString type;
+        if (data["type"].type() == QVariant::Map) {
+            QVariantMap typeData = data["type"].toMap();
+            if (typeData.contains("type") && typeData["type"].toString() == "option") {
+                type = "profile";
+            }
+        } else {
+            type = data["type"].toString();
+        }
+
+        // Only auto-center for entity selections (not folders, profiles, or components)
+        if (type == "entity" && tacticalDisplay && tacticalDisplay->canvas) {
+            QString entityId = data["ID"].toString();
+
+            // Auto-center the map on the selected entity
+            // Using adjustZoom=false to preserve user's current zoom level
+            tacticalDisplay->canvas->centerOnEntity(entityId, false);
+        }
+    });
+     //=================================================================================================
+
+}
+void RuntimeEditor::setupEnhancedDockWidgets()
+{
+    tacticalDisplay = new TacticalDisplay(this);
+    setCentralWidget(tacticalDisplay);
+
+    // Set main window background
+    this->setStyleSheet("QMainWindow { background-color: #0F2636; }");
+
+    // --- 1. Helper Lambda with Side Logic ---
+    auto setupOverlay = [this](CustomResizableOverlayDock* &dock, QWidget* content, const QString &title, bool isLeftPanel) {
+        dock = new CustomResizableOverlayDock(title, this);
+        dock->setWidget(content);
+        dock->setFloating(true);
+        dock->setParent(this);
+        dock->setWindowFlags(Qt::SubWindow | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
+        dock->setMinimumWidth(280);
+        dock->setMinimumHeight(300);
+
+        QString dockStyleSheet = "CustomResizableOverlayDock { "
+                                 "background-color: #0F2636; "
+                                 "color: white; ";
+
+        if (isLeftPanel) {
+            dock->handlePos = CustomResizableOverlayDock::Right;
+            dockStyleSheet += "border-right: 4px solid #00BFFF; }";
+        } else {
+            dock->handlePos = CustomResizableOverlayDock::Left;
+            dockStyleSheet += "border-left: 4px solid #00BFFF; }";
+        }
+
+        dockStyleSheet += "CustomResizableOverlayDock::title { "
+                          "background-color: #1A3A4F; "
+                          "color: white; "
+                          "font-weight: bold; }";
+
+        dock->setStyleSheet(dockStyleSheet);
+
+        if (content) {
+            content->setStyleSheet("background-color: #0F2636; color: white;");
+        }
+    };
+
+    // --- 2. Sidebar (Top-Right) ---
+    sidebarDock = new CustomResizableOverlayDock("Sidebar", this);
+    SidebarWidget *sidebar = new SidebarWidget(this);
+    sidebar->setSensorsButtonVisible(true);  // Enable sensors button for runtime
+    sidebar->setStyleSheet("background-color: #0F2636; color: white;");
+    sidebarDock->setWidget(sidebar);
+    sidebarDock->setFloating(true);
+    sidebarDock->setParent(this);
+    sidebarDock->setWindowFlags(Qt::SubWindow | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
+    sidebarDock->setFixedHeight(50);
+    sidebarDock->setMinimumWidth(280);
+    sidebarDock->handlePos = CustomResizableOverlayDock::Left;
+    sidebarDock->setStyleSheet("CustomResizableOverlayDock { "
+                               "background-color: #0F2636; "
+                               "color: white; "
+                               "border-left: 4px solid #00BFFF; }"
+                               "CustomResizableOverlayDock::title { "
+                               "background-color: #1A3A4F; "
+                               "color: white; "
+                               "font-weight: bold; }");
+
+    // --- 3. Right Side Panels (isLeftPanel = false) ---
+    inspector = new Inspector(this);
+    if (hierarchy) inspector->setHierarchy(hierarchy);
+    inspector->setStyleSheet("background-color: #0F2636; color: white;");
+    setupOverlay(inspectorDock, inspector, "Inspector", false);
+
+    libTreeView = new HierarchyTree(this);
+    libTreeView->islib = true;
+    libTreeView->setStyleSheet("background-color: #0F2636; color: white;");
+    setupOverlay(libraryDock, libTreeView, "Library", false);
+
+    textScriptView = new TextScriptWidget(this);
+    textScriptView->setStyleSheet("background-color: #0F2636; color: white;");
+    setupOverlay(textScriptDock, textScriptView, "TestScript", false);
+
+    // --- 4. Display (Sensors) Panel ---
+    displayDock = new CustomResizableOverlayDock("Sensors", this);
+    displayTabs = new QTabWidget(this);
+    displayTabs->setStyleSheet("QTabWidget::pane { background-color: #0F2636; }"
+                               "QTabBar::tab { background-color: #1A3A4F; color: white; padding: 8px; }"
+                               "QTabBar::tab:selected { background-color: #00BFFF; }");
+
+    // Create sensor displays
+    radarDisplayUI = new RadarDisplay(displayTabs);
+    if (hierarchy) radarDisplayUI->setHierarchy(hierarchy);
+    displayTabs->addTab(radarDisplayUI, "Radar");
+
+    iffDisplayUI = new IFFDisplay(displayTabs);
+    if (hierarchy) iffDisplayUI->setHierarchy(hierarchy);
+    displayTabs->addTab(iffDisplayUI, "IFF");
+
+    radioDisplayUI = new RADIODisplay(displayTabs);
+    if (hierarchy) radioDisplayUI->setHierarchy(hierarchy);
+    displayTabs->addTab(radioDisplayUI, "RADIO");
+
+    esmDisplayUI = new ESMDisplay(displayTabs);
+    if (hierarchy) esmDisplayUI->setHierarchy(hierarchy);
+    displayTabs->addTab(esmDisplayUI, "ESM");
+
+    csmDisplayUI = new CSMDisplay(displayTabs);
+    if (hierarchy) csmDisplayUI->setHierarchy(hierarchy);
+    displayTabs->addTab(csmDisplayUI, "CSM");
+
+    displayTabs->setCurrentIndex(0);
+    displayDock->setWidget(displayTabs);
+    displayDock->setFloating(true);
+    displayDock->setParent(this);
+    displayDock->setWindowFlags(Qt::SubWindow | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
+    displayDock->setMinimumWidth(280);
+    displayDock->setMinimumHeight(300);
+    displayDock->handlePos = CustomResizableOverlayDock::Left;
+    displayDock->setStyleSheet("CustomResizableOverlayDock { "
+                               "background-color: #0F2636; "
+                               "color: white; "
+                               "border-left: 4px solid #00BFFF; }"
+                               "CustomResizableOverlayDock::title { "
+                               "background-color: #1A3A4F; "
+                               "color: white; "
+                               "font-weight: bold; }");
+
+    // --- 5. Logger Panel ---
+    loggerDock = new CustomResizableOverlayDock("Logger", this);
+    loggerDialog = new LoggerDialog(this);
+    loggerDialog->setStyleSheet("background-color: #0F2636; color: white;");
+    loggerDock->setWidget(loggerDialog);
+    loggerDock->setFloating(true);
+    loggerDock->setParent(this);
+    loggerDock->setWindowFlags(Qt::SubWindow | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
+    loggerDock->setMinimumWidth(280);
+    loggerDock->setMinimumHeight(300);
+    loggerDock->handlePos = CustomResizableOverlayDock::Left;
+    loggerDock->setStyleSheet("CustomResizableOverlayDock { "
+                              "background-color: #0F2636; "
+                              "color: white; "
+                              "border-left: 4px solid #00BFFF; }"
+                              "CustomResizableOverlayDock::title { "
+                              "background-color: #1A3A4F; "
+                              "color: white; "
+                              "font-weight: bold; }");
+
+    // --- 6. Left Side Panel (isLeftPanel = true) ---
+    treeView = new HierarchyTree(this);
+    treeView->setStyleSheet("background-color: #0F2636; color: white;");
+    setupOverlay(hierarchyDock, treeView, "Editor", true);
+
+    // --- 7. LAYERS PANEL ---
+    layerPanel = new LayerPanel(this);
+    layerPanel->setStyleSheet("background-color: #0F2636; color: white;");
+    setupOverlay(layerDock, layerPanel, "Layers", true);
+
+    // Connect layer panel to canvas
+    if (tacticalDisplay && tacticalDisplay->canvas) {
+        tacticalDisplay->canvas->setLayerPanel(layerPanel);
+        if (tacticalDisplay->canvas->getShapesFeature()) {
+            tacticalDisplay->canvas->getShapesFeature()->setLayerPanel(layerPanel);
+            layerPanel->setCanvasWidget(tacticalDisplay->canvas);
+        }
+    }
+
+    // --- 8. CONSOLE (Bottom) ---
+    consoleDock = new CustomResizableOverlayDock("Console", this);
+    consoleView = new ConsoleView(this);
+    consoleView->setStyleSheet("background-color: #0F2636; color: white;");
+    consoleDock->setWidget(consoleView);
+    consoleDock->setFloating(true);
+    consoleDock->setParent(this);
+    // Enable title bar with close button for console
+    consoleDock->setWindowFlags(Qt::SubWindow | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
+    consoleDock->setMinimumWidth(400);
+    consoleDock->setMinimumHeight(150);
+    consoleDock->handlePos = CustomResizableOverlayDock::Left;
+    consoleDock->setStyleSheet("CustomResizableOverlayDock { "
+                               "background-color: #0F2636; "
+                               "color: white; "
+                               "border: 2px solid #00BFFF; }"
+                               "CustomResizableOverlayDock::title { "
+                               "background-color: #1A3A4F; "
+                               "color: white; "
+
+                               "font-weight: bold; }");
+    // --- POSITIONING ---
+    int winW = width() > 0 ? width() : 1100;
+    int winH = height() > 0 ? height() : 600;
+    int panelWidth = 300;
+    int rightX = winW - panelWidth - 20;
+    int leftX = 20;
+    int topY = 80;  // Start below toolbar
+
+    // LEFT SIDE
+    int hierarchyHeight = 400;
+    hierarchyDock->setGeometry(leftX, topY, panelWidth, hierarchyHeight);
+    hierarchyDock->show();
+
+    int hierarchyBottom = hierarchyDock->y() + hierarchyDock->height();
+    layerDock->setGeometry(leftX, hierarchyBottom + 5, panelWidth, 150);
+    layerDock->show();
+
+    // RIGHT SIDE
+    sidebarDock->setGeometry(rightX, topY, panelWidth, 45);
+    sidebarDock->show();
+
+    int sidebarBottom = sidebarDock->y() + sidebarDock->height();
+    int rightPanelHeight = winH - sidebarBottom - 100;
+
+    inspectorDock->setGeometry(rightX, sidebarBottom + 5, panelWidth, rightPanelHeight);
+    inspectorDock->show();
+    inspectorDock->raise();
+
+    libraryDock->setGeometry(rightX, sidebarBottom + 5, panelWidth, rightPanelHeight);
+    libraryDock->hide();
+
+    textScriptDock->setGeometry(rightX, sidebarBottom + 5, panelWidth, rightPanelHeight);
+    textScriptDock->hide();
+
+    displayDock->setGeometry(rightX, sidebarBottom + 5, panelWidth, rightPanelHeight);
+    displayDock->hide();
+
+    loggerDock->setGeometry(rightX, sidebarBottom + 5, panelWidth, rightPanelHeight);
+    loggerDock->hide();
+
+    consoleDock->setGeometry(20, winH - 190, winW - 40, 150);
+    consoleDock->hide();
+
+    // Ensure proper z-order
+    hierarchyDock->raise();
+    layerDock->raise();
+    sidebarDock->raise();
+    inspectorDock->raise();
+
+    // --- CONNECT SIDEBAR VIEW SELECTION ---
+    connect(sidebar, &SidebarWidget::viewSelected, this, [this](const QString &viewName) {
+        inspectorDock->hide();
+        libraryDock->hide();
+        textScriptDock->hide();
+        displayDock->hide();
+        loggerDock->hide();
+
+        CustomResizableOverlayDock* target = nullptr;
+        if (viewName == "Inspector") {
+            target = inspectorDock;
+        } else if (viewName == "Library") {
+            target = libraryDock;
+        } else if (viewName == "TextScript") {
+            target = textScriptDock;
+        } else if (viewName == "Sensors") {
+            target = displayDock;
+        } else if (viewName == "Logger") {
+            target = loggerDock;
+        } else if (viewName == "Console") {
+            consoleDock->setVisible(!consoleDock->isVisible());
+            if (consoleDock->isVisible()) consoleDock->raise();
+            return;
+        }
+
+        if (target) {
+            QRect sGeo = sidebarDock->geometry();
+            target->setGeometry(sGeo.x(), sGeo.y() + sGeo.height() + 5,
+                                sGeo.width(), height() - sGeo.y() - sGeo.height() - 150);
+            target->show();
+            target->raise();
+        }
+    });
+
+    // --- CONNECT MOVE/RESIZE SIGNALS ---
+    connect(sidebarDock, &CustomResizableOverlayDock::moved, this, [this](QPoint oldPos, QPoint newPos) {
+        QPoint delta = newPos - oldPos;
+        if (inspectorDock && inspectorDock->isVisible())
+            inspectorDock->move(inspectorDock->pos() + delta);
+        if (libraryDock && libraryDock->isVisible())
+            libraryDock->move(libraryDock->pos() + delta);
+        if (textScriptDock && textScriptDock->isVisible())
+            textScriptDock->move(textScriptDock->pos() + delta);
+        if (displayDock && displayDock->isVisible())
+            displayDock->move(displayDock->pos() + delta);
+        if (loggerDock && loggerDock->isVisible())
+            loggerDock->move(loggerDock->pos() + delta);
+    });
+
+    connect(sidebarDock, &CustomResizableOverlayDock::resized, this, [this](QSize oldSize, QSize newSize) {
+        int newWidth = newSize.width();
+        if (inspectorDock && inspectorDock->isVisible())
+            inspectorDock->setFixedWidth(newWidth);
+        if (libraryDock && libraryDock->isVisible())
+            libraryDock->setFixedWidth(newWidth);
+        if (textScriptDock && textScriptDock->isVisible())
+            textScriptDock->setFixedWidth(newWidth);
+        if (displayDock && displayDock->isVisible())
+            displayDock->setFixedWidth(newWidth);
+        if (loggerDock && loggerDock->isVisible())
+            loggerDock->setFixedWidth(newWidth);
+    });
+
+    // --- CONNECT LIBRARY TITLE UPDATE ---
+    connect(libTreeView, &HierarchyTree::libraryFileNameChanged,
+            this, [=](const QString& fileName) {
+                if (fileName == "Library") {
+                    libraryDock->setWindowTitle("Library");
+                } else {
+                    libraryDock->setWindowTitle("Library - " + fileName);
+                }
+            });
+
+    // --- INITIALIZE INSPECTOR LIST ---
+    inspectorDocks.append(inspectorDock);
+    inspectors.append(inspector);
+}
+void RuntimeEditor::resizeEvent(QResizeEvent *event)
+{
+    QMainWindow::resizeEvent(event);
+
+    // Reposition panels on window resize
+    int winW = width();
+    int winH = height();
+    int panelWidth = 300;
+    int rightX = winW - panelWidth - 20;
+    int leftX = 20;
+
+    // Calculate topY based on toolbar height
+    int toolbarHeight = designToolBar ? designToolBar->height() : 30;
+    int topY = toolbarHeight + 80;  // Start below toolbar with padding
+
+    // LEFT SIDE - INCREASED HIERARCHY HEIGHT to 500
+    int hierarchyHeight = 500; // Match the height from setupEnhancedDockWidgets
+    if (hierarchyDock) {
+        hierarchyDock->setGeometry(leftX, topY, panelWidth, hierarchyHeight);
+    }
+
+    if (layerDock) {
+        int hierarchyBottom = hierarchyDock ? hierarchyDock->y() + hierarchyDock->height() : topY + hierarchyHeight;
+        layerDock->setGeometry(leftX, hierarchyBottom + 5, panelWidth, 150);
+    }
+
+    // RIGHT SIDE
+    if (sidebarDock) {
+        sidebarDock->setGeometry(rightX, topY, panelWidth, 45);
+    }
+
+    int sidebarBottom = sidebarDock ? sidebarDock->y() + sidebarDock->height() : topY + 45;
+    int rightPanelHeight = winH - sidebarBottom - 100;
+
+    if (inspectorDock && inspectorDock->isVisible()) {
+        inspectorDock->setGeometry(rightX, sidebarBottom, panelWidth, rightPanelHeight);
+    }
+    if (libraryDock && libraryDock->isVisible()) {
+        libraryDock->setGeometry(rightX, sidebarBottom, panelWidth, rightPanelHeight);
+    }
+    if (textScriptDock && textScriptDock->isVisible()) {
+        textScriptDock->setGeometry(rightX, sidebarBottom, panelWidth, rightPanelHeight);
+    }
+
+    // CONSOLE
+    if (consoleDock && consoleDock->isVisible()) {
+        consoleDock->setGeometry(20, winH - 190, winW - 40, 150);
+    }
+}
+// Add this showEvent
+void RuntimeEditor::showEvent(QShowEvent *event)
+{
+    QMainWindow::showEvent(event);
+    // Force a resize event when window is shown
+    QResizeEvent *re = new QResizeEvent(size(), size());
+    resizeEvent(re);
+    delete re;
+}
 void RuntimeEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures)
 {
     // This method is replaced by setupEnhancedDockWidgets()
@@ -836,104 +1221,102 @@ void RuntimeEditor::onDockVisibilityChanged(bool visible)
 
 void RuntimeEditor::toggleRadarDisplay() {
     if (!displayDock->isVisible()) {
+        // Hide other right-side panels
         inspectorDock->hide();
         libraryDock->hide();
         textScriptDock->hide();
         loggerDock->hide();
-        addDockWidget(Qt::RightDockWidgetArea, displayDock);
-        splitDockWidget(sidebarDock, displayDock, Qt::Vertical);
-        displayDock->show();
-        qDebug() << "Display dock shown, geometry:" << displayDock->geometry();
 
-        SidebarWidget *sidebar = sidebarDock->widget()->findChild<SidebarWidget*>();
+        // Use manual positioning (same as in sidebar view selection)
+        QRect sGeo = sidebarDock->geometry();
+        displayDock->setGeometry(sGeo.x(), sGeo.y() + sGeo.height() + 5,
+                                 sGeo.width(), height() - sGeo.y() - sGeo.height() - 150);
+        displayDock->show();
+        displayDock->raise();
+
+        SidebarWidget *sidebar = qobject_cast<SidebarWidget*>(sidebarDock->widget());
         if (sidebar) {
             sidebar->setActiveButton("Sensors");
         }
     } else {
         displayDock->hide();
-        qDebug() << "Display dock hidden";
-
-        SidebarWidget *sidebar = sidebarDock->widget()->findChild<SidebarWidget*>();
+        SidebarWidget *sidebar = qobject_cast<SidebarWidget*>(sidebarDock->widget());
         if (sidebar) {
             sidebar->setActiveButton("");
         }
     }
-    runtimeToolBar->findChild<QAction*>("radarToggleAction")->setChecked(displayDock->isVisible());
+
+    QAction *radarToggle = runtimeToolBar->findChild<QAction*>("radarToggleAction");
+    if (radarToggle) {
+        radarToggle->setChecked(displayDock->isVisible());
+    }
 }
 
 // Logger
 void RuntimeEditor::toggleLoggerDisplay(bool checked)
 {
-    qDebug() << "toggleLoggerDisplay called, checked:" << checked << ", loggerDock visible:" << loggerDock->isVisible();
     if (checked && !loggerDock->isVisible()) {
+        // Hide other right-side panels
         inspectorDock->hide();
         libraryDock->hide();
         textScriptDock->hide();
         displayDock->hide();
-        addDockWidget(Qt::RightDockWidgetArea, loggerDock);
-        splitDockWidget(sidebarDock, loggerDock, Qt::Vertical);
+
+        // Use manual positioning (same as in sidebar view selection)
+        QRect sGeo = sidebarDock->geometry();
+        loggerDock->setGeometry(sGeo.x(), sGeo.y() + sGeo.height() + 5,
+                                sGeo.width(), height() - sGeo.y() - sGeo.height() - 150);
         loggerDock->show();
-        qDebug() << "Logger dock shown, geometry:" << loggerDock->geometry();
-        SidebarWidget *sidebar = sidebarDock->widget()->findChild<SidebarWidget*>();
+        loggerDock->raise();
+
+        SidebarWidget *sidebar = qobject_cast<SidebarWidget*>(sidebarDock->widget());
         if (sidebar) {
             sidebar->setActiveButton("Logger");
         }
     } else if (!checked && loggerDock->isVisible()) {
         loggerDock->hide();
-        qDebug() << "Logger dock hidden";
-        SidebarWidget *sidebar = sidebarDock->widget()->findChild<SidebarWidget*>();
+        SidebarWidget *sidebar = qobject_cast<SidebarWidget*>(sidebarDock->widget());
         if (sidebar) {
             sidebar->setActiveButton("");
         }
     }
+
     QAction *loggerAction = runtimeToolBar->findChild<QAction*>("loggerAction");
     if (loggerAction) {
-        bool isDockVisible = loggerDock->isVisible();
-        loggerAction->setChecked(isDockVisible);
-        qDebug() << "loggerAction checked state updated to:" << isDockVisible;
+        loggerAction->setChecked(loggerDock->isVisible());
     }
 }
-
-void RuntimeEditor::setupMenuBar()
-{
-    menuBar = new MenuBar(this);
-    setMenuBar(menuBar);
-    connect(menuBar, &MenuBar::feedbackTriggered, this, &RuntimeEditor::showFeedbackWindow);
-
-
-    QMenu *editMenu = menuBar->getEditMenu();
-    if (editMenu) {
-        // Create reset layout action
-        QAction *resetLayoutAction = new QAction("Reset Layout", this);
-        // resetLayoutAction->setShortcut(QKeySequence("Ctrl+R"));
-        resetLayoutAction->setStatusTip("Reset all docks to initial positions");
-
-        // Add separator and then reset layout action to Edit menu
-        editMenu->addSeparator();
-        editMenu->addAction(resetLayoutAction);
-
-        // Connect the action
-        connect(resetLayoutAction, &QAction::triggered, this, &RuntimeEditor::resetLayout);
-    }
-}
-
 void RuntimeEditor::setupToolBars()
 {
-    designToolBar = new DesignToolBar(this);
+    // designToolBar = new DesignToolBar(this);
+    designToolBar = new DesignToolBar(this, m_scenarioConfig);
     addToolBar(Qt::TopToolBarArea, designToolBar);
-
     runtimeToolBar = new RuntimeToolBar(this);
     addToolBar(Qt::TopToolBarArea, runtimeToolBar);
-
-    addToolBarBreak(Qt::TopToolBarArea);
-
     networkToolBar = new NetworkToolbar(this);
     addToolBar(Qt::TopToolBarArea, networkToolBar);
 
-    // Allow toolbars to be movable
+    // addToolBarBreak(Qt::TopToolBarArea);
+
+    // runtimeToolBar = new RuntimeToolBar(this);
+    // addToolBar(Qt::TopToolBarArea, runtimeToolBar);
+
     designToolBar->setMovable(true);
     runtimeToolBar->setMovable(true);
     networkToolBar->setMovable(true);
+
+    // Set context menu policy for ALL toolbars
+    designToolBar->setContextMenuPolicy(Qt::CustomContextMenu);
+    networkToolBar->setContextMenuPolicy(Qt::CustomContextMenu);
+    runtimeToolBar->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    // Connect ALL toolbars to the same slot
+    connect(designToolBar, &QToolBar::customContextMenuRequested,
+            this, &RuntimeEditor::showPanelContextMenu);
+    connect(networkToolBar, &QToolBar::customContextMenuRequested,
+            this, &RuntimeEditor::showPanelContextMenu);
+    connect(runtimeToolBar, &QToolBar::customContextMenuRequested,
+            this, &RuntimeEditor::showPanelContextMenu);
 }
 
 void RuntimeEditor::setupToolBarConnections()
@@ -943,19 +1326,6 @@ void RuntimeEditor::setupToolBarConnections()
         qWarning() << "Toolbar connection setup failed - required components missing";
         return;
     }
-
-    // RECENT PROJECT CONNECTION
-    connect(menuBar->getRecentProjectAction(), &QAction::triggered,
-            this, &RuntimeEditor::onRecentProjectTriggered);
-
-    qDebug() << "MenuBar actions connected successfully";
-    qDebug() << "Recent Project Action:" << menuBar->getRecentProjectAction()->text();
-    connect(menuBar, &MenuBar::profileTriggered,
-            this, &RuntimeEditor::showProfileInfo);
-
-    connect(menuBar, &MenuBar::applicationTriggered, this, &RuntimeEditor::showApplicationDialog);
-
-
     connect(designToolBar, &DesignToolBar::modeChanged,
             this, [=](int mode) {
                 tacticalDisplay->canvas->setTransformMode(static_cast<TransformMode>(mode));
@@ -963,7 +1333,6 @@ void RuntimeEditor::setupToolBarConnections()
     connect(designToolBar, &DesignToolBar::shapeSelected,
             this, [=](const QString &shape) {
                 tacticalDisplay->canvas->setShapeDrawingMode(true, shape);
-                Console::log("Shape selected: " + shape.toStdString());
             });
     connect(designToolBar, &DesignToolBar::gridPlaneXToggled,
             tacticalDisplay->canvas, &CanvasWidget::setXGridVisible);
@@ -972,8 +1341,10 @@ void RuntimeEditor::setupToolBarConnections()
     connect(designToolBar, &DesignToolBar::gridOpacityChanged,
             this, [=](int opacity) {
                 tacticalDisplay->canvas->setGridOpacity(opacity);
-                Console::log("Grid opacity changed to: " + std::to_string(opacity));
             });
+    connect(designToolBar, &DesignToolBar::tooltipOptionsChanged,
+            tacticalDisplay->canvas, &CanvasWidget::setTooltipOptions);
+    //====================waris=======================
     connect(designToolBar, &DesignToolBar::layerOptionToggled,
             tacticalDisplay->canvas, &CanvasWidget::toggleLayerVisibility);
     connect(designToolBar, &DesignToolBar::bitmapImageSelected,
@@ -981,21 +1352,16 @@ void RuntimeEditor::setupToolBarConnections()
     connect(designToolBar, &DesignToolBar::bitmapSelected,
             this, [=](const QString &fileName) {
                 tacticalDisplay->canvas->onBitmapSelected(fileName);
-                Console::log("Bitmap selected: " + fileName.toStdString());
             });
     if (tacticalDisplay && tacticalDisplay->mapWidget) {
         connect(designToolBar, &DesignToolBar::mapLayerChanged,
                 this, [=](const QString &layers) {
                     tacticalDisplay->setMapLayers(layers.split(",", Qt::SkipEmptyParts));
-                    Console::log("Map layers updated: " + layers.toStdString());
                 });
         connect(designToolBar, &DesignToolBar::customMapAdded,
                 tacticalDisplay, &TacticalDisplay::addCustomMap);
         connect(designToolBar, &DesignToolBar::customMapAdded,
                 this, [=](const QString &name, int zoomMin, int zoomMax, const QString &url) {
-                    qDebug() << "RuntimeEditor received customMapAdded: name =" << name
-                             << ", zoomMin =" << zoomMin << ", zoomMax =" << zoomMax
-                             << ", url =" << url;
                 });
         connect(designToolBar, &DesignToolBar::searchPlaceTriggered,
                 tacticalDisplay->mapWidget, &GISlib::serachPlace);
@@ -1006,7 +1372,6 @@ void RuntimeEditor::setupToolBarConnections()
         connect(designToolBar->selectCenterAction, &QAction::triggered, this, [=]() {
             if (tacticalDisplay && tacticalDisplay->mapWidget) {
                 tacticalDisplay->mapWidget->setCenter(0, 0);
-                Console::log("Map centered at (0, 0)");
             }
         });
     } else {
@@ -1015,24 +1380,16 @@ void RuntimeEditor::setupToolBarConnections()
     connect(designToolBar->getAddTrajectoryAction(), &QAction::triggered,
             this, [=]() {
                 tacticalDisplay->canvas->setTrajectoryDrawingMode(true);
-                Console::log("Add Trajectory action triggered from DesignToolBar");
             });
     connect(designToolBar->getMeasureDistanceAction(), &QAction::triggered,
             this, [=]() {
                 bool isChecked = designToolBar->getMeasureDistanceAction()->isChecked();
                 tacticalDisplay->canvas->setTransformMode(isChecked ? MeasureDistance : Translate);
-                Console::log(isChecked ? "Measure Distance mode enabled" : "Measure Distance mode disabled");
             });
-    connect(designToolBar, &DesignToolBar::bitmapImageSelected,
-            tacticalDisplay->canvas, &CanvasWidget::onBitmapImageSelected);
-    // for preset
     connect(designToolBar, &DesignToolBar::presetLayerSelected,
             tacticalDisplay->canvas, &CanvasWidget::onPresetLayerSelected);
-    // gor geojson function
     connect(designToolBar, &DesignToolBar::importGeoJsonTriggered,
             tacticalDisplay->canvas, &CanvasWidget::importGeoJsonLayer);
-
-    // NEW: Connections for GeoJSON layers menu
     connect(tacticalDisplay->canvas, &CanvasWidget::geoJsonLayerAdded,
             designToolBar, &DesignToolBar::onGeoJsonLayerAdded);
     connect(designToolBar, &DesignToolBar::geoJsonLayerToggled,
@@ -1040,13 +1397,15 @@ void RuntimeEditor::setupToolBarConnections()
     connect(designToolBar, &DesignToolBar::bitmapSelected,
             this, [=](const QString &fileName) {
                 tacticalDisplay->canvas->onBitmapSelected(fileName);
-                Console::log("Bitmap selected: " + fileName.toStdString());
             });
     connect(designToolBar, &DesignToolBar::shapeSelected,
             this, [=](const QString &shape) {
                 tacticalDisplay->canvas->setShapeDrawingMode(true, shape);
-                Console::log("Shape selected: " + shape.toStdString());
             });
+    connect(designToolBar, &DesignToolBar::coordinateSystemChanged,
+            tacticalDisplay->mapWidget, &GISlib::setCoordinateSystem);
+
+        //===========================================
 }
 
 void RuntimeEditor::onItemSelected(QVariantMap data)
@@ -1077,8 +1436,6 @@ void RuntimeEditor::onItemSelected(QVariantMap data)
 
 void RuntimeEditor::onLibraryItemSelected(QVariantMap data)
 {
-    qDebug() << "Library item selected:" << data;
-    // TODO: Implement library item selection functionality
 }
 
 void RuntimeEditor::addInspectorTab()
@@ -1125,24 +1482,51 @@ void RuntimeEditor::addInspectorTab()
 void RuntimeEditor::showFeedbackWindow()
 {
     Feedback *feedbackWindow = new Feedback(this);
-    feedbackWindow->h = hierarchy;
-    feedbackWindow->loadDashboardData("{}");
+
     feedbackWindow->show();
 }
 
 void RuntimeEditor::loadFromJsonFile(const QString &filePath)
 {
-    // Create loading dialog with indeterminate progress
-    QProgressDialog* loadingDialog = new QProgressDialog("Loading data...", nullptr, 0, 0, this);
-    loadingDialog->setWindowTitle("");
-    loadingDialog->setWindowModality(Qt::WindowModal);
-    loadingDialog->setCancelButton(nullptr); // No cancel button
-    loadingDialog->setMinimumDuration(0); // Show immediately
-    loadingDialog->setRange(0, 0); // Indeterminate mode
-    loadingDialog->setValue(0);
-    loadingDialog->show();
+    QProgressDialog* loadingDialog = new QProgressDialog(this);
 
-    // Force UI update
+    loadingDialog->setLabelText("Loading...");
+    loadingDialog->setCancelButton(nullptr);
+    loadingDialog->setRange(0, 0);
+    loadingDialog->setMinimumDuration(0);
+    loadingDialog->setWindowModality(Qt::WindowModal);
+    loadingDialog->setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog | Qt::WindowStaysOnTopHint);
+    loadingDialog->setWindowTitle("");
+    loadingDialog->setFixedSize(250, 80);
+    loadingDialog->setStyleSheet(R"(
+        QProgressDialog {
+            background-color: #f0f0f0;
+            border: 1px solid #cccccc;
+            border-radius: 0px;
+        }
+        QLabel {
+            color: #333333;
+            font-size: 13px;
+            font-family: "Segoe UI";
+            padding: 10px;
+            margin: 0px;
+        }
+        QProgressBar {
+            border: 1px solid #bbbbbb;
+            background-color: #ffffff;
+            text-align: center;
+            height: 20px;
+        }
+        QProgressBar::chunk {
+            background-color: #4da6ff;
+            border: none;
+        }
+    )");
+
+
+    loadingDialog->move(geometry().center() - loadingDialog->rect().center());
+
+    loadingDialog->show();
     QCoreApplication::processEvents();
 
     QFile file(filePath);
@@ -1168,44 +1552,33 @@ void RuntimeEditor::loadFromJsonFile(const QString &filePath)
     if (obj.contains("hierarchy")) {
         loadingDialog->setLabelText("Loading...");
         QCoreApplication::processEvents();
-
         QJsonObject hier = obj["hierarchy"].toObject();
         hierarchy->fromJson(hier);
-
         QCoreApplication::processEvents();
-
-        qDebug() << "Hierarchy loaded from file:" << filePath;
         if (treeView && treeView->getTreeWidget()) {
             treeView->getTreeWidget()->update();
-            qDebug() << "HierarchyTree updated after loading JSON";
         } else {
             qWarning() << "Failed to update HierarchyTree: treeView or treeWidget is null";
         }
-
         QCoreApplication::processEvents();
     } else {
         qWarning() << "JSON file does not contain 'hierarchy' key";
     }
-
     if (tacticalDisplay && obj.contains("tactical")) {
-        loadingDialog->setLabelText("Loading tactical display...");
+        loadingDialog->setLabelText("Loading...");
         QCoreApplication::processEvents();
-
         QJsonObject tac = obj["tactical"].toObject();
         tacticalDisplay->canvas->fromJson(tac);
-        qDebug() << "TacticalDisplay loaded from file:" << filePath;
     } else {
         qWarning() << "JSON file does not contain 'tactical' key or tacticalDisplay is null";
     }
 
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
-
-    // Close loading dialog
     loadingDialog->close();
     loadingDialog->deleteLater();
 
-    updateStatusBar("Project loaded: " + QFileInfo(filePath).fileName());
+    // updateStatusBar("Project loaded: " + QFileInfo(filePath).fileName());
 }
 void RuntimeEditor::markUnsavedChanges()
 {
@@ -1228,26 +1601,18 @@ void RuntimeEditor::clearUnsavedChanges()
 
 void RuntimeEditor::resetLayout()
 {
-    // Show message in console
-    console->log("Resetting Runtime Editor layout to initial state...");
-
-    // Close all additional inspector docks
     for (int i = inspectorDocks.size() - 1; i >= 0; --i) {
         QDockWidget* dock = inspectorDocks[i];
-        if (dock != inspectorDock) { // Keep the main inspector
+        if (dock != inspectorDock) {
             inspectors.removeAt(i);
             dock->deleteLater();
         }
     }
-
-    // Keep only main inspector
     if (inspectorDocks.size() > 1) {
         inspectorDocks = QList<QDockWidget*>{inspectorDock};
         inspectors = QList<Inspector*>{inspector};
     }
     inspectorCount = 0;
-
-    // Hide all docks first
     hierarchyDock->hide();
     tacticalDisplayDock->hide();
     consoleDock->hide();
@@ -1257,8 +1622,6 @@ void RuntimeEditor::resetLayout()
     textScriptDock->hide();
     displayDock->hide();
     loggerDock->hide();
-
-    // Remove all docks from main window
     removeDockWidget(hierarchyDock);
     removeDockWidget(tacticalDisplayDock);
     removeDockWidget(consoleDock);
@@ -1268,8 +1631,6 @@ void RuntimeEditor::resetLayout()
     removeDockWidget(textScriptDock);
     removeDockWidget(displayDock);
     removeDockWidget(loggerDock);
-
-    // Add docks back to initial positions
     addDockWidget(Qt::LeftDockWidgetArea, hierarchyDock);
     addDockWidget(Qt::RightDockWidgetArea, tacticalDisplayDock);
     addDockWidget(Qt::BottomDockWidgetArea, consoleDock);
@@ -1298,10 +1659,8 @@ void RuntimeEditor::resetLayout()
     consoleDock->show();
     sidebarDock->show();
     inspectorDock->show();
-
-    // Reset to initial sizes with a small delay
     QTimer::singleShot(100, this, [=]() {
-        QMainWindow::resize(1100, 600); // Reset window size
+        QMainWindow::resize(1100, 600);
 
         int totalWidth = this->width();
         int totalHeight = this->height();
@@ -1328,13 +1687,15 @@ void RuntimeEditor::resetLayout()
         inspectorDock->raise();
 
         updateStatusBar("Runtime Editor layout reset to initial state");
-        console->log("Runtime Editor layout successfully reset to initial configuration");
+
     });
 }
 
 RuntimeEditor::~RuntimeEditor()
 {
-    // Cleanup managed by Qt's parent-child relationships
+    std::cout << "RuntimeEditor delete";
+    delete runtime;
+
 }
 
 void RuntimeEditor::setupStatusBar() {
@@ -1352,17 +1713,44 @@ void RuntimeEditor::updateStatusBar(const QString &message) {
 
 void RuntimeEditor::loadRecentProject(const QString& filePath)
 {
-    // Create loading dialog with indeterminate progress
-    QProgressDialog* loadingDialog = new QProgressDialog("Loading data...", nullptr, 0, 0, this);
-    loadingDialog->setWindowTitle("");
-    loadingDialog->setWindowModality(Qt::WindowModal);
-    loadingDialog->setCancelButton(nullptr); // No cancel button
-    loadingDialog->setMinimumDuration(0); // Show immediately
-    loadingDialog->setRange(0, 0); // Indeterminate mode
-    loadingDialog->setValue(0);
-    loadingDialog->show();
+    QProgressDialog* loadingDialog = new QProgressDialog(this);
 
-    // Force UI update
+    loadingDialog->setLabelText("Loading...");
+    loadingDialog->setCancelButton(nullptr);
+    loadingDialog->setRange(0, 0);
+    loadingDialog->setMinimumDuration(0);
+    loadingDialog->setWindowModality(Qt::WindowModal);
+    loadingDialog->setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog | Qt::WindowStaysOnTopHint);
+    loadingDialog->setWindowTitle("");
+    loadingDialog->setFixedSize(250, 80);
+    loadingDialog->setStyleSheet(R"(
+        QProgressDialog {
+            background-color: #f0f0f0;
+            border: 1px solid #cccccc;
+            border-radius: 0px;
+        }
+        QLabel {
+            color: #333333;
+            font-size: 13px;
+            font-family: "Segoe UI";
+            padding: 5px;
+            margin: 0px;
+        }
+        QProgressBar {
+            border: 1px solid #bbbbbb;
+            background-color: #ffffff;
+            text-align: center;
+            height: 20px;
+        }
+        QProgressBar::chunk {
+            background-color: #4da6ff;
+            border: none;
+        }
+    )");
+
+
+    loadingDialog->move(geometry().center() - loadingDialog->rect().center());
+    loadingDialog->show();
     QCoreApplication::processEvents();
 
     if (!QFile::exists(filePath)) {
@@ -1404,7 +1792,7 @@ void RuntimeEditor::loadRecentProject(const QString& filePath)
     QJsonObject hier = obj["hierarchy"].toObject();
     hierarchy->fromJson(hier);
 
-    loadingDialog->setLabelText("Loading tactical display...");
+    loadingDialog->setLabelText("Loading...");
     QCoreApplication::processEvents();
 
     // Load tactical display if present
@@ -1425,20 +1813,13 @@ void RuntimeEditor::loadRecentProject(const QString& filePath)
     loadingDialog->deleteLater();
 
     updateStatusBar("Runtime loaded: " + QFileInfo(filePath).fileName());
-    console->log("Runtime project loaded: " + filePath.toStdString());
+
 }
 void RuntimeEditor::onRecentProjectTriggered()
 {
     RecentProjectsManager::instance()->showRecentProjectsMenu(this,
                                                               RecentProjectsManager::RuntimeEditor);
 }
-
-// void RuntimeEditor::clearRecentProjects()
-// {
-//     RecentProjectsManager::instance()->clearRecentProjects();
-//     updateStatusBar("Recent projects list cleared");
-//     console->log("Recent projects list cleared");
-// }
 
 void RuntimeEditor::showProfileInfo()
 {
@@ -1451,6 +1832,212 @@ void RuntimeEditor::showApplicationDialog()
     connect(&dialog,&ApplicationDialog::fpsState,simulation,&Simulation::setFps);
     connect(&dialog,&ApplicationDialog::canvasIconState,tacticalDisplay->canvas,&CanvasWidget::setImageScale);
     dialog.exec();
+}
+void RuntimeEditor::triggerSidebarView(const QString &viewName)
+{
+    SidebarWidget *sidebar = qobject_cast<SidebarWidget*>(sidebarDock->widget());
+    if (!sidebar) {
+        qWarning() << "Sidebar widget not found!";
+        return;
+    }
+
+    QButtonGroup *buttonGroup = sidebar->findChild<QButtonGroup*>();
+    if (!buttonGroup) {
+        qWarning() << "Button group not found!";
+        return;
+    }
+
+    QList<QAbstractButton*> buttons = buttonGroup->buttons();
 
 
+
+    for (QAbstractButton *button : buttons) {
+        QString btnViewName = button->property("viewName").toString();
+        if (btnViewName == viewName) {
+            button->click();
+            return;
+        }
+    }
+
+    qWarning() << "No button found with viewName:" << viewName;
+}
+void RuntimeEditor::triggerDisplayTab(const QString &tabName)
+{
+    if (!displayTabs) {
+        qWarning() << "displayTabs not found!";
+        return;
+    }
+    for (int i = 0; i < displayTabs->count(); ++i) {
+        if (displayTabs->tabText(i) == tabName) {
+            displayTabs->setCurrentIndex(i);
+            return;
+        }
+    }
+}
+
+void RuntimeEditor::onRunScriptFileRequested(const QString& filePath)
+{
+    if (!QFile::exists(filePath)) {
+        return;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return;
+    }
+
+    QTextStream in(&file);
+    QString scriptSource = in.readAll();
+    file.close();
+    runtime->scriptengine->loadAndCompileScript(scriptSource);
+}
+
+void RuntimeEditor::onRecentLibraryTriggered()
+{
+    // Show recent library menu
+    // RecentProjectsManager::instance()->showRecentLibraryMenu(this);
+    connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
+            this, [=](const QString& filePath, RecentProjectsManager::EditorType type) {
+                if (type == RecentProjectsManager::LibraryData && !filePath.isEmpty()) {
+                    QFile file(filePath);
+                    if (!file.open(QIODevice::ReadOnly)) {
+                        QMessageBox::warning(this, "Error",
+                                             "Failed to open library file:\n" + filePath);
+                        return;
+                    }
+                    QByteArray data = file.readAll();
+                    file.close();
+                    QJsonParseError err;
+                    QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+                    if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+                        QMessageBox::warning(this, "Error",
+                                             "Invalid library file format:\n" + err.errorString());
+                        return;
+                    }
+                    QJsonObject obj = doc.object();
+                    if (obj.contains("hierarchy")) {
+                        QJsonObject hier = obj["hierarchy"].toObject();
+                        // Clear and load library
+                        library->clear();
+                        library->fromJson(hier);
+
+                        // Update tree view
+                        if (libTreeView) {
+                            libTreeView->getTreeWidget()->update();
+
+                            // **UPDATE LIBRARY TITLE** ✅
+                            libTreeView->setLibraryFileName(filePath);
+                        }
+
+                        updateStatusBar("Library loaded: " + QFileInfo(filePath).fileName());
+                    } else {
+                        QMessageBox::warning(this, "Error",
+                                             "No 'hierarchy' data found in file");
+                    }
+                }
+            }, Qt::UniqueConnection);
+
+       RecentProjectsManager::instance()->showRecentLibraryMenu(this);
+}
+void RuntimeEditor::showPanelContextMenu(const QPoint &pos)
+{
+    QMenu contextMenu("Panels", this);
+    contextMenu.setStyleSheet(R"(
+        QMenu {
+        background-color: #1A3652;
+           color: white;
+            border: 1px solid #cccccc;
+            border-radius: 3px;
+            padding: 5px 0px;
+            font-size: 12px;
+        }
+        QMenu::item {
+            background-color: transparent;
+               color: white;
+            padding: 6px 30px 6px 30px;  /* Space for indicator */
+            margin: 2px 5px;
+            border-radius: 2px;
+        }
+        QMenu::item:selected {
+            background-color: #27446d;
+              color: white;
+        }
+        /* CHECKED ITEMS - BOLD */
+        QMenu::item:checked {
+            background-color: #1A3652;
+           color: white;
+            font-weight: bold;
+        }
+        QMenu::item:checked:selected {
+            background-color: #27446d
+        }
+        /* INDICATOR (CHECKBOX) STYLING */
+        QMenu::indicator {
+            width: 16px;
+            height: 16px;
+            margin-left: 5px;
+        }
+        /* UNCHECKED STATE - EMPTY BOX */
+        QMenu::indicator:unchecked {
+            image: none;
+            border: 1px solid #999999;
+            background-color: white;
+            border-radius: 2px;
+        }
+        /* CHECKED STATE - YOUR CHECK.PNG IMAGE */
+        QMenu::indicator:checked {
+            image: url(:/icons/images/check.png);
+            border: 1px solid #0078D4;
+            background-color: #0078D4;
+            border-radius: 2px;
+        }
+        /* SEPARATOR */
+        QMenu::separator {
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 5px 10px;
+        }
+    )");
+    QAction *showHierarchy = contextMenu.addAction("Hierarchy");
+    showHierarchy->setCheckable(true);
+    showHierarchy->setChecked(hierarchyDock->isVisible());
+
+    QAction *showLayers = contextMenu.addAction("Layers");
+    showLayers->setCheckable(true);
+    showLayers->setChecked(layerDock->isVisible());
+
+    contextMenu.addSeparator();
+
+    QAction *showConsole = contextMenu.addAction("Console");
+    showConsole->setCheckable(true);
+    showConsole->setChecked(consoleDock->isVisible());
+
+    QAction *showSidebar = contextMenu.addAction("Sidebar");
+    showSidebar->setCheckable(true);
+    showSidebar->setChecked(sidebarDock->isVisible());
+
+    QAction *selected = contextMenu.exec(mapToGlobal(pos));
+
+    if (selected == showHierarchy) {
+        hierarchyDock->setVisible(!hierarchyDock->isVisible());
+        if (hierarchyDock->isVisible()) hierarchyDock->raise();
+    }
+    else if (selected == showLayers) {
+        layerDock->setVisible(!layerDock->isVisible());
+        if (layerDock->isVisible()) layerDock->raise();
+    }
+    else if (selected == showConsole) {
+        consoleDock->setVisible(!consoleDock->isVisible());
+        if (consoleDock->isVisible()) {
+            consoleDock->raise();
+            // Make sure it's positioned correctly when shown
+            int winW = width();
+            int winH = height();
+            consoleDock->setGeometry(20, winH - 200, winW - 40, 150);
+        }
+    }
+    else if (selected == showSidebar) {
+        sidebarDock->setVisible(!sidebarDock->isVisible());
+        if (sidebarDock->isVisible()) sidebarDock->raise();
+    }
 }

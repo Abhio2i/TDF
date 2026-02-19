@@ -1,3 +1,10 @@
+//============================================================================
+// File        : esmdisplay.cpp
+// Description : Implementation of ESMDisplay class . radar-style display, target
+//               tracking, interactive hover detection, and performance
+//               profiling for sensor data.
+//               Written by Arti Rajpoot
+//============================================================================
 
 
 #include "esmdisplay.h"                           // For EW display class
@@ -52,9 +59,10 @@ int ESMDisplay::heightForWidth(int width) const
 /* Handle mouse move events for hover detection */
 void ESMDisplay::mouseMoveEvent(QMouseEvent *event)
 {
+        return;
     lastMousePos = event->pos();
 
-    if (targets.isEmpty()) {
+    if (sensor->ewtargets.isEmpty()) {
         hoveredTargetIndex = -1;
         update();
         return;
@@ -70,8 +78,8 @@ void ESMDisplay::mouseMoveEvent(QMouseEvent *event)
     int closestIndex = -1;
     double minDistance = 20.0; // Pixel threshold for hover detection
 
-    for (int i = 0; i < targets.size(); ++i) {
-        const Target &t = targets[i];
+    int i=0;
+    for (const Target &t : sensor->ewtargets) {
 
         // Calculate target position on screen
         double per = t.radius / range;
@@ -93,6 +101,7 @@ void ESMDisplay::mouseMoveEvent(QMouseEvent *event)
             minDistance = distance;
             closestIndex = i;
         }
+        i++;
     }
 
     if (hoveredTargetIndex != closestIndex) {
@@ -166,7 +175,7 @@ void ESMDisplay::updateRadar()
         // Set radar range and trigger repaint
         setRange(sensor->range);
         // 🔥 Ensure targets are properly updated
-        targets = sensor->ewtargets;
+        // targets = sensor->ewtargets;
         update();
     } else {
         // Reset targets if no entity/sensor
@@ -200,13 +209,12 @@ void ESMDisplay::paintEvent(QPaintEvent * /*event*/)
     drawCenterMark(p, center);
     drawTopMarker(p, center, outerRadius);
 
-
+    if(!sensor)return;
     // Draw targets with dotted lines and labels
-    if (!targets.isEmpty()) {
-        for (int i = 0; i < targets.size(); ++i) {
-            const Target &t = targets[i];
-
-            // FIX: Manual bound check
+    if (!sensor->ewtargets.isEmpty()) {
+        int i=0;
+        for (const Target &t : sensor->ewtargets) {
+            // const Target &t = targets[i];
             double per = t.radius / range;
             if (per < 0.0) per = 0.0;
             if (per > 1.0) per = 1.0;
@@ -245,13 +253,14 @@ void ESMDisplay::paintEvent(QPaintEvent * /*event*/)
                 p.drawText(tx + 6, ty - 6, angleText);
                 p.drawText(tx + 6, ty + 12, distText);
 
-                // Optional: Show platform name if available
+
                 Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
                 if (targetPlatform) {
                     QString nameText = QString::fromStdString(targetPlatform->Name);
                     p.drawText(tx + 6, ty + 30, nameText);
                 }
             }
+            i++;
         }
     } else if (entity && sensor) {
         // No targets message

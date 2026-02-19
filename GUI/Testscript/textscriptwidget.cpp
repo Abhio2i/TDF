@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: textscriptwidget.cpp                                             */
 /* Purpose: Implements widget for managing and displaying script files      */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #include "textscriptwidget.h"                      // For text script widget class
@@ -46,41 +47,37 @@ TextScriptItemWidget::TextScriptItemWidget(const QString &fileName, const QStrin
         "   border: 1px solid #707070;"
         "}");
     layout->addWidget(playButton);
-    // Create pause button
-    pauseButton = new QPushButton(this);
-    pauseButton->setIcon(QIcon(":/icons/images/pause.png"));
-    pauseButton->setFixedSize(24, 24);
-    pauseButton->setToolTip("Pause Script");
-    pauseButton->setStyleSheet(
-        "QPushButton {"
-        "   border: none;"
-        "   background: transparent;"
-        "}"
-        "QPushButton[active=true] {"
-        "   background-color: #505050;"
-        "   border: 1px solid #707070;"
-        "}");
-    layout->addWidget(pauseButton);
+    // // Create pause button
+    // pauseButton = new QPushButton(this);
+    // pauseButton->setIcon(QIcon(":/icons/images/pause.png"));
+    // pauseButton->setFixedSize(24, 24);
+    // pauseButton->setToolTip("Pause Script");
+    // pauseButton->setStyleSheet(
+    //     "QPushButton {"
+    //     "   border: none;"
+    //     "   background: transparent;"
+    //     "}"
+    //     "QPushButton[active=true] {"
+    //     "   background-color: #505050;"
+    //     "   border: 1px solid #707070;"
+    //     "}");
+    // layout->addWidget(pauseButton);
     // Connect button signals
     connect(playButton, &QPushButton::clicked, this, [this, filePath]() {
         emit playClicked(filePath);
     });
-    connect(pauseButton, &QPushButton::clicked, this, [this, filePath]() {
-        emit pauseClicked(filePath);
-    });
+    // connect(pauseButton, &QPushButton::clicked, this, [this, filePath]() {
+    //     emit pauseClicked(filePath);
+    // });
     // Set initial button state
     setActiveButton("none");
     // Verify icons
     if (playButton->icon().isNull()) {
-        Console::error("Failed to load play icon from :/icons/images/play.png");
+       //Console::error("Failed to load play icon from :/icons/images/play.png");
     } else {
-        Console::log("Play icon loaded successfully for :/icons/images/play.png");
+       //Console::log("Play icon loaded successfully for :/icons/images/play.png");
     }
-    if (pauseButton->icon().isNull()) {
-        Console::error("Failed to load pause icon from :/icons/images/pause.png");
-    } else {
-        Console::log("Pause icon loaded successfully for :/icons/images/pause.png");
-    }
+
 }
 
 // %%% TextScriptItemWidget Methods %%%
@@ -88,11 +85,11 @@ TextScriptItemWidget::TextScriptItemWidget(const QString &fileName, const QStrin
 void TextScriptItemWidget::setActiveButton(const QString &state)
 {
     playButton->setProperty("active", state == "play");
-    pauseButton->setProperty("active", state == "pause");
+    // pauseButton->setProperty("active", state == "pause");
     playButton->style()->unpolish(playButton);
     playButton->style()->polish(playButton);
-    pauseButton->style()->unpolish(pauseButton);
-    pauseButton->style()->polish(pauseButton);
+    // pauseButton->style()->unpolish(pauseButton);
+    // pauseButton->style()->polish(pauseButton);
 }
 
 // %%% TextScriptWidget Constructor %%%
@@ -130,9 +127,9 @@ TextScriptWidget::TextScriptWidget(QWidget *parent)
     connect(addScriptButton, &QPushButton::clicked, this, &TextScriptWidget::handleAddScriptButtonClicked);
     // Verify add button icon
     if (addScriptButton->icon().isNull()) {
-        Console::error("Failed to load add icon from :/icons/images/add.png");
+       //Console::error("Failed to load add icon from :/icons/images/add.png");
     } else {
-        Console::log("Add icon loaded successfully for :/icons/images/add.png");
+       //Console::log("Add icon loaded successfully for :/icons/images/add.png");
     }
     // Load script files
     QString projectDir = QCoreApplication::applicationDirPath() + "/../..";
@@ -147,7 +144,7 @@ void TextScriptWidget::loadScriptFiles(const QString &directoryPath)
     QDir dir(directoryPath);
     if (!dir.exists()) {
         fileListWidget->addItem("Directory not found: " + directoryPath);
-        Console::error("Directory not found: " + directoryPath.toStdString());
+       //Console::error("Directory not found: " + directoryPath.toStdString());
         return;
     }
     // Filter for .as files
@@ -156,7 +153,7 @@ void TextScriptWidget::loadScriptFiles(const QString &directoryPath)
     QFileInfoList fileList = dir.entryInfoList();
     if (fileList.isEmpty()) {
         fileListWidget->addItem("No .as files found in directory");
-        Console::log("No .as files found in directory: " + directoryPath.toStdString());
+       //Console::log("No .as files found in directory: " + directoryPath.toStdString());
         return;
     }
     // Clear existing items and status
@@ -177,7 +174,7 @@ void TextScriptWidget::loadScriptFiles(const QString &directoryPath)
         activeButtonState[filePath] = "none";
         updateStatusIcon(item, "none");
     }
-    Console::log("Loaded " + std::to_string(fileList.size()) + " .as files from directory: " + directoryPath.toStdString());
+   //Console::log("Loaded " + std::to_string(fileList.size()) + " .as files from directory: " + directoryPath.toStdString());
 }
 
 /* Update status icon for script item */
@@ -202,9 +199,9 @@ void TextScriptWidget::updateStatusIcon(QListWidgetItem *item, const QString &st
         item->setToolTip("Status: Not run");
     }
     if (!item->icon().isNull()) {
-        Console::log("Status icon set to " + status.toStdString() + " for item using " + iconPath.toStdString());
+       //Console::log("Status icon set to " + status.toStdString() + " for item using " + iconPath.toStdString());
     } else if (status != "none") {
-        Console::error("Failed to load status icon for status: " + status.toStdString() + " at " + iconPath.toStdString());
+       //Console::error("Failed to load status icon for status: " + status.toStdString() + " at " + iconPath.toStdString());
     }
 }
 
@@ -231,31 +228,24 @@ void TextScriptWidget::handleCustomContextMenu(const QPoint &pos)
 /* Handle play button click for script */
 void TextScriptWidget::handlePlayClicked(const QString &filePath)
 {
-    emit runScript(filePath);
+    emit runScriptFile(filePath);
+
     activeButtonState[filePath] = "play";
-    // Simulate execution result
-    QString status;
-    int rand = QRandomGenerator::global()->bounded(3);
-    switch (rand) {
-    case 0: status = "success"; break;
-    case 1: status = "warning"; break;
-    case 2: status = "error"; break;
-    default: status = "success"; break;
-    }
-    fileStatus[filePath] = status;
-    // Update item status
+
+    // UI state update only (no fake status)
     for (int i = 0; i < fileListWidget->count(); ++i) {
         QListWidgetItem *item = fileListWidget->item(i);
         if (item->data(Qt::UserRole).toString() == filePath) {
-            TextScriptItemWidget *itemWidget = qobject_cast<TextScriptItemWidget*>(fileListWidget->itemWidget(item));
-            if (itemWidget) {
+            if (auto *itemWidget =
+                qobject_cast<TextScriptItemWidget*>(fileListWidget->itemWidget(item))) {
                 itemWidget->setActiveButton("play");
             }
-            updateStatusIcon(item, status);
+            updateStatusIcon(item, "none");
             break;
         }
     }
-    Console::log("Play clicked for script: " + filePath.toStdString() + ", status set to: " + status.toStdString());
+
+   //Console::log("▶ Running script file: " + filePath.toStdString());
 }
 
 /* Handle pause button click for script */
@@ -276,7 +266,7 @@ void TextScriptWidget::handlePauseClicked(const QString &filePath)
             break;
         }
     }
-    Console::log("Pause clicked for script: " + filePath.toStdString() + ", status set to none");
+   //Console::log("Pause clicked for script: " + filePath.toStdString() + ", status set to none");
 }
 
 /* Handle rename action for script */
@@ -304,10 +294,10 @@ void TextScriptWidget::handleRenameAction()
             itemWidget->findChild<QLabel*>()->setText(newName);
             fileStatus[newFilePath] = fileStatus.take(filePath);
             activeButtonState[newFilePath] = activeButtonState.take(filePath);
-            Console::log("Renamed script from " + filePath.toStdString() + " to " + newFilePath.toStdString());
+           //Console::log("Renamed script from " + filePath.toStdString() + " to " + newFilePath.toStdString());
         } else {
             QMessageBox::warning(this, "Rename Failed", "Could not rename the file.");
-            Console::error("Failed to rename script: " + filePath.toStdString());
+           //Console::error("Failed to rename script: " + filePath.toStdString());
         }
     }
 }
@@ -332,10 +322,10 @@ void TextScriptWidget::handleRemoveAction()
             delete item;
             fileStatus.remove(filePath);
             activeButtonState.remove(filePath);
-            Console::log("Removed script: " + filePath.toStdString());
+           //Console::log("Removed script: " + filePath.toStdString());
         } else {
             QMessageBox::warning(this, "Remove Failed", "Could not remove the file.");
-            Console::error("Failed to remove script: " + filePath.toStdString());
+           //Console::error("Failed to remove script: " + filePath.toStdString());
         }
     }
 }
@@ -350,7 +340,7 @@ void TextScriptWidget::handleAddScriptButtonClicked()
     connect(window, &TestScriptDialog::runScriptstring, this, &TextScriptWidget::runScriptstring);
     connect(window, &TestScriptDialog::closed, this, [=]() {
         loadScriptFiles(testScriptPath);
-        Console::log("New script added or canceled, reloading script files from: " + testScriptPath.toStdString());
+       //Console::log("New script added or canceled, reloading script files from: " + testScriptPath.toStdString());
         window->deleteLater();
     });
     window->show();
@@ -361,7 +351,7 @@ void TextScriptWidget::handleEditAction()
 {
     QString filePath = fileListWidget->property("selectedFilePath").toString();
     if (filePath.isEmpty()) {
-        Console::error("No file selected for editing");
+       //Console::error("No file selected for editing");
         QMessageBox::warning(this, "Edit Failed", "No file selected for editing.");
         return;
     }
@@ -372,7 +362,7 @@ void TextScriptWidget::handleEditAction()
     connect(window, &TestScriptDialog::runScriptstring, this, &TextScriptWidget::runScriptstring);
     connect(window, &TestScriptDialog::closed, this, [=]() {
         loadScriptFiles(testScriptPath);
-        Console::log("Script edited and saved or canceled, reloading script files: " + filePath.toStdString());
+       //Console::log("Script edited and saved or canceled, reloading script files: " + filePath.toStdString());
         window->deleteLater();
     });
     window->show();

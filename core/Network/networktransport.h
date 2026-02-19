@@ -1,3 +1,4 @@
+//Author::Aman Negi
 #ifndef NETWORKTRANSPORT_H
 #define NETWORKTRANSPORT_H
 
@@ -16,12 +17,15 @@ public:
     NetworkTransport();
     ~NetworkTransport();
     //void init(const QString& ip, int port);
-   // void start(bool server = false);
+    // void start(bool server = false);
     //void sendMessage(QString message);
     void sendUDPMessage(const QString &message);
     void sendBinaryMessage(QByteArray byteMessage);
     bool isServer();
     //void sendBinaryUDPMessage(const QByteArray &byteMessage);
+
+
+
 private slots:
     void readyUDPRead();
     void NewConnection();
@@ -32,7 +36,7 @@ private slots:
     void BinaryMessage(QByteArray byteMessage);
 
 signals:
-    void onNewConnection();
+    void onNewConnection(QWebSocket* pSocket);//the argument is chnagd by Aman
     void onConnect();
     void onDisconnect();
     void onErrorOccurred(QString error);

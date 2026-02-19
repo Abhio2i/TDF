@@ -9,7 +9,7 @@
 Collider::Collider(Hierarchy* h):Component(h) {
     Active = true;
     CollideRadius = 200;
-    WarningRadius = 1000;
+    WarningRadius = 100;
     Width = 1;
     Length = 1;
     Height = 1;
@@ -19,11 +19,12 @@ Collider::Collider(Hierarchy* h):Component(h) {
 }
 
 void Collider::Update(float deltaTime){
-    if(parentEntity && parentEntity->root){
+    if(parentEntity && parentEntity->type == Constants::EntityType::Platform && parentEntity->root){
         Transform* source =(*parentEntity->root->Platforms)[parentEntity->ID]->transform;
+        if(!source)return;
         for (auto& [key, entity] : *parentEntity->root->Platforms){
-            if(!entity->Active || entity->isDestroy || key == parentEntity->ID) continue;
-            float distance = source->translation().distanceToPoint(entity->transform->translation())*1000;
+            if(!entity || !entity->Active || entity->isDestroy || key == parentEntity->ID || !entity->transform) continue;
+            float distance = source->matrix->translation().distanceToPoint(entity->transform->matrix->translation())*1000;
             // qDebug()<<distance;
             if(distance<WarningRadius){
                 parentEntity->collisionWarning = true;

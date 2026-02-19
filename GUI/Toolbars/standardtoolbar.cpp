@@ -31,34 +31,20 @@ StandardToolBar::StandardToolBar(QWidget *parent)
 
     connect(testScriptAction, &QAction::triggered, this, &StandardToolBar::onTestScriptTriggered);
 
-    Console::log("StandardToolBar initialized with addTrajectoryAction and testScriptAction");
+    //Console::log("StandardToolBar initialized with addTrajectoryAction and testScriptAction");
 }
 
 void StandardToolBar::createActions()
 {
     newAction = new QAction(QIcon(withWhiteBg(":/icons/images/new-document.png")), tr("New"), this);
-
-
-
-
-
     saveAllAction = new QAction(QIcon(withWhiteBg(":/icons/images/floppy-disk.png")), tr("Save All"), this);
-
     cutAction = new QAction(QIcon(withWhiteBg(":/icons/images/cut.png")), tr("Cut"), this);
-
-
     copyAction = new QAction(QIcon(withWhiteBg(":/icons/images/copy.png")), tr("Copy"), this);
-
-
     pasteAction = new QAction(QIcon(withWhiteBg(":/icons/images/paste.png")), tr("Paste"), this);
-
-
     undoAction = new QAction(QIcon(withWhiteBg(":/icons/images/undo.png")), tr("Undo"), this);
     undoAction->setShortcut(QKeySequence::Undo);
-
     redoAction = new QAction(QIcon(withWhiteBg(":/icons/images/redo.png")), tr("Redo"), this);
     redoAction->setShortcut(QKeySequence::Redo);
-
     addTrajectoryAction = new QAction(QIcon(withWhiteBg(":/icons/images/trajectory.png")), tr("Add Trajectory"), this);
     addTrajectoryAction->setEnabled(false);
 
@@ -66,7 +52,7 @@ void StandardToolBar::createActions()
     if (addTrajectoryAction->icon().isNull()) {
         Console::error("Failed to load trajectory icon from :/icons/images/trajectory.png");
     } else {
-        Console::log("Trajectory icon loaded successfully");
+        //Console::log("Trajectory icon loaded successfully");
     }
 
     testScriptAction = new QAction(QIcon(withWhiteBg(":/icons/images/test.png")), tr("Test Script"), this);

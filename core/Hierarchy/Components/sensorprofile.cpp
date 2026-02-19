@@ -146,3 +146,13 @@ void SensorProfile::fromJson(const QJsonObject& obj) {
     }
     //Console::log("Collider::fromJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
 }
+Sensor* SensorProfile::getSensor(const std::string& id) const
+{
+    if (!sensors) return nullptr;
+
+    auto it = sensors->find(id);
+    if (it == sensors->end())
+        return nullptr;
+
+    return it->second;
+}

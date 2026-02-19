@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: angelscripthighlighter.cpp                                       */
 /* Purpose: Implements syntax highlighter for AngelScript code             */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #include "angelscripthighlighter.h"                // For AngelScript highlighter class

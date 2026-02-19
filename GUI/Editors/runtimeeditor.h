@@ -1,6 +1,9 @@
+
+// #endif // RUNTIMEEDITOR_H
 /* ========================================================================= */
 /* File: runtimeeditor.h                                                    */
 /* Purpose: Defines the main window for the runtime editor application       */
+// Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef RUNTIMEEDITOR_H
@@ -20,21 +23,20 @@
 #include "core/Hierarchy/hierarchy.h"             // For hierarchy data structure
 #include "core/structure/runtime.h"               // For runtime data structure
 #include <QMainWindow>                             // For main window base class
-#include <QDockWidget>                             // For dock widget functionality
 #include "GUI/Menubars/menubar.h"                 // For menu bar
 #include "GUI/scene3dwidget/scene3dwidget.h"      // For 3D scene widget
 #include "GUI/Testscript/textscriptwidget.h"      // For text script widget
-#include "GUI/Timing/graphwidgettime.h"           // For timing graph widget
 #include "GUI/Panel/radardisplay.h"               // For radar display
-// #include "GUI/Panel/ewdisplay.h"                  // For EW display
 #include "GUI/Panel/iffdisplay.h"
 #include "GUI/Panel/radiodisplay.h"
 #include "GUI/Panel/csmdisplay.h"
 #include "GUI/Panel/esmdisplay.h"
 #include "GUI/Logger/loggerdialog.h"              // For logger dialog
 #include <QTabWidget>                             // For tabbed interface
-#include <QStatusBar>                             // For status bar display
+#include <QStatusBar>                              // For status bar display
 #include <GUI/Menubars/profileinfodialog.h>
+#include <GUI/Tacticaldisplay/Gis/layerpanel.h>
+#include "GUI/Editors/customresizableoverlaydock.h"
 
 // %%% Class Definition %%%
 /* Main window class for the runtime editor */
@@ -49,6 +51,7 @@ public:
     ~RuntimeEditor();
     // Library hierarchy data
     Hierarchy* library;
+    HierarchyTree *treeView;
     // Library tree view widget
     HierarchyTree* libTreeView;
     // Canvas widget for display
@@ -63,9 +66,20 @@ public:
     bool hasUnsavedChanges = false;
     // Clear unsaved changes flag
     void clearUnsavedChanges();
+    Hierarchy* hierarchy;
+    Simulation *simulation;
+    void triggerSidebarView(const QString &viewName);
+    void triggerDisplayTab(const QString &tabName);
+    TacticalDisplay *tacticalDisplay;
+
 public slots:
     void showProfileInfo();
-     void showApplicationDialog();
+    void showApplicationDialog();
+
+protected:
+    void resizeEvent(QResizeEvent *event) override;
+    void showEvent(QShowEvent *event) override;
+
 private slots:
     // Handle item selection
     void onItemSelected(QVariantMap data);
@@ -81,13 +95,13 @@ private slots:
     void toggleRadarDisplay();
     // Toggle logger display
     void toggleLoggerDisplay(bool checked);
-
     void onRecentProjectTriggered();
     void loadRecentProject(const QString& filePath);
-    // void clearRecentProjects();
     void setupEnhancedDockWidgets();
     void onDockVisibilityChanged(bool visible);
     void resetLayout();
+    void onRecentLibraryTriggered();
+    void showPanelContextMenu(const QPoint &pos);
 
 signals:
     // Signal unsaved changes state
@@ -96,108 +110,68 @@ signals:
 
 private:
     // %%% UI Setup Methods %%%
-     ScriptEngine* scriptengine = nullptr;
+    GraphWidget *graphWidget = nullptr;
+    ScriptEngine* scriptengine = nullptr;
+
+    // CUSTOM RESIZABLE OVERLAY DOCKS - ALL SAME TYPE
+    CustomResizableOverlayDock *hierarchyDock;        // ✅ Custom class
+    CustomResizableOverlayDock *tacticalDisplayDock;  // ✅ Custom class (unused since tacticalDisplay is central)
+    CustomResizableOverlayDock *consoleDock;          // ✅ Custom class
+    CustomResizableOverlayDock *inspectorDock;        // ✅ Custom class
+    CustomResizableOverlayDock *libraryDock;          // ✅ Custom class
+    CustomResizableOverlayDock *sidebarDock;          // ✅ Custom class
+    CustomResizableOverlayDock *textScriptDock;       // ✅ Custom class
+    CustomResizableOverlayDock *displayDock;          // ✅ Custom class (for Sensors)
+    CustomResizableOverlayDock *loggerDock;           // ✅ Custom class
+    CustomResizableOverlayDock *layerDock;            // ✅ Custom class (for Layers)
+
     // Configure menu bar
     void setupMenuBar();
     // Configure toolbars
     void setupToolBars();
-    // Configure dock widgets
+    // Configure dock widgets (legacy)
     void setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures);
     // Connect toolbar signals
     void setupToolBarConnections();
 
     // %%% UI Components %%%
-    // Hierarchy tree view widget
-    HierarchyTree *treeView;
-    // Inspector panel widget
     Inspector *inspector;
-    // Console for debugging
     Console *console;
-    // Dock widget for hierarchy
-    QDockWidget *hierarchyDock;
-    // Dock widget for tactical display
-    QDockWidget *tacticalDisplayDock;
-    // Dock widget for console
-    QDockWidget *consoleDock;
-    // Dock widget for inspector
-    QDockWidget *inspectorDock;
-    // Dock widget for library
-    QDockWidget *libraryDock;
-    // Dock widget for sidebar
-    QDockWidget *sidebarDock;
-    // Dock widget for text script
-    QDockWidget *textScriptDock;
-    // Console view widget
     ConsoleView *consoleView;
-    // Dock widget for display
-    QDockWidget *displayDock;
-    // Tactical display widget
-    TacticalDisplay *tacticalDisplay;
-    // 3D scene widget
     Scene3DWidget *scene3dwidget;
-    // Text script view widget
     TextScriptWidget *textScriptView;
-    // Timing graph widget
-    // GraphWidgetTime *timingGraphWidget;
-    // Hierarchy connector
     HierarchyConnector* m_hierarchyConnector;
-    // Hierarchy data structure
-    Hierarchy* hierarchy;
-    // Store copied data
     QVariantMap copydata;
-    // Store copied hierarchy
     Hierarchy* copyhirarchy = nullptr;
-    // Design toolbar
     DesignToolBar *designToolBar;
-    // Runtime toolbar
     RuntimeToolBar *runtimeToolBar;
-    // Network toolbar
     NetworkToolbar *networkToolBar;
-    // Standard toolbar
-    // StandardToolBar *standardToolBar;
-    // Menu bar
+    LayerPanel *layerPanel = nullptr;
     MenuBar *menuBar;
-    // List of inspector docks
-    QList<QDockWidget*> inspectorDocks;
-    // Count inspector instances
+    QList<QDockWidget*> inspectorDocks;  // Keep as QDockWidget* for additional tabs
     int inspectorCount = 0;
-    // List of inspectors
     QList<Inspector*> inspectors;
-    // Runtime data structure
     Runtime *runtime;
-    // Radar display UI
     RadarDisplay *radarDisplayUI;
-    // Simulation instance
-    Simulation *simulation;
-    // Configure status bar
     void setupStatusBar();
-    // Update status bar message
     void updateStatusBar(const QString &message);
-    // Status bar widget
     QStatusBar *statusBar;
-    // Display window widget
     QWidget *displayWindow;
-    // Tab widget for displays
     QTabWidget *displayTabs;
-    // EW display UI
-    // EWDisplay *ewDisplayUI;
-    // IFF display UI
     IFFDisplay *iffDisplayUI;
-
-    // RADIO display UI
     RADIODisplay *radioDisplayUI;
-
-
     ESMDisplay *esmDisplayUI;
     CSMDisplay *csmDisplayUI;
-    QDockWidget *loggerDock;
-    // Logger dialog instance
     LoggerDialog *loggerDialog;
-    // Store recording start time
     QDateTime recordingStartTime;
-    // Timer for updating recording duration
-    QTimer *recordingTimer;
+    QTimer *recordingTimer = nullptr;
+    ScenarioConfig* m_scenarioConfig;
 
+private:
+    qint64 pausedTimeMs = 0;
+
+private slots:
+    void onRunScriptFileRequested(const QString& filePath);
 };
 
 #endif // RUNTIMEEDITOR_H

@@ -23,41 +23,46 @@ public:
     enum class SpreadSpectrum { FHSS, DSSS, None };
     enum class MajorModulation { AM, FM, PSK, QAM };
     enum class EncryptionType { AES, DES, None };
-
-    struct Modulation {
-        SpreadSpectrum spreadSpectrum = SpreadSpectrum::None;
-        MajorModulation majorModulation = MajorModulation::AM;
-        std::string detailModulation;
-    };
-
-    struct Message {
-        std::string timeStamp; // Assumed as string, can be changed to QDateTime or other type
-        std::string source; // Entity Reference
-        std::string destination; // Entity Reference
-        std::string content; // Message Content (string or reference)
-    };
-
-    RadioType radioType = RadioType::Transceiver;
-    Modulation modulation;
     Entity* parentEntity = nullptr;
+    RadioType radioType = RadioType::Transceiver;
+
+    //Radio Transmitter
+    float minFrequency = 0;
+    float maxFrequency = 0;
+    float power = 0;
+    float powerDegradation = 0;
+
+    //Envolope
+    float minAzimuth = 0;//deg
+    float maxAzimuth = 60;//deg
+    float minElevation = 0;//deg
+    float maxElevation = 60;//deg
+
+    //Modulation
+    float spreadSpecturm = 0;
+    float majorModulation = 0;
+    float detail = 0;
+    float detailModulation = 0;
+
+    //Radio Pulse
+    float pulseWidth = 0;
+
+    //Radio Antenna
+    float AntennaGain = 1;
+    float AntennaBandwidth = 1;
+    float beamWidth = 1;
+    int scanType = 0;
+    int scanTime1 = 0;
+    int scanTime2 = 0;
+    float peakSideLobLevel = 1;
+    float avgSideLobLevel = 1;
+
     float Range=10.0f;
-    float frequencyMin = 8.0f; // MHz
-    float frequencyMax = 12.0f; // MHz
-    float emittingPower = 1.0f; // Watts
-    float bandwidth = 0.0f; // kHz
-    float dataRate = 0.0f; // kbps
-    EncryptionType encryptionType = EncryptionType::None;
-    int channelCount = 1;
-    bool jammingResistance = false;
-    float antennaGain = 0.0f; // dBi
-    float noiseFigure = 0.0f; // dB
-    std::vector<Message> messages;
-    float frequencyUsed = 1.0f; // MHz
-    float receiverSensitivity = -100.0f;   // dBm, typical small radio
-    float systemLoss = 2.0f;               // dB, cable/connectors
-    float fadeMargin = 10.0f;              // dB, reliability buffer
-    float receiverAntennaGain = -1.0f;     // dBi, -1 = use antennaGain automatically
-    float pathLossExponent = 2.0f;         // Free space default
+    float frequencyMin;
+    float frequencyMax;
+    float frequencyUsed;
+    float bandwidth;
+
     struct RadioTarget {
         Platform* entity;
         std::string name;     // Target platform name
@@ -76,24 +81,8 @@ public:
 
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& obj) override;
-    float calculateRange() const;
-    // --- Auto connections ---
-    void updateAvailableConnections(Transform* source); // Scans hierarchy for compatible radios
     std::unordered_set<Platform*> detects;
     QVector<RadioTarget> targets;
-signals:
-    void availableConnectionsUpdated(const QJsonArray& connArray); // <--- Add this
-private:
-    QString radioTypeToString(RadioType rt) const;
-    RadioType stringToRadioType(const QString& str) const;
-    QString spreadSpectrumToString(SpreadSpectrum ss) const;
-    SpreadSpectrum stringToSpreadSpectrum(const QString& str) const;
-    QString majorModulationToString(MajorModulation mm) const;
-    MajorModulation stringToMajorModulation(const QString& str) const;
-    QString encryptionTypeToString(EncryptionType et) const;
-    EncryptionType stringToEncryptionType(const QString& str) const;
-    // std::vector<RadioTarget> targets;
-    static std::unordered_set<std::string> radioSeen;
 };
 
 #endif // RADIO_H

@@ -1,9 +1,11 @@
 /* ========================================================================= */
 /* File: measuredistancedialog.cpp                                         */
 /* Purpose: Implements dialog for measuring and displaying distances        */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #include "measuredistancedialog.h"                  // For measure distance dialog
+#include "measuredistancedialog-styles.h"           // Include separate CSS file
 #include <QVBoxLayout>                             // For vertical layout
 #include <QHBoxLayout>                             // For horizontal layout
 #include <QLabel>                                  // For labels
@@ -23,82 +25,120 @@
 MeasureDistanceDialog::MeasureDistanceDialog(QWidget *parent)
     : QDialog(parent)
 {
+    // Apply dark theme to dialog
+    setStyleSheet(MeasureDistanceDialogStyles::Dialog);
+
     // Set window title and size
     setWindowTitle("Measure Distance");
     setMinimumSize(400, 300);
+
     // Create main layout
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    mainLayout->setSpacing(10);
+    mainLayout->setContentsMargins(10, 10, 10, 10);
+
     // Setup segments header
     QHBoxLayout *segmentsHeaderLayout = new QHBoxLayout();
+
     QLabel *xLabel = new QLabel("x");
     QLabel *yLabel = new QLabel("y");
     QLabel *distanceLabel = new QLabel("Distance");
-    xLabel->setStyleSheet("font-weight: bold; font-family: Courier;");
-    yLabel->setStyleSheet("font-weight: bold; font-family: Courier;");
-    distanceLabel->setStyleSheet("font-weight: bold; font-family: Courier;");
+
+    xLabel->setStyleSheet(MeasureDistanceDialogStyles::HeaderLabel);
+    yLabel->setStyleSheet(MeasureDistanceDialogStyles::HeaderLabel);
+    distanceLabel->setStyleSheet(MeasureDistanceDialogStyles::HeaderLabel);
+
     xLabel->setFixedWidth(100);
     yLabel->setFixedWidth(100);
     distanceLabel->setFixedWidth(100);
+
     segmentsHeaderLayout->addWidget(xLabel);
     segmentsHeaderLayout->addSpacing(20);
     segmentsHeaderLayout->addWidget(yLabel);
     segmentsHeaderLayout->addSpacing(20);
     segmentsHeaderLayout->addWidget(distanceLabel);
     segmentsHeaderLayout->addStretch();
+
     mainLayout->addLayout(segmentsHeaderLayout);
+
     // Setup segments list
     segmentsList = new QListWidget(this);
-    segmentsList->setFont(QFont("Courier"));
+    segmentsList->setFont(QFont("Courier New", 10));
+    segmentsList->setStyleSheet(MeasureDistanceDialogStyles::ListWidget);
     mainLayout->addWidget(segmentsList);
+
     // Setup control layout
     QHBoxLayout *controlLayout = new QHBoxLayout();
+
     unitComboBox = new QComboBox(this);
     unitComboBox->addItems({"meters", "kilometers", "feet", "miles", "degrees"});
     unitComboBox->setCurrentIndex(Meters);
+    unitComboBox->setStyleSheet(MeasureDistanceDialogStyles::ComboBox);
     controlLayout->addWidget(unitComboBox);
+
     QPushButton *lockButton = new QPushButton(this);
     lockButton->setIcon(QIcon(":/icons/lock.png"));
     lockButton->setFixedSize(24, 24);
     lockButton->setFlat(true);
+    lockButton->setStyleSheet(MeasureDistanceDialogStyles::LockButton);
     lockButton->setToolTip("Lock measurements");
     controlLayout->addWidget(lockButton);
-    controlLayout->addWidget(new QLabel("Total:"));
+
+    QLabel *totalLabel = new QLabel("Total:");
+    totalLabel->setStyleSheet(MeasureDistanceDialogStyles::TotalLabel);
+    controlLayout->addWidget(totalLabel);
+
     totalDistanceEdit = new QLineEdit(this);
     totalDistanceEdit->setReadOnly(true);
     totalDistanceEdit->setPlaceholderText("0.000 m");
+    totalDistanceEdit->setStyleSheet(MeasureDistanceDialogStyles::LineEdit);
     controlLayout->addWidget(totalDistanceEdit);
     controlLayout->addStretch();
+
     mainLayout->addLayout(controlLayout);
+
     // Setup measurement type selection
     QHBoxLayout *typeLayout = new QHBoxLayout();
-    cartesianRadio = new QRadioButton("Cartesian");
+
     ellipsoidalRadio = new QRadioButton("Ellipsoidal");
     ellipsoidalRadio->setChecked(true);
-    typeLayout->addWidget(cartesianRadio);
+    ellipsoidalRadio->setStyleSheet(MeasureDistanceDialogStyles::RadioButton);
+
     typeLayout->addWidget(ellipsoidalRadio);
+    typeLayout->addStretch();
+
     mainLayout->addLayout(typeLayout);
+
     // Setup button layout
     QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->setSpacing(8);
+
     QPushButton *infoButton = new QPushButton("Info");
     QPushButton *newButton = new QPushButton("New");
-    QPushButton *configButton = new QPushButton("Configuration");
     QPushButton *copyButton = new QPushButton("Copy");
     QPushButton *closeButton = new QPushButton("Close");
+
+    infoButton->setStyleSheet(MeasureDistanceDialogStyles::PushButton);
+    newButton->setStyleSheet(MeasureDistanceDialogStyles::PushButton);
+    copyButton->setStyleSheet(MeasureDistanceDialogStyles::PushButton);
+    closeButton->setStyleSheet(MeasureDistanceDialogStyles::PushButton);
+
     buttonLayout->addWidget(infoButton);
     buttonLayout->addWidget(newButton);
-    buttonLayout->addWidget(configButton);
     buttonLayout->addWidget(copyButton);
+    buttonLayout->addStretch();
     buttonLayout->addWidget(closeButton);
+
     mainLayout->addLayout(buttonLayout);
+
     // Connect button signals
     connect(closeButton, &QPushButton::clicked, this, &QDialog::reject);
     connect(newButton, &QPushButton::clicked, this, &MeasureDistanceDialog::onNewButtonClicked);
     connect(copyButton, &QPushButton::clicked, this, &MeasureDistanceDialog::onCopyButtonClicked);
     connect(infoButton, &QPushButton::clicked, this, &MeasureDistanceDialog::onInfoButtonClicked);
-    connect(configButton, &QPushButton::clicked, this, &MeasureDistanceDialog::onConfigButtonClicked);
-    connect(cartesianRadio, &QRadioButton::toggled, this, &MeasureDistanceDialog::onMeasurementTypeChanged);
     connect(ellipsoidalRadio, &QRadioButton::toggled, this, &MeasureDistanceDialog::onMeasurementTypeChanged);
     connect(unitComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MeasureDistanceDialog::onUnitChanged);
+
     // Set main layout
     setLayout(mainLayout);
 }
@@ -109,20 +149,29 @@ void MeasureDistanceDialog::addMeasurement(double x, double y, double distance)
 {
     // Validate distance
     if (distance < 0) {
-        QMessageBox::warning(this, "Invalid Distance", "Distance cannot be negative.");
+        QMessageBox msgBox(this);
+        msgBox.setStyleSheet(MeasureDistanceDialogStyles::Dialog);
+        msgBox.setWindowTitle("Invalid Distance");
+        msgBox.setText("Distance cannot be negative.");
+        msgBox.setIcon(QMessageBox::Warning);
+        msgBox.exec();
         return;
     }
+
     // Store measurement
     measurements.append({x, y, distance});
+
     // Convert distance to current unit
     double factor = getConversionFactor(currentUnit);
     double convertedDistance = distance * factor;
+
     // Format and add item to list
     QString itemText = QString("%1 %2 %3")
                            .arg(x, 10, 'f', 6)
                            .arg(y, 10, 'f', 6)
                            .arg(convertedDistance, 10, 'f', 3);
     segmentsList->addItem(itemText);
+
     // Update total distance
     updateTotalDistance();
 }
@@ -133,10 +182,12 @@ void MeasureDistanceDialog::updateTotalDistance()
     double total = 0.0;
     double factor = getConversionFactor(currentUnit);
     QString unitStr = getUnitString(currentUnit);
+
     // Sum distances
     for (const auto &measurement : measurements) {
         total += measurement.distance;
     }
+
     // Update total display
     totalDistanceEdit->setText(QString::number(total * factor, 'f', 3) + " " + unitStr);
 }
@@ -147,8 +198,10 @@ void MeasureDistanceDialog::clearMeasurements()
     // Clear list and measurements
     segmentsList->clear();
     measurements.clear();
+
     // Reset total display
     totalDistanceEdit->setText("0.000 " + getUnitString(currentUnit));
+
     // Emit new measurement signal
     emit newMeasurementRequested();
 }
@@ -161,6 +214,7 @@ void MeasureDistanceDialog::updateMeasurementDisplay()
     double total = 0.0;
     double factor = getConversionFactor(currentUnit);
     QString unitStr = getUnitString(currentUnit);
+
     // Repopulate list with converted measurements
     for (const auto &measurement : measurements) {
         double convertedDistance = measurement.distance * factor;
@@ -171,6 +225,7 @@ void MeasureDistanceDialog::updateMeasurementDisplay()
                                .arg(convertedDistance, 10, 'f', 3);
         segmentsList->addItem(itemText);
     }
+
     // Update total display
     totalDistanceEdit->setText(QString::number(total * factor, 'f', 3) + " " + unitStr);
 }
@@ -228,16 +283,25 @@ void MeasureDistanceDialog::onNewButtonClicked()
 void MeasureDistanceDialog::onCopyButtonClicked()
 {
     QString text;
+
     // Copy all list items
     for (int i = 0; i < segmentsList->count(); ++i) {
         text += segmentsList->item(i)->text() + "\n";
     }
+
     // Append total distance
     text += "Total: " + totalDistanceEdit->text();
+
     // Copy to clipboard
     QApplication::clipboard()->setText(text);
+
     // Show confirmation
-    QMessageBox::information(this, "Copied", "Measurements copied to clipboard.");
+    QMessageBox msgBox(this);
+    msgBox.setStyleSheet(MeasureDistanceDialogStyles::Dialog);
+    msgBox.setWindowTitle("Copied");
+    msgBox.setText("Measurements copied to clipboard.");
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.exec();
 }
 
 /* Handle info button click */
@@ -248,15 +312,26 @@ void MeasureDistanceDialog::onInfoButtonClicked()
                        ? "Ellipsoidal: Distances are calculated using an ellipsoidal model (e.g., WGS84)."
                        : "Cartesian: Distances are calculated using flat-plane geometry.";
     info += "\nCurrent unit: " + unitComboBox->currentText();
+
     // Show info dialog
-    QMessageBox::information(this, "Measurement Info", info);
+    QMessageBox msgBox(this);
+    msgBox.setStyleSheet(MeasureDistanceDialogStyles::Dialog);
+    msgBox.setWindowTitle("Measurement Info");
+    msgBox.setText(info);
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.exec();
 }
 
 /* Handle configuration button click */
 void MeasureDistanceDialog::onConfigButtonClicked()
 {
     // Show placeholder message
-    QMessageBox::information(this, "Configuration", "Configuration options are not implemented yet.");
+    QMessageBox msgBox(this);
+    msgBox.setStyleSheet(MeasureDistanceDialogStyles::Dialog);
+    msgBox.setWindowTitle("Configuration");
+    msgBox.setText("Configuration options are not implemented yet.");
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.exec();
 }
 
 /* Handle unit change */
@@ -264,8 +339,10 @@ void MeasureDistanceDialog::onUnitChanged(int index)
 {
     // Update current unit
     currentUnit = static_cast<Unit>(index);
+
     // Emit unit change signal
     emit unitChanged(unitComboBox->currentText());
+
     // Update display
     updateMeasurementDisplay();
 }

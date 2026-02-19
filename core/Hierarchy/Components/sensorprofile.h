@@ -15,7 +15,7 @@ public:
 
     bool Active;
     std::unordered_map<std::string, Sensor*> *sensors;
-
+    Sensor* getSensor(const std::string& id) const;
     // Add a map to store custom parameters
     QJsonObject customParameters; // Store custom parameters as key-value pairs
     void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QString data3 = "") override;

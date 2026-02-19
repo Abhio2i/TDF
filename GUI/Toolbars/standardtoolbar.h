@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: standardtoolbar.h                                                  */
 /* Purpose: Defines toolbar for standard editing actions                     */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef STANDARDTOOLBAR_H
@@ -56,7 +57,6 @@ private:
     // %%% Utility Methods %%%
     // Create toolbar actions
     void createActions();
-    // Create pixmap with white background
     QPixmap withWhiteBg(const QString &iconPath);
 };
 

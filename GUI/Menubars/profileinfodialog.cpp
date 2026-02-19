@@ -1,5 +1,13 @@
+//============================================================================
+// File        : profileinfodialog.cpp
+// Description : Implementation of ProfileInfoDialog class for displaying
+//               real-time performance metrics including FPS, execution times,
+//               and various system component timings with live updates.
+//               Written by Arti Rajpoot
+//============================================================================
 
 #include "profileinfodialog.h"
+#include "profileinfodialog-styles.h"  // Include separate CSS file
 #include "core/Debug/profiler.h"
 #include <QApplication>
 #include <QClipboard>
@@ -22,6 +30,9 @@ ProfileInfoDialog::ProfileInfoDialog(QWidget *parent)
     , frameCount(0)
     , fps(0)
 {
+    // Apply dark theme to dialog
+    setStyleSheet(ProfileInfoDialogStyles::Dialog);
+
     setWindowTitle("Premetrix Performance Metrics");
     setMinimumSize(400, 500);
 
@@ -30,14 +41,11 @@ ProfileInfoDialog::ProfileInfoDialog(QWidget *parent)
 
     setupUI();
 
-
     fpsTimer.start();
-
 
     refreshTimer = new QTimer(this);
     connect(refreshTimer, &QTimer::timeout, this, &ProfileInfoDialog::updateRealTimeInfo);
     refreshTimer->start(100); // 100ms = 10 FPS
-
 
     QTimer* fpsUpdateTimer = new QTimer(this);
     connect(fpsUpdateTimer, &QTimer::timeout, this, [this]() {
@@ -49,7 +57,7 @@ ProfileInfoDialog::ProfileInfoDialog(QWidget *parent)
     // Initial update
     updateRealTimeInfo();
 
-    qDebug() << "ProfileInfoDialog created with CanvasWidget-style updates";
+    // qDebug() << "ProfileInfoDialog created with CanvasWidget-style updates";
 }
 
 ProfileInfoDialog::~ProfileInfoDialog()
@@ -63,60 +71,33 @@ ProfileInfoDialog::~ProfileInfoDialog()
 void ProfileInfoDialog::setupUI()
 {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    mainLayout->setSpacing(10);
+    mainLayout->setContentsMargins(15, 15, 15, 15);
 
     // Title
     titleLabel = new QLabel("Premetrix Performance Metrics", this);
     titleLabel->setAlignment(Qt::AlignCenter);
-    titleLabel->setStyleSheet("color: #2c3e50; font-size: 16px; font-weight: bold; margin: 10px;");
+    titleLabel->setStyleSheet(ProfileInfoDialogStyles::TitleLabel);
     mainLayout->addWidget(titleLabel);
-
 
     textEdit = new QTextEdit(this);
     textEdit->setReadOnly(true);
     textEdit->setFont(QFont("Consolas", 9));
-    textEdit->setStyleSheet(
-        "QTextEdit {"
-        "  background-color: #f8f9fa;"
-        "  color: #212529;"
-        "  border: 1px solid #dee2e6;"
-        "  border-radius: 4px;"
-        "  padding: 8px;"
-        "}"
-        );
+    textEdit->setStyleSheet(ProfileInfoDialogStyles::TextEdit);
     mainLayout->addWidget(textEdit);
 
     // Button layout
     QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->setSpacing(10);
+    buttonLayout->setContentsMargins(0, 5, 0, 0);
 
     copyButton = new QPushButton("Copy", this);
-    copyButton->setStyleSheet(
-        "QPushButton {"
-        "  background-color: #6c757d;"
-        "  color: white;"
-        "  padding: 6px 12px;"
-        "  border-radius: 4px;"
-        "  font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "  background-color: #5a6268;"
-        "}"
-        );
+    copyButton->setStyleSheet(ProfileInfoDialogStyles::CopyButton);
     copyButton->setToolTip("Copy metrics to clipboard");
     connect(copyButton, &QPushButton::clicked, this, &ProfileInfoDialog::copyToClipboard);
 
     closeButton = new QPushButton("Close", this);
-    closeButton->setStyleSheet(
-        "QPushButton {"
-        "  background-color: #dc3545;"
-        "  color: white;"
-        "  padding: 6px 12px;"
-        "  border-radius: 4px;"
-        "  font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "  background-color: #c82333;"
-        "}"
-        );
+    closeButton->setStyleSheet(ProfileInfoDialogStyles::CloseButton);
     connect(closeButton, &QPushButton::clicked, this, &ProfileInfoDialog::close);
 
     buttonLayout->addWidget(copyButton);
@@ -128,7 +109,7 @@ void ProfileInfoDialog::setupUI()
     // Status label
     QLabel *statusLabel = new QLabel("🔄 Live updating every 100ms", this);
     statusLabel->setAlignment(Qt::AlignCenter);
-    statusLabel->setStyleSheet("color: #6c757d; font-size: 10px; font-style: italic; padding: 5px;");
+    statusLabel->setStyleSheet(ProfileInfoDialogStyles::StatusLabel);
     mainLayout->addWidget(statusLabel);
 
     setLayout(mainLayout);
@@ -141,15 +122,12 @@ void ProfileInfoDialog::updateRealTimeInfo()
     QString info;
     QTextStream stream(&info);
 
-
     stream << "=== PREMETRIX PERFORMANCE METRICS ===\n";
     stream << "Timestamp: " << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz") << "\n";
     stream << "=====================================\n\n";
 
-
     if (Profiler::currentFrame) {
         const auto currentFrame = Profiler::currentFrame;
-
 
         struct PerfMetric {
             const char* label;
@@ -178,27 +156,27 @@ void ProfileInfoDialog::updateRealTimeInfo()
 
         for (const auto& metric : metrics) {
             QString text = QString("%1 %2ms")
-                               .arg(metric.label)
-                               .arg(metric.timeValue);
+                               .arg(metric.label, -8)  // Left align with width 8
+                               .arg(metric.timeValue, 4);  // Right align with width 4
             stream << text << "\n";
         }
     } else {
         stream << "Performance Metrics:\n";
         stream << "-------------------\n";
-        stream << "Exc Time:     0 ms\n";
-        stream << "Can Time:     0 ms\n";
-        stream << "Phy Time:     0 ms\n";
-        stream << "Dym Time:     0 ms\n";
-        stream << "Sen Time:     0 ms\n";
-        stream << "Rdr Time:     0 ms\n";
-        stream << "EW Time:      0 ms\n";
-        stream << "CSM Time:     0 ms\n";
-        stream << "ESM Time:     0 ms\n";
-        stream << "IFF Time:     0 ms\n";
-        stream << "Rdo Time:     0 ms\n";
-        stream << "CSM UI:       0 ms\n";
-        stream << "ESM UI:       0 ms\n";
-        stream << "GUI Time:     0 ms\n";
+        stream << "Exc Time    0 ms\n";
+        stream << "Can Time    0 ms\n";
+        stream << "Phy Time    0 ms\n";
+        stream << "Dym Time    0 ms\n";
+        stream << "Sen Time    0 ms\n";
+        stream << "Rdr Time    0 ms\n";
+        stream << "EW Time     0 ms\n";
+        stream << "CSM Time    0 ms\n";
+        stream << "ESM Time    0 ms\n";
+        stream << "IFF Time    0 ms\n";
+        stream << "Rdo Time    0 ms\n";
+        stream << "CSM UI      0 ms\n";
+        stream << "ESM UI      0 ms\n";
+        stream << "GUI Time    0 ms\n";
     }
 
     textEdit->setPlainText(info);
@@ -236,7 +214,6 @@ void ProfileInfoDialog::showProfileInfo(QWidget *parent)
     if (!dialog || !dialog->isVisible()) {
         dialog = new ProfileInfoDialog(parent);
         dialog->setAttribute(Qt::WA_DeleteOnClose);
-
         if (parent) {
             QRect parentRect = parent->geometry();
             QRect dialogRect = dialog->geometry();
@@ -252,5 +229,5 @@ void ProfileInfoDialog::showProfileInfo(QWidget *parent)
     // dialog->raise();
     // dialog->activateWindow();
 
-    qDebug() << "ProfileInfoDialog shown with CanvasWidget-style metrics";
+    // qDebug() << "ProfileInfoDialog shown with CanvasWidget-style metrics";
 }

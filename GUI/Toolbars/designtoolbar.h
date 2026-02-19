@@ -1,6 +1,8 @@
+
 /* ========================================================================= */
 /* File: designtoolbar.h                                                    */
 /* Purpose: Defines toolbar for design and map interaction                    */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef DESIGNTOOLBAR_H
@@ -12,10 +14,13 @@
 #include <QMenu>                                  // For menu widget
 #include <core/Hierarchy/Components/transform.h>  // For transform component
 #include <GUI/Tacticaldisplay/Gis/layerinformationdialog.h> // For layer info dialog
+#include <core/Config/scenarioconfig.h>
 
 // %%% StayOpenMenu Class %%%
 /* Menu that stays open on click */
 class StayOpenMenu : public QMenu {
+    Q_OBJECT  // Added Q_OBJECT macro for qobject_cast
+
 public:
     // Initialize menu
     explicit StayOpenMenu(QWidget* parent = nullptr) : QMenu(parent) {}
@@ -39,7 +44,8 @@ class DesignToolBar : public QToolBar {
 
 public:
     // Initialize toolbar
-    explicit DesignToolBar(QWidget *parent = nullptr);
+    // explicit DesignToolBar(QWidget *parent = nullptr);
+    explicit DesignToolBar(QWidget *parent = nullptr, ScenarioConfig* config = nullptr);
     // Get load JSON action
     QAction* getLoadAction() { return loadJsonAction; }
     // Get save JSON action
@@ -169,7 +175,7 @@ signals:
     void searchCoordinatesTriggered(double latitude, double longitude);
     void addTrajectoryTriggered();
     void coordinateSystemChanged(const QString& crsId);
-
+    void tooltipOptionsChanged(const QSet<QString>& activeOptions);
 public slots:
     // Handle mode change
     void onModeChanged(TransformMode mode);
@@ -181,9 +187,13 @@ public slots:
 private slots:
     // Handle GeoJSON import
     void importGeoJson();
+    // Handle adding a base layer to selected layers
+    void onAddBaseLayerToSelected(const QString& layerId);
+    // Update the map layers menu display
+    void updateMapLayersMenu();
 
 private:
-         // %%% UI Components %%%
+    // %%% UI Components %%%
     QAction *addTrajectoryAction;
     // View action
     QAction *viewAction;
@@ -221,8 +231,10 @@ private:
     QAction *snapScaleAction;
     // Add custom map action
     QAction *addCustomMapAction;
-    // Map of layer actions
+    // Map of layer actions (for selected layers)
     QMap<QString, QAction*> layerActions;
+    // Map of add button actions (for base layers)
+    QMap<QString, QAction*> addLayerActions;
     // List of map layer info
     QList<LayerInformationDialog::MapLayerInfo> mapLayers;
     // Load JSON action
@@ -233,6 +245,12 @@ private:
     QAction *editTrajectoryAction;
     // Map of GeoJSON layer actions
     QMap<QString, QAction*> geoJsonLayerActions;
+    QSlider* opacitySlider;
+
+    // Track map layer rendering order
+    QStringList currentLayerOrder;
+    // Track which base layers have been added to selected layers
+    QStringList selectedBaseLayers;
 
     // %%% Utility Methods %%%
     // Create toolbar actions
@@ -245,6 +263,11 @@ private:
     QPixmap withWhiteBg(const QString &iconPath);
     // Handle bitmap image selection
     void onSelectBitmapImage();
+    // void updateTooltipOptions(const QMap<QString, QAction*>& fieldActions);
+    QMap<QString, QAction*> tooltipFieldActions;
+    void updateTooltipOptions();
+    ScenarioConfig* scenarioConfig;
+
 };
 
 #endif

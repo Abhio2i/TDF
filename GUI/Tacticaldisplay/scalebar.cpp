@@ -1,3 +1,13 @@
+//============================================================================
+// ScaleBar
+// Written by: Waris
+//
+// Purpose:
+// - Displays a dynamic map scale bar on the GIS canvas
+// - Automatically adjusts scale length and label based on zoom level
+// - Renders a visually clear scale similar to standard map applications
+//============================================================================
+
 #include "GUI/Tacticaldisplay/scalebar.h"
 #include <QPainter>
 #include <QDebug>

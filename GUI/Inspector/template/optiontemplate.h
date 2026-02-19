@@ -41,7 +41,6 @@ public:
 signals:
     // Signal value change
     void valueChanged(QString ID, QString name, QJsonObject delta);
-
 private:
     // %%% Data Members %%%
     // Connected item ID

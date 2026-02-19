@@ -1,16 +1,19 @@
-
-
-
 //============================================================================
 // File        : consoleview.cpp
 // Description : Implements the ConsoleView class for handling multiple
 //               console tabs (general, error, debug, warning, log) in Qt.
+//               Written by Arti Rajpoot
 //============================================================================
 
 #include "consoleview.h"
+#include "consoleview-styles.h"  // Include separate CSS file
+#include "qtabbar.h"
 #include <QFont>
 #include <QDateTime>
 #include <QTextStream>
+#include <QPalette>
+#include <QStyleOptionTab>
+#include <QStylePainter>
 
 //============================================================================
 // CLASS: ConsoleView
@@ -24,6 +27,9 @@
  */
 ConsoleView::ConsoleView(QWidget *parent) : QWidget(parent)
 {
+    // Apply main widget style
+    setStyleSheet(ConsoleViewStyles::MainWidget);
+
     // Create main vertical layout for entire widget
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -34,6 +40,54 @@ ConsoleView::ConsoleView(QWidget *parent) : QWidget(parent)
     //--------------------------------------------------------------------------
 
     tabWidget = new QTabWidget(this);
+    tabWidget->setDocumentMode(true);
+    tabWidget->setStyleSheet(ConsoleViewStyles::TabWidget);
+    QWidget *cornerWidget = new QWidget();
+    cornerWidget->setStyleSheet("background-color: #0F2636;");
+    cornerWidget->setFixedHeight(30); // Match tab height
+    tabWidget->setCornerWidget(cornerWidget, Qt::TopRightCorner);
+
+    // Ensure tab widget background is dark
+    tabWidget->setAutoFillBackground(true);
+
+    // Set palette to force dark background
+    QPalette pal = tabWidget->palette();
+    pal.setColor(QPalette::Window, QColor(15, 38, 54));
+    pal.setColor(QPalette::Base, QColor(15, 38, 54));
+    pal.setColor(QPalette::Button, QColor(15, 38, 54));
+    pal.setColor(QPalette::Mid, QColor(15, 38, 54));
+    pal.setColor(QPalette::Dark, QColor(15, 38, 54));
+    tabWidget->setPalette(pal);
+
+    // Force tab bar to have dark background - COMPREHENSIVE APPROACH
+    QTabBar *tabBar = tabWidget->tabBar();
+    if (tabBar) {
+        // Method 1: Stylesheet with !important
+          tabBar->setExpanding(false);
+        tabBar->setStyleSheet(
+            "QTabBar { background-color: #0F2636 !important; } "
+            "QTabBar::tab { background-color: #1A3652; } "
+            "QTabBar::tab:selected { background-color: #0F2636; } "
+            "QTabBar::tear { background-color: #0F2636 !important; } "
+            "QTabBar::scroller { background-color: #0F2636 !important; } "
+            "QTabBar QToolButton { background-color: #0F2636; border: none; }"
+            );
+
+        // Method 2: Palette
+        QPalette tabPal = tabBar->palette();
+        tabPal.setColor(QPalette::Window, QColor(15, 38, 54));
+        tabPal.setColor(QPalette::Base, QColor(15, 38, 54));
+        tabPal.setColor(QPalette::Button, QColor(15, 38, 54));
+        tabPal.setColor(QPalette::Mid, QColor(15, 38, 54));
+        tabPal.setColor(QPalette::Dark, QColor(15, 38, 54));
+        tabBar->setPalette(tabPal);
+
+        // Method 3: AutoFill
+        tabBar->setAutoFillBackground(true);
+
+        // Method 4: Force update
+        tabBar->update();
+    }
 
     //--------------------------------------------------------------------------
     // STEP 2: Create individual console QTextEdit widgets
@@ -49,20 +103,26 @@ ConsoleView::ConsoleView(QWidget *parent) : QWidget(parent)
     setupConsoleTabs();
 
     //--------------------------------------------------------------------------
-    // STEP 3: Create layout for buttons
+    // STEP 3: Create layout for buttons - with dark background
     //--------------------------------------------------------------------------
 
-    QHBoxLayout *buttonLayout = new QHBoxLayout();
-    buttonLayout->setContentsMargins(0, 0, 0, 0);
+    // Create a container widget for buttons to ensure full background
+    QWidget *buttonContainer = new QWidget(this);
+    buttonContainer->setStyleSheet(ConsoleViewStyles::ButtonContainer);
+    buttonContainer->setAutoFillBackground(true);
+
+    QHBoxLayout *buttonLayout = new QHBoxLayout(buttonContainer);
+    buttonLayout->setContentsMargins(5, 2, 5, 2);
+    buttonLayout->setSpacing(8);
 
     // Create clear and save buttons
     clearButton = new QPushButton("Clear");
     saveButton = new QPushButton("Save Log");
 
-    // Configure buttons with style and signals
+    // Configure buttons with compact style
     setupButtons();
 
-    // Add buttons to button layout with stretch for alignment
+    // Add buttons to button layout
     buttonLayout->addWidget(clearButton);
     buttonLayout->addStretch();
     buttonLayout->addWidget(saveButton);
@@ -72,7 +132,7 @@ ConsoleView::ConsoleView(QWidget *parent) : QWidget(parent)
     //--------------------------------------------------------------------------
 
     mainLayout->addWidget(tabWidget);
-    mainLayout->addLayout(buttonLayout);
+    mainLayout->addWidget(buttonContainer);
 
     // Set main layout for this widget
     setLayout(mainLayout);
@@ -90,15 +150,9 @@ void ConsoleView::setupConsoleTabs()
     // Lambda function for setting up each QTextEdit console
     auto setupConsole = [](QTextEdit *console) {
         console->setReadOnly(true);
-        console->setFont(QFont("Courier", 10));
-        console->setStyleSheet(
-            "QTextEdit { "
-            "background-color: #1E1E1E; "
-            "color: black; "
-            "border: none; "
-            "}"
-            );
-         console->document()->setMaximumBlockCount(1000);
+        console->setFont(QFont("Courier New", 10));
+        console->setStyleSheet(ConsoleViewStyles::TextEdit);
+        console->document()->setMaximumBlockCount(1000);
     };
 
     // Apply setup to all consoles
@@ -114,13 +168,21 @@ void ConsoleView::setupConsoleTabs()
     tabWidget->addTab(debugConsole, "Debug");
     tabWidget->addTab(warningConsole, "Warning");
     tabWidget->addTab(logConsole, "Log");
+    QWidget *cornerWidget = new QWidget();
+    cornerWidget->setAutoFillBackground(true);
+    QPalette cornerPal = cornerWidget->palette();
+    cornerPal.setColor(QPalette::Window, QColor(15, 38, 54));
+    cornerWidget->setPalette(cornerPal);
+    cornerWidget->setStyleSheet("background-color: #0F2636;");
+    tabWidget->setCornerWidget(cornerWidget, Qt::TopRightCorner);
+    // Set the current tab to general console
+    tabWidget->setCurrentWidget(generalConsole);
 
-    // Set tab bar colors and styles
-    tabWidget->setStyleSheet(
-        "QTabBar::tab { color: black;  } "
-        "QTabBar::tab:selected { background: lightgray; } "
-        "QTabWidget::pane { border: none; } "
-        );
+    // Force repaint of tab bar
+    QTabBar *tabBar = tabWidget->tabBar();
+    if (tabBar) {
+        tabBar->repaint();
+    }
 }
 
 //============================================================================
@@ -132,23 +194,13 @@ void ConsoleView::setupConsoleTabs()
  */
 void ConsoleView::setupButtons()
 {
-    // Style Clear button
-    clearButton->setStyleSheet(
-        "QPushButton { "
-        "color: black; "
-        "border: 1px solid #5A5A5A; "
-        "}"
-        "QPushButton:hover { background-color: #4A4A4A; }"
-        );
+    // Style Clear button with compact style
+    clearButton->setStyleSheet(ConsoleViewStyles::PushButton);
+    clearButton->setFixedHeight(22);
 
-    // Style Save button
-    saveButton->setStyleSheet(
-        "QPushButton { "
-        "color: black; "
-        "border: 1px solid #5A5A5A; "
-        "}"
-        "QPushButton:hover { background-color: #4A4A4A; }"
-        );
+    // Style Save button with compact style
+    saveButton->setStyleSheet(ConsoleViewStyles::PushButton);
+    saveButton->setFixedHeight(22);
 
     // Connect buttons to respective slots
     connect(clearButton, &QPushButton::clicked, this, &ConsoleView::clearConsole);
@@ -171,9 +223,9 @@ void ConsoleView::appendTextToConsole(QTextEdit *console, const QString &text, c
 
     console->moveCursor(QTextCursor::End);
     console->setTextColor(color);           // Set timestamp color
-    console->insertPlainText(timestamp);   // Insert timestamp
-    console->setTextColor(Qt::white);      // Reset text color
-    console->insertPlainText(text + "\n"); // Insert message
+    console->insertPlainText(timestamp);    // Insert timestamp
+    console->setTextColor(Qt::white);       // Reset text color to white
+    console->insertPlainText(text + "\n");  // Insert message
     console->moveCursor(QTextCursor::End);
 }
 
@@ -183,7 +235,7 @@ void ConsoleView::appendTextToConsole(QTextEdit *console, const QString &text, c
 
 void ConsoleView::appendText(const QString &text)
 {
-    appendTextToConsole(generalConsole, text, Qt::gray);
+    appendTextToConsole(generalConsole, text, Qt::lightGray);
 
     // Switch to general console tab if visible and not current
     if (consoleDock && consoleDock->isVisible() && tabWidget->currentWidget() != generalConsole) {
@@ -209,7 +261,7 @@ void ConsoleView::appendDebug(const QString &text)
 
 void ConsoleView::appendWarning(const QString &text)
 {
-    appendTextToConsole(warningConsole, text, QColor(255, 165, 0));
+    appendTextToConsole(warningConsole, text, QColor(255, 165, 0)); // Orange
     if (consoleDock && consoleDock->isVisible()) {
         tabWidget->setCurrentWidget(warningConsole);
     }
@@ -217,7 +269,7 @@ void ConsoleView::appendWarning(const QString &text)
 
 void ConsoleView::appendLog(const QString &text)
 {
-    appendTextToConsole(logConsole, text, Qt::gray);
+    appendTextToConsole(logConsole, text, Qt::lightGray);
     if (consoleDock && consoleDock->isVisible()) {
         tabWidget->setCurrentWidget(logConsole);
     }

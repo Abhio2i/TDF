@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: menubar.h                                                          */
 /* Purpose: Defines menu bar for application interface                       */
+// Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef MENUBAR_H
@@ -9,7 +10,7 @@
 #include <QMenuBar>                               // For menu bar base class
 #include <QMenu>                                  // For menu widget
 #include <QAction>                                // For action items
-#include <GUI/Feedback/feedback.h>                // For feedback window
+#include <GUI/Feedback/projectinformation.h>                // For feedback window
 
 // %%% Class Definition %%%
 /* Menu bar for application UI */
@@ -40,6 +41,7 @@ public:
     QAction* getNewFileAction();
     // Get recent project action
     QAction* getRecentProjectAction();
+        QAction* getrecentProjectLibraryAction();
     // Get run action (commented)
     // QAction* getRunAction();
     // Get exit action
@@ -72,8 +74,15 @@ public:
     // QAction* getAdd3DViewAction();
     // // Get remove 3D view action
     // QAction* getRemove3DViewAction();
-       QAction* getProfileAction();
-        QAction* getApplicationAction() { return applicationAction; }
+    QAction* getProfileAction();
+    QAction* getApplicationAction() { return applicationAction; }
+    QAction* getLoadXmlAction();
+    QAction* getOpenRuntimeInstanceAction();
+
+
+    //====8feb====
+    void setLibraryActionsVisible(bool visible);
+
 
 signals:
     // Signal feedback action triggered
@@ -82,6 +91,7 @@ signals:
     void newFileTriggered();
     // Signal recent project action triggered
     void recentProjectTriggered();
+    void recentProjectLibraryTriggered();
     // Signal load action triggered
     void loadTriggered();
     // Signal load to library action triggered
@@ -122,21 +132,24 @@ signals:
     // void add3DViewTriggered();
     // // Signal remove 3D view action triggered
     // void remove3DViewTriggered();
-     void profileTriggered();
-         void applicationTriggered();
+    void profileTriggered();
+    void applicationTriggered();
+    void loadXmlTriggered();
+    void openRuntimeInstanceTriggered();
 
 private:
     // %%% Menu Components %%%
     // File menu
     QMenu* fileMenu;
     // Edit menu
-    QMenu* editMenu;
+    // QMenu* editMenu;
     // View menu
     QMenu* viewMenu;
     // New file action
     QAction* newFileAction;
     // Recent project action
     QAction* recentProjectAction;
+    QAction* recentProjectLibraryAction;
     // Load JSON action
     QAction* loadJsonAction;
     // Load to library action
@@ -181,8 +194,10 @@ private:
     QMenu* feedbackMenu;
     // Feedback action
     QAction* feedbackAction;
-       QAction* profileAction;
-     QAction *applicationAction;
+    QAction* profileAction;
+    QAction *applicationAction;
+    QAction* loadXmlAction;
+    QAction* openRuntimeInstanceAction;
 };
 
 #endif // MENUBAR_H

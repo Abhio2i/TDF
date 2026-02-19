@@ -1,6 +1,5 @@
 
 
-
 #ifndef DYNAMICMODEL_H
 #define DYNAMICMODEL_H
 #include <QObject>
@@ -17,6 +16,7 @@ class DynamicModel: public QObject, public Component
 {
     Q_OBJECT
 public:
+
     enum TerrainSurface {
         Generic,
         Ground,
@@ -31,18 +31,19 @@ public:
     void start();
     bool control;
     bool follow;
-    float turnRadius = 500;//metre
+    float turnRadius = 10;//metre
     ///Maximums
-    float minSpeed = 1800.0f;//km/h
+    float minSpeed = 100.0f;//km/h
     float moveSpeed = 800.0f;//km/h
-    float maxSpeed = 100.0f;//km/h
+    float maxSpeed = 1800.0f;//km/h
     float Acceleration = 100.000f;//m/s^2
     float Decceleration = 100.000f;//m/s^2
-    float turnRate = 71.620f;//deg/s
+    float turnRate = 10.620f;//deg/s
     float Roll = 90.000;//deg
+    float maxAltitude = 60000;//ft
     float Altitude = 10000;//ft
-    float climbRate = 100.000;//ft/s
-    float diveRate = 100.000;//ft/s
+    float climbRate = 1000.000;//ft/s
+    float diveRate = 1000.000;//ft/s
 
     ///Resposes
     float deltaSpdCommandMaxAcc = 20.000;//m/s
@@ -63,6 +64,7 @@ public:
 
     float angdeg = 1;
     float startTime = 0;
+    float endTime = -1;
     float time = 0;
     float currentSpeed = 0;
     float currentAltitude = 0;
@@ -70,8 +72,26 @@ public:
 
     // New member variables for 6-DoF simulation without Rigidbody
     QVector3D velocity;
+    QVector3D windDierction;
+    float windSpeed;
     QVector3D angularVelocity;
     float mass = 1.0f; // Add mass for realistic physics calculations
+
+    ///out Parameter
+    float pitch = 0;
+    float roll = 0;
+    float yaw = 0;
+    float Rollrate = 0;
+    float Pitchrate = 0;
+    float Yawrate = 0;
+    float DriftAngle = 0;
+    float TrueHeading = 0;
+    float TrueAirSpeed = 0;
+    float NorthVelocity = 0;
+    float EastVelocity = 0;
+    float VerticalVelocity = 0;
+    float GroundVelocity = 0;
+    ////////////
 
     Transform* transform;
     Rigidbody* rigidbody;
@@ -91,6 +111,14 @@ public:
     void fromJson(const QJsonObject &obj) override;
 
     void FollowTrajectory();
+
+    // Formation turn state tracking
+    float lastLeaderHeading = 0.0f;      // Track leader's heading
+    float turnStartHeading = 0.0f;        // Wingman's heading when turn detected
+    float turnTargetHeading = 0.0f;       // Target heading for this turn
+    bool inActiveTurn = false;            // Are we currently executing a turn?
+    bool currentTurnIsTactical = false;   // Type of turn we committed to
+    float turnDetectionThreshold = 5.0f;  // Degrees of change to detect new turn
 
 public slots:
     void Update(float deltaTime);

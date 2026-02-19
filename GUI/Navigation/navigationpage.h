@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: navigationpage.h                                                   */
 /* Purpose: Defines widget for navigation page with editor buttons           */
+// Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef NAVIGATIONPAGE_H
@@ -19,18 +20,15 @@ class NavigationPage : public QWidget
 public:
     // Initialize navigation page
     explicit NavigationPage(QWidget *parent = nullptr);
-
 signals:
     // Signal editor request
     void editorRequested(const QString &editorKey);
-
 private:
     // %%% UI Components %%%
     // List of navigation buttons
     QList<QToolButton*> navButtons;
     // Active navigation button
     QToolButton* activeButton = nullptr;
-
     // %%% Utility Methods %%%
     // Create navigation button
     QToolButton* createNavButton(const QString &iconPath, const QString &label, const QString &editorKey);

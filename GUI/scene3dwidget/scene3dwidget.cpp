@@ -353,7 +353,7 @@ void Scene3DWidget::addEntity(QString ID, Mesh3dEntry entry)
     entity->addComponent(picker);
     // Connect picker signal
     connect(picker, &Qt3DRender::QObjectPicker::clicked, this, [=](Qt3DRender::QPickEvent *event) {
-        qDebug() << "Clicked Entity ID:" << QString::fromStdString(key);
+       // qDebug() << "Clicked Entity ID:" << QString::fromStdString(key);
         emit selectEntityByCursor(ID);
         selectedEntity(QString::fromStdString(key));
     });
@@ -361,7 +361,7 @@ void Scene3DWidget::addEntity(QString ID, Mesh3dEntry entry)
     entry.entity = entity;
     entry.originalMaterial = mat;
     entities3D[key] = entry;
-    qDebug() << "Added entity:" << ID;
+   // qDebug() << "Added entity:" << ID;
 }
 
 /* Remove a 3D entity from the scene */
@@ -382,7 +382,7 @@ void Scene3DWidget::removeEntity(QString ID)
     if (selectedEntityId == ID) {
         selectedEntityId.clear();
     }
-    qDebug() << "Removed entity:" << ID;
+   // qDebug() << "Removed entity:" << ID;
 }
 
 /* Highlight selected entity */
@@ -425,7 +425,7 @@ void Scene3DWidget::selectedEntity(QString ID)
         sharedHighlightMaterial->setShininess(0);
     }
     entity->addComponent(sharedHighlightMaterial);
-    qDebug() << "Highlighted with shared material:" << ID;
+   // qDebug() << "Highlighted with shared material:" << ID;
 }
 
 /* Clear texture and material buffers */
@@ -484,7 +484,7 @@ void Scene3DWidget::MoveEntity(QString ID)
         Qt3DCore::QTransform* transform = transforms[0];
         if (transform && entry.position && entry.rotation && entry.size) {
             // Transform updates commented out
-            // qDebug() << "Moved entity:" << ID;
+            //// qDebug() << "Moved entity:" << ID;
         }
     } else {
         qWarning() << "MoveEntity failed. No transform component found for:" << ID;

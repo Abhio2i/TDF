@@ -19,13 +19,18 @@
 #include <core/Network/libs/MessageBus.h>
 #include <core/Network/libs/TransformUpdate.h>
 
+#include "simulation_state.h"
+// #include <core/SharedMemory/sharedmemory.h> //Shared Memory By Himanshu
+
 struct PhysicsComponent {
     std::string name;
-    Platform *entity;
-    Transform *transform;
-    DynamicModel *dynamicModel;
-    Rigidbody *rigidbody;
-    Collider *collider;
+    Entity *base = nullptr;
+    Platform *platform = nullptr;
+    Specialzone *zone = nullptr;
+    Transform *transform = nullptr;
+    DynamicModel *dynamicModel = nullptr;
+    Rigidbody *rigidbody = nullptr;
+    Collider *collider = nullptr;
 };
 
 class Simulation : public QObject {
@@ -35,6 +40,12 @@ public:
     ~Simulation();
 
     Recorder* recorder = nullptr;
+    Recording* recording = nullptr;
+
+    /* Shared Memory By Himanshu */
+    /* For Shared Memory Mode */
+    SimulationStateNS::State Status = SimulationStateNS::STOP;
+    /* Shared Memory By Himanshu */
 
     std::unordered_map<std::string, PhysicsComponent> physicsComponent;
 
@@ -43,7 +54,8 @@ public:
     int UIUpdateFrameRate;
     Vector* Gravity;
 
-    bool isPlay;
+    static inline bool isPlay;
+    static inline float simulationTime;
     bool complete;
 
     void start();
@@ -57,6 +69,7 @@ public:
 
     int getRate() const;
     void calculatePhysics();
+    void calculateDynamic(float dt);
 
     void replay(); // newly added overload
     void replay(const QVector<QJsonObject>& recordedFrames);
@@ -71,6 +84,7 @@ private:
 public slots:
     void init();
     void ReInit();
+    void Reset();
     void startf();
     void pausef();
     void entityAdded(QString parentID, Entity* entity);
@@ -78,6 +92,8 @@ public slots:
     void entityUpdate(QString ID);
     void handleReplayFrame(const QJsonObject& frame);
     void setFps(int value);
+    void timeJump(int newTime);
+
 
 signals:
     void Awake();
@@ -87,6 +103,10 @@ signals:
     void HierarchyUpdate();
     void Render(float deltaTime);
     void speedUpdated(float speed);
+    void sendMode(SimulationStateNS::State status);//Shared Memory By Himanshu
+    void sendUpdate();//Recording By Himanshu
+
+
 
 private:
     NetworkManager *networkManager = nullptr;

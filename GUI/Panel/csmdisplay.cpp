@@ -1,4 +1,9 @@
-
+//============================================================================
+// File        : csmdisplay.cpp
+// Description : Implementation of CSMDisplay class . radar-style display, target tracking,
+//               interactive hover detection, and performance profiling.
+//               Written by Arti Rajpoot
+//============================================================================
 
 #include "csmdisplay.h"                            // For EW display class
 #include "core/Hierarchy/Utils/entityutils.h"
@@ -52,9 +57,10 @@ int CSMDisplay::heightForWidth(int width) const
 /* Handle mouse move events for hover detection */
 void CSMDisplay::mouseMoveEvent(QMouseEvent *event)
 {
+    return;
     lastMousePos = event->pos();
 
-    if (targets.isEmpty()) {
+    if (sensor->ewtargets.isEmpty()) {
         hoveredTargetIndex = -1;
         update();
         return;
@@ -70,8 +76,8 @@ void CSMDisplay::mouseMoveEvent(QMouseEvent *event)
     int closestIndex = -1;
     double minDistance = 20.0; // Pixel threshold for hover detection
 
-    for (int i = 0; i < targets.size(); ++i) {
-        const Target &t = targets[i];
+    int i=0;
+    for (const Target &t : sensor->ewtargets) {
 
         // Calculate target position on screen
         double per = t.radius / range;
@@ -93,6 +99,7 @@ void CSMDisplay::mouseMoveEvent(QMouseEvent *event)
             minDistance = distance;
             closestIndex = i;
         }
+        i++;
     }
 
     if (hoveredTargetIndex != closestIndex) {
@@ -164,7 +171,7 @@ void CSMDisplay::updateRadar()
 {
     if (entity && sensor) {
         setRange(sensor->range);
-        targets = sensor->ewtargets;
+        // targets = sensor->ewtargets;
         update();
     } else {
         // Reset targets if no entity/sensor
@@ -196,10 +203,11 @@ void CSMDisplay::paintEvent(QPaintEvent * /*event*/)
     drawTicksAndLabels(p, center, outerRadius);
     drawCenterMark(p, center);
     drawTopMarker(p, center, outerRadius);
-
-    if (!targets.isEmpty()) {
-        for (int i = 0; i < targets.size(); ++i) {
-            const Target &t = targets[i];
+    if(!sensor)return;
+    if ( !sensor->ewtargets.isEmpty()) {
+        int i=0;
+        for (const Target &t : sensor->ewtargets) {
+            // const Target &t = targets[i];
 
             // FIX: Manual bound check
             double per = t.radius / range;
@@ -245,6 +253,7 @@ void CSMDisplay::paintEvent(QPaintEvent * /*event*/)
                 p.drawText(tx + 6, ty + 12, distText);
                 p.drawText(tx + 6, ty + 30, nameText);
             }
+            i++;
         }
     } else if (entity && sensor) {
         // No targets message

@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_Sensor_t {
-    QByteArrayData data[4];
-    char stringdata0[45];
+    QByteArrayData data[7];
+    char stringdata0[82];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -35,11 +35,15 @@ static const qt_meta_stringdata_Sensor_t qt_meta_stringdata_Sensor = {
 QT_MOC_LITERAL(0, 0, 6), // "Sensor"
 QT_MOC_LITERAL(1, 7, 27), // "availableConnectionsUpdated"
 QT_MOC_LITERAL(2, 35, 0), // ""
-QT_MOC_LITERAL(3, 36, 8) // "msgArray"
+QT_MOC_LITERAL(3, 36, 8), // "msgArray"
+QT_MOC_LITERAL(4, 45, 21), // "DetectionCapabilities"
+QT_MOC_LITERAL(5, 67, 3), // "All"
+QT_MOC_LITERAL(6, 71, 10) // "MovingOnly"
 
     },
     "Sensor\0availableConnectionsUpdated\0\0"
-    "msgArray"
+    "msgArray\0DetectionCapabilities\0All\0"
+    "MovingOnly"
 };
 #undef QT_MOC_LITERAL
 
@@ -51,7 +55,7 @@ static const uint qt_meta_data_Sensor[] = {
        0,    0, // classinfo
        1,   14, // methods
        0,    0, // properties
-       0,    0, // enums/sets
+       1,   22, // enums/sets
        0,    0, // constructors
        0,       // flags
        1,       // signalCount
@@ -61,6 +65,13 @@ static const uint qt_meta_data_Sensor[] = {
 
  // signals: parameters
     QMetaType::Void, QMetaType::QJsonArray,    3,
+
+ // enums: name, alias, flags, count, data
+       4,    4, 0x2,    2,   27,
+
+ // enum data: key, value
+       5, uint(Sensor::DetectionCapabilities::All),
+       6, uint(Sensor::DetectionCapabilities::MovingOnly),
 
        0        // eod
 };

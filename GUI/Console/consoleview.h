@@ -6,6 +6,7 @@
 // Description : Header file for ConsoleView class which manages multiple
 //               console tabs (general, error, debug, warning, log) and
 //               provides functionality to append, clear, and save console logs.
+// Written by   : Arti Rajpoot
 //============================================================================
 
 #include <QWidget>
@@ -114,4 +115,4 @@ private:
     void appendTextToConsole(QTextEdit *console, const QString &text, const QColor &color);
 };
 
-#endif // CONSOLEVIEW_H
+#endif

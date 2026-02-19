@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_DatabaseEditor_t {
-    QByteArrayData data[13];
-    char stringdata0[200];
+    QByteArrayData data[23];
+    char stringdata0[349];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -36,23 +36,37 @@ QT_MOC_LITERAL(0, 0, 14), // "DatabaseEditor"
 QT_MOC_LITERAL(1, 15, 21), // "unsavedChangesChanged"
 QT_MOC_LITERAL(2, 37, 0), // ""
 QT_MOC_LITERAL(3, 38, 10), // "hasChanges"
-QT_MOC_LITERAL(4, 49, 15), // "addInspectorTab"
-QT_MOC_LITERAL(5, 65, 18), // "showFeedbackWindow"
-QT_MOC_LITERAL(6, 84, 23), // "onDockVisibilityChanged"
-QT_MOC_LITERAL(7, 108, 7), // "visible"
-QT_MOC_LITERAL(8, 116, 11), // "resetLayout"
-QT_MOC_LITERAL(9, 128, 24), // "onRecentProjectTriggered"
-QT_MOC_LITERAL(10, 153, 19), // "clearRecentProjects"
-QT_MOC_LITERAL(11, 173, 17), // "loadRecentProject"
-QT_MOC_LITERAL(12, 191, 8) // "filePath"
+QT_MOC_LITERAL(4, 49, 9), // "Activated"
+QT_MOC_LITERAL(5, 59, 15), // "hierarchyLoaded"
+QT_MOC_LITERAL(6, 75, 13), // "hierarchyData"
+QT_MOC_LITERAL(7, 89, 15), // "showProfileInfo"
+QT_MOC_LITERAL(8, 105, 21), // "showApplicationDialog"
+QT_MOC_LITERAL(9, 127, 15), // "addInspectorTab"
+QT_MOC_LITERAL(10, 143, 18), // "showFeedbackWindow"
+QT_MOC_LITERAL(11, 162, 23), // "onDockVisibilityChanged"
+QT_MOC_LITERAL(12, 186, 7), // "visible"
+QT_MOC_LITERAL(13, 194, 11), // "resetLayout"
+QT_MOC_LITERAL(14, 206, 24), // "onRecentProjectTriggered"
+QT_MOC_LITERAL(15, 231, 17), // "loadRecentProject"
+QT_MOC_LITERAL(16, 249, 8), // "filePath"
+QT_MOC_LITERAL(17, 258, 18), // "onTreeItemSelected"
+QT_MOC_LITERAL(18, 277, 4), // "data"
+QT_MOC_LITERAL(19, 282, 22), // "cleanupExtraInspectors"
+QT_MOC_LITERAL(20, 305, 23), // "showAllEntityComponents"
+QT_MOC_LITERAL(21, 329, 8), // "entityId"
+QT_MOC_LITERAL(22, 338, 10) // "entityName"
 
     },
     "DatabaseEditor\0unsavedChangesChanged\0"
-    "\0hasChanges\0addInspectorTab\0"
+    "\0hasChanges\0Activated\0hierarchyLoaded\0"
+    "hierarchyData\0showProfileInfo\0"
+    "showApplicationDialog\0addInspectorTab\0"
     "showFeedbackWindow\0onDockVisibilityChanged\0"
     "visible\0resetLayout\0onRecentProjectTriggered\0"
-    "clearRecentProjects\0loadRecentProject\0"
-    "filePath"
+    "loadRecentProject\0filePath\0"
+    "onTreeItemSelected\0data\0cleanupExtraInspectors\0"
+    "showAllEntityComponents\0entityId\0"
+    "entityName"
 };
 #undef QT_MOC_LITERAL
 
@@ -62,36 +76,48 @@ static const uint qt_meta_data_DatabaseEditor[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-       8,   14, // methods
+      14,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
        0,       // flags
-       1,       // signalCount
+       3,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    1,   54,    2, 0x06 /* Public */,
+       1,    1,   84,    2, 0x06 /* Public */,
+       4,    0,   87,    2, 0x06 /* Public */,
+       5,    1,   88,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-       4,    0,   57,    2, 0x08 /* Private */,
-       5,    0,   58,    2, 0x08 /* Private */,
-       6,    1,   59,    2, 0x08 /* Private */,
-       8,    0,   62,    2, 0x08 /* Private */,
-       9,    0,   63,    2, 0x08 /* Private */,
-      10,    0,   64,    2, 0x08 /* Private */,
-      11,    1,   65,    2, 0x08 /* Private */,
+       7,    0,   91,    2, 0x0a /* Public */,
+       8,    0,   92,    2, 0x0a /* Public */,
+       9,    0,   93,    2, 0x08 /* Private */,
+      10,    0,   94,    2, 0x08 /* Private */,
+      11,    1,   95,    2, 0x08 /* Private */,
+      13,    0,   98,    2, 0x08 /* Private */,
+      14,    0,   99,    2, 0x08 /* Private */,
+      15,    1,  100,    2, 0x08 /* Private */,
+      17,    1,  103,    2, 0x08 /* Private */,
+      19,    0,  106,    2, 0x08 /* Private */,
+      20,    2,  107,    2, 0x08 /* Private */,
 
  // signals: parameters
     QMetaType::Void, QMetaType::Bool,    3,
+    QMetaType::Void,
+    QMetaType::Void, QMetaType::QJsonObject,    6,
 
  // slots: parameters
     QMetaType::Void,
     QMetaType::Void,
-    QMetaType::Void, QMetaType::Bool,    7,
     QMetaType::Void,
     QMetaType::Void,
+    QMetaType::Void, QMetaType::Bool,   12,
     QMetaType::Void,
-    QMetaType::Void, QMetaType::QString,   12,
+    QMetaType::Void,
+    QMetaType::Void, QMetaType::QString,   16,
+    QMetaType::Void, QMetaType::QVariantMap,   18,
+    QMetaType::Void,
+    QMetaType::Void, QMetaType::QString, QMetaType::QString,   21,   22,
 
        0        // eod
 };
@@ -103,13 +129,19 @@ void DatabaseEditor::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _
         (void)_t;
         switch (_id) {
         case 0: _t->unsavedChangesChanged((*reinterpret_cast< bool(*)>(_a[1]))); break;
-        case 1: _t->addInspectorTab(); break;
-        case 2: _t->showFeedbackWindow(); break;
-        case 3: _t->onDockVisibilityChanged((*reinterpret_cast< bool(*)>(_a[1]))); break;
-        case 4: _t->resetLayout(); break;
-        case 5: _t->onRecentProjectTriggered(); break;
-        case 6: _t->clearRecentProjects(); break;
-        case 7: _t->loadRecentProject((*reinterpret_cast< const QString(*)>(_a[1]))); break;
+        case 1: _t->Activated(); break;
+        case 2: _t->hierarchyLoaded((*reinterpret_cast< QJsonObject(*)>(_a[1]))); break;
+        case 3: _t->showProfileInfo(); break;
+        case 4: _t->showApplicationDialog(); break;
+        case 5: _t->addInspectorTab(); break;
+        case 6: _t->showFeedbackWindow(); break;
+        case 7: _t->onDockVisibilityChanged((*reinterpret_cast< bool(*)>(_a[1]))); break;
+        case 8: _t->resetLayout(); break;
+        case 9: _t->onRecentProjectTriggered(); break;
+        case 10: _t->loadRecentProject((*reinterpret_cast< const QString(*)>(_a[1]))); break;
+        case 11: _t->onTreeItemSelected((*reinterpret_cast< QVariantMap(*)>(_a[1]))); break;
+        case 12: _t->cleanupExtraInspectors(); break;
+        case 13: _t->showAllEntityComponents((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QString(*)>(_a[2]))); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
@@ -118,6 +150,20 @@ void DatabaseEditor::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _
             using _t = void (DatabaseEditor::*)(bool );
             if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&DatabaseEditor::unsavedChangesChanged)) {
                 *result = 0;
+                return;
+            }
+        }
+        {
+            using _t = void (DatabaseEditor::*)();
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&DatabaseEditor::Activated)) {
+                *result = 1;
+                return;
+            }
+        }
+        {
+            using _t = void (DatabaseEditor::*)(QJsonObject );
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&DatabaseEditor::hierarchyLoaded)) {
+                *result = 2;
                 return;
             }
         }
@@ -153,13 +199,13 @@ int DatabaseEditor::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 8)
+        if (_id < 14)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 8;
+        _id -= 14;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 8)
+        if (_id < 14)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 8;
+        _id -= 14;
     }
     return _id;
 }
@@ -169,6 +215,19 @@ void DatabaseEditor::unsavedChangesChanged(bool _t1)
 {
     void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
     QMetaObject::activate(this, &staticMetaObject, 0, _a);
+}
+
+// SIGNAL 1
+void DatabaseEditor::Activated()
+{
+    QMetaObject::activate(this, &staticMetaObject, 1, nullptr);
+}
+
+// SIGNAL 2
+void DatabaseEditor::hierarchyLoaded(QJsonObject _t1)
+{
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    QMetaObject::activate(this, &staticMetaObject, 2, _a);
 }
 QT_WARNING_POP
 QT_END_MOC_NAMESPACE

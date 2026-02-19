@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: docktitlemenu.cpp                                                  */
 /* Purpose: Implements menu and hover event filter for dock widget title     */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #include "docktitlemenu.h"                        // For dock title menu classes

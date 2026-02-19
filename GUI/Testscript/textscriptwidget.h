@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: textscriptwidget.h                                                 */
 /* Purpose: Defines widgets for managing and displaying script files         */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef TEXTSCRIPTWIDGET_H
@@ -73,6 +74,9 @@ private slots:
     void handlePauseClicked(const QString &filePath);
     // Handle add script button click
     void handleAddScriptButtonClicked();
+signals:
+    void runScriptFile(const QString& filePath);
+    void pauseScriptFile(const QString& filePath);
 
 private:
     // %%% Utility Methods %%%

@@ -22,6 +22,7 @@ public:
     bool isDatabase = false;
     bool isScenario = false;
     bool isRuntime = false;
+    bool fixedProfiles = true;
     std::unordered_map<std::string, ProfileCategaory*> ProfileCategories;
     std::unordered_map<std::string, std::list<std::string>> dictionry;
     std::unordered_map<std::string, Folder*> *Folders;
@@ -43,6 +44,8 @@ public:
     ProfileCategaory* addProfileCategaory(QString profileName);
     void addProfileCategaoryWithObject(ProfileCategaory *profile);
     void removeProfileCategaory(QString ID);
+    ProfileCategaory* getProfileById(QString ID);
+    ProfileCategaory* getProfileByName(QString name);
 
     Folder* addFolder(QString parentId, QString FolderName, bool Profile);
     void addFolderViaNetwork(QString parentId,QString ID,QString FolderName,bool Profile);
@@ -53,6 +56,7 @@ public:
     void addEntityViaNetwork(QString parentId,QString ID,QString EntityName,bool Profile);
     Entity* addEntityFromJson(QString parentId, QJsonObject obj, bool Profile);
     void removeEntity(QString parentId, QString ID, bool Profile);
+    Entity* getEntityById(QString ID);
 
     void renameProfileCategaory(QString Id, QString name);
     void renameFolder(QString Id, QString name);
@@ -86,8 +90,38 @@ public:
     static Hierarchy* getCurrentContext() {
         return currentContext;
     }
+    void clear() {
+        std::vector<std::string> keysToRemove;
+        for (const auto& [key, profilePtr] : ProfileCategories) {
+            keysToRemove.push_back(key);
+        }
+
+        for (const auto& key : keysToRemove) {
+            removeProfileCategaory(QString::fromStdString(key));
+        }
+
+        if (Folders) Folders->clear();
+        if (Entities) Entities->clear();
+        if (Platforms) Platforms->clear();
+        if (Radios) Radios->clear();
+        if (Sensors) Sensors->clear();
+        if (FixedPointes) FixedPointes->clear();
+        if (Formations) Formations->clear();
+        if (Specialzones) Specialzones->clear();
+        if (Iffs) Iffs->clear();
+        if (Components) Components->clear();
+        if (Meshes) Meshes->clear();
+        if (missionList) missionList->clear();
+
+        // Clear temporary data
+        tempData = QJsonObject();
+        dictionry.clear();
+        EntityPaths.clear();
+        FolderPaths.clear();
+    }
 
 signals:
+    void Init();
     void profileAddedPointer(ProfileCategaory* profile);
     void folderAddedPointer(QString parentID, Folder* folder);
     void entityAddedPointer(QString parentID, Entity* entity);
@@ -120,6 +154,8 @@ signals:
     void entityComponentUpdate(QString ID, QString name, QJsonObject delta);
     void entitySubComponentUpdate(QString ID, QString name, QJsonObject delta);
     void getJsonData(const QJsonObject& obj);
+
+    void status(QString value);
 };
 
 #endif // HIERARCHY_H

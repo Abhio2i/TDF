@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: sidebarwidget.h                                                    */
 /* Purpose: Defines widget for sidebar navigation                            */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef SIDEBARWIDGET_H
@@ -22,6 +23,7 @@ public:
     explicit SidebarWidget(QWidget *parent = nullptr);
     // Set active button by view name
     void setActiveButton(const QString &viewName);
+    void setSensorsButtonVisible(bool visible);
 
 signals:
     // Signal view selection
@@ -35,6 +37,7 @@ private:
     // %%% UI Components %%%
     // Button group for sidebar
     QButtonGroup *buttonGroup;
+    QPushButton *sensorsButton;
 };
 
 #endif // SIDEBARWIDGET_H

@@ -50,7 +50,9 @@ Folder* Folder::addFolder(std::string folderName, std::string iD){
     //         );
     //     return nullptr;
     // }
+
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    emit parent->status("add");
     Folder *folder = new Folder(parent);
     folder->Name = folderName;
     folder->parentID = ID;
@@ -85,6 +87,7 @@ void Folder::addFolderWithObject(Folder *folder){
 
     // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    emit parent->status("add");
     if (parent && parent->Folders) {
         parent->Folders->insert({folder->ID, folder});
         emit parent->folderAddedPointer(QString::fromStdString(folder->parentID),folder);
@@ -107,6 +110,7 @@ void Folder::removeFolder(std::string folderID){
     Folders.erase(folderID);
     // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+        emit parent->status("remove");
     if (parent && parent->Folders) {
         parent->Folders->erase(folderID);
         emit parent->folderRemoved(QString::fromStdString(folderID));
@@ -128,6 +132,7 @@ Entity* Folder::addEntity(std::string entityName, std::string iD){
     //     return nullptr;
     // }
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+        emit parent->status("add");
     Entity *entity;
     if(type == Constants::EntityType::Radio){
         entity = new Radio(parent);
@@ -207,6 +212,7 @@ void Folder::addEntityWithObject(Entity *entity){
 
     // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+        emit parent->status("add");
     if (parent && parent->Entities) {
         parent->Entities->insert({entity->ID, entity});
         if(type == Constants::EntityType::Radio){
@@ -261,6 +267,7 @@ void Folder::removeEntity(std::string EntityID){
     Entities.erase(EntityID);
     // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+        emit parent->status("remove");
     if (parent && parent->Entities) {
         parent->Entities->erase(EntityID);
         if(type == Constants::EntityType::Radio){

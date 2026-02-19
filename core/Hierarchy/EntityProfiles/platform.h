@@ -30,6 +30,7 @@ class Platform: public Entity
     Q_OBJECT
 public:
     Platform(Hierarchy* h);
+    ~Platform();
     float width;
     float height;
 
@@ -47,7 +48,9 @@ public:
     RadioProfile *radios = nullptr;
     IFFProfile *iffs = nullptr;
     // Pointers to multiple Radios, Sensors, IFFs
-
+    Sensor* getSensorByName(const std::string& name) const;
+    Radio* getRadioByName(const std::string& name) const;
+    IFF* getIFFByName(const std::string& name) const;
     std::unordered_map<std::string, std::function<void()>> componentMap;
     std::unordered_map<std::string, Component> *components = nullptr;
 

@@ -5,6 +5,8 @@ QT += websockets
 QT += 3dcore 3drender 3dinput 3dextras
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+QT += core gui network printsupport
+
 CONFIG += c++17
 INCLUDEPATH += $$PWD/angelscript/include
 LIBS += -L$$PWD/angelscript/lib -langelscript
@@ -30,12 +32,16 @@ LIBS += -L/usr/lib \
 
 SOURCES += \
     GUI/Console/consoleview.cpp \
+    GUI/Editors/customresizableoverlaydock.cpp \
     GUI/Editors/databaseeditor.cpp \
+    GUI/Editors/recentprojectsmanager.cpp \
     GUI/Editors/runtimeeditor.cpp \
     GUI/Editors/scenarioeditor.cpp \
-    GUI/Feedback/feedback.cpp \
+    GUI/Feedback/projectinformation.cpp \
+    GUI/Hierarchytree/addformationdialog.cpp \
     GUI/Hierarchytree/additemdialog.cpp \
     GUI/Hierarchytree/contextmenu.cpp \
+    GUI/Hierarchytree/customtrajectorydialog.cpp \
     GUI/Hierarchytree/hierarchyconnector.cpp \
     GUI/Hierarchytree/hierarchytree.cpp \
     # GUI/Inspector/customparameterdialog.cpp \
@@ -50,29 +56,34 @@ SOURCES += \
     GUI/Inspector/template/vectortemplate.cpp \
     GUI/Logger/loggerdialog.cpp \
     GUI/Menubars/menubar.cpp \
+    GUI/Menubars/profileinfodialog.cpp \
     GUI/Navigation/navigationpage.cpp \
     GUI/Overview/overview.cpp \
     GUI/Panel/csmdisplay.cpp \
     GUI/Panel/esmdisplay.cpp \
-    GUI/Panel/ewdisplay.cpp \
     GUI/Panel/iffdisplay.cpp \
     GUI/Panel/radardisplay.cpp \
     GUI/Panel/radiodisplay.cpp \
     GUI/Plugins/pluginwindow.cpp \
-    GUI/Settingsmanager/settingsmanager.cpp \
+    GUI/Settings/applicationdialog.cpp \
     GUI/Sidebar/sidebarwidget.cpp \
     GUI/Tacticaldisplay/Gis/custommapdialog.cpp \
     GUI/Tacticaldisplay/Gis/gislib.cpp \
     GUI/Tacticaldisplay/Gis/gisnetwork.cpp \
     GUI/Tacticaldisplay/Gis/layerinformationdialog.cpp \
+    GUI/Tacticaldisplay/Gis/layerpanel.cpp \
+    GUI/Tacticaldisplay/Gis/shapes_feature.cpp \
     GUI/Tacticaldisplay/canvaswidget.cpp \
+    GUI/Tacticaldisplay/entityinfodialog.cpp \
+    GUI/Tacticaldisplay/scalebar.cpp \
     GUI/Tacticaldisplay/shapepropertiesdialog.cpp \
     GUI/Tacticaldisplay/tacticaldisplay.cpp \
+    GUI/Tacticaldisplay/tooltiphelper.cpp \
+    GUI/Tacticaldisplay/waypointeditdialog.cpp \
     GUI/Testscript/angelscripthighlighter.cpp \
     GUI/Testscript/testscriptdialog.cpp \
     GUI/Testscript/textscriptwidget.cpp \
-    GUI/Timing/graphwidgettime.cpp \
-    GUI/Timing/timingdialog.cpp \
+    GUI/Timing/graphwidget.cpp \
     GUI/Toolbars/designtoolbar.cpp \
     GUI/Toolbars/networktoolbar.cpp \
     GUI/Toolbars/runtimetoolbar.cpp \
@@ -81,6 +92,7 @@ SOURCES += \
     GUI/mainwindow.cpp \
     GUI/measuredistance/measuredistancedialog.cpp \
     GUI/scene3dwidget/scene3dwidget.cpp \
+    Setup.cpp \
     angelscript/add_on/scriptarray/scriptarray.cpp \
     angelscript/add_on/scriptstdstring/scriptstdstring.cpp \
     bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvh.cpp \
@@ -306,14 +318,21 @@ SOURCES += \
     core/Hierarchy/Components/attachedenitities.cpp \
     core/Hierarchy/Components/collider.cpp \
     core/Hierarchy/Components/component.cpp \
+    core/Hierarchy/Components/crosssection.cpp \
     core/Hierarchy/Components/dynamicmodel.cpp \
+    core/Hierarchy/Components/iffprofile.cpp \
     core/Hierarchy/Components/mesh.cpp \
     core/Hierarchy/Components/meshrenderer2d.cpp \
     core/Hierarchy/Components/mission.cpp \
     core/Hierarchy/Components/networkobject.cpp \
+    core/Hierarchy/Components/radioprofile.cpp \
     core/Hierarchy/Components/rigidbody.cpp \
+    core/Hierarchy/Components/sensorprofile.cpp \
     core/Hierarchy/Components/trajectory.cpp \
     core/Hierarchy/Components/transform.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/csm.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/esm.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/radar.cpp \
     core/Hierarchy/EntityProfiles/fixedpoints.cpp \
     core/Hierarchy/EntityProfiles/formation.cpp \
     core/Hierarchy/EntityProfiles/iff.cpp \
@@ -338,12 +357,19 @@ SOURCES += \
     core/Hierarchy/hierarchy.cpp \
     core/Hierarchy/profilecategaory.cpp \
     core/InputSystem/inputmanager.cpp \
+    core/Network/entitypdu.cpp \
+    core/Network/folderpdu.cpp \
+    core/Network/libs/lz4.c \
     core/Network/networkmanager.cpp \
     core/Network/networktransport.cpp \
+    core/Network/profilepdu.cpp \
+    core/Network/transformpdu.cpp \
     core/Plugins/pluginmanager.cpp \
     core/Recorder/recorder.cpp \
     core/Render/scenerenderer.cpp \
     core/ScriptEngine/scriptengine.cpp \
+    core/ScriptEngine/scriptenginegis.cpp \
+    core/SharedMemory/sharedmemorywrapper.cpp \
     core/Simulation/simulation.cpp \
     # core/Struct/action.cpp \
     # core/Struct/color.cpp \
@@ -355,6 +381,7 @@ SOURCES += \
     # core/Struct/task.cpp \
     # core/Struct/vector.cpp \
     # core/Struct/waypoints.cpp \
+    core/Simulation/simulation_state.cpp \
     core/Utility/uuid.cpp \
     core/structure/database.cpp \
     # core/structure/entity.cpp \
@@ -365,16 +392,203 @@ SOURCES += \
     # core/structure/profilecategaory.cpp \
     core/structure/runtime.cpp \
     core/structure/scenario.cpp \
+    dis7/AcknowledgePdu.cpp \
+    dis7/AcknowledgeReliablePdu.cpp \
+    dis7/AcousticEmitter.cpp \
+    dis7/ActionRequestPdu.cpp \
+    dis7/ActionRequestReliablePdu.cpp \
+    dis7/ActionResponsePdu.cpp \
+    dis7/ActionResponseReliablePdu.cpp \
+    dis7/AggregateIdentifier.cpp \
+    dis7/AggregateMarking.cpp \
+    dis7/AggregateType.cpp \
+    dis7/AngleDeception.cpp \
+    dis7/AngularVelocityVector.cpp \
+    dis7/AntennaLocation.cpp \
+    dis7/ArealObjectStatePdu.cpp \
+    dis7/ArticulatedParts.cpp \
+    dis7/Association.cpp \
+    dis7/AttachedParts.cpp \
+    dis7/Attribute.cpp \
+    dis7/AttributePdu.cpp \
+    dis7/BeamAntennaPattern.cpp \
+    dis7/BeamData.cpp \
+    dis7/BeamStatus.cpp \
+    dis7/BlankingSector.cpp \
+    dis7/ClockTime.cpp \
+    dis7/CollisionElasticPdu.cpp \
+    dis7/CollisionPdu.cpp \
+    dis7/CommentPdu.cpp \
+    dis7/CommentReliablePdu.cpp \
+    dis7/CommunicationsNodeID.cpp \
+    dis7/CreateEntityPdu.cpp \
+    dis7/CreateEntityReliablePdu.cpp \
+    dis7/DataPdu.cpp \
+    dis7/DataQueryDatumSpecification.cpp \
+    dis7/DataQueryPdu.cpp \
+    dis7/DataQueryReliablePdu.cpp \
+    dis7/DataReliablePdu.cpp \
+    dis7/DatumSpecification.cpp \
+    dis7/DeadReckoningParameters.cpp \
+    dis7/DesignatorPdu.cpp \
+    dis7/DetonationPdu.cpp \
+    dis7/DirectedEnergyAreaAimpoint.cpp \
+    dis7/DirectedEnergyDamage.cpp \
+    dis7/DirectedEnergyFirePdu.cpp \
+    dis7/DirectedEnergyPrecisionAimpoint.cpp \
+    dis7/DirectedEnergyTargetEnergyDeposition.cpp \
+    dis7/DistributedEmissionsFamilyPdu.cpp \
+    dis7/EEFundamentalParameterData.cpp \
+    dis7/EightByteChunk.cpp \
+    dis7/ElectromagneticEmissionBeamData.cpp \
+    dis7/ElectromagneticEmissionSystemData.cpp \
+    dis7/ElectromagneticEmissionsPdu.cpp \
+    dis7/EmitterSystem.cpp \
+    dis7/EngineFuel.cpp \
+    dis7/EngineFuelReload.cpp \
+    dis7/EntityAssociation.cpp \
+    dis7/EntityDamageStatusPdu.cpp \
+    dis7/EntityID.cpp \
+    dis7/EntityInformationFamilyPdu.cpp \
+    dis7/EntityManagementFamilyPdu.cpp \
+    dis7/EntityMarking.cpp \
+    dis7/EntityStatePdu.cpp \
+    dis7/EntityStateUpdatePdu.cpp \
+    dis7/EntityType.cpp \
+    dis7/EntityTypeVP.cpp \
+    dis7/Environment.cpp \
+    dis7/EnvironmentGeneral.cpp \
+    dis7/EnvironmentType.cpp \
+    dis7/EulerAngles.cpp \
+    dis7/EventIdentifier.cpp \
+    dis7/EventIdentifierLiveEntity.cpp \
+    dis7/EventReportPdu.cpp \
+    dis7/EventReportReliablePdu.cpp \
+    dis7/Expendable.cpp \
+    dis7/ExpendableDescriptor.cpp \
+    dis7/ExpendableReload.cpp \
+    dis7/ExplosionDescriptor.cpp \
+    dis7/FalseTargetsAttribute.cpp \
+    dis7/FastEntityStatePdu.cpp \
+    dis7/FirePdu.cpp \
+    dis7/FixedDatum.cpp \
+    dis7/FourByteChunk.cpp \
+    dis7/FundamentalOperationalData.cpp \
+    dis7/GridAxis.cpp \
+    dis7/GroupIdentifier.cpp \
+    dis7/IFFFundamentalParameterData.cpp \
+    dis7/IFFPdu.cpp \
+    dis7/IOCommunicationsNode.cpp \
+    dis7/IOEffect.cpp \
+    dis7/IffDataSpecification.cpp \
+    dis7/IntercomCommunicationsParameters.cpp \
+    dis7/IntercomIdentifier.cpp \
+    dis7/IntercomSignalPdu.cpp \
+    dis7/IsPartOfPdu.cpp \
+    dis7/JammingTechnique.cpp \
+    dis7/LaunchedMunitionRecord.cpp \
+    dis7/LayerHeader.cpp \
+    dis7/LinearObjectStatePdu.cpp \
+    dis7/LinearSegmentParameter.cpp \
+    dis7/LiveEntityIdentifier.cpp \
+    dis7/LiveEntityPdu.cpp \
+    dis7/LiveSimulationAddress.cpp \
+    dis7/LogisticsFamilyPdu.cpp \
+    dis7/MineEntityIdentifier.cpp \
+    dis7/MinefieldFamilyPdu.cpp \
+    dis7/MinefieldIdentifier.cpp \
+    dis7/MinefieldResponseNackPdu.cpp \
+    dis7/MinefieldStatePdu.cpp \
+    dis7/ModulationParameters.cpp \
+    dis7/ModulationType.cpp \
+    dis7/Munition.cpp \
+    dis7/MunitionDescriptor.cpp \
+    dis7/MunitionReload.cpp \
+    dis7/NamedLocationIdentification.cpp \
+    dis7/ObjectIdentifier.cpp \
+    dis7/ObjectType.cpp \
+    dis7/OwnershipStatus.cpp \
+    dis7/Pdu.cpp \
+    dis7/PduContainer.cpp \
+    dis7/PduHeader.cpp \
+    dis7/PduStatus.cpp \
+    dis7/PduSuperclass.cpp \
+    dis7/PointObjectStatePdu.cpp \
+    dis7/PropulsionSystemData.cpp \
+    dis7/RadioCommunicationsFamilyPdu.cpp \
+    dis7/RadioIdentifier.cpp \
+    dis7/RadioType.cpp \
+    dis7/ReceiverPdu.cpp \
+    dis7/RecordQueryReliablePdu.cpp \
+    dis7/RecordQuerySpecification.cpp \
+    dis7/RecordSpecification.cpp \
+    dis7/RecordSpecificationElement.cpp \
+    dis7/Relationship.cpp \
+    dis7/RemoveEntityPdu.cpp \
+    dis7/RemoveEntityReliablePdu.cpp \
+    dis7/RepairCompletePdu.cpp \
+    dis7/RepairResponsePdu.cpp \
+    dis7/ResupplyOfferPdu.cpp \
+    dis7/ResupplyReceivedPdu.cpp \
+    dis7/SecondaryOperationalData.cpp \
+    dis7/SeesPdu.cpp \
+    dis7/Sensor.cpp \
+    dis7/SeparationVP.cpp \
+    dis7/ServiceRequestPdu.cpp \
+    dis7/SetDataPdu.cpp \
+    dis7/SetDataReliablePdu.cpp \
+    dis7/SimulationAddress.cpp \
+    dis7/SimulationIdentifier.cpp \
+    dis7/SimulationManagementFamilyPdu.cpp \
+    dis7/SimulationManagementPduHeader.cpp \
+    dis7/SimulationManagementWithReliabilityFamilyPdu.cpp \
+    dis7/StandardVariableSpecification.cpp \
+    dis7/StartResumePdu.cpp \
+    dis7/StartResumeReliablePdu.cpp \
+    dis7/StopFreezePdu.cpp \
+    dis7/StopFreezeReliablePdu.cpp \
+    dis7/StorageFuel.cpp \
+    dis7/StorageFuelReload.cpp \
+    dis7/SupplyQuantity.cpp \
+    dis7/SyntheticEnvironmentFamilyPdu.cpp \
+    dis7/SystemIdentifier.cpp \
+    dis7/TotalRecordSets.cpp \
+    dis7/TrackJamData.cpp \
+    dis7/TwoByteChunk.cpp \
+    dis7/UAFundamentalParameter.cpp \
+    dis7/UaPdu.cpp \
+    dis7/UnattachedIdentifier.cpp \
+    dis7/UnsignedDISInteger.cpp \
+    dis7/VariableDatum.cpp \
+    dis7/VariableParameter.cpp \
+    dis7/VariableTransmitterParameters.cpp \
+    dis7/Vector2Float.cpp \
+    dis7/Vector3Double.cpp \
+    dis7/Vector3Float.cpp \
+    dis7/VectoringNozzleSystem.cpp \
+    dis7/WarfareFamilyPdu.cpp \
+    dis7/utils/ConversionUtils.cpp \
+    dis7/utils/DataStream.cpp \
     main.cpp
 
 HEADERS += \
+    GUI/Console/consoleview-styles.h \
     GUI/Console/consoleview.h \
+    GUI/Editors/customresizableoverlaydock.h \
+    GUI/Editors/database-styles.h \
     GUI/Editors/databaseeditor.h \
+    GUI/Editors/recentprojectsmanager.h \
     GUI/Editors/runtimeeditor.h \
     GUI/Editors/scenarioeditor.h \
-    GUI/Feedback/feedback.h \
+    GUI/Feedback/projectinformation-styles.h \
+    GUI/Feedback/projectinformation.h \
+    GUI/Hierarchytree/addformationdialog.h \
+    GUI/Hierarchytree/additemdialog-styles.h \
     GUI/Hierarchytree/additemdialog.h \
+    GUI/Hierarchytree/contextmenu-styles.h \
     GUI/Hierarchytree/contextmenu.h \
+    GUI/Hierarchytree/customtrajectorydialog.h \
+    GUI/Hierarchytree/hierarchy-styles.h \
     GUI/Hierarchytree/hierarchyconnector.h \
     GUI/Hierarchytree/hierarchytree.h \
     GUI/Inspector/customparameterdialog.h \
@@ -382,6 +596,7 @@ HEADERS += \
     GUI/Inspector/customparameterdialog.h \
     GUI/Inspector/customparameterdialog.h \
     GUI/Inspector/customparameterdialog.h \
+    GUI/Inspector/inspector-styles.h \
     GUI/Inspector/inspector.h \
     GUI/Inspector/template/colortemplate.h \
     GUI/Inspector/template/geocordstemplate.h \
@@ -390,38 +605,55 @@ HEADERS += \
     GUI/Inspector/template/optiontemplate.h \
     GUI/Inspector/template/vectortemplate.h \
     GUI/Logger/loggerdialog.h \
+    GUI/Menubars/menubar-styles.h \
     GUI/Menubars/menubar.h \
+    GUI/Menubars/profileinfodialog-styles.h \
+    GUI/Menubars/profileinfodialog.h \
     GUI/Navigation/navigationpage.h \
     GUI/Overview/overview.h \
     GUI/Panel/csmdisplay.h \
     GUI/Panel/esmdisplay.h \
-    GUI/Panel/ewdisplay.h \
     GUI/Panel/iffdisplay.h \
     GUI/Panel/radardisplay.h \
     GUI/Panel/radiodisplay.h \
     GUI/Plugins/pluginwindow.h \
-    GUI/Settingsmanager/settingsmanager.h \
+    GUI/Settings/applicationdialog-styles.h \
+    GUI/Settings/applicationdialog.h \
+    GUI/Sidebar/sidebar-styles.h \
     GUI/Sidebar/sidebarwidget.h \
     GUI/Tacticaldisplay/Gis/custommapdialog.h \
     GUI/Tacticaldisplay/Gis/gislib.h \
     GUI/Tacticaldisplay/Gis/gisnetwork.h \
     GUI/Tacticaldisplay/Gis/layerinformationdialog.h \
+    GUI/Tacticaldisplay/Gis/layerpanel-styles.h \
+    GUI/Tacticaldisplay/Gis/layerpanel.h \
+    GUI/Tacticaldisplay/Gis/shapes_feature.h \
     GUI/Tacticaldisplay/canvaswidget.h \
+    GUI/Tacticaldisplay/entityinfodialog-styles.h \
+    GUI/Tacticaldisplay/entityinfodialog.h \
+    GUI/Tacticaldisplay/scalebar.h \
     GUI/Tacticaldisplay/shapepropertiesdialog.h \
     GUI/Tacticaldisplay/tacticaldisplay.h \
+    GUI/Tacticaldisplay/tooltiphelper.h \
+    GUI/Tacticaldisplay/waypointeditdialog.h \
     GUI/Testscript/angelscripthighlighter.h \
     GUI/Testscript/testscriptdialog.h \
     GUI/Testscript/textscriptwidget.h \
-    GUI/Timing/graphwidgettime.h \
-    GUI/Timing/timingdialog.h \
+    GUI/Timing/graphwidget.h \
+    GUI/Toolbars/designtoolbar-styles.h \
     GUI/Toolbars/designtoolbar.h \
+    GUI/Toolbars/networktoolbar-styles.h \
     GUI/Toolbars/networktoolbar.h \
+    GUI/Toolbars/runtimetoolbar-styles.h \
     GUI/Toolbars/runtimetoolbar.h \
     GUI/Toolbars/standardtoolbar.h \
     GUI/docktitlemenu/docktitlemenu.h \
+    GUI/mainwindow-styles.h \
     GUI/mainwindow.h \
+    GUI/measuredistance/measuredistancedialog-styles.h \
     GUI/measuredistance/measuredistancedialog.h \
     GUI/scene3dwidget/scene3dwidget.h \
+    Setup.h \
     angelscript/add_on/scriptarray/scriptarray.h \
     angelscript/add_on/scriptstdstring/scriptstdstring.h \
     bullet/Bullet3Collision/BroadPhaseCollision/b3BroadphaseCallback.h \
@@ -808,14 +1040,21 @@ HEADERS += \
     core/Hierarchy/Components/attachedenitities.h \
     core/Hierarchy/Components/collider.h \
     core/Hierarchy/Components/component.h \
+    core/Hierarchy/Components/crosssection.h \
     core/Hierarchy/Components/dynamicmodel.h \
+    core/Hierarchy/Components/iffprofile.h \
     core/Hierarchy/Components/mesh.h \
     core/Hierarchy/Components/meshrenderer2d.h \
     core/Hierarchy/Components/mission.h \
     core/Hierarchy/Components/networkobject.h \
+    core/Hierarchy/Components/radioprofile.h \
     core/Hierarchy/Components/rigidbody.h \
+    core/Hierarchy/Components/sensorprofile.h \
     core/Hierarchy/Components/trajectory.h \
     core/Hierarchy/Components/transform.h \
+    core/Hierarchy/EntityProfiles/SensorProfiles/csm.h \
+    core/Hierarchy/EntityProfiles/SensorProfiles/esm.h \
+    core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
     core/Hierarchy/EntityProfiles/fixedpoints.h \
     core/Hierarchy/EntityProfiles/formation.h \
     core/Hierarchy/EntityProfiles/iff.h \
@@ -840,13 +1079,23 @@ HEADERS += \
     core/Hierarchy/hierarchy.h \
     core/Hierarchy/profilecategaory.h \
     core/InputSystem/inputmanager.h \
+    core/Network/entitypdu.h \
+    core/Network/folderpdu.h \
+    core/Network/libs/MessageBus.h \
+    core/Network/libs/TransformUpdate.h \
+    core/Network/libs/lz4.h \
     core/Network/networkmanager.h \
     core/Network/networktransport.h \
+    core/Network/profilepdu.h \
+    core/Network/transformpdu.h \
     core/Plugins/pluginmanager.h \
     core/Recorder/recorder.h \
     core/Render/scenerenderer.h \
     core/ScriptEngine/scriptengine.h \
+    core/ScriptEngine/scriptenginegis.h \
+    core/SharedMemory/sharedmemorywrapper.h \
     core/Simulation/simulation.h \
+    core/Simulation/simulation_state.h \
     core/Utility/uuid.h \
     core/structure/database.h \
     core/structure/entity.h \
@@ -855,7 +1104,187 @@ HEADERS += \
     core/structure/missioncreator.h \
     core/structure/missionexcuter.h \
     core/structure/runtime.h \
-    core/structure/scenario.h
+    core/structure/scenario.h \
+    dis7/AcknowledgePdu.h \
+    dis7/AcknowledgeReliablePdu.h \
+    dis7/AcousticEmitter.h \
+    dis7/ActionRequestPdu.h \
+    dis7/ActionRequestReliablePdu.h \
+    dis7/ActionResponsePdu.h \
+    dis7/ActionResponseReliablePdu.h \
+    dis7/AggregateIdentifier.h \
+    dis7/AggregateMarking.h \
+    dis7/AggregateType.h \
+    dis7/AngleDeception.h \
+    dis7/AngularVelocityVector.h \
+    dis7/AntennaLocation.h \
+    dis7/ArealObjectStatePdu.h \
+    dis7/ArticulatedParts.h \
+    dis7/Association.h \
+    dis7/AttachedParts.h \
+    dis7/Attribute.h \
+    dis7/AttributePdu.h \
+    dis7/BeamAntennaPattern.h \
+    dis7/BeamData.h \
+    dis7/BeamStatus.h \
+    dis7/BlankingSector.h \
+    dis7/ClockTime.h \
+    dis7/CollisionElasticPdu.h \
+    dis7/CollisionPdu.h \
+    dis7/CommentPdu.h \
+    dis7/CommentReliablePdu.h \
+    dis7/CommunicationsNodeID.h \
+    dis7/CreateEntityPdu.h \
+    dis7/CreateEntityReliablePdu.h \
+    dis7/DataPdu.h \
+    dis7/DataQueryDatumSpecification.h \
+    dis7/DataQueryPdu.h \
+    dis7/DataQueryReliablePdu.h \
+    dis7/DataReliablePdu.h \
+    dis7/DatumSpecification.h \
+    dis7/DeadReckoningParameters.h \
+    dis7/DesignatorPdu.h \
+    dis7/DetonationPdu.h \
+    dis7/DirectedEnergyAreaAimpoint.h \
+    dis7/DirectedEnergyDamage.h \
+    dis7/DirectedEnergyFirePdu.h \
+    dis7/DirectedEnergyPrecisionAimpoint.h \
+    dis7/DirectedEnergyTargetEnergyDeposition.h \
+    dis7/DistributedEmissionsFamilyPdu.h \
+    dis7/EEFundamentalParameterData.h \
+    dis7/EightByteChunk.h \
+    dis7/ElectromagneticEmissionBeamData.h \
+    dis7/ElectromagneticEmissionSystemData.h \
+    dis7/ElectromagneticEmissionsPdu.h \
+    dis7/EmitterSystem.h \
+    dis7/EngineFuel.h \
+    dis7/EngineFuelReload.h \
+    dis7/EntityAssociation.h \
+    dis7/EntityDamageStatusPdu.h \
+    dis7/EntityID.h \
+    dis7/EntityInformationFamilyPdu.h \
+    dis7/EntityManagementFamilyPdu.h \
+    dis7/EntityMarking.h \
+    dis7/EntityStatePdu.h \
+    dis7/EntityStateUpdatePdu.h \
+    dis7/EntityType.h \
+    dis7/EntityTypeVP.h \
+    dis7/Environment.h \
+    dis7/EnvironmentGeneral.h \
+    dis7/EnvironmentType.h \
+    dis7/EulerAngles.h \
+    dis7/EventIdentifier.h \
+    dis7/EventIdentifierLiveEntity.h \
+    dis7/EventReportPdu.h \
+    dis7/EventReportReliablePdu.h \
+    dis7/Expendable.h \
+    dis7/ExpendableDescriptor.h \
+    dis7/ExpendableReload.h \
+    dis7/ExplosionDescriptor.h \
+    dis7/FalseTargetsAttribute.h \
+    dis7/FastEntityStatePdu.h \
+    dis7/FirePdu.h \
+    dis7/FixedDatum.h \
+    dis7/FourByteChunk.h \
+    dis7/FundamentalOperationalData.h \
+    dis7/GridAxis.h \
+    dis7/GroupIdentifier.h \
+    dis7/IFFFundamentalParameterData.h \
+    dis7/IFFPdu.h \
+    dis7/IOCommunicationsNode.h \
+    dis7/IOEffect.h \
+    dis7/IffDataSpecification.h \
+    dis7/IntercomCommunicationsParameters.h \
+    dis7/IntercomIdentifier.h \
+    dis7/IntercomSignalPdu.h \
+    dis7/IsPartOfPdu.h \
+    dis7/JammingTechnique.h \
+    dis7/LaunchedMunitionRecord.h \
+    dis7/LayerHeader.h \
+    dis7/LinearObjectStatePdu.h \
+    dis7/LinearSegmentParameter.h \
+    dis7/LiveEntityIdentifier.h \
+    dis7/LiveEntityPdu.h \
+    dis7/LiveSimulationAddress.h \
+    dis7/LogisticsFamilyPdu.h \
+    dis7/MineEntityIdentifier.h \
+    dis7/MinefieldFamilyPdu.h \
+    dis7/MinefieldIdentifier.h \
+    dis7/MinefieldResponseNackPdu.h \
+    dis7/MinefieldStatePdu.h \
+    dis7/ModulationParameters.h \
+    dis7/ModulationType.h \
+    dis7/Munition.h \
+    dis7/MunitionDescriptor.h \
+    dis7/MunitionReload.h \
+    dis7/NamedLocationIdentification.h \
+    dis7/ObjectIdentifier.h \
+    dis7/ObjectType.h \
+    dis7/OwnershipStatus.h \
+    dis7/Pdu.h \
+    dis7/PduContainer.h \
+    dis7/PduHeader.h \
+    dis7/PduStatus.h \
+    dis7/PduSuperclass.h \
+    dis7/PointObjectStatePdu.h \
+    dis7/PropulsionSystemData.h \
+    dis7/RadioCommunicationsFamilyPdu.h \
+    dis7/RadioIdentifier.h \
+    dis7/RadioType.h \
+    dis7/ReceiverPdu.h \
+    dis7/RecordQueryReliablePdu.h \
+    dis7/RecordQuerySpecification.h \
+    dis7/RecordSpecification.h \
+    dis7/RecordSpecificationElement.h \
+    dis7/Relationship.h \
+    dis7/RemoveEntityPdu.h \
+    dis7/RemoveEntityReliablePdu.h \
+    dis7/RepairCompletePdu.h \
+    dis7/RepairResponsePdu.h \
+    dis7/ResupplyOfferPdu.h \
+    dis7/ResupplyReceivedPdu.h \
+    dis7/SecondaryOperationalData.h \
+    dis7/SeesPdu.h \
+    dis7/Sensor.h \
+    dis7/SeparationVP.h \
+    dis7/ServiceRequestPdu.h \
+    dis7/SetDataPdu.h \
+    dis7/SetDataReliablePdu.h \
+    dis7/SimulationAddress.h \
+    dis7/SimulationIdentifier.h \
+    dis7/SimulationManagementFamilyPdu.h \
+    dis7/SimulationManagementPduHeader.h \
+    dis7/SimulationManagementWithReliabilityFamilyPdu.h \
+    dis7/StandardVariableSpecification.h \
+    dis7/StartResumePdu.h \
+    dis7/StartResumeReliablePdu.h \
+    dis7/StopFreezePdu.h \
+    dis7/StopFreezeReliablePdu.h \
+    dis7/StorageFuel.h \
+    dis7/StorageFuelReload.h \
+    dis7/SupplyQuantity.h \
+    dis7/SyntheticEnvironmentFamilyPdu.h \
+    dis7/SystemIdentifier.h \
+    dis7/TotalRecordSets.h \
+    dis7/TrackJamData.h \
+    dis7/TwoByteChunk.h \
+    dis7/UAFundamentalParameter.h \
+    dis7/UaPdu.h \
+    dis7/UnattachedIdentifier.h \
+    dis7/UnsignedDISInteger.h \
+    dis7/VariableDatum.h \
+    dis7/VariableParameter.h \
+    dis7/VariableTransmitterParameters.h \
+    dis7/Vector2Float.h \
+    dis7/Vector3Double.h \
+    dis7/Vector3Float.h \
+    dis7/VectoringNozzleSystem.h \
+    dis7/WarfareFamilyPdu.h \
+    dis7/opendis7_export.h \
+    dis7/utils/ConversionUtils.h \
+    dis7/utils/DataStream.h \
+    dis7/utils/Endian.h \
+    dis7/utils/PDUType.h
 
 win32: LIBS += -lws2_32
 
@@ -894,4 +1323,20 @@ DISTFILES += \
     bullet/BulletSoftBody/premake4.lua \
     bullet/CMakeLists.txt \
     bullet/LinearMath/CMakeLists.txt \
-    bullet/LinearMath/premake4.lua
+    bullet/LinearMath/premake4.lua \
+    dis7/CMakeLists.txt \
+    dis7/utils/CMakeLists.txt
+
+# win32:CONFIG(release, debug|release): LIBS += -L$$PWD/'../../Desktop/Cpp Projects/sharedMemory/release/' -lSharedMemoryLib
+# else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/'../../Desktop/Cpp Projects/sharedMemory/debug/' -lSharedMemoryLib
+# else:unix: LIBS += -L$$PWD/'../../Desktop/Cpp Projects/sharedMemory/' -lSharedMemoryLib
+
+# INCLUDEPATH += $$PWD/'../../Desktop/Cpp Projects/sharedMemory'
+# DEPENDPATH += $$PWD/'../../Desktop/Cpp Projects/sharedMemory'
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sharedMemorylib/release/ -lSharedMemoryLib
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sharedMemorylib/debug/ -lSharedMemoryLib
+else:unix: LIBS += -L$$PWD/sharedMemorylib/ -lSharedMemoryLib
+
+INCLUDEPATH += $$PWD/sharedMemorylib
+DEPENDPATH += $$PWD/sharedMemorylib

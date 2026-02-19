@@ -45,6 +45,7 @@ void ProfileCategaory::setProfileType(Constants::EntityType Type){
 
 Folder* ProfileCategaory::addFolder(std::string folderName, std::string iD){
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+        emit parent->status("add");
     Folder *folder = new Folder(parent);
     folder->Name = folderName;
     folder->parentID = ID;
@@ -77,6 +78,7 @@ void ProfileCategaory::addFolderWithObject(Folder *folder){
 
     // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+        emit parent->status("add");
     if (parent && parent->Folders) {
         parent->Folders->insert({folder->ID, folder});
         emit parent->folderAddedPointer(QString::fromStdString(folder->parentID),folder);
@@ -99,6 +101,7 @@ void ProfileCategaory::removeFolder(std::string folderID){
     Folders.erase(folderID);
     // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+        emit parent->status("remove");
     if (parent && parent->Folders) {
         parent->Folders->erase(folderID);
         emit parent->folderRemoved(QString::fromStdString(folderID));
@@ -111,15 +114,9 @@ void ProfileCategaory::removeFolder(std::string folderID){
 }
 
 Entity* ProfileCategaory::addEntity(std::string entityName, std::string iD){
-    // if(Entities.count(entityName)){
 
-    //     Console::error(
-    //         "RunTimeError::" + std::string(__FILE__) + "," +
-    //         std::to_string(__LINE__) + " Folder already exists With Same Name"
-    //         );
-    //     return nullptr;
-    // }
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+        emit parent->status("add");
     Entity *entity;
     if(type == Constants::EntityType::Radio){
         entity = new Radio(parent);
@@ -204,6 +201,7 @@ void ProfileCategaory::addEntityWithObject(Entity *entity){
 
     // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+        emit parent->status("add");
     if (parent && parent->Entities) {
         parent->Entities->insert({entity->ID, entity});
         if(type == Constants::EntityType::Radio){
@@ -258,6 +256,7 @@ void ProfileCategaory::removeEntity(std::string EntityID){
     Entities.erase(EntityID);
     // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+        emit parent->status("remove");
     if (parent && parent->Entities) {
         parent->Entities->erase(EntityID);
         if(type == Constants::EntityType::Radio){

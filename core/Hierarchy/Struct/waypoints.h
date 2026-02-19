@@ -13,6 +13,8 @@ public:
     Geocords *geocord = nullptr;
     Vector *position = nullptr;
     double speed = 0;
+    bool sensor = false;
+    bool formation = false;
 
     QJsonObject toJson()const;
     void fromJson(const QJsonObject& obj);

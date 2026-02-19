@@ -13,7 +13,7 @@ public:
     Trajectory();
     ComponentType Typo() const override { return ComponentType::Trajectory; }
     bool Active;
-     bool FollowPath;
+    bool FollowPath;
     // std::vector<QJsonObject> array;
     std::vector<Waypoints*> Trajectories;
     int current = 0;
@@ -26,10 +26,11 @@ public:
     void fromJson(const QJsonObject &obj) override;
 
     // Function declarations
+    Waypoints* getCurrentWaypoint();
+    Waypoints* getTargetWaypoint();
     bool removeTrajectory(size_t index);
     void addTrajectory(Waypoints* waypoint);
     void addWaypoint(float x,float y, float z);
 };
 
 #endif // TRAJECTORY_H
-

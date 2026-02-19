@@ -1,4 +1,13 @@
 
+//============================================================================
+// File        : iffdisplay.cpp
+// Description : Implementation of IFFDisplay class for Identification
+//               Friend or Foe (IFF) visualization with radar-style display,
+//               target identification, friend/foe color coding, and
+//               interactive hover detection.
+//               Written by Arti Rajpoot
+//============================================================================
+
 #include "iffdisplay.h"
 #include "core/Hierarchy/Utils/entityutils.h"
 #include <QPainter>
@@ -43,9 +52,10 @@ int IFFDisplay::heightForWidth(int width) const
 
 void IFFDisplay::mouseMoveEvent(QMouseEvent *event)
 {
+        return;
     mousePos = event->pos();
 
-    if (targets.isEmpty()) {
+    if (iff->targets.isEmpty()) {
         hoveredTargetIndex = -1;
         update();
         return;
@@ -59,23 +69,23 @@ void IFFDisplay::mouseMoveEvent(QMouseEvent *event)
 
     // Check if mouse is near any target
     int closestIndex = -1;
-    double minDistance = 15.0; // Reduced threshold for better sensitivity
+    double minDistance = 15.0;
 
-    for (int i = 0; i < targets.size(); ++i) {
-        const IFF::IFFTarget &t = targets[i];
+    int i=0;
+    for (const IFF::IFFTarget &t : iff->targets) {
 
-        // Calculate target position on screen - USE SAME CALCULATION AS paintEvent
+
         double per = t.radius / range;
         if (per < 0.0) per = 0.0;
         if (per > 1.0) per = 1.0;
 
         double r = per * outerRadius;
-        double angleDeg = t.angle - 90; // FIX: Same as paintEvent
-        double theta = qDegreesToRadians(angleDeg); // FIX: No -90 adjustment here
+        double angleDeg = t.angle - 90;
+        double theta = qDegreesToRadians(angleDeg);
         int tx = center.x() + int(r * cos(theta));
         int ty = center.y() + int(r * sin(theta));
 
-        // Calculate distance from mouse to target
+
         double dx = mousePos.x() - tx;
         double dy = mousePos.y() - ty;
         double distance = sqrt(dx*dx + dy*dy);
@@ -84,12 +94,13 @@ void IFFDisplay::mouseMoveEvent(QMouseEvent *event)
             minDistance = distance;
             closestIndex = i;
         }
+        i++;
     }
 
     if (hoveredTargetIndex != closestIndex) {
         hoveredTargetIndex = closestIndex;
         update();
-        qDebug() << "Hovered target index:" << hoveredTargetIndex; // Debug
+       // qDebug() << "Hovered target index:" << hoveredTargetIndex; // Debug
     }
 
     QWidget::mouseMoveEvent(event);
@@ -128,10 +139,10 @@ void IFFDisplay::selectEntity(Entity* entit)
     }
 
     if (!iff) {
-        qDebug() << "❌ No IFF found for platform:" << QString::fromStdString(entity->Name);
+       // qDebug() << "❌ No IFF found for platform:" << QString::fromStdString(entity->Name);
     }
 
-    // Reset hover state when entity changes
+
     hoveredTargetIndex = -1;
     update();
 }
@@ -150,11 +161,11 @@ void IFFDisplay::RemoveEntity(QString ID)
 void IFFDisplay::updateRadar()
 {
     if (entity && iff) {
-        setRange(iff->emittingRange * 1.0f); // km to meters conversion
-        targets = iff->targets;
+        setRange(iff->emittingRange * 1.0f);
+        // targets = iff->targets;
         update();
     } else {
-        // Reset targets if no entity/iff
+
         targets.clear();
         hoveredTargetIndex = -1;
     }
@@ -165,7 +176,7 @@ void IFFDisplay::paintEvent(QPaintEvent * /*event*/)
     if (width() <= 0 || height() <= 0) return;
 
     QPainter p(this);
-    //p.setRenderHint(QPainter::Antialiasing); // Optional: smoother edges
+
 
     drawBackground(p);
 
@@ -181,12 +192,14 @@ void IFFDisplay::paintEvent(QPaintEvent * /*event*/)
     drawCenterMark(p, center);
     drawTopMarker(p, center, outerRadius);
 
+    if(!iff)return;
     // Draw targets with hover functionality
-    if (!targets.isEmpty()) {
-        for (int i = 0; i < targets.size(); ++i) {
-            const IFF::IFFTarget &t = targets[i];
+    if (!iff->targets.isEmpty()) {
+        int i=0;
+        for (const IFF::IFFTarget &t : iff->targets) {
+            // const Target &t = targets[i];
 
-            // FIX: Manual bound check
+
             double per = t.radius / range;
             if (per < 0.0) per = 0.0;
             if (per > 1.0) per = 1.0;
@@ -206,7 +219,7 @@ void IFFDisplay::paintEvent(QPaintEvent * /*event*/)
                 // Highlight hovered target
                 p.setPen(QPen(Qt::white, 2));
                 p.setBrush(Qt::white);
-                p.drawEllipse(QPointF(tx, ty), 6, 6); // Larger white circle for hover
+                p.drawEllipse(QPointF(tx, ty), 6, 6);
             }
 
             // Draw colored dot (non-transparent)
@@ -216,13 +229,13 @@ void IFFDisplay::paintEvent(QPaintEvent * /*event*/)
                 p.setPen(QPen(Qt::blue, 1));
             } else {
                 // Foe/unknown - solid red
-                p.setBrush(QBrush(QColor(255, 0, 0, 255))); // Alpha 255 = solid
+                p.setBrush(QBrush(QColor(255, 0, 0, 255)));
                 p.setPen(QPen(Qt::red, 1));
             }
 
             p.drawEllipse(QPointF(tx, ty), 4, 4);
 
-            // Draw labels ONLY if this target is hovered
+
             if (i == hoveredTargetIndex) {
                 p.setPen(QPen(Qt::cyan, 1));
                 QFont font = p.font();
@@ -268,6 +281,7 @@ void IFFDisplay::paintEvent(QPaintEvent * /*event*/)
                     p.drawText(tx + 12, ty + 32, codeText);
                 }
             }
+            i++;
         }
     } else if (entity && iff) {
         // No targets message
@@ -285,12 +299,12 @@ void IFFDisplay::drawIFFTargets(QPainter &p, const QPoint &center, int outerRadi
     if (iff->iffTargets.isEmpty()) return;
 
     QList<QPointF> positions;
-    QList<int> drawnIndices; // map drawn dot index → iffTargets index
+    QList<int> drawnIndices;
     const int dotSize = 8;
 
     for (int i = 0; i < iff->iffTargets.size(); ++i) {
         const IFF::IFFTarget &target = iff->iffTargets.at(i);
-        // Skip drawing if target is out of radar range
+
         if (target.radius > range) {
             continue;
         }

@@ -1,3 +1,4 @@
+//Author::Aman Negi
 #ifndef NETWORKMANAGER_H
 #define NETWORKMANAGER_H
 
@@ -42,7 +43,12 @@ public:
     void onMessaageRecevied(QString message);
     void onBinaryMessage(QByteArray byteMessage);
     void onConnect();
-    void onNewConnction();
+    void onNewConnction(QWebSocket* socket);//chnaged by Aman
+    QStringList getNetworkStatus() const;//by Aman
+    bool stopSession();//by aman
+    bool startSession();//by aman
+    bool isSessionActive() const { return sessionActive; }
+
     // Global network access
     NetworkTransport* networkTransport;
     std::unordered_map<std::string, std::string>* connectedClients;
@@ -61,7 +67,7 @@ public:
     void profileAdded(QString ID, QString profileName);
     void folderAdded(QString parentID, QString ID, QString folderName);
     void entityAdded(QString parentID, QString ID, QString entityName);
-    void componentAdded(QString Id, QString componentName);
+    void componentAdded(QString parantId,QString Id, QString componentName);
 
     void profileRemoved(QString ID);
     void folderRemoved(QString ID);
@@ -98,7 +104,7 @@ signals:
     void requestInit(const QString& ip, int port);
     void requestStart(bool server);
     void requestSendText(const QString& msg);
-    void requestSendBinary(const QByteArray& data);   
+    void requestSendBinary(const QByteArray& data);
     void transformReceived(const TransformUpdate& msg);
 
 private:
@@ -122,12 +128,15 @@ private:
     // Global map tracking all entities' previous transforms
     std::unordered_map<std::string, TransformState> previousTransforms;
     QThread* networkThread = nullptr;
-
+    // 🔥 SERVER-SIDE client registry
+    QHash<QWebSocket*, ClientInfo> clients;
+    int nextClientId = 1;
+    bool sessionActive = false;//by Aman
 
 };
 
 #endif
-    // NETWORKMANAGER_H
+// NETWORKMANAGER_H
 // NETWORKMANAGER_H
 // NETWORKMANAGER_H
 // NetworkTransport Thread
@@ -140,4 +149,3 @@ private:
 //     |
 //     v
 //     SimulationThread applies updates during frame()
-

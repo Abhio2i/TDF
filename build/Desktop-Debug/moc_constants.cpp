@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_Constants_t {
-    QByteArrayData data[77];
-    char stringdata0[643];
+    QByteArrayData data[83];
+    char stringdata0[704];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -50,75 +50,83 @@ QT_MOC_LITERAL(14, 96, 13), // "FormationType"
 QT_MOC_LITERAL(15, 110, 4), // "Line"
 QT_MOC_LITERAL(16, 115, 1), // "V"
 QT_MOC_LITERAL(17, 117, 7), // "Diamond"
-QT_MOC_LITERAL(18, 125, 10), // "EntityType"
-QT_MOC_LITERAL(19, 136, 8), // "Platform"
-QT_MOC_LITERAL(20, 145, 5), // "Radio"
-QT_MOC_LITERAL(21, 151, 6), // "Sensor"
-QT_MOC_LITERAL(22, 158, 11), // "SpecialZone"
-QT_MOC_LITERAL(23, 170, 6), // "Weapon"
-QT_MOC_LITERAL(24, 177, 3), // "IFF"
-QT_MOC_LITERAL(25, 181, 6), // "Supply"
-QT_MOC_LITERAL(26, 188, 10), // "FixedPoint"
-QT_MOC_LITERAL(27, 199, 9), // "Formation"
-QT_MOC_LITERAL(28, 209, 12), // "ColliderType"
-QT_MOC_LITERAL(29, 222, 6), // "Sphere"
-QT_MOC_LITERAL(30, 229, 3), // "Box"
-QT_MOC_LITERAL(31, 233, 9), // "Cyclinder"
-QT_MOC_LITERAL(32, 243, 10), // "ActionType"
-QT_MOC_LITERAL(33, 254, 7), // "Landing"
-QT_MOC_LITERAL(34, 262, 7), // "TakeOFf"
-QT_MOC_LITERAL(35, 270, 4), // "Fire"
-QT_MOC_LITERAL(36, 275, 7), // "Destroy"
-QT_MOC_LITERAL(37, 283, 4), // "Stop"
-QT_MOC_LITERAL(38, 288, 2), // "On"
-QT_MOC_LITERAL(39, 291, 11), // "PassiveMode"
-QT_MOC_LITERAL(40, 303, 10), // "ActiveMode"
-QT_MOC_LITERAL(41, 314, 7), // "Connect"
-QT_MOC_LITERAL(42, 322, 10), // "Disconnect"
-QT_MOC_LITERAL(43, 333, 12), // "TrackCycleOn"
-QT_MOC_LITERAL(44, 346, 13), // "MissileLaunch"
-QT_MOC_LITERAL(45, 360, 4), // "GoTo"
-QT_MOC_LITERAL(46, 365, 5), // "State"
-QT_MOC_LITERAL(47, 371, 5), // "isFly"
-QT_MOC_LITERAL(48, 377, 6), // "isLand"
-QT_MOC_LITERAL(49, 384, 8), // "isFollow"
-QT_MOC_LITERAL(50, 393, 11), // "havePayLoad"
-QT_MOC_LITERAL(51, 405, 4), // "isOn"
-QT_MOC_LITERAL(52, 410, 11), // "isConnected"
-QT_MOC_LITERAL(53, 422, 14), // "isDisconnected"
-QT_MOC_LITERAL(54, 437, 11), // "isTrackMode"
-QT_MOC_LITERAL(55, 449, 8), // "isActive"
-QT_MOC_LITERAL(56, 458, 9), // "isTrigger"
-QT_MOC_LITERAL(57, 468, 7), // "isEmpty"
-QT_MOC_LITERAL(58, 476, 11), // "isLossTaget"
-QT_MOC_LITERAL(59, 488, 12), // "MissionValue"
-QT_MOC_LITERAL(60, 501, 5), // "Speed"
-QT_MOC_LITERAL(61, 507, 6), // "Target"
-QT_MOC_LITERAL(62, 514, 5), // "Range"
-QT_MOC_LITERAL(63, 520, 7), // "Bullets"
-QT_MOC_LITERAL(64, 528, 12), // "DetectEntity"
-QT_MOC_LITERAL(65, 541, 9), // "EntityIFF"
-QT_MOC_LITERAL(66, 551, 3), // "Msg"
-QT_MOC_LITERAL(67, 555, 6), // "Weight"
-QT_MOC_LITERAL(68, 562, 8), // "Altitude"
-QT_MOC_LITERAL(69, 571, 7), // "Heading"
-QT_MOC_LITERAL(70, 579, 12), // "OperaterType"
-QT_MOC_LITERAL(71, 592, 5), // "Equal"
-QT_MOC_LITERAL(72, 598, 8), // "NotEqual"
-QT_MOC_LITERAL(73, 607, 7), // "Greater"
-QT_MOC_LITERAL(74, 615, 4), // "Less"
-QT_MOC_LITERAL(75, 620, 12), // "GreaterEqual"
-QT_MOC_LITERAL(76, 633, 9) // "LessEqual"
+QT_MOC_LITERAL(18, 125, 6), // "Square"
+QT_MOC_LITERAL(19, 132, 6), // "Column"
+QT_MOC_LITERAL(20, 139, 11), // "EchelonLeft"
+QT_MOC_LITERAL(21, 151, 12), // "EchelonRight"
+QT_MOC_LITERAL(22, 164, 15), // "StaggeredColumn"
+QT_MOC_LITERAL(23, 180, 5), // "Wedge"
+QT_MOC_LITERAL(24, 186, 10), // "EntityType"
+QT_MOC_LITERAL(25, 197, 8), // "Platform"
+QT_MOC_LITERAL(26, 206, 5), // "Radio"
+QT_MOC_LITERAL(27, 212, 6), // "Sensor"
+QT_MOC_LITERAL(28, 219, 11), // "SpecialZone"
+QT_MOC_LITERAL(29, 231, 6), // "Weapon"
+QT_MOC_LITERAL(30, 238, 3), // "IFF"
+QT_MOC_LITERAL(31, 242, 6), // "Supply"
+QT_MOC_LITERAL(32, 249, 10), // "FixedPoint"
+QT_MOC_LITERAL(33, 260, 9), // "Formation"
+QT_MOC_LITERAL(34, 270, 12), // "ColliderType"
+QT_MOC_LITERAL(35, 283, 6), // "Sphere"
+QT_MOC_LITERAL(36, 290, 3), // "Box"
+QT_MOC_LITERAL(37, 294, 9), // "Cyclinder"
+QT_MOC_LITERAL(38, 304, 10), // "ActionType"
+QT_MOC_LITERAL(39, 315, 7), // "Landing"
+QT_MOC_LITERAL(40, 323, 7), // "TakeOFf"
+QT_MOC_LITERAL(41, 331, 4), // "Fire"
+QT_MOC_LITERAL(42, 336, 7), // "Destroy"
+QT_MOC_LITERAL(43, 344, 4), // "Stop"
+QT_MOC_LITERAL(44, 349, 2), // "On"
+QT_MOC_LITERAL(45, 352, 11), // "PassiveMode"
+QT_MOC_LITERAL(46, 364, 10), // "ActiveMode"
+QT_MOC_LITERAL(47, 375, 7), // "Connect"
+QT_MOC_LITERAL(48, 383, 10), // "Disconnect"
+QT_MOC_LITERAL(49, 394, 12), // "TrackCycleOn"
+QT_MOC_LITERAL(50, 407, 13), // "MissileLaunch"
+QT_MOC_LITERAL(51, 421, 4), // "GoTo"
+QT_MOC_LITERAL(52, 426, 5), // "State"
+QT_MOC_LITERAL(53, 432, 5), // "isFly"
+QT_MOC_LITERAL(54, 438, 6), // "isLand"
+QT_MOC_LITERAL(55, 445, 8), // "isFollow"
+QT_MOC_LITERAL(56, 454, 11), // "havePayLoad"
+QT_MOC_LITERAL(57, 466, 4), // "isOn"
+QT_MOC_LITERAL(58, 471, 11), // "isConnected"
+QT_MOC_LITERAL(59, 483, 14), // "isDisconnected"
+QT_MOC_LITERAL(60, 498, 11), // "isTrackMode"
+QT_MOC_LITERAL(61, 510, 8), // "isActive"
+QT_MOC_LITERAL(62, 519, 9), // "isTrigger"
+QT_MOC_LITERAL(63, 529, 7), // "isEmpty"
+QT_MOC_LITERAL(64, 537, 11), // "isLossTaget"
+QT_MOC_LITERAL(65, 549, 12), // "MissionValue"
+QT_MOC_LITERAL(66, 562, 5), // "Speed"
+QT_MOC_LITERAL(67, 568, 6), // "Target"
+QT_MOC_LITERAL(68, 575, 5), // "Range"
+QT_MOC_LITERAL(69, 581, 7), // "Bullets"
+QT_MOC_LITERAL(70, 589, 12), // "DetectEntity"
+QT_MOC_LITERAL(71, 602, 9), // "EntityIFF"
+QT_MOC_LITERAL(72, 612, 3), // "Msg"
+QT_MOC_LITERAL(73, 616, 6), // "Weight"
+QT_MOC_LITERAL(74, 623, 8), // "Altitude"
+QT_MOC_LITERAL(75, 632, 7), // "Heading"
+QT_MOC_LITERAL(76, 640, 12), // "OperaterType"
+QT_MOC_LITERAL(77, 653, 5), // "Equal"
+QT_MOC_LITERAL(78, 659, 8), // "NotEqual"
+QT_MOC_LITERAL(79, 668, 7), // "Greater"
+QT_MOC_LITERAL(80, 676, 4), // "Less"
+QT_MOC_LITERAL(81, 681, 12), // "GreaterEqual"
+QT_MOC_LITERAL(82, 694, 9) // "LessEqual"
 
     },
     "Constants\0ParameterType\0INT\0FLOAT\0"
     "DOUBLE\0STRING\0LIST\0CHAR\0BOOL\0ENUM\0"
     "VECTOR\0COLOR\0OPTION\0Unknown\0FormationType\0"
-    "Line\0V\0Diamond\0EntityType\0Platform\0"
-    "Radio\0Sensor\0SpecialZone\0Weapon\0IFF\0"
-    "Supply\0FixedPoint\0Formation\0ColliderType\0"
-    "Sphere\0Box\0Cyclinder\0ActionType\0Landing\0"
-    "TakeOFf\0Fire\0Destroy\0Stop\0On\0PassiveMode\0"
+    "Line\0V\0Diamond\0Square\0Column\0EchelonLeft\0"
+    "EchelonRight\0StaggeredColumn\0Wedge\0"
+    "EntityType\0Platform\0Radio\0Sensor\0"
+    "SpecialZone\0Weapon\0IFF\0Supply\0FixedPoint\0"
+    "Formation\0ColliderType\0Sphere\0Box\0"
+    "Cyclinder\0ActionType\0Landing\0TakeOFf\0"
+    "Fire\0Destroy\0Stop\0On\0PassiveMode\0"
     "ActiveMode\0Connect\0Disconnect\0"
     "TrackCycleOn\0MissileLaunch\0GoTo\0State\0"
     "isFly\0isLand\0isFollow\0havePayLoad\0"
@@ -147,13 +155,13 @@ static const uint qt_meta_data_Constants[] = {
 
  // enums: name, alias, flags, count, data
        1,    1, 0x0,   12,   54,
-      14,   14, 0x0,    3,   78,
-      18,   18, 0x0,    9,   84,
-      28,   28, 0x0,    3,  102,
-      32,   32, 0x0,   13,  108,
-      46,   46, 0x0,   12,  134,
-      59,   59, 0x0,   10,  158,
-      70,   70, 0x0,    6,  178,
+      14,   14, 0x0,    9,   78,
+      24,   24, 0x0,    9,   96,
+      34,   34, 0x0,    3,  114,
+      38,   38, 0x0,   13,  120,
+      52,   52, 0x0,   12,  146,
+      65,   65, 0x0,   10,  170,
+      76,   76, 0x0,    6,  190,
 
  // enum data: key, value
        2, uint(Constants::INT),
@@ -171,59 +179,65 @@ static const uint qt_meta_data_Constants[] = {
       15, uint(Constants::Line),
       16, uint(Constants::V),
       17, uint(Constants::Diamond),
-      19, uint(Constants::Platform),
-      20, uint(Constants::Radio),
-      21, uint(Constants::Sensor),
-      22, uint(Constants::SpecialZone),
-      23, uint(Constants::Weapon),
-      24, uint(Constants::IFF),
-      25, uint(Constants::Supply),
-      26, uint(Constants::FixedPoint),
-      27, uint(Constants::Formation),
-      29, uint(Constants::Sphere),
-      30, uint(Constants::Box),
-      31, uint(Constants::Cyclinder),
-      33, uint(Constants::Landing),
-      34, uint(Constants::TakeOFf),
-      35, uint(Constants::Fire),
-      36, uint(Constants::Destroy),
-      37, uint(Constants::Stop),
-      38, uint(Constants::On),
-      39, uint(Constants::PassiveMode),
-      40, uint(Constants::ActiveMode),
-      41, uint(Constants::Connect),
-      42, uint(Constants::Disconnect),
-      43, uint(Constants::TrackCycleOn),
-      44, uint(Constants::MissileLaunch),
-      45, uint(Constants::GoTo),
-      47, uint(Constants::isFly),
-      48, uint(Constants::isLand),
-      49, uint(Constants::isFollow),
-      50, uint(Constants::havePayLoad),
-      51, uint(Constants::isOn),
-      52, uint(Constants::isConnected),
-      53, uint(Constants::isDisconnected),
-      54, uint(Constants::isTrackMode),
-      55, uint(Constants::isActive),
-      56, uint(Constants::isTrigger),
-      57, uint(Constants::isEmpty),
-      58, uint(Constants::isLossTaget),
-      60, uint(Constants::Speed),
-      61, uint(Constants::Target),
-      62, uint(Constants::Range),
-      63, uint(Constants::Bullets),
-      64, uint(Constants::DetectEntity),
-      65, uint(Constants::EntityIFF),
-      66, uint(Constants::Msg),
-      67, uint(Constants::Weight),
-      68, uint(Constants::Altitude),
-      69, uint(Constants::Heading),
-      71, uint(Constants::Equal),
-      72, uint(Constants::NotEqual),
-      73, uint(Constants::Greater),
-      74, uint(Constants::Less),
-      75, uint(Constants::GreaterEqual),
-      76, uint(Constants::LessEqual),
+      18, uint(Constants::Square),
+      19, uint(Constants::Column),
+      20, uint(Constants::EchelonLeft),
+      21, uint(Constants::EchelonRight),
+      22, uint(Constants::StaggeredColumn),
+      23, uint(Constants::Wedge),
+      25, uint(Constants::Platform),
+      26, uint(Constants::Radio),
+      27, uint(Constants::Sensor),
+      28, uint(Constants::SpecialZone),
+      29, uint(Constants::Weapon),
+      30, uint(Constants::IFF),
+      31, uint(Constants::Supply),
+      32, uint(Constants::FixedPoint),
+      33, uint(Constants::Formation),
+      35, uint(Constants::Sphere),
+      36, uint(Constants::Box),
+      37, uint(Constants::Cyclinder),
+      39, uint(Constants::Landing),
+      40, uint(Constants::TakeOFf),
+      41, uint(Constants::Fire),
+      42, uint(Constants::Destroy),
+      43, uint(Constants::Stop),
+      44, uint(Constants::On),
+      45, uint(Constants::PassiveMode),
+      46, uint(Constants::ActiveMode),
+      47, uint(Constants::Connect),
+      48, uint(Constants::Disconnect),
+      49, uint(Constants::TrackCycleOn),
+      50, uint(Constants::MissileLaunch),
+      51, uint(Constants::GoTo),
+      53, uint(Constants::isFly),
+      54, uint(Constants::isLand),
+      55, uint(Constants::isFollow),
+      56, uint(Constants::havePayLoad),
+      57, uint(Constants::isOn),
+      58, uint(Constants::isConnected),
+      59, uint(Constants::isDisconnected),
+      60, uint(Constants::isTrackMode),
+      61, uint(Constants::isActive),
+      62, uint(Constants::isTrigger),
+      63, uint(Constants::isEmpty),
+      64, uint(Constants::isLossTaget),
+      66, uint(Constants::Speed),
+      67, uint(Constants::Target),
+      68, uint(Constants::Range),
+      69, uint(Constants::Bullets),
+      70, uint(Constants::DetectEntity),
+      71, uint(Constants::EntityIFF),
+      72, uint(Constants::Msg),
+      73, uint(Constants::Weight),
+      74, uint(Constants::Altitude),
+      75, uint(Constants::Heading),
+      77, uint(Constants::Equal),
+      78, uint(Constants::NotEqual),
+      79, uint(Constants::Greater),
+      80, uint(Constants::Less),
+      81, uint(Constants::GreaterEqual),
+      82, uint(Constants::LessEqual),
 
        0        // eod
 };

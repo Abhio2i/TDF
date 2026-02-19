@@ -1,4 +1,10 @@
-
+//============================================================================
+// Written by: Waris
+// CustomMapDialog
+// Purpose:
+// - Dialog for adding or editing custom map layers
+// - Collects map name, tile URL, zoom range, opacity, and layer type
+//============================================================================
 
 #include "custommapdialog.h"
 

@@ -1,5 +1,14 @@
+//============================================================================
+// ShapePropertiesDialog
+// Purpose: Dialog for editing visual properties of a shape (border color and border thickness).
+// Written by: Waris
+//============================================================================
+
 #include "shapepropertiesdialog.h"
 
+// Constructor
+// Initializes the dialog UI, applies a dark theme,
+// and sets up color selection and border thickness controls.
 ShapePropertiesDialog::ShapePropertiesDialog(QWidget *parent)
     : QDialog(parent), m_currentColor(Qt::red), m_borderThickness(2)
 {
@@ -52,6 +61,7 @@ ShapePropertiesDialog::ShapePropertiesDialog(QWidget *parent)
     connect(cancelButton, &QPushButton::clicked, this, &QDialog::reject);
 }
 
+// Updates the dialog UI with existing shape properties
 void ShapePropertiesDialog::setCurrentProperties(const QColor& color, int borderThickness)
 {
     m_currentColor = color;
@@ -61,16 +71,19 @@ void ShapePropertiesDialog::setCurrentProperties(const QColor& color, int border
     m_thicknessSpinBox->setValue(m_borderThickness);
 }
 
+// Returns the color selected by the user
 QColor ShapePropertiesDialog::getSelectedColor() const
 {
     return m_currentColor;
 }
 
+// Returns the selected border thickness
 int ShapePropertiesDialog::getBorderThickness() const
 {
     return m_thicknessSpinBox->value();
 }
 
+// Opens a color picker dialog and updates the preview button
 void ShapePropertiesDialog::onColorButtonClicked()
 {
     QColor newColor = QColorDialog::getColor(m_currentColor, this, "Select Shape Color", QColorDialog::DontUseNativeDialog);

@@ -8,18 +8,19 @@ Radar::Radar(Hierarchy* h) : Sensor(h)  {
 }
 
 void Radar::scan(){
-    // qDebug()<<"Radar";
+     if(!parentEntity) return;
     Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
+    if(!source) return;
     for (auto& [key, entity] : *root->Platforms)
     {
-        if(key == parentEntity->ID) continue;
+        if(!entity || key == parentEntity->ID) continue;
         Platform* platform = entity;
-        if (platform) {
-            QVector3D localPos = source->inverseTransformPoint(platform->transform->translation());
+        if (platform && platform->transform) {
+            QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
             //float distance = localPos.length();
             float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
-            if (detectCheck(localPos,metredis)) // .position() is assumed
+            if (detectCheck(localPos,metredis,2)) // .position() is assumed
             {
                 if (detects.count(platform) == 0)
                 {
@@ -68,7 +69,7 @@ QJsonObject Radar::toJson() const {
     QJsonObject obj;
     obj["id"] = QString::fromStdString(ID);
     obj["name"] = QString::fromStdString(Name);
-    obj["on"] = on;
+    obj["Active"] = Active;
     obj["SensorType"] = "Radar";
 
     QJsonObject capabilitiesObj;
@@ -79,6 +80,42 @@ QJsonObject Radar::toJson() const {
     capabilitiesObj["options"] = optionsArray;
     capabilitiesObj["value"] = detectionCapabilitiesToString(capabilities);
 
+    QJsonObject Emmison;
+    Emmison["type"] = "Section";
+    Emmison["power"] = toParm(power,"kw");
+    Emmison["frequency"] = toParm(frequency,"Ghz");
+    obj["Emmison"] = Emmison;
+
+    QJsonObject Envolope;
+    Envolope["type"] = "Section";
+    Envolope["minAzimuth"] = toParm(minAzimuth,"deg");
+    Envolope["maxAzimuth"] = toParm(maxAzimuth,"deg");
+    Envolope["minElevation"] = toParm(minElevation,"deg");
+    Envolope["maxElevation"] = toParm(maxElevation,"deg");
+    obj["Envolope"] = Envolope;
+
+    QJsonObject Scanning;
+    Scanning["type"] = "Section";
+    Scanning["rate"] = toParm(rate,"hz");
+    Scanning["hits"] = toParm(hits,"");
+    obj["Scanning"] = Scanning;
+
+    QJsonObject Antenna;
+    Antenna["type"] = "Section";
+    Antenna["AntennaGain"] = toParm(AntennaGain,"db");
+    Antenna["AntennaBandwidth"] = toParm(AntennaBandwidth,"ghz");
+    Antenna["beamWidth"] = toParm(beamWidth,"deg");
+    Antenna["scanType"] = toParm(scanType,"");
+    Antenna["scanTime1"] = toParm(scanTime1,"");
+    Antenna["scanTime2"] = toParm(scanTime2,"");
+    Antenna["peakSideLobLevel"] = toParm(peakSideLobLevel,"");
+    Antenna["avgSideLobLevel"] = toParm(avgSideLobLevel,"");
+    obj["Antenna"] = Antenna;
+
+    QJsonObject Pulse;
+    Pulse["type"] = "Section";
+    Pulse["pulseWidth"] = toParm(pulseWidth,"us");
+    obj["Pulse"] = Pulse;
 
     QJsonObject defaultObj;
     defaultObj["type"] = "Section";
@@ -94,8 +131,63 @@ void Radar::fromJson(const QJsonObject& obj) {
     if (obj.contains("id")){
         ID = obj["id"].toString().toStdString();
     }
-    if (obj.contains("on"))
-        on = obj["on"].toBool();
+    if (obj.contains("Active"))
+        Active = obj["Active"].toBool();
+
+    if (obj.contains("Emmison") && obj["Emmison"].isObject()) {
+        QJsonObject Emmison = obj["Emmison"].toObject();
+        if (Emmison.contains("power"))
+            power = valueFromParm(Emmison["power"].toObject());
+        if (Emmison.contains("frequency"))
+            frequency = valueFromParm(Emmison["frequency"].toObject());
+    }
+
+    if (obj.contains("Envolope") && obj["Envolope"].isObject()) {
+        QJsonObject Envolope = obj["Envolope"].toObject();
+        if (Envolope.contains("minAzimuth"))
+            minAzimuth = valueFromParm(Envolope["minAzimuth"].toObject());
+        if (Envolope.contains("maxAzimuth"))
+            maxAzimuth = valueFromParm(Envolope["maxAzimuth"].toObject());
+        if (Envolope.contains("minElevation"))
+            minElevation = valueFromParm(Envolope["minElevation"].toObject());
+        if (Envolope.contains("maxElevation"))
+            maxElevation = valueFromParm(Envolope["maxElevation"].toObject());
+    }
+
+    if (obj.contains("Scanning") && obj["Scanning"].isObject()) {
+        QJsonObject Scanning = obj["Scanning"].toObject();
+        if (Scanning.contains("rate"))
+            rate = valueFromParm(Scanning["rate"].toObject());
+        if (Scanning.contains("hits"))
+            hits = valueFromParm(Scanning["hits"].toObject());
+    }
+
+    if (obj.contains("Antenna") && obj["Antenna"].isObject()) {
+        QJsonObject Antenna = obj["Antenna"].toObject();
+        if (Antenna.contains("AntennaGain"))
+            AntennaGain = valueFromParm(Antenna["AntennaGain"].toObject());
+        if (Antenna.contains("AntennaBandwidth"))
+            AntennaBandwidth = valueFromParm(Antenna["AntennaBandwidth"].toObject());
+        if (Antenna.contains("beamWidth"))
+            beamWidth = valueFromParm(Antenna["beamWidth"].toObject());
+        if (Antenna.contains("scanType"))
+            scanType = valueFromParm(Antenna["scanType"].toObject());
+        if (Antenna.contains("scanTime1"))
+            scanTime1 = valueFromParm(Antenna["scanTime1"].toObject());
+        if (Antenna.contains("scanTime2"))
+            scanTime2 = valueFromParm(Antenna["scanTime2"].toObject());
+        if (Antenna.contains("peakSideLobLevel"))
+            peakSideLobLevel = valueFromParm(Antenna["peakSideLobLevel"].toObject());
+        if (Antenna.contains("avgSideLobLevel"))
+            avgSideLobLevel = valueFromParm(Antenna["avgSideLobLevel"].toObject());
+    }
+
+    if (obj.contains("Pulse") && obj["Pulse"].isObject()) {
+        QJsonObject Pulse = obj["Pulse"].toObject();
+        if (Pulse.contains("pulseWidth"))
+            pulseWidth = valueFromParm(Pulse["pulseWidth"].toObject());
+    }
+
     if (obj.contains("default") && obj["default"].isObject()) {
         QJsonObject defaultObj = obj["default"].toObject();
         if (defaultObj.contains("range"))

@@ -3,12 +3,35 @@
 #include <QThread>
 #include <core/Network/libs/TransformUpdate.h> //for qued connnection
 #include <QMetaType>//by aman
+#include <core/SharedMemory/sharedmemorywrapper.h>
 Runtime::Runtime() {
     qRegisterMetaType<TransformUpdate>("TransformUpdate");//by Aman
+
+    // New By Himanshu Start
+    // Register the Enum so it can be passed across threads via Signals/Slots
+    qRegisterMetaType<SimulationStateNS::State>("SimulationStateNS::State");
 
     simulationThread = new QThread(this);
     Library = new Hierarchy();
     hierarchy = new Hierarchy();
+    Library->fixedProfiles = false;
+    // Setup Shared Memory Thread By Himanshu
+    sharedMemoryThread = new QThread(this);
+    sharedWrapper = new SharedMemoryWrapper();
+    // Create SharedMemory. IMPORTANT: pass nullptr as parent!
+    // If you pass 'this', you cannot move it to another thread.
+    // sharedmemory = new SharedMemory(hierarchy, simulation, nullptr);
+
+    // // Move SharedMemory to its thread
+    // sharedmemory->moveToThread(sharedMemoryThread);
+
+    // // Connect Thread Lifecycle
+    // connect(sharedMemoryThread, &QThread::finished, sharedmemory, &QObject::deleteLater);
+    // connect(sharedMemoryThread, &QThread::finished, sharedMemoryThread, &QObject::deleteLater);
+
+    // // Start SharedMemory Thread
+    // sharedMemoryThread->start();
+
 
     scenerenderer = new SceneRenderer();
     simulation = new Simulation();
@@ -38,7 +61,13 @@ Runtime::Runtime() {
     connect(hierarchy,&Hierarchy::entityMeshRemoved,scenerenderer,&SceneRenderer::entityRemoved);
     connect(simulation,&Simulation::Render,scenerenderer,&SceneRenderer::Render);
 
+    //SharedMemory Connection
+    connect(hierarchy,&Hierarchy::entityPhysicsAdded,sharedWrapper,&SharedMemoryWrapper::entityAdded);
+    connect(hierarchy,&Hierarchy::entityRemoved,sharedWrapper,&SharedMemoryWrapper::entityRemoved);
+    connect(simulation,&Simulation::Render,sharedWrapper,&SharedMemoryWrapper::SimulationUpdate);
+
     // Physics system connections
+    connect(hierarchy,&Hierarchy::Init,simulation,&Simulation::Reset);
     connect(hierarchy,&Hierarchy::entityPhysicsAdded,simulation,&Simulation::entityAdded);
     connect(hierarchy,&Hierarchy::entityRemoved,simulation,&Simulation::entityRemoved);
     connect(hierarchy,&Hierarchy::entityPhysicsRemoved,simulation,&Simulation::entityRemoved);
@@ -97,24 +126,76 @@ Runtime::Runtime() {
             hierarchy,
             &Hierarchy::renameEntity);
 
-    // --- START CLIENT SIMULATION AUTOMATICALLY ---
+    // --- START CLIENT SIMULATION AUTOMATICALLY ---by Aman
     connect(networkManager, &NetworkManager::initSyncComplete,
             this, [this]() {
 
                 if (!networkManager->isServer()) {
                     qDebug() << "[CLIENT] Starting simulation loop";
-                    simulation->start();
+                    //simulation->start();
                 }
             });
+    connect(hierarchy, &Hierarchy::status,this,[this]{
+        if(simulation->isPlay){
+            simulation->pause();
+            QThread::msleep(200);
+        }
+    });
 
 
+    //Shared Memory
+    //connect(simulation,&Simulation::sendMode,sharedmemory,&SharedMemory::getMode);
+    // 7. Connect Simulation to SharedMemory (Cross-Thread Communication)
+    // The Qt::QueuedConnection is automatic because they are on different threads
+    // connect(simulation, &Simulation::sendMode,
+    //         sharedmemory, &SharedMemory::handleState);
+
+    /* -------------------------------------------------------
+     * Recording Implementation Start
+     * ------------------------------------------------------*/
+    recording = recorder->m_recording;
+    replay    = recorder->m_replay;
+    //recording = new Recording(hierarchy, simulation ,recorder, this);
+    // connect(simulation, &Simulation::Update,
+    //         recording, &Recording::getSimulationUpdate);
+
+    connect(simulation, &Simulation::Update, this, [=]() {
+        recording->getSimulationUpdate();
+    });
+    connect(simulation, &Simulation::HierarchyUpdate,this,[=](){
+        if(recording->mode == recording->recordingModes::START){
+            recording->changeInHierarchy();
+        }else if(recording->mode == recording->recordingModes::PAUSE){
+            recording->changeInHierarchyInPause = true;
+        }
+    });
+    connect(replay,&Replay::updateScene,scenerenderer,&SceneRenderer::Render);
+    /* -------------------------------------------------------
+     * Recording Implementation End
+     * ------------------------------------------------------*/
+
+    QObject::connect(simulationThread, &QThread::started, simulation, &Simulation::init);
+    connect(simulationThread, &QThread::finished, simulationThread, &QThread::deleteLater);
+    simulationThread->start();
 
 
 }
 
 Runtime::~Runtime() {
+    std::cout << "Runtime delete";
+    Console::log("Runtime delete");
+    delete sharedWrapper;
     delete recorder;
+    delete recording;
+    delete replay;
     // delete missionExcuter;
+    // delete sharedmemory; //Shared Memory By Himanshu
+    // Clean up Shared Memory Thread New
+    if (sharedMemoryThread && sharedMemoryThread->isRunning()) {
+        sharedMemoryThread->quit();
+        sharedMemoryThread->wait();
+    }
+    // sharedmemory is deleted by deleteLater connection New
     delete console;
     delete networkManager;
     delete scenerenderer;

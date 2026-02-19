@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: measuredistancedialog.h                                            */
 /* Purpose: Defines dialog for measuring distances                          */
+// Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef MEASUREDISTANCEDIALOG_H

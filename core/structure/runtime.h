@@ -13,7 +13,9 @@
 #include "core/Recorder/recorder.h"
 #include "core/ScriptEngine/scriptengine.h"
 
-
+#include <QThread> // Include QThread
+#include <core/SharedMemory/sharedmemorywrapper.h>  //Shared Memory By Himanshu
+#include <core/Simulation/simulation_state.h>// Recorder By Himanshu
 
 class Runtime : public QObject  // QObject se inherit kiya
 {
@@ -34,6 +36,9 @@ public:
     Profiler *profiler;
     Console *console;
     Recorder *recorder;  // Using external Recorder
+    Recording *recording;       // Using external Recorder Recording
+    Replay    *replay;
+    SharedMemoryWrapper* sharedWrapper; //Shared Memory By Himanshu
 
 signals:
 
@@ -44,7 +49,7 @@ public slots:
 
 private:
     QThread *simulationThread;
-
+    QThread *sharedMemoryThread; // Add this line New by Himanshu
 };
 
 

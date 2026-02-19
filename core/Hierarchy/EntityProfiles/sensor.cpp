@@ -57,14 +57,16 @@ void Sensor::scan() {
     qDebug()<<"sensor";
 }
 
-bool Sensor::detectCheck(QVector3D localPos,float distance)
+void Sensor::clearTargets(){
+    targets.clear();
+    detects.clear();
+
+    ewdetects.clear();
+    ewtargets.clear();
+}
+
+bool Sensor::detectCheck(QVector3D localPos,float distance,float multi)
 {
-    // localPos.magnitude  ->  localPos.length() (QVector3D method)
-    //loat distance = localPos.length();
-
-    // C# Mathf.Atan2(y, x) -> std::atan2(y, x)
-    // C# Mathf.Rad2Deg -> RAD2DEG constant
-
     // horizontal angle (Y axis) : x vs z
     float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
 
@@ -73,10 +75,10 @@ bool Sensor::detectCheck(QVector3D localPos,float distance)
 
     // abs le lo taki left/right aur up/down dono sides cover ho
     // C# Mathf.Abs() -> std::abs()
-    yAngle = std::abs(yAngle);
+    yAngle = std::abs(yAngle) * multi;
     xAngle = std::abs(xAngle);
     xAngle = yAngle;
-    //qDebug()<< xAngle<<","<<yAngle<<","<<distance;
+    // qDebug()<< xAngle<<","<<yAngle<<","<<distance;
     //qDebug()<< maxDetectionAngle<<","<<range;
     //qDebug()<< (distance < range)<<","<<(xAngle < maxDetectionAngle)<<","<<(yAngle < maxDetectionAngle);
     // Assuming 'range' and 'maxDetectionAngle' are member variables of Sensor
@@ -236,4 +238,38 @@ Sensor::DetectionCapabilities Sensor::stringTodetectionCapabilities(const QStrin
         return DetectionCapabilities::All;  // ✅ Default fallback
 }
 
+// ================= Generic Targets =================
+int Sensor::getTargetCount() const {
+    return targets.size();
+}
 
+Target Sensor::getTarget(int index) const {
+    if (index < 0 || index >= targets.size()) {
+        throw std::out_of_range("Generic Target index out of range");
+    }
+    return targets[index];
+}
+
+// ================= CSM Targets =================
+int Sensor::getCSMTargetCount() const {
+    return ewtargets.size();  // Changed from csmtargets
+}
+
+Target Sensor::getCSMTarget(int index) const {
+    if (index < 0 || index >= csmtargets.size()) {
+        throw std::out_of_range("CSM Target index out of range");
+    }
+    return ewtargets[index];  // Changed from csmtargets
+}
+
+// ================= ESM Targets =================
+int Sensor::getESMTargetCount() const {
+    return ewtargets.size();  // Changed from esmtargets
+}
+
+Target Sensor::getESMTarget(int index) const {
+    if (index < 0 || index >= esmtargets.size()) {
+        throw std::out_of_range("ESM Target index out of range");
+    }
+    return ewtargets[index];  // Changed from esmtargets
+}

@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: overview.cpp                                                     */
 /* Purpose: Implements overview widget with centered label                  */
+//               Written by Arti Rajpoot
 /* ========================================================================= */
 
 #include "overview.h"                              // For overview widget class

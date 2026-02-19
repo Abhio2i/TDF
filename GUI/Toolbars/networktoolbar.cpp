@@ -1,5 +1,14 @@
 
+
+//============================================================================
+// File        : networktoolbar.cpp
+// Description : Implementation of NetworkToolbar class for network session
+//               management including start/stop sessions, status monitoring,
+//               packet analysis, and real-time network metrics visualization.
+//============================================================================
+
 #include "networktoolbar.h"
+#include "networktoolbar-styles.h"  // Include separate CSS file
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QDialogButtonBox>
@@ -12,18 +21,18 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
-
-
-
-
-
 NetworkToolbar::NetworkToolbar(QWidget *parent) : QToolBar(parent)
 {
     setObjectName("NetworkToolbar");
     setWindowTitle("Network Toolbar");
     setMovable(false);
 
-    // Define JSON configuration as a string
+    // Apply toolbar styles
+    setStyleSheet(NetworkToolbarStyles::Toolbar);
+
+    // Set smaller icon size (16x16 instead of 24x24)
+    setIconSize(QSize(20, 20));
+
     QString configJson = R"(
     {
         "session": {
@@ -72,31 +81,12 @@ NetworkToolbar::NetworkToolbar(QWidget *parent) : QToolBar(parent)
     }
 
     createActions();
-
-    // Add actions to the toolbar with separators for grouping
     addAction(startAction);
     addAction(stopAction);
-    addSeparator();
-    addAction(connectAction);
-    addAction(disconnectAction);
-    addSeparator();
     addAction(statusAction);
-    addAction(packetAction);
-    addSeparator();
-    addAction(testAction);
-    addAction(syncAction);
-    addAction(logAction);
-    addSeparator();
-    addAction(pduAction);
-    addAction(refreshAction);
 
-    // Initialize network manager and timer
-    //networkManager = new NetworkManager();
     packetTimer = new QTimer(this);
     connect(packetTimer, &QTimer::timeout, this, &NetworkToolbar::updatePacketTable);
-
-    // Set icon size to match StandardToolBar
-    setIconSize(QSize(24, 24));
 }
 
 NetworkToolbar::~NetworkToolbar()
@@ -130,63 +120,22 @@ void NetworkToolbar::createActions()
 {
     startAction = new QAction(QIcon(withWhiteBg(":/icons/images/play.png")), tr("Start"), this);
     startAction->setToolTip("Start a Master or Slave network session (Ctrl+N)");
-    //startAction->setShortcut(QKeySequence("Ctrl+N"));
+    // Apply button style
+    startAction->setProperty("class", "toolbar-button");
     connect(startAction, &QAction::triggered, this, &NetworkToolbar::startSession);
 
     stopAction = new QAction(QIcon(withWhiteBg(":/icons/images/stop.png")), tr("Stop"), this);
     stopAction->setToolTip("Stop the active network session (Ctrl+Shift+N)");
-    //stopAction->setShortcut(QKeySequence("Ctrl+Shift+N"));
     stopAction->setEnabled(false);
     connect(stopAction, &QAction::triggered, this, &NetworkToolbar::stopSession);
 
-    connectAction = new QAction(QIcon(withWhiteBg(":/icons/images/network.png")), tr("Connect"), this);
-    connectAction->setToolTip("Connect to a Slave node (Ctrl+C)");
-    //connectAction->setShortcut(QKeySequence("Ctrl+C"));
-    connect(connectAction, &QAction::triggered, this, &NetworkToolbar::connectClient);
-
-    disconnectAction = new QAction(QIcon(withWhiteBg(":/icons/images/disconnect.png")), tr("Disconnect"), this);
-    disconnectAction->setToolTip("Disconnect a selected Slave node (Ctrl+D)");
-    //disconnectAction->setShortcut(QKeySequence("Ctrl+D"));
-    disconnectAction->setEnabled(false);
-    connect(disconnectAction, &QAction::triggered, this, &NetworkToolbar::disconnectClient);
-
     statusAction = new QAction(QIcon(withWhiteBg(":/icons/images/status-update.png")), tr("Status"), this);
     statusAction->setToolTip("Display real-time network metrics (Ctrl+S)");
-    //statusAction->setShortcut(QKeySequence("Ctrl+S"));
     connect(statusAction, &QAction::triggered, this, &NetworkToolbar::viewNetworkStatus);
-
-    packetAction = new QAction(QIcon(withWhiteBg(":/icons/images/packet.png")), tr("Packet Analyzer"), this);
-    packetAction->setToolTip("Launch packet capture and analysis (Ctrl+P)");
-    //packetAction->setShortcut(QKeySequence("Ctrl+P"));
-    connect(packetAction, &QAction::triggered, this, &NetworkToolbar::openPacketAnalyzer);
-
-    testAction = new QAction(QIcon(withWhiteBg(":/icons/images/test.png")), tr("Test"), this);
-    testAction->setToolTip("Run TTCN-3 test to validate protocol (Ctrl+T)");
-    //testAction->setShortcut(QKeySequence("Ctrl+T"));
-    connect(testAction, &QAction::triggered, this, &NetworkToolbar::runProtocolTest);
-
-    syncAction = new QAction(QIcon(withWhiteBg(":/icons/images/sync.png")), tr("Sync"), this);
-    syncAction->setToolTip("Configure network synchronization settings (Ctrl+Y)");
-    //syncAction->setShortcut(QKeySequence("Ctrl+Y"));
-    connect(syncAction, &QAction::triggered, this, &NetworkToolbar::configureSyncSettings);
-
-    logAction = new QAction(QIcon(withWhiteBg(":/icons/images/log-file.png")), tr("Logs"), this);
-    logAction->setToolTip("View network-related logs (Ctrl+L)");
-    //logAction->setShortcut(QKeySequence("Ctrl+L"));
-    connect(logAction, &QAction::triggered, this, &NetworkToolbar::viewLogs);
-
-    pduAction = new QAction(QIcon(withWhiteBg(":/icons/images/pdu.png")), tr("PDU"), this);
-    pduAction->setToolTip("Create or simulate a sample DIS PDU (Ctrl+M)");
-    //pduAction->setShortcut(QKeySequence("Ctrl+M"));
-    connect(pduAction, &QAction::triggered, this, &NetworkToolbar::simulatePDU);
-
-
-    refreshAction = new QAction(QIcon(withWhiteBg(":/icons/images/loading-arrow")), tr("Refresh"), this);
-    connect(refreshAction, &QAction::triggered, this, &NetworkToolbar::updateNetwork);
-
 }
+
 void NetworkToolbar::updateNetwork(){
-    qDebug() << " iam working";
+    // qDebug() << " iam working";
     //networkManager->UpdateClient();
 }
 
@@ -194,7 +143,7 @@ void NetworkToolbar::setupDialog(QDialog *dialog, const QString &title)
 {
     dialog->setWindowTitle(title);
     dialog->setFixedSize(400, 300);
-    dialog->setStyleSheet("QDialog { background-color: black; }");
+    dialog->setStyleSheet(NetworkToolbarStyles::Dialog);
 }
 
 void NetworkToolbar::showMessage(const QString &title, const QString &message, bool isError)
@@ -203,7 +152,7 @@ void NetworkToolbar::showMessage(const QString &title, const QString &message, b
     msgBox.setWindowTitle(title);
     msgBox.setText(message);
     msgBox.setStandardButtons(QMessageBox::Ok);
-    msgBox.setStyleSheet(isError ? "QMessageBox { color: red; }" : "");
+    msgBox.setStyleSheet(NetworkToolbarStyles::MessageBox);
     msgBox.exec();
 }
 
@@ -213,6 +162,7 @@ void NetworkToolbar::startSession()
     setupDialog(&dialog, "Start Network Session");
 
     QVBoxLayout *layout = new QVBoxLayout(&dialog);
+
     QComboBox *typeCombo = new QComboBox();
     QStringList sessionTypes;
     QJsonArray sessionArray = config["session"].toObject()["session_types"].toArray();
@@ -225,12 +175,17 @@ void NetworkToolbar::startSession()
     QLineEdit *ipEdit = new QLineEdit("127.0.0.1");  // Default to loopback IP for local testing
 
     QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    buttons->setStyleSheet(NetworkToolbarStyles::ButtonBox);
 
-    layout->addWidget(new QLabel("Session Type:"));
+    QLabel *typeLabel = new QLabel("Session Type:");
+    QLabel *portLabel = new QLabel("Port:");
+    QLabel *ipLabel = new QLabel("Server IP (for Slave):");
+
+    layout->addWidget(typeLabel);
     layout->addWidget(typeCombo);
-    layout->addWidget(new QLabel("Port:"));
+    layout->addWidget(portLabel);
     layout->addWidget(portEdit);
-    layout->addWidget(new QLabel("Server IP (for Slave):"));
+    layout->addWidget(ipLabel);
     layout->addWidget(ipEdit);
     layout->addWidget(buttons);
 
@@ -246,20 +201,14 @@ void NetworkToolbar::startSession()
             return;
         }
 
-        qDebug() << "[UI] Selected session type:" << typeCombo->currentText();
-        qDebug() << "[UI] Trying to start on port:" << selectedPort;
-
         if (typeCombo->currentText() == "Master") {
             networkManager->init(selectedIP,selectedPort);
-            // enableMessageSendingUI();
             success = networkManager->startServer(selectedPort);
         } else {
-           // networkManager->initClient(selectedIP, selectedPort);
             networkManager->init(selectedIP,selectedPort);
             success = networkManager->startClient();
         }
 
-        qDebug() << "[UI] Session success:" << success;
         dialog.accept();
 
         showMessage("Session Started",
@@ -272,156 +221,56 @@ void NetworkToolbar::startSession()
 
         if (success) {
             stopAction->setEnabled(true);
-            disconnectAction->setEnabled(true);
         }
     });
 
     connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     dialog.exec();
 }
+
 void NetworkToolbar::enableMessageSendingUI() {
     QWidget *msgWidget = new QWidget();
     QHBoxLayout *layout = new QHBoxLayout(msgWidget);
 
     QLineEdit *inputField = new QLineEdit();
+    inputField->setStyleSheet(NetworkToolbarStyles::Dialog); // Reuse line edit style
+
     QPushButton *sendButton = new QPushButton("Send");
+    sendButton->setStyleSheet(NetworkToolbarStyles::PushButton);
 
     layout->addWidget(inputField);
     layout->addWidget(sendButton);
     msgWidget->setLayout(layout);
 
     // Add to your main window (assumes you have a layout to add to)
-    mainWindowLayout->addWidget(msgWidget);  // Replace with your layout
+    if (mainWindowLayout) {
+        mainWindowLayout->addWidget(msgWidget);
+    }
 
     connect(sendButton, &QPushButton::clicked, this, [this, inputField]() {
         QString msg = inputField->text().trimmed();
         if (!msg.isEmpty()) {
-           // networkManager->sendServerMessage(msg);
+            // networkManager->sendServerMessage(msg);
             inputField->clear();
         }
     });
 }
+
 void NetworkToolbar::stopSession()
 {
     QMessageBox msgBox;
     msgBox.setWindowTitle("Confirm Stop Session");
     msgBox.setText("Stop current network session?");
     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setStyleSheet(NetworkToolbarStyles::MessageBox);
+
     if (msgBox.exec() == QMessageBox::Yes) {
-        // bool success = networkManager->stopSession();
-        // showMessage("Session Stopped", success ? "Network session stopped successfully" : "Failed to stop session", !success);
-        // if (success) {
-        //     stopAction->setEnabled(false);
-        //     disconnectAction->setEnabled(false);
-        // }
-    }
-}
-
-void NetworkToolbar::connectClient()
-{
-    QDialog dialog(this);
-    setupDialog(&dialog, "Connect to Client");
-
-    QVBoxLayout *layout = new QVBoxLayout(&dialog);
-    QComboBox *idCombo = new QComboBox();
-    QLineEdit *ipEdit = new QLineEdit();
-    QLineEdit *portEdit = new QLineEdit();
-    QComboBox *protocolCombo = new QComboBox();
-    QJsonArray clients = config["clients"].toArray();
-    for (const QJsonValue &client : clients) {
-        idCombo->addItem(client.toObject()["id"].toString());
-    }
-    QStringList protocols;
-    QJsonArray protocolArray = config["protocols"].toArray();
-    for (const QJsonValue &value : protocolArray) {
-        protocols.append(value.toString());
-    }
-    protocolCombo->addItems(protocols);
-
-    // Update IP and port when client ID changes
-    auto updateFields = [=]() {
-        for (const QJsonValue &client : clients) {
-            if (client.toObject()["id"].toString() == idCombo->currentText()) {
-                ipEdit->setText(client.toObject()["ip"].toString());
-                portEdit->setText(QString::number(client.toObject()["port"].toInt()));
-            }
+        bool success = networkManager->stopSession();
+        showMessage("Session Stopped", success ? "Network session stopped successfully" : "Failed to stop session", !success);
+        if (success) {
+            stopAction->setEnabled(false);
         }
-    };
-    updateFields();
-    connect(idCombo, &QComboBox::currentTextChanged, updateFields);
-
-    QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-
-    layout->addWidget(new QLabel("Client ID:"));
-    layout->addWidget(idCombo);
-    layout->addWidget(new QLabel("IP Address:"));
-    layout->addWidget(ipEdit);
-    layout->addWidget(new QLabel("Port:"));
-    layout->addWidget(portEdit);
-    layout->addWidget(new QLabel("Protocol:"));
-    layout->addWidget(protocolCombo);
-    layout->addWidget(buttons);
-
-    connect(buttons, &QDialogButtonBox::accepted, [&]() {
-        // bool success = networkManager->connectClient(idCombo->currentText(), ipEdit->text(), portEdit->text().toInt(), protocolCombo->currentText());
-        // dialog.accept();
-        // showMessage("Connection", success ? QString("Connected to %1 at %2:%3").arg(idCombo->currentText(), ipEdit->text(), portEdit->text())
-        //                                   : "Failed to connect: Invalid IP", !success);
-    });
-    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
-
-    dialog.exec();
-}
-
-void NetworkToolbar::disconnectClient()
-{
-    QDialog dialog(this);
-    setupDialog(&dialog, "Disconnect Client");
-
-    QVBoxLayout *layout = new QVBoxLayout(&dialog);
-    QComboBox *clientCombo = new QComboBox();
-    QJsonArray clients = config["clients"].toArray();
-    for (const QJsonValue &client : clients) {
-        clientCombo->addItem(client.toObject()["id"].toString());
     }
-    QLabel *idLabel = new QLabel("Client ID: " + clientCombo->currentText());
-    QLabel *ipLabel = new QLabel("IP Address: ");
-    QLabel *portLabel = new QLabel("Port: ");
-    QLabel *activityLabel = new QLabel("Last Activity: ");
-
-    // Update labels when client ID changes
-    auto updateLabels = [=]() {
-        for (const QJsonValue &client : clients) {
-            if (client.toObject()["id"].toString() == clientCombo->currentText()) {
-                idLabel->setText("Client ID: " + client.toObject()["id"].toString());
-                ipLabel->setText("IP Address: " + client.toObject()["ip"].toString());
-                portLabel->setText("Port: " + QString::number(client.toObject()["port"].toInt()));
-                activityLabel->setText("Last Activity: " + client.toObject()["last_activity"].toString());
-            }
-        }
-    };
-    updateLabels();
-    connect(clientCombo, &QComboBox::currentTextChanged, updateLabels);
-
-    QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-
-    layout->addWidget(new QLabel("Select Client:"));
-    layout->addWidget(clientCombo);
-    layout->addWidget(idLabel);
-    layout->addWidget(ipLabel);
-    layout->addWidget(portLabel);
-    layout->addWidget(activityLabel);
-    layout->addWidget(buttons);
-
-    connect(buttons, &QDialogButtonBox::accepted, [&]() {
-        // bool success = networkManager->disconnectClient(clientCombo->currentText());
-        // dialog.accept();
-        // showMessage("Disconnection", success ? QString("%1 disconnected").arg(clientCombo->currentText())
-        //                                      : "Failed to disconnect: Network timeout", !success);
-    });
-    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
-
-    dialog.exec();
 }
 
 void NetworkToolbar::viewNetworkStatus()
@@ -433,26 +282,29 @@ void NetworkToolbar::viewNetworkStatus()
     QVBoxLayout *layout = new QVBoxLayout(content);
 
     QLabel *countLabel = new QLabel("Connected Clients: 0");
+    countLabel->setStyleSheet("color: white; font-weight: bold;");
+
     QTableWidget *table = new QTableWidget(0, 4);
     table->setHorizontalHeaderLabels({"Client ID", "IP", "Status", "Latency"});
     table->horizontalHeader()->setStretchLastSection(true);
+    table->setStyleSheet(NetworkToolbarStyles::TableWidget);
 
     // Update status function
     auto updateStatus = [=]() {
-        // QStringList status = networkManager->getNetworkStatus();
-        // table->setRowCount(0);
-        // int connectedCount = 0;
-        // for (const QString &entry : status) {
-        //     QStringList fields = entry.split(",");
-        //     int row = table->rowCount();
-        //     table->insertRow(row);
-        //     table->setItem(row, 0, new QTableWidgetItem(fields[0]));
-        //     table->setItem(row, 1, new QTableWidgetItem(fields[1]));
-        //     table->setItem(row, 2, new QTableWidgetItem(fields[2]));
-        //     table->setItem(row, 3, new QTableWidgetItem(fields[3]));
-        //     if (fields[2] == "Connected") connectedCount++;
-        // }
-        // countLabel->setText(QString("Connected Clients: %1").arg(connectedCount));
+        QStringList status = networkManager->getNetworkStatus();
+        table->setRowCount(0);
+        int connectedCount = 0;
+        for (const QString &entry : status) {
+            QStringList fields = entry.split(",");
+            int row = table->rowCount();
+            table->insertRow(row);
+            table->setItem(row, 0, new QTableWidgetItem(fields[0]));
+            table->setItem(row, 1, new QTableWidgetItem(fields[1]));
+            table->setItem(row, 2, new QTableWidgetItem(fields[2]));
+            table->setItem(row, 3, new QTableWidgetItem(fields[3]));
+            if (fields[2] == "Connected") connectedCount++;
+        }
+        countLabel->setText(QString("Connected Clients: %1").arg(connectedCount));
     };
 
     // Initial update
@@ -464,6 +316,8 @@ void NetworkToolbar::viewNetworkStatus()
     statusTimer->start(1000);
 
     QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Save);
+    buttons->setStyleSheet(NetworkToolbarStyles::ButtonBox);
+
     connect(buttons, &QDialogButtonBox::accepted, [=]() {
         statusTimer->stop();
         dialog->accept();
@@ -500,17 +354,25 @@ void NetworkToolbar::openPacketAnalyzer()
     packetTable = new QTableWidget(0, 4);
     packetTable->setHorizontalHeaderLabels({"Time", "Type", "Source", "Data"});
     packetTable->horizontalHeader()->setStretchLastSection(true);
+    packetTable->setStyleSheet(NetworkToolbarStyles::TableWidget);
 
     QPushButton *startButton = new QPushButton("Start Capture");
     QPushButton *stopButton = new QPushButton("Stop Capture");
     QPushButton *closeButton = new QPushButton("Close");
+
+    startButton->setStyleSheet(NetworkToolbarStyles::PushButton);
+    stopButton->setStyleSheet(NetworkToolbarStyles::PushButton);
+    closeButton->setStyleSheet(NetworkToolbarStyles::PushButton);
 
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     buttonLayout->addWidget(startButton);
     buttonLayout->addWidget(stopButton);
     buttonLayout->addWidget(closeButton);
 
-    layout->addWidget(new QLabel("Filter:"));
+    QLabel *filterLabel = new QLabel("Filter:");
+    filterLabel->setStyleSheet("color: white;");
+
+    layout->addWidget(filterLabel);
     layout->addWidget(filterCombo);
     layout->addWidget(packetTable);
     layout->addLayout(buttonLayout);
@@ -537,152 +399,5 @@ void NetworkToolbar::openPacketAnalyzer()
 
 void NetworkToolbar::updatePacketTable()
 {
-    // QStringList packets = networkManager->getPackets();
-    // int rowCount = packetTable->rowCount();
-
-    // for (const QString &packet : packets) {
-    //     QStringList fields = packet.split(",");
-    //     packetTable->insertRow(rowCount);
-    //     packetTable->setItem(rowCount, 0, new QTableWidgetItem(fields[0]));
-    //     packetTable->setItem(rowCount, 1, new QTableWidgetItem(fields[1]));
-    //     packetTable->setItem(rowCount, 2, new QTableWidgetItem(fields[2]));
-    //     packetTable->setItem(rowCount, 3, new QTableWidgetItem(fields[3]));
-    //     rowCount++;
-    // }
-
-    // packetTable->scrollToBottom();
-}
-
-void NetworkToolbar::runProtocolTest()
-{
-    QDialog dialog(this);
-    setupDialog(&dialog, "Run Protocol Test");
-
-    QVBoxLayout *layout = new QVBoxLayout(&dialog);
-    QComboBox *protocolCombo = new QComboBox();
-    QStringList protocols;
-    QJsonArray protocolArray = config["protocols"].toArray();
-    for (const QJsonValue &value : protocolArray) {
-        protocols.append(value.toString());
-    }
-    protocolCombo->addItems(protocols);
-
-    QComboBox *testCombo = new QComboBox();
-    QStringList testTypes;
-    QJsonArray testArray = config["test_types"].toArray();
-    for (const QJsonValue &value : testArray) {
-        testTypes.append(value.toString());
-    }
-    testCombo->addItems(testTypes);
-
-    QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-
-    layout->addWidget(new QLabel("Protocol:"));
-    layout->addWidget(protocolCombo);
-    layout->addWidget(new QLabel("Test Type:"));
-    layout->addWidget(testCombo);
-    layout->addWidget(buttons);
-
-    connect(buttons, &QDialogButtonBox::accepted, [&]() {
-        // bool success = networkManager->runTest(protocolCombo->currentText(), testCombo->currentText());
-        // dialog.accept();
-        // showMessage("Test Results", success ? QString("%1 %2: Passed").arg(protocolCombo->currentText(), testCombo->currentText())
-        //                                     : "Test Failed: Protocol mismatch", !success);
-    });
-    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
-
-    dialog.exec();
-}
-
-void NetworkToolbar::configureSyncSettings()
-{
-    QDialog dialog(this);
-    setupDialog(&dialog, "Synchronization Settings");
-
-    // QVBoxLayout *layout = new QVBoxLayout(&dialog);
-    // QComboBox *freqCombo = new QComboBox();
-    // QStringList frequencies;
-    // QJsonArray freqArray = config["heartbeat_frequencies"].toArray();
-    // for (const QJsonValue &value : freqArray) {
-    //     frequencies.append(value.toString());
-    // }
-    // freqCombo->addItems(frequencies);
-    // QLineEdit *latencyEdit = new QLineEdit(QString::number(config["default_latency_threshold"].toInt()));
-    // QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-
-    // layout->addWidget(new QLabel("Heartbeat Frequency:"));
-    // layout->addWidget(freqCombo);
-    // layout->addWidget(new QLabel("Latency Threshold (ms):"));
-    // layout->addWidget(latencyEdit);
-    // layout->addWidget(buttons);
-
-    // connect(buttons, &QDialogButtonBox::accepted, [&]() {
-    //     dialog.accept();
-    //     showMessage("Settings Applied", "Sync settings updated successfully");
-    // });
-    // connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
-
-    dialog.exec();
-}
-
-void NetworkToolbar::viewLogs()
-{
-    QDialog dialog(this);
-    setupDialog(&dialog, "Network Logs");
-
-    QWidget *content = new QWidget();
-    QVBoxLayout *layout = new QVBoxLayout(content);
-
-    QTextEdit *logText = new QTextEdit();
-    logText->setReadOnly(true);
-    logText->setText("2025-06-06 11:18: Client_01 connected\n2025-06-06 11:19: Client_02 disconnected");
-
-    QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Save);
-    connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
-    connect(buttons, &QDialogButtonBox::clicked, [=](QAbstractButton *button) {
-        if (buttons->buttonRole(button) == QDialogButtonBox::ActionRole) {
-            // Export logic here
-        }
-    });
-
-    layout->addWidget(logText);
-    layout->addWidget(buttons);
-    dialog.setLayout(layout);
-    dialog.exec();
-}
-
-void NetworkToolbar::simulatePDU()
-{
-    QDialog dialog(this);
-    setupDialog(&dialog, "Simulate PDU");
-
-    QVBoxLayout *layout = new QVBoxLayout(&dialog);
-    QComboBox *pduCombo = new QComboBox();
-    QStringList pduTypes;
-    QJsonArray pduArray = config["pdu_types"].toArray();
-    for (const QJsonValue &value : pduArray) {
-        pduTypes.append(value.toString());
-    }
-    pduCombo->addItems(pduTypes);
-    QLineEdit *idEdit = new QLineEdit(config["default_pdu"].toObject()["id"].toString());
-    QLineEdit *posEdit = new QLineEdit(config["default_pdu"].toObject()["position"].toString());
-    QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-
-    layout->addWidget(new QLabel("PDU Type:"));
-    layout->addWidget(pduCombo);
-    layout->addWidget(new QLabel("Entity ID:"));
-    layout->addWidget(idEdit);
-    layout->addWidget(new QLabel("Position:"));
-    layout->addWidget(posEdit);
-    layout->addWidget(buttons);
-
-    connect(buttons, &QDialogButtonBox::accepted, [&]() {
-        // bool success = networkManager->sendPDU(pduCombo->currentText(), idEdit->text(), posEdit->text());
-        // dialog.accept();
-        // showMessage("PDU Sent", success ? QString("%1 PDU sent successfully").arg(pduCombo->currentText())
-        //                                 : "Failed to send PDU: Network error", !success);
-    });
-    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
-
-    dialog.exec();
+    // Implementation for packet table updates
 }
