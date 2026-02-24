@@ -37,14 +37,14 @@ const QString SearchBar = R"(
         border-radius: 2px;
     }
 )";
-
-/* Profile Dropdown - SAME padding, height, width, ONLY colors changed */
 const QString ProfileDropdown = R"(
     QComboBox {
         background-color: #1A3652;
         color: white;
         border: 1px solid #27446d;
         border-radius: 3px;
+        min-height: 28px;
+
     }
     QComboBox:hover {
         background-color: #27446d;
@@ -55,19 +55,29 @@ const QString ProfileDropdown = R"(
         background-color: #1E3E5E;
     }
     QComboBox::drop-down {
-        border: none;
+        subcontrol-origin: padding;
+        subcontrol-position: right center;
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        bottom: 0px;
         width: 24px;
+        border-left: 1px solid #27446d;
         background-color: #1A3652;
         border-top-right-radius: 3px;
         border-bottom-right-radius: 3px;
     }
+    QComboBox::drop-down:hover {
+        background-color: #0078D4;
+        border-left-color: #0078D4;
+    }
     QComboBox::down-arrow {
-        width: 14px;
-        height: 14px;
-        border-left: 5px solid transparent;
-        border-right: 5px solid transparent;
-        border-top: 5px solid white;
-        margin-right: 4px;
+        image: url(:/icons/images/down.png);  /* Your custom arrow icon */
+        width: 16px;
+        height: 16px;
+    }
+    QComboBox::down-arrow:on { /* When dropdown is open */
+        image: url(:/icons/images/up.png);  /* Optional: up arrow when open */
     }
     /* Dropdown list */
     QComboBox QAbstractItemView {
@@ -82,6 +92,7 @@ const QString ProfileDropdown = R"(
     QComboBox QAbstractItemView::item {
         color: white;
         background-color: #1A3652;
+        padding: 8px;
         border: none;
     }
     QComboBox QAbstractItemView::item:selected {
@@ -92,7 +103,6 @@ const QString ProfileDropdown = R"(
         background-color: #27446d;
     }
 )";
-
 /* Tree Widget - Your existing styles */
 const QString TreeWidget = R"(
     QTreeView {

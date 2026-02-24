@@ -289,21 +289,16 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                             r->Range = RadioRng;
                         }
                     }
-
                     QCoreApplication::processEvents();
                 }
             });
-
     connect(treeView, &HierarchyTree::copyItemsRequested, this,
             [this, hierarchy](QList<QVariantMap> dataList) {
                 if (dataList.isEmpty()) {
                     return;
                 }
-                // Set copy source for multi-paste
                 copySource = hierarchy;
-
             });
-
     connect(treeView, &HierarchyTree::pasteItemsRequested, this,
             [this, hierarchy](QVariantMap targetData, QList<QVariantMap> itemsToPaste) {
 
@@ -336,7 +331,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                 }
                 bool isProfile = (targetType == "profile");
                 QApplication::processEvents();
-
                 int successCount = 0;
                 for (int i = 0; i < itemsToPaste.size(); ++i) {
                     const QVariantMap& itemData = itemsToPaste[i];
@@ -370,15 +364,12 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                                          "No items copied. Please copy items first.");
                     return;
                 }
-
                 if (itemsToPaste.isEmpty()) {
 
                     return;
                 }
-
                 QString targetId = targetData["ID"].toString();
                 QString targetType;
-
                 // Determine target type
                 if (targetData["type"].type() == QVariant::Map) {
                     QVariantMap typeData = targetData["type"].toMap();
@@ -417,7 +408,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                     } catch (const std::exception& e) {
 
                     }
-
                     QApplication::processEvents();
                 }
             });
@@ -426,7 +416,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                 for (const auto& entityInfo : entityInfoList) {
                     QString parentId = entityInfo.first;
                     QString entityId = entityInfo.second;
-
                     try {
                         hierarchy->removeEntity(parentId, entityId, false);
                     } catch (const std::exception& e) {
@@ -439,7 +428,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
             hierarchy, &Hierarchy::removeEntity);
     connect(treeView->getContextMenu(), &ContextMenu::removeComponentRequested,
             hierarchy, &Hierarchy::removeComponent);
-
     // Connect add component request
     connect(treeView->getContextMenu(), &ContextMenu::addComponentRequested, this,
             [=](QString entityID, QString componentType, QString componentName,
@@ -450,33 +438,27 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                 } else if (componentType == "sensors") {
                     hierarchy->addSubComponent(entityID, ComponentType::SensorProfile,
                                                componentName, sensorType, sensorProfileId);
-
                     if (!sensorProfileId.isEmpty()) {
                         // Copy settings from selected sensor profile
                     }
-
                     hierarchy->attachSensors(entityID, componentName, sensorType);
                 } else if (componentType == "radios") {
                     hierarchy->addSubComponent(entityID, ComponentType::RadioProfile,
                                                componentName, sensorType, sensorProfileId);
                 }
             });
-
     // Connect tactical display if provided
     if (tactical) {
         connect(hierarchy, &Hierarchy::entityRemoved, tactical, &TacticalDisplay::removeMesh);
     }
-
     // Connect inspector if provided
     if (inspector) {
         connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
     }
-
     // Connect rename signals
     connect(hierarchy, &Hierarchy::profileRenamed, treeView, &HierarchyTree::profileRenamed);
     connect(hierarchy, &Hierarchy::folderRenamed, treeView, &HierarchyTree::folderRenamed);
     connect(hierarchy, &Hierarchy::entityRenamed, treeView, &HierarchyTree::entityRenamed);
-
     // Connect context menu rename action
     connect(treeView->getContextMenu(), &ContextMenu::renameItemRequested,
             hierarchy, [=](QVariantMap data) {
@@ -522,7 +504,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                 copydata.clear();
                 copySource = hierarchy;
             });
-
     // Handle paste action
     connect(treeView, &HierarchyTree::pasteItemRequested, this, [this, hierarchy](QVariantMap targetData) {
         if (copydata.isEmpty()) {
@@ -531,11 +512,9 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
         if (!copySource) {
             return;
         }
-
         QString type = copydata["type"].toString();
         QString id = copydata["ID"].toString();
         QString targetType;
-
         if (targetData["type"].type() == QVariant::Map) {
             QVariantMap typeData = targetData["type"].toMap();
             if (typeData.contains("type") && typeData["type"].toString() == "option") {
@@ -546,19 +525,15 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
         } else {
             targetType = targetData["type"].toString();
         }
-
         QString targetId = targetData["ID"].toString();
-
         if (type != "entity") {
             return;
         }
-
         try {
             auto entityIt = copySource->Entities->find(id.toStdString());
             if (entityIt == copySource->Entities->end()) {
                 return;
             }
-
             QJsonObject entityJson = entityIt->second->toJson();
             QString newId = QString::fromStdString(Uuid::generateShortUniqueID());
             entityJson["id"] = newId;
@@ -686,16 +661,13 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                     QString formationType = dialog.getFormationType();
                     QList<QVariantMap> allies = dialog.getAllies();
                     int alliesCount = dialog.getAlliesCount();
-
                     if (formationName.isEmpty()) {
                         QMessageBox::warning(nullptr, "Invalid Input",
                                              "Formation name cannot be empty.");
                         return;
                     }
-
                     // Find or create Formation profile
                     QString formationProfileId = "";
-
                     // First, try to find existing Formation profile
                     for (const auto& [id, profile] : hierarchy->ProfileCategories) {
                         if (profile->type == Constants::EntityType::Formation) {
@@ -703,7 +675,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                             break;
                         }
                     }
-
                     // If no Formation profile exists, create one
                     if (formationProfileId.isEmpty()) {
                         ProfileCategaory* formationProfile = hierarchy->addProfileCategaory("Formation");
@@ -761,7 +732,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                     else if (formationType == "Staggered Column") typeEnum = Constants::FormationType::StaggeredColumn;
                     else if (formationType == "Wedge") typeEnum = Constants::FormationType::Wedge;
                     else typeEnum = Constants::FormationType::V;
-
                     formation->formationType = typeEnum;
                     formation->count = alliesCount;
 
@@ -769,9 +739,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                     auto motherIt = hierarchy->Entities->find(mothershipId.toStdString());
                     if (motherIt != hierarchy->Entities->end()) {
                         Entity* motherEntity = motherIt->second;
-
-                        // FIXED: Removed duplicate addComponent("mothership") call
-                        // Note: mothership component already created by spawn(), just update it
 
                         // Update mothership with selected entity
                         QJsonObject motherJson;
@@ -781,7 +748,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                         entityRef["id"] = QString::fromStdString(motherEntity->ID);
                         motherJson["entity"] = entityRef;
                         formation->updateComponent("mothership", motherJson);
-                        // Also set the mothership entity directly
                         formation->mothership->entity = motherEntity;
                     }
 
@@ -810,9 +776,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                                     offsetY = position->Offset->y;
                                     offsetZ = position->Offset->z;
                                 }
-
-                                // CRITICAL: Get the current geoOffset values
-                                // Using correct member names from Geocords class
                                 double geoLat = 0, geoLon = 0, geoAlt = 0, geoHead = 0;
                                 if (position->geoOffset) {
                                     geoLat = position->geoOffset->latitude;      // lowercase 'latitude'
@@ -1618,8 +1581,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
         }
     });
 }
-// %%% Library Operations %%%
-/* Load JSON to library */
 // %%% Library Operations %%%
 /* Load JSON to library */
 void HierarchyConnector::loadToLibrary(QMainWindow* parent)

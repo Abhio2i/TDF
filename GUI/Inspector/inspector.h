@@ -75,6 +75,8 @@ public:
     bool isLocked() const;
     /* Get main ID of inspected item */
     QString getMainID() const { return mainID; }
+    QString getName() const { return Name; }
+    QString getConnectedID() const { return ConnectedID; }
 
 public slots:
     // %%% Data Initialization %%%

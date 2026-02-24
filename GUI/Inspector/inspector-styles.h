@@ -502,11 +502,6 @@ const QString ContainerDropdownButton = R"(
 )";
 
 /* Subcomponent Group Box - used in handleMultiComponentContainer */
-
-
-
-
-
 /* ==================== CHECKBOX ==================== */
 const QString CheckBox = R"(
     QCheckBox {

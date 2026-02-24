@@ -229,7 +229,7 @@ void RuntimeToolBar::createActions()
 
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, [=]() {
-        elapsedSeconds++;
+        //elapsedSeconds++;
         updateTimeDisplay();
     });
 
@@ -312,6 +312,7 @@ void RuntimeToolBar::onElapsedTime(float time)
 
 void RuntimeToolBar::updateTimeDisplay()
 {
+
     int totalSeconds = static_cast<int>(elapsedSeconds);
     int hours = totalSeconds / 3600;
     int minutes = (totalSeconds % 3600) / 60;
@@ -336,7 +337,6 @@ void RuntimeToolBar::onTimeLabelClicked()
 
     QVBoxLayout *layout = new QVBoxLayout(dialog);
     QHBoxLayout *timeLayout = new QHBoxLayout();
-
     QLineEdit *hoursEdit = new QLineEdit(dialog);
     hoursEdit->setPlaceholderText("HH");
     hoursEdit->setText(QString::number(hours));
@@ -450,7 +450,7 @@ void RuntimeToolBar::updateStatusDisplay()
     simulationStatusLabel->setStyleSheet(styleSheet);
 }
 
-// Update simulation status (for blinking effect)
+
 void RuntimeToolBar::updateSimulationStatus()
 {
     blinkState = !blinkState;

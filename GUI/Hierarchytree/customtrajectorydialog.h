@@ -15,8 +15,6 @@ class CustomTrajectoryDialog : public QDialog
 
 public:
     explicit CustomTrajectoryDialog(QWidget *parent = nullptr);
-
-
     int getWaypointsCount() const;
     QString getShape() const;
     double getLength() const;
@@ -31,7 +29,6 @@ public:
     double getMinSpeed() const;
     double getMaxSpeed() const;
     QString getCurveType() const;
-
     bool isAltitudeEnabled() const;
     bool isSpeedEnabled() const;
 
@@ -39,11 +36,8 @@ private slots:
     void onShapeChanged(int index);
     void onSpeedCheckboxChanged(int state);
     void onAltitudeCheckboxChanged(int state);
-
 private:
     void setupUI();
-
-
     QSpinBox *waypointsSpinBox;
     QComboBox *shapesComboBox;
     QGroupBox *lineGroupBox;
@@ -52,33 +46,21 @@ private:
     QGroupBox *speedGroupBox;
     QGroupBox *altitudeGroupBox;
     QGroupBox *curveGroupBox;
-
-
     QDoubleSpinBox *lengthSpinBox;
-
-
     QDoubleSpinBox *radiusSpinBox;
     QComboBox *startPointComboBox;
     QComboBox *circlePointComboBox;
-
-
     QDoubleSpinBox *majorAxisSpinBox;
     QDoubleSpinBox *minorAxisSpinBox;
     QComboBox *orientationComboBox;
-
-
     QCheckBox *speedCheckBox;
     QDoubleSpinBox *minSpeedSpinBox;
     QDoubleSpinBox *maxSpeedSpinBox;
     QDoubleSpinBox *SpeedSpinBox;
-
-
     QCheckBox *altitudeCheckBox;
     QDoubleSpinBox *minAltitudeSpinBox;
     QDoubleSpinBox *maxAltitudeSpinBox;
     QDoubleSpinBox *altitudeSpinBox;
-
-
     QComboBox *curveComboBox;
 };
 

@@ -180,8 +180,8 @@ QString TooltipHelper::formatTooltipHTML(const QString& name,
 
             tableRows.append(QString(
                                  "<tr>"
-                                 "  <td style='padding: 3px 8px 3px 0; font-weight: bold; white-space: nowrap;'>%1:</td>"
-                                 "  <td style='padding: 3px 0;'>%2</td>"
+                                 "  <td style='padding: 3px 8px 3px 0; font-weight: bold; white-space: nowrap; color: #CCCCCC;'>%1:</td>"
+                                 "  <td style='padding: 3px 0; color: white;'>%2</td>"
                                  "</tr>"
                                  ).arg(label, value));
         }
@@ -192,11 +192,11 @@ QString TooltipHelper::formatTooltipHTML(const QString& name,
         return QString();
     }
 
-    // Create HTML tooltip
+    // Create HTML tooltip - DARK THEME COLORS
     QString html = QString(
-                       "<div style='background-color: white; color: black; border: 1px solid #ccc; "
+                       "<div style='background-color: #1A3652; color: white; border: 1px solid #0078D4; "
                        "padding: 10px; border-radius: 3px; min-width: 280px; font-family: Arial, sans-serif; "
-                       "font-size: 12px;'>"
+                       "font-size: 12px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);'>"
                        "<table style='border-collapse: collapse; width: 100%;'>"
                        "%1"
                        "</table>"
@@ -304,7 +304,7 @@ double TooltipHelper::calculateCompletionTime(const MeshEntry& entry)
     return totalTime;
 }
 
-// ✅ HELPER: Haversine distance calculation (in kilometers)
+
 double TooltipHelper::calculateHaversineDistance(const QPointF& pos1, const QPointF& pos2)
 {
     const double R = 6371.0; // Earth radius in km
@@ -353,13 +353,12 @@ int TooltipHelper::findNearestUpcomingWaypoint(const MeshEntry& entry, const QPo
     QPointF lastWpPos(lastWp->position->z, lastWp->position->x);
     double distToLast = calculateHaversineDistance(currentPos, lastWpPos);
 
-    // If very close to last waypoint (within 50 meters), trajectory complete
-    if (distToLast < 0.05) { // 0.05 km = 50 meters
+
+    if (distToLast < 0.05) {
         return -1;
     }
 
-    // ✅ KEY FIX: Use trajectory->current from DynamicModel
-    // The DynamicModel already tracks which waypoint we're heading to
+
     int currentTargetIndex = entry.trajectory->current;
 
     // Safety check: Make sure index is valid

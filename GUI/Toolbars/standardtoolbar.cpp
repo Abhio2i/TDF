@@ -12,12 +12,8 @@ StandardToolBar::StandardToolBar(QWidget *parent)
 {
     setObjectName("StandardToolBar");
     setWindowTitle("Standard Tools");
-
     createActions();
-
-
     addAction(newAction);
-
     addAction(saveAllAction);
     addSeparator();
     addAction(cutAction);
@@ -28,9 +24,7 @@ StandardToolBar::StandardToolBar(QWidget *parent)
     addAction(redoAction);
     addSeparator();
     addAction(addTrajectoryAction);
-
     connect(testScriptAction, &QAction::triggered, this, &StandardToolBar::onTestScriptTriggered);
-
     //Console::log("StandardToolBar initialized with addTrajectoryAction and testScriptAction");
 }
 
@@ -47,8 +41,6 @@ void StandardToolBar::createActions()
     redoAction->setShortcut(QKeySequence::Redo);
     addTrajectoryAction = new QAction(QIcon(withWhiteBg(":/icons/images/trajectory.png")), tr("Add Trajectory"), this);
     addTrajectoryAction->setEnabled(false);
-
-
     if (addTrajectoryAction->icon().isNull()) {
         Console::error("Failed to load trajectory icon from :/icons/images/trajectory.png");
     } else {
@@ -65,8 +57,6 @@ void StandardToolBar::createActions()
 
     }
 }
-
-
 void StandardToolBar::onTestScriptTriggered()
 {
 

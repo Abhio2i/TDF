@@ -51,19 +51,11 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
 {
 
     m_scenarioConfig = new ScenarioConfig(this);
-    // Set window title and size
     setWindowTitle("Scenario Editor");
     resize(1100, 600);
-
-    // Setup enhanced dock widgets for Linux compatibility
     setupEnhancedDockWidgets();
-
-    // Initialize UI components
-    // setupMenuBar();
-    // connect(menuBar, &MenuBar::exitTriggered, qApp, &QApplication::quit);
     setupToolBars();
     setupStatusBar();
-
     // Initialize scenario components
     Scenario *scenario = new Scenario();
     hierarchy = scenario->hierarchy;
@@ -72,7 +64,6 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     scriptengine = scenario->scriptengine;
     library = scenario->Library;
     lastSavedFilePath = "";
-
     // Setup script engine
     scenario->scriptengine->setHierarchy(hierarchy, treeView, renderer);
     connect(textScriptView, &TextScriptWidget::runScriptstring,
@@ -128,7 +119,12 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
 
         // Connect trajectory signals
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated,
-                inspector, &Inspector::updateTrajectory);
+                inspector, [=](QString entityId, QJsonArray waypoints) {
+                    if (inspector->getName() == "trajectory" &&
+                        inspector->getConnectedID() == entityId) {
+                        inspector->updateTrajectory(entityId, waypoints);
+                    }
+                });
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated,
                 this, [=](QString entityId, QJsonArray /*waypoints*/) {
                     auto it = tacticalDisplay->canvas->Meshes.find(entityId.toStdString());
@@ -174,6 +170,27 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     if (tacticalDisplay && tacticalDisplay->canvas) {
         connect(tacticalDisplay->canvas, &CanvasWidget::selectEntitybyCursor,
                 treeView, &HierarchyTree::selectEntityById);
+        connect(tacticalDisplay->canvas, &CanvasWidget::selectEntitybyCursor,
+                this, [=](const QString& entityId) {
+                    if (!hierarchy->Entities) return;
+                    auto it = hierarchy->Entities->find(entityId.toStdString());
+                    if (it == hierarchy->Entities->end()) return;
+
+                    Entity* entity = it->second;
+                    QString entityName = QString::fromStdString(entity->Name);
+                    QString displayName = capitalizeFirstLetter(entityName);
+
+                    for (Inspector* insp : inspectors) {
+                        insp->init(entityId, displayName + "_self",
+                                   (*hierarchy->Entities)[entityId.toStdString()]->toJson());
+                    }
+                    if (!inspectorDock->isVisible()) {
+                        if (libraryDock) libraryDock->hide();
+                        if (textScriptDock) textScriptDock->hide();
+                        inspectorDock->show();
+                        inspectorDock->raise();
+                    }
+                });
     }
 
     // Connect tree view item selection
@@ -201,7 +218,7 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
                 if (formation) {
                     // Collect all formation-related entity IDs
                     QList<QString> formationEntityIds;
-                    formationEntityIds.append(entityID); // Formation itself
+                    formationEntityIds.append(entityID);
 
                     // Add mothership
                     if (formation->mothership && formation->mothership->entity) {
@@ -235,7 +252,7 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
                         tacticalDisplay->canvas->selectMultipleEntities(formationEntityIds);
                     }
 
-                    return; // Don't proceed with single selection
+                    return;
                 }
             }
         }
@@ -371,24 +388,15 @@ void ScenarioEditor::setupEnhancedDockWidgets()
 {
     tacticalDisplay = new TacticalDisplay(this);
     setCentralWidget(tacticalDisplay);
-
-    // Set main window background
     this->setStyleSheet("QMainWindow { background-color: #0F2636; }");
-
-    // --- 1. Helper Lambda with Side Logic ---
     auto setupOverlay = [this](CustomResizableOverlayDock* &dock, QWidget* content, const QString &title, bool isLeftPanel) {
         dock = new CustomResizableOverlayDock(title, this);
         dock->setWidget(content);
         dock->setFloating(true);
         dock->setParent(this);
-        // Enable title bar with close button for all docks created with this helper
         dock->setWindowFlags(Qt::SubWindow | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
-        // Allow default title bar to show with close button
-        // DON'T call setTitleBarWidget() to keep the default title bar
         dock->setMinimumWidth(280);
         dock->setMinimumHeight(300);
-
-        // Set the dock widget stylesheet with the new colors
         QString dockStyleSheet = "CustomResizableOverlayDock { "
                                  "background-color: #0F2636; "
                                  "color: white; ";
@@ -408,8 +416,6 @@ void ScenarioEditor::setupEnhancedDockWidgets()
                           "font-weight: bold; }";
 
         dock->setStyleSheet(dockStyleSheet);
-
-        // Also set stylesheet for the content widget
         if (content) {
             content->setStyleSheet("background-color: #0F2636; color: white;");
         }
@@ -510,8 +516,6 @@ void ScenarioEditor::setupEnhancedDockWidgets()
                                "color: white; "
 
                                "font-weight: bold; }");
-
-    // --- FIXED POSITIONING - DIRECT SET WITHOUT TIMER ---
     int winW = width() > 0 ? width() : 1100;
     int winH = height() > 0 ? height() : 600;
     int panelWidth = 300;
@@ -635,13 +639,9 @@ void ScenarioEditor::resizeEvent(QResizeEvent *event)
     int panelWidth = 300;
     int rightX = winW - panelWidth - 20;
     int leftX = 20;
-
-    // Calculate topY based on toolbar height
     int toolbarHeight = designToolBar ? designToolBar->height() : 30;
-    int topY = toolbarHeight + 80;  // Start below toolbar with padding
-
-    // LEFT SIDE - INCREASED HIERARCHY HEIGHT to 500
-    int hierarchyHeight = 500; // Match the height from setupEnhancedDockWidgets
+    int topY = toolbarHeight + 80;
+    int hierarchyHeight = 500;
     if (hierarchyDock) {
         hierarchyDock->setGeometry(leftX, topY, panelWidth, hierarchyHeight);
     }
@@ -674,11 +674,10 @@ void ScenarioEditor::resizeEvent(QResizeEvent *event)
         consoleDock->setGeometry(20, winH - 190, winW - 40, 150);
     }
 }
-// Add this showEvent
+
 void ScenarioEditor::showEvent(QShowEvent *event)
 {
     QMainWindow::showEvent(event);
-    // Force a resize event when window is shown
     QResizeEvent *re = new QResizeEvent(size(), size());
     resizeEvent(re);
     delete re;
@@ -708,7 +707,6 @@ void ScenarioEditor::setupToolBars()
     designToolBar = new DesignToolBar(this, m_scenarioConfig);
     addToolBar(Qt::TopToolBarArea, designToolBar);
     designToolBar->setMovable(true);
-    // ADD THIS - Enable context menu on the toolbar
     designToolBar->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(designToolBar, &QToolBar::customContextMenuRequested,
             this, &ScenarioEditor::showPanelContextMenu);
@@ -1264,8 +1262,6 @@ void ScenarioEditor::onRunScriptFileRequested(const QString& filePath)
     file.close();
     scriptengine->loadAndCompileScript(scriptSource);
 }
-
-
 void ScenarioEditor::onRecentLibraryTriggered()
 {
     connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,

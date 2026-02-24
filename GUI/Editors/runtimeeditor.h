@@ -113,17 +113,17 @@ private:
     GraphWidget *graphWidget = nullptr;
     ScriptEngine* scriptengine = nullptr;
 
-    // CUSTOM RESIZABLE OVERLAY DOCKS - ALL SAME TYPE
-    CustomResizableOverlayDock *hierarchyDock;        // ✅ Custom class
-    CustomResizableOverlayDock *tacticalDisplayDock;  // ✅ Custom class (unused since tacticalDisplay is central)
-    CustomResizableOverlayDock *consoleDock;          // ✅ Custom class
-    CustomResizableOverlayDock *inspectorDock;        // ✅ Custom class
-    CustomResizableOverlayDock *libraryDock;          // ✅ Custom class
-    CustomResizableOverlayDock *sidebarDock;          // ✅ Custom class
-    CustomResizableOverlayDock *textScriptDock;       // ✅ Custom class
-    CustomResizableOverlayDock *displayDock;          // ✅ Custom class (for Sensors)
-    CustomResizableOverlayDock *loggerDock;           // ✅ Custom class
-    CustomResizableOverlayDock *layerDock;            // ✅ Custom class (for Layers)
+    // CUSTOM RESIZABLE OVERLAY DOCKS
+    CustomResizableOverlayDock *hierarchyDock;
+    CustomResizableOverlayDock *tacticalDisplayDock;
+    CustomResizableOverlayDock *consoleDock;
+    CustomResizableOverlayDock *inspectorDock;
+    CustomResizableOverlayDock *libraryDock;
+    CustomResizableOverlayDock *sidebarDock;
+    CustomResizableOverlayDock *textScriptDock;
+    CustomResizableOverlayDock *displayDock;
+    CustomResizableOverlayDock *loggerDock;
+    CustomResizableOverlayDock *layerDock;
 
     // Configure menu bar
     void setupMenuBar();
@@ -148,7 +148,7 @@ private:
     NetworkToolbar *networkToolBar;
     LayerPanel *layerPanel = nullptr;
     MenuBar *menuBar;
-    QList<QDockWidget*> inspectorDocks;  // Keep as QDockWidget* for additional tabs
+    QList<QDockWidget*> inspectorDocks;
     int inspectorCount = 0;
     QList<Inspector*> inspectors;
     Runtime *runtime;
@@ -166,6 +166,7 @@ private:
     QDateTime recordingStartTime;
     QTimer *recordingTimer = nullptr;
     ScenarioConfig* m_scenarioConfig;
+    bool m_canvasSelecting = false;
 
 private:
     qint64 pausedTimeMs = 0;

@@ -56,6 +56,7 @@ struct MeshEntry {
     int textSize;             // Font size
     bool isTextSelected;      // Selection flag for text
     int individualImageSize = -1;
+   QColor trajectoryColor = Qt::blue;
 };
 
 /* TransformMode enumeration section */
@@ -286,7 +287,7 @@ private:
     bool showSensors = true;     // Default sensors visible
     bool showRadio = true;       // Default radio visible
     bool showImage = true;
-    bool showTooltip = true;
+    bool showTooltip = false;
     // Mode and state flags
     bool isDrawingTrajectory = false;  // Currently drawing trajectory
     QString selectedBitmapType;  // Selected bitmap type for placement
@@ -348,7 +349,9 @@ protected:
 
 signals:
     // Communication signals with other components
-    void selectEntitybyCursor(QString ID);  // Entity selection signal
+    // void selectEntitybyCursor(QString ID);  // Entity selection signal
+    void selectEntitybyCursor(const QString& entityId, bool isEntitySelection = true);
+
     void MoveEntity(QString ID);  // Entity movement signal
     void trajectoryUpdated(QString entityId, QJsonArray waypoints);  // Trajectory update signal
     void airbaseLayerToggled(bool visible);  // Airbase layer toggle signal
@@ -357,6 +360,7 @@ signals:
     void geoJsonLayerAdded(const QString& layerName);  // GeoJSON layer added
     void pointsUpdated(const QList<QPointF>& points);  // Measurement points updated
     void requestAddEntityAtPosition(double longitude, double latitude);
+    void entitySelectedOnCanvas(QString entityId);
 
 private:
 

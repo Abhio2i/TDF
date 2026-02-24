@@ -464,9 +464,10 @@ void DynamicModel::FollowTrajectory() {
     windDierction.setZ(0);
     windSpeed = 0;
     // // ////////////////////////////////////////////////////
-    // if( transform->trailData.capacity()>4000){
-    //     transform->trailData.erase(transform->trailData.begin());
-    // }
+    transform->trailData.push_back(QVector3D(transform->getLatitude(),0,transform->getLongitude()));
+    if( transform->trailData.capacity()>54000){
+        transform->trailData.erase(transform->trailData.begin());
+    }
     // ////////////////////////////////////////////////////
     // //*transform->position = Vector::Lerp(*tran7sform->position, *trajectory->Trajectories[trajectory->current]->position, moveSpeed * 0.1);
     current.setZ(transform->getLatitude());

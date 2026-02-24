@@ -3,7 +3,7 @@
 //============================================================================
 
 #include "projectinformation.h"
-#include "projectinformation-styles.h"  // Include separate CSS file
+#include "projectinformation-styles.h"
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -77,15 +77,10 @@ Feedback::Feedback(QWidget *parent)
 
     versionLayout->addWidget(versionTitleLabel);
     versionLayout->addWidget(versionLabel, 1);
-
     mainLayout->addLayout(versionLayout);
-
-    // Add stretch to push button to bottom
     mainLayout->addStretch();
-
-    // OK Button - SMALLER SIZE
     QPushButton *okButton = new QPushButton("OK");
-    okButton->setFixedSize(70, 28);  // Changed from 100,35 to 70,28
+    okButton->setFixedSize(70, 28);
     okButton->setCursor(Qt::PointingHandCursor);
     okButton->setStyleSheet(ProjectInformationStyles::OkButton);
 

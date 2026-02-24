@@ -59,10 +59,6 @@ public:
     Hierarchy* library = nullptr;
 
 public slots:
-    // Handle library to hierarchy drop
-    // void handleLibraryToHierarchyDrop(QVariantMap sourceData, QVariantMap targetData);
-    // Handle hierarchy to library drop
-    // void handleHierarchyToLibraryDrop(QVariantMap sourceData, QVariantMap targetData);
     void loadToLibrary(QMainWindow* parent);
 private:
     // Initialize connector

@@ -15,10 +15,8 @@ AddFormationDialog::AddFormationDialog(const QList<QVariantMap>& selectedEntitie
     setupUI();
 
     // Calculate and display allies count
-    int alliesCount = selectedEntities.size() - 1; // minus mothership
+    int alliesCount = selectedEntities.size() - 1;
     m_labelAlliesCount->setText(QString::number(alliesCount));
-
-    // Initialize allies list (all except the first as default mothership)
     updateAlliesList();
 }
 

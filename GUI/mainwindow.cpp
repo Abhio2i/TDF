@@ -6,7 +6,7 @@
 //               Written by Arti Rajpoot
 //============================================================================
 #include "mainwindow.h"
-#include "mainwindow-styles.h"                     // Include separate CSS file
+#include "mainwindow-styles.h"
 #include <QDockWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -19,15 +19,34 @@
 #include <QFileInfo>
 #include <QCloseEvent>
 #include "Setup.h"
-
+#include <QProxyStyle>
+#include <QStyleFactory>
 ScenarioConfig* MainWindow::scenarioconfig = nullptr;
 MainWindow* MainWindow::s_instance = nullptr;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
-    // Apply dark theme to main window
-    setStyleSheet(MainWindowStyles::MainWindow);
 
+    setStyleSheet(MainWindowStyles::MainWindow);
+        qApp->setStyle(QStyleFactory::create("Fusion"));
+
+
+        QPalette darkPalette;
+        darkPalette.setColor(QPalette::Window, QColor("#0F2636"));
+        darkPalette.setColor(QPalette::WindowText, Qt::white);
+        // darkPalette.setColor(QPalette::Base, QColor(25, 25, 25));
+        // darkPalette.setColor(QPalette::AlternateBase, QColor(45, 45, 45));
+        darkPalette.setColor(QPalette::ToolTipBase, Qt::white);
+        darkPalette.setColor(QPalette::ToolTipText, Qt::white);
+        darkPalette.setColor(QPalette::Text, Qt::white);
+        // darkPalette.setColor(QPalette::Button, QColor(45, 45, 45));
+        darkPalette.setColor(QPalette::ButtonText, Qt::white);
+        darkPalette.setColor(QPalette::BrightText, Qt::red);
+        darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
+        darkPalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
+        // darkPalette.setColor(QPalette::HighlightedText, Qt::black);
+        qApp->setPalette(darkPalette);
+        qApp->setStyleSheet(qApp->styleSheet() + MainWindowStyles::ToolTip);
     MainWindow::s_instance = this;
     MainWindow::scenarioconfig = new ScenarioConfig();
     setWindowTitle("Indigenous Scenario and Sensor Simulation Toolkit");
@@ -117,8 +136,7 @@ void MainWindow::setupUI()
 
 void MainWindow::setupMenuBarConnections()
 {
-    // Instead of creating separate connections for each menu action,
-    // we need to delegate to the current editor's file operations
+
 
     // File Menu Connections
     connect(mainMenuBar, &MenuBar::newFileTriggered, this, [=]() {
@@ -675,9 +693,9 @@ bool MainWindow::handleUnsavedChanges()
         // Determine which save action to use
         QAction *saveAction = nullptr;
         if (lastSavedFilePath.isEmpty()) {
-            saveAction = mainMenuBar->getSaveAction(); // Save As for new files
+            saveAction = mainMenuBar->getSaveAction();
         } else {
-            saveAction = mainMenuBar->getSameSaveAction(); // Save to same file
+            saveAction = mainMenuBar->getSameSaveAction();
         }
 
         if (!saveAction) {
@@ -690,7 +708,7 @@ bool MainWindow::handleUnsavedChanges()
 
         // Process events to ensure save completes
         QCoreApplication::processEvents();
-        QCoreApplication::processEvents(); // Double process to ensure dialog events are handled
+        QCoreApplication::processEvents();
 
         // Small delay to ensure file write completes
         QThread::msleep(100);
@@ -764,7 +782,6 @@ void MainWindow::switchEditor(const QString &editorKey)
             if (file.open(QIODevice::ReadOnly)) {
                 QByteArray data = file.readAll();
                 file.close();
-
                 QJsonParseError err;
                 QJsonDocument doc = QJsonDocument::fromJson(data, &err);
                 if (err.error == QJsonParseError::NoError && doc.isObject()) {
@@ -803,7 +820,6 @@ void MainWindow::switchEditor(const QString &editorKey)
             scenarioEditor->libTreeView->getTreeWidget()->update();
             scenarioEditor->libTreeView->getTreeWidget()->collapseAll();
         }
-
         stackedWidget->setCurrentWidget(scenarioEditor);
         updateWindowTitleForCurrentEditor();
         emit scenarioEditor->Activated();
@@ -849,8 +865,6 @@ void MainWindow::switchEditor(const QString &editorKey)
                 }
             }
         }
-
-        // Load scenario if available
         if (!scenarioEditor->lastSavedFilePath.isEmpty()) {
             runtimeEditor->loadFromJsonFile(scenarioEditor->lastSavedFilePath);
         }
@@ -859,7 +873,6 @@ void MainWindow::switchEditor(const QString &editorKey)
             runtimeEditor->libTreeView->getTreeWidget()->update();
             runtimeEditor->libTreeView->getTreeWidget()->collapseAll();
         }
-
         stackedWidget->setCurrentWidget(runtimeEditor);
         updateWindowTitleForCurrentEditor();
         emit runtimeEditor->Activated();
@@ -943,7 +956,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 bool MainWindow::promptForSave(QMainWindow* editor, const QString& editorName)
 {
-    // Cast to appropriate editor type to access hasUnsavedChanges
     DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(editor);
     ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(editor);
     RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(editor);
@@ -974,7 +986,6 @@ bool MainWindow::promptForSave(QMainWindow* editor, const QString& editorName)
     QMessageBox::StandardButton reply = (QMessageBox::StandardButton)msgBox.exec();
 
     if (reply == QMessageBox::Save) {
-        // USE MAINWINDOW'S MENU BAR INSTEAD OF EDITOR'S MENU BAR
         if (!mainMenuBar) {
             qWarning() << "Main menu bar not found";
             return false;
@@ -1000,14 +1011,13 @@ bool MainWindow::promptForSave(QMainWindow* editor, const QString& editorName)
                 return !rtEditor->hasUnsavedChanges;
             }
         }
-        return false; // Save failed
+        return false;
     } else if (reply == QMessageBox::Discard) {
-        // FIX: ONLY clear the unsaved changes flag, DO NOT reload data
         if (dbEditor) dbEditor->clearUnsavedChanges();
         else if (scEditor) scEditor->clearUnsavedChanges();
         else if (rtEditor) rtEditor->clearUnsavedChanges();
-        return true; // Proceed with close
+        return true;
     } else {
-        return false; // Cancel
+        return false;
     }
 }

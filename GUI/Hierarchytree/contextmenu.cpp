@@ -1,6 +1,6 @@
 
 #include "contextmenu.h"
-#include "contextmenu-styles.h"  // Include separate CSS file
+#include "contextmenu-styles.h"
 #include "GUI/Hierarchytree/additemdialog.h"
 #include "core/Hierarchy/hierarchy.h"
 #include "qapplication.h"
@@ -164,13 +164,9 @@ void ContextMenu::setupProfileMenu(const QVariantMap &data)
                 correctHierarchy = mainWindow->runtimeEditor->library;
             }
         }
-
-
         if (!correctHierarchy && mainWindow) {
             correctHierarchy = mainWindow->getDatabaseHierarchy();
         }
-
-
         AddItemDialog dialog(AddItemDialog::EntityType,
                              specificType,
                              AddItemDialog::NormalMode,
@@ -184,7 +180,6 @@ void ContextMenu::setupProfileMenu(const QVariantMap &data)
         } else {
             dialog.setWindowTitle("Add Entity");
         }
-
         if (dialog.exec() == QDialog::Accepted && !dialog.getName().isEmpty()) {
             bool isProfileParent = true;
             QString selectedEntityId;
@@ -239,7 +234,7 @@ void ContextMenu::setupProfileMenu(const QVariantMap &data)
                 progressDialog.close();
             }
         } else {
-            // Dialog cancelled
+
         }
     });
 

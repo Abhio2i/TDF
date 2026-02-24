@@ -153,8 +153,8 @@ const QString StatusPausedBlink = R"(
         font-family: monospace;
         font-weight: bold;
         padding: 2px 8px;
-        background-color: #8B7E2D;
-        border: 2px solid #FFC107;
+         background-color: #665C1A;
+        border: 1px solid #FFC107;
         border-radius: 3px;
         color: #FFD54F;
         font-size: 11px;

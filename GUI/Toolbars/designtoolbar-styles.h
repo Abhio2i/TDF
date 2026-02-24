@@ -113,13 +113,6 @@ const QString Menu = R"(
         width: 0px;
     }
 )";
-
-/* Rest of the styles remain the same... */
-
-
-
-/* StayOpenMenu (Custom menu) */
-/* StayOpenMenu - BASE64 PNG WHITE CHECKMARK (100% WORKS) */
 /* StayOpenMenu - PNG FROM RESOURCES */
 const QString StayOpenMenu = R"(
     QMenu {
@@ -179,6 +172,7 @@ const QString StayOpenMenu = R"(
         background-color: #27446d;
         margin: 6px 0;
     }
+
 )";
 
 /* Menu Label (section headers) */

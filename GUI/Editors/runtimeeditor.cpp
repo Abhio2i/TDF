@@ -81,12 +81,8 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             runtime->scriptengine, &ScriptEngine::loadAndCompileScript);
     connect(this,&RuntimeEditor::Activated,simulation,&Simulation::ReInit);
     connect(this,&RuntimeEditor::Activated,tacticalDisplay->canvas,&CanvasWidget::ReInit);
-    // Connect ScriptEngine sidebar view requests
     connect(scriptengine, &ScriptEngine::requestSidebarView, this, &RuntimeEditor::triggerSidebarView);
-    // In constructor after scriptengine init:
     connect(scriptengine, &ScriptEngine::requestDisplayTab, this, &RuntimeEditor::triggerDisplayTab);
-    // Connect ScriptEngine entity selection requests
-    // Connect ScriptEngine entity selection requests
     connect(scriptengine, &ScriptEngine::requestSelectEntity, this, [=](const QString &entityId) {
         // Select entity in tree (visual highlight)
         treeView->selectEntityById(entityId);
@@ -215,7 +211,13 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     if (tacticalDisplay && tacticalDisplay->canvas && tacticalDisplay->mapWidget) {
         scriptengine->setCanvas(tacticalDisplay->canvas);
         scriptengine->setGIS(tacticalDisplay->mapWidget);
-        connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated, inspector, &Inspector::updateTrajectory);
+        connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated,
+                inspector, [=](QString entityId, QJsonArray waypoints) {
+                    if (inspector->getName() == "trajectory" &&
+                        inspector->getConnectedID() == entityId) {
+                        inspector->updateTrajectory(entityId, waypoints);
+                    }
+                });
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated, this, [=](QString entityId, QJsonArray /*waypoints*/) {
             auto it = tacticalDisplay->canvas->Meshes.find(entityId.toStdString());
             if (it != tacticalDisplay->canvas->Meshes.end() && it->second.trajectory) {
@@ -283,7 +285,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         });
         networkToolBar->setNetworkManager(networkManager);
     } else {
-        qWarning() << "Failed to connect RuntimeToolBar signals - nullptr detected";
+
     }
     connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
             this, [=](const QString& filePath, RecentProjectsManager::EditorType type) {
@@ -325,6 +327,28 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     if (tacticalDisplay && tacticalDisplay->canvas) {
         connect(tacticalDisplay->canvas, &CanvasWidget::selectEntitybyCursor,
                 treeView, &HierarchyTree::selectEntityById);
+
+        connect(tacticalDisplay->canvas, &CanvasWidget::selectEntitybyCursor,
+                this, [=](const QString& entityId) {
+                    if (!hierarchy->Entities) return;
+                    auto it = hierarchy->Entities->find(entityId.toStdString());
+                    if (it == hierarchy->Entities->end()) return;
+
+                    Entity* entity = it->second;
+                    QString entityName = QString::fromStdString(entity->Name);
+                    QString displayName = capitalizeFirstLetter(entityName);
+
+                    for (Inspector* insp : inspectors) {
+                        insp->init(entityId, displayName + "_self",
+                                   (*hierarchy->Entities)[entityId.toStdString()]->toJson());
+                    }
+                    if (radarDisplayUI) radarDisplayUI->selectEntity(entity);
+                    if (iffDisplayUI)   iffDisplayUI->selectEntity(entity);
+                    if (radioDisplayUI) radioDisplayUI->selectEntity(entity);
+                    if (csmDisplayUI)   csmDisplayUI->selectEntity(entity);
+                    if (esmDisplayUI)   esmDisplayUI->selectEntity(entity);
+
+                });
     }
     connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
         QString type;
@@ -431,22 +455,37 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 inspector->init(ID, displayName, QJsonObject());
             }
         }
+
         if (!inspectorDock->isVisible()) {
-            // Hide other right panel docks
+            // Hide other right panel docks (but NOT sensors)
             if (libraryDock && libraryDock->isVisible()) {
                 libraryDock->hide();
             }
             if (textScriptDock && textScriptDock->isVisible()) {
                 textScriptDock->hide();
             }
+            if (loggerDock && loggerDock->isVisible()) {
+                loggerDock->hide();
+            }
 
-            // Show inspector
-            addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
-            splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
-            inspectorDock->show();
-            inspectorDock->raise();
+            QRect sGeo = sidebarDock->geometry();
+            if (displayDock && displayDock->isVisible()) {
+                QRect displayGeo = displayDock->geometry();
+                inspectorDock->setGeometry(displayGeo);
+                inspectorDock->show();
+            } else {
+                inspectorDock->setGeometry(sGeo.x(), sGeo.y() + sGeo.height() + 5,
+                                           sGeo.width(), height() - sGeo.y() - sGeo.height() - 150);
+                inspectorDock->show();
+                inspectorDock->raise();
+            }
+        } else {
+            if (displayDock && displayDock->isVisible()) {
+                displayDock->raise();
+            } else {
+                inspectorDock->raise();
+            }
         }
-
         if (tacticalDisplay && type == "entity") {
             tacticalDisplay->selectedMesh(data["ID"].toString());
         } else {
@@ -545,8 +584,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 sensorPath
                 );
         }
-        // ✅ 2. CAPTURE CANVAS SCREENSHOT (ONLY ONCE, WHEN CONDITION REACHED)
-        // Only capture if not already taken AND filePath indicates condition reached
+
         if (!canvasScreenshotTaken && filePath.contains("detection", Qt::CaseInsensitive)) {
             if (tacticalDisplay && tacticalDisplay->canvas) {
                 QWidget* canvasContainer = tacticalDisplay->canvas->parentWidget();
@@ -1219,20 +1257,62 @@ void RuntimeEditor::onDockVisibilityChanged(bool visible)
     }
 }
 
+// void RuntimeEditor::toggleRadarDisplay() {
+//     if (!displayDock->isVisible()) {
+//         // Hide other right-side panels
+//         inspectorDock->hide();
+//         libraryDock->hide();
+//         textScriptDock->hide();
+//         loggerDock->hide();
+
+//         // Use manual positioning (same as in sidebar view selection)
+//         QRect sGeo = sidebarDock->geometry();
+//         displayDock->setGeometry(sGeo.x(), sGeo.y() + sGeo.height() + 5,
+//                                  sGeo.width(), height() - sGeo.y() - sGeo.height() - 150);
+//         displayDock->show();
+//         displayDock->raise();
+
+//         SidebarWidget *sidebar = qobject_cast<SidebarWidget*>(sidebarDock->widget());
+//         if (sidebar) {
+//             sidebar->setActiveButton("Sensors");
+//         }
+//     } else {
+//         displayDock->hide();
+//         SidebarWidget *sidebar = qobject_cast<SidebarWidget*>(sidebarDock->widget());
+//         if (sidebar) {
+//             sidebar->setActiveButton("");
+//         }
+//     }
+
+//     QAction *radarToggle = runtimeToolBar->findChild<QAction*>("radarToggleAction");
+//     if (radarToggle) {
+//         radarToggle->setChecked(displayDock->isVisible());
+//     }
+// }
 void RuntimeEditor::toggleRadarDisplay() {
     if (!displayDock->isVisible()) {
-        // Hide other right-side panels
-        inspectorDock->hide();
+        // Hide other right-side panels (but save inspector state)
         libraryDock->hide();
         textScriptDock->hide();
         loggerDock->hide();
 
-        // Use manual positioning (same as in sidebar view selection)
         QRect sGeo = sidebarDock->geometry();
-        displayDock->setGeometry(sGeo.x(), sGeo.y() + sGeo.height() + 5,
-                                 sGeo.width(), height() - sGeo.y() - sGeo.height() - 150);
-        displayDock->show();
-        displayDock->raise();
+
+        // Check if inspector is open
+        if (inspectorDock->isVisible()) {
+            // If inspector is open, place sensors at SAME POSITION
+            QRect inspectorGeo = inspectorDock->geometry();
+            displayDock->setGeometry(inspectorGeo);
+            displayDock->show();
+            displayDock->raise(); // Sensors on top
+            // inspector remains behind - don't hide it
+        } else {
+            // If no inspector, place below sidebar
+            displayDock->setGeometry(sGeo.x(), sGeo.y() + sGeo.height() + 5,
+                                     sGeo.width(), height() - sGeo.y() - sGeo.height() - 150);
+            displayDock->show();
+            displayDock->raise();
+        }
 
         SidebarWidget *sidebar = qobject_cast<SidebarWidget*>(sidebarDock->widget());
         if (sidebar) {
@@ -1240,6 +1320,11 @@ void RuntimeEditor::toggleRadarDisplay() {
         }
     } else {
         displayDock->hide();
+        // Agar sensors hide ho raha hai aur inspector open tha, to inspector ko raise karein
+        if (inspectorDock->isVisible()) {
+            inspectorDock->raise();
+        }
+
         SidebarWidget *sidebar = qobject_cast<SidebarWidget*>(sidebarDock->widget());
         if (sidebar) {
             sidebar->setActiveButton("");
@@ -1251,7 +1336,6 @@ void RuntimeEditor::toggleRadarDisplay() {
         radarToggle->setChecked(displayDock->isVisible());
     }
 }
-
 // Logger
 void RuntimeEditor::toggleLoggerDisplay(bool checked)
 {
@@ -1894,8 +1978,7 @@ void RuntimeEditor::onRunScriptFileRequested(const QString& filePath)
 
 void RuntimeEditor::onRecentLibraryTriggered()
 {
-    // Show recent library menu
-    // RecentProjectsManager::instance()->showRecentLibraryMenu(this);
+
     connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
             this, [=](const QString& filePath, RecentProjectsManager::EditorType type) {
                 if (type == RecentProjectsManager::LibraryData && !filePath.isEmpty()) {
@@ -2030,7 +2113,6 @@ void RuntimeEditor::showPanelContextMenu(const QPoint &pos)
         consoleDock->setVisible(!consoleDock->isVisible());
         if (consoleDock->isVisible()) {
             consoleDock->raise();
-            // Make sure it's positioned correctly when shown
             int winW = width();
             int winH = height();
             consoleDock->setGeometry(20, winH - 200, winW - 40, 150);

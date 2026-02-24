@@ -47,7 +47,7 @@ private:
     QString name;
     // Inspector reference
     Inspector *inspectorRef;
-        QString mainID;
+    QString mainID;
 };
 
 #endif // IMAGETEMPLATE_H

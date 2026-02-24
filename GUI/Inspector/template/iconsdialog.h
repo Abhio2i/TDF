@@ -31,11 +31,11 @@ private:
     bool addImageToList(const QString &imagePath, const QString &fileName);
     void filterImages(const QString &searchText);
     QListWidget *listWidget;
-      QLineEdit *searchBox;
+    QLineEdit *searchBox;
     QString mainID;
     Inspector *inspectorRef;
-        QList<QPair<QString, QString>> allImages;
-        QString m_selectedPath;
+    QList<QPair<QString, QString>> allImages;
+    QString m_selectedPath;
 
 };
 

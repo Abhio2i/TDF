@@ -75,6 +75,7 @@ public:
     QList<QVariantMap> copiedItems;
     void setLibraryFileName(const QString& fileName);
     void selectMultipleEntitiesInTree(const QList<QString>& entityIds);
+    QMap<QString, QTreeWidgetItem*> Items;
 
 signals:
     void copyItemsRequested(QList<QVariantMap> data);
@@ -141,21 +142,14 @@ private:
     QComboBox *profileFilterCombo;
     // Context menu
     ContextMenu *contextMenu;
-
     // %%% Layouts %%%
     QVBoxLayout *mainLayout;
     QHBoxLayout *filterLayout;
-
     // %%% Data Storage %%%
-    // Map of items by ID
-    QMap<QString, QTreeWidgetItem*> Items;
-    // Map of profile ID to profile name
     QMap<QString, QString> profileMap;
     // Original items backup for filtering
     QMap<QString, QTreeWidgetItem*> originalItems;
-
     static inline QVariantMap dragsourceData;
-
     // %%% Helper Methods %%%
     // Recursively show/hide items based on filters
     void applyFilters(QTreeWidgetItem* item, const QString& profileFilter, const QString& searchText);

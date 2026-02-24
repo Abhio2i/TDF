@@ -10,10 +10,10 @@
 #define ADDITEMDIALOG_H
 
 #include "GUI/Hierarchytree/customtrajectorydialog.h"
-#include <QDialog>        // For dialog base class
-#include <QVariantMap>    // For storing key-value data pairs
-#include <QHBoxLayout>    // For horizontal layout management
-#include <QCompleter>           // For autocomplete functionality
+#include <QDialog>
+#include <QVariantMap>
+#include <QHBoxLayout>
+#include <QCompleter>
 #include <QStringListModel>
 #include <QCompleter>
 #include <QStringListModel>
@@ -38,17 +38,17 @@ public:
 
     QString getSelectedEntityId() const;
     enum DialogType {
-        EntityType,   // For adding entities with components
-        FolderType    // For adding organizational folders
+        EntityType,
+        FolderType
     };
 
     // %%% Dialog Mode Enumeration %%%
     /* Defines specialized modes for component-specific dialogs */
     enum DialogMode {
-        NormalMode,             // Standard entity/folder creation
-        ComponentSensorMode,    // Specialized mode for sensor components
-        ComponentIFFMode,       // Specialized mode for IFF components
-        ComponentRadioMode      // Specialized mode for radio components
+        NormalMode,
+        ComponentSensorMode,
+        ComponentIFFMode,
+        ComponentRadioMode
     };
 
     QVariantMap getEntityComponents() const;
@@ -188,9 +188,7 @@ private:
     QCompleter *entityCompleter;
     QMap<QString, QVariantList> entityMap;
     void clearEntitySelection();
-    QString m_profileContext; // Add this member
-
-    // Helper function
+    QString m_profileContext;
     QString determineProfileContext(const QString& specificType,
                                     DialogMode dialogMode,
                                     const QString& editorContext);

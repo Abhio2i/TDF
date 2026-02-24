@@ -503,28 +503,21 @@ void CanvasWidget::wheelEvent(QWheelEvent *event)
 
 
 void CanvasWidget::handleMousePress(QMouseEvent *event) {
-   // Box-zoom: Check for double-click on empty canvas FIRST
    if (event->button() == Qt::LeftButton && event->type() == QEvent::MouseButtonDblClick) {
        if (isClickOnEmptyCanvas(event->pos())) {
            boxZoomPending = true;
            boxZoomStart = event->pos();
            boxZoomCurrent = event->pos();
            doubleClickTimer.start();
-
            return;
        } else {
            boxZoomPending = false;
        }
    }
-
-   // DOUBLE-CLICK HANDLING
    if (event->button() == Qt::LeftButton && event->type() == QEvent::MouseButtonDblClick) {
        m_tooltipTimer.stop();
                QToolTip::hideText();
        bool isRuntimeEditor = !window()->windowTitle().contains("Scenario Editor", Qt::CaseInsensitive);
-
-       // FIRST: Check if double-click is on ANY ENTITY (image/icon)
-       // Entity की priority सबसे high रखें
        if (isRuntimeEditor) {
            for (auto& [id, entry] : Meshes) {
                if (!entry.coreTransform) continue;
@@ -533,16 +526,12 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                    entry.coreTransform->getLatitude(),
                    entry.coreTransform->getLongitude()
                );
-
-               // Check if click is on entity image/icon
-               // Image size को ध्यान में रखें
-               float imageSize = 20.0f; // Approximate entity image size
+               float imageSize = 20.0f;
                if (entry.individualImageSize > 0 || ImageScale > 0) {
                    imageSize = (entry.individualImageSize > 0 ? entry.individualImageSize : ImageScale) / 2.0f;
                }
 
                if (QVector2D(event->pos() - entityPos).length() < imageSize) {
-                   // Click is on ENTITY IMAGE - ALWAYS show entity info dialog
                    selectedEntityId = id;
                    if (entry.entity) {
                        showEntityInfo(QString::fromStdString(id));
@@ -552,13 +541,8 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                }
            }
        }
-
-       // SECOND: Check if double-click is on TRAJECTORY but NOT on any entity
-       // Only check trajectory if NOT on any entity image
        for (auto& [id, entry] : Meshes) {
            if (!entry.trajectory || entry.trajectory->Trajectories.empty()) continue;
-
-           // First make sure click is NOT on this entity's image
            QPointF entityPos = gislib->geoToCanvas(
                entry.coreTransform->getLatitude(),
                entry.coreTransform->getLongitude()
@@ -567,8 +551,6 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
            if (entry.individualImageSize > 0 || ImageScale > 0) {
                imageSize = (entry.individualImageSize > 0 ? entry.individualImageSize : ImageScale) / 2.0f;
            }
-
-           // If click is on entity image, skip trajectory check
            if (QVector2D(event->pos() - entityPos).length() < imageSize) {
                continue;
            }
@@ -634,8 +616,6 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                return;
            }
        }
-
-       // THIRD: Check for box-zoom on empty canvas
        if (isClickOnEmptyCanvas(event->pos())) {
            boxZoomPending = true;
            boxZoomStart = event->pos();
@@ -644,11 +624,9 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
 
            return;
        }
-
-       // If we reach here, double-click was on something else
        boxZoomPending = false;
 
-       return;  // IMPORTANT: Return after handling double-click
+       return;
    }
 
    if (event->button() == Qt::RightButton) {
@@ -786,6 +764,8 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
            dragStartPos = event->pos();
            activeDragAxis = "both";
            entityWasClicked = true;
+
+
            Refresh();
            return;
        }
@@ -1130,7 +1110,6 @@ void CanvasWidget::handleTextMousePress(QMouseEvent *event) {
        }
    }
 
-
    if (currentMode == EditShape && !editingShapeId.isEmpty()) {
        const qreal handleTolerance = 10.0f;
        selectedHandleIndex = -1;
@@ -1154,7 +1133,6 @@ void CanvasWidget::handleTextMousePress(QMouseEvent *event) {
        isResizingShape = false;
        resizeHandles.clear();
        setCursor(Qt::ArrowCursor);
-
        Refresh();
        return;
    }
@@ -1334,6 +1312,24 @@ void CanvasWidget::handleRightClick(QMouseEvent *event) {
                        });
                    }
                });
+
+               QAction* changeTrajectoryColorAction = contextMenu.addAction("Change Trajectory Color");
+               connect(changeTrajectoryColorAction, &QAction::triggered, this, [this, id]() {
+                   auto it = Meshes.find(id);
+                   if (it == Meshes.end()) return;
+
+                   QColor newColor = QColorDialog::getColor(
+                       it->second.trajectoryColor,
+                       this->window(),
+                       "Select Trajectory Color",
+                       QColorDialog::DontUseNativeDialog
+                   );
+
+                   if (newColor.isValid()) {
+                       it->second.trajectoryColor = newColor;
+                       Refresh();
+                   }
+               });
            } else {
                // Runtime Editor menu items
                QAction* removeAction = contextMenu.addAction("Remove");
@@ -1444,6 +1440,23 @@ void CanvasWidget::handleRightClick(QMouseEvent *event) {
                        QTimer::singleShot(100, this, [this]() {
                            this->update();
                        });
+                   }
+               });
+               QAction* changeTrajectoryColorAction = contextMenu.addAction("Change Trajectory Color");
+               connect(changeTrajectoryColorAction, &QAction::triggered, this, [this, id]() {
+                   auto it = Meshes.find(id);
+                   if (it == Meshes.end()) return;
+
+                   QColor newColor = QColorDialog::getColor(
+                       it->second.trajectoryColor,
+                       this->window(),
+                       "Select Trajectory Color",
+                       QColorDialog::DontUseNativeDialog
+                   );
+
+                   if (newColor.isValid()) {
+                       it->second.trajectoryColor = newColor;
+                       Refresh();
                    }
                });
            }
@@ -3657,7 +3670,8 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
 
    if (isDrawingTrajectory && !currentTrajectory.empty()) {
        painter.save();
-       QPen pen(Qt::magenta, 2, Qt::DashLine);
+       QColor drawColor = Qt::magenta;
+       QPen pen(drawColor, 2, Qt::DashLine);
        painter.setPen(pen);
        painter.setBrush(Qt::NoBrush);
        QPolygonF polyline;
@@ -3665,15 +3679,19 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
            Waypoints* waypoint = currentTrajectory[i];
            QPointF screenPos = gislib->geoToCanvas(waypoint->position->x, waypoint->position->z);
            polyline << screenPos;
-           painter.setBrush(Qt::magenta);
+
+           painter.setBrush(drawColor);
            int pointSize = (i == selectedWaypointIndex) ? 6 : 4;
-           QPen pointPen = (i == selectedWaypointIndex) ? QPen(Qt::yellow, 2) : QPen(Qt::magenta, 1);
+           QPen pointPen = (i == selectedWaypointIndex)
+               ? QPen(Qt::yellow, 2)
+               : QPen(drawColor, 1);
            painter.setPen(pointPen);
            painter.drawEllipse(screenPos, pointSize, pointSize);
            painter.setBrush(Qt::NoBrush);
        }
        if (polyline.size() > 1) {
-           painter.setPen(QPen(Qt::magenta, 2, Qt::DashLine));
+           QPen polyPen(drawColor, 2, Qt::DashLine);
+           painter.setPen(polyPen);
            painter.drawPolyline(polyline);
        }
        painter.restore();
@@ -3686,18 +3704,14 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
    // Box-zoom: Draw selection rectangle
    if (isBoxZooming) {
        painter.save();
-
        QRect zoomBox = QRect(boxZoomStart, boxZoomCurrent).normalized();
-
        // Semi-transparent fill
        painter.fillRect(zoomBox, QColor(0, 120, 215, 30));
-
        // Border
        QPen borderPen(QColor(0, 120, 215, 200), 2, Qt::SolidLine);
        painter.setPen(borderPen);
        painter.setBrush(Qt::NoBrush);
        painter.drawRect(zoomBox);
-
        // Corner handles
        int handleSize = 6;
        painter.setBrush(QColor(0, 120, 215, 200));
@@ -3716,7 +3730,6 @@ void CanvasWidget::handlePaint(QPaintEvent *event) {
 
        painter.restore();
    }
-
    frameCount++;
    qint64 elapsedMs = timer.elapsed();
    Profiler::currentFrame->canvasTime = elapsedMs;
@@ -3742,24 +3755,19 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event) {
    handleMouseRelease(event);
 }
 
-
 void CanvasWidget::drawGridLines(QPainter& painter) {
    int alpha = (gridOpacity * 255) / 100;
-
    if (showXGrid) {
        painter.setPen(QColor(128, 128, 128, alpha));
        for (int x = 0; x < width(); x += 20)
            painter.drawLine(x, 0, x, height());
    }
-
    if (showYGrid) {
        painter.setPen(QColor(128, 128, 128, alpha));
        for (int y = 0; y < height(); y += 20)
            painter.drawLine(0, y, width(), y);
    }
 }
-
-
 void CanvasWidget::drawSceneInformation(QPainter& painter) {
    if (!showInformation) {
        return;
@@ -3771,7 +3779,6 @@ void CanvasWidget::drawSceneInformation(QPainter& painter) {
    painter.setPen(QColor(5, 5, 5, 200));
    const QPointF startPos(width() - 110, 35);
    int yOffset = 0;
-
    // --- Data Retrieval and Drawing ---
    const auto currentFrame = Profiler::currentFrame;
    const QString modeText = QString(" %1").arg(simulate ? "Simulation" : "Editor");
@@ -3780,7 +3787,6 @@ void CanvasWidget::drawSceneInformation(QPainter& painter) {
        const char* label;
        int timeValue;
    };
-
    const PerfMetric metrics[] = {
        {"Exc Time", currentFrame->excutionTime},
        {"Can Time", currentFrame->canvasTime},
@@ -3799,23 +3805,19 @@ void CanvasWidget::drawSceneInformation(QPainter& painter) {
    };
 
    for (const auto& metric : metrics) {
-
        QString text = QString("%1 %2ms")
                           .arg(metric.label)
                           .arg(metric.timeValue);
-
        // Draw text and increment Y offset
        painter.drawText(startPos + QPointF(0, yOffset), text);
        yOffset += 15; // Vertical spacing between lines
    }
    if (showFPS) {
        QString fpsText = QString("FPS: %1").arg(fps*10);
-
        painter.drawText(QPointF(10, 20), fpsText);
    }
    painter.restore();
 }
-
 void CanvasWidget::drawEntityInformation(QPainter& painter) {
    if (!showInformation || simulate || selectedEntityId.empty()) return;
    auto it = Meshes.find(selectedEntityId);
@@ -3893,30 +3895,6 @@ void CanvasWidget::drawTransformGizmo(QPainter& painter) {
    }
 }
 
-
-// void CanvasWidget::drawSelectionOutline(QPainter& painter) {
-//     if (!showOutline /*|| simulate*/) return;
-//     if (Meshes.find(selectedEntityId) == Meshes.end()) return;
-
-//     auto& entry = Meshes[selectedEntityId];
-//     //auto& pos = entry.position;
-//     //auto& size = entry.size;
-//     //QPointF point = gislib->geoToCanvas(entry.transform->translation().x(), entry.transform->translation().z());
-//     QPointF point = gislib->geoToCanvas(entry.coreTransform->getLatitude(), entry.coreTransform->getLongitude());
-
-//     float x = point.x();
-//     float y = point.y();
-//     float w = entry.transform->scale3D().z() * 55;
-//     float h = entry.transform->scale3D().x() * 55;
-//     QRectF outlineRect(x - w / 2.0f, y - h / 2.0f, w, h);
-
-//     QPen pen(Qt::red);
-//     pen.setWidth(2);
-//     pen.setStyle(Qt::DashLine);
-//     painter.setPen(pen);
-//     painter.setBrush(Qt::NoBrush);
-//     painter.drawRect(outlineRect);
-// }
 void CanvasWidget::drawSelectionOutline(QPainter& painter) {
    if (!showOutline) return;
 
@@ -4037,7 +4015,7 @@ void CanvasWidget::drawTrail(QPainter& painter,std::string id , MeshEntry entry)
    if(entry.coreTransform->trailData.capacity()>2){
        QVector3D v = entry.coreTransform->trailData.at(0);
        QPointF lastv = gislib->geoToCanvas(v.x(), v.z());
-       painter.setPen(QPen(Qt::magenta, 1));
+       painter.setPen(QPen(Qt::magenta, 2));
        for (const auto& position : entry.coreTransform->trailData) {
            QPointF point = gislib->geoToCanvas(position.x(), position.z());
            painter.drawLine(lastv.x(), lastv.y(), point.x(), point.y());
@@ -4166,7 +4144,6 @@ void CanvasWidget::drawMesh(QPainter& painter) {
            QPointF radiusPointCanvas = gislib->geoToCanvas(radiusPointGeo.y(), radiusPointGeo.x());
            float canvasRadius = sqrt(pow(radiusPointCanvas.x() - canvasCenter.x(), 2) +
                                      pow(radiusPointCanvas.y() - canvasCenter.y(), 2));
-
            if (canvasRadius > 0 && canvasRadius < 10000) {
                painter.setPen(QPen(*mesh->color, mesh->lineWidth, Qt::SolidLine));
                // painter.setBrush(QColor(255, 0, 0, 50));
@@ -4329,8 +4306,16 @@ void CanvasWidget::drawTrajectory(QPainter& painter, const std::string& id, Mesh
    painter.save();
    bool isSelected = (id == selectedEntityId) ||
                     (std::find(selectedEntityIds.begin(), selectedEntityIds.end(), id) != selectedEntityIds.end());
-   QColor trajectoryColor = isSelected ? QColor(0, 128, 128) : Qt::blue;
-   const QPen trajectoryPen(trajectoryColor, 2);
+   // QColor trajectoryColor = isSelected ? QColor(0, 128, 128) : Qt::blue;
+   // QColor trajectoryColor = isSelected
+   //     ? entry.trajectoryColor.lighter(130)
+   //     : entry.trajectoryColor;
+   QColor trajectoryColor = isSelected
+       ? QColor(0, 128, 128)        // ← selected = teal/cyan (pehle jaisa)
+       : entry.trajectoryColor;     // ← unselected = custom color
+   QColor pointColor = trajectoryColor;
+
+   QPen trajectoryPen(trajectoryColor, 2, Qt::DashLine);
    painter.setPen(trajectoryPen);
    painter.setBrush(Qt::NoBrush);
    entry.polyline.clear();
@@ -4347,11 +4332,13 @@ void CanvasWidget::drawTrajectory(QPainter& painter, const std::string& id, Mesh
        }
    }
    if (entry.polyline.size() > 1) {
-       painter.drawPolyline(entry.polyline);
-   }
+        QPen polyPen(trajectoryColor, 2, Qt::DashLine);  // Dash line
+        painter.setPen(polyPen);
+        painter.drawPolyline(entry.polyline);
+    }
    if (!entry.pointsToDraw.empty()) {
 
-       QColor pointColor = isSelected ? QColor(0, 128, 128) : Qt::blue;
+       // QColor pointColor = isSelected ? QColor(0, 128, 128) : Qt::blue;
        const QPen peen(pointColor, 6);
        painter.setPen(peen);
        painter.drawPoints(entry.pointsToDraw);
@@ -4475,7 +4462,6 @@ void CanvasWidget::onBitmapImageSelected(const QString& filePath) {
    entry.mesh->color = new QColor(Qt::white);
    entry.mesh->lineWidth = 1;
    entry.mesh->closePath = false;
-
    tempMeshes.push_back(entry);
 
    QString logMsg = QString("USER UPLOADED IMAGE: %1 at (lon: %2, lat: %3)")
@@ -4603,7 +4589,6 @@ void CanvasWidget::updateTrajectoryData() {
    if (selectedEntityId.empty()) {
        return;
    }
-
    QJsonArray waypointsArray;
    for (const Waypoints* wp : currentTrajectory) {
        QJsonObject wpObj;
@@ -4615,10 +4600,8 @@ void CanvasWidget::updateTrajectoryData() {
        wpObj["position"] = posObj;
        waypointsArray.append(wpObj);
    }
-
    emit trajectoryUpdated(QString::fromStdString(selectedEntityId), waypointsArray);
    QJsonDocument doc(waypointsArray);
-
 }
 
 QJsonObject CanvasWidget::toJson() const {
@@ -4739,6 +4722,17 @@ QJsonObject CanvasWidget::toJson() const {
        tempMeshesArray.append(meshObj);
    }
    json["tempMeshes"] = tempMeshesArray;
+   // Trajectory colors save karo
+   QJsonObject meshesColorData;
+   for (const auto& [id, entry] : Meshes) {
+       QJsonObject colorObj;
+       colorObj["r"] = entry.trajectoryColor.red();
+       colorObj["g"] = entry.trajectoryColor.green();
+       colorObj["b"] = entry.trajectoryColor.blue();
+       colorObj["a"] = entry.trajectoryColor.alpha();
+       meshesColorData[QString::fromStdString(id)] = colorObj;
+   }
+   json["trajectoryColors"] = meshesColorData;
    // Save layer panel data
    if (m_layerPanel) {
        QJsonObject layersData = m_layerPanel->toJson();
@@ -4979,6 +4973,23 @@ void CanvasWidget::fromJson(const QJsonObject& json) {
            entry.trajectory = nullptr;
 
            tempMeshes.push_back(entry);
+       }
+   }
+   // Trajectory colors load karo
+   if (json.contains("trajectoryColors") && json["trajectoryColors"].isObject()) {
+       QJsonObject colorsObj = json["trajectoryColors"].toObject();
+       for (auto it = colorsObj.begin(); it != colorsObj.end(); ++it) {
+           std::string entityId = it.key().toStdString();
+           auto meshIt = Meshes.find(entityId);
+           if (meshIt != Meshes.end()) {
+               QJsonObject colorObj = it.value().toObject();
+               meshIt->second.trajectoryColor = QColor(
+                   colorObj["r"].toInt(),
+                   colorObj["g"].toInt(),
+                   colorObj["b"].toInt(),
+                   colorObj.contains("a") ? colorObj["a"].toInt() : 255
+               );
+           }
        }
    }
 

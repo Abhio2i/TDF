@@ -124,7 +124,6 @@ private:
     QCheckBox *followTrajectoryCheckBox = nullptr;
     QCheckBox *showConnectionCheckBox = nullptr;
     QCheckBox *showDetectionCheckBox = nullptr;
-    // Add this helper function declaration for formation
     Formation* findFormationForEntity(Entity* entity);
     void displayFormationInfo(Formation* formation, Entity* currentEntity, QVBoxLayout* layout);
 

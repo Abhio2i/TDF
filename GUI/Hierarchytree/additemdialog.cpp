@@ -47,9 +47,9 @@
 #include "Setup.h"
 #include <QMessageBox>
 
-// Key-pair data for major cities (Capitals)
+
 QMap<QString, QPointF> indianCities = {
-    // ... existing city data ...
+
 };
 
 // %%% String Utility Functions %%%
@@ -234,7 +234,6 @@ void AddItemDialog::setupScSection()
     // Create options group
     scOptionsGroup = new QGroupBox("Scenarioconfig Options", this);
     scOptionsGroup->setStyleSheet(AddItemDialogStyles::GroupBox);
-
     QVBoxLayout *groupLayout = new QVBoxLayout();
 
     // Type selection
@@ -636,7 +635,7 @@ void AddItemDialog::setupUI(DialogType type)
                                 entityName = entityName.left(parenIndex);
                             }
 
-                            // Set entity name
+
                             if (nameLineEdit) {
                                 nameLineEdit->setText(entityName);
                             }
@@ -890,32 +889,22 @@ void AddItemDialog::setupUI(DialogType type)
         mainLayout->addWidget(scCheckBox);
         mainLayout->addWidget(scOptionsGroup);
     }
-
-    bool shouldCreateComponents = true; // Components create karne ke liye flag
-
-    // Check karte hain ki components create karne chahiye ya nahi
-    bool shouldShowComponents = false; // UI mein show nahi karna
-
-
-
+    bool shouldCreateComponents = true;
+    bool shouldShowComponents = false;
     bool createComponents = (type == EntityType && !isForComponentAdd && !isForSensor &&
                              (specificType.isEmpty() || specificType == "Platform" ||
                               specificType == "SpecialZone" || specificType == "FixedPoints" ||
                               specificType == "Entity"));
-
-    // Agar createComponents true hai to components create karo
     if (createComponents) {
-        // Components group banao but visible mat karo
+
         QGroupBox *componentsGroup = new QGroupBox("Components", this);
         componentsGroup->setStyleSheet(AddItemDialogStyles::GroupBox);
-        componentsGroup->setVisible(false); // UI mein chhupao
+        componentsGroup->setVisible(false);
 
         QVBoxLayout *componentsLayout = new QVBoxLayout();
 
         Entity *entity = nullptr;
         QString effectiveType = specificType.isEmpty() ? "Entity" : specificType;
-
-        // Create appropriate entity type
         if (effectiveType == "Platform") {
             entity = new Platform(nullptr);
         } else if (effectiveType == "FixedPoints") {
@@ -927,7 +916,7 @@ void AddItemDialog::setupUI(DialogType type)
         }
 
         if (entity) {
-            // Get supported components and create checkboxes
+
             std::vector<std::string> supportedComponents = entity->getSupportedComponents();
             QMap<QString, Component*> uniqueComponents;
 
@@ -939,22 +928,17 @@ void AddItemDialog::setupUI(DialogType type)
                 QString displayName = it.key();
                 QString camelCaseName = toCamelCase(displayName);
                 QCheckBox *checkBox = new QCheckBox(displayName, this);
-
-                // Transform component is always required
                 if (camelCaseName == "transform") {
                     checkBox->setChecked(true);
                     checkBox->setEnabled(false);
                 } else {
-                    checkBox->setChecked(true); // Sab components default checked
+                    checkBox->setChecked(true);
                 }
                 componentCheckboxes.insert(camelCaseName, checkBox);
                 componentsLayout->addWidget(checkBox);
             }
 
             componentsGroup->setLayout(componentsLayout);
-            // IMPORTANT: Group ko layout mein add mat karo taaki UI mein na dikhe
-            // mainLayout->addWidget(componentsGroup); - Ye line comment out karo ya hata do
-
             delete entity;
         }
     }
@@ -965,8 +949,6 @@ void AddItemDialog::setupUI(DialogType type)
     QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok |
                                                            QDialogButtonBox::Cancel, this);
     buttonBox->setStyleSheet(AddItemDialogStyles::ButtonBox);
-
-    // Connect OK button to validation first
     connect(buttonBox, &QDialogButtonBox::accepted, this, [this]() {
         if (validateInputs()) {
             accept();
@@ -975,8 +957,6 @@ void AddItemDialog::setupUI(DialogType type)
 
     connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
     mainLayout->addWidget(buttonBox);
-
-    // Determine dialog layout type
     bool isSimpleDialog = (specificType == "Formation" ||
                            specificType == "IFF" ||
                            specificType == "Radio" ||
@@ -989,15 +969,11 @@ void AddItemDialog::setupUI(DialogType type)
                            isComponentRadioAdd);
 
     if (isSimpleDialog) {
-        // Simple fixed-size dialog for basic types
         QVBoxLayout *dialogLayout = new QVBoxLayout(this);
         dialogLayout->addWidget(mainWidget);
         setLayout(dialogLayout);
-
         mainWidget->adjustSize();
         adjustSize();
-
-        // Set appropriate size and title
         QString windowTitle;
         QMap<QString, QString> titleMap;
         titleMap["sensor"] = "Add Sensor";
@@ -1025,7 +1001,6 @@ void AddItemDialog::setupUI(DialogType type)
             windowTitle = "Add Entity";
         }
 
-        // Set appropriate dialog size
         if (isComponentSensorAdd || isComponentIFFAdd || isComponentRadioAdd) {
             setFixedSize(350, 220);
         } else if (isProfileSensorAdd) {
@@ -1042,7 +1017,7 @@ void AddItemDialog::setupUI(DialogType type)
 
         setWindowTitle(windowTitle);
     } else {
-        // Scrollable dialog for complex types
+
         QScrollArea *scrollArea = new QScrollArea(this);
         scrollArea->setWidgetResizable(true);
         scrollArea->setWidget(mainWidget);
@@ -1276,13 +1251,12 @@ void AddItemDialog::clearEntitySelection()
         nameLineEdit->setText(defaultName);
     }
 
-    // Uncheck all component checkboxes except transform
     for (auto it = componentCheckboxes.begin(); it != componentCheckboxes.end(); ++it) {
         QString compName = it.key();
         if (compName == "transform") {
-            it.value()->setChecked(true);  // Transform always checked
+            it.value()->setChecked(true);
         } else {
-            it.value()->setChecked(false);  // Others unchecked
+            it.value()->setChecked(false);
         }
     }
 }
@@ -1306,7 +1280,7 @@ QPointF AddItemDialog::getCity() const {
         return indianCities[city];
     }
     // Banglore Cordinates
-    return QPointF(12.9716, 77.5946); // Default value agar match na mile
+    return QPointF(12.9716, 77.5946);
 }
 
 /* Get scenario range */

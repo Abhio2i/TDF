@@ -37,34 +37,34 @@ HierarchyTree::HierarchyTree(QWidget *parent)
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
-    // Create filter layout (search bar + profile dropdown)
+    // Create filter layout
     filterLayout = new QHBoxLayout();
-    filterLayout->setSpacing(1);
-    filterLayout->setContentsMargins(0, 0, 0, 0);
+    filterLayout->setSpacing(5);
+    filterLayout->setContentsMargins(5, 5, 5, 5);
 
     // Dark background for filter container
     QWidget *filterContainer = new QWidget(this);
     filterContainer->setStyleSheet(HierarchyStyles::FilterLayout);
     filterContainer->setLayout(filterLayout);
 
-    // Create search bar - SAME DIMENSIONS
+
     searchBar = new QLineEdit(this);
     searchBar->setPlaceholderText("Search entities...");
     searchBar->setClearButtonEnabled(true);
-    searchBar->setMaximumWidth(400);  // SAME width
-    searchBar->setStyleSheet(HierarchyStyles::SearchBar);  // ONLY colors changed
-
-    // Create profile filter dropdown - SAME DIMENSIONS
+    searchBar->setFixedHeight(30);
+    searchBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    searchBar->setStyleSheet(HierarchyStyles::SearchBar);
     profileFilterCombo = new QComboBox(this);
     profileFilterCombo->addItem("All Profiles");
-    profileFilterCombo->setMaximumWidth(100);  // SAME width
-    profileFilterCombo->setStyleSheet(HierarchyStyles::ProfileDropdown);  // ONLY colors changed
+    profileFilterCombo->setFixedHeight(30);
+    profileFilterCombo->setFixedWidth(110);
+    profileFilterCombo->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    profileFilterCombo->setStyleSheet(HierarchyStyles::ProfileDropdown);
 
-    // Add widgets to filter layout - SAME order
+    // Add widgets to filter layout
     filterLayout->addWidget(searchBar);
     filterLayout->addWidget(profileFilterCombo);
-    filterLayout->addSpacing(0);
-    filterLayout->addStretch();
+
 
     // Add filter container to main layout
     mainLayout->addWidget(filterContainer);
@@ -75,29 +75,22 @@ HierarchyTree::HierarchyTree(QWidget *parent)
     tree->setEditTriggers(QAbstractItemView::DoubleClicked);
     tree->setContextMenuPolicy(Qt::CustomContextMenu);
     tree->expandAll();
-    tree->setStyleSheet(HierarchyStyles::TreeWidget);  // Dark theme tree
+    tree->setStyleSheet(HierarchyStyles::TreeWidget);
+    tree->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    // Enable drag and drop and multi-selection
+    // Enable drag and drop
     tree->setSelectionMode(QAbstractItemView::ExtendedSelection);
     tree->setDragEnabled(true);
     setAcceptDrops(true);
 
     // Style header
     QHeaderView* header = tree->header();
-    header->setStyleSheet(HierarchyStyles::TreeHeader);  // Dark theme header
+    header->setStyleSheet(HierarchyStyles::TreeHeader);
+    mainLayout->addWidget(tree, 1);
 
-    // Add tree to main layout
-    mainLayout->addWidget(tree);
-
-    // Set main layout
-    setLayout(mainLayout);
-   tree->setStyleSheet(HierarchyStyles::TreeWidget);
-    // Connect signals for filtering
     connect(searchBar, &QLineEdit::textChanged, this, &HierarchyTree::onSearchTextChanged);
     connect(profileFilterCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &HierarchyTree::onProfileFilterChanged);
-
-    // Connect item clicked signal
     connect(tree, &QTreeWidget::itemClicked, this, [=](QTreeWidgetItem* item, int column) {
         Q_UNUSED(column);
         QVariantMap data = item->data(0, Qt::UserRole).toMap();
@@ -125,8 +118,6 @@ HierarchyTree::HierarchyTree(QWidget *parent)
         }
         emit itemSelected(data);
     });
-
-    // Connect item selection changed signal for multi-select
     connect(tree, &QTreeWidget::itemSelectionChanged, this, [=]() {
         QList<QTreeWidgetItem*> selectedItems = tree->selectedItems();
         QList<QVariantMap> selectedDataList;
@@ -181,8 +172,8 @@ void HierarchyTree::updateProfileDropdown()
     profiles.sort();
 
     for (const QString& profile : profiles) {
-        // **SHOW FULL NAME** ✅
-        profileFilterCombo->addItem(profile);  // Display "Platform", "Sensor", etc.
+
+        profileFilterCombo->addItem(profile);
 
         int lastIndex = profileFilterCombo->count() - 1;
         profileFilterCombo->setItemData(lastIndex, profile, Qt::UserRole);
@@ -198,13 +189,13 @@ void HierarchyTree::updateProfileDropdown()
     }
 }
 /* Handle search text change */
-/* Handle search text change */
+
 void HierarchyTree::onSearchTextChanged(const QString& text)
 {
-    QString profileFilter = "All Profiles"; // Default
+    QString profileFilter = "All Profiles";
 
-    if (profileFilterCombo->currentIndex() > 0) { // Not "All"
-        // Get FULL NAME from UserRole
+    if (profileFilterCombo->currentIndex() > 0) {
+
         profileFilter = profileFilterCombo->currentData(Qt::UserRole).toString();
 
         if (profileFilter.isEmpty()) {
@@ -223,7 +214,7 @@ void HierarchyTree::onProfileFilterChanged(int index)
 
     QString profileFilter = "All Profiles";
 
-    if (profileFilterCombo->currentIndex() > 0) { // Not "All Profiles"
+    if (profileFilterCombo->currentIndex() > 0) {
         // Get FULL NAME from UserRole
         profileFilter = profileFilterCombo->currentData(Qt::UserRole).toString();
 

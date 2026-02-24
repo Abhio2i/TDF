@@ -1,23 +1,19 @@
-// CustomResizableOverlayDock.cpp
 #include "customresizableoverlaydock.h"
 #include <QCursor>
 #include <QPainter>
-// #include <QPainter>
 #include <QPen>
+#include <QApplication>
 CustomResizableOverlayDock::CustomResizableOverlayDock(const QString &title, QWidget *parent)
     : QDockWidget(title, parent)
 {
-    // Sirf close button ke liye window flags
     setWindowFlags(Qt::Window | Qt::WindowCloseButtonHint);
-
-    // Dock widget features - sirf close button allowed karo
     setFeatures(QDockWidget::DockWidgetClosable);
-
     setAttribute(Qt::WA_TranslucentBackground, false);
-
-    // Background color set karo
     setStyleSheet("QDockWidget { background-color: #252525; }"
                   "QDockWidget::title { background-color: #333; color: white; }");
+
+    setMouseTracking(true);
+    qApp->installEventFilter(this);
 }
 
 void CustomResizableOverlayDock::mousePressEvent(QMouseEvent *event)
@@ -29,50 +25,57 @@ void CustomResizableOverlayDock::mousePressEvent(QMouseEvent *event)
             dragPosition = event->globalPos() - frameGeometry().topLeft();
             event->accept();
         } else {
-            // Move the widget
             dragPosition = event->globalPos() - frameGeometry().topLeft();
             event->accept();
         }
     }
     QDockWidget::mousePressEvent(event);
 }
-
 void CustomResizableOverlayDock::mouseMoveEvent(QMouseEvent *event)
 {
-    if (!event->buttons().testFlag(Qt::LeftButton)) {
-        updateCursor(event->pos());
-        return;
-    }
-
     if (resizing) {
-        QRect geo = geometry();
-        QPoint delta = event->globalPos() - (geo.topLeft() + dragPosition);
-
-        if (resizeEdge.testFlag(Qt::RightEdge)) {
-            geo.setWidth(qMax(minimumWidth(), geo.width() + delta.x()));
-        }
-        if (resizeEdge.testFlag(Qt::BottomEdge)) {
-            geo.setHeight(qMax(minimumHeight(), geo.height() + delta.y()));
-        }
-        if (resizeEdge.testFlag(Qt::LeftEdge)) {
-            geo.setLeft(geo.left() + delta.x());
-            geo.setWidth(geo.width() - delta.x());
-        }
+        QRect rect = geometry();
+        QPoint globalPos = event->globalPos();
+        QPoint posInParent = parentWidget() ? parentWidget()->mapFromGlobal(globalPos) : globalPos;
         if (resizeEdge.testFlag(Qt::TopEdge)) {
-            geo.setTop(geo.top() + delta.y());
-            geo.setHeight(geo.height() - delta.y());
+            int oldBottom = rect.bottom();
+            int newTop = posInParent.y();
+            int newHeight = oldBottom - newTop;
+
+            if (newHeight > minimumHeight()) {
+                rect.setTop(newTop);
+            }
         }
 
-        setGeometry(geo);
-        dragPosition = event->globalPos() - geo.topLeft(); // update for smooth resize
+        else if (resizeEdge.testFlag(Qt::BottomEdge)) {
+            rect.setBottom(posInParent.y());
+        }
+
+
+        if (resizeEdge.testFlag(Qt::LeftEdge)) {
+            int oldRight = rect.right();
+            int newLeft = posInParent.x();
+            if ((oldRight - newLeft) > minimumWidth()) {
+                rect.setLeft(newLeft);
+            }
+        }
+
+        else if (resizeEdge.testFlag(Qt::RightEdge)) {
+            rect.setRight(posInParent.x());
+        }
+
+        setGeometry(rect);
         event->accept();
-    } else {
-        // Normal move
+    }
+    else if (event->buttons() & Qt::LeftButton) {
         move(event->globalPos() - dragPosition);
         event->accept();
     }
+    else {
+        updateCursor(event->pos());
+        QDockWidget::mouseMoveEvent(event);
+    }
 }
-
 void CustomResizableOverlayDock::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
@@ -99,16 +102,13 @@ Qt::Edges CustomResizableOverlayDock::getResizeEdge(const QPoint &pos) const
 void CustomResizableOverlayDock::updateCursor(const QPoint &pos)
 {
     Qt::Edges edge = getResizeEdge(pos);
-    if (edge == (Qt::RightEdge | Qt::BottomEdge))
-        setCursor(Qt::SizeFDiagCursor);
-    else if (edge == (Qt::LeftEdge | Qt::BottomEdge))
-        setCursor(Qt::SizeBDiagCursor);
-    else if (edge.testFlag(Qt::RightEdge) || edge.testFlag(Qt::LeftEdge))
+    if (edge.testFlag(Qt::LeftEdge) || edge.testFlag(Qt::RightEdge))
         setCursor(Qt::SizeHorCursor);
     else if (edge.testFlag(Qt::BottomEdge) || edge.testFlag(Qt::TopEdge))
         setCursor(Qt::SizeVerCursor);
-    else
+    else {
         setCursor(Qt::ArrowCursor);
+    }
 }
 void CustomResizableOverlayDock::moveEvent(QMoveEvent *event)
 {
@@ -125,50 +125,34 @@ void CustomResizableOverlayDock::resizeEvent(QResizeEvent *event)
     emit resized(oldSize, newSize);
     QDockWidget::resizeEvent(event);
 }
-// void CustomResizableOverlayDock::paintEvent(QPaintEvent *event)
-// {
-//     QDockWidget::paintEvent(event); // Default drawing
-//     QPainter painter(this);
 
-//     // Sidebar/Dock ki boundary dikhane ke liye ek patli border
-//     painter.setPen(QPen(QColor(60, 60, 60), 1)); // Dark grey border
-//     painter.drawRect(0, 0, width() - 1, height() - 1);
-
-//     // --- Resize Indicator Draw Karna ---
-//     // Right side par ek "Vertical Bar" dikhane ke liye
-//     painter.setPen(QPen(QColor(100, 100, 100, 150), 3)); // Light grey line
-//     painter.drawLine(width() - 3, 10, width() - 3, height() - 10);
-
-//     // Bottom-right corner mein 3 chote dots (Grabber design)
-//     painter.setPen(QPen(QColor(150, 150, 150), 2));
-//     painter.drawPoint(width() - 5, height() - 5);
-//     painter.drawPoint(width() - 9, height() - 5);
-//     painter.drawPoint(width() - 5, height() - 9);
-// }
 void CustomResizableOverlayDock::paintEvent(QPaintEvent *event)
 {
     QDockWidget::paintEvent(event);
     QPainter painter(this);
-
-    // Sky Blue Color set karein
-    QColor skyBlue(0, 191, 255);
-    painter.setPen(QPen(skyBlue, 3)); // 3px thickness
-
     if (handlePos == Left) {
-        // Left side par line draw karein (Inspector/Library ke liye)
         painter.drawLine(2, 10, 2, height() - 10);
-
-        // Bottom-left mein 3 dots
         painter.drawPoint(5, height() - 5);
         painter.drawPoint(9, height() - 5);
         painter.drawPoint(5, height() - 9);
     } else {
-        // Right side par line draw karein (Hierarchy ke liye)
         painter.drawLine(width() - 3, 10, width() - 3, height() - 10);
-
-        // Bottom-right mein 3 dots
         painter.drawPoint(width() - 5, height() - 5);
         painter.drawPoint(width() - 9, height() - 5);
         painter.drawPoint(width() - 5, height() - 9);
     }
 }
+bool CustomResizableOverlayDock::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() == QEvent::MouseMove) {
+        QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+        QPoint localPos = mapFromGlobal(mouseEvent->globalPos());
+        if (rect().contains(localPos)) {
+            updateCursor(localPos);
+        } else {
+            setCursor(Qt::ArrowCursor);
+        }
+    }
+    return QDockWidget::eventFilter(watched, event);
+}
+

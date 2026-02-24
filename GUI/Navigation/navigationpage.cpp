@@ -50,16 +50,16 @@ QToolButton* NavigationPage::createNavButton(const QString &iconPath, const QStr
         "QToolButton {"
         "font-size: 11px;"
         "color: #cccccc;"
-        "border: 1px solid #555555;"  // Border added
+        "border: 1px solid #555555;"
         "padding: 8px 15px;"
         "text-align: left;"
         "background-color: transparent;"
-        "border-radius: 3px;"  // Border radius added
-        "margin: 2px;"  // Margin between buttons
+        "border-radius: 3px;"
+        "margin: 2px;"
         "}"
         "QToolButton:hover {"
         "background-color: #404040;"
-        "border-color: #666666;"  // Border color on hover
+        "border-color: #666666;"
         "color: white;"
         "}"
         );

@@ -200,6 +200,16 @@ const QString ProgressDialog = R"(
         background-color: #27446d;
     }
 )";
+const QString ToolTip = R"(
+    QToolTip {
+        background-color: #1A3652;
+        color: white;
+        border: 1px solid #0078D4;
+        border-radius: 2px;
+        padding: 2px 4px;
+        font-size: 11px;
+    }
+)";
 
 } // namespace MainWindowStyles
 

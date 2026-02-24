@@ -339,7 +339,7 @@ void DesignToolBar::createActions() {
     QAction* radioAction = new QAction("Radio", this);
     tooltipAction->setCheckable(true);
 
-    tooltipAction->setChecked(true);
+    tooltipAction->setChecked(false);
     colliderAction->setCheckable(true);
     colliderAction->setChecked(true);
     meshAction->setCheckable(true);

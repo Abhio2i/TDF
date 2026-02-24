@@ -119,7 +119,6 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
     inspectorDocks.append(inspectorDock);
     inspectors.append(inspector);
     inspector->setHierarchy(hierarchy);
-
     // %%% Menu Bar Setup %%%
     MenuBar* menuBar = qobject_cast<MenuBar*>(this->menuBar());
     if (menuBar) {
@@ -131,13 +130,10 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
         connect(menuBar, &MenuBar::exitTriggered, qApp, &QApplication::quit);
     }
 }
-
 // %%% Enhanced Dock Setup %%%
 /* Setup dock widgets with full features for Linux compatibility */
 void DatabaseEditor::setupEnhancedDockWidgets()
-
 {
-
     QDockWidget::DockWidgetFeatures fullDockFeatures =
         QDockWidget::DockWidgetClosable |
         QDockWidget::DockWidgetMovable |
@@ -233,7 +229,6 @@ void DatabaseEditor::setupMenuBar()
         this->clearUnsavedChanges();
         this->updateStatusBar("New database file created");
     });
-
     connect(menuBar->getLoadXmlAction(), &QAction::triggered,
             this, [=]() {
                 QString filePath = QFileDialog::getOpenFileName(this, "Open Xml",
@@ -257,47 +252,37 @@ void DatabaseEditor::resetLayout()
             dock->deleteLater();
         }
     }
-
     // %%% Reset Inspector Lists %%%
     if (inspectorDocks.size() > 1) {
         inspectorDocks = QList<QDockWidget*>{inspectorDock};
         inspectors = QList<Inspector*>{inspector};
     }
     inspectorCount = 0;
-
     // %%% Hide and Re-add Docks %%%
     hierarchyDock->hide();
     inspectorDock->hide();
     consoleDock->hide();
-
     removeDockWidget(hierarchyDock);
     removeDockWidget(inspectorDock);
     removeDockWidget(consoleDock);
-
     addDockWidget(Qt::LeftDockWidgetArea, hierarchyDock);
     addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
     addDockWidget(Qt::BottomDockWidgetArea, consoleDock);
-
     splitDockWidget(hierarchyDock, inspectorDock, Qt::Horizontal);
     splitDockWidget(inspectorDock, consoleDock, Qt::Vertical);
-
     hierarchyDock->show();
     inspectorDock->show();
     consoleDock->show();
-
     // %%% Delayed Size Restoration %%%
     QTimer::singleShot(100, this, [=]() {
         int totalWidth = this->width();
         int totalHeight = this->height();
-
         int hierarchyWidth = static_cast<int>(totalWidth * 0.10);
         int inspectorWidth = static_cast<int>(totalWidth * 0.85);
         int consoleHeight = static_cast<int>(totalHeight * 0.25);
-
         resizeDocks({hierarchyDock}, {hierarchyWidth}, Qt::Horizontal);
         resizeDocks({inspectorDock}, {inspectorWidth}, Qt::Horizontal);
         resizeDocks({consoleDock}, {consoleHeight}, Qt::Vertical);
-
         updateStatusBar("Layout reset to initial state");
     });
 }
@@ -316,21 +301,17 @@ void DatabaseEditor::addInspectorTab()
     QDockWidget *newInspectorDock = new QDockWidget("Inspector " + QString::number(++inspectorCount), this);
     newInspectorDock->setAllowedAreas(Qt::AllDockWidgetAreas);
     newInspectorDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
-
     Inspector *newInspector = new Inspector(newInspectorDock);
     newInspectorDock->setWidget(newInspector);
     newInspectorDock->setMinimumWidth(200);
     newInspectorDock->setTitleBarWidget(nullptr);
-
     inspectorDocks.append(newInspectorDock);
     inspectors.append(newInspector);
-
     // %%% Inspector Connections %%%
     connect(newInspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
     connect(newInspector, &Inspector::valueChanged, this, &DatabaseEditor::markUnsavedChanges);
     connect(newInspector, &Inspector::addTabRequested, this, &DatabaseEditor::addInspectorTab);
     connect(newInspectorDock, &QDockWidget::visibilityChanged, this, &DatabaseEditor::onDockVisibilityChanged);
-
     // %%% Dock Placement %%%
     if (inspectorDock->isVisible()) {
         splitDockWidget(inspectorDock, newInspectorDock, Qt::Horizontal);
@@ -421,7 +402,6 @@ void DatabaseEditor::loadRecentProject(const QString& filePath)
     loadingDialog->move(geometry().center() - loadingDialog->rect().center());
     loadingDialog->show();
     QCoreApplication::processEvents();
-
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this, "Error", "Failed to open scenario file");
@@ -466,7 +446,6 @@ void DatabaseEditor::showProfileInfo()
 {
     ProfileInfoDialog::showProfileInfo(this);
 }
-
 // %%% Application Settings Dialog %%%
 /* Show application settings dialog */
 void DatabaseEditor::showApplicationDialog()
@@ -827,7 +806,6 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
         }
         currentColumn++;
     }
-
     // Group 2 column
     if (!group2ComponentsList.isEmpty()) {
         columnWidgets[currentColumn] = new QWidget();
@@ -847,7 +825,6 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
         int columnIndex = i % otherColumnComponents.size();
         otherColumnComponents[columnIndex].append(otherComponents[i]);
     }
-
     for (int col = 0; col < otherColumnComponents.size(); col++) {
         int columnIndex = currentColumn + col;
         columnWidgets[columnIndex] = new QWidget();
@@ -859,7 +836,6 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
             componentColumnMap[comp.first] = columnIndex;
         }
     }
-
     // %%% Component Widget Creation %%%
     for (const auto& comp : availableComponents) {
         QString compType = comp.first;
@@ -928,7 +904,6 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
         } else {
             compWidget = createComponentInspector(entityId, displayName, componentData, actualHeight);
         }
-
         // Set size policies based on component type
         if (exclusiveSingleColumnComponents.contains(compType)) {
             compWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -948,10 +923,8 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
         } else {
             compWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
         }
-
         columnLayouts[columnIndex]->insertWidget(columnLayouts[columnIndex]->count() - 1, compWidget);
     }
-
     // %%% Grid Layout Assembly %%%
     for (int col = 0; col < totalColumns; col++) {
         if (columnWidgets[col]) {
@@ -959,11 +932,8 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
             gridLayout->setColumnStretch(col, 1);
         }
     }
-
     gridLayout->setRowStretch(0, 0);
     gridLayout->setRowStretch(1, 1);
-
-
     QScrollArea *scrollArea = new QScrollArea();
     scrollArea->setWidgetResizable(true);
     scrollArea->setWidget(container);
@@ -1009,11 +979,9 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
 
     // %%% Inspector Collection %%%
     QList<Inspector*> allInspectors = container->findChildren<Inspector*>();
-
     // %%% Inspector Dock Configuration %%%
     inspectorDock->setWidget(scrollArea);
     inspectorDock->setWindowTitle(entityName + " - All Components");
-
     inspectorDock->setProperty("IsAllComponentsMode", true);
     inspectorDock->setProperty("EntityId", entityId);
     inspectorDock->setProperty("AllComponentsWidget", QVariant::fromValue(scrollArea));

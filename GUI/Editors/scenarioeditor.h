@@ -92,13 +92,13 @@ signals:
 private:
     // %%% Core Components %%%
 
-    CustomResizableOverlayDock *hierarchyDock;        // ✅ Custom class
-    CustomResizableOverlayDock *tacticalDisplayDock;  // ✅ Custom class
-    CustomResizableOverlayDock *consoleDock;          // ✅ Custom class
-    CustomResizableOverlayDock *inspectorDock;        // ✅ Custom class
-    CustomResizableOverlayDock *libraryDock;          // ✅ Custom class
-    CustomResizableOverlayDock *sidebarDock;          // ✅ Custom class
-    CustomResizableOverlayDock *textScriptDock;       // ✅ Custom class
+    CustomResizableOverlayDock *hierarchyDock;
+    CustomResizableOverlayDock *tacticalDisplayDock;
+    CustomResizableOverlayDock *consoleDock;
+    CustomResizableOverlayDock *inspectorDock;
+    CustomResizableOverlayDock *libraryDock;
+    CustomResizableOverlayDock *sidebarDock;
+    CustomResizableOverlayDock *textScriptDock;
     // Script engine instance
     ScriptEngine* scriptengine = nullptr;
     // Inspector panel widget
@@ -111,24 +111,8 @@ private:
     QVariantMap copydata;
     // Store copied hierarchy
     Hierarchy* copyhirarchy = nullptr;
-    // %%% UI Components %%%
-    // Dock widget for hierarchy
-    // QDockWidget *hierarchyDock;
-    // Dock widget for tactical display
-    // QDockWidget *tacticalDisplayDock;
-    // Dock widget for console
-    // QDockWidget *consoleDock;
     LayerPanel *layerPanel = nullptr;
-CustomResizableOverlayDock *layerDock = nullptr;
-    // Dock widget for inspector
-    // QDockWidget *inspectorDock;
-    // Dock widget for library
-    // QDockWidget *libraryDock;
-    // Dock widget for sidebar
-    // QDockWidget *sidebarDock;
-    // Dock widget for text script
-    // QDockWidget *textScriptDock;
-    // Console view widget
+    CustomResizableOverlayDock *layerDock = nullptr;
     ConsoleView *consoleView;
     // Text script view widget
     TextScriptWidget *textScriptView;
@@ -145,10 +129,6 @@ CustomResizableOverlayDock *layerDock = nullptr;
     // %%% Toolbar Components %%%
     // Design toolbar
     DesignToolBar *designToolBar;
-    // Menu bar
-    // MenuBar *menuBar;
-    // %%% Inspector Management %%%
-    // List of inspector docks
     QList<QDockWidget*> inspectorDocks;
     // Count inspector instances
     int inspectorCount = 0;
@@ -163,10 +143,7 @@ CustomResizableOverlayDock *layerDock = nullptr;
     QStatusBar *statusBar;
     Simulation *simulation;
     ScenarioConfig* m_scenarioConfig;
-void showPanelContextMenu(const QPoint &pos);
-
-    // LayerPanel* layerPanel;
-
+     void showPanelContextMenu(const QPoint &pos);
 private slots:
     void onRunScriptFileRequested(const QString& filePath);
 

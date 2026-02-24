@@ -39,7 +39,7 @@ QString RecentProjectsManager::getSettingsKey(EditorType editorType) const
         return "recentProjects/RuntimeEditor";
     case DatabaseEditor:
         return "recentProjects/DatabaseEditor";
-    case LibraryData:  // NEW
+    case LibraryData:
         return "recentProjects/Library";
     default:
         return "recentProjects/Default";

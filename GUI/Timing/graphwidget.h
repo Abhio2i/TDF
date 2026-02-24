@@ -64,9 +64,9 @@ public slots:
 
 private:
     // %%% Private Variables %%%
-    Hierarchy* h = nullptr;                    // Hierarchy data reference
-    QTableWidget* tableWidget;                 // Entity status table
-    QWidget* graphCanvas;                      // Graph drawing canvas
+    Hierarchy* h = nullptr;
+    QTableWidget* tableWidget;
+    QWidget* graphCanvas;
 
     // %%% Private Methods %%%
     /* Update table with current entity status */

@@ -38,10 +38,10 @@ public:
     void setHierarchy(Hierarchy* hierarchy) { m_hierarchy = hierarchy; }
 
     // %%% Hierarchy Reference %%%
-    Hierarchy* m_hierarchy = nullptr;  // Pointer to hierarchy data structure
+    Hierarchy* m_hierarchy = nullptr;
 
     // %%% Multi-Select Support %%%
-    QList<QVariantMap> m_copiedItems;  // Store copied items for multi-paste
+    QList<QVariantMap> m_copiedItems;
 
 signals:
     // %%% Folder Operations Signals %%%

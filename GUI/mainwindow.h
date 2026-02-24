@@ -56,7 +56,7 @@ public:
         return databaseEditor ? databaseEditor->hierarchy : nullptr;
     }
 protected:
-     void closeEvent(QCloseEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
 private slots:
     // %%% Editor Management Slots %%%
     /* Switch between different editor interfaces */
@@ -82,24 +82,21 @@ private:
                            bool hasUnsavedChanges = false);
 
     // %%% UI Component Members %%%
-/*    QStackedWidget *stackedWidget; */    // Container for stacked editor widgets
+    /*    QStackedWidget *stackedWidget; */
     NavigationPage *navigationPage;    // Navigation interface page
     // DatabaseEditor *databaseEditor;    // Database editing interface
     // ScenarioEditor *scenarioEditor;    // Scenario editing interface
     // RuntimeEditor *runtimeEditor;      // Runtime editing interface
     static MainWindow* s_instance;
-     MenuBar*mainMenuBar;
-
-     //-----Setupfileopretion-----17-feb-----//
-
-     QString ensureTDFSubfolder(const QString& subfolderName);
-     void loadFileWithTDFSupport(QMainWindow* editor,
-                                 RecentProjectsManager::EditorType editorType,
-                                 const QString& extension,
-                                 const QString& filter);
-     void saveFileWithTDFSupport(QMainWindow* editor);
-     void saveToSameFileWithTDFSupport(QMainWindow* editor);
-     void createScenarioInstanceCopy(const QString& runtimeFilePath, const QJsonObject& data);
+    MenuBar*mainMenuBar;
+    QString ensureTDFSubfolder(const QString& subfolderName);
+    void loadFileWithTDFSupport(QMainWindow* editor,
+                                RecentProjectsManager::EditorType editorType,
+                                const QString& extension,
+                                const QString& filter);
+    void saveFileWithTDFSupport(QMainWindow* editor);
+    void saveToSameFileWithTDFSupport(QMainWindow* editor);
+    void createScenarioInstanceCopy(const QString& runtimeFilePath, const QJsonObject& data);
 };
 
 #endif // MAINWINDOW_H

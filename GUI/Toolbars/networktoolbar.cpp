@@ -363,20 +363,16 @@ void NetworkToolbar::openPacketAnalyzer()
     startButton->setStyleSheet(NetworkToolbarStyles::PushButton);
     stopButton->setStyleSheet(NetworkToolbarStyles::PushButton);
     closeButton->setStyleSheet(NetworkToolbarStyles::PushButton);
-
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     buttonLayout->addWidget(startButton);
     buttonLayout->addWidget(stopButton);
     buttonLayout->addWidget(closeButton);
-
     QLabel *filterLabel = new QLabel("Filter:");
     filterLabel->setStyleSheet("color: white;");
-
     layout->addWidget(filterLabel);
     layout->addWidget(filterCombo);
     layout->addWidget(packetTable);
     layout->addLayout(buttonLayout);
-
     dialog->setLayout(layout);
 
     connect(startButton, &QPushButton::clicked, [=]() {
@@ -399,5 +395,5 @@ void NetworkToolbar::openPacketAnalyzer()
 
 void NetworkToolbar::updatePacketTable()
 {
-    // Implementation for packet table updates
+
 }

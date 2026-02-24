@@ -12,16 +12,16 @@ class CustomResizableOverlayDock : public QDockWidget
 public:
     explicit CustomResizableOverlayDock(const QString &title, QWidget *parent = nullptr);
     enum HandlePosition { Left, Right };
-    HandlePosition handlePos = Right; // Default Right side
+    HandlePosition handlePos = Right;
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
-    // Yeh dono add karo (override kar rahe ho to protected mein declare karo)
     void moveEvent(QMoveEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 signals:
     void moved(QPoint oldPos, QPoint newPos);
     void resized(QSize oldSize, QSize newSize);
