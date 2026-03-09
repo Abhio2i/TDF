@@ -19,6 +19,7 @@
 #include <core/Network/libs/MessageBus.h>
 #include <core/Network/libs/TransformUpdate.h>
 
+#include "core/Dynamics/Model/aircraft.h"
 #include "simulation_state.h"
 // #include <core/SharedMemory/sharedmemory.h> //Shared Memory By Himanshu
 
@@ -31,6 +32,7 @@ struct PhysicsComponent {
     DynamicModel *dynamicModel = nullptr;
     Rigidbody *rigidbody = nullptr;
     Collider *collider = nullptr;
+    Aircraft *aircraft = nullptr;
 };
 
 class Simulation : public QObject {
@@ -69,6 +71,7 @@ public:
 
     int getRate() const;
     void calculatePhysics();
+    void updateDynamics(float dt,PhysicsComponent *comp);
     void calculateDynamic(float dt);
 
     void replay(); // newly added overload

@@ -314,155 +314,155 @@ void DynamicModel::FollowTrajectory() {
     FlatXYZ targt = geoToFlatXYZ(target.x,target.z,target.y);
     QVector3D target_qvec(targt.x, targt.y, targt.z);
     QVector2D tar(target_qvec.x(),target_qvec.z());
-    if(moveSpeed <minSpeed){
-        moveSpeed = minSpeed;
-    }
-    if(moveSpeed > maxSpeed){
-        moveSpeed = maxSpeed;
-    }
-    if(Altitude>maxAltitude){
-        Altitude = maxAltitude;
-    }
-    if(Altitude<0){
-        Altitude = 0;
-    }
+    // if(moveSpeed <minSpeed){
+    //     moveSpeed = minSpeed;
+    // }
+    // if(moveSpeed > maxSpeed){
+    //     moveSpeed = maxSpeed;
+    // }
+    // if(Altitude>maxAltitude){
+    //     Altitude = maxAltitude;
+    // }
+    // if(Altitude<0){
+    //     Altitude = 0;
+    // }
     float movespd = (moveSpeed/3600.0f);//km/h to km/s
-    float accel = (Acceleration/1000.0f);//m/s to km/s
-    float dccel = (Decceleration/1000.0f);//m/s to km/s
-    float alt = Altitude * FTtoKM;//ft to km
-    float clmbrate = climbRate * FTminToKMs;//ft/min to km/s
-    float divrate = diveRate * FTminToKMs;//ft/min to km/s
-    currentAltitude = current.y();
+    // float accel = (Acceleration/1000.0f);//m/s to km/s
+    // float dccel = (Decceleration/1000.0f);//m/s to km/s
+    // float alt = Altitude * FTtoKM;//ft to km
+    // float clmbrate = climbRate * FTminToKMs;//ft/min to km/s
+    // float divrate = diveRate * FTminToKMs;//ft/min to km/s
+    // currentAltitude = current.y();
 
 
 
-    float diffspeed = std::abs(speed-movespd);
-    float lastspeed = speed;
-    if(currentSpeed < 300){
+    // float diffspeed = std::abs(speed-movespd);
+    // float lastspeed = speed;
+    // if(currentSpeed < 300){
 
-        // alt = 10*FTtoKM;
-        // divrate = 9.8f/1000.0f;
-    }
+    //     // alt = 10*FTtoKM;
+    //     // divrate = 9.8f/1000.0f;
+    // }
 
-    if(speed<movespd){
-        if(diffspeed<accel){
-            accel = 0.5f*diffspeed;
-        }
-        speed += accel*delta;
-    }else{
-        if(diffspeed<dccel){
-            dccel = 0.5f*diffspeed;
-        }
-        speed -= dccel*delta;
-    }
-    // float deltaSpeed = std::abs(speed - lastspeed)*1000 * (1/delta);
-    float distance = last.distanceToPoint(tar)*1000;
-    float offset = movespd*1000;//active current speed
-    // //qDebug()<<distance<<","<<deltaSpeed ;
-    if((speed*1000) > offset  &&  distance < (movespd*1000*3)){
-        speed -= offset* delta * 0.4f;
-    }
-    speed = speed<0?0:speed;
+    // if(speed<movespd){
+    //     if(diffspeed<accel){
+    //         accel = 0.5f*diffspeed;
+    //     }
+    //     speed += accel*delta;
+    // }else{
+    //     if(diffspeed<dccel){
+    //         dccel = 0.5f*diffspeed;
+    //     }
+    //     speed -= dccel*delta;
+    // }
+    // // float deltaSpeed = std::abs(speed - lastspeed)*1000 * (1/delta);
+    // float distance = last.distanceToPoint(tar)*1000;
+    // float offset = movespd*1000;//active current speed
+    // // //qDebug()<<distance<<","<<deltaSpeed ;
+    // if((speed*1000) > offset  &&  distance < (movespd*1000*3)){
+    //     speed -= offset* delta * 0.4f;
+    // }
+    // speed = speed<0?0:speed;
 
-    // //qDebug()<<delta;
-    float diffaalt = std::abs(currentAltitude-alt);
-    if(currentAltitude<alt){
-        if(diffaalt<clmbrate){
-            clmbrate = 0.5f*diffaalt;
-        }
-        currentAltitude += clmbrate*delta;
-    }else{
-        if(diffaalt<divrate){
-            divrate = 0.5f*diffaalt;
-        }
-        currentAltitude -= divrate*delta;
-    }
-    QVector3D direction = target_qvec - current;
-    direction = direction.normalized();
+    // // //qDebug()<<delta;
+    // float diffaalt = std::abs(currentAltitude-alt);
+    // if(currentAltitude<alt){
+    //     if(diffaalt<clmbrate){
+    //         clmbrate = 0.5f*diffaalt;
+    //     }
+    //     currentAltitude += clmbrate*delta;
+    // }else{
+    //     if(diffaalt<divrate){
+    //         divrate = 0.5f*diffaalt;
+    //     }
+    //     currentAltitude -= divrate*delta;
+    // }
+    // QVector3D direction = target_qvec - current;
+    // direction = direction.normalized();
 
-    float angleRad = atan2(direction.x(), direction.z());
-    float targetDeg = angleRad * (180.0f / M_PI);
-    float deltaang = std::abs(normalizeAngle(targetDeg - angdeg));
+    // float angleRad = atan2(direction.x(), direction.z());
+    // float targetDeg = angleRad * (180.0f / M_PI);
+    // float deltaang = std::abs(normalizeAngle(targetDeg - angdeg));
 
-    float tunrate = turnRate;
-    if(deltaang <= tunrate){
-        tunrate = 0.5f*deltaang;
-    }
-    float tr = convertToClockwise360(targetDeg);
-    float cr = convertToClockwise360(angdeg);
-    targetDeg = normalizeAngle(targetDeg);
-    angdeg = normalizeAngle(angdeg);
-    float diff1 = std::abs(tr-cr);//0-360
-    float diff2 = std::abs(targetDeg-angdeg);//-180 0 180
+    // float tunrate = turnRate;
+    // if(deltaang <= tunrate){
+    //     tunrate = 0.5f*deltaang;
+    // }
+    // float tr = convertToClockwise360(targetDeg);
+    // float cr = convertToClockwise360(angdeg);
+    // targetDeg = normalizeAngle(targetDeg);
+    // angdeg = normalizeAngle(angdeg);
+    // float diff1 = std::abs(tr-cr);//0-360
+    // float diff2 = std::abs(targetDeg-angdeg);//-180 0 180
 
-    if(diff2>diff1){
-        angdeg = cr;
-        targetDeg = tr;
-    }
+    // if(diff2>diff1){
+    //     angdeg = cr;
+    //     targetDeg = tr;
+    // }
 
-    if(angdeg>targetDeg){
-        angdeg -= tunrate * delta;
-    }else{
-        angdeg += tunrate * delta;
-    }
+    // if(angdeg>targetDeg){
+    //     angdeg -= tunrate * delta;
+    // }else{
+    //     angdeg += tunrate * delta;
+    // }
 
-    // //qDebug()<<targetDeg<<","<<angdeg <<","<<deltaang;
-    transform->matrix->setRotation(QQuaternion::fromEulerAngles(QVector3D(0,angdeg,0)));
+    // // //qDebug()<<targetDeg<<","<<angdeg <<","<<deltaang;
+    // transform->matrix->setRotation(QQuaternion::fromEulerAngles(QVector3D(0,angdeg,0)));
 
-    // transform->lookAt(target_qvec);
-    current += ((transform->forward() * speed) + (windDierction* windSpeed))  * delta;
-    current.setY(currentAltitude);
+    // // transform->lookAt(target_qvec);
+    // current += ((transform->forward() * speed) + (windDierction* windSpeed))  * delta;
+    // current.setY(currentAltitude);
 
-    //calculate driftangle
-    // 1. Wind Angle निकालें (हवा और हेडिंग के बीच का अंतर)
-    float windAngleRad = qDegreesToRadians(qRadiansToDegrees(qAtan2(windDierction.x(), -windDierction.z())) - TrueHeading);
+    // //calculate driftangle
+    // // 1. Wind Angle निकालें (हवा और हेडिंग के बीच का अंतर)
+    // float windAngleRad = qDegreesToRadians(qRadiansToDegrees(qAtan2(windDierction.x(), -windDierction.z())) - TrueHeading);
 
-    float sinDrift = (windSpeed / TrueAirSpeed) * qSin(windAngleRad);
+    // float sinDrift = (windSpeed / TrueAirSpeed) * qSin(windAngleRad);
 
-    // सुरक्षा के लिए लिमिट चेक (ताकि asin एरर न दे)
-    if (sinDrift > 1.0f) sinDrift = 1.0f;
-    if (sinDrift < -1.0f) sinDrift = -1.0f;
+    // // सुरक्षा के लिए लिमिट चेक (ताकि asin एरर न दे)
+    // if (sinDrift > 1.0f) sinDrift = 1.0f;
+    // if (sinDrift < -1.0f) sinDrift = -1.0f;
 
-    DriftAngle = qRadiansToDegrees(qAsin(sinDrift));
+    // DriftAngle = qRadiansToDegrees(qAsin(sinDrift));
 
-    ///calculate pitch
-    float ratio = VerticalVelocity / TrueAirSpeed;
+    // ///calculate pitch
+    // float ratio = VerticalVelocity / TrueAirSpeed;
 
-    // 3. सुरक्षा के लिए चेक करें (ताकि asin एरर न दे)
-    if (ratio > 1.0f) ratio = 1.0f;
-    if (ratio < -1.0f) ratio = -1.0f;
+    // // 3. सुरक्षा के लिए चेक करें (ताकि asin एरर न दे)
+    // if (ratio > 1.0f) ratio = 1.0f;
+    // if (ratio < -1.0f) ratio = -1.0f;
 
-    // 4. Angle निकालें (Radians में) और फिर Degrees में बदलें
-    float pitchDegrees = qRadiansToDegrees(qAsin(ratio));
-    float g = 9.81f;
+    // // 4. Angle निकालें (Radians में) और फिर Degrees में बदलें
+    // float pitchDegrees = qRadiansToDegrees(qAsin(ratio));
+    // float g = 9.81f;
 
-    // 4. Bank Angle निकालें: tan(theta) = (v * omega) / g
-    float rollDegrees = qRadiansToDegrees(qAtan((TrueAirSpeed * qDegreesToRadians(turnRate)) / g));
+    // // 4. Bank Angle निकालें: tan(theta) = (v * omega) / g
+    // float rollDegrees = qRadiansToDegrees(qAtan((TrueAirSpeed * qDegreesToRadians(turnRate)) / g));
 
-    Pitchrate = (pitch - pitchDegrees)*(1/delta);
-    Rollrate = (roll - rollDegrees)*(1/delta);
-    Yawrate = (yaw - transform->yaw())*(1/delta);
+    // Pitchrate = (pitch - pitchDegrees)*(1/delta);
+    // Rollrate = (roll - rollDegrees)*(1/delta);
+    // Yawrate = (yaw - transform->yaw())*(1/delta);
 
-    pitch = pitchDegrees;
-    roll = rollDegrees;
-    yaw = transform->yaw();
-    transform->matrix->setTranslation(current);
-    float unit = (1/delta)*3600;
-    NorthVelocity = (current.x()-last3d.x()) * unit;
-    EastVelocity = (current.z()-last3d.z()) * unit;
-    VerticalVelocity = (current.y()-last3d.y()) * unit;
-    TrueAirSpeed = QVector2D(current.x(),current.z()).distanceToPoint(last) * unit;
-    GroundVelocity = (windSpeed*3600)+TrueAirSpeed;
-    velocity = worldToLocalVelocity(EastVelocity, NorthVelocity, VerticalVelocity, transform->rotation());
-    if(windSpeed > 0){
-        currentSpeed = QVector2D(current.x(),current.z()).distanceToPoint(last) * (1/delta) * 3600;
-    }else{
-        currentSpeed = (speed * 3600)+(windSpeed*3600);
-    }
-    windDierction.setX(0);
-    windDierction.setY(0);
-    windDierction.setZ(0);
-    windSpeed = 0;
+    // pitch = pitchDegrees;
+    // roll = rollDegrees;
+    // yaw = transform->yaw();
+    // transform->matrix->setTranslation(current);
+    // float unit = (1/delta)*3600;
+    // NorthVelocity = (current.x()-last3d.x()) * unit;
+    // EastVelocity = (current.z()-last3d.z()) * unit;
+    // VerticalVelocity = (current.y()-last3d.y()) * unit;
+    // TrueAirSpeed = QVector2D(current.x(),current.z()).distanceToPoint(last) * unit;
+    // GroundVelocity = (windSpeed*3600)+TrueAirSpeed;
+    // velocity = worldToLocalVelocity(EastVelocity, NorthVelocity, VerticalVelocity, transform->rotation());
+    // if(windSpeed > 0){
+    //     currentSpeed = QVector2D(current.x(),current.z()).distanceToPoint(last) * (1/delta) * 3600;
+    // }else{
+    //     currentSpeed = (speed * 3600)+(windSpeed*3600);
+    // }
+    // windDierction.setX(0);
+    // windDierction.setY(0);
+    // windDierction.setZ(0);
+    // windSpeed = 0;
     // // ////////////////////////////////////////////////////
     transform->trailData.push_back(QVector3D(transform->getLatitude(),0,transform->getLongitude()));
     if( transform->trailData.capacity()>54000){
@@ -478,7 +478,7 @@ void DynamicModel::FollowTrajectory() {
                                      current.x());
 
     // //qDebug()<<metredis;
-    if (trajectory->Trajectories.size() > trajectory->current &&  metredis < movespd*1000) {
+    if (trajectory->Trajectories.size() > trajectory->current &&  metredis < (currentSpeed/3.6f) *2.f) {
         trajectory->current += 1;
         // //qDebug()<<"time :"<<time;
         if(trajectory->current >= trajectory->Trajectories.size()){
@@ -500,9 +500,10 @@ void DynamicModel::FollowTrajectory() {
             if(Altitude<0){
                 Altitude = 0;
             }
-            movespd = (tgtSpd/3600.0f);//km/h to km/s
+            //movespd = (tgtSpd/3600.0f);//km/h to km/s
+            moveSpeed = tgtSpd;
             if(target_qvec.y() > 0){
-                alt = target_qvec.y() * FTtoKM;
+                //alt = target_qvec.y() * FTtoKM;
                 Altitude = target_qvec.y();
             }
         }
@@ -572,31 +573,31 @@ QJsonObject DynamicModel::toJson() const {
 
     QJsonObject maximumObj;
     maximumObj["type"] = "Section";
-    maximumObj["minSpeed"] = toParm(minSpeed,"Km/h");
-    maximumObj["maxSpeed"] = toParm(maxSpeed,"Km/h");
-    maximumObj["moveSpeed"] = toParm(moveSpeed,"Km/h");
-    maximumObj["Acceleration"] = toParm(Acceleration,"m/s^2");
-    maximumObj["Decceleration"] = toParm(Decceleration,"m/s^2");
+    maximumObj["minSpeed"] = toParm(minSpeed,"Km/h",0,300);
+    maximumObj["maxSpeed"] = toParm(maxSpeed,"Km/h",100,2000);
+    maximumObj["moveSpeed"] = toParm(moveSpeed,"Km/h",0,2000);
+    maximumObj["Acceleration"] = toParm(Acceleration,"m/s^2",100,500,"i am Accerlation");
+    maximumObj["Decceleration"] = toParm(Decceleration,"m/s^2",50,    400);
     // maximumObj["turnRadius"] = toParm(turnRadius,"m");
-    maximumObj["turnRate"] = toParm(turnRate,"deg/s");
-    maximumObj["MaxAltitude"] = toParm(maxAltitude,"ft");
-    maximumObj["Altitude"] = toParm(Altitude,"ft");
-    maximumObj["climbRate"] = toParm(climbRate,"ft/min");
-    maximumObj["diveRate"] = toParm(diveRate,"ft/min");
+    maximumObj["turnRate"] = toParm(turnRate,"deg/s",5,30);
+    maximumObj["MaxAltitude"] = toParm(maxAltitude,"ft",10,60000);
+    maximumObj["Altitude"] = toParm(Altitude,"ft",10,60000);
+    maximumObj["climbRate"] = toParm(climbRate,"ft/min",0,      10000);
+    maximumObj["diveRate"] = toParm(diveRate,"ft/min",0,      10000);
     obj["maximums"] = maximumObj;
 
     QJsonObject responsesObj;
     responsesObj["type"] = "Section";
-    responsesObj["deltaSpdCommandMaxAcc"] = toParm(deltaSpdCommandMaxAcc,"m/s");
-    responsesObj["timeToReachMaxAcc"] = toParm(timeToReachMaxAcc,"s");
-    responsesObj["deltaSpdCommandMaxDecel"] = toParm(deltaSpdCommandMaxDecel,"m/s");
-    responsesObj["timeToReachMaxDecel"] = toParm(timeToReachMaxDecel,"s");
-    responsesObj["deltaHdgCommandMaxRot"] = toParm(deltaHdgCommandMaxRot,"deg");
-    responsesObj["timeToReachMaxRot"] = toParm(timeToReachMaxRot,"s");
-    responsesObj["maximumPitchRate"] = toParm(maximumPitchRate,"deg/s");
-    responsesObj["maximumRollRate"] = toParm(maximumRollRate,"deg/s");
-    responsesObj["deltaToReachMaxROC"] = toParm(deltaToReachMaxROC,"m");
-    responsesObj["deltaToReachMaxROD"] = toParm(deltaToReachMaxROD,"m");
+    responsesObj["deltaSpdCommandMaxAcc"] = toParm(deltaSpdCommandMaxAcc,"m/s",0,    200);
+    responsesObj["timeToReachMaxAcc"] = toParm(timeToReachMaxAcc,"s",0,    30);
+    responsesObj["deltaSpdCommandMaxDecel"] = toParm(deltaSpdCommandMaxDecel,"m/s",  0,    200);
+    responsesObj["timeToReachMaxDecel"] = toParm(timeToReachMaxDecel,"s",    0,    30);
+    responsesObj["deltaHdgCommandMaxRot"] = toParm(deltaHdgCommandMaxRot,"deg",  0,    180);
+    responsesObj["timeToReachMaxRot"] = toParm(timeToReachMaxRot,"s",    0,    30);
+    responsesObj["maximumPitchRate"] = toParm(maximumPitchRate,"deg/s",0,    60);
+    responsesObj["maximumRollRate"] = toParm(maximumRollRate,"deg/s",0,    120);
+    responsesObj["deltaToReachMaxROC"] = toParm(deltaToReachMaxROC,"m",    0,    5000);
+    responsesObj["deltaToReachMaxROD"] = toParm(deltaToReachMaxROD,"m",    0,    5000);
     obj["responses"] = responsesObj;
 
     QJsonObject passabillityObj;
@@ -608,7 +609,7 @@ QJsonObject DynamicModel::toJson() const {
     terrainSurfaceObj["options"] = optionsArray;
     terrainSurfaceObj["value"] = surfaceTypeToString(terrainSurface);
     passabillityObj["terrainSurface"] = terrainSurfaceObj;
-    passabillityObj["maximumSpeed"] = toParm(maximumSpeed,"%");
+    passabillityObj["maximumSpeed"] = toParm(maximumSpeed,"%",0, 1000);
     passabillityObj["terrainIsPassable"] = terrainIs;
     obj["passabillity"] = passabillityObj;
 
@@ -717,8 +718,6 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
 
             terrainIs = passabillityObj["terrainIsPassable"].toBool();
     }
-
-
 
     // Custom parameters
     QStringList standardKeys = {

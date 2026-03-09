@@ -82,29 +82,29 @@ QJsonObject Radar::toJson() const {
 
     QJsonObject Emmison;
     Emmison["type"] = "Section";
-    Emmison["power"] = toParm(power,"kw");
-    Emmison["frequency"] = toParm(frequency,"Ghz");
+    Emmison["power"] = toParm(power,"kw",  0,    1000);
+    Emmison["frequency"] = toParm(frequency,"Ghz", 0.1,  100);
     obj["Emmison"] = Emmison;
 
     QJsonObject Envolope;
     Envolope["type"] = "Section";
-    Envolope["minAzimuth"] = toParm(minAzimuth,"deg");
-    Envolope["maxAzimuth"] = toParm(maxAzimuth,"deg");
-    Envolope["minElevation"] = toParm(minElevation,"deg");
-    Envolope["maxElevation"] = toParm(maxElevation,"deg");
+    Envolope["minAzimuth"] = toParm(minAzimuth,"deg", -180, 0);
+    Envolope["maxAzimuth"] = toParm(maxAzimuth,"deg", 0,    180);
+    Envolope["minElevation"] = toParm(minElevation,"deg", -90,  0);
+    Envolope["maxElevation"] = toParm(maxElevation,"deg", 0,    90);
     obj["Envolope"] = Envolope;
 
     QJsonObject Scanning;
     Scanning["type"] = "Section";
-    Scanning["rate"] = toParm(rate,"hz");
-    Scanning["hits"] = toParm(hits,"");
+    Scanning["rate"] = toParm(rate,"hz", 0, 100);
+    Scanning["hits"] = toParm(hits,"",   0, 100);
     obj["Scanning"] = Scanning;
 
     QJsonObject Antenna;
     Antenna["type"] = "Section";
-    Antenna["AntennaGain"] = toParm(AntennaGain,"db");
-    Antenna["AntennaBandwidth"] = toParm(AntennaBandwidth,"ghz");
-    Antenna["beamWidth"] = toParm(beamWidth,"deg");
+    Antenna["AntennaGain"] = toParm(AntennaGain,"db",  0,    60);
+    Antenna["AntennaBandwidth"] = toParm(AntennaBandwidth,"ghz", 0,    10);
+    Antenna["beamWidth"] = toParm(beamWidth,"deg", 0,    360);
     Antenna["scanType"] = toParm(scanType,"");
     Antenna["scanTime1"] = toParm(scanTime1,"");
     Antenna["scanTime2"] = toParm(scanTime2,"");
@@ -114,14 +114,14 @@ QJsonObject Radar::toJson() const {
 
     QJsonObject Pulse;
     Pulse["type"] = "Section";
-    Pulse["pulseWidth"] = toParm(pulseWidth,"us");
+    Pulse["pulseWidth"] = toParm(pulseWidth,"us", 0, 1000);
     obj["Pulse"] = Pulse;
 
     QJsonObject defaultObj;
     defaultObj["type"] = "Section";
-    defaultObj["range"] = toParm(range,"km");
-    defaultObj["frequency"] = toParm(frequency,"Ghz");
-    defaultObj["azimuth"] = toParm(azimuth,"deg");
+    defaultObj["range"] = toParm(range,"km", 0, 1000);
+    defaultObj["frequency"] = toParm(frequency,"Ghz", 0, 1000);
+    defaultObj["azimuth"] = toParm(azimuth,"deg", 0,   360);
     defaultObj["DetectionCapabilities"] = capabilitiesObj;
     obj["default"] = defaultObj;
     return obj;

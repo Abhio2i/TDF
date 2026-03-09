@@ -44,15 +44,15 @@ void Console::warning(std::string warning) {
 }
 
 void Console::saveLog() {
-    // Implementation for saving logs (unchanged)
+
 }
 
 void Console::getLog() {
-    // Implementation for retrieving logs (unchanged)
+
 }
 
 void Console::clearLog() {
-    // Implementation for clearing logs (unchanged)
+
 }
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
@@ -76,7 +76,6 @@ void customMessageHandler(QtMsgType type, const QMessageLogContext &context, con
         logLevel = "[Fatal]";
         break;
     }
-
     QString finalMsg = QString("%1 %2 (%3:%4, %5): %6")
                            .arg(QDateTime::currentDateTime().toString("hh:mm:ss"))
                            .arg(logLevel)

@@ -71,18 +71,18 @@ QJsonObject Radio::toJson() const {
 
     QJsonObject Transmitter;
     Transmitter["type"] = "Section";
-    Transmitter["minFrequency"] = toParm(minFrequency,"Mhz");
-    Transmitter["maxFrequency"] = toParm(maxFrequency,"Mhz");
-    Transmitter["power"] = toParm(power,"");
+    Transmitter["minFrequency"] = toParm(minFrequency,"Mhz", 0,    30000);
+    Transmitter["maxFrequency"] = toParm(maxFrequency,"Mhz", 0,    30000);
+    Transmitter["Range"] = toParm(Range,"");
     Transmitter["powerDegradation"] = toParm(powerDegradation,"");
     obj["Transmitter"] = Transmitter;
 
     QJsonObject Envolope;
     Envolope["type"] = "Section";
-    Envolope["minAzimuth"] = toParm(minAzimuth,"deg");
-    Envolope["maxAzimuth"] = toParm(maxAzimuth,"deg");
-    Envolope["minElevation"] = toParm(minElevation,"deg");
-    Envolope["maxElevation"] = toParm(maxElevation,"deg");
+    Envolope["minAzimuth"] = toParm(minAzimuth,"deg", -180, 0);
+    Envolope["maxAzimuth"] = toParm(maxAzimuth,"deg", 0, 180);
+    Envolope["minElevation"] = toParm(minElevation,"deg", -90, 0);
+    Envolope["maxElevation"] = toParm(maxElevation,"deg", 0, 90);
     obj["Envolope"] = Envolope;
 
     QJsonObject Modulation;
@@ -95,7 +95,7 @@ QJsonObject Radio::toJson() const {
 
     QJsonObject Pulse;
     Pulse["type"] = "Section";
-    Pulse["pulseWidth"] = toParm(pulseWidth,"Mhz");
+    Pulse["pulseWidth"] = toParm(pulseWidth,"Mhz",0,500);
     obj["Pulse"] = Pulse;
 
     QJsonObject Antenna;
@@ -131,8 +131,8 @@ void Radio::fromJson(const QJsonObject& obj) {
             minFrequency = valueFromParm(Transmitter["minFrequency"].toObject());
         if (Transmitter.contains("maxFrequency"))
             maxFrequency = valueFromParm(Transmitter["maxFrequency"].toObject());
-        if (Transmitter.contains("power"))
-            power = valueFromParm(Transmitter["power"].toObject());
+        if (Transmitter.contains("Range"))
+            Range = valueFromParm(Transmitter["Range"].toObject());
         if (Transmitter.contains("powerDegradation"))
             powerDegradation = valueFromParm(Transmitter["powerDegradation"].toObject());
     }
@@ -223,12 +223,18 @@ void Radio::scan(){
             QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
             //float distance = localPos.length();
             float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
-
+            bool connect = false;
+            for(int f = minFrequency;f<=maxFrequency;f++){
+                if(f<=entity->maxFrequency && f>=entity->minFrequency){
+                    connect = true;
+                    break;
+                }
+            }
 
             // horizontal angle (Y axis) : x vs z
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
             //qDebug()<<localPos<<","<<yAngle;
-            if (metredis<Range) // .position() is assumed
+            if (metredis<Range&&connect) // .position() is assumed
             {
                 //qDebug()<< "detect";
                 if (detects.count(platform) == 0)
@@ -265,5 +271,31 @@ void Radio::scan(){
         }
     }
 }
+int Radio::getRadioTargetCount() const
+{
+    return targets.size();
+}
 
+bool Radio::getRadioTarget(
+    int index,
+    std::string& outName,
+    float& outRadius,
+    float& outAngle,
+    float& outRange,
+    float& outFrequency
+    ) const
+{
+    if (index < 0 || index >= targets.size())
+        return false;
+
+    const RadioTarget& t = targets[index];
+
+    outName      = t.name;
+    outRadius    = t.radius;
+    outAngle     = t.angle;
+    outRange     = t.range;
+    outFrequency = t.frequency;
+
+    return true;
+}
 

@@ -388,15 +388,17 @@ void ScriptEngineGIS::canvasAddRectangle(
     // Geo validation
     bool geoOk = isLatLonInIndia(cityLat, cityLon);
 
-    // Draw rectangle (center-based)
-    canvas->getShapesFeature()->drawRectangle(center);
-
-    // Reset previous bounds
-    lastShapeBounds = {};
-
     // Convert meters → degrees (approx, screenshot-safe)
     double halfWidthDeg  = (width  / 2.0) / 111000.0;
     double halfHeightDeg = (height / 2.0) / 111000.0;
+
+    canvas->getShapesFeature()->drawRectangle(center, halfWidthDeg, halfHeightDeg);
+
+    // Draw rectangle (center-based)
+    //canvas->getShapesFeature()->drawRectangle(center);
+
+    // Reset previous bounds
+    lastShapeBounds = {};
 
     // Update bounding box
     updateBounds(lastShapeBounds, cityLat + halfHeightDeg, cityLon + halfWidthDeg);
@@ -444,14 +446,12 @@ void ScriptEngineGIS::canvasAddCircle(const std::string &name, float radius)
 
     bool geoOk = isLatLonInIndia(cityLat, cityLon);
 
-    canvas->getShapesFeature()->drawCircle(center);
+    double radiusDeg = radius / 111000.0;
+    canvas->getShapesFeature()->drawCircle(center, radiusDeg);
 
     // Reset previous bounds
     // lastShapeBounds = {};
     lastShapeBounds = QRectF();
-
-    // Convert meters → degrees (approx, safe for screenshots)
-    double radiusDeg = radius / 111000.0;
 
     updateBounds(lastShapeBounds, cityLat + radiusDeg, cityLon + radiusDeg);
     updateBounds(lastShapeBounds, cityLat - radiusDeg, cityLon - radiusDeg);

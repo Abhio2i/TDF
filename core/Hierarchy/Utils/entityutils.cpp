@@ -5,11 +5,15 @@
 
 
 
-QJsonObject toParm(float value,QString unit){
+QJsonObject toParm(float value,QString unit,float min ,float max , QString description ){
     QJsonObject parm;
     parm["type"] = "unitParam";
     parm["value"] = value;
     parm["unit"] = unit;
+    parm["min"] = min;
+    parm["max"] = max;
+    parm["description"] = description;
+
     return parm;
 }
 

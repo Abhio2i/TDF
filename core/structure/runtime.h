@@ -17,6 +17,8 @@
 #include <core/SharedMemory/sharedmemorywrapper.h>  //Shared Memory By Himanshu
 #include <core/Simulation/simulation_state.h>// Recorder By Himanshu
 
+#include <core/SQLite/sqlite.h>// For SQLite By Himanshu
+
 class Runtime : public QObject  // QObject se inherit kiya
 {
     Q_OBJECT  // Meta-object system ke liye zaroori hai
@@ -39,6 +41,8 @@ public:
     Recording *recording;       // Using external Recorder Recording
     Replay    *replay;
     SharedMemoryWrapper* sharedWrapper; //Shared Memory By Himanshu
+
+    SQLite *sqlite; //SQLite Memory By Himanshu
 
 signals:
 

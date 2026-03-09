@@ -9,6 +9,7 @@
 #include "core/Hierarchy/EntityProfiles/formation.h"
 #include "core/Hierarchy/EntityProfiles/specialzone.h"
 
+class Weapon;
 class Hierarchy : public QObject
 {
     Q_OBJECT
@@ -34,6 +35,7 @@ public:
     std::unordered_map<std::string, Formation*> *Formations;
     std::unordered_map<std::string, Specialzone*> *Specialzones;
     std::unordered_map<std::string, IFF*> *Iffs;
+    std::unordered_map<std::string, Weapon*> *Weapons;
 
     std::unordered_map<std::string, Component*> *Components;
     std::unordered_map<std::string, Mesh*> *Meshes;
@@ -54,6 +56,7 @@ public:
 
     Entity* addEntity(QString parentId, QString EntityName, bool Profile);
     void addEntityViaNetwork(QString parentId,QString ID,QString EntityName,bool Profile);
+    void addEntityViaLogger(QString parentId,QString ID,QString EntityName,bool Profile);
     Entity* addEntityFromJson(QString parentId, QJsonObject obj, bool Profile);
     void removeEntity(QString parentId, QString ID, bool Profile);
     Entity* getEntityById(QString ID);
@@ -72,6 +75,7 @@ public:
     void attchedIff(QString Id, QString name);
     void attachSensors(QString ID, QString name, QString sensorType);
     void attachRadios(QString ID, QString name);
+    void attachWeapons(QString ID, QString name);
 
 
     QJsonObject getComponentData(QString ID, QString componentName);
@@ -120,6 +124,10 @@ public:
         FolderPaths.clear();
     }
 
+
+    void renameSubComponent(QString ID, QString subComponentID, QString newName);
+
+
 signals:
     void Init();
     void profileAddedPointer(ProfileCategaory* profile);
@@ -156,6 +164,10 @@ signals:
     void getJsonData(const QJsonObject& obj);
 
     void status(QString value);
+
+
+    void subComponentRenamed(QString componentId, QString subCompId, QString newName);
+
 };
 
 #endif // HIERARCHY_H

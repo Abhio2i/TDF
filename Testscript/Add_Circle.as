@@ -4,7 +4,7 @@ void main(ScriptEngine@ e)
     e.useCity("Bhopal");
 
     // Add circle on canvas
-    e.canvasAddCircle("Circle", 10.0);
+    e.canvasAddCircle("Circle", 10000.0);
 
     // Generate PDF report
     e.generatePDFReport("GIS_Report_circle.pdf");

@@ -9,7 +9,9 @@ ScenarioConfig::ScenarioConfig(QObject *parent)
     savedGUIFPS(60),
     savedSimulationFPS(60),
     savedPhysicsFPS(60),
-    savedImageSize("100px")
+    savedImageSize("100px"),
+    savedDatabaseEnabled(false),
+    savedDatabasePath(QString())
 {
 
     // Use organization and application name
@@ -23,6 +25,7 @@ ScenarioConfig::ScenarioConfig(QObject *parent)
 
     // Load saved settings
     loadAppSettings();
+     loadDatabaseSettings();
 }
 
 ScenarioConfig::~ScenarioConfig()
@@ -47,7 +50,7 @@ void ScenarioConfig::saveAppSettings(int fps, const QString &imageSize)
     // Force save to disk
     settings->sync();
 
-    qDebug() << "💾 Application settings saved - FPS:" << fps << "Image Size:" << imageSize;
+
 }
 
 
@@ -227,4 +230,30 @@ QSet<QString> ScenarioConfig::loadTooltipFields() const
 
     qDebug() << "📖 Tooltip fields loaded:" << fieldList;
     return fields;
+}
+void ScenarioConfig::saveDatabaseSettings(bool enabled, const QString& path)
+{
+    settings->setValue("databaseSettings/enabled", enabled);
+    settings->setValue("databaseSettings/path",    path);
+    savedDatabaseEnabled = enabled;
+    savedDatabasePath    = path;
+    settings->sync();
+
+}
+
+void ScenarioConfig::loadDatabaseSettings()
+{
+    savedDatabaseEnabled = settings->value("databaseSettings/enabled", false).toBool();
+    savedDatabasePath    = settings->value("databaseSettings/path",    QString()).toString();
+
+}
+
+bool ScenarioConfig::getSavedDatabaseEnabled() const
+{
+    return savedDatabaseEnabled;
+}
+
+QString ScenarioConfig::getSavedDatabasePath() const
+{
+    return savedDatabasePath;
 }

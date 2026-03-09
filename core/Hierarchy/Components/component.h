@@ -18,6 +18,7 @@ enum class ComponentType {
     SensorProfile,
     IFFProfile,
     RadioProfile,
+    WeaponProfile
 
     // aur bhi component types
 };
@@ -38,9 +39,10 @@ public:
     virtual void removeSubComponent(std::string ID) = 0;
     virtual QJsonObject getsubComponentData(std::string ID) const = 0;
     virtual void updateSubComponent(std::string ID, const QJsonObject& obj) = 0;
-
+    virtual void renameSubComponent(std::string ID, QString newName) {}
     virtual QJsonObject toJson() const = 0;
     virtual void fromJson(const QJsonObject& obj) = 0;
+
 };
 
 #endif // COMPONENT_H

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <core/Debug/console.h>
 #include "core/Debug/profiler.h"
+#include "core/Hierarchy/Utils/entityutils.h"
 #include <QJsonObject>
 #include <QtMath>
 #include <GUI/mainwindow.h>
@@ -135,9 +136,6 @@ void Simulation::frame() {
     frameData["entities"] = entitiesArray;
     frameData["timestamp"] = QDateTime::currentMSecsSinceEpoch();
 
-    if (recorder) {
-        recorder->recordFrame(frameData);
-    }
 
     QTimer::singleShot(0, this, [=]() {
         emit Update();
@@ -257,8 +255,8 @@ void Simulation::fromJson() {
 // Start Replay
 void Simulation::replay() {
     if (recorder) {
-        const QVector<QJsonObject>& frames = recorder->getRecordedFrames();
-        replay(frames);
+        //const QVector<QJsonObject>& frames = recorder->getRecordedFrames();
+        //replay(frames);
     } else {
         Console::error("No recorder set. Cannot replay.");
     }
@@ -325,6 +323,7 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
         component.rigidbody = platform->rigidbody;
         component.collider = platform->collider;
         component.dynamicModel = platform->dynamicModel;
+        component.aircraft = new Aircraft();
         physicsComponent[platform->ID] = component;
 
         if (platform->transform && platform->rigidbody) {
@@ -513,6 +512,54 @@ void Simulation::enqueueTransformUpdate(const TransformUpdate& msg)//by Aman
       - Clients only receive updates (no physics)
 */
 
+void Simulation::updateDynamics(float dt,PhysicsComponent *comp){
+    if(comp->dynamicModel->trajectory->Trajectories.size()<2) return;
+    comp->aircraft->MaxAcceleration = comp->dynamicModel->Acceleration;
+    comp->aircraft->MaxDecceleration = comp->dynamicModel->Decceleration;
+    comp->aircraft->CeilingHeight = comp->dynamicModel->maxAltitude / 3.281f;
+    comp->aircraft->TargetSpeed = comp->dynamicModel->moveSpeed  /3.6f;
+    comp->aircraft->turnRate = comp->dynamicModel->turnRate;
+    comp->aircraft->ClimbRate = comp->dynamicModel->climbRate/196.9f;
+    comp->aircraft->DiveRate = comp->dynamicModel->diveRate/196.9f;
+    // comp->aircraft->MaxPitch = comp->dynamicModel->maxPitch;
+    comp->aircraft->PitchRate = comp->dynamicModel->turnRate;
+
+    QVector3D position = comp->transform->translation();
+    comp->aircraft->Position = Aircraft::vec3(position.x()* 1000.f,
+                                              position.y()* 1000.f,
+                                              position.z()* 1000.f);
+
+    QVector3D eularAngle = comp->transform->toEulerAngles();
+    comp->aircraft->EularAngles = Aircraft::vec3(eularAngle.x(),eularAngle.y(),eularAngle.z());
+    comp->aircraft->LocalEularAngles = Aircraft::vec3(eularAngle.x(),eularAngle.y(),eularAngle.z());
+
+    comp->aircraft->Forward.x = comp->transform->forward().x();
+    comp->aircraft->Forward.y = comp->transform->forward().y();
+    comp->aircraft->Forward.z = comp->transform->forward().z();
+
+    Vector target = *comp->dynamicModel->trajectory->getTargetWaypoint()->position;
+    //float tgtSpd = comp.dynamicModel->trajectory->getTargetWaypoint()->speed;
+    FlatXYZ targt = geoToFlatXYZ(target.x,target.z,target.y);
+    comp->aircraft->TargetPosition.x = targt.x * 1000.f;
+    comp->aircraft->TargetPosition.y = targt.y / 3.281f;
+    comp->aircraft->TargetPosition.z = targt.z * 1000.f;
+
+    comp->aircraft->FixedUpdate(dt);
+
+    Aircraft::vec3 pos = comp->aircraft->Position;
+    comp->transform->setTranslation(QVector3D(pos.x/1000.f,
+                                              pos.y/1000.f,
+                                              pos.z/1000.f));
+
+    Aircraft::vec3 rot = comp->aircraft->LocalEularAngles;
+    // Aircraft::vec3 rot = comp->aircraft->EularAngles;
+    rot.y = comp->aircraft->EularAngles.y;
+    comp->transform->matrix->setRotation(QQuaternion::fromEulerAngles(QVector3D(rot.x,rot.y,rot.z)));
+    comp->dynamicModel->currentSpeed = comp->aircraft->speed * 3.6f;
+    comp->dynamicModel->currentAltitude = comp->aircraft->Altitude/1000.0f;
+
+}
+
 void Simulation::calculateDynamic(float dt){
     for (auto& [id, comp] : physicsComponent) {
         if(!comp.base->Active) continue;
@@ -564,6 +611,7 @@ void Simulation::calculatePhysics() {
             QElapsedTimer timer;
             timer.start();  // Start measuring
             comp.dynamicModel->Update(dt);
+            updateDynamics(dt,&comp);
             qint64 elapsedMs = timer.elapsed();
             dynamicTime +=elapsedMs;
         }

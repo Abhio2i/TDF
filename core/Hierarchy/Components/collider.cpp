@@ -86,11 +86,11 @@ QJsonObject Collider::toJson() const {
 
     QJsonObject dimensionObj;
     dimensionObj["type"] = "Section";
-    dimensionObj["CollideRadius"] = toParm(CollideRadius,"m");
-    dimensionObj["WarningRadius"] = toParm(WarningRadius,"m");
-    dimensionObj["width"] = toParm(Width,"m");
-    dimensionObj["length"] = toParm(Length,"m");
-    dimensionObj["height"] = toParm(Height,"m");
+    dimensionObj["CollideRadius"] = toParm(CollideRadius,"m", 0, 10000);
+    dimensionObj["WarningRadius"] = toParm(WarningRadius,"m", 0, 10000);
+    dimensionObj["width"] = toParm(Width,"m", 0, 500);
+    dimensionObj["length"] = toParm(Length,"m", 0, 500);
+    dimensionObj["height"] = toParm(Height,"m", 0, 500);
     obj["dimension"] = dimensionObj;
 
 

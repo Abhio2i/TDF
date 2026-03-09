@@ -1,0 +1,483 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Database Scripting Guide &mdash; TDF Help</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=60dbed4a"></script>
+      <script src="../../_static/doctools.js?v=888ff710"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="GIS Canvas Scripting Guide" href="GIS_canvas_scripting_guide.html" />
+    <link rel="prev" title="Behaviour Script" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            TDF Help Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Scripting Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../Introduction%20to%20script.html">Adding and Running Scripts in Scenario Editor</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Behaviour Script</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Database Scripting Guide</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#getting-the-platform-profile">Getting the Platform Profile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-a-folder-in-platform-hierarchy">Creating a Folder in Platform Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#setting-dynamic-model-parameters">Setting Dynamic Model Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#adding-custom-parameters">Adding Custom Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#assigning-image-to-an-entity">Assigning Image to an Entity</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#result">Result</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="GIS_canvas_scripting_guide.html">GIS Canvas Scripting Guide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Radar%2C%20CSM%2C%20ESM%2C%20Radio%20%26%20IFF%20Simulation%20System.html">Radar, CSM, ESM, Radio &amp; IFF Simulation System</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mission_editor_guide/index.html">Mission Editor User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developer_guide/index.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation_guide/index.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release_notes/index.html">Release Notes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">TDF Help Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Scripting Guide</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Behaviour Script</a></li>
+      <li class="breadcrumb-item active">Database Scripting Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/scripting_guide/Behavior script language/database_scripting_guide.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="database-scripting-guide">
+<h1>Database Scripting Guide<a class="headerlink" href="#database-scripting-guide" title="Link to this heading"></a></h1>
+<p>This section explains how to use <strong>database scripting</strong> to create platform
+hierarchies and automatically add entities with properties.</p>
+<p>Using database scripts, users can quickly generate large platform structures
+such as <strong>Air, Ground and Sea platforms</strong> without manually creating them
+through the user interface.</p>
+<p>Every database script must define a <code class="docutils literal notranslate"><span class="pre">main</span></code> function.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">ScriptEngine</span><span class="err">@</span><span class="w"> </span><span class="n">e</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="c1">// Script logic here</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<section id="getting-the-platform-profile">
+<h2>Getting the Platform Profile<a class="headerlink" href="#getting-the-platform-profile" title="Link to this heading"></a></h2>
+<p>Before creating any platform entities, the <strong>Platform profile category</strong>
+must be retrieved.</p>
+<p><strong>Syntax</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">ProfileCategaory</span><span class="err">@</span><span class="w"> </span><span class="n">profile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">getProfileByName</span><span class="p">(</span><span class="s">&quot;Platform&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><strong>Explanation</strong></p>
+<ul class="simple">
+<li><p>Retrieves the <strong>Platform category</strong> from the database.</p></li>
+<li><p>All platform hierarchies are created under this profile.</p></li>
+</ul>
+</section>
+<section id="creating-a-folder-in-platform-hierarchy">
+<h2>Creating a Folder in Platform Hierarchy<a class="headerlink" href="#creating-a-folder-in-platform-hierarchy" title="Link to this heading"></a></h2>
+<p>Folders are used to organize entities inside the platform hierarchy
+such as <strong>Ground, Air, and Sea</strong>.</p>
+<p><strong>Syntax</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">ProfileCategaory</span><span class="err">@</span><span class="w"> </span><span class="n">platformProfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">getProfileByName</span><span class="p">(</span><span class="s">&quot;Platform&quot;</span><span class="p">);</span>
+
+<span class="n">Folder</span><span class="err">@</span><span class="w"> </span><span class="n">folder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">addFolder</span><span class="p">(</span><span class="n">platformProfile</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;FolderName&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><strong>Explanation</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">platformProfile.id</span></code> – ID of the Platform profile where the folder will be created</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">FolderName</span></code> – Name of the folder (e.g., Ground, Air, Sea)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">true</span></code> – Creates the folder if it does not already exist</p></li>
+</ul>
+<p><strong>Example</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">ScriptEngine</span><span class="err">@</span><span class="w"> </span><span class="n">e</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">ProfileCategaory</span><span class="err">@</span><span class="w"> </span><span class="n">platformProfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">getProfileByName</span><span class="p">(</span><span class="s">&quot;Platform&quot;</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">Folder</span><span class="err">@</span><span class="w"> </span><span class="n">seaFolder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">addFolder</span><span class="p">(</span><span class="n">platformProfile</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Sea&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="setting-dynamic-model-parameters">
+<h2>Setting Dynamic Model Parameters<a class="headerlink" href="#setting-dynamic-model-parameters" title="Link to this heading"></a></h2>
+<p>Dynamic model parameters control how a platform moves in the simulation
+such as speed, altitude, and turning behaviour.</p>
+<p><strong>Syntax</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">entity</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">parameter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">;</span>
+</pre></div>
+</div>
+<p><strong>Explanation</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">entity</span></code> – Platform object created using <code class="docutils literal notranslate"><span class="pre">addEntity</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dynamicModel</span></code> – Contains movement related properties of the platform</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">parameter</span></code> – The specific property to modify (e.g., moveSpeed, maxSpeed)</p></li>
+</ul>
+<p><strong>Example</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">ScriptEngine</span><span class="err">@</span><span class="w"> </span><span class="n">e</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">ProfileCategaory</span><span class="err">@</span><span class="w"> </span><span class="n">platformProfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">getProfileByName</span><span class="p">(</span><span class="s">&quot;Platform&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">Folder</span><span class="err">@</span><span class="w"> </span><span class="n">airFolder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">addFolder</span><span class="p">(</span><span class="n">platformProfile</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Air&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">Platform</span><span class="err">@</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">addEntity</span><span class="p">(</span><span class="n">airFolder</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Example Aircraft&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="w"> </span><span class="o">!</span><span class="n">is</span><span class="w"> </span><span class="n">null</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">moveSpeed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">800</span><span class="p">;</span>
+<span class="w">        </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">maxSpeed</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">900</span><span class="p">;</span>
+<span class="w">        </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">minSpeed</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">300</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="adding-custom-parameters">
+<h2>Adding Custom Parameters<a class="headerlink" href="#adding-custom-parameters" title="Link to this heading"></a></h2>
+<p>Custom parameters are used to store additional platform information such
+as type, country, or physical specifications.</p>
+<p><strong>Syntax</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">entity</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Parameter Name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Value&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><strong>Explanation</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Parameter</span> <span class="pre">Name</span></code> – Name of the property to be displayed</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Value</span></code> – The value assigned to that property</p></li>
+</ul>
+<p><strong>Example</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">ScriptEngine</span><span class="err">@</span><span class="w"> </span><span class="n">e</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">ProfileCategaory</span><span class="err">@</span><span class="w"> </span><span class="n">platformProfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">getProfileByName</span><span class="p">(</span><span class="s">&quot;Platform&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">Folder</span><span class="err">@</span><span class="w"> </span><span class="n">seaFolder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">addFolder</span><span class="p">(</span><span class="n">platformProfile</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Sea&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">Platform</span><span class="err">@</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">addEntity</span><span class="p">(</span><span class="n">seaFolder</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Example Ship&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Destroyer&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Country&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;India&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="assigning-image-to-an-entity">
+<h2>Assigning Image to an Entity<a class="headerlink" href="#assigning-image-to-an-entity" title="Link to this heading"></a></h2>
+<p>An image can be assigned to represent the platform visually in the
+hierarchy and canvas.</p>
+<p><strong>Syntax</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">entity</span><span class="p">.</span><span class="n">setImage</span><span class="p">(</span><span class="s">&quot;image_path&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><strong>Explanation</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">entity</span></code> – Platform object created using <code class="docutils literal notranslate"><span class="pre">addEntity</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">image_path</span></code> – Resource path of the image file</p></li>
+</ul>
+<p><strong>Example</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">ScriptEngine</span><span class="err">@</span><span class="w"> </span><span class="n">e</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">ProfileCategaory</span><span class="err">@</span><span class="w"> </span><span class="n">platformProfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">getProfileByName</span><span class="p">(</span><span class="s">&quot;Platform&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">Folder</span><span class="err">@</span><span class="w"> </span><span class="n">groundFolder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">addFolder</span><span class="p">(</span><span class="n">platformProfile</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Ground&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">Platform</span><span class="err">@</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">addEntity</span><span class="p">(</span><span class="n">groundFolder</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Example Vehicle&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">m</span><span class="p">.</span><span class="n">setImage</span><span class="p">(</span><span class="s">&quot;:/ground/images/example.png&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<section id="air-platform-database-script">
+<h3>Air Platform Database Script<a class="headerlink" href="#air-platform-database-script" title="Link to this heading"></a></h3>
+<p>This script creates an <strong>AirCraft folder</strong> and adds aircraft entities
+with flight dynamic properties.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">ScriptEngine</span><span class="err">@</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="n">ProfileCategaory</span><span class="err">@</span><span class="w"> </span><span class="n">platformProfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">getProfileByName</span><span class="p">(</span><span class="s">&quot;Platform&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">Folder</span><span class="err">@</span><span class="w"> </span><span class="n">airFolder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">addFolder</span><span class="p">(</span><span class="n">platformProfile</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;AirCraft&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">string</span><span class="p">[]</span><span class="w"> </span><span class="n">entityList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s">&quot;Douglas DC-3&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;HAL Saras&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Boeing X-37B&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;SR-71 Blackbird&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;B-2 Spirit&quot;</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">uint</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">entityList</span><span class="p">.</span><span class="n">length</span><span class="p">();</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Platform</span><span class="err">@</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">addEntity</span><span class="p">(</span><span class="n">airFolder</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">entityList</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;Douglas DC-3&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="w"> </span><span class="o">!</span><span class="n">is</span><span class="w"> </span><span class="n">null</span><span class="p">)</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">moveSpeed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">800</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">maxSpeed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">800</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">minSpeed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">400</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">Acceleration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">3.0</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">Decceleration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.5</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">turnRate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">Roll</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">maxAltitude</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">40000</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">Altitude</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">30000</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">climbRate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2500</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">diveRate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4000</span><span class="p">;</span>
+<span class="w">            </span><span class="p">}</span>
+
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">setImage</span><span class="p">(</span><span class="s">&quot;:/air/images/air/DouglasDC3.png&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;HAL Saras&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="w"> </span><span class="o">!</span><span class="n">is</span><span class="w"> </span><span class="n">null</span><span class="p">)</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">moveSpeed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">800</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">maxSpeed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">800</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">minSpeed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">400</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">Acceleration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">3.0</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">Decceleration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.5</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">turnRate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">Roll</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">maxAltitude</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">40000</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">Altitude</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">30000</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">climbRate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2500</span><span class="p">;</span>
+<span class="w">                </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">diveRate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4000</span><span class="p">;</span>
+<span class="w">            </span><span class="p">}</span>
+
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">setImage</span><span class="p">(</span><span class="s">&quot;:/air/images/air/HALSaras.png&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="n">Print</span><span class="p">(</span><span class="s">&quot;Created Entity: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="n">name</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/air.png"><img alt="air entities" class="align-center" src="../../_images/air.png" style="width: 600px;" /></a>
+</section>
+<section id="ground-platform-database-script">
+<h3>Ground Platform Database Script<a class="headerlink" href="#ground-platform-database-script" title="Link to this heading"></a></h3>
+<p>This script creates a <strong>Ground platform folder</strong> and adds
+multiple platform entities with parameters.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">ScriptEngine</span><span class="err">@</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">     </span><span class="n">ProfileCategaory</span><span class="err">@</span><span class="w"> </span><span class="n">platformProfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">getProfileByName</span><span class="p">(</span><span class="s">&quot;Platform&quot;</span><span class="p">);</span>
+<span class="w">     </span><span class="n">Folder</span><span class="err">@</span><span class="w"> </span><span class="n">groundFolder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">addFolder</span><span class="p">(</span><span class="n">platformProfile</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Ground&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">string</span><span class="p">[]</span><span class="w"> </span><span class="n">entityList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s">&quot;Gerald R. Ford-class&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Nimitz-class&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;INS Vikrant&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Kuznetsov-class&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Shandong (Type 002)&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Queen Elizabeth-class&quot;</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">uint</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">entityList</span><span class="p">.</span><span class="n">length</span><span class="p">();</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Platform</span><span class="err">@</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">addEntity</span><span class="p">(</span><span class="n">groundFolder</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">entityList</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;Gerald R. Ford-class&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">maxSpeed</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">30</span><span class="p">;</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">moveSpeed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">30</span><span class="p">;</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">minSpeed</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Aircraft Carrier&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Country&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;USA&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Length (m)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;333&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Beam / Width (m)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;78&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Draft (m)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;12&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Payload Capacity (Numeric)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;75&quot;</span><span class="p">);</span>
+
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">setImage</span><span class="p">(</span><span class="s">&quot;:/ground/images/GeraldR.Fordclass.png&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;Nimitz-class&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">maxSpeed</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">30</span><span class="p">;</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">moveSpeed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">30</span><span class="p">;</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">minSpeed</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Aircraft Carrier&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Country&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;USA&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Length (m)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;333&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Beam / Width (m)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;41&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Draft (m)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;11.9&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Payload Capacity (Numeric)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;64&quot;</span><span class="p">);</span>
+
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">setImage</span><span class="p">(</span><span class="s">&quot;:/ground/images/Nimitzclass.png&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">    </span><span class="p">}</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/ground.png"><img alt="ground entities" class="align-center" src="../../_images/ground.png" style="width: 600px;" /></a>
+</section>
+<section id="sea-platform-database-script">
+<h3>Sea Platform Database Script<a class="headerlink" href="#sea-platform-database-script" title="Link to this heading"></a></h3>
+<p>This script creates a Sea platform folder and adds maritime entities including ships, submarines, and aircraft carriers.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">ScriptEngine</span><span class="err">@</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">     </span><span class="n">ProfileCategaory</span><span class="err">@</span><span class="w"> </span><span class="n">platformProfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">getProfileByName</span><span class="p">(</span><span class="s">&quot;Platform&quot;</span><span class="p">);</span>
+<span class="w">     </span><span class="n">Folder</span><span class="err">@</span><span class="w"> </span><span class="n">seaFolder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">addFolder</span><span class="p">(</span><span class="n">platformProfile</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Sea&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">string</span><span class="p">[]</span><span class="w"> </span><span class="n">entityList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s">&quot;Gerald R. Ford-class&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Nimitz-class&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Admiral Gorshkov (Mod Kiev)&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;INS Vikrant&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Kuznetsov-class&quot;</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">uint</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">entityList</span><span class="p">.</span><span class="n">length</span><span class="p">();</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Platform</span><span class="err">@</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">addEntity</span><span class="p">(</span><span class="n">seaFolder</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">entityList</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;Gerald R. Ford-class&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">maxSpeed</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mf">30.0</span><span class="p">;</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">moveSpeed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">30.0</span><span class="p">;</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">minSpeed</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Aircraft Carrier&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Country&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;USA&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Length (m)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;333.0&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Beam / Width (m)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;78.0&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Draft (m)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;12.0&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Payload Capacity (Numeric)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;75.0&quot;</span><span class="p">);</span>
+
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">setImage</span><span class="p">(</span><span class="s">&quot;:/sea/images/GeraldR.Fordclass.png&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;Nimitz-class&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">maxSpeed</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mf">30.0</span><span class="p">;</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">moveSpeed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">30.0</span><span class="p">;</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">dynamicModel</span><span class="p">.</span><span class="n">minSpeed</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Aircraft Carrier&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Country&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;USA&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Length (m)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;333.0&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Beam / Width (m)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;41.0&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Draft (m)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;11.9&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">addParam</span><span class="p">(</span><span class="s">&quot;Payload Capacity (Numeric)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;64.0&quot;</span><span class="p">);</span>
+
+<span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="n">setImage</span><span class="p">(</span><span class="s">&quot;:/sea/images/Nimitzclass.png&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="n">Print</span><span class="p">(</span><span class="s">&quot;Created Entity: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="n">name</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/sea.png"><img alt="sea entities" class="align-center" src="../../_images/sea.png" style="width: 600px;" /></a>
+</section>
+</section>
+<section id="result">
+<h2>Result<a class="headerlink" href="#result" title="Link to this heading"></a></h2>
+<p>After executing these scripts:</p>
+<ul class="simple">
+<li><p>Three platform folders are created:</p>
+<ul>
+<li><p><strong>AirCraft</strong></p></li>
+<li><p><strong>Ground</strong></p></li>
+<li><p><strong>Sea</strong></p></li>
+</ul>
+</li>
+<li><p>Multiple entities are automatically added to each hierarchy.</p></li>
+<li><p>Each entity contains:</p>
+<ul>
+<li><p>Dynamic model parameters</p></li>
+<li><p>Platform specifications</p></li>
+<li><p>entities icons</p></li>
+</ul>
+</li>
+</ul>
+<p>These entities will appear in the <strong>Hierarchy panel</strong> and their properties
+can be viewed in the <strong>Inspector panel</strong>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Behaviour Script" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="GIS_canvas_scripting_guide.html" class="btn btn-neutral float-right" title="GIS Canvas Scripting Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

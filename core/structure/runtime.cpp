@@ -32,6 +32,7 @@ Runtime::Runtime() {
     // // Start SharedMemory Thread
     // sharedMemoryThread->start();
 
+    sqlite = new SQLite(hierarchy, simulation);//SQLite Memory By Himanshu
 
     scenerenderer = new SceneRenderer();
     simulation = new Simulation();
@@ -43,11 +44,12 @@ Runtime::Runtime() {
     console  = Console::internalInstance();
     profiler = new Profiler();
     recorder = new Recorder(hierarchy, simulation);
-    simulation->moveToThread(simulationThread);
+    simulation->init();
+    // simulation->moveToThread(simulationThread);
 
-    QObject::connect(simulationThread, &QThread::started, simulation, &Simulation::init);
-    connect(simulationThread,&QThread::finished,simulationThread,&QThread::deleteLater);
-    simulationThread->start();
+    // QObject::connect(simulationThread, &QThread::started, simulation, &Simulation::init);
+    // connect(simulationThread,&QThread::finished,simulationThread,&QThread::deleteLater);
+    // simulationThread->start();
 
     //fix:the hirarchy updated now only touched by simualtion thread to avoid race condition
     connect(networkManager,
@@ -170,6 +172,8 @@ Runtime::Runtime() {
         }
     });
     connect(replay,&Replay::updateScene,scenerenderer,&SceneRenderer::Render);
+    connect(replay,&Replay::createEntitiesCreate,hierarchy,&Hierarchy::addEntityViaLogger);
+    connect(replay,&Replay::deleteEntities,hierarchy,&Hierarchy::removeEntity);
     /* -------------------------------------------------------
      * Recording Implementation End
      * ------------------------------------------------------*/
@@ -207,6 +211,8 @@ Runtime::~Runtime() {
         simulationThread->quit();
         simulationThread->wait();
     }
+    // SQLite by Himanshu
+    delete sqlite;
 }
 
 void Runtime::handleStart() {

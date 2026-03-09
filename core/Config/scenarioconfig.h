@@ -13,7 +13,7 @@ class ScenarioConfig : public QObject
 public:
     ScenarioConfig(QObject *parent = nullptr);
     ~ScenarioConfig();
-    static inline QString software_version = "2.0.92";
+    static inline QString software_version = "3.0.3";
     static inline QString file_Version = "";
     void toJson();
     void fromJson();
@@ -22,12 +22,7 @@ public:
     void addToRecentProjects(const QString &filePath);
     QStringList getRecentProjects() const;
     void clearRecentProjects();
-
-    // Application Settings Management
-
     void saveAppSettings(int fps, const QString &imageSize);
-
-    // New method with 5 parameters for all settings
     void saveAppSettings(int fps, int guifps, int simfps, int physicsfps, const QString &imageSize);
     void loadAppSettings();
 
@@ -43,6 +38,11 @@ public:
     QString lastOpenedProject;
     void saveTooltipFields(const QSet<QString>& fields);
     QSet<QString> loadTooltipFields() const;
+    void saveDatabaseSettings(bool enabled, const QString& path);
+    void loadDatabaseSettings();
+    bool getSavedDatabaseEnabled() const;
+    QString getSavedDatabasePath() const;
+
 
 private:
     QSettings *settings;
@@ -51,6 +51,8 @@ private:
     int savedSimulationFPS;
     int savedPhysicsFPS;
     QString savedImageSize;
+    bool savedDatabaseEnabled;
+    QString savedDatabasePath;
 };
 
 #endif // SCENARIOCONFIG_H

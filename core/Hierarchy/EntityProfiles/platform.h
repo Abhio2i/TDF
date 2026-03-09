@@ -9,6 +9,8 @@
 #include "core/Hierarchy/Components/iffprofile.h"
 #include "core/Hierarchy/Components/radioprofile.h"
 #include "core/Hierarchy/Components/sensorprofile.h"
+#include "core/Hierarchy/Components/weaponprofile.h"
+#include "core/Hierarchy/EntityProfiles/weapon.h"
 #include <core/Hierarchy/entity.h>
 #include <QObject>
 #include <QJsonObject>
@@ -46,6 +48,7 @@ public:
     CrossSection *crossSection = nullptr;
     SensorProfile *sensors = nullptr;
     RadioProfile *radios = nullptr;
+    WeaponProfile *weapons = nullptr;
     IFFProfile *iffs = nullptr;
     // Pointers to multiple Radios, Sensors, IFFs
     Sensor* getSensorByName(const std::string& name) const;
@@ -70,6 +73,9 @@ public:
     QJsonObject customParameters; // Added to store custom parameters
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
+
+    // Helper methods
+    Weapon* getWeaponByName(const std::string& name) const;
 };
 
 #endif // PLATFORM_H

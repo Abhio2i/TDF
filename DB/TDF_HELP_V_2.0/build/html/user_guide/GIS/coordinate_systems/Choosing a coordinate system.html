@@ -1,0 +1,183 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Choosing a Coordinate System &mdash; TDF Help</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=60dbed4a"></script>
+      <script src="../../../_static/doctools.js?v=888ff710"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Map Layer Icon Overview" href="../map_layer/index.html" />
+    <link rel="prev" title="Universal Transverse Mercator (UTM)" href="Utm.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            TDF Help Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../Introduction/index.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../Starting_TDF.html">Starting TDF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../Creating%20a%20database/index.html">Creating a new database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../Building%20a%20scenario/index.html">Building a Scenario</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../Running%20a%20scenario/index.html">Running a Scenario</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../Trajectories%20and%20waypoints.html">Trajectory and waypoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../formation/index.html">Formation Creation and Configuration Guide</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html">GIS</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">Coordinate system</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="Geo-detic.html">Geo-detic Coordinates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Utm.html">Universal Transverse Mercator (UTM)</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Choosing a Coordinate System</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../map_layer/index.html">Map Layer Icon Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../import_geojson/index.html">Import GeoJSON Features User Guide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../search_place/index.html">Search Place Features User Guide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../shape/index.html">Shape Drawing Features User Guide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bitmaps/index.html">Bitmap Features User Guide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../select_bitmap_image/index.html">Select Bitmap Image Features User Guide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../major_distance/index.html">Measure Distance Features User Guide</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../scripting_guide/index.html">Scripting Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mission_editor_guide/index.html">Mission Editor User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer_guide/index.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation_guide/index.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../release_notes/index.html">Release Notes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">TDF Help Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">GIS</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Coordinate system</a></li>
+      <li class="breadcrumb-item active">Choosing a Coordinate System</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/user_guide/GIS/coordinate_systems/Choosing a coordinate system.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="choosing-a-coordinate-system">
+<h1>Choosing a Coordinate System<a class="headerlink" href="#choosing-a-coordinate-system" title="Link to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>You can choose the coordinate system used for searching, plotting, and interacting with your tactical map. The system supports switching between Lat/Lon (geodetic) and UTM coordinates directly on the application screen, allowing flexible state-wise search and visualization.</p>
+<section id="setting-the-coordinate-system">
+<h3>Setting the Coordinate System<a class="headerlink" href="#setting-the-coordinate-system" title="Link to this heading"></a></h3>
+<p>You may select the default coordinate system at launch, and switch modes dynamically while working in the Scenario Editor.</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>To set the initial coordinate system, use the Configuration Manager within the application. Go to <strong>Tools &gt; Configuration Manager</strong>, then select the <strong>General</strong> category, and adjust the “Initial Coordinate System” field. Supported choices are:</dt><dd><ul>
+<li><p><strong>GEODETIC (Lat/Lon coordinates)</strong></p></li>
+<li><p><strong>UTM (Universal Transverse Mercator)</strong></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Save your preferences, restart the Scenario Manager, and the system will initialize to your selected CRS.</p></li>
+</ul>
+</section>
+<section id="switching-coordinate-systems">
+<h3>Switching Coordinate Systems<a class="headerlink" href="#switching-coordinate-systems" title="Link to this heading"></a></h3>
+<p>On the tactical display screen, the coordinate system indicator shows the current mode (Lat/Lon or UTM). You can switch between modes as needed:</p>
+<ul class="simple">
+<li><p><strong>Lat/Lon Mode:</strong>
+Use geographic coordinates (latitude and longitude in EPSG:4326/WGS84) to search and display locations state-wise. Enter coordinates or place names to center and zoom on specific areas.</p></li>
+<li><p><strong>UTM Mode:</strong>
+Enables a metric grid overlay and displays coordinates in meters according to the relevant UTM zone, automatically detected based on map center. Location searches and visualizations now use meter-based offsets instead of degrees.</p></li>
+</ul>
+</section>
+<section id="state-wise-search">
+<h3>State-wise Search<a class="headerlink" href="#state-wise-search" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt>You can search for locations by state using latitude/longitude coordinates. After entering a state or coordinate query, the system:</dt><dd><ul class="simple">
+<li><p>Fetches matching locations.</p></li>
+<li><p>Auto-centers and zooms the map to the relevant region.</p></li>
+<li><p>Highlights boundaries and overlays the appropriate grid (UTM or geodetic).</p></li>
+</ul>
+</dd>
+</dl>
+<p>Switching to UTM will immediately update the coordinate display on the tactical map and adjust your search and measurement context to the metric grid.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Utm.html" class="btn btn-neutral float-left" title="Universal Transverse Mercator (UTM)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../map_layer/index.html" class="btn btn-neutral float-right" title="Map Layer Icon Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

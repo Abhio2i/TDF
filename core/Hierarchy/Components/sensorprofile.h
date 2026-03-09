@@ -24,6 +24,9 @@ public:
     void updateSubComponent(std::string ID, const QJsonObject& obj) override;
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
+
+
+    void renameSubComponent(std::string ID, QString newName) override;
 };
 
 #endif // SENSORPROFILE_H

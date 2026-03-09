@@ -1,5 +1,666 @@
 
 
+// #include "platform.h"
+// #include "core/Hierarchy/EntityProfiles/radio.h"
+// #include "core/Hierarchy/EntityProfiles/sensor.h"
+// #include "core/Hierarchy/EntityProfiles/iff.h"
+// #include "qelapsedtimer.h"
+// #include "qjsonarray.h"
+// #include "core/Hierarchy/Utils/entityutils.h"
+// #include "core/Hierarchy/Struct/parameter.h"
+// #include "core/GlobalRegistry.h"
+// #include <core/Hierarchy/hierarchy.h>
+// #include <core/Debug/console.h>
+// #include "core/Debug/profiler.h"
+
+// Platform::Platform(Hierarchy* h) : Entity(h) {
+//     type = Constants::EntityType::Platform;
+//     std::shared_ptr<Parameter> par = std::make_shared<Parameter>();
+//     par->Name = "roll";
+//     par->type = Constants::ParameterType::FLOAT;
+//     par->value = 1.0f;
+//     parameters["roll"] = par;
+
+
+// }
+
+// Platform::~Platform(){
+//     std::vector<std::string>supportedComponents =  Platform::getSupportedComponents();
+//     for (const std::string &component : supportedComponents) {
+//         removeComponent(component);
+//     }
+// }
+
+// void Platform::update(){
+//     //qDebug()<<"update";
+//     int csmTime = 0;
+//     int esmTime = 0;
+//     int radarTime = 0;
+//     int ewTime = 0;
+//     if(!sensors)return;
+//     Waypoints* wp = trajectory->getCurrentWaypoint();
+//     for (auto const& pair :*sensors->sensors) {
+//         Sensor* s = pair.second;
+//         if(!s)continue;
+//         if(wp){
+//             s->Active = wp->sensor;
+//             s->clearTargets();
+//         }
+//         if(!s->Active)continue;
+//         if(s->subType == Sensor::SubType::CSM){
+//             //qDebug() << "[Platform::update] calling csmScan";
+//             QElapsedTimer timer;
+//             timer.start();  // Start measuring
+//             s->scan();
+//             qint64 elapsedMs = timer.elapsed();
+//             csmTime +=elapsedMs;
+
+//         }else
+//         if(s->subType == Sensor::SubType::ESM){
+//             QElapsedTimer timer;
+//             timer.start();  // Start measuring
+//             //qDebug() << "[Platform::update] calling esmScan";
+//             s->scan();
+//             qint64 elapsedMs = timer.elapsed();
+//             esmTime +=elapsedMs;
+//         }else{
+//             //qDebug() << "[Platform::update] calling scan + ewscan (Generic)";
+//             QElapsedTimer timer;
+//             timer.start();  // Start measuring
+//             s->scan();
+//             qint64 elapsedMs = timer.elapsed();
+//             radarTime +=elapsedMs;
+//         }
+//     }
+
+//     Profiler::currentFrame->CSMTime +=csmTime;
+//     Profiler::currentFrame->ESMTime +=esmTime;
+//     Profiler::currentFrame->RadarTime +=radarTime;
+//     Profiler::currentFrame->EWTime +=ewTime;
+
+//     QElapsedTimer timer;
+//     timer.start();  // Start measuring
+
+//     for (auto const& pair : *radios->radios) { // assuming you have a list of radios on this platform
+//         Radio* r = pair.second;
+//         if (r) {
+//             r->scan();
+//         }
+//     }
+
+//     qint64 elapsedMs = timer.elapsed();
+//     Profiler::currentFrame->RadioTime +=elapsedMs;
+
+//     timer.start();  // Start measuring
+//     for (auto const& pair : *iffs->iffs) {
+//         IFF* iff = pair.second;
+//         if (iff) {
+//             iff->scan();
+//         }
+//     }
+//     elapsedMs = timer.elapsed();
+//     Profiler::currentFrame->IFFTime +=elapsedMs;
+// }
+
+
+// void Platform::spawn() {
+//     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+//     emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
+//     emit parent->entityAddedPointer(QString::fromStdString(parentID),this);
+// }
+
+// void Platform::addParam(std::string key,std::string value){
+//     customParameters[QString::fromStdString(key)] = QString::fromStdString(value);
+// }
+
+// void Platform::editParam(std::string key,std::string value){
+//     customParameters[QString::fromStdString(key)] = QString::fromStdString(value);
+// }
+
+// std::string Platform::getParam(std::string key){
+//     return customParameters[QString::fromStdString(key)].toString().toStdString();
+// }
+
+// void Platform::removeParam(std::string key){
+//     customParameters.remove(QString::fromStdString(key));
+// }
+
+
+// std::vector<std::string> Platform::getSupportedComponents() {
+//     std::vector<std::string> supported;
+//     supported.push_back("transform");
+//     supported.push_back("trajectory");
+//     supported.push_back("rigidbody");
+//     supported.push_back("dynamicModel");
+//     supported.push_back("collider");
+//     supported.push_back("crossSection");
+//     supported.push_back("networkObject");
+//     supported.push_back("bitmap");
+//     supported.push_back("mission");
+//     supported.push_back("radios");
+//     supported.push_back("sensors");
+//     supported.push_back("iffs");
+//     return supported;
+// }
+
+// QJsonObject Platform::toJson() const {
+//     QJsonObject obj;
+//     obj["name"] = QString::fromStdString(Name);
+//     obj["branch"] = QString::fromStdString("Entity");
+//     obj["id"] = QString::fromStdString(ID);
+//     obj["parent_id"] = QString::fromStdString(parentID);
+//     obj["active"] = Active;
+//     QJsonObject paramMap;
+//     for (const auto& [key, param] : parameters) {
+//         if (param) {
+//             paramMap[QString::fromStdString(key)] = param->toJson();
+//         }
+//     }
+
+//     QJsonObject parObj;
+//     parObj["type"] = "parameter";
+//     parObj["value"] = paramMap;
+//     obj["parameters"] = parObj;
+
+//     if (transform) obj["transform"] = transform->toJson();
+//     if (trajectory) obj["trajectory"] = trajectory->toJson();
+//     if (crossSection) obj["crossSection"] = crossSection->toJson();
+//     if (rigidbody) obj["rigidbody"] = rigidbody->toJson();
+//     if (dynamicModel) obj["dynamicModel"] = dynamicModel->toJson();
+//     if (collider) obj["collider"] = collider->toJson();
+//     if (meshRenderer2d) obj["bitmap"] = meshRenderer2d->toJson();
+//     if (sensors) obj["sensors"] = sensors->toJson();
+//     if (iffs) obj["iffs"] = iffs->toJson();
+//     if (radios) obj["radios"] = radios->toJson();
+//     // QJsonArray radioArray;
+//     // for (Radio* r : radioList) {
+//     //     if (r) radioArray.append(r->toJson());
+//     // }
+//     // obj["radios"] = radioArray;
+
+//     // // QJsonArray sensorArray;
+//     // // for (Sensor* s : sensorList) {
+//     // //     if (s) sensorArray.append(s->toJson());
+//     // // }
+//     // // obj["sensors"] = sensorArray;
+
+//     // QJsonArray iffArray;
+//     // for (IFF* i : iffList) {
+//     //     if (i) iffArray.append(i->toJson());
+//     // }
+//     // obj["iffs"] = iffArray;
+
+//     QJsonObject entityObj;
+//     entityObj["type"] = "option";
+//     QJsonArray optionsArray;
+//     for (const QString& opt : entityTypeOptions())
+//         optionsArray.append(opt);
+
+//     entityObj["options"] = optionsArray;
+//     entityObj["value"] = entityTypeToString(type);
+//     obj["type"] = entityObj;
+
+//     // Include custom parameters
+//     for (auto it = customParameters.begin(); it != customParameters.end(); ++it) {
+//         obj[it.key()] = it.value();
+//     }
+
+//     return obj;
+// }
+
+
+// void Platform::fromJson(const QJsonObject& obj) {
+
+//     if (obj.contains("active"))
+//         Active = obj["active"].toBool();
+//     if (obj.contains("name"))
+//         Name = obj["name"].toString().toStdString();
+//     if (obj.contains("id"))
+//         ID = obj["id"].toString().toStdString();
+//     if (obj.contains("parent_id"))
+//         parentID = obj["parent_id"].toString().toStdString();
+
+
+
+//     if (obj.contains("type") && obj["type"].isObject()) {
+//         QJsonObject entityObj = obj["type"].toObject();
+//         if (entityObj.contains("value"))
+//             type = stringToEntityType(entityObj["value"].toString());
+//     }
+
+//     if (obj.contains("transform") && obj["transform"].isObject()) {
+//         if (!transform) addComponent("transform");
+//         transform->fromJson(obj["transform"].toObject());
+//     }else{
+//         if (!transform) addComponent("transform");
+//     }
+
+//     if (obj.contains("crossSection") && obj["crossSection"].isObject()) {
+//         if (!crossSection) addComponent("crossSection");
+//         crossSection->fromJson(obj["crossSection"].toObject());
+//     }else{
+//         if (!crossSection) addComponent("crossSection");
+//     }
+
+//     if (obj.contains("trajectory") && obj["trajectory"].isObject()) {
+//         if (!trajectory) addComponent("trajectory");
+//         trajectory->fromJson(obj["trajectory"].toObject());
+//     }else{
+//         if (!trajectory) addComponent("trajectory");
+//     }
+
+//     if (obj.contains("rigidbody") && obj["rigidbody"].isObject()) {
+//         if (!rigidbody) addComponent("rigidbody");
+//         rigidbody->fromJson(obj["rigidbody"].toObject());
+//     }else{
+//         if (!rigidbody) addComponent("rigidbody");
+//     }
+
+//     if (obj.contains("dynamicModel") && obj["dynamicModel"].isObject()) {
+//         if (!dynamicModel) addComponent("dynamicModel");
+//         dynamicModel->fromJson(obj["dynamicModel"].toObject());
+//     }else{
+//         if (!dynamicModel) addComponent("dynamicModel");
+//     }
+
+//     if (obj.contains("collider") && obj["collider"].isObject()) {
+//         if (!collider) addComponent("collider");
+//         collider->fromJson(obj["collider"].toObject());
+//     }else{
+//         if (!collider) addComponent("collider");
+//     }
+
+//     if (obj.contains("bitmap") && obj["bitmap"].isObject()) { // Fix: Correct key
+//         if (!meshRenderer2d) addComponent("bitmap");
+//         meshRenderer2d->fromJson(obj["bitmap"].toObject());
+//     }else{
+//         if (!meshRenderer2d) addComponent("bitmap");
+//     }
+
+//     // if (obj.contains("meshRenderer2d") && obj["meshRenderer2d"].isObject()) { // Fix: Correct key
+//     //     if (!meshRenderer2d) addComponent("bitmap");
+//     //     meshRenderer2d->fromJson(obj["meshRenderer2d"].toObject());
+//     // }
+
+//     if (obj.contains("sensors") && obj["sensors"].isObject()) { // Fix: Correct key
+//         if (!sensors) addComponent("sensors");
+//         sensors->fromJson(obj["sensors"].toObject());
+//     }else{
+//         if (!sensors) addComponent("sensors");
+//     }
+
+//     if (obj.contains("iffs") && obj["iffs"].isObject()) { // Fix: Correct key
+//         if (!iffs) addComponent("iffs");
+//         iffs->fromJson(obj["iffs"].toObject());
+//     }else{
+//         if (!iffs) addComponent("iffs");
+//     }
+
+//     if (obj.contains("radios") && obj["radios"].isObject()) { // Fix: Correct key
+//         if (!radios) addComponent("radios");
+//         radios->fromJson(obj["radios"].toObject());
+//     }else{
+//         if (!radios) addComponent("radios");
+//     }
+
+//     if (obj.contains("parameters")) {
+//         QJsonObject parObj = obj["parameters"].toObject();
+//         if (parObj.contains("value")) { // Fix: Check "value" instead of "array"
+//             QJsonObject paramMap = parObj["value"].toObject();
+//             for (const QString& key : paramMap.keys()) {
+//                 QJsonObject paramObj = paramMap[key].toObject();
+//                 std::shared_ptr<Parameter> param = std::make_shared<Parameter>();
+//                 param->fromJson(paramObj);
+//                 parameters[key.toStdString()] = param;
+//             }
+//         }
+//     }
+//     // Merge custom parameters
+//     for (auto it = obj.begin(); it != obj.end(); ++it) {
+//         if (it.key() != "name" &&
+//             it.key() != "id" &&
+//             it.key() != "parent_id" &&
+//             it.key() != "active" &&
+//             it.key() != "parameters" &&
+//             it.key() != "type" &&
+//             it.key() != "transform" &&
+//             it.key() != "trajectory" &&
+//             it.key() != "rigidbody" &&
+//             it.key() != "dynamicModel" &&
+//             it.key() != "crossSection" &&
+//             it.key() != "collider" &&
+//             it.key() != "meshRenderer2d" &&
+//             it.key() != "bitmap" &&
+//             it.key() != "radios" &&
+//             it.key() != "sensors" &&
+//             it.key() != "iffs" &&
+//             it.key() != "parent_id") {
+//             customParameters[it.key()] = it.value();
+//         }
+//     }
+
+// }
+
+
+// void Platform::addComponent(std::string name) {
+//     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+//     if (name == "transform") {
+//         if (!transform){
+//             transform = new Transform();
+//             transform->parentEntity = this;
+//             parent->Components->insert({transform->ID, transform});
+//             emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(transform->ID),"transform");
+//         }
+//     } else if (name == "crossSection") {
+//         if (!crossSection){
+//             crossSection = new CrossSection();
+//             crossSection->parentEntity = this;
+//             parent->Components->insert({crossSection->ID, crossSection});
+//             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(crossSection->ID), "crossSection");
+//         }
+//     } else if (name == "trajectory") {
+//         if (!trajectory){
+//             trajectory = new Trajectory();
+//             trajectory->parentEntity = this;
+//             parent->Components->insert({trajectory->ID, trajectory});
+//             emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(trajectory->ID),"trajectory");
+//         }
+//     } else if (name == "rigidbody") {
+//         if (!rigidbody) {
+//             if (!transform)
+//                 addComponent("transform");
+//             rigidbody = new Rigidbody();
+//             rigidbody->parentEntity = this;
+//             parent->Components->insert({rigidbody->ID, rigidbody});
+//             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(rigidbody->ID), "rigidbody");
+//         }
+
+//     } else if (name == "sensors") {
+//         if (!sensors) {
+//             if (!transform)
+//                 addComponent("transform");
+//             sensors = new SensorProfile(parent);
+//             sensors->parentEntity = this;
+//             sensors->parentID = ID;
+//             parent->Components->insert({sensors->ID, sensors});
+//             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(sensors->ID), "sensors");
+//         }
+
+//     }else if (name == "iffs") {
+//         if (!iffs) {
+//             if (!transform)
+//                 addComponent("transform");
+//             iffs = new IFFProfile(parent);
+//             iffs->parentEntity = this;
+//             iffs->parentID = ID;
+//             parent->Components->insert({iffs->ID, iffs});
+//             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(iffs->ID), "iffs");
+//         }
+
+//     }else if (name == "radios") {
+//         if (!radios) {
+//             if (!transform)
+//                 addComponent("transform");
+//             radios = new RadioProfile(parent);
+//             radios->parentEntity = this;
+//             radios->parentID = ID;
+//             parent->Components->insert({radios->ID, radios});
+//             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(radios->ID), "radios");
+//         }
+
+//     }else if (name == "WeaponProfile") {
+//         if (!weapons) {
+//             weapons = new WeaponProfile(root);
+//             weapons->ID = ID;
+//             weapons->parentID = parentID;
+//             weapons->parentEntity = this;
+//         }
+//     } else if (name == "dynamicModel") {
+//         if (!dynamicModel) {
+//             if (!transform)
+//                 addComponent("transform");
+//             if (!rigidbody)
+//                 addComponent("rigidbody");
+//             if (!collider)
+//                 addComponent("collider");
+//             if (!trajectory)
+//                 addComponent("trajectory");
+//             dynamicModel = new DynamicModel();
+//             dynamicModel->parentEntity = this;
+//             dynamicModel->transform = transform;
+//             dynamicModel->rigidbody = rigidbody;
+//             dynamicModel->trajectory = trajectory;
+//             dynamicModel->init();
+//             parent->Components->insert({dynamicModel->ID, dynamicModel});
+//             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(dynamicModel->ID), "dynamicModel");
+//             emit parent->entityPhysicsAdded(QString::fromStdString(parentID), this);
+//         }
+
+//     } else if (name == "collider") {
+//         if (!collider) {
+//             if (!transform)
+//                 addComponent("transform");
+//             collider = new Collider(parent);
+//             collider->parentEntity = this;
+//             collider->parentID = ID;
+//             parent->Components->insert({collider->ID, collider});
+//             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(collider->ID), "collider");
+//         }
+
+//     } else if (name == "bitmap") {
+//         if (!meshRenderer2d) {
+//             if (!transform)
+//                 addComponent("transform");
+//             if (!collider)
+//                 addComponent("collider");
+//             meshRenderer2d = new MeshRenderer2D();
+//             meshRenderer2d->parentEntity = this;
+//             parent->Components->insert({meshRenderer2d->ID, meshRenderer2d});
+//             emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(meshRenderer2d->ID),"bitmap");
+//             emit parent->entityMeshAdded(QString::fromStdString(parentID), this);
+//         }
+
+//     }/*else if (name == "radios") {
+//         emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString("transform->ID"), "radios");
+//     }else if (name == "sensors") {
+//         emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString("transform->ID"), "sensors");
+//     }else if (name == "iff") {
+//         emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString("transform->ID"), "iff");
+//     }*/
+// }
+
+// void Platform::removeComponent(std::string name) {
+//     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+//     if (name == "transform") {
+//         if (!transform) return;
+//         parent->Components->erase(transform->ID);
+//         delete transform;
+//         transform = nullptr;
+//         emit parent->componentRemoved(QString::fromStdString(ID), "transform");
+//         emit parent->entityMeshRemoved(QString::fromStdString(parentID));
+//         emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+//     } else if (name == "crossSection") {
+//         if (!crossSection) return;
+//         parent->Components->erase(crossSection->ID);
+//         delete crossSection;
+//         crossSection = nullptr;
+//         emit parent->componentRemoved(QString::fromStdString(ID), "crossSection");
+//     } else if (name == "trajectory") {
+//         if (!trajectory) return;
+//         parent->Components->erase(trajectory->ID);
+//         delete trajectory;
+//         trajectory = nullptr;
+//         emit parent->componentRemoved(QString::fromStdString(ID), "trajectory");
+//     } else if (name == "sensors") {
+//         if (!sensors) return;
+//         parent->Components->erase(sensors->ID);
+//         delete sensors;
+//         sensors = nullptr;
+//         emit parent->componentRemoved(QString::fromStdString(ID), "sensors");
+//     } else if (name == "iffs") {
+//         if (!iffs) return;
+//         parent->Components->erase(iffs->ID);
+//         delete iffs;
+//         iffs = nullptr;
+//         emit parent->componentRemoved(QString::fromStdString(ID), "iffs");
+//     } else if (name == "radios") {
+//         if (!radios) return;
+//         parent->Components->erase(radios->ID);
+//         delete radios;
+//         radios = nullptr;
+//         emit parent->componentRemoved(QString::fromStdString(ID), "radios");
+//     } else if (name == "rigidbody") {
+//         if (!rigidbody) return;
+//         parent->Components->erase(rigidbody->ID);
+//         delete rigidbody;
+//         rigidbody = nullptr;
+//         emit parent->componentRemoved(QString::fromStdString(ID), "rigidbody");
+//         emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+//     } else if (name == "dynamicModel") {
+//         if (!dynamicModel) return;
+//         parent->Components->erase(dynamicModel->ID);
+//         delete dynamicModel;
+//         dynamicModel = nullptr;
+//         emit parent->componentRemoved(QString::fromStdString(ID), "dynamicModel");
+//         emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+//     } else if (name == "collider") {
+//         if (!collider) return;
+//         parent->Components->erase(collider->ID);
+//         delete collider;
+//         collider = nullptr;
+//         emit parent->componentRemoved(QString::fromStdString(ID), "collider");
+//         emit parent->entityMeshRemoved(QString::fromStdString(parentID));
+//         emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+//     } else if (name == "bitmap") {
+//         if (!meshRenderer2d) return;
+//         parent->Components->erase(meshRenderer2d->ID);
+//         delete meshRenderer2d;
+//         meshRenderer2d = nullptr;
+//         emit parent->componentRemoved(QString::fromStdString(ID), "bitmap");
+//         emit parent->entityMeshRemoved(QString::fromStdString(parentID));
+//     }
+// }
+
+// QJsonObject Platform::getComponent(std::string name) {
+//     if (name == "transform") {
+//         if (!transform) { Console::error(name + ": not exist"); return QJsonObject(); }
+//         return transform->toJson();
+//     } else if (name == "crossSection") {
+//         if (!crossSection) { Console::error(name + ": not exist"); return QJsonObject(); }
+//         return crossSection->toJson();
+//     } else if (name == "trajectory") {
+//         if (!trajectory) { Console::error(name + ": not exist"); return QJsonObject(); }
+//         return trajectory->toJson();
+//     } else if (name == "rigidbody") {
+//         if (!rigidbody) { Console::error(name + ": not exist"); return QJsonObject(); }
+//         return rigidbody->toJson();
+//     } else if (name == "dynamicModel") {
+//         if (!dynamicModel) { Console::error(name + ": not exist"); return QJsonObject(); }
+//         return dynamicModel->toJson();
+//     } else if (name == "collider") {
+//         if (!collider) { Console::error(name + ": not exist"); return QJsonObject(); }
+//         return collider->toJson();
+//     } else if (name == "bitmap") {
+//         if (!meshRenderer2d) { Console::error(name + ": not exist"); return QJsonObject(); }
+//         return meshRenderer2d->toJson();
+//     } else if (name == "sensors") {
+//         if (!sensors) { Console::error(name + ": not exist"); return QJsonObject(); }
+//         return sensors->toJson();
+//     }else if (name == "iffs") {
+//         if (!iffs) { Console::error(name + ": not exist"); return QJsonObject(); }
+//         return iffs->toJson();
+//     }else if (name == "radios") {
+//         if (!radios) { Console::error(name + ": not exist"); return QJsonObject(); }
+//         return radios->toJson();
+//     }
+
+//     return QJsonObject();
+// }
+
+// void Platform::updateComponent(QString name, const QJsonObject& obj) {
+//     if (name == "transform") {
+//         if (!transform) { Console::error(name.toStdString() + ": not exist"); return; }
+//         transform->fromJson(obj);
+//     } else if (name == "crossSection") {
+//         if (!crossSection) { Console::error(name.toStdString() + ": not exist"); return; }
+//         crossSection->fromJson(obj);
+//     } else if (name == "trajectory") {
+//         if (!trajectory) { Console::error(name.toStdString() + ": not exist"); return; }
+//         trajectory->fromJson(obj);
+//     } else if (name == "rigidbody") {
+//         if (!rigidbody) { Console::error(name.toStdString() + ": not exist"); return; }
+//         rigidbody->fromJson(obj);
+//     } else if (name == "dynamicModel") {
+//         if (!dynamicModel) { Console::error(name.toStdString() + ": not exist"); return; }
+//         dynamicModel->fromJson(obj);
+//     } else if (name == "collider") {
+//         if (!collider) { Console::error(name.toStdString() + ": not exist"); return; }
+//         collider->fromJson(obj);
+//     } else if (name == "bitmap") {
+//         if (!meshRenderer2d) { Console::error(name.toStdString() + ": not exist"); return; }
+//         meshRenderer2d->fromJson(obj);
+//     } else if (name == "sensors") {
+//         if (!sensors) { Console::error(name.toStdString() + ": not exist"); return; }
+//         sensors->fromJson(obj);
+//     } else if (name == "iffs") {
+//         if (!iffs) { Console::error(name.toStdString() + ": not exist"); return; }
+//         iffs->fromJson(obj);
+//     } else if (name == "radios") {
+//         if (!radios) { Console::error(name.toStdString() + ": not exist"); return; }
+//         radios->fromJson(obj);
+//     }
+// }
+
+// Sensor* Platform::getSensorByName(const std::string& name) const
+// {
+//     if (!sensors || !sensors->sensors)
+//         return nullptr;
+
+//     for (const auto& [id, sensor] : *sensors->sensors)
+//     {
+//         if (sensor && sensor->Name == name)
+//             return sensor;
+//     }
+
+//     return nullptr;
+// }
+// Radio* Platform::getRadioByName(const std::string& name) const
+// {
+//     if (!radios || !radios->radios)
+//         return nullptr;
+
+//     // Iterate through the radios map in the RadioProfile component
+//     for (const auto& [id, radio] : *radios->radios)
+//     {
+//         if (radio && radio->Name == name)
+//             return radio;
+//     }
+
+//     return nullptr;
+// }
+// IFF* Platform::getIFFByName(const std::string& name) const
+// {
+//     if (!iffs || !iffs->iffs)
+//         return nullptr;
+
+//     // Iterate through the iffs map in the IFFProfile component
+//     for (const auto& [id, iff] : *iffs->iffs)
+//     {
+//         if (iff && iff->Name == name)
+//             return iff;
+//     }
+
+//     return nullptr;
+// }
+// Weapon* Platform::getWeaponByName(const std::string& name) const {
+//     if (!weapons) return nullptr;
+//     for (auto& [key, weapon] : *weapons->weapons) {
+//         if (weapon && weapon->Name == name) {
+//             return weapon;
+//         }
+//     }
+//     return nullptr;
+// }
 #include "platform.h"
 #include "core/Hierarchy/EntityProfiles/radio.h"
 #include "core/Hierarchy/EntityProfiles/sensor.h"
@@ -56,21 +717,21 @@ void Platform::update(){
             csmTime +=elapsedMs;
 
         }else
-        if(s->subType == Sensor::SubType::ESM){
-            QElapsedTimer timer;
-            timer.start();  // Start measuring
-            //qDebug() << "[Platform::update] calling esmScan";
-            s->scan();
-            qint64 elapsedMs = timer.elapsed();
-            esmTime +=elapsedMs;
-        }else{
-            //qDebug() << "[Platform::update] calling scan + ewscan (Generic)";
-            QElapsedTimer timer;
-            timer.start();  // Start measuring
-            s->scan();
-            qint64 elapsedMs = timer.elapsed();
-            radarTime +=elapsedMs;
-        }
+            if(s->subType == Sensor::SubType::ESM){
+                QElapsedTimer timer;
+                timer.start();  // Start measuring
+                //qDebug() << "[Platform::update] calling esmScan";
+                s->scan();
+                qint64 elapsedMs = timer.elapsed();
+                esmTime +=elapsedMs;
+            }else{
+                //qDebug() << "[Platform::update] calling scan + ewscan (Generic)";
+                QElapsedTimer timer;
+                timer.start();  // Start measuring
+                s->scan();
+                qint64 elapsedMs = timer.elapsed();
+                radarTime +=elapsedMs;
+            }
     }
 
     Profiler::currentFrame->CSMTime +=csmTime;
@@ -100,6 +761,17 @@ void Platform::update(){
     }
     elapsedMs = timer.elapsed();
     Profiler::currentFrame->IFFTime +=elapsedMs;
+
+    timer.start();
+    if (weapons) {
+        for (auto const& pair : *weapons->weapons) {
+            Weapon* w = pair.second;
+            if (w && w->isActive) {
+                w->scan();
+            }
+        }
+    }
+    // Note: add WeaponTime to Frame struct in profiler.h to enable weapon timing
 }
 
 
@@ -140,6 +812,7 @@ std::vector<std::string> Platform::getSupportedComponents() {
     supported.push_back("radios");
     supported.push_back("sensors");
     supported.push_back("iffs");
+    supported.push_back("weapons");
     return supported;
 }
 
@@ -172,6 +845,7 @@ QJsonObject Platform::toJson() const {
     if (sensors) obj["sensors"] = sensors->toJson();
     if (iffs) obj["iffs"] = iffs->toJson();
     if (radios) obj["radios"] = radios->toJson();
+    if (weapons) obj["weapons"] = weapons->toJson();
     // QJsonArray radioArray;
     // for (Radio* r : radioList) {
     //     if (r) radioArray.append(r->toJson());
@@ -303,6 +977,13 @@ void Platform::fromJson(const QJsonObject& obj) {
         if (!radios) addComponent("radios");
     }
 
+    if (obj.contains("weapons") && obj["weapons"].isObject()) {
+        if (!weapons) addComponent("weapons");
+        weapons->fromJson(obj["weapons"].toObject());
+    }else{
+        if (!weapons) addComponent("weapons");
+    }
+
     if (obj.contains("parameters")) {
         QJsonObject parObj = obj["parameters"].toObject();
         if (parObj.contains("value")) { // Fix: Check "value" instead of "array"
@@ -334,6 +1015,7 @@ void Platform::fromJson(const QJsonObject& obj) {
             it.key() != "radios" &&
             it.key() != "sensors" &&
             it.key() != "iffs" &&
+            it.key() != "weapons" &&
             it.key() != "parent_id") {
             customParameters[it.key()] = it.value();
         }
@@ -408,6 +1090,16 @@ void Platform::addComponent(std::string name) {
             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(radios->ID), "radios");
         }
 
+    } else if (name == "weapons") {
+        if (!weapons) {
+            if (!transform)
+                addComponent("transform");
+            weapons = new WeaponProfile(parent);
+            weapons->parentEntity = this;
+            weapons->parentID = ID;
+            parent->Components->insert({weapons->ID, weapons});
+            emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(weapons->ID), "weapons");
+        }
     } else if (name == "dynamicModel") {
         if (!dynamicModel) {
             if (!transform)
@@ -502,6 +1194,12 @@ void Platform::removeComponent(std::string name) {
         delete radios;
         radios = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "radios");
+    } else if (name == "weapons") {
+        if (!weapons) return;
+        parent->Components->erase(weapons->ID);
+        delete weapons;
+        weapons = nullptr;
+        emit parent->componentRemoved(QString::fromStdString(ID), "weapons");
     } else if (name == "rigidbody") {
         if (!rigidbody) return;
         parent->Components->erase(rigidbody->ID);
@@ -565,8 +1263,10 @@ QJsonObject Platform::getComponent(std::string name) {
     }else if (name == "radios") {
         if (!radios) { Console::error(name + ": not exist"); return QJsonObject(); }
         return radios->toJson();
+    }else if (name == "weapons") {
+        if (!weapons) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return weapons->toJson();
     }
-
     return QJsonObject();
 }
 
@@ -601,6 +1301,9 @@ void Platform::updateComponent(QString name, const QJsonObject& obj) {
     } else if (name == "radios") {
         if (!radios) { Console::error(name.toStdString() + ": not exist"); return; }
         radios->fromJson(obj);
+    } else if (name == "weapons") {
+        if (!weapons) { Console::error(name.toStdString() + ": not exist"); return; }
+        weapons->fromJson(obj);
     }
 }
 
@@ -643,5 +1346,14 @@ IFF* Platform::getIFFByName(const std::string& name) const
             return iff;
     }
 
+    return nullptr;
+}
+Weapon* Platform::getWeaponByName(const std::string& name) const {
+    if (!weapons) return nullptr;
+    for (auto& [key, weapon] : *weapons->weapons) {
+        if (weapon && weapon->Name == name) {
+            return weapon;
+        }
+    }
     return nullptr;
 }

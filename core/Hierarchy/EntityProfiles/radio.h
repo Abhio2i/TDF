@@ -27,8 +27,8 @@ public:
     RadioType radioType = RadioType::Transceiver;
 
     //Radio Transmitter
-    float minFrequency = 0;
-    float maxFrequency = 0;
+    float minFrequency = 8;
+    float maxFrequency = 12;
     float power = 0;
     float powerDegradation = 0;
 
@@ -58,9 +58,6 @@ public:
     float avgSideLobLevel = 1;
 
     float Range=10.0f;
-    float frequencyMin;
-    float frequencyMax;
-    float frequencyUsed;
     float bandwidth;
 
     struct RadioTarget {
@@ -78,7 +75,17 @@ public:
     void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;
     void updateComponent(QString name, const QJsonObject& obj) override;
+    // ---- RadioTarget access for ScriptEngine ----
+    int getRadioTargetCount() const;
 
+    bool getRadioTarget(
+        int index,
+        std::string& outName,
+        float& outRadius,
+        float& outAngle,
+        float& outRange,
+        float& outFrequency
+        ) const;
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& obj) override;
     std::unordered_set<Platform*> detects;

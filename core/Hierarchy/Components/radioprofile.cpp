@@ -103,3 +103,14 @@ void RadioProfile::fromJson(const QJsonObject& obj) {
     }
     //Console::log("Collider::fromJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
 }
+void RadioProfile::renameSubComponent(std::string id, QString newName) {
+    auto it = radios->find(id);
+    if (it != radios->end() && it->second != nullptr) {
+        Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+        it->second->Name = newName.toStdString();
+        emit parent->subComponentRenamed(
+            QString::fromStdString(ID),
+            QString::fromStdString(id),
+            newName);
+    }
+}

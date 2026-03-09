@@ -83,4 +83,19 @@ void Entity::clearIFFs() {
     for (IFF* i : iffList) delete i;
     iffList.clear();
 }
+void Entity::addWeapon(Weapon* weapon) {
+    if (weapon) weaponList.push_back(weapon);
+}
 
+void Entity::removeWeapon(Weapon* weapon) {
+    auto it = std::find(weaponList.begin(), weaponList.end(), weapon);
+    if (it != weaponList.end()) {
+        delete *it;
+        weaponList.erase(it);
+    }
+}
+
+void Entity::clearWeapons() {
+    for (Weapon* w : weaponList) delete w;
+    weaponList.clear();
+}

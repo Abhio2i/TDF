@@ -1,11 +1,11 @@
 void main(ScriptEngine@ e)
 {
-    ProfileCategaory@ p = e.NewProfile("AircraftProfile");
+    ProfileCategaory@ platformProfile = e.getProfileByName("Platform");
     
     // ==================================================
     // Jet1: Agra → New Delhi (HAS RADAR - EMITS SIGNALS)
     // ==================================================
-    Platform@ jet1 = e.addEntityToPlatform(p, "Jet1");
+    Platform@ jet1 = e.addEntityToPlatform(platformProfile, "Jet1");
     jet1.dynamicModel.moveSpeed = 1500;
     jet1.transform.setGeoCord(27.1767f, 78.0081f, 0.0f); // Agra
     jet1.trajectory.addWaypoint(27.1767f, 0.0f, 78.0081f); // Start
@@ -16,7 +16,7 @@ void main(ScriptEngine@ e)
     // ==================================================
     // Jet2: Gurugram → Hathras (HAS ESM - DETECTS RADAR)
     // ==================================================
-    Platform@ jet2 = e.addEntityToPlatform(p, "Jet2");
+    Platform@ jet2 = e.addEntityToPlatform(platformProfile, "Jet2");
     jet2.dynamicModel.moveSpeed = 1500;
     jet2.transform.setGeoCord(28.4595f, 77.0266f, 0.0f); // Gurugram
     jet2.trajectory.addWaypoint(28.4595f, 0.0f, 77.0266f); // Start

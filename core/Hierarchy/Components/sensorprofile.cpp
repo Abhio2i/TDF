@@ -156,3 +156,14 @@ Sensor* SensorProfile::getSensor(const std::string& id) const
 
     return it->second;
 }
+void SensorProfile::renameSubComponent(std::string id, QString newName) {
+    auto it = sensors->find(id);
+    if (it != sensors->end() && it->second != nullptr) {
+        Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+        it->second->Name = newName.toStdString();
+        emit parent->subComponentRenamed(
+            QString::fromStdString(ID),
+            QString::fromStdString(id),
+            newName);
+    }
+}

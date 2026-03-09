@@ -169,8 +169,8 @@ QJsonObject IFF::toJson() const {
     QJsonObject defaultObj;
     defaultObj["type"] = "Section";
     defaultObj["transponder"] = transponder;
-    defaultObj["emittingRange"] = toParm(emittingRange,"km");
-    defaultObj["emittingFrequency"] = toParm(emittingFrequency,"Mhz");
+    defaultObj["emittingRange"] = toParm(emittingRange,"km",  0,  500);
+    defaultObj["emittingFrequency"] = toParm(emittingFrequency,"Mhz", 0,  3000);
     defaultObj["code"] = toParm(code,"code");
     obj["default"] = defaultObj;
 

@@ -20,6 +20,7 @@
 class Hierarchy;
 class AttachedEnitities;
 class Radio;
+class Weapon;
 class Sensor;
 class IFF;
 class Entity: public QObject
@@ -50,6 +51,12 @@ public:
     void addIFF(IFF* iff);
     void removeIFF(IFF* iff);
     void clearIFFs();
+
+    std::vector<Weapon*> weaponList;
+    void addWeapon(Weapon* weapon);
+    void removeWeapon(Weapon* weapon);
+    void clearWeapons();
+
     virtual void spawn() = 0;
     virtual std::vector<std::string> getSupportedComponents() = 0;
     virtual void addComponent(std::string name) = 0;

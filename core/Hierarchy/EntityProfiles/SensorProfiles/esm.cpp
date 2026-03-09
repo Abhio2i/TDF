@@ -77,9 +77,9 @@ QJsonObject ESM::toJson() const {
     obj["SensorType"] = "ESM";
     QJsonObject defaultObj;
     defaultObj["type"] = "Section";
-    defaultObj["range"] = toParm(range,"km");
-    defaultObj["frequency"] = toParm(frequency,"Ghz");
-    defaultObj["azimuth"] = toParm(azimuth,"deg");
+    defaultObj["range"] = toParm(range,"km",  0,   500);
+    defaultObj["frequency"] = toParm(frequency,"Ghz", 0.1, 100);
+    defaultObj["azimuth"] = toParm(azimuth,"deg", 0,   360);
     obj["default"] = defaultObj;
     return obj;
 }

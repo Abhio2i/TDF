@@ -13,6 +13,9 @@
 #include <core/Simulation/simulation_state.h>
 #include <core/Hierarchy/entity.h>
 #include <core/Hierarchy/EntityProfiles/platform.h>
+#include <cmath>
+#include "payload.h"
+
 
 // Forward declarations to avoid circular includes
 class Hierarchy;
@@ -30,85 +33,13 @@ public:
 public:
     // Constructor:Accepts hierarchy and simulation to pull state and recording speed
     //explicit Recorder(Hierarchy* hierarchy, Simulation* simulation, QObject *parent = nullptr);
-    QJsonObject getAllRecordings() const;
-    void startRecording();
-    void stopRecording();
-    void resumeRecording();
-    void pauseRecording();
-    void recordToJson(const QString &filePath);
-    void record(const QJsonObject &data);        // Store entire JSON data
-    void recordBookmark(const QString &message, qint64 timestampMs);// Store entire JSON data for Bookmark
-    void recordFrame(const QJsonObject &frame); // Store individual frame
-    // bool saveToFile();
-    bool saveToFile(const QString &filePath);
-    //void saveBookmark(const QString &message, qint64 timestampMs);
-    bool loadReplay(const QString &filePath);
-    void clear();  // Clears previously recorded dataz
-    //By Hime
-    //void showBookmarkLog(const QString &note, qint64 timestampMs);
-    void bookmarkReplay(const QString &note, qint64 timestampMs);
-    void startReplayFromTimestamp(qint64 timestampMs);
-    void toggleReplayPause();
-    void startReplay();
-    void playAgain();
-    void goToNextFrame();
-    void goToPreviousFrame();
-    //By Hime End
-    void setRate(int rate);
-    int getRate() const;
-    void stopReplay();
 
-    QVector<QJsonObject> getRecordedFrames() const;
-
-signals:
-    void replayFrame(QJsonObject frame);
-    void bookmarkAdded(const QString &note, qint64 timestampMs);
-    void replayBookmark(const QString &note, qint64 timestamp);     // fired during loadReplay
-    void bookmarkReached(const QString& note, qint64 timestamp);
-    void setReplayDuration(qint64 duration);
-    //Start Himan
-    void recordingPaused();
-    void recordingResumed();
-    void frameLoaded(const QJsonObject &frame);
-    void replayFrameLoaded(qint64 timestampMs);
-    void recordingTimeUpdated(qint64 ms);
-    //End Himan
-private slots:
-    void playNextFrame();
-    //Start Himan
-public slots:
-    void togglePause();
-    void resetReplayState();
-    //End Himan
 private:
     Hierarchy* m_hierarchy = nullptr;  // Used for extracting structure snapshot
     Simulation* m_simulation = nullptr;  // Used for getting simulation speed
 
-    QJsonObject recordedData;  // Main data JSON object
-    QJsonArray trajectoryArray;  // Stores all frames for replay
-    int sampleRate = 1;  // Sample rate for recording
-    int currentFrame = 0;  // Tracks current frame during replay
-    QTimer *replayTimer = nullptr;
-    QVector<QJsonObject> recordedFrames;
-    //By Hima
-    QJsonValue getArrayElement(const QJsonArray &array, int index);
-    //QDateTime recordingStartTime;  // Start time of the current recording
-    QTimer *recordingTimer = nullptr; // Timer to store intervals
-    QJsonArray m_recordings;
-    QJsonArray bookmarkArray;
-    QVector<QJsonObject> playbackFrames;
-    bool isRecordingPaused = false;
-    qint64 pausedTimeOffset = 0;
-    QDateTime pauseStartTime;
-
-
-    bool isReplayPaused = false;
-    QDateTime replayPauseStartTime;
-    qint64 replayPausedTimeOffset = 0;
-
-    int currentReplayIndex = 0;
-    qint64 lastElapsedMs = 0;
-
+signals:
+    void setRecorder(Recorder *s_recorder);
     /* -------------------------------------------------------
  * Shared Object Start
  * ------------------------------------------------------*/
@@ -125,7 +56,7 @@ public:
     //String for Debug
     Recording *m_recording = nullptr;
     Replay    *m_replay    = nullptr;
-    QString debugString;
+    QString    debugString;
     loggerModes modeOfLogger;
 
 public:
@@ -134,7 +65,7 @@ public:
 
 public slots:
     void loggerModeCheck(loggerModes mode);
-    void recorderStatus();
+
     //Recorder Information Start
     //Enum for Logger Status of:
     //S Stands for Status:
@@ -164,26 +95,20 @@ public:
         S_SIMULATION_NA,    //3
     };
     Q_ENUM(SimulationStatusModes)
-    QDateTime             recordingStartTime;
-    qint64                 duration;
+    QDateTime                       recordingStartTime;
+    qint64                          duration;
     Recorder::LoggerStatusModes     loggerStatus    ;
     Recorder::SimulationStatusModes simulationStatus;
     // Recorder* recorder;
     // Recorder* getRecorder() const { return recorder; }
+    QDateTime   startTime() const;
+
+
 public:
     //To Display input data
     void loggerInfo();
     void update(Recorder::LoggerStatusModes     loggerStatus);
 private:
-
-    //Use to Update Recorder Information Logger Status Modes
-
-    //void update();
-    // void update(
-    //     QDateTime       s_recordingStartTime,
-    //     qint64          s_duration,
-    //     Recorder::LoggerStatusModes     loggerStatus,
-    //     Recorder::SimulationStatusModes simulationStatus);
     //Use to Update Recorder Information only first time
     void recorderInfoUpdateOnce();
     //Use to Update Recorder Information after first
@@ -193,10 +118,7 @@ private:
 
 signals:
     //Use to Send Recorder Information only first time
-
-    // void update(QDateTime       s_recordingStartTime);
-    // void update(qint64          s_duration);
-
+    void sendRecorder();
     //For Testing
     void recorderInfoSend(
         Recorder::LoggerStatusModes     loggerStatus);
@@ -218,15 +140,28 @@ signals:
     void recorderInfoSendDuration(qint64 s_duration);
 
     //Recorder Information End
+public:
+    QString getStringTimer(qint64 time);
 
-private:
 
+    //TimeLine Widget Start
+public:
+    qint64* leftTimer  = nullptr;
+    qint64* rightTimer = nullptr;
+    void setLeftRightTimer(qint64 &left, qint64 &right);
+
+    qint64* durationPtr = nullptr;
+    void setDuartionPtr(qint64 &s_durationPtr);
+    qint64* getDuartionPtr();
+    QList<QPair<QString, qint64>>* bookmarks;
+    void setBookmarks(QList<QPair<QString, qint64>> &s_bookmarks);
+
+    //TimeLine Wideget End
 };
 
 /* -------------------------------------------------------
  * Shared Object End
  * ------------------------------------------------------*/
-
 
 
 /* -------------------------------------------------------
@@ -239,50 +174,59 @@ class Recording : public QObject
 
 public:
     explicit Recording(Hierarchy* hierarchy, Simulation* simulation,Recorder *parentRecorder, QObject *parent = nullptr);
+
 public:
-    //Recorder *m_recorder;
-    // Recorder* getRecorder() const { return m_recorder; }
     Recording *m_recording;
-    //For Recording
+    Recorder* getRecorder() const { return m_recorder; }
+
+    //For Recording States
     enum recordingModes{
         START,
         PAUSE,
         RESUME,
         STOP
     };
-
     Q_ENUM(recordingModes)
 
-    Recorder* getRecorder() const { return m_recorder; }
-
-    template<typename T>
-    T getValue(T* ptr) const
-    {
-        return *ptr;
-    }
-
-    template<typename T>
-    void setValue(T* ptr, const T &value)
-    {
-        *ptr = value;
-    }
-    void update();
-    QDateTime startTime() const;
-    qint64     duration()  const;
-
 public slots:
-    void start();
+    void start(Recorder &s_recorder);
     void resume();
     void pause();
     void stop();
     void addBookmark();
+    void update();
+
 private:
     Recorder*   m_recorder   = nullptr;
     Hierarchy*  m_hierarchy  = nullptr;  // Used for extracting structure snapshot
     Simulation* m_simulation = nullptr;  // Used for getting simulation speed
+
+public:
+
     QDateTime   m_startTime;
-    qint64      m_duration;
+    QDateTime   startTime() const;
     bool        m_active { false };
+
+    //TimeLine Widget Start
+public:
+    QTimer    *recordingTimer = nullptr;
+    QDateTime currentDateTime;
+    qint64    recordingPeriod;
+    qint64    duration;
+
+    qint64    m_duration;
+signals:
+    void updateUiDuration();
+    //TimeLine Wideget End
+
+private:
+    QDateTime recordingStartTime;
+    qint64 pausedOffsetMs = 0;   // public earlier, that's ok
+    bool   isPaused = false;
+    int    noOfFrame = 1;
+
+    QDateTime pauseStartTime;
+    //Recording Start Recording Start
 
     //Recording Start Recording Start
 public:
@@ -309,17 +253,7 @@ public:
 private:
     SimUpdateTypes::UpdateTypes     simUpdate     = SimUpdateTypes::UPDATE;
     SimTypeOfUpdates::TypeOfUpdate  simUpdateType = SimTypeOfUpdates::dynamicDynamic;
-    QJsonObject recordedStructure;
-    /*├──►*/QJsonArray   rs_hierarchy;
-    /*│---*/QJsonObject    rs_hierarchyObj;
-    /*├──►*/QJsonArray   rs_bookmark ;
-    /*│---*/QJsonObject    rs_bookmarkObj;
-    /*└─┬►*/QJsonArray   rs_frame    ;
-    /*  │---*/QJsonObject  rs_frameObj;
-    /*  └─┬►*/QJsonArray     frameEntities;
-    /*    ├───►*/ QJsonObject  entityObj;
-    /*    ├───►*/ //QJsonObject CurrentSpeed;
-    /*    └───►*/
+
     QJsonArray    getFrameEntitiesData();
 
 public:
@@ -327,6 +261,15 @@ public:
     void changeInHierarchy();
     bool changeInHierarchyInPause = false;
     qint64 lastElapsedMs = 0;
+    recordingModes mode = STOP;
+
+
+    //Recording Main Container
+    QJsonArray recordedFile;
+    //Meta Data essential for recording
+    //   Contain static components of recording
+    //QJsonObject metaData; //Add later
+
 
 public slots:
     //void getSimulationUpdate();
@@ -339,13 +282,7 @@ private:
     void saveFile();
 
 
-    //Recording Main Container
-    QJsonArray recordedFile;
-    //Meta Data essential for recording
-    //   Contain static components of recording
-    //QJsonObject metaData; //Add later
-    QDateTime   currentDateTime;
-    QJsonArray  bookmarks;
+
     //  Contain snap in data entry
     //QJsonObject timeEntry;
     QJsonObject recordedData;
@@ -357,51 +294,138 @@ private:
     //Recording Constants
     //RecordinDynamic components of recording
 public:
-    recordingModes mode = STOP;
-    //for logger
-    //QTimer *recordingTimer = nullptr;
-    //qint64 lastElapsedMs;
-    //qint64 pausedOffsetMs = 0;
-    //Remove
-    qint64 recordingPeriod;
-private:
-    QTimer *recordingTimer = nullptr;
-    QDateTime recordingStartTime;
-    qint64 pausedOffsetMs = 0;   // public earlier, that's ok
+    qint64 durationShared = 0;
+    qint64 leftTimer      = 0;
+    qint64 rightTimer     = 0;
+    QList<QPair<QString, qint64>> bookmarks = {
+        qMakePair(QString("Recording BookMark A"), 41000),
+        qMakePair(QString("Recording BookMark B"), 42000),
+        qMakePair(QString("Recording BookMark C"), 43000),
+        qMakePair(QString("Recording BookMark D"), 44000)
+    };
 
-    bool isPaused = false;
-    int noOfFrame = 1;
-    //     //QTimer *recordingTimer = nullptr; //error1
-    //     QDateTime recordingStartTime;
-    //     QDateTime recordingPauseTime;
-    //     //qint64 pausedOffsetMs = 0;   // time before pause
-    //     bool isPaused = false;
-    // //Remove
-    //     //Recordin Period is in of Off-Set of 1s = 1000ms
-    //     qint64 recordingPeriod;
-    //     int    noOfFrame  = 1;
-    //     qint64 leftTimer  = 0;
-    //     qint64 rightTimer = 0;
-    //     //qint64 elapsedMs;                //error1
-
-
-    QDateTime pauseStartTime;
-    //Recording Start Recording Start
 signals:
     void started();
     void paused();
     void stopped(qint64);
+    void insertEntity(QString ID, bool Profile);
+    void mapFrame(const qint64 &s_duration);
+    //In Between Running simulation
+private:
+    enum HierarchyOps{
+        Success = true,
+        Failed = false,
+        EntityAdded,
+        EntityRemoved,
 
+    };
+    //Q_ENUM(HierarchyOps)
+public:
+    std::unordered_set<std::string>     entityIDList;
+
+    // Index & ID Start
+    int maxIndex = 0;
+    //std::unordered_map<QString,int> entitiesIDIndex;
+    EntitiesDetailsList m_entitiesDetailsList;
+    EntitiesCreatedList m_entitiesCreatedList;
+    EntitiesUpdatedList m_entitiesUpdatedList;
+    EntitiesDeletedList m_entitiesDeletedList;
+    QHash<QString, int> entitiesIDIndex;
+    void inspectEntitiesIDIndex();
+    void inspectEntitiesUpdatedList();
+    // Index & ID End
+
+    // Frame Index Start
+    int frameIndex = 0;
+    // Frame Index End
+
+
+    // To Insert All entity from Start of Recording
+    void entityAddedAllFromStart();
+    void entityAddedInBetween(const QString &parentID, const QString &ID, const QString &entityName);
+    void entityUpdatesInBetween();
+    void entityRemovedInBetween(const QString &ID);
+    void framePayLoad();
+signals:
+    void entityCreated(const QString &parentID, const QString &id, const QString &name, const qint64 &created);
+    void entityDeleted(const QString &id,const qint64  &deleted);
+    void sendPayLoad(PayLoad m_payLoad);
+private:
+    // enum DBStatuses{
+    //     CONNECTED = true,
+    //     DISCONNECTED = false
+    // };
+    enum DBStatuses {
+        CONNECTED = true,
+        DISCONNECTED = false
+    }dbStatus = DISCONNECTED;
+
+
+    /*------------    Custom Debugger Start    ------------*/
+private:
+    /*   General purpose sting For Passing   */
+    QString str;
+
+    /*  Custom enum for Selective Debugging  */
+public:
+    typedef enum {
+        D_NULL            = 0b100000000000,
+        D_JustPrint       = 0b010000000000,
+        D_Timer           = 0b001000000000,
+        D_RecordingStatus = 0b000100000000,
+        D_RecordingUpdate = 0b000010000000,
+        D_BeforeStart     = 0b000001000000,
+        D_EntityCreated   = 0b000000100000,
+        D_EntityUpdated   = 0b000000010000,
+        D_EntityDeleted   = 0b000000001000,
+        D_FramePayLoad    = 0b000000000100,
+        D_EntitiesIDIndex = 0b000000000010,
+        D_UpdatesInBTW    = 0b000000000001
+    }debugOptions;
+    Q_ENUM(debugOptions)
+
+private:
+    /*   To Print Above String   */
+    void debug(const QString &str,const debugOptions &currentdebugType = D_JustPrint);
+    /*   Variable which hold the value for
+     *   Custom Debugging    */
+    /*  ===> " USE ME " for debugging   <===*/
+    int debugList = D_JustPrint
+                    | D_RecordingStatus
+                    | D_RecordingUpdate
+                    | D_BeforeStart
+                    | D_EntityCreated
+                    | D_EntityUpdated
+                    | D_EntitiesIDIndex
+                    | D_EntityDeleted
+                    | D_UpdatesInBTW;
+    /*   To find the the debugOptions inside
+     *   debugType or not "Helping Function" */
+    bool dbgIsAllow(const debugOptions &currentdebugType);
+
+    /*------------     Custom Debugger End     ------------*/
 };
+
 /* -------------------------------------------------------
  * Recording QObject End
  * ------------------------------------------------------*/
 
 
-
 /* -------------------------------------------------------
  * Replay QObject Start
  * ------------------------------------------------------*/
+
+typedef struct{
+    double longitude  ;
+    double latitude   ;
+    double altitude   ;
+    double heading    ;
+    float  turn_radius;
+    float  curr_speed ;
+    float  climb_rate ;
+}entity;
+
+
 class Replay : public QObject
 {
     Q_OBJECT
@@ -414,19 +438,34 @@ public:
     // Recorder* getRecorder() const { return m_recorder; }
     Recorder* getRecorder() const { return m_recorder; }
     Replay *m_replay = nullptr;
-    QTimer *replayTimer = nullptr;
-
 
     qint64 pausedTimestamp = 0;
 
     //For Replay
     enum replayModes{
-        Start,
+        START,
         PAUSE,
         RESUME,
         STOP
     };
     Q_ENUM(replayModes)
+    replayModes mode;
+
+    enum jumpOps{
+        FORWORD,
+        BACKWORD,
+        INBETWEEN,
+        BOOKMARK
+    };
+    Q_ENUM(jumpOps)
+
+    enum fileStates{
+        NOT_EXIST = false,
+        EXIST = true
+    };
+    Q_ENUM(fileStates)
+    fileStates fileState = NOT_EXIST;
+
     void update() ;
     bool replayLoaded(const QString &filePath);
     void replayStart();
@@ -435,12 +474,12 @@ signals:
     void started(QDateTime);
     void paused();
     void stopped(qint64);
-
     void setReplayDuration(qint64 duration);
     void replayBookmark(const QString &note, qint64 timestamp);
     void frameLoaded(const QJsonObject &frame);
 
     void replayFrameLoaded(qint64 timestampMs);
+    void updateUiDuration();
 public slots:
     void start()  ;
     void pause()  ;
@@ -458,40 +497,293 @@ public slots:
 
 
 private:
-    Recorder* m_recorder;
-    Hierarchy* m_hierarchy = nullptr;  // Used for extracting structure snapshot
+    Recorder*   m_recorder;
+    Hierarchy*  m_hierarchy = nullptr;  // Used for extracting structure snapshot
     Simulation* m_simulation = nullptr;  // Used for getting simulation speed
-    QDateTime m_startTime;
-    qint64     m_duration;
-    bool      m_active { false };
+    QDateTime   m_startTime;
+    qint64      m_duration;
+    bool        m_active { false };
 
     bool isPaused = false;
     QVector<QJsonObject> playbackFrames;
     //int currentReplayIndex = 1;
     int currentReplayIndex = 0;
+
 public:
-    QJsonObject recordedStructure;
-    /*├──►*/QJsonArray   rs_hierarchy;
-    /*│---*/QJsonObject    rs_hierarchyObj;
-    /*├──►*/QJsonArray   rs_bookmark ;
-    /*│---*/QJsonObject    rs_bookmarkObj;
-    /*└─┬►*/QJsonArray   rs_frame    ;
-    /*  │---*/QJsonObject  rs_frameObj;
-    /*  └─┬►*/QJsonArray     frameEntities;
-    /*    ├───►*/ QJsonObject  entityObj;
-    /*    ├───►*/ //QJsonObject CurrentSpeed;
-    /*    └───►*/
-    void loadFrameEntitiesData(const QJsonValue frame);
+
     void createTimer();
     void toggle();
+    void loadData();
+
 signals:
     void updateScene(float deltaTime);
+public:
+    std::unordered_map<std::string, Platform*> *m_Platforms;
+public:
+    qint64 durationShared = 0;
+    qint64 durationLength = 1000*60*2;
+    qint64 leftTimer  =     0;
+    qint64 rightTimer =     0;
+    QList<QPair<QString, qint64>> bookmarks = {
+        qMakePair(QString("Replay BookMark A"), 41000),
+        qMakePair(QString("Replay BookMark B"), 42000),
+        qMakePair(QString("Replay BookMark C"), 43000),
+        qMakePair(QString("Replay BookMark D"), 44000)
+    };
+    qint64 jumpStep = 5000;
+
+public:
+    QTimer    *replayTimer = nullptr;
+    QDateTime replayDateTime;
+    qint64    replayPeriod;
+
+    int       frameIndex;
+    qint64    duration;
+
+    int       maxFrameIndex;
+    qint64    maxDuration;
+
+
+
+    /*-------------- Fetching Data Start --------------*/
+public:
+    PayLoad payload;
+    void framePayLoad();
+signals:
+    void getPayLoad(PayLoad* payload);
+    void getMaxFrameIndexNDuration(
+        int*    maxFrameIndex,
+        qint64* maxDuration);
+    /*--------------  Fetching Data End  --------------*/
+
+
+    /*---------  Update Data on Canvas Start  ---------*/
+
+    /*
+ *      EntitiesDetailsList
+ *      EntitiesCreatedList
+ *      EntitiesUpdatedList
+ *      EntitiesDeletedList
+ */
+
+public:
+    std::unordered_map<int, EntitiesDetails> entitiesIndexDetails;
+    void setEntitiesIndexDetails();
+
+    void createEntitiesCreateList();
+    void updateEntitiesUpdatedList();
+    void deleteEntitiesDeletedList();
+signals:
+    void createEntitiesCreate(QString parentId,QString ID,QString EntityName,bool Profile);
+    void updateEntities();
+    void deleteEntities(QString parentId, QString ID, bool Profile);
+    /*---------   Update Data on Canvas End   ---------*/
+public:
+    std::unordered_map<int,std::pair<std::string, std::string>> entitiesMap;
+    std::vector<qint64> frameMap;
+
+    void loadFrameEntitiesData();
+    std::unordered_map<int , entity> frame;
+
+signals:
+    void getEntities();
+    void getFrameMap();
+    void getFrame(int s_frameIndex);
+    void render(float deltatime);
+
+    /*------------    Custom Debugger Start    ------------*/
+private:
+    /*   General purpose sting For Passing   */
+    QString str;
+
+    /*  Custom enum for Selective Debugging  */
+public:
+    typedef enum {
+        D_NULL            = 0b100000000000,
+        D_JustPrint       = 0b010000000000,
+        D_Timer           = 0b001000000000,
+        D_MaxFrameIndexNDuration = 0b000100000000,
+        D_EntitiesIndexDetails   = 0b000010000000,
+        D_EntitiesCreateList     = 0b000001000000,
+        D_EntitiesDeletedList    = 0b000000100000,
+        D_PayLoad_Inspect        = 0b000000010000
+    }debugReplay;
+    Q_ENUM(debugReplay)
+
+private:
+    /*   To Print Above String   */
+    void debug(const QString &str,const debugReplay &currentdebugType = D_JustPrint);
+    /*   Variable which hold the value for
+     *   Custom Debugging    */
+    /*  ===> " USE ME " for debugging   <===*/
+    int debugList = D_JustPrint
+                    | D_EntitiesDeletedList
+                    | D_PayLoad_Inspect
+        //| D_Timer
+        //| D_EntitiesCreateList
+        //| D_MaxFrameIndexNDuration
+        //| D_EntitiesIndexDetails
+        ;
+
+    /*   To find the the debugOptions inside
+     *   debugType or not "Helping Function" */
+    bool dbgIsAllow(const debugReplay &currentdebugType);
+
+    /*------------     Custom Debugger End     ------------*/
 };
 /* -------------------------------------------------------
  * Replay QObject End
- * ------------------------------------------------------*/
+ * -------------------------------------------------------*/
 
 
+
+
+//
+// /*-------------------------------------------------------
+//  * Recording QObject Start
+//  * ------------------------------------------------------*/
+
+// class Recording : public QObject
+// {
+//     Q_OBJECT
+
+// public:
+//     explicit Recording(Hierarchy* hierarchy, Simulation* simulation,Recorder *parentRecorder, QObject *parent = nullptr);
+// public:
+//     //Recorder *m_recorder;
+//     // Recorder* getRecorder() const { return m_recorder; }
+//     Recording *m_recording;
+//     //For Recording
+//     enum recordingModes{
+//         START,
+//         PAUSE,
+//         RESUME,
+//         STOP
+//     };
+
+//     Q_ENUM(recordingModes)
+//     Recorder* getRecorder() const { return m_recorder; }
+
+//     void update();
+//     QDateTime startTime() const;
+//     qint64     duration()  const;
+
+// public slots:
+//     void start();
+//     void resume();
+//     void pause();
+//     void stop();
+//     void addBookmark();
+// private:
+//     Recorder*   m_recorder   = nullptr;
+//     Hierarchy*  m_hierarchy  = nullptr;  // Used for extracting structure snapshot
+//     Simulation* m_simulation = nullptr;  // Used for getting simulation speed
+//     QDateTime   m_startTime;
+//     qint64      m_duration;
+//     bool        m_active { false };
+
+//     //Recording Start Recording Start
+// public:
+//     void recordingBookmark(const QString &message, qint64 timestampMs);
+
+//     /*------------ New Type of recording Start ------------*/
+
+//     // public:
+//     //     //Definig essential enums
+//     //     enum typeOfUpdate{
+//     //         dynamicDynamic,
+//     //         dynamicStatic,
+//     //         trajectory,
+//     //         sensor,
+//     //         entity,
+//     //     };
+
+//     //     enum updateTypes{
+//     //         CREATE,
+//     //         UPDATE,
+//     //         DELETE
+//     //     };
+
+// private:
+//     SimUpdateTypes::UpdateTypes     simUpdate     = SimUpdateTypes::UPDATE;
+//     SimTypeOfUpdates::TypeOfUpdate  simUpdateType = SimTypeOfUpdates::dynamicDynamic;
+//     QJsonObject recordedStructure;
+//     /*├──►*/QJsonArray   rs_hierarchy;
+//     /*│---*/QJsonObject    rs_hierarchyObj;
+//     /*├──►*/QJsonArray   rs_bookmark ;
+//     /*│---*/QJsonObject    rs_bookmarkObj;
+//     /*└─┬►*/QJsonArray   rs_frame    ;
+//     /*  │---*/QJsonObject  rs_frameObj;
+//     /*  └─┬►*/QJsonArray     frameEntities;
+//     /*    ├───►*/ QJsonObject  entityObj;
+//     /*    ├───►*/ //QJsonObject CurrentSpeed;
+//     /*    └───►*/
+//     QJsonArray    getFrameEntitiesData();
+
+// public:
+//     void getSimulationUpdate();
+//     void changeInHierarchy();
+//     bool changeInHierarchyInPause = false;
+//     qint64 lastElapsedMs = 0;
+
+// public slots:
+//     //void getSimulationUpdate();
+//     /*------------ New Type of recording End   ------------*/
+
+// private:
+//     void recordingStart();
+//     void recordingStop();
+//     void recordingPauseResume();
+//     void saveFile();
+
+
+//     //Recording Main Container
+//     QJsonArray recordedFile;
+//     //Meta Data essential for recording
+//     //   Contain static components of recording
+//     //QJsonObject metaData; //Add later
+//     QDateTime   currentDateTime;
+//     QJsonArray  bookmarks;
+//     //  Contain snap in data entry
+//     //QJsonObject timeEntry;
+//     QJsonObject recordedData;
+
+//     //Recording Container Insert Method;
+//     void insertRecord(const QJsonObject &data);
+
+
+//     //Recording Constants
+//     //RecordinDynamic components of recording
+// public:
+//     recordingModes mode = STOP;
+//     //for logger
+//     //QTimer *recordingTimer = nullptr;
+//     //qint64 lastElapsedMs;
+//     //qint64 pausedOffsetMs = 0;
+//     //Remove
+//     qint64 recordingPeriod;
+// private:
+//     QTimer *recordingTimer = nullptr;
+//     QDateTime recordingStartTime;
+//     qint64 pausedOffsetMs = 0;   // public earlier, that's ok
+
+//     bool isPaused = false;
+//     int noOfFrame = 1;
+
+//     QDateTime pauseStartTime;
+//     //Recording Start Recording Start
+// signals:
+//     void started();
+//     void paused();
+//     void stopped(qint64);
+// signals:
+//     void mapFrame(const qint64 &s_duration);
+
+// };
+// /* -------------------------------------------------------
+//  * Recording QObject End
+//  * ------------------------------------------------------*/
+//
 
 
 

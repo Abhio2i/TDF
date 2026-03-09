@@ -1,0 +1,227 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Select Bitmap Image Features User Guide &mdash; TDF Help</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=60dbed4a"></script>
+      <script src="../../../_static/doctools.js?v=888ff710"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Measure Distance Features User Guide" href="../major_distance/index.html" />
+    <link rel="prev" title="Bitmap Features User Guide" href="../bitmaps/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            TDF Help Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../Introduction/index.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../Starting_TDF.html">Starting TDF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../Creating%20a%20database/index.html">Creating a new database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../Building%20a%20scenario/index.html">Building a Scenario</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../Running%20a%20scenario/index.html">Running a Scenario</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../Trajectories%20and%20waypoints.html">Trajectory and waypoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../formation/index.html">Formation Creation and Configuration Guide</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html">GIS</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../coordinate_systems/index.html">Coordinate system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../map_layer/index.html">Map Layer Icon Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../import_geojson/index.html">Import GeoJSON Features User Guide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../search_place/index.html">Search Place Features User Guide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../shape/index.html">Shape Drawing Features User Guide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bitmaps/index.html">Bitmap Features User Guide</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Select Bitmap Image Features User Guide</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#select-bitmap-image-icon-overview">Select Bitmap Image Icon Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-to-use-select-bitmap-image">How to Use Select Bitmap Image</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#placing-custom-images">Placing Custom Images</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#managing-custom-images">Managing Custom Images</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../major_distance/index.html">Measure Distance Features User Guide</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../scripting_guide/index.html">Scripting Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mission_editor_guide/index.html">Mission Editor User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer_guide/index.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation_guide/index.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../release_notes/index.html">Release Notes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">TDF Help Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">GIS</a></li>
+      <li class="breadcrumb-item active">Select Bitmap Image Features User Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/user_guide/GIS/select_bitmap_image/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="select-bitmap-image-features-user-guide">
+<h1>Select Bitmap Image Features User Guide<a class="headerlink" href="#select-bitmap-image-features-user-guide" title="Link to this heading"></a></h1>
+<section id="select-bitmap-image-icon-overview">
+<h2>Select Bitmap Image Icon Overview<a class="headerlink" href="#select-bitmap-image-icon-overview" title="Link to this heading"></a></h2>
+<p>The <strong>Select Bitmap Image</strong> button allows you to upload and place your own
+custom images on the map, providing complete flexibility for marking locations with
+company logos, specialized icons, or any visual markers you need.</p>
+</section>
+<section id="how-to-use-select-bitmap-image">
+<h2>How to Use Select Bitmap Image<a class="headerlink" href="#how-to-use-select-bitmap-image" title="Link to this heading"></a></h2>
+<section id="accessing-the-feature">
+<h3>Accessing the Feature<a class="headerlink" href="#accessing-the-feature" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Click the <strong>Select Bitmap Image</strong> icon on the <strong>Design Toolbar</strong></p></li>
+<li><p>A file selection dialog opens immediately</p></li>
+<li><p>Navigate to and select your image file</p></li>
+<li><p>Click <strong>Open</strong> to place the image</p></li>
+</ol>
+</section>
+<section id="supported-file-formats">
+<h3>Supported File Formats<a class="headerlink" href="#supported-file-formats" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>PNG</strong> (<code class="docutils literal notranslate"><span class="pre">.png</span></code>) — <em>Recommended (supports transparency)</em></p></li>
+<li><p><strong>JPEG/JPG</strong> (<code class="docutils literal notranslate"><span class="pre">.jpeg</span></code>, <code class="docutils literal notranslate"><span class="pre">.jpg</span></code>) — <em>Standard photo formats</em></p></li>
+</ul>
+</section>
+</section>
+<section id="placing-custom-images">
+<h2>Placing Custom Images<a class="headerlink" href="#placing-custom-images" title="Link to this heading"></a></h2>
+<section id="automatic-placement">
+<h3>Automatic Placement<a class="headerlink" href="#automatic-placement" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Image is automatically centered on your current map view</p></li>
+<li><p>No need to click the map — placement is instant</p></li>
+<li><p>Ideal for precise positioning by adjusting the map beforehand</p></li>
+</ul>
+<a class="reference internal image-reference" href="../../../_images/select_bitmap_image.png"><img alt="select bitmap image" class="align-center" src="../../../_images/select_bitmap_image.png" style="width: 500px;" /></a>
+</section>
+</section>
+<section id="managing-custom-images">
+<h2>Managing Custom Images<a class="headerlink" href="#managing-custom-images" title="Link to this heading"></a></h2>
+<section id="selecting-custom-images">
+<h3>Selecting Custom Images<a class="headerlink" href="#selecting-custom-images" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Switch to <strong>Move Mode</strong> (hand icon)</p></li>
+<li><p>Click directly on your custom image to select it</p></li>
+<li><p>Selected images become active for editing</p></li>
+</ul>
+</section>
+<section id="moving-custom-images">
+<h3>Moving Custom Images<a class="headerlink" href="#moving-custom-images" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Select image in <strong>Move Mode</strong></p></li>
+<li><p>Click and drag to reposition anywhere on the map</p></li>
+<li><p>Real-time coordinate tracking during movement</p></li>
+</ul>
+</section>
+<section id="editing-custom-images-right-click-menu">
+<h3>Editing Custom Images (Right-Click Menu)<a class="headerlink" href="#editing-custom-images-right-click-menu" title="Link to this heading"></a></h3>
+<p>Right-click any custom image for the following options:</p>
+<ul class="simple">
+<li><p><strong>Edit</strong> – Enter edit mode with resize handles</p></li>
+<li><p><strong>Rotate</strong> – Activate rotation handles for orientation adjustment</p></li>
+<li><p><strong>Delete Image</strong> – Permanently remove the image from the map</p></li>
+</ul>
+</section>
+<section id="resizing-custom-images">
+<h3>Resizing Custom Images<a class="headerlink" href="#resizing-custom-images" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Right-click the image → <strong>Edit</strong></p></li>
+<li><p>Four resize handles appear at the corners</p></li>
+<li><p>Drag any handle to adjust size proportionally</p></li>
+<li><p>The original aspect ratio is preserved automatically</p></li>
+<li><p>Click outside the image to exit edit mode</p></li>
+</ol>
+</section>
+<section id="rotation">
+<h3>Rotation<a class="headerlink" href="#rotation" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Right-click the image → <strong>Rotate</strong></p></li>
+<li><p>A rotation handle (yellow circle) appears</p></li>
+<li><p>Drag the handle to rotate the image to the desired angle</p></li>
+<li><p>Smooth rotation with visual angle feedback</p></li>
+<li><p>Perfect for aligning images with map features or roads</p></li>
+</ol>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../bitmaps/index.html" class="btn btn-neutral float-left" title="Bitmap Features User Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../major_distance/index.html" class="btn btn-neutral float-right" title="Measure Distance Features User Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

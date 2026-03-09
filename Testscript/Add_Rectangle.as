@@ -4,7 +4,7 @@ void main(ScriptEngine@ e)
     e.useCity("Bhopal");
 
     // Add rectangle on canvas
-    e.canvasAddRectangle("Grid_Block", 8.0, 6.0);
+    e.canvasAddRectangle("Grid_Block", 80000.0, 60000.0);
 
     // Generate PDF report
     e.generatePDFReport("GIS_Report_rectange.pdf");

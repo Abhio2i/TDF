@@ -118,7 +118,7 @@ float Transform::getAltitude(){
 // ===== Unity-like Directional Methods (using QQuaternion) =====
 QVector3D Transform::toEulerAngles() const {
 
-    if(Simulation::isPlay){
+    if(Simulation::isPlay && false){
         return rotationbuffer.toEulerAngles();
     }else{
         return matrix->rotation().toEulerAngles();
@@ -127,7 +127,7 @@ QVector3D Transform::toEulerAngles() const {
 
 void Transform::setFromEulerAngles(const QVector3D& eulerAngles) {
 
-    if(Simulation::isPlay){
+    if(Simulation::isPlay && false){
         RotUpdate = true;
         rotationbuffer.fromEulerAngles(eulerAngles);
     }else{
@@ -234,7 +234,7 @@ void Transform::lookAt3D(const QVector3D& targetWorldPos) {
 
 void Transform::setTranslation(const QVector3D& vector) {
 
-    if(Simulation::isPlay){
+    if(Simulation::isPlay && false){
         PosUpdate = true;
         positionbuffer.setX(vector.x());
         positionbuffer.setY(vector.y());
@@ -248,7 +248,7 @@ void Transform::setTranslation(const QVector3D& vector) {
 
 void Transform::addTranslation(const QVector3D& vector) {
 
-    if(Simulation::isPlay){
+    if(Simulation::isPlay && false){
         PosUpdate = true;
         positionbuffer.setX(positionbuffer.x() + vector.x());
         positionbuffer.setY(positionbuffer.y() + vector.y());
@@ -261,7 +261,7 @@ void Transform::addTranslation(const QVector3D& vector) {
 
 QVector3D Transform::translation() const {
 
-    if(Simulation::isPlay){
+    if(Simulation::isPlay && false){
         return positionbuffer;
     }else
     {
@@ -272,7 +272,7 @@ QVector3D Transform::translation() const {
 
 void Transform::setRotation(const QQuaternion& quat) {
 
-    if(Simulation::isPlay){
+    if(Simulation::isPlay && false){
         RotUpdate = true;
         rotationbuffer.setX(quat.x());
         rotationbuffer.setY(quat.y());
@@ -287,7 +287,7 @@ void Transform::setRotation(const QQuaternion& quat) {
 
 QQuaternion Transform::rotation() {
 
-    if(Simulation::isPlay){
+    if(Simulation::isPlay && false){
         return rotationbuffer;
     }else
     {

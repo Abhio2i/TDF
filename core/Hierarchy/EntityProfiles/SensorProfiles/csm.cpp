@@ -29,8 +29,8 @@ void CSM::scan(){
 
             // horizontal angle (Y axis) : x vs z
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
-            float fre1 = entity->frequencyMin;
-            float fre2 = entity->frequencyMax;
+            float fre1 = entity->minFrequency;
+            float fre2 = entity->maxFrequency;
             // qDebug()<<yAngle<<","<<detectCheck(localPos,metredis)<<","<<(fre1 < frequency && fre2> frequency);
             if (detectCheck(localPos,metredis) && fre1 < frequency && fre2> frequency)  // .position() is assumed
             {
@@ -78,9 +78,9 @@ QJsonObject CSM::toJson() const {
     obj["id"] = QString::fromStdString(ID);
     QJsonObject defaultObj;
     defaultObj["type"] = "Section";
-    defaultObj["range"] = toParm(range,"km");
-    defaultObj["frequency"] = toParm(frequency,"Ghz");
-    defaultObj["azimuth"] = toParm(azimuth,"deg");
+    defaultObj["range"] = toParm(range,"km",0,    500);
+    defaultObj["frequency"] = toParm(frequency,"Ghz", 0.1,  100);
+    defaultObj["azimuth"] = toParm(azimuth,"deg", 0,    360);
     obj["default"] = defaultObj;
     return obj;
 }

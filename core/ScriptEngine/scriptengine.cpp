@@ -49,7 +49,7 @@ static float Math_Random()
 static QString geoToString(double lat, double lon)
 {
     return QString("Lat:%1 Lon:%2")
-    .arg(lat, 0, 'f', 6)
+        .arg(lat, 0, 'f', 6)
         .arg(lon, 0, 'f', 6);
 }
 
@@ -387,13 +387,13 @@ CScriptArray* ScriptEngine::findEntitiesByType(int typeId) {
         qDebug() << "[EntityFinder] No entities of this type";
     } else if (count == 1) {
         qDebug().noquote() << QString("[EntityFinder] Found 1 entity named %1 of \"%2\" Type")
-        .arg(QString::fromStdString(names.str()))
-            .arg(QString::fromStdString(typeName));
+                                  .arg(QString::fromStdString(names.str()))
+                                  .arg(QString::fromStdString(typeName));
     } else {
         qDebug().noquote() << QString("[EntityFinder] Found %1 entities named %2 of \"%3\" Type")
-        .arg((int)count)
-            .arg(QString::fromStdString(names.str()))
-            .arg(QString::fromStdString(typeName));
+                                  .arg((int)count)
+                                  .arg(QString::fromStdString(names.str()))
+                                  .arg(QString::fromStdString(typeName));
     }
 
     return arr;
@@ -489,6 +489,24 @@ void ScriptEngine::renameProfile(const std::string& profileID, const std::string
              << QString::fromStdString(profileID)
              << "renamed to"
              << QString::fromStdString(newName);
+}
+
+
+static void Platform_setImage(Platform* self, std::string path)
+{
+    if (!self) return;
+
+    // Ensure bitmap exists
+    if (!self->meshRenderer2d)
+        self->addComponent("bitmap");
+
+    if (!self->meshRenderer2d) return;
+
+    // Direct sprite update (correct for your architecture)
+    if (self->meshRenderer2d->Sprite)
+        *(self->meshRenderer2d->Sprite) = path;
+
+    // Optional: refresh mesh if needed
 }
 
 void ScriptEngine::removeEntity(const std::string& parentId, const std::string& entityID)
@@ -1640,10 +1658,36 @@ ScriptEngine::ScriptEngine()
     s = engine->RegisterObjectMethod("Transform", "QVector3D inverseTransformDirection(const QVector3D& in)", asMETHOD(Transform, inverseTransformDirection), asCALL_THISCALL); Q_ASSERT(s >= 0);
 
     s = engine->RegisterObjectType("Trajectory", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
-    s = engine->RegisterObjectMethod("Trajectory", "void addWaypoint(float,float,float)", asMETHOD(Trajectory, addWaypoint), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    // Old 3‑parameter version (now with asMETHODPR)
+    r = engine->RegisterObjectMethod(
+        "Trajectory",
+        "void addWaypoint(float lat, float alt, float lon)",
+        asMETHODPR(Trajectory, addWaypoint, (float, float, float), void),
+        asCALL_THISCALL);
+    assert(r >= 0);
 
+    // New 4‑parameter version with sensor flag
+    r = engine->RegisterObjectMethod(
+        "Trajectory",
+        "void addWaypoint(float lat, float alt, float lon, bool activateSensor)",
+        asMETHODPR(Trajectory, addWaypoint, (float, float, float, bool), void),
+        asCALL_THISCALL);
+    assert(r >= 0);
+    //////////////////////////////////////////////////////////////////////////////
     s = engine->RegisterObjectType("DynamicModel", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
+
+    // dynamic maximum
     s = engine->RegisterObjectProperty("DynamicModel", "float moveSpeed", asOFFSET(DynamicModel, moveSpeed)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("DynamicModel", "float maxSpeed", asOFFSET(DynamicModel, maxSpeed)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("DynamicModel", "float minSpeed", asOFFSET(DynamicModel, minSpeed)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("DynamicModel", "float Acceleration", asOFFSET(DynamicModel, Acceleration)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("DynamicModel", "float Decceleration", asOFFSET(DynamicModel, Decceleration)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("DynamicModel", "float turnRate", asOFFSET(DynamicModel, turnRate)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("DynamicModel", "float Roll", asOFFSET(DynamicModel, Roll)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("DynamicModel", "float maxAltitude", asOFFSET(DynamicModel, maxAltitude)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("DynamicModel", "float Altitude", asOFFSET(DynamicModel, Altitude)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("DynamicModel", "float climbRate", asOFFSET(DynamicModel, climbRate)); Q_ASSERT(s >= 0);
+    s = engine->RegisterObjectProperty("DynamicModel", "float diveRate", asOFFSET(DynamicModel, diveRate)); Q_ASSERT(s >= 0);
 
     s = engine->RegisterObjectType("ProfileCategaory", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectProperty("ProfileCategaory", "string id", asOFFSET(ProfileCategaory, ID)); Q_ASSERT(s >= 0);
@@ -1665,6 +1709,13 @@ ScriptEngine::ScriptEngine()
     s = engine->RegisterObjectMethod("Platform", "string getParam(const string &in)", asMETHOD(Platform, getParam), asCALL_THISCALL); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("Platform", "void removeParam(const string &in)", asMETHOD(Platform, removeParam), asCALL_THISCALL); Q_ASSERT(s >= 0);
 
+    s = engine->RegisterObjectMethod(
+        "Platform",
+        "void setImage(string)",
+        asFUNCTION(Platform_setImage),
+        asCALL_CDECL_OBJFIRST
+        );
+    assert(s >= 0);
 
     s = engine->RegisterObjectType("ScriptEngine", 0, asOBJ_REF | asOBJ_NOCOUNT); Q_ASSERT(s >= 0);
     s = engine->RegisterObjectMethod("ScriptEngine", "void render()", asMETHOD(ScriptEngine, renderscene), asCALL_THISCALL); Q_ASSERT(s >= 0);
@@ -1900,16 +1951,16 @@ ScriptEngine::ScriptEngine()
         asCALL_THISCALL
         );
 
-    // // Register Radio methods
-    // engine->RegisterObjectMethod("Radio",
-    //                              "int getRadioTargetCount() const",
-    //                              asMETHOD(Radio, getRadioTargetCount),
-    //                              asCALL_THISCALL);
+    // Register Radio methods
+    engine->RegisterObjectMethod("Radio",
+                                 "int getRadioTargetCount() const",
+                                 asMETHOD(Radio, getRadioTargetCount),
+                                 asCALL_THISCALL);
 
-    // engine->RegisterObjectMethod("Radio",
-    //                              "bool getRadioTarget(int, string &out, float &out, float &out, float &out, float &out) const",
-    //                              asMETHOD(Radio, getRadioTarget),
-    //                              asCALL_THISCALL);
+    engine->RegisterObjectMethod("Radio",
+                                 "bool getRadioTarget(int, string &out, float &out, float &out, float &out, float &out) const",
+                                 asMETHOD(Radio, getRadioTarget),
+                                 asCALL_THISCALL);
 
     // Register Platform::getRadioByName
     engine->RegisterObjectMethod("Platform",

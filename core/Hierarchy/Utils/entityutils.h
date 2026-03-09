@@ -15,7 +15,7 @@ const double KMtoFT = 3281.0f;
 const double FTminToKMs = 1/196900.0f;//ft/min to km/s
 #define EARTH_RADIUS 6371000.0 // in meters
 
-QJsonObject toParm(float value,QString unit);
+QJsonObject toParm(float value,QString unit,float min = 0.0f,float max = 0.0f, QString description = "");
 float valueFromParm(const QJsonObject& parm);
 double toRadians(double degree);
 QString entityTypeToString(Constants::EntityType type);

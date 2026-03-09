@@ -105,3 +105,14 @@ void IFFProfile::fromJson(const QJsonObject& obj) {
 
     //Console::log("Collider::fromJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
 }
+void IFFProfile::renameSubComponent(std::string id, QString newName) {
+    auto it = iffs->find(id);
+    if (it != iffs->end() && it->second != nullptr) {
+        Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+        it->second->Name = newName.toStdString();
+        emit parent->subComponentRenamed(
+            QString::fromStdString(ID),
+            QString::fromStdString(id),
+            newName);
+    }
+}
