@@ -3,7 +3,7 @@
 #include "./component.h"
 #include <QObject>
 #include <core/Hierarchy/Struct/constants.h>
-#include <core/Hierarchy/Struct/task.h>
+// #include <core/Hierarchy/Struct/task.h>
 
 class Mission : public QObject, public Component
 {
@@ -14,7 +14,7 @@ public:
     std::string Name;
     bool Active;
     Constants::EntityType type;
-    std::unordered_map<std::string, Task> *taskGroup;
+    // std::unordered_map<std::string, Task> *taskGroup;
     void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QString data3 = "") override;
     void removeSubComponent(std::string ID) override;
     QJsonObject getsubComponentData(std::string ID) const override;

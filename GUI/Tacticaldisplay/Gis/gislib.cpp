@@ -3263,13 +3263,10 @@ void GISlib::renderGeometry(QPainter &painter, const QJsonObject &geometry,
             }
         }
     }
-    // Polygon geometry (single polygon with optional holes)
     else if (type == "polygon") {
         QJsonValue coordArraysValue = geometry["coordinates"];
         if (coordArraysValue.isArray()) {
             QJsonArray rings = coordArraysValue.toArray();
-
-            // First ring is outer boundary, subsequent rings are holes
             for (const QJsonValue &ringVal : rings) {
                 if (!ringVal.isArray()) continue;
                 QJsonArray coords = ringVal.toArray();
@@ -3281,11 +3278,10 @@ void GISlib::renderGeometry(QPainter &painter, const QJsonObject &geometry,
                         polygon << canvasPos;
                     }
                 }
-
                 if (polygon.size() > 2) {
-                    painter.setBrush(QBrush(color, Qt::Dense4Pattern));  // Pattern fill
+                    painter.setBrush(QBrush(color, Qt::Dense4Pattern));
                     painter.setPen(QPen(color, width));
-                    painter.drawPolygon(polygon);  // Draw polygon
+                    painter.drawPolygon(polygon);
                 }
             }
         }

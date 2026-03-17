@@ -193,6 +193,47 @@ void ScriptEngineGIS::setCanvas(CanvasWidget* c)
     // }
 }
 
+void ScriptEngineGIS::canvasCreateVectorLayer(const std::string &layerName)
+{
+    qDebug() << "SCRIPT creating layer:" << QString::fromStdString(layerName);
+
+    if (!canvas) return;
+
+    QString qname = QString::fromStdString(layerName);
+
+    LayerPanel* panel = canvas->getLayerPanel();
+    if (!panel) {
+        qDebug() << "LayerPanel NULL";
+        return;
+    }
+
+    panel->addLayerFromScript(qname);
+}
+
+void ScriptEngineGIS::canvasSelectLayer(const std::string &layerName)
+{
+    if (!canvas) return;
+
+    QString qname = QString::fromStdString(layerName);
+
+    LayerPanel* panel = canvas->getLayerPanel();
+    if (!panel) return;
+
+    panel->setActiveLayer(qname);
+}
+
+void ScriptEngineGIS::canvasRenameShape(const std::string &id,const std::string &newName)
+{
+    if (!canvas) return;
+
+    QString qid = QString::fromStdString(id);
+    QString qname = QString::fromStdString(newName);
+
+    LayerPanel* panel = canvas->getLayerPanel();
+    if (!panel) return;
+
+    panel->setShapeDisplayName(qid, qname);
+}
 
 //===================LINE TOOL====================
 // Start line drawing
@@ -206,6 +247,7 @@ void ScriptEngineGIS::canvasStartLine()
     linePoints.clear();
     lastShapeBounds = QRectF();
 }
+
 // Add line point
 void ScriptEngineGIS::canvasAddLinePoint(float lon, float lat)
 {
@@ -293,6 +335,9 @@ void ScriptEngineGIS::canvasAddPolygon(const std::string &name, CScriptArray* po
     // RESET bounds
     lastShapeBounds = QRectF();
 
+    ShapesFeature* shapes = canvas->getShapesFeature();
+    if(!shapes) return;
+
     //  DRAW POLYGON
     for (asUINT i = 0; i < points->GetSize(); i++) {
         QString pt = QString::fromStdString(*(std::string*)points->At(i));
@@ -314,19 +359,23 @@ void ScriptEngineGIS::canvasAddPolygon(const std::string &name, CScriptArray* po
         if (!isLatLonInIndia(lat, lon))
             geoOk = false;
 
-        // FORCE AUTO ZOOM (state level)
-        canvas->gislib->fitToBounds(
-            lastShapeBounds.top(),
-            lastShapeBounds.left(),
-            lastShapeBounds.bottom(),
-            lastShapeBounds.right(),
-            -2   // slightly zoomed out
-            );
+        // DRAW vertex
+        shapes->drawPolygon(geo, i == points->GetSize() - 1);
 
-
-        // Draw polygon vertex
-        canvas->getShapesFeature()->drawPolygon(geo, i == points->GetSize() - 1);
     }
+
+    // FORCE AUTO ZOOM (state level)
+    canvas->gislib->fitToBounds(
+        lastShapeBounds.top(),
+        lastShapeBounds.left(),
+        lastShapeBounds.bottom(),
+        lastShapeBounds.right(),
+        -2   // slightly zoomed out
+        );
+
+    // Draw polygon vertex
+    // canvas->getShapesFeature()->drawPolygon(geo, i == points->GetSize() - 1);
+    //}
 
     // FORCE redraw before screenshot
     canvas->update();
@@ -392,7 +441,14 @@ void ScriptEngineGIS::canvasAddRectangle(
     double halfWidthDeg  = (width  / 2.0) / 111000.0;
     double halfHeightDeg = (height / 2.0) / 111000.0;
 
-    canvas->getShapesFeature()->drawRectangle(center, halfWidthDeg, halfHeightDeg);
+    ShapesFeature* shapes = canvas->getShapesFeature();
+    if(!shapes) return;
+
+    // draw rectangle (default naming handled internally)
+    shapes->drawRectangle(center, halfWidthDeg, halfHeightDeg);
+
+    // draw rectangle ONLY ONCE
+    //canvas->getShapesFeature()->drawRectangle(center, halfWidthDeg, halfHeightDeg);
 
     // Draw rectangle (center-based)
     //canvas->getShapesFeature()->drawRectangle(center);
@@ -413,6 +469,7 @@ void ScriptEngineGIS::canvasAddRectangle(
         -2   // slightly zoomed out
         );
 
+    canvas->update();
 
     // Capture screenshot AFTER drawing & bounds update
     QString screenshot = screenshotFn("rectangle");
@@ -440,6 +497,8 @@ void ScriptEngineGIS::canvasAddCircle(const std::string &name, float radius)
         return;
     }
 
+    ShapesFeature* shapes = canvas->getShapesFeature();
+
     //center
     QPointF center(cityLon, cityLat);
     lastGeoCursor = center;
@@ -448,6 +507,13 @@ void ScriptEngineGIS::canvasAddCircle(const std::string &name, float radius)
 
     double radiusDeg = radius / 111000.0;
     canvas->getShapesFeature()->drawCircle(center, radiusDeg);
+
+    // 🔴 ADD THIS (layer support)
+    LayerPanel* panel = canvas->getLayerPanel();
+    if(panel) {
+        QString shapeId = QString("TempCircle_%1").arg(shapes->getPolygonCounter()-1);
+        panel->addShapeToLayer(shapeId, "Circle");
+    }
 
     // Reset previous bounds
     // lastShapeBounds = {};
@@ -482,7 +548,6 @@ void ScriptEngineGIS::canvasAddCircle(const std::string &name, float radius)
             );
     }
 }
-
 
 // Add a point
 void ScriptEngineGIS::canvasAddPoint(const std::string &name, float lon, float lat)

@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_RuntimeToolBar_t {
-    QByteArrayData data[28];
-    char stringdata0[419];
+    QByteArrayData data[29];
+    char stringdata0[434];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -57,9 +57,10 @@ QT_MOC_LITERAL(21, 293, 16), // "newTimeInSeconds"
 QT_MOC_LITERAL(22, 310, 22), // "simulationStateChanged"
 QT_MOC_LITERAL(23, 333, 15), // "SimulationState"
 QT_MOC_LITERAL(24, 349, 5), // "state"
-QT_MOC_LITERAL(25, 355, 21), // "timingActionTriggered"
-QT_MOC_LITERAL(26, 377, 18), // "onTimeLabelClicked"
-QT_MOC_LITERAL(27, 396, 22) // "updateSimulationStatus"
+QT_MOC_LITERAL(25, 355, 14), // "resetTriggered"
+QT_MOC_LITERAL(26, 370, 21), // "timingActionTriggered"
+QT_MOC_LITERAL(27, 392, 18), // "onTimeLabelClicked"
+QT_MOC_LITERAL(28, 411, 22) // "updateSimulationStatus"
 
     },
     "RuntimeToolBar\0timingGraphClicked\0\0"
@@ -72,7 +73,7 @@ QT_MOC_LITERAL(27, 396, 22) // "updateSimulationStatus"
     "eventTypes\0radarDisplayToggled\0"
     "timeChanged\0newTimeInSeconds\0"
     "simulationStateChanged\0SimulationState\0"
-    "state\0timingActionTriggered\0"
+    "state\0resetTriggered\0timingActionTriggered\0"
     "onTimeLabelClicked\0updateSimulationStatus"
 };
 #undef QT_MOC_LITERAL
@@ -83,35 +84,36 @@ static const uint qt_meta_data_RuntimeToolBar[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-      19,   14, // methods
+      20,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
        0,       // flags
-      16,       // signalCount
+      17,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    0,  109,    2, 0x06 /* Public */,
-       3,    0,  110,    2, 0x06 /* Public */,
-       4,    0,  111,    2, 0x06 /* Public */,
-       5,    0,  112,    2, 0x06 /* Public */,
-       6,    0,  113,    2, 0x06 /* Public */,
-       7,    0,  114,    2, 0x06 /* Public */,
-       8,    1,  115,    2, 0x06 /* Public */,
-      10,    0,  118,    2, 0x06 /* Public */,
-      11,    1,  119,    2, 0x06 /* Public */,
-      13,    0,  122,    2, 0x06 /* Public */,
-      14,    0,  123,    2, 0x06 /* Public */,
-      15,    1,  124,    2, 0x06 /* Public */,
-      17,    1,  127,    2, 0x06 /* Public */,
-      19,    0,  130,    2, 0x06 /* Public */,
-      20,    1,  131,    2, 0x06 /* Public */,
-      22,    1,  134,    2, 0x06 /* Public */,
+       1,    0,  114,    2, 0x06 /* Public */,
+       3,    0,  115,    2, 0x06 /* Public */,
+       4,    0,  116,    2, 0x06 /* Public */,
+       5,    0,  117,    2, 0x06 /* Public */,
+       6,    0,  118,    2, 0x06 /* Public */,
+       7,    0,  119,    2, 0x06 /* Public */,
+       8,    1,  120,    2, 0x06 /* Public */,
+      10,    0,  123,    2, 0x06 /* Public */,
+      11,    1,  124,    2, 0x06 /* Public */,
+      13,    0,  127,    2, 0x06 /* Public */,
+      14,    0,  128,    2, 0x06 /* Public */,
+      15,    1,  129,    2, 0x06 /* Public */,
+      17,    1,  132,    2, 0x06 /* Public */,
+      19,    0,  135,    2, 0x06 /* Public */,
+      20,    1,  136,    2, 0x06 /* Public */,
+      22,    1,  139,    2, 0x06 /* Public */,
+      25,    0,  142,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-      25,    0,  137,    2, 0x08 /* Private */,
-      26,    0,  138,    2, 0x08 /* Private */,
-      27,    0,  139,    2, 0x08 /* Private */,
+      26,    0,  143,    2, 0x08 /* Private */,
+      27,    0,  144,    2, 0x08 /* Private */,
+      28,    0,  145,    2, 0x08 /* Private */,
 
  // signals: parameters
     QMetaType::Void,
@@ -130,6 +132,7 @@ static const uint qt_meta_data_RuntimeToolBar[] = {
     QMetaType::Void,
     QMetaType::Void, QMetaType::Float,   21,
     QMetaType::Void, 0x80000000 | 23,   24,
+    QMetaType::Void,
 
  // slots: parameters
     QMetaType::Void,
@@ -161,9 +164,10 @@ void RuntimeToolBar::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _
         case 13: _t->radarDisplayToggled(); break;
         case 14: _t->timeChanged((*reinterpret_cast< float(*)>(_a[1]))); break;
         case 15: _t->simulationStateChanged((*reinterpret_cast< SimulationState(*)>(_a[1]))); break;
-        case 16: _t->timingActionTriggered(); break;
-        case 17: _t->onTimeLabelClicked(); break;
-        case 18: _t->updateSimulationStatus(); break;
+        case 16: _t->resetTriggered(); break;
+        case 17: _t->timingActionTriggered(); break;
+        case 18: _t->onTimeLabelClicked(); break;
+        case 19: _t->updateSimulationStatus(); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
@@ -280,6 +284,13 @@ void RuntimeToolBar::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _
                 return;
             }
         }
+        {
+            using _t = void (RuntimeToolBar::*)();
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&RuntimeToolBar::resetTriggered)) {
+                *result = 16;
+                return;
+            }
+        }
     }
 }
 
@@ -312,13 +323,13 @@ int RuntimeToolBar::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 19)
+        if (_id < 20)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 19;
+        _id -= 20;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 19)
+        if (_id < 20)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 19;
+        _id -= 20;
     }
     return _id;
 }
@@ -423,6 +434,12 @@ void RuntimeToolBar::simulationStateChanged(SimulationState _t1)
 {
     void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
     QMetaObject::activate(this, &staticMetaObject, 15, _a);
+}
+
+// SIGNAL 16
+void RuntimeToolBar::resetTriggered()
+{
+    QMetaObject::activate(this, &staticMetaObject, 16, nullptr);
 }
 QT_WARNING_POP
 QT_END_MOC_NAMESPACE

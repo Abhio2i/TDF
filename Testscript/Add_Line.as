@@ -1,5 +1,8 @@
 void main(ScriptEngine@ e) {
 
+     // add layer
+    e.canvasCreateVectorLayer("Layer1");
+
     // Start line drawing
     e.canvasStartLine();
 

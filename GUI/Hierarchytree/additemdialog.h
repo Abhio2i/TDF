@@ -1,5 +1,4 @@
 
-// #endif // ADDITEMDIALOG_H
 /* ========================================================================= */
 /* File: additemdialog.h                                                    */
 /* Purpose: Dialog for adding items with configurable properties and components */
@@ -48,7 +47,8 @@ public:
         NormalMode,
         ComponentSensorMode,
         ComponentIFFMode,
-        ComponentRadioMode
+        ComponentRadioMode,
+        ComponentWeaponMode   // ← NEW: Radio jaisa weapon search dialog
     };
 
     QVariantMap getEntityComponents() const;
@@ -147,6 +147,8 @@ private:
     void populateIFFProfiles();
     /* Populate radio profiles in combo box */
     void populateRadioProfiles();
+    /* Populate weapon profiles in combo box (mirrors Radio pattern) */
+    void populateWeaponProfiles();
     /* General method to populate profiles by type */
     void populateProfiles(const QString& profileType);
 

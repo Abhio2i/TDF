@@ -31,6 +31,7 @@ public:
     void start();
     bool control;
     bool follow;
+    bool followTarget = false;
     float turnRadius = 10;//metre
     ///Maximums
     float minSpeed = 100.0f;//km/h
@@ -72,6 +73,7 @@ public:
 
     // New member variables for 6-DoF simulation without Rigidbody
     QVector3D velocity;
+    float windAngle;
     QVector3D windDierction;
     float windSpeed;
     QVector3D angularVelocity;

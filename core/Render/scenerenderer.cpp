@@ -25,6 +25,22 @@ void SceneRenderer::entityAdded(QString /*parentID*/, Entity* entity) {
         meshData.dynamicmodel = platform->dynamicModel;
         emit addMesh(QString::fromStdString(platform->ID), meshData);
     }
+    Weapon* weapon = dynamic_cast<Weapon*>(entity);
+    if (weapon) {
+        if (!weapon->transform || !weapon->collider || !weapon->meshRenderer2d) {
+            Console::error("Required components missing for entity: " + weapon->Name);
+            return;
+        }
+        MeshData meshData;
+        meshData.name = QString::fromStdString(weapon->Name);
+        meshData.transform = weapon->transform;
+        meshData.collider = weapon->collider;
+        meshData.trajectory = weapon->trajectory;
+        meshData.Meshes = weapon->meshRenderer2d->Meshes;
+        meshData.entity = entity;
+        meshData.dynamicmodel = weapon->dynamicModel;
+        emit addMesh(QString::fromStdString(weapon->ID), meshData);
+    }
     Specialzone* zone = dynamic_cast<Specialzone*>(entity);
     if (zone) {
         if (!zone->transform || !zone->collider || !zone->meshRenderer2d) {
@@ -58,11 +74,7 @@ void SceneRenderer::entityAdded(QString /*parentID*/, Entity* entity) {
         emit addMesh(QString::fromStdString(point->ID), meshData);
     }
 
-
-
-
 }
-
 void SceneRenderer::entityRemoved(QString ID) {
     emit removeMesh(ID);
     std::string key = ID.toStdString();

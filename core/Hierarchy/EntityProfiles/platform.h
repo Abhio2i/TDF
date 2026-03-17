@@ -11,6 +11,7 @@
 #include "core/Hierarchy/Components/sensorprofile.h"
 #include "core/Hierarchy/Components/weaponprofile.h"
 #include "core/Hierarchy/EntityProfiles/weapon.h"
+#include "mission/taskgroup.h"
 #include <core/Hierarchy/entity.h>
 #include <QObject>
 #include <QJsonObject>
@@ -33,9 +34,116 @@ class Platform: public Entity
 public:
     Platform(Hierarchy* h);
     ~Platform();
+    Hierarchy* m_hierarchy = nullptr;
     float width;
     float height;
-
+    enum MissionType{
+        PATROL,
+        SURVEILLANCE,
+        INTERCEPTION,
+        STRIKE,
+        ESCORT,
+        AREA_DENIAL,
+        SEARCH_AND_RESCUE,
+        BLOCKADE,
+        RECONNAISSANCE,
+        DEFENSIVE_HOLD
+    };
+    const std::string MissionTypeNames[10] = { "PATROL",
+                                      "SURVEILLANCE",
+                                      "INTERCEPTION",
+                                      "STRIKE",
+                                      "ESCORT",
+                                      "AREA_DENIAL",
+                                      "SEARCH_AND_RESCUE",
+                                      "BLOCKADE",
+                                      "RECONNAISSANCE",
+                                      "DEFENSIVE_HOLD"};
+    enum ROI{
+        HOLD_FIRE,
+        RETURN_FIRE_ONLY,
+        DEFENSIVE_ONLY,
+        FIRE_ON_DETECTION,
+        FIRE_ON_IDENTIFICATION,
+        FREE_FIRE,
+        COMMAND_AUTHORIZATION_REQUIRED,
+    };
+    const std::string ROINames[7] = { "HOLD_FIRE",
+                                     "RETURN_FIRE_ONLY",
+                                     "DEFENSIVE_ONLY",
+                                     "FIRE_ON_DETECTION",
+                                     "FIRE_ON_IDENTIFICATION",
+                                     "FREE_FIRE",
+                                     "COMMAND_AUTHORIZATION_REQUIRED"};
+    enum Engagement{
+        NEAREST_TARGET,
+        HIGHEST_THREAT,
+        LOWEST_HEALTH_TARGET,
+        ASSIGNED_TARGET_ONLY,
+        HIGH_VALUE_TARGET,
+        GROUP_ENGAGEMENT,
+        SEQUENTIAL_ENGAGEMENT
+    };
+    const std::string EngagementNames[7] = { "NEAREST_TARGET",
+                                     "HIGHEST_THREAT",
+                                     "LOWEST_HEALTH_TARGET",
+                                     "ASSIGNED_TARGET_ONLY",
+                                     "HIGH_VALUE_TARGET",
+                                     "GROUP_ENGAGEMENT",
+                                     "SEQUENTIAL_ENGAGEMENT"};
+    enum Retreat{
+        NEVER_RETREAT,
+        RETREAT_IF_OUTNUMBERED,
+        RETREAT_IF_DAMAGE_EXCEEDS_THRESHOLD,
+        RETREAT_IF_FUEL_LOW,
+        RETREAT_IF_AMMO_DEPLETED,
+        RETREAT_IF_COMMAND_ORDERED,
+        TACTICAL_WITHDRAWAL
+    };
+    const std::string RetreatNames[7] = { "NEVER_RETREAT",
+                                            "RETREAT_IF_OUTNUMBERED",
+                                            "RETREAT_IF_DAMAGE_EXCEEDS_THRESHOLD",
+                                            "RETREAT_IF_FUEL_LOW",
+                                            "RETREAT_IF_AMMO_DEPLETED",
+                                            "RETREAT_IF_COMMAND_ORDERED",
+                                            "TACTICAL_WITHDRAWAL"};
+    enum Detection{
+        PASSIVE_SENSORS_ONLY,
+        ACTIVE_RADAR_ALLOWED,
+        FULL_SENSOR_USAGE,
+        STEALTH_MODE,
+        EMCON_PASSIVE,
+        INTERMITTENT_RADAR
+    };
+    const std::string DetectionNames[6] = { "PASSIVE_SENSORS_ONLY",
+                                           "ACTIVE_RADAR_ALLOWED",
+                                           "FULL_SENSOR_USAGE",
+                                           "STEALTH_MODE",
+                                           "EMCON_PASSIVE",
+                                           "INTERMITTENT_RADAR"};
+    enum WeaponRelease{
+        AUTOMATIC,
+        SEMI_AUTOMATIC,
+        COMMAND_APPROVAL_REQUIRED,
+        WEAPON_FREE,
+        WEAPON_TIGHT,
+        WEAPON_HOLD
+    };
+    const std::string WeaponReleaseNames[6] = { "AUTOMATIC",
+                                           "SEMI_AUTOMATIC",
+                                           "COMMAND_APPROVAL_REQUIRED",
+                                           "WEAPON_FREE",
+                                           "WEAPON_TIGHT",
+                                           "WEAPON_HOLD"};
+    MissionType mtype = MissionType::PATROL;
+    ROI roi = ROI::DEFENSIVE_ONLY;
+    Engagement engagement = Engagement::NEAREST_TARGET;
+    Retreat retreat = Retreat::NEVER_RETREAT;
+    Detection detection = Detection::PASSIVE_SENSORS_ONLY;
+    WeaponRelease weaponrelease = WeaponRelease::WEAPON_HOLD;
+    float healthThreshold = 20;
+    float fuelthreshold = 20;
+    float engagementRange = 30;
     ///Components
     Transform *transform = nullptr;
     Trajectory *trajectory = nullptr;
@@ -45,6 +153,7 @@ public:
     NetworkObject *networkObject = nullptr;
     MeshRenderer2D *meshRenderer2d = nullptr;
     Mission *mission = nullptr;
+    TaskGroup* taskgroup;
     CrossSection *crossSection = nullptr;
     SensorProfile *sensors = nullptr;
     RadioProfile *radios = nullptr;
@@ -62,8 +171,9 @@ public:
     std::string getParam(std::string key);
     void removeParam(std::string key);
 
+    void Start();
     void update();
-
+    void Decision();
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;
@@ -76,6 +186,11 @@ public:
 
     // Helper methods
     Weapon* getWeaponByName(const std::string& name) const;
+
+public slots:
+    void start();
+    void reset();
+    void pause();
 };
 
 #endif // PLATFORM_H

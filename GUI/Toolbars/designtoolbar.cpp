@@ -245,6 +245,7 @@ void DesignToolBar::createActions() {
         emit modeChanged(Rotate);
     });
 
+
     // Main zoom in action
     zoomInAction = new QAction(QIcon(withWhiteBg(":/icons/images/zoom-in.png")), tr("Zoom In"), this);
     zoomInAction->setCheckable(false);
@@ -334,9 +335,10 @@ void DesignToolBar::createActions() {
     QAction* outlineAction = new QAction("Outline", this);
     QAction* informationAction = new QAction("Information", this);
     QAction* fpsAction = new QAction("FPS", this);
-    QAction* imageAction = new QAction("Image", this);
+    QAction* imageAction = new QAction("Entities", this);
     QAction* sensorsAction = new QAction("Sensors", this);
     QAction* radioAction = new QAction("Radio", this);
+    QAction* trajectoriesAction = new QAction("Trajectories", this);
     tooltipAction->setCheckable(true);
 
     tooltipAction->setChecked(false);
@@ -356,6 +358,8 @@ void DesignToolBar::createActions() {
     sensorsAction->setChecked(true);
     radioAction->setCheckable(true);
     radioAction->setChecked(false);
+    trajectoriesAction->setCheckable(true);
+    trajectoriesAction->setChecked(true);
     layerMenu->addAction(tooltipAction);
     layerMenu->addAction(colliderAction);
     layerMenu->addAction(meshAction);
@@ -366,6 +370,8 @@ void DesignToolBar::createActions() {
     layerMenu->addSeparator();
     layerMenu->addAction(sensorsAction);
     layerMenu->addAction(radioAction);
+    layerMenu->addAction(trajectoriesAction);
+
     layerSelectAction->setMenu(layerMenu);
 
     connect(tooltipAction, &QAction::triggered, this, [=](bool checked) {
@@ -399,6 +405,9 @@ void DesignToolBar::createActions() {
     });
     connect(radioAction, &QAction::triggered, this, [=](bool checked) {
         emit layerOptionToggled("Radio", checked);
+    });
+    connect(trajectoriesAction, &QAction::triggered, this, [=](bool checked) {
+        emit layerOptionToggled("Trajectories", checked);
     });
 
     // Main measurement tool action
@@ -631,7 +640,7 @@ void DesignToolBar::createActions() {
 
     QWidgetAction* searchAction = new QWidgetAction(this);
     QLineEdit* searchInput = new QLineEdit();
-    searchInput->setPlaceholderText("Enter location or coordinates (lat,lon)...");
+    searchInput->setPlaceholderText("Enter coordinates (lat,lon)...");
     searchInput->setMinimumWidth(200);
     searchInput->setStyleSheet(DesignToolbarStyles::LineEdit);
 

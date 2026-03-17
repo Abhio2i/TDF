@@ -31,12 +31,17 @@
 #include "GUI/Panel/radiodisplay.h"
 #include "GUI/Panel/csmdisplay.h"
 #include "GUI/Panel/esmdisplay.h"
+#include "GUI/Panel/sonardisplay.h"              // for sonar display
 #include "GUI/Logger/loggerdialog.h"              // For logger dialog
 #include <QTabWidget>                             // For tabbed interface
 #include <QStatusBar>                              // For status bar display
 #include <GUI/Menubars/profileinfodialog.h>
 #include <GUI/Tacticaldisplay/Gis/layerpanel.h>
 #include "GUI/Editors/customresizableoverlaydock.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h" //by amjad
+#include "core/Hierarchy/Components/transform.h"   // ← ADD (already ho sakta hai)
+#include "core/Hierarchy/EntityProfiles/platform.h" // ← ADD
+#include <QElapsedTimer>                            // ← ADD
 
 // %%% Class Definition %%%
 /* Main window class for the runtime editor */
@@ -71,6 +76,8 @@ public:
     void triggerSidebarView(const QString &viewName);
     void triggerDisplayTab(const QString &tabName);
     TacticalDisplay *tacticalDisplay;
+    static QJsonObject s_missionData;
+    static QString     s_missionFilePath;
 
 public slots:
     void showProfileInfo();
@@ -100,7 +107,7 @@ private slots:
     void setupEnhancedDockWidgets();
     void onDockVisibilityChanged(bool visible);
     void resetLayout();
-    void onRecentLibraryTriggered();
+    // void onRecentLibraryTriggered();
     void showPanelContextMenu(const QPoint &pos);
 
 signals:
@@ -162,11 +169,15 @@ private:
     RADIODisplay *radioDisplayUI;
     ESMDisplay *esmDisplayUI;
     CSMDisplay *csmDisplayUI;
+    SonarDisplay *sonarDisplayUI;  //  by amjad
     LoggerDialog *loggerDialog;
     QDateTime recordingStartTime;
     QTimer *recordingTimer = nullptr;
     ScenarioConfig* m_scenarioConfig;
     bool m_canvasSelecting = false;
+
+    ActiveSonar   m_activeSonar; // by amjad
+    QElapsedTimer m_sonarTimer;
 
 private:
     qint64 pausedTimeMs = 0;

@@ -210,6 +210,7 @@ QString Sensor::subTypeToString(SubType t) const {
     switch (t) {
     case SubType::CSM: return "CSM";
     case SubType::ESM: return "ESM";
+    case SubType::Sonar: return "Sonar";
     case SubType::Generic: return "Generic";
     default: return "Generic";
     }
@@ -219,6 +220,7 @@ Sensor::SubType Sensor::stringToSubType(const QString& str) const {
     QString lower = str.toLower();
     if (lower == "csm") return SubType::CSM;
     if (lower == "esm") return SubType::ESM;
+    if (lower == "sonar") return SubType::Sonar;
     if (lower == "sensor" || lower == "generic") return SubType::Generic;
     return SubType::Generic;  // ✅ Default fallback
 }

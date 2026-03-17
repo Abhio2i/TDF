@@ -1,5 +1,6 @@
 QT += core gui widgets charts
 QT += core gui widgets xml svg
+QT += sql
 QT += websockets
 # QT       += core gui
 QT += 3dcore 3drender 3dinput 3dextras
@@ -27,19 +28,28 @@ LIBS += -L/usr/lib \
     -lqgis_core \
     -lqgis_gui \
     -lqgis_analysis \
-    -lproj
+    -lproj \
+
 
 
 SOURCES += \
     GUI/Console/consoleview.cpp \
+    GUI/DOCTRINE/doctrineareadefinition.cpp \
+    GUI/DOCTRINE/doctrineassumptionsnotes.cpp \
+    GUI/DOCTRINE/doctrineparameters.cpp \
+    GUI/DOCTRINE/tacticalrules.cpp \
+    GUI/Editors/analysiseditor.cpp \
     GUI/Editors/customresizableoverlaydock.cpp \
     GUI/Editors/databaseeditor.cpp \
+    GUI/Editors/missioneditor.cpp \
     GUI/Editors/recentprojectsmanager.cpp \
+    GUI/Editors/reportseditor.cpp \
     GUI/Editors/runtimeeditor.cpp \
     GUI/Editors/scenarioeditor.cpp \
     GUI/Feedback/projectinformation.cpp \
     GUI/Hierarchytree/addformationdialog.cpp \
     GUI/Hierarchytree/additemdialog.cpp \
+    GUI/Hierarchytree/addweapondialog.cpp \
     GUI/Hierarchytree/contextmenu.cpp \
     GUI/Hierarchytree/customtrajectorydialog.cpp \
     GUI/Hierarchytree/hierarchyconnector.cpp \
@@ -61,9 +71,11 @@ SOURCES += \
     GUI/Overview/overview.cpp \
     GUI/Panel/csmdisplay.cpp \
     GUI/Panel/esmdisplay.cpp \
+    GUI/Panel/ewdisplay.cpp \
     GUI/Panel/iffdisplay.cpp \
     GUI/Panel/radardisplay.cpp \
     GUI/Panel/radiodisplay.cpp \
+    GUI/Panel/sonardisplay.cpp \
     GUI/Plugins/pluginwindow.cpp \
     GUI/Settings/applicationdialog.cpp \
     GUI/Sidebar/sidebarwidget.cpp \
@@ -92,6 +104,7 @@ SOURCES += \
     GUI/mainwindow.cpp \
     GUI/measuredistance/measuredistancedialog.cpp \
     GUI/scene3dwidget/scene3dwidget.cpp \
+    GUI/statusbar.cpp \
     Setup.cpp \
     angelscript/add_on/scriptarray/scriptarray.cpp \
     angelscript/add_on/scriptstdstring/scriptstdstring.cpp \
@@ -314,6 +327,8 @@ SOURCES += \
     core/Debug/console.cpp \
     core/Debug/frame.cpp \
     core/Debug/profiler.cpp \
+    core/Dynamics/Model/aircraft.cpp \
+    core/Dynamics/dynamics.cpp \
     core/GlobalRegistry.cpp \
     core/Hierarchy/Components/attachedenitities.cpp \
     core/Hierarchy/Components/collider.cpp \
@@ -330,9 +345,14 @@ SOURCES += \
     core/Hierarchy/Components/sensorprofile.cpp \
     core/Hierarchy/Components/trajectory.cpp \
     core/Hierarchy/Components/transform.cpp \
+    core/Hierarchy/Components/weaponprofile.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/csm.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/esm.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/radar.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/sonar.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.cpp \
     core/Hierarchy/EntityProfiles/fixedpoints.cpp \
     core/Hierarchy/EntityProfiles/formation.cpp \
     core/Hierarchy/EntityProfiles/iff.cpp \
@@ -340,7 +360,14 @@ SOURCES += \
     core/Hierarchy/EntityProfiles/radio.cpp \
     core/Hierarchy/EntityProfiles/sensor.cpp \
     core/Hierarchy/EntityProfiles/specialzone.cpp \
-    core/Hierarchy/EntityProfiles/weapons.cpp \
+    core/Hierarchy/EntityProfiles/weapon.cpp \
+    core/Hierarchy/EntityProfiles/weapons/artillery.cpp \
+    core/Hierarchy/EntityProfiles/weapons/bomb.cpp \
+    core/Hierarchy/EntityProfiles/weapons/chaff.cpp \
+    core/Hierarchy/EntityProfiles/weapons/flare.cpp \
+    core/Hierarchy/EntityProfiles/weapons/missile.cpp \
+    core/Hierarchy/EntityProfiles/weapons/rocket.cpp \
+    core/Hierarchy/EntityProfiles/weapons/torpedo.cpp \
     core/Hierarchy/Struct/action.cpp \
     core/Hierarchy/Struct/color.cpp \
     core/Hierarchy/Struct/condition.cpp \
@@ -348,7 +375,6 @@ SOURCES += \
     core/Hierarchy/Struct/formationposition.cpp \
     core/Hierarchy/Struct/geocords.cpp \
     core/Hierarchy/Struct/parameter.cpp \
-    core/Hierarchy/Struct/task.cpp \
     core/Hierarchy/Struct/vector.cpp \
     core/Hierarchy/Struct/waypoints.cpp \
     core/Hierarchy/Utils/entityutils.cpp \
@@ -367,6 +393,7 @@ SOURCES += \
     core/Plugins/pluginmanager.cpp \
     core/Recorder/recorder.cpp \
     core/Render/scenerenderer.cpp \
+    core/SQLite/sqlite.cpp \
     core/ScriptEngine/scriptengine.cpp \
     core/ScriptEngine/scriptenginegis.cpp \
     core/SharedMemory/sharedmemorywrapper.cpp \
@@ -569,15 +596,29 @@ SOURCES += \
     dis7/WarfareFamilyPdu.cpp \
     dis7/utils/ConversionUtils.cpp \
     dis7/utils/DataStream.cpp \
-    main.cpp
+    main.cpp \
+    mission/actions.cpp \
+    mission/ifcondition.cpp \
+    mission/inputs.cpp \
+    mission/task.cpp \
+    mission/taskgroup.cpp
 
 HEADERS += \
     GUI/Console/consoleview-styles.h \
     GUI/Console/consoleview.h \
+    GUI/DOCTRINE/doctrine-styles.h \
+    GUI/DOCTRINE/doctrineareadefinition.h \
+    GUI/DOCTRINE/doctrineassumptionsnotes.h \
+    GUI/DOCTRINE/doctrineparameters.h \
+    GUI/DOCTRINE/tactical-styles.h \
+    GUI/DOCTRINE/tacticalrules.h \
+    GUI/Editors/analysiseditor.h \
     GUI/Editors/customresizableoverlaydock.h \
     GUI/Editors/database-styles.h \
     GUI/Editors/databaseeditor.h \
+    GUI/Editors/missioneditor.h \
     GUI/Editors/recentprojectsmanager.h \
+    GUI/Editors/reportseditor.h \
     GUI/Editors/runtimeeditor.h \
     GUI/Editors/scenarioeditor.h \
     GUI/Feedback/projectinformation-styles.h \
@@ -585,6 +626,7 @@ HEADERS += \
     GUI/Hierarchytree/addformationdialog.h \
     GUI/Hierarchytree/additemdialog-styles.h \
     GUI/Hierarchytree/additemdialog.h \
+    GUI/Hierarchytree/addweapondialog.h \
     GUI/Hierarchytree/contextmenu-styles.h \
     GUI/Hierarchytree/contextmenu.h \
     GUI/Hierarchytree/customtrajectorydialog.h \
@@ -612,10 +654,13 @@ HEADERS += \
     GUI/Navigation/navigationpage.h \
     GUI/Overview/overview.h \
     GUI/Panel/csmdisplay.h \
+    GUI/Panel/displayconstants.h \
     GUI/Panel/esmdisplay.h \
+    GUI/Panel/ewdisplay.h \
     GUI/Panel/iffdisplay.h \
     GUI/Panel/radardisplay.h \
     GUI/Panel/radiodisplay.h \
+    GUI/Panel/sonardisplay.h \
     GUI/Plugins/pluginwindow.h \
     GUI/Settings/applicationdialog-styles.h \
     GUI/Settings/applicationdialog.h \
@@ -653,6 +698,7 @@ HEADERS += \
     GUI/measuredistance/measuredistancedialog-styles.h \
     GUI/measuredistance/measuredistancedialog.h \
     GUI/scene3dwidget/scene3dwidget.h \
+    GUI/statusbar.h \
     Setup.h \
     angelscript/add_on/scriptarray/scriptarray.h \
     angelscript/add_on/scriptstdstring/scriptstdstring.h \
@@ -1036,6 +1082,8 @@ HEADERS += \
     core/Debug/console.h \
     core/Debug/frame.h \
     core/Debug/profiler.h \
+    core/Dynamics/Model/aircraft.h \
+    core/Dynamics/dynamics.h \
     core/GlobalRegistry.h \
     core/Hierarchy/Components/attachedenitities.h \
     core/Hierarchy/Components/collider.h \
@@ -1052,9 +1100,14 @@ HEADERS += \
     core/Hierarchy/Components/sensorprofile.h \
     core/Hierarchy/Components/trajectory.h \
     core/Hierarchy/Components/transform.h \
+    core/Hierarchy/Components/weaponprofile.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/csm.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/esm.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+    core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
+    core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h \
+    core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+    core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
     core/Hierarchy/EntityProfiles/fixedpoints.h \
     core/Hierarchy/EntityProfiles/formation.h \
     core/Hierarchy/EntityProfiles/iff.h \
@@ -1062,7 +1115,14 @@ HEADERS += \
     core/Hierarchy/EntityProfiles/radio.h \
     core/Hierarchy/EntityProfiles/sensor.h \
     core/Hierarchy/EntityProfiles/specialzone.h \
-    core/Hierarchy/EntityProfiles/weapons.h \
+    core/Hierarchy/EntityProfiles/weapon.h \
+    core/Hierarchy/EntityProfiles/weapons/artillery.h \
+    core/Hierarchy/EntityProfiles/weapons/bomb.h \
+    core/Hierarchy/EntityProfiles/weapons/chaff.h \
+    core/Hierarchy/EntityProfiles/weapons/flare.h \
+    core/Hierarchy/EntityProfiles/weapons/missile.h \
+    core/Hierarchy/EntityProfiles/weapons/rocket.h \
+    core/Hierarchy/EntityProfiles/weapons/torpedo.h \
     core/Hierarchy/Struct/action.h \
     core/Hierarchy/Struct/color.h \
     core/Hierarchy/Struct/condition.h \
@@ -1070,7 +1130,6 @@ HEADERS += \
     core/Hierarchy/Struct/formationposition.h \
     core/Hierarchy/Struct/geocords.h \
     core/Hierarchy/Struct/parameter.h \
-    core/Hierarchy/Struct/task.h \
     core/Hierarchy/Struct/vector.h \
     core/Hierarchy/Struct/waypoints.h \
     core/Hierarchy/Utils/entityutils.h \
@@ -1089,8 +1148,10 @@ HEADERS += \
     core/Network/profilepdu.h \
     core/Network/transformpdu.h \
     core/Plugins/pluginmanager.h \
+    core/Recorder/payload.h \
     core/Recorder/recorder.h \
     core/Render/scenerenderer.h \
+    core/SQLite/sqlite.h \
     core/ScriptEngine/scriptengine.h \
     core/ScriptEngine/scriptenginegis.h \
     core/SharedMemory/sharedmemorywrapper.h \
@@ -1284,11 +1345,22 @@ HEADERS += \
     dis7/utils/ConversionUtils.h \
     dis7/utils/DataStream.h \
     dis7/utils/Endian.h \
-    dis7/utils/PDUType.h
+    dis7/utils/PDUType.h \
+    mission/actions.h \
+    mission/ifcondition.h \
+    mission/inputs.h \
+    mission/task.h \
+    mission/taskgroup.h
 
 win32: LIBS += -lws2_32
+win32: LIBS += -lpsapi
 
-FORMS +=
+FORMS += \
+    mission/actions.ui \
+    mission/ifcondition.ui \
+    mission/inputs.ui \
+    mission/task.ui \
+    mission/taskgroup.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

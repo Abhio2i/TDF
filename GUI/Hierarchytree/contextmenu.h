@@ -1,17 +1,17 @@
 
 /* ========================================================================= */
-/* File: contextmenu.h                                                      */
-/* Purpose: Context-sensitive menu for hierarchy tree operations            */
+/* File: contextmenu.h                                                       */
+/* Purpose: Context-sensitive menu for hierarchy tree operations             */
 // Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef CONTEXTMENU_H
 #define CONTEXTMENU_H
 
-#include <QMenu>                         // For menu base class
-#include <QTreeWidgetItem>               // For tree item handling
-#include <QVariantMap>                   // For data storage and transfer
-#include <QList>                         // For list of items
+#include <QMenu>                              // For menu base class
+#include <QTreeWidgetItem>                    // For tree item handling
+#include <QVariantMap>                        // For data storage and transfer
+#include <QList>                              // For list of items
 #include "GUI/Hierarchytree/additemdialog.h"  // For add item dialog integration
 
 // Forward declarations
@@ -57,7 +57,10 @@ signals:
                             bool isProfileParent,
                             QVariantMap components = QVariantMap(),
                             AddItemDialog* dialog = nullptr,
-                            QString sensorType = "Generic",double initLat = 20000,double initlon = 20000,float heading = 20000);
+                            QString sensorType = "Generic",
+                            double initLat = 20000,
+                            double initlon = 20000,
+                            float heading = 20000);
     /* Request to remove existing entity */
     void removeEntityRequested(QString parentID, QString ID, bool isProfileParent);
 
@@ -68,7 +71,7 @@ signals:
     void removeProfileRequested(QString ID);
 
     // %%% Component Operations Signals %%%
-    /* Request to add component to entity */
+    /* Request to add component to entity (Radio / Sensor / IFF) */
     void addComponentRequested(QString entityID, QString componentType, QString componentName,
                                QString sensorType = "Generic", QString profileId = "");
     /* Request to remove component from entity */
@@ -95,11 +98,10 @@ private:
     void setupFolderMenu(const QVariantMap &data);
     /* Configure menu options for entity items */
     void setupEntityMenu(const QVariantMap &data);
-    /* Configure menu options for component items */
+    /* Configure menu options for component items (Radio, Sensor, IFF, Weapon) */
     void setupComponentMenu(const QVariantMap &data);
     /* Configure menu options for sub-component items */
     void setupSubComponentMenu(const QVariantMap &data);
-
 };
 
 #endif // CONTEXTMENU_H

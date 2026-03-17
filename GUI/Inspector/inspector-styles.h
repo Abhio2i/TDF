@@ -69,20 +69,19 @@ const QString TableWidget = R"(
         background-color: #0F2636;
         color: white;
         border: none;
-        gridline-color: #1A3652;
+        gridline-color: transparent;
         outline: none;
         font-size: 12px;
     }
     QTableWidget::item {
         background-color: #0F2636;
         color: white;
+        border: none;
         border-bottom: 1px solid #1A3652;
-        padding: 6px 8px;
+        border-right: none;
+        padding: 4px 2px;
     }
-    QTableWidget::item:selected {
-        background-color: #0078D4;
-        color: white;
-    }
+
     QTableWidget::item:hover {
         background-color: #1A3652;
     }
@@ -91,7 +90,6 @@ const QString TableWidget = R"(
         color: #E0E0E0;
         padding: 8px;
         border: none;
-        border-bottom: 2px solid #27446d;
         font-weight: 600;
         font-size: 12px;
     }
@@ -157,7 +155,7 @@ const QString GeocordsInput = R"(
         color: white;
         border: 1px solid #27446d;
         border-radius: 2px;
-        padding: 4px 8px;
+        padding: 4px 2px;
         selection-background-color: #0078D4;
         font-size: 11px;
     }
@@ -324,7 +322,7 @@ const QString ImageLineEdit = R"(
         color: white;
         border: 1px solid #27446d;
         border-radius: 2px;
-        padding: 4px 8px;
+        padding: 4px 2px;
         selection-background-color: #0078D4;
         font-size: 11px;
     }
@@ -359,7 +357,7 @@ const QString OptionComboBox = R"(
         color: white;
         border: 1px solid #27446d;
         border-radius: 2px;
-        padding: 4px 8px;
+        padding: 4px 2px;
         font-size: 11px;
         min-width: 120px;
     }
@@ -367,18 +365,16 @@ const QString OptionComboBox = R"(
         background-color: #27446d;
         border-color: #3A5A7A;
     }
-    QComboBox::drop-down {
-        border: none;
-        width: 20px;
-    }
-    QComboBox::down-arrow {
-        width: 12px;
-        height: 12px;
-    }
+QComboBox::down-arrow {
+    image: url(:/icons/images/arrow-down.png);  // apni existing icons path use karo
+    width: 10px;
+    height: 6px;
+}
     QComboBox QAbstractItemView {
         background-color: #1A3652;
         color: white;
         border: 1px solid #27446d;
+
         selection-background-color: #0078D4;
         selection-color: white;
     }
@@ -408,7 +404,7 @@ const QString VectorInput = R"(
         color: white;
         border: 1px solid #27446d;
         border-radius: 2px;
-        padding: 4px 8px;
+        padding: 4px 2px;
         selection-background-color: #0078D4;
         font-size: 11px;
         min-width: 100px;
@@ -437,7 +433,11 @@ const QString UnitParamLabel = R"(
         color: #999999;
         font-size: 11px;
         font-style: normal;
-        padding-left: 4px;
+        padding: 0px 4px;
+        margin: 0px;
+        background-color: #1A3652;
+        border: 1px solid #27446d;
+        border-left: none;
     }
 )";
 
@@ -445,7 +445,6 @@ const QString UnitParamLabel = R"(
 const QString SectionHeader = R"(
     QWidget {
         background-color: #1A3652;
-        border-left: 3px solid #0078D4;
         border-top: 1px solid #27446d;
         border-bottom: 1px solid #27446d;
     }
@@ -501,7 +500,6 @@ const QString ContainerDropdownButton = R"(
     }
 )";
 
-/* Subcomponent Group Box - used in handleMultiComponentContainer */
 /* ==================== CHECKBOX ==================== */
 const QString CheckBox = R"(
     QCheckBox {
@@ -543,7 +541,7 @@ const QString LineEdit = R"(
         color: white;
         border: 1px solid #27446d;
         border-radius: 2px;
-        padding: 4px 8px;
+        padding: 4px 2px;
         selection-background-color: #0078D4;
         font-size: 12px;
     }
@@ -560,7 +558,7 @@ const QString ReadOnlyLineEdit = R"(
         color: #C0C0C0;
         border: 1px solid #1A3652;
         border-radius: 2px;
-        padding: 4px 8px;
+        padding: 4px 2px;
         font-size: 12px;
     }
 )";
@@ -572,7 +570,7 @@ const QString WheelableLineEdit = R"(
         color: white;
         border: 1px solid #27446d;
         border-radius: 2px;
-        padding: 4px 8px;
+        padding: 4px 2px;
         selection-background-color: #0078D4;
         font-size: 12px;
     }
@@ -602,7 +600,6 @@ const QString DropdownButton = R"(
         background-color: #1E3E5E;
         border-left: 3px solid #0078D4;
     }
-
 )";
 
 /* List Widget */
@@ -712,6 +709,7 @@ const QString TableParamKeyItem = R"(
     padding-left: 20px;
     border-right: 1px solid #27446d;
 )";
+
 /* ==================== FIXED DARK STYLES FOR SENSORS ==================== */
 
 /* Subcomponent Group Box - Dark theme for sensors */
@@ -798,25 +796,38 @@ const QString ScrollArea = R"(
     }
 )";
 
-/* Sensor Active Checkbox */
+/* ==================== SENSOR CHECKBOX - matches main CheckBox style with check icon ==================== */
 const QString SensorCheckBox = R"(
     QCheckBox {
-        color: white !important;
+        color: white;
+        border: none;
+        background-color: transparent;
         spacing: 6px;
     }
     QCheckBox::indicator {
-        width: 16px;
-        height: 16px;
-        background-color: #1A3652 !important;
-        border: 1px solid #27446d !important;
-        border-radius: 2px;
+        width: 14px;
+        height: 14px;
+        border: 1px solid #666;
+        background-color: white;
+        subcontrol-origin: padding;
+        subcontrol-position: center;
     }
     QCheckBox::indicator:checked {
-        background-color: #0078D4 !important;
-        border: 1px solid #0078D4 !important;
+        image: url(:/icons/images/check-box.png);
+        background-color: #007bff;
+        border: 1px solid #007bff;
     }
-    QCheckBox::indicator:unchecked:hover {
-        border: 1px solid #0078D4 !important;
+    QCheckBox::indicator:unchecked {
+        image: none;
+        background-color: white;
+        border: 1px solid #666;
+    }
+    QCheckBox::indicator:hover {
+        border: 1px solid #007bff;
+    }
+    QCheckBox::indicator:checked:hover {
+        background-color: #1a8cff;
+        border: 1px solid #1a8cff;
     }
 )";
 

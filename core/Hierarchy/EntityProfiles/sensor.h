@@ -21,7 +21,20 @@ struct Target{
     float altitude;
     float lat;
     float lon;
+    float radialVelocity = 0.0f;  // ADD THIS — m/s, + = closing, - = opening
+
 };
+
+// struct Target{
+//     Platform *entity;
+//     float radius;
+//     float angle;
+//     float speed;
+//     float direction;
+//     float altitude;
+//     float lat;
+//     float lon;
+// };
 
 class Sensor : public Entity
 {
@@ -32,7 +45,7 @@ public:
     // Sensor attributes
     enum class Type { Active, Passive };
     enum class Mode { Search, Track, TrackWhileScan, FireControl };
-    enum class SubType { Generic, CSM, ESM };
+    enum class SubType { Generic, CSM, ESM,Sonar };
     enum class DetectionCapabilities { All, MovingOnly };
     Q_ENUM(DetectionCapabilities);
     struct Detection {
@@ -127,15 +140,20 @@ public:
     static SubType getSubTypeFromString(const QString& str) {
         if (str == "CSM") return SubType::CSM;
         if (str == "ESM") return SubType::ESM;
+        if (str == "Sonar") return SubType::Sonar;
         return SubType::Generic;
     }
     QString detectionCapabilitiesToString(DetectionCapabilities t) const;
     Sensor::DetectionCapabilities stringTodetectionCapabilities(const QString& str) const;
     QString subTypeToString(SubType t) const;
     SubType stringToSubType(const QString& str) const;
+
 signals:
     void availableConnectionsUpdated(const QJsonArray& msgArray);
+    void enemyDetected();
+    void enemyNotFound();
 private:
+    bool enemyAvailabel = false;
     QString modeToString(Mode m) const;
     Mode stringToMode(const QString& str) const;
 };

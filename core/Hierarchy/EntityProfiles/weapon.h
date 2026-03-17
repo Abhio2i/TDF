@@ -1,269 +1,219 @@
-// #ifndef WEAPON_H
-// #define WEAPON_H
+/* ========================================================================= */
+/* File: weapon.h                                                            */
+/* Purpose: Base class for all weapon types.                                 */
+/*          Follows the same pattern as sensor.h / Sensor base class.        */
+/*          Subclasses (Missile, Bomb, Torpedo, Artillery, Rocket,           */
+/*          Flare, Chaff) live in WeaponTypes/ and override launch() and     */
+/*          toJson() / fromJson() exactly like ESM/CSM override scan().      */
+/* ========================================================================= */
 
-// #include "core/Hierarchy/EntityProfiles/platform.h"
-// #include <core/Hierarchy/entity.h>
-// #include <QObject>
-// #include <QJsonObject>
-// #include <QJsonArray>
-// #include <string>
-// #include <vector>
-// #include <unordered_set>
-
-// class CanvasWidget;
-// class Weapon : public Entity
-// {
-//     Q_OBJECT
-// public:
-//     explicit Weapon(Hierarchy* h);
-
-//     // Weapon types
-//     enum class WeaponType { Missile, Bomb, Torpedo, Artillery, Rocket, Flare, Chaff };
-//     enum class GuidanceType { Unguided, SemiActive, FullyActive, PassiveInfrared, CommandGuided, InertialGuidance };
-//     enum class DetonationType { Impact, Proximity, Timed, Command };
-//     enum class PropulsionType { SolidRocket, LiquidRocket, Turbofan, Ramjet, Turboprop, Gravity };
-
-//     Entity* parentEntity = nullptr;
-//     WeaponType weaponType = WeaponType::Missile;
-
-//     // Basic weapon specifications (Specifications section)
-//     std::string designation;        // e.g., "AIM-120C", "AGM-65D"
-//     float length = 3.7f;            // meters
-//     float diameter = 0.178f;        // meters
-//     float totalMass = 45.0f;        // kg
-//     float payloadMass = 20.0f;      // kg
-//     float fuelMass = 15.0f;         // kg
-
-//     // Performance characteristics (Performance section)
-//     float maxVelocity = 2500.0f;    // m/s
-//     float minVelocity = 100.0f;     // m/s
-//     float maxRange = 100000.0f;     // meters
-//     float minRange = 500.0f;        // meters
-//     float maxAltitude = 20000.0f;   // meters
-//     float minAltitude = 0.0f;       // meters
-//     float maximumG = 25.0f;         // G-force capability
-//     float flightTimeMax = 600.0f;   // seconds
-
-//     // Guidance system (Guidance section)
-//     GuidanceType guidanceType = GuidanceType::FullyActive;
-//     float seekerRange = 100000.0f;  // meters
-//     float seekerFOV = 45.0f;        // degrees
-//     float lockOnRange = 50000.0f;   // meters
-//     bool isLocked = false;
-//     Platform* targetEntity = nullptr;
-
-//     // Detonation characteristics (Detonation section)
-//     DetonationType detonationType = DetonationType::Proximity;
-//     float proximityRange = 100.0f;  // meters
-//     float timerDelay = 5.0f;        // seconds
-
-//     // Warhead specifications (Warhead section)
-//     float blastRadius = 200.0f;     // meters
-//     float effectiveRadius = 500.0f; // meters
-//     float peakPressure = 500.0f;    // kPa
-//     std::string warheadType;        // "HE", "Fragmentation", etc.
-
-//     // Propulsion system (Propulsion section)
-//     PropulsionType propulsionType = PropulsionType::SolidRocket;
-//     float thrustMain = 200000.0f;   // Newton
-//     float thrustBooster = 50000.0f; // Newton
-//     float burnTime = 45.0f;         // seconds
-//     float specificImpulse = 280.0f; // seconds
-
-//     // Launch constraints & Safety (Launch section)
-//     float launchG = 5.0f;           // G-forces
-//     float preflightCheckTime = 30.0f; // seconds
-//     int rearmTime = 600;            // seconds
-//     bool armed = false;
-//     bool safed = true;
-
-//     // Seeker/Tracking (Tracking section)
-//     float seekerTrackingRate = 30.0f; // degrees/second
-//     float seekerLockAccuracy = 0.5f;  // degrees
-//     bool isActive = false;
-
-//     // Evasion/Counter-measures
-//     float flareDispensed = 0;
-//     float chaffDispensed = 0;
-//     bool chainsawMode = false;
-
-//     // Target tracking structure
-//     struct WeaponTarget {
-//         Platform* entity;
-//         std::string name;
-//         float distance = 0.0f;      // meters
-//         float bearing = 0.0f;       // degrees
-//         float elevation = 0.0f;     // degrees
-//         float closureRate = 0.0f;   // m/s
-//         float aspect = 0.0f;        // degrees
-//         bool inGimbalLock = false;
-//     };
-
-//     // Weapon behavior methods
-//     void launch();
-//     void flyToTarget();
-//     void updateGuidance();
-//     void checkDetonation();
-//     void disarmWeapon();
-//     void rearmWeapon();
-//     void scan();
-//     bool canEngage(Platform* target);
-//     float calculateImpactTime(Platform* target);
-//     float calculateLaunchPoint();
-
-//     std::unordered_set<Platform*> detects;
-//     QVector<WeaponTarget> targets;
-
-//     // Override entity functions
-//     void spawn() override;
-//     std::vector<std::string> getSupportedComponents() override;
-//     void addComponent(std::string name) override;
-//     void removeComponent(std::string name) override;
-//     QJsonObject getComponent(std::string name) override;
-//     void updateComponent(QString name, const QJsonObject& obj) override;
-
-//     // Serialization
-//     QJsonObject toJson() const override;
-//     void fromJson(const QJsonObject& obj) override;
-// };
-
-// #endif // WEAPON_H
 #ifndef WEAPON_H
 #define WEAPON_H
 
-#include "core/Hierarchy/EntityProfiles/platform.h"
 #include <core/Hierarchy/entity.h>
 #include <QObject>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QTimer>
+#include <QElapsedTimer>
 #include <string>
 #include <vector>
 #include <unordered_set>
 
+// ── Auto-integrated component headers ────────────────────────────────────────
+#include <core/Hierarchy/Components/transform.h>
+#include <core/Hierarchy/Components/rigidbody.h>
+#include <core/Hierarchy/Components/collider.h>
+#include <core/Hierarchy/Components/trajectory.h>
+#include <core/Hierarchy/Components/meshrenderer2d.h>
+#include <core/Hierarchy/Components/dynamicmodel.h>
+#include <core/Hierarchy/Components/crosssection.h>
+
+class Platform;
 class CanvasWidget;
+
+// ── WeaponTarget struct (same as Sensor's Target struct) ─────────────────────
+struct WeaponTarget {
+    Platform   *entity    = nullptr;
+    std::string name;
+    float distance    = 0.0f;
+    float bearing     = 0.0f;
+    float elevation   = 0.0f;
+    float closureRate = 0.0f;
+    float aspect      = 0.0f;
+    bool  inGimbalLock = false;
+};
+
 class Weapon : public Entity
 {
     Q_OBJECT
 public:
     explicit Weapon(Hierarchy* h);
+    ~Weapon() override;
 
-    // Weapon types
-    enum class WeaponType { Missile, Bomb, Torpedo, Artillery, Rocket, Flare, Chaff };
-    enum class GuidanceType { Unguided, SemiActive, FullyActive, PassiveInfrared, CommandGuided, InertialGuidance };
+    // ── WeaponType enum (same role as Sensor::SubType) ────────────────────────
+    enum class WeaponType     { Missile, Bomb, Torpedo, Artillery, Rocket, Flare, Chaff };
+    enum class GuidanceType   { Unguided, SemiActive, FullyActive, PassiveInfrared,
+                              CommandGuided, InertialGuidance };
     enum class DetonationType { Impact, Proximity, Timed, Command };
     enum class PropulsionType { SolidRocket, LiquidRocket, Turbofan, Ramjet, Turboprop, Gravity };
 
-    Entity* parentEntity = nullptr;
+    // ── Type tag (overridden by each subclass, same role as Sensor::subType) ──
     WeaponType weaponType = WeaponType::Missile;
+    virtual QString weaponTypeName() const { return "Missile"; }
 
-    // Basic weapon specifications (Specifications section)
-    std::string designation;        // e.g., "AIM-120C", "AGM-65D"
-    float length = 3.7f;            // meters
-    float diameter = 0.178f;        // meters
-    float totalMass = 45.0f;        // kg
-    float payloadMass = 20.0f;      // kg
-    float fuelMass = 15.0f;         // kg
+    // ── Ownership ─────────────────────────────────────────────────────────────
+    Entity *parentEntity = nullptr;
 
-    // Performance characteristics (Performance section)
-    float maxVelocity = 2500.0f;    // m/s
-    float minVelocity = 100.0f;     // m/s
-    float maxRange = 100000.0f;     // meters
-    float minRange = 500.0f;        // meters
-    float maxAltitude = 20000.0f;   // meters
-    float minAltitude = 0.0f;       // meters
-    float maximumG = 25.0f;         // G-force capability
-    float flightTimeMax = 600.0f;   // seconds
+    // =========================================================================
+    // AUTO-INTEGRATED COMPONENTS  (created in constructor, same as Platform)
+    // =========================================================================
+    Transform      *transform      = nullptr;
+    Rigidbody      *rigidbody      = nullptr;
+    Collider       *collider       = nullptr;
+    Trajectory     *trajectory     = nullptr;
+    MeshRenderer2D *meshRenderer2d = nullptr;
+    DynamicModel   *dynamicModel   = nullptr;
+    CrossSection   *crossSection   = nullptr;
 
-    // Guidance system (Guidance section)
-    GuidanceType guidanceType = GuidanceType::FullyActive;
-    float seekerRange = 100000.0f;  // meters
-    float seekerFOV = 45.0f;        // degrees
-    float lockOnRange = 50000.0f;   // meters
-    bool isLocked = false;
-    Platform* targetEntity = nullptr;
+    // ── Shared physical fields ────────────────────────────────────────────────
+    std::string designation;
+    float length        = 3.7f;
+    float diameter      = 0.178f;
+    float totalMass     = 45.0f;
+    float payloadMass   = 20.0f;
+    float fuelMass      = 15.0f;
 
-    // Detonation characteristics (Detonation section)
+    // ── Shared performance fields ─────────────────────────────────────────────
+    float maxVelocity   = 2500.0f;
+    float minVelocity   = 100.0f;
+    float maxRange      = 100000.0f;
+    float minRange      = 500.0f;
+    float maxAltitude   = 20000.0f;
+    float minAltitude   = 0.0f;
+    float maximumG      = 25.0f;
+    float flightTimeMax = 600.0f;
+
+    // ── Shared detonation fields ──────────────────────────────────────────────
     DetonationType detonationType = DetonationType::Proximity;
-    float proximityRange = 100.0f;  // meters
-    float timerDelay = 5.0f;        // seconds
+    float proximityRange = 100.0f;
+    float timerDelay     = 5.0f;
 
-    // Warhead specifications (Warhead section)
-    float blastRadius = 200.0f;     // meters
-    float effectiveRadius = 500.0f; // meters
-    float peakPressure = 500.0f;    // kPa
-    std::string warheadType;        // "HE", "Fragmentation", etc.
+    // ── Shared warhead fields ─────────────────────────────────────────────────
+    float blastRadius     = 200.0f;
+    float effectiveRadius = 500.0f;
+    float peakPressure    = 500.0f;
+    std::string warheadType;
 
-    // Propulsion system (Propulsion section)
-    PropulsionType propulsionType = PropulsionType::SolidRocket;
-    float thrustMain = 200000.0f;   // Newton
-    float thrustBooster = 50000.0f; // Newton
-    float burnTime = 45.0f;         // seconds
-    float specificImpulse = 280.0f; // seconds
+    // ── Shared launch / safety fields ─────────────────────────────────────────
+    float launchG            = 5.0f;
+    float preflightCheckTime = 30.0f;
+    int   rearmTime          = 600;
+    bool  armed              = false;
+    bool  safed              = true;
 
-    // Launch constraints & Safety (Launch section)
-    float launchG = 5.0f;           // G-forces
-    float preflightCheckTime = 30.0f; // seconds
-    int rearmTime = 600;            // seconds
-    bool armed = false;
-    bool safed = true;
-
-    // Seeker/Tracking (Tracking section)
-    float seekerTrackingRate = 30.0f; // degrees/second
-    float seekerLockAccuracy = 0.5f;  // degrees
-    bool isActive = false;
-
-    // Evasion/Counter-measures
+    // ── Countermeasures (Flare / Chaff use these) ─────────────────────────────
     float flareDispensed = 0;
     float chaffDispensed = 0;
-    bool chainsawMode = false;
+    bool  chainsawMode   = false;
 
-    // Target tracking structure
-    struct WeaponTarget {
-        Platform* entity;
-        std::string name;
-        float distance = 0.0f;      // meters
-        float bearing = 0.0f;       // degrees
-        float elevation = 0.0f;     // degrees
-        float closureRate = 0.0f;   // m/s
-        float aspect = 0.0f;        // degrees
-        bool inGimbalLock = false;
-    };
-
-    // Weapon behavior methods
-    void launch();
-    void flyToTarget();
-    void updateGuidance();
-    void checkDetonation();
-    void disarmWeapon();
-    void rearmWeapon();
-    void scan();
-    bool canEngage(Platform* target);
-    float calculateImpactTime(Platform* target);
-    float calculateLaunchPoint();
-
+    // ── Target tracking ───────────────────────────────────────────────────────
     std::unordered_set<Platform*> detects;
-    QVector<WeaponTarget> targets;
+    QVector<WeaponTarget>         targets;
+    Platform *targetEntity = nullptr;
 
-    // Override entity functions
-    void spawn() override;
-    std::vector<std::string> getSupportedComponents() override;
-    void addComponent(std::string name) override;
-    void removeComponent(std::string name) override;
-    QJsonObject getComponent(std::string name) override;
+    // ── Virtual launch() — same role as Sensor::scan() ───────────────────────
+    // weapon.cpp has an empty stub.
+    // Each subclass (Missile, Bomb, etc.) overrides with its own behaviour.
+    virtual void launch();
+
+    // ── Other shared virtual behaviours ──────────────────────────────────────
+    virtual void  flyToTarget();
+    virtual void  updateGuidance();
+    virtual void  checkDetonation();
+    virtual void  scan();
+    virtual bool  canEngage(Platform *target);
+    virtual float calculateImpactTime(Platform *target);
+    virtual float calculateLaunchPoint();
+    void          disarmWeapon();
+    void          rearmWeapon();
+    void          clearTargets();
+
+    // ── Entity interface overrides ────────────────────────────────────────────
+    void spawn()                                               override;
+    std::vector<std::string> getSupportedComponents()          override;
+    void addComponent   (std::string name)                     override;
+    void removeComponent(std::string name)                     override;
+    QJsonObject getComponent(std::string name)                 override;
     void updateComponent(QString name, const QJsonObject& obj) override;
 
-    // Serialization
-    QJsonObject toJson() const override;
-    void fromJson(const QJsonObject& obj) override;
+    // ── Serialisation ─────────────────────────────────────────────────────────
+    // Subclass calls Weapon::toJson() first, then appends its own fields.
+    // Subclass calls Weapon::fromJson() first, then reads its own fields.
+    QJsonObject toJson()              const override;
+    void        fromJson(const QJsonObject&)  override;
 
-    // ✅ TYPE-SPECIFIC PARAMETER HELPERS
-    QString guidanceTypeToString() const;
-    QString propulsionTypeToString() const;
-    QString detonationTypeToString() const;
+    // ── Shared enum helpers ───────────────────────────────────────────────────
+    QString detonationTypeToString()              const;
+    void    setDetonationTypeFromString(const QString&);
 
-    void setGuidanceTypeFromString(const QString& str);
-    void setPropulsionTypeFromString(const QString& str);
-    void setDetonationTypeFromString(const QString& str);
+    // ── Static helper (same pattern as Sensor::getSubTypeFromString) ─────────
+    static WeaponType getWeaponTypeFromString(const QString& str) {
+        if (str == "Missile")   return WeaponType::Missile;
+        if (str == "Bomb")      return WeaponType::Bomb;
+        if (str == "Torpedo")   return WeaponType::Torpedo;
+        if (str == "Artillery") return WeaponType::Artillery;
+        if (str == "Rocket")    return WeaponType::Rocket;
+        if (str == "Flare")     return WeaponType::Flare;
+        if (str == "Chaff")     return WeaponType::Chaff;
+        return WeaponType::Missile;
+    }
+    QString weaponTypeToString()              const;
+    QString weaponTypeNameFromEnum(WeaponType t) const;
+
+    // ── Sync base fields into sub-components ─────────────────────────────────
+    void syncComponentsFromWeaponData();
+
+    // ── Flight monitor state (Missile uses these; other types ignore them) ────
+    bool  m_flightActive      = false;
+    bool  m_updateRunning     = false;
+    float m_distanceTravelled = 0.0f;
+    float m_flightTime        = 0.0f;
+    float m_launchHeading     = 0.0f;
+    bool  isLaunched          = false;
+    bool  isDead              = false;
+
+    double m_targetLat  = 28.6358;
+    double m_targetLon  = 77.2244;
+    Transform *m_target = nullptr;
+    Platform  *m_targetplatform = nullptr;
+    float      m_detonationRange = 5000.0f;
+    CanvasWidget *m_canvas = nullptr;
+
+    QTimer       *m_flightCheckTimer = nullptr;
+    QTimer       *m_updateTimer      = nullptr;
+    QElapsedTimer m_dtClock;
+
+    void setCanvas(CanvasWidget* canvas) { m_canvas = canvas; }
+    void setTarget(double lat, double lon, float detonationRangeMetres = 5000.0f);
+    void setTarget(Transform *tr, float detonationRangeMetres);
+    double getTargetLat()       const { return m_targetLat; }
+    double getTargetLon()       const { return m_targetLon; }
+    float  getDetonationRange() const { return m_detonationRange; }
+
+    void startFlightMonitor();
+    void stopFlightMonitor();
+
+    // ── Virtual flight hooks (empty stubs here, Missile overrides all 5) ──────
+    virtual void      missileStart();
+    virtual void      checkFlightState();
+    virtual void      missileUpdate(float deltaTime);
+    virtual QVector3D calcTargetVector() const;
+    virtual void      missileEnd();
+
+signals:
+    void missileDetonated(const QString& weaponID,
+                          double lat, double lon, double alt);
 };
 
 #endif // WEAPON_H

@@ -31,6 +31,7 @@ MenuBar::MenuBar(QWidget *parent)
     // loadJsonAction->setShortcut(QKeySequence("Ctrl+O"));
     loadToLibraryAction = new QAction("Open File to Library", this);
     openRuntimeInstanceAction = new QAction("Open Runtime Instance", this);
+    openMissionFileAction = new QAction("Open Mission File", this);
     sameSaveAction = new QAction("Save", this);
     sameSaveAction->setShortcut(QKeySequence("Ctrl+S"));
     saveJsonAction = new QAction("Save As", this);
@@ -44,6 +45,7 @@ MenuBar::MenuBar(QWidget *parent)
     fileMenu->addAction(loadXmlAction);
     fileMenu->addAction(loadToLibraryAction);
     fileMenu->addAction(openRuntimeInstanceAction);
+    fileMenu->addAction(openMissionFileAction);
     fileMenu->addAction(sameSaveAction);
     fileMenu->addAction(saveJsonAction);
     fileMenu->addSeparator();
@@ -96,6 +98,7 @@ MenuBar::MenuBar(QWidget *parent)
     connect(recentProjectLibraryAction, &QAction::triggered, this, &MenuBar::recentProjectLibraryTriggered);
     connect(loadJsonAction, &QAction::triggered, this, &MenuBar::loadTriggered);
     connect(loadToLibraryAction, &QAction::triggered, this, &MenuBar::loadToLibraryTriggered);
+    connect(openMissionFileAction, &QAction::triggered, this, &MenuBar::openMissionFileTriggered);
     connect(sameSaveAction, &QAction::triggered, this, &MenuBar::sameSaveTriggered);
     connect(saveJsonAction, &QAction::triggered, this, &MenuBar::saveTriggered);
     // connect(runAction, &QAction::triggered, this, &MenuBar::runTriggered);
@@ -263,4 +266,8 @@ void MenuBar::setLibraryActionsVisible(bool visible)
     recentProjectLibraryAction->setVisible(visible);
     loadToLibraryAction->setVisible(visible);
     openRuntimeInstanceAction->setVisible(visible);
+}
+QAction* MenuBar::getOpenMissionFileAction()
+{
+    return openMissionFileAction;
 }

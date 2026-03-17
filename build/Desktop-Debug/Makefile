@@ -14,10 +14,10 @@ EQ            = =
 
 CC            = clang
 CXX           = clang++
-DEFINES       = -DBT_NO_SIMD_OPERATOR -DBT_USE_SSE -DBT_USE_SSE_IN_API -DQT_QML_DEBUG -DQT_CHARTS_LIB -DQT_SVG_LIB -DQT_PRINTSUPPORT_LIB -DQT_WIDGETS_LIB -DQT_3DEXTRAS_LIB -DQT_3DRENDER_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DCORE_LIB -DQT_GUI_LIB -DQT_XML_LIB -DQT_WEBSOCKETS_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB
+DEFINES       = -DBT_NO_SIMD_OPERATOR -DBT_USE_SSE -DBT_USE_SSE_IN_API -DQT_QML_DEBUG -DQT_CHARTS_LIB -DQT_SVG_LIB -DQT_PRINTSUPPORT_LIB -DQT_WIDGETS_LIB -DQT_3DEXTRAS_LIB -DQT_3DRENDER_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DCORE_LIB -DQT_GUI_LIB -DQT_XML_LIB -DQT_SQL_LIB -DQT_WEBSOCKETS_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB
 CFLAGS        = -pipe -g -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
 CXXFLAGS      = -pipe -g -std=gnu++1z -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
-INCPATH       = -I../../../TDF_2.0.93_19feb -I. -I../../angelscript/include -I../../bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I../../sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang
+INCPATH       = -I../../../TDF_3.0.43_17mrach -I. -I../../angelscript/include -I../../bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I../../sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I. -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang
 QMAKE         = /usr/lib/qt5/bin/qmake
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
@@ -37,10 +37,10 @@ MOVE          = mv -f
 TAR           = tar -cf
 COMPRESS      = gzip -9f
 DISTNAME      = TDF1.0.0
-DISTDIR = /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/.tmp/TDF1.0.0
+DISTDIR = /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/.tmp/TDF1.0.0
 LINK          = clang++
 LFLAGS        = -ccc-gcc-name g++ -Wl,-rpath-link,/usr/lib/x86_64-linux-gnu
-LIBS          = $(SUBLIBS) -L/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/lib -langelscript -L/usr/lib -lqgis_core -lqgis_gui -lqgis_analysis -lproj -L/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib/ -lSharedMemoryLib /usr/lib/x86_64-linux-gnu/libQt5Charts.so /usr/lib/x86_64-linux-gnu/libQt5Svg.so /usr/lib/x86_64-linux-gnu/libQt5PrintSupport.so /usr/lib/x86_64-linux-gnu/libQt5Widgets.so /usr/lib/x86_64-linux-gnu/libQt53DExtras.so /usr/lib/x86_64-linux-gnu/libQt53DRender.so /usr/lib/x86_64-linux-gnu/libQt53DInput.so /usr/lib/x86_64-linux-gnu/libQt53DLogic.so /usr/lib/x86_64-linux-gnu/libQt53DCore.so /usr/lib/x86_64-linux-gnu/libQt5Gui.so /usr/lib/x86_64-linux-gnu/libQt5Xml.so /usr/lib/x86_64-linux-gnu/libQt5WebSockets.so /usr/lib/x86_64-linux-gnu/libQt5Network.so /usr/lib/x86_64-linux-gnu/libQt5Core.so -lGL -lpthread   
+LIBS          = $(SUBLIBS) -L/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/lib -langelscript -L/usr/lib -lqgis_core -lqgis_gui -lqgis_analysis -lproj -L/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib/ -lSharedMemoryLib /usr/lib/x86_64-linux-gnu/libQt5Charts.so /usr/lib/x86_64-linux-gnu/libQt5Svg.so /usr/lib/x86_64-linux-gnu/libQt5PrintSupport.so /usr/lib/x86_64-linux-gnu/libQt5Widgets.so /usr/lib/x86_64-linux-gnu/libQt53DExtras.so /usr/lib/x86_64-linux-gnu/libQt53DRender.so /usr/lib/x86_64-linux-gnu/libQt53DInput.so /usr/lib/x86_64-linux-gnu/libQt53DLogic.so /usr/lib/x86_64-linux-gnu/libQt53DCore.so /usr/lib/x86_64-linux-gnu/libQt5Gui.so /usr/lib/x86_64-linux-gnu/libQt5Xml.so /usr/lib/x86_64-linux-gnu/libQt5Sql.so /usr/lib/x86_64-linux-gnu/libQt5WebSockets.so /usr/lib/x86_64-linux-gnu/libQt5Network.so /usr/lib/x86_64-linux-gnu/libQt5Core.so -lGL -lpthread   
 AR            = ar cqs
 RANLIB        = 
 SED           = sed
@@ -53,14 +53,22 @@ OBJECTS_DIR   = ./
 ####### Files
 
 SOURCES       = ../../GUI/Console/consoleview.cpp \
+		../../GUI/DOCTRINE/doctrineareadefinition.cpp \
+		../../GUI/DOCTRINE/doctrineassumptionsnotes.cpp \
+		../../GUI/DOCTRINE/doctrineparameters.cpp \
+		../../GUI/DOCTRINE/tacticalrules.cpp \
+		../../GUI/Editors/analysiseditor.cpp \
 		../../GUI/Editors/customresizableoverlaydock.cpp \
 		../../GUI/Editors/databaseeditor.cpp \
+		../../GUI/Editors/missioneditor.cpp \
 		../../GUI/Editors/recentprojectsmanager.cpp \
+		../../GUI/Editors/reportseditor.cpp \
 		../../GUI/Editors/runtimeeditor.cpp \
 		../../GUI/Editors/scenarioeditor.cpp \
 		../../GUI/Feedback/projectinformation.cpp \
 		../../GUI/Hierarchytree/addformationdialog.cpp \
 		../../GUI/Hierarchytree/additemdialog.cpp \
+		../../GUI/Hierarchytree/addweapondialog.cpp \
 		../../GUI/Hierarchytree/contextmenu.cpp \
 		../../GUI/Hierarchytree/customtrajectorydialog.cpp \
 		../../GUI/Hierarchytree/hierarchyconnector.cpp \
@@ -80,9 +88,11 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		../../GUI/Overview/overview.cpp \
 		../../GUI/Panel/csmdisplay.cpp \
 		../../GUI/Panel/esmdisplay.cpp \
+		../../GUI/Panel/ewdisplay.cpp \
 		../../GUI/Panel/iffdisplay.cpp \
 		../../GUI/Panel/radardisplay.cpp \
 		../../GUI/Panel/radiodisplay.cpp \
+		../../GUI/Panel/sonardisplay.cpp \
 		../../GUI/Plugins/pluginwindow.cpp \
 		../../GUI/Settings/applicationdialog.cpp \
 		../../GUI/Sidebar/sidebarwidget.cpp \
@@ -111,6 +121,7 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		../../GUI/mainwindow.cpp \
 		../../GUI/measuredistance/measuredistancedialog.cpp \
 		../../GUI/scene3dwidget/scene3dwidget.cpp \
+		../../GUI/statusbar.cpp \
 		../../Setup.cpp \
 		../../angelscript/add_on/scriptarray/scriptarray.cpp \
 		../../angelscript/add_on/scriptstdstring/scriptstdstring.cpp \
@@ -168,6 +179,8 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		../../core/Debug/console.cpp \
 		../../core/Debug/frame.cpp \
 		../../core/Debug/profiler.cpp \
+		../../core/Dynamics/Model/aircraft.cpp \
+		../../core/Dynamics/dynamics.cpp \
 		../../core/GlobalRegistry.cpp \
 		../../core/Hierarchy/Components/attachedenitities.cpp \
 		../../core/Hierarchy/Components/collider.cpp \
@@ -184,9 +197,14 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		../../core/Hierarchy/Components/sensorprofile.cpp \
 		../../core/Hierarchy/Components/trajectory.cpp \
 		../../core/Hierarchy/Components/transform.cpp \
+		../../core/Hierarchy/Components/weaponprofile.cpp \
 		../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.cpp \
 		../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.cpp \
 		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.cpp \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.cpp \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar.cpp \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.cpp \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.cpp \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.cpp \
 		../../core/Hierarchy/EntityProfiles/formation.cpp \
 		../../core/Hierarchy/EntityProfiles/iff.cpp \
@@ -194,7 +212,14 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		../../core/Hierarchy/EntityProfiles/radio.cpp \
 		../../core/Hierarchy/EntityProfiles/sensor.cpp \
 		../../core/Hierarchy/EntityProfiles/specialzone.cpp \
-		../../core/Hierarchy/EntityProfiles/weapons.cpp \
+		../../core/Hierarchy/EntityProfiles/weapon.cpp \
+		../../core/Hierarchy/EntityProfiles/weapons/artillery.cpp \
+		../../core/Hierarchy/EntityProfiles/weapons/bomb.cpp \
+		../../core/Hierarchy/EntityProfiles/weapons/chaff.cpp \
+		../../core/Hierarchy/EntityProfiles/weapons/flare.cpp \
+		../../core/Hierarchy/EntityProfiles/weapons/missile.cpp \
+		../../core/Hierarchy/EntityProfiles/weapons/rocket.cpp \
+		../../core/Hierarchy/EntityProfiles/weapons/torpedo.cpp \
 		../../core/Hierarchy/Struct/action.cpp \
 		../../core/Hierarchy/Struct/color.cpp \
 		../../core/Hierarchy/Struct/condition.cpp \
@@ -202,7 +227,6 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		../../core/Hierarchy/Struct/formationposition.cpp \
 		../../core/Hierarchy/Struct/geocords.cpp \
 		../../core/Hierarchy/Struct/parameter.cpp \
-		../../core/Hierarchy/Struct/task.cpp \
 		../../core/Hierarchy/Struct/vector.cpp \
 		../../core/Hierarchy/Struct/waypoints.cpp \
 		../../core/Hierarchy/Utils/entityutils.cpp \
@@ -221,6 +245,7 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		../../core/Plugins/pluginmanager.cpp \
 		../../core/Recorder/recorder.cpp \
 		../../core/Render/scenerenderer.cpp \
+		../../core/SQLite/sqlite.cpp \
 		../../core/ScriptEngine/scriptengine.cpp \
 		../../core/ScriptEngine/scriptenginegis.cpp \
 		../../core/SharedMemory/sharedmemorywrapper.cpp \
@@ -409,16 +434,29 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		../../dis7/WarfareFamilyPdu.cpp \
 		../../dis7/utils/ConversionUtils.cpp \
 		../../dis7/utils/DataStream.cpp \
-		../../main.cpp qrc_Resources.cpp \
+		../../main.cpp \
+		../../mission/actions.cpp \
+		../../mission/ifcondition.cpp \
+		../../mission/inputs.cpp \
+		../../mission/task.cpp \
+		../../mission/taskgroup.cpp qrc_Resources.cpp \
 		moc_consoleview.cpp \
+		moc_doctrineareadefinition.cpp \
+		moc_doctrineassumptionsnotes.cpp \
+		moc_doctrineparameters.cpp \
+		moc_tacticalrules.cpp \
+		moc_analysiseditor.cpp \
 		moc_customresizableoverlaydock.cpp \
 		moc_databaseeditor.cpp \
+		moc_missioneditor.cpp \
 		moc_recentprojectsmanager.cpp \
+		moc_reportseditor.cpp \
 		moc_runtimeeditor.cpp \
 		moc_scenarioeditor.cpp \
 		moc_projectinformation.cpp \
 		moc_addformationdialog.cpp \
 		moc_additemdialog.cpp \
+		moc_addweapondialog.cpp \
 		moc_contextmenu.cpp \
 		moc_customtrajectorydialog.cpp \
 		moc_hierarchyconnector.cpp \
@@ -438,9 +476,11 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		moc_overview.cpp \
 		moc_csmdisplay.cpp \
 		moc_esmdisplay.cpp \
+		moc_ewdisplay.cpp \
 		moc_iffdisplay.cpp \
 		moc_radardisplay.cpp \
 		moc_radiodisplay.cpp \
+		moc_sonardisplay.cpp \
 		moc_applicationdialog.cpp \
 		moc_sidebarwidget.cpp \
 		moc_custommapdialog.cpp \
@@ -466,6 +506,7 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		moc_mainwindow.cpp \
 		moc_measuredistancedialog.cpp \
 		moc_scene3dwidget.cpp \
+		moc_statusbar.cpp \
 		moc_scenarioconfig.cpp \
 		moc_sessionmanager.cpp \
 		moc_console.cpp \
@@ -485,9 +526,11 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		moc_sensorprofile.cpp \
 		moc_trajectory.cpp \
 		moc_transform.cpp \
+		moc_weaponprofile.cpp \
 		moc_csm.cpp \
 		moc_esm.cpp \
 		moc_radar.cpp \
+		moc_sonar.cpp \
 		moc_fixedpoints.cpp \
 		moc_formation.cpp \
 		moc_iff.cpp \
@@ -495,7 +538,14 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		moc_radio.cpp \
 		moc_sensor.cpp \
 		moc_specialzone.cpp \
-		moc_weapons.cpp \
+		moc_weapon.cpp \
+		moc_artillery.cpp \
+		moc_bomb.cpp \
+		moc_chaff.cpp \
+		moc_flare.cpp \
+		moc_missile.cpp \
+		moc_rocket.cpp \
+		moc_torpedo.cpp \
 		moc_action.cpp \
 		moc_color.cpp \
 		moc_condition.cpp \
@@ -503,7 +553,6 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		moc_formationposition.cpp \
 		moc_geocords.cpp \
 		moc_parameter.cpp \
-		moc_task.cpp \
 		moc_waypoints.cpp \
 		moc_entity.cpp \
 		moc_folder.cpp \
@@ -515,6 +564,7 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		moc_pluginmanager.cpp \
 		moc_recorder.cpp \
 		moc_scenerenderer.cpp \
+		moc_sqlite.cpp \
 		moc_scriptengine.cpp \
 		moc_sharedmemorywrapper.cpp \
 		moc_simulation.cpp \
@@ -523,16 +573,29 @@ SOURCES       = ../../GUI/Console/consoleview.cpp \
 		moc_missioncreator.cpp \
 		moc_missionexcuter.cpp \
 		moc_runtime.cpp \
-		moc_scenario.cpp
+		moc_scenario.cpp \
+		moc_actions.cpp \
+		moc_ifcondition.cpp \
+		moc_inputs.cpp \
+		moc_task.cpp \
+		moc_taskgroup.cpp
 OBJECTS       = consoleview.o \
+		doctrineareadefinition.o \
+		doctrineassumptionsnotes.o \
+		doctrineparameters.o \
+		tacticalrules.o \
+		analysiseditor.o \
 		customresizableoverlaydock.o \
 		databaseeditor.o \
+		missioneditor.o \
 		recentprojectsmanager.o \
+		reportseditor.o \
 		runtimeeditor.o \
 		scenarioeditor.o \
 		projectinformation.o \
 		addformationdialog.o \
 		additemdialog.o \
+		addweapondialog.o \
 		contextmenu.o \
 		customtrajectorydialog.o \
 		hierarchyconnector.o \
@@ -552,9 +615,11 @@ OBJECTS       = consoleview.o \
 		overview.o \
 		csmdisplay.o \
 		esmdisplay.o \
+		ewdisplay.o \
 		iffdisplay.o \
 		radardisplay.o \
 		radiodisplay.o \
+		sonardisplay.o \
 		pluginwindow.o \
 		applicationdialog.o \
 		sidebarwidget.o \
@@ -583,6 +648,7 @@ OBJECTS       = consoleview.o \
 		mainwindow.o \
 		measuredistancedialog.o \
 		scene3dwidget.o \
+		statusbar.o \
 		Setup.o \
 		scriptarray.o \
 		scriptstdstring.o \
@@ -640,6 +706,8 @@ OBJECTS       = consoleview.o \
 		console.o \
 		frame.o \
 		profiler.o \
+		aircraft.o \
+		dynamics.o \
 		GlobalRegistry.o \
 		attachedenitities.o \
 		collider.o \
@@ -656,9 +724,14 @@ OBJECTS       = consoleview.o \
 		sensorprofile.o \
 		trajectory.o \
 		transform.o \
+		weaponprofile.o \
 		csm.o \
 		esm.o \
 		radar.o \
+		radarmodel.o \
+		sonar.o \
+		active_sonar.o \
+		sonar_model.o \
 		fixedpoints.o \
 		formation.o \
 		iff.o \
@@ -666,7 +739,14 @@ OBJECTS       = consoleview.o \
 		radio.o \
 		sensor.o \
 		specialzone.o \
-		weapons.o \
+		weapon.o \
+		artillery.o \
+		bomb.o \
+		chaff.o \
+		flare.o \
+		missile.o \
+		rocket.o \
+		torpedo.o \
 		action.o \
 		color.o \
 		condition.o \
@@ -674,7 +754,6 @@ OBJECTS       = consoleview.o \
 		formationposition.o \
 		geocords.o \
 		parameter.o \
-		task.o \
 		vector.o \
 		waypoints.o \
 		entityutils.o \
@@ -693,6 +772,7 @@ OBJECTS       = consoleview.o \
 		pluginmanager.o \
 		recorder.o \
 		scenerenderer.o \
+		sqlite.o \
 		scriptengine.o \
 		scriptenginegis.o \
 		sharedmemorywrapper.o \
@@ -882,16 +962,29 @@ OBJECTS       = consoleview.o \
 		ConversionUtils.o \
 		DataStream.o \
 		main.o \
+		actions.o \
+		ifcondition.o \
+		inputs.o \
+		task.o \
+		taskgroup.o \
 		qrc_Resources.o \
 		moc_consoleview.o \
+		moc_doctrineareadefinition.o \
+		moc_doctrineassumptionsnotes.o \
+		moc_doctrineparameters.o \
+		moc_tacticalrules.o \
+		moc_analysiseditor.o \
 		moc_customresizableoverlaydock.o \
 		moc_databaseeditor.o \
+		moc_missioneditor.o \
 		moc_recentprojectsmanager.o \
+		moc_reportseditor.o \
 		moc_runtimeeditor.o \
 		moc_scenarioeditor.o \
 		moc_projectinformation.o \
 		moc_addformationdialog.o \
 		moc_additemdialog.o \
+		moc_addweapondialog.o \
 		moc_contextmenu.o \
 		moc_customtrajectorydialog.o \
 		moc_hierarchyconnector.o \
@@ -911,9 +1004,11 @@ OBJECTS       = consoleview.o \
 		moc_overview.o \
 		moc_csmdisplay.o \
 		moc_esmdisplay.o \
+		moc_ewdisplay.o \
 		moc_iffdisplay.o \
 		moc_radardisplay.o \
 		moc_radiodisplay.o \
+		moc_sonardisplay.o \
 		moc_applicationdialog.o \
 		moc_sidebarwidget.o \
 		moc_custommapdialog.o \
@@ -939,6 +1034,7 @@ OBJECTS       = consoleview.o \
 		moc_mainwindow.o \
 		moc_measuredistancedialog.o \
 		moc_scene3dwidget.o \
+		moc_statusbar.o \
 		moc_scenarioconfig.o \
 		moc_sessionmanager.o \
 		moc_console.o \
@@ -958,9 +1054,11 @@ OBJECTS       = consoleview.o \
 		moc_sensorprofile.o \
 		moc_trajectory.o \
 		moc_transform.o \
+		moc_weaponprofile.o \
 		moc_csm.o \
 		moc_esm.o \
 		moc_radar.o \
+		moc_sonar.o \
 		moc_fixedpoints.o \
 		moc_formation.o \
 		moc_iff.o \
@@ -968,7 +1066,14 @@ OBJECTS       = consoleview.o \
 		moc_radio.o \
 		moc_sensor.o \
 		moc_specialzone.o \
-		moc_weapons.o \
+		moc_weapon.o \
+		moc_artillery.o \
+		moc_bomb.o \
+		moc_chaff.o \
+		moc_flare.o \
+		moc_missile.o \
+		moc_rocket.o \
+		moc_torpedo.o \
 		moc_action.o \
 		moc_color.o \
 		moc_condition.o \
@@ -976,7 +1081,6 @@ OBJECTS       = consoleview.o \
 		moc_formationposition.o \
 		moc_geocords.o \
 		moc_parameter.o \
-		moc_task.o \
 		moc_waypoints.o \
 		moc_entity.o \
 		moc_folder.o \
@@ -988,6 +1092,7 @@ OBJECTS       = consoleview.o \
 		moc_pluginmanager.o \
 		moc_recorder.o \
 		moc_scenerenderer.o \
+		moc_sqlite.o \
 		moc_scriptengine.o \
 		moc_sharedmemorywrapper.o \
 		moc_simulation.o \
@@ -996,7 +1101,12 @@ OBJECTS       = consoleview.o \
 		moc_missioncreator.o \
 		moc_missionexcuter.o \
 		moc_runtime.o \
-		moc_scenario.o
+		moc_scenario.o \
+		moc_actions.o \
+		moc_ifcondition.o \
+		moc_inputs.o \
+		moc_task.o \
+		moc_taskgroup.o
 DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../GUI/GUI/Panel.zip \
 		../../Testscript/dghy.as \
@@ -1121,7 +1231,6 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang/qmake.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf \
-		../../.qmake.stash \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf \
@@ -1144,10 +1253,19 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/lex.prf \
 		../../../../TDF.pro ../../GUI/Console/consoleview-styles.h \
 		../../GUI/Console/consoleview.h \
+		../../GUI/DOCTRINE/doctrine-styles.h \
+		../../GUI/DOCTRINE/doctrineareadefinition.h \
+		../../GUI/DOCTRINE/doctrineassumptionsnotes.h \
+		../../GUI/DOCTRINE/doctrineparameters.h \
+		../../GUI/DOCTRINE/tactical-styles.h \
+		../../GUI/DOCTRINE/tacticalrules.h \
+		../../GUI/Editors/analysiseditor.h \
 		../../GUI/Editors/customresizableoverlaydock.h \
 		../../GUI/Editors/database-styles.h \
 		../../GUI/Editors/databaseeditor.h \
+		../../GUI/Editors/missioneditor.h \
 		../../GUI/Editors/recentprojectsmanager.h \
+		../../GUI/Editors/reportseditor.h \
 		../../GUI/Editors/runtimeeditor.h \
 		../../GUI/Editors/scenarioeditor.h \
 		../../GUI/Feedback/projectinformation-styles.h \
@@ -1155,6 +1273,7 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../GUI/Hierarchytree/addformationdialog.h \
 		../../GUI/Hierarchytree/additemdialog-styles.h \
 		../../GUI/Hierarchytree/additemdialog.h \
+		../../GUI/Hierarchytree/addweapondialog.h \
 		../../GUI/Hierarchytree/contextmenu-styles.h \
 		../../GUI/Hierarchytree/contextmenu.h \
 		../../GUI/Hierarchytree/customtrajectorydialog.h \
@@ -1182,10 +1301,13 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../GUI/Navigation/navigationpage.h \
 		../../GUI/Overview/overview.h \
 		../../GUI/Panel/csmdisplay.h \
+		../../GUI/Panel/displayconstants.h \
 		../../GUI/Panel/esmdisplay.h \
+		../../GUI/Panel/ewdisplay.h \
 		../../GUI/Panel/iffdisplay.h \
 		../../GUI/Panel/radardisplay.h \
 		../../GUI/Panel/radiodisplay.h \
+		../../GUI/Panel/sonardisplay.h \
 		../../GUI/Plugins/pluginwindow.h \
 		../../GUI/Settings/applicationdialog-styles.h \
 		../../GUI/Settings/applicationdialog.h \
@@ -1223,6 +1345,7 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../GUI/measuredistance/measuredistancedialog-styles.h \
 		../../GUI/measuredistance/measuredistancedialog.h \
 		../../GUI/scene3dwidget/scene3dwidget.h \
+		../../GUI/statusbar.h \
 		../../Setup.h \
 		../../angelscript/add_on/scriptarray/scriptarray.h \
 		../../angelscript/add_on/scriptstdstring/scriptstdstring.h \
@@ -1606,6 +1729,8 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../core/Debug/console.h \
 		../../core/Debug/frame.h \
 		../../core/Debug/profiler.h \
+		../../core/Dynamics/Model/aircraft.h \
+		../../core/Dynamics/dynamics.h \
 		../../core/GlobalRegistry.h \
 		../../core/Hierarchy/Components/attachedenitities.h \
 		../../core/Hierarchy/Components/collider.h \
@@ -1622,9 +1747,14 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/Components/trajectory.h \
 		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
 		../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.h \
 		../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.h \
 		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/EntityProfiles/iff.h \
@@ -1632,7 +1762,14 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../core/Hierarchy/EntityProfiles/radio.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
-		../../core/Hierarchy/EntityProfiles/weapons.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/EntityProfiles/weapons/artillery.h \
+		../../core/Hierarchy/EntityProfiles/weapons/bomb.h \
+		../../core/Hierarchy/EntityProfiles/weapons/chaff.h \
+		../../core/Hierarchy/EntityProfiles/weapons/flare.h \
+		../../core/Hierarchy/EntityProfiles/weapons/missile.h \
+		../../core/Hierarchy/EntityProfiles/weapons/rocket.h \
+		../../core/Hierarchy/EntityProfiles/weapons/torpedo.h \
 		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Struct/condition.h \
@@ -1640,7 +1777,6 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/Struct/geocords.h \
 		../../core/Hierarchy/Struct/parameter.h \
-		../../core/Hierarchy/Struct/task.h \
 		../../core/Hierarchy/Struct/vector.h \
 		../../core/Hierarchy/Struct/waypoints.h \
 		../../core/Hierarchy/Utils/entityutils.h \
@@ -1659,8 +1795,10 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../core/Network/profilepdu.h \
 		../../core/Network/transformpdu.h \
 		../../core/Plugins/pluginmanager.h \
+		../../core/Recorder/payload.h \
 		../../core/Recorder/recorder.h \
 		../../core/Render/scenerenderer.h \
+		../../core/SQLite/sqlite.h \
 		../../core/ScriptEngine/scriptengine.h \
 		../../core/ScriptEngine/scriptenginegis.h \
 		../../core/SharedMemory/sharedmemorywrapper.h \
@@ -1854,15 +1992,28 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../dis7/utils/ConversionUtils.h \
 		../../dis7/utils/DataStream.h \
 		../../dis7/utils/Endian.h \
-		../../dis7/utils/PDUType.h ../../GUI/Console/consoleview.cpp \
+		../../dis7/utils/PDUType.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../mission/task.h \
+		../../mission/taskgroup.h ../../GUI/Console/consoleview.cpp \
+		../../GUI/DOCTRINE/doctrineareadefinition.cpp \
+		../../GUI/DOCTRINE/doctrineassumptionsnotes.cpp \
+		../../GUI/DOCTRINE/doctrineparameters.cpp \
+		../../GUI/DOCTRINE/tacticalrules.cpp \
+		../../GUI/Editors/analysiseditor.cpp \
 		../../GUI/Editors/customresizableoverlaydock.cpp \
 		../../GUI/Editors/databaseeditor.cpp \
+		../../GUI/Editors/missioneditor.cpp \
 		../../GUI/Editors/recentprojectsmanager.cpp \
+		../../GUI/Editors/reportseditor.cpp \
 		../../GUI/Editors/runtimeeditor.cpp \
 		../../GUI/Editors/scenarioeditor.cpp \
 		../../GUI/Feedback/projectinformation.cpp \
 		../../GUI/Hierarchytree/addformationdialog.cpp \
 		../../GUI/Hierarchytree/additemdialog.cpp \
+		../../GUI/Hierarchytree/addweapondialog.cpp \
 		../../GUI/Hierarchytree/contextmenu.cpp \
 		../../GUI/Hierarchytree/customtrajectorydialog.cpp \
 		../../GUI/Hierarchytree/hierarchyconnector.cpp \
@@ -1882,9 +2033,11 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../GUI/Overview/overview.cpp \
 		../../GUI/Panel/csmdisplay.cpp \
 		../../GUI/Panel/esmdisplay.cpp \
+		../../GUI/Panel/ewdisplay.cpp \
 		../../GUI/Panel/iffdisplay.cpp \
 		../../GUI/Panel/radardisplay.cpp \
 		../../GUI/Panel/radiodisplay.cpp \
+		../../GUI/Panel/sonardisplay.cpp \
 		../../GUI/Plugins/pluginwindow.cpp \
 		../../GUI/Settings/applicationdialog.cpp \
 		../../GUI/Sidebar/sidebarwidget.cpp \
@@ -1913,6 +2066,7 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../GUI/mainwindow.cpp \
 		../../GUI/measuredistance/measuredistancedialog.cpp \
 		../../GUI/scene3dwidget/scene3dwidget.cpp \
+		../../GUI/statusbar.cpp \
 		../../Setup.cpp \
 		../../angelscript/add_on/scriptarray/scriptarray.cpp \
 		../../angelscript/add_on/scriptstdstring/scriptstdstring.cpp \
@@ -1970,6 +2124,8 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../core/Debug/console.cpp \
 		../../core/Debug/frame.cpp \
 		../../core/Debug/profiler.cpp \
+		../../core/Dynamics/Model/aircraft.cpp \
+		../../core/Dynamics/dynamics.cpp \
 		../../core/GlobalRegistry.cpp \
 		../../core/Hierarchy/Components/attachedenitities.cpp \
 		../../core/Hierarchy/Components/collider.cpp \
@@ -1986,9 +2142,14 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../core/Hierarchy/Components/sensorprofile.cpp \
 		../../core/Hierarchy/Components/trajectory.cpp \
 		../../core/Hierarchy/Components/transform.cpp \
+		../../core/Hierarchy/Components/weaponprofile.cpp \
 		../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.cpp \
 		../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.cpp \
 		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.cpp \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.cpp \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar.cpp \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.cpp \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.cpp \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.cpp \
 		../../core/Hierarchy/EntityProfiles/formation.cpp \
 		../../core/Hierarchy/EntityProfiles/iff.cpp \
@@ -1996,7 +2157,14 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../core/Hierarchy/EntityProfiles/radio.cpp \
 		../../core/Hierarchy/EntityProfiles/sensor.cpp \
 		../../core/Hierarchy/EntityProfiles/specialzone.cpp \
-		../../core/Hierarchy/EntityProfiles/weapons.cpp \
+		../../core/Hierarchy/EntityProfiles/weapon.cpp \
+		../../core/Hierarchy/EntityProfiles/weapons/artillery.cpp \
+		../../core/Hierarchy/EntityProfiles/weapons/bomb.cpp \
+		../../core/Hierarchy/EntityProfiles/weapons/chaff.cpp \
+		../../core/Hierarchy/EntityProfiles/weapons/flare.cpp \
+		../../core/Hierarchy/EntityProfiles/weapons/missile.cpp \
+		../../core/Hierarchy/EntityProfiles/weapons/rocket.cpp \
+		../../core/Hierarchy/EntityProfiles/weapons/torpedo.cpp \
 		../../core/Hierarchy/Struct/action.cpp \
 		../../core/Hierarchy/Struct/color.cpp \
 		../../core/Hierarchy/Struct/condition.cpp \
@@ -2004,7 +2172,6 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../core/Hierarchy/Struct/formationposition.cpp \
 		../../core/Hierarchy/Struct/geocords.cpp \
 		../../core/Hierarchy/Struct/parameter.cpp \
-		../../core/Hierarchy/Struct/task.cpp \
 		../../core/Hierarchy/Struct/vector.cpp \
 		../../core/Hierarchy/Struct/waypoints.cpp \
 		../../core/Hierarchy/Utils/entityutils.cpp \
@@ -2023,6 +2190,7 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../core/Plugins/pluginmanager.cpp \
 		../../core/Recorder/recorder.cpp \
 		../../core/Render/scenerenderer.cpp \
+		../../core/SQLite/sqlite.cpp \
 		../../core/ScriptEngine/scriptengine.cpp \
 		../../core/ScriptEngine/scriptenginegis.cpp \
 		../../core/SharedMemory/sharedmemorywrapper.cpp \
@@ -2211,7 +2379,12 @@ DIST          = ../../GUI/GUI/Editors/runtimeeditor.zip \
 		../../dis7/WarfareFamilyPdu.cpp \
 		../../dis7/utils/ConversionUtils.cpp \
 		../../dis7/utils/DataStream.cpp \
-		../../main.cpp
+		../../main.cpp \
+		../../mission/actions.cpp \
+		../../mission/ifcondition.cpp \
+		../../mission/inputs.cpp \
+		../../mission/task.cpp \
+		../../mission/taskgroup.cpp
 QMAKE_TARGET  = TDF
 DESTDIR       = 
 TARGET        = TDF
@@ -2220,7 +2393,7 @@ TARGET        = TDF
 first: all
 ####### Build rules
 
-TDF:  $(OBJECTS)  
+TDF: ui_actions.h ui_ifcondition.h ui_inputs.h ui_task.h ui_taskgroup.h $(OBJECTS)  
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
 Makefile: ../../TDF.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang/qmake.conf /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
@@ -2320,7 +2493,6 @@ Makefile: ../../TDF.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang/qmake.
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang/qmake.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf \
-		.qmake.stash \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf \
@@ -2441,7 +2613,6 @@ Makefile: ../../TDF.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang/qmake.
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang/qmake.conf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf:
-.qmake.stash:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf:
@@ -2480,8 +2651,9 @@ distdir: FORCE
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents ../../Resources.qrc $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents ../../GUI/Console/consoleview-styles.h ../../GUI/Console/consoleview.h ../../GUI/Editors/customresizableoverlaydock.h ../../GUI/Editors/database-styles.h ../../GUI/Editors/databaseeditor.h ../../GUI/Editors/recentprojectsmanager.h ../../GUI/Editors/runtimeeditor.h ../../GUI/Editors/scenarioeditor.h ../../GUI/Feedback/projectinformation-styles.h ../../GUI/Feedback/projectinformation.h ../../GUI/Hierarchytree/addformationdialog.h ../../GUI/Hierarchytree/additemdialog-styles.h ../../GUI/Hierarchytree/additemdialog.h ../../GUI/Hierarchytree/contextmenu-styles.h ../../GUI/Hierarchytree/contextmenu.h ../../GUI/Hierarchytree/customtrajectorydialog.h ../../GUI/Hierarchytree/hierarchy-styles.h ../../GUI/Hierarchytree/hierarchyconnector.h ../../GUI/Hierarchytree/hierarchytree.h ../../GUI/Inspector/customparameterdialog.h ../../GUI/Inspector/customparameterdialog.h ../../GUI/Inspector/customparameterdialog.h ../../GUI/Inspector/customparameterdialog.h ../../GUI/Inspector/customparameterdialog.h ../../GUI/Inspector/inspector-styles.h ../../GUI/Inspector/inspector.h ../../GUI/Inspector/template/colortemplate.h ../../GUI/Inspector/template/geocordstemplate.h ../../GUI/Inspector/template/iconsdialog.h ../../GUI/Inspector/template/imagetemplate.h ../../GUI/Inspector/template/optiontemplate.h ../../GUI/Inspector/template/vectortemplate.h ../../GUI/Logger/loggerdialog.h ../../GUI/Menubars/menubar-styles.h ../../GUI/Menubars/menubar.h ../../GUI/Menubars/profileinfodialog-styles.h ../../GUI/Menubars/profileinfodialog.h ../../GUI/Navigation/navigationpage.h ../../GUI/Overview/overview.h ../../GUI/Panel/csmdisplay.h ../../GUI/Panel/esmdisplay.h ../../GUI/Panel/iffdisplay.h ../../GUI/Panel/radardisplay.h ../../GUI/Panel/radiodisplay.h ../../GUI/Plugins/pluginwindow.h ../../GUI/Settings/applicationdialog-styles.h ../../GUI/Settings/applicationdialog.h ../../GUI/Sidebar/sidebar-styles.h ../../GUI/Sidebar/sidebarwidget.h ../../GUI/Tacticaldisplay/Gis/custommapdialog.h ../../GUI/Tacticaldisplay/Gis/gislib.h ../../GUI/Tacticaldisplay/Gis/gisnetwork.h ../../GUI/Tacticaldisplay/Gis/layerinformationdialog.h ../../GUI/Tacticaldisplay/Gis/layerpanel-styles.h ../../GUI/Tacticaldisplay/Gis/layerpanel.h ../../GUI/Tacticaldisplay/Gis/shapes_feature.h ../../GUI/Tacticaldisplay/canvaswidget.h ../../GUI/Tacticaldisplay/entityinfodialog-styles.h ../../GUI/Tacticaldisplay/entityinfodialog.h ../../GUI/Tacticaldisplay/scalebar.h ../../GUI/Tacticaldisplay/shapepropertiesdialog.h ../../GUI/Tacticaldisplay/tacticaldisplay.h ../../GUI/Tacticaldisplay/tooltiphelper.h ../../GUI/Tacticaldisplay/waypointeditdialog.h ../../GUI/Testscript/angelscripthighlighter.h ../../GUI/Testscript/testscriptdialog.h ../../GUI/Testscript/textscriptwidget.h ../../GUI/Timing/graphwidget.h ../../GUI/Toolbars/designtoolbar-styles.h ../../GUI/Toolbars/designtoolbar.h ../../GUI/Toolbars/networktoolbar-styles.h ../../GUI/Toolbars/networktoolbar.h ../../GUI/Toolbars/runtimetoolbar-styles.h ../../GUI/Toolbars/runtimetoolbar.h ../../GUI/Toolbars/standardtoolbar.h ../../GUI/docktitlemenu/docktitlemenu.h ../../GUI/mainwindow-styles.h ../../GUI/mainwindow.h ../../GUI/measuredistance/measuredistancedialog-styles.h ../../GUI/measuredistance/measuredistancedialog.h ../../GUI/scene3dwidget/scene3dwidget.h ../../Setup.h ../../angelscript/add_on/scriptarray/scriptarray.h ../../angelscript/add_on/scriptstdstring/scriptstdstring.h ../../bullet/Bullet3Collision/BroadPhaseCollision/b3BroadphaseCallback.h ../../bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvh.h ../../bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvhBroadphase.h ../../bullet/Bullet3Collision/BroadPhaseCollision/b3OverlappingPair.h ../../bullet/Bullet3Collision/BroadPhaseCollision/b3OverlappingPairCache.h ../../bullet/Bullet3Collision/BroadPhaseCollision/shared/b3Aabb.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3Config.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3Contact4.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3ConvexUtility.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3CpuNarrowPhase.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3RaycastInfo.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3RigidBodyCL.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3BvhSubtreeInfoData.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3BvhTraversal.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3ClipFaces.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3Collidable.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3Contact4Data.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3ContactConvexConvexSAT.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3ContactSphereSphere.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3ConvexPolyhedronData.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3FindConcaveSatAxis.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3FindSeparatingAxis.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3MprPenetration.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3NewContactReduction.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3QuantizedBvhNodeData.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3ReduceContacts.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3RigidBodyData.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3UpdateAabbs.h ../../bullet/Bullet3Common/b3AlignedAllocator.h ../../bullet/Bullet3Common/b3AlignedObjectArray.h ../../bullet/Bullet3Common/b3CommandLineArgs.h ../../bullet/Bullet3Common/b3FileUtils.h ../../bullet/Bullet3Common/b3HashMap.h ../../bullet/Bullet3Common/b3Logging.h ../../bullet/Bullet3Common/b3Matrix3x3.h ../../bullet/Bullet3Common/b3MinMax.h ../../bullet/Bullet3Common/b3PoolAllocator.h ../../bullet/Bullet3Common/b3QuadWord.h ../../bullet/Bullet3Common/b3Quaternion.h ../../bullet/Bullet3Common/b3Random.h ../../bullet/Bullet3Common/b3ResizablePool.h ../../bullet/Bullet3Common/b3Scalar.h ../../bullet/Bullet3Common/b3StackAlloc.h ../../bullet/Bullet3Common/b3Transform.h ../../bullet/Bullet3Common/b3TransformUtil.h ../../bullet/Bullet3Common/b3Vector3.h ../../bullet/Bullet3Common/shared/b3Float4.h ../../bullet/Bullet3Common/shared/b3Int2.h ../../bullet/Bullet3Common/shared/b3Int4.h ../../bullet/Bullet3Common/shared/b3Mat3x3.h ../../bullet/Bullet3Common/shared/b3PlatformDefinitions.h ../../bullet/Bullet3Common/shared/b3Quat.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3ContactSolverInfo.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3FixedConstraint.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3Generic6DofConstraint.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3JacobianEntry.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3PgsJacobiSolver.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3Point2PointConstraint.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3SolverBody.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3SolverConstraint.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3TypedConstraint.h ../../bullet/Bullet3Dynamics/b3CpuRigidBodyPipeline.h ../../bullet/Bullet3Dynamics/shared/b3ContactConstraint4.h ../../bullet/Bullet3Dynamics/shared/b3ConvertConstraint4.h ../../bullet/Bullet3Dynamics/shared/b3Inertia.h ../../bullet/Bullet3Dynamics/shared/b3IntegrateTransforms.h ../../bullet/Bullet3Geometry/b3AabbUtil.h ../../bullet/Bullet3Geometry/b3ConvexHullComputer.h ../../bullet/Bullet3Geometry/b3GeometryUtil.h ../../bullet/Bullet3Geometry/b3GrahamScan2dConvexHull.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/autogenerated/bullet2.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3BulletFile.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3Chunk.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3Common.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3DNA.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3Defines.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3File.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3Serializer.h ../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3.h ../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3Internal.h ../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseInterface.h ../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseProxy.h ../../bullet/BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h ../../bullet/BulletCollision/BroadphaseCollision/btDbvt.h ../../bullet/BulletCollision/BroadphaseCollision/btDbvtBroadphase.h ../../bullet/BulletCollision/BroadphaseCollision/btDispatcher.h ../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCache.h ../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCallback.h ../../bullet/BulletCollision/BroadphaseCollision/btQuantizedBvh.h ../../bullet/BulletCollision/BroadphaseCollision/btSimpleBroadphase.h ../../bullet/BulletCollision/CollisionDispatch/SphereTriangleDetector.h ../../bullet/BulletCollision/CollisionDispatch/btActivatingCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btBox2dBox2dCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btBoxBoxCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btBoxBoxDetector.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionConfiguration.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionCreateFunc.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionDispatcher.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionObject.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionWorld.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionWorldImporter.h ../../bullet/BulletCollision/CollisionDispatch/btCompoundCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btCompoundCompoundCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btConvex2dConvex2dAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btConvexConcaveCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btConvexConvexAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btConvexPlaneCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h ../../bullet/BulletCollision/CollisionDispatch/btEmptyCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btGhostObject.h ../../bullet/BulletCollision/CollisionDispatch/btHashedSimplePairCache.h ../../bullet/BulletCollision/CollisionDispatch/btInternalEdgeUtility.h ../../bullet/BulletCollision/CollisionDispatch/btManifoldResult.h ../../bullet/BulletCollision/CollisionDispatch/btSimulationIslandManager.h ../../bullet/BulletCollision/CollisionDispatch/btSphereBoxCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btUnionFind.h ../../bullet/BulletCollision/CollisionShapes/btBox2dShape.h ../../bullet/BulletCollision/CollisionShapes/btBoxShape.h ../../bullet/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h ../../bullet/BulletCollision/CollisionShapes/btCapsuleShape.h ../../bullet/BulletCollision/CollisionShapes/btCollisionMargin.h ../../bullet/BulletCollision/CollisionShapes/btCollisionShape.h ../../bullet/BulletCollision/CollisionShapes/btCompoundShape.h ../../bullet/BulletCollision/CollisionShapes/btConcaveShape.h ../../bullet/BulletCollision/CollisionShapes/btConeShape.h ../../bullet/BulletCollision/CollisionShapes/btConvex2dShape.h ../../bullet/BulletCollision/CollisionShapes/btConvexHullShape.h ../../bullet/BulletCollision/CollisionShapes/btConvexInternalShape.h ../../bullet/BulletCollision/CollisionShapes/btConvexPointCloudShape.h ../../bullet/BulletCollision/CollisionShapes/btConvexPolyhedron.h ../../bullet/BulletCollision/CollisionShapes/btConvexShape.h ../../bullet/BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h ../../bullet/BulletCollision/CollisionShapes/btCylinderShape.h ../../bullet/BulletCollision/CollisionShapes/btEmptyShape.h ../../bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h ../../bullet/BulletCollision/CollisionShapes/btMaterial.h ../../bullet/BulletCollision/CollisionShapes/btMiniSDF.h ../../bullet/BulletCollision/CollisionShapes/btMinkowskiSumShape.h ../../bullet/BulletCollision/CollisionShapes/btMultiSphereShape.h ../../bullet/BulletCollision/CollisionShapes/btMultimaterialTriangleMeshShape.h ../../bullet/BulletCollision/CollisionShapes/btOptimizedBvh.h ../../bullet/BulletCollision/CollisionShapes/btPolyhedralConvexShape.h ../../bullet/BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h ../../bullet/BulletCollision/CollisionShapes/btSdfCollisionShape.h ../../bullet/BulletCollision/CollisionShapes/btShapeHull.h ../../bullet/BulletCollision/CollisionShapes/btSphereShape.h ../../bullet/BulletCollision/CollisionShapes/btStaticPlaneShape.h ../../bullet/BulletCollision/CollisionShapes/btStridingMeshInterface.h ../../bullet/BulletCollision/CollisionShapes/btTetrahedronShape.h ../../bullet/BulletCollision/CollisionShapes/btTriangleBuffer.h ../../bullet/BulletCollision/CollisionShapes/btTriangleCallback.h ../../bullet/BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h ../../bullet/BulletCollision/CollisionShapes/btTriangleIndexVertexMaterialArray.h ../../bullet/BulletCollision/CollisionShapes/btTriangleInfoMap.h ../../bullet/BulletCollision/CollisionShapes/btTriangleMesh.h ../../bullet/BulletCollision/CollisionShapes/btTriangleMeshShape.h ../../bullet/BulletCollision/CollisionShapes/btTriangleShape.h ../../bullet/BulletCollision/CollisionShapes/btUniformScalingShape.h ../../bullet/BulletCollision/Gimpact/btBoxCollision.h ../../bullet/BulletCollision/Gimpact/btClipPolygon.h ../../bullet/BulletCollision/Gimpact/btCompoundFromGimpact.h ../../bullet/BulletCollision/Gimpact/btContactProcessing.h ../../bullet/BulletCollision/Gimpact/btContactProcessingStructs.h ../../bullet/BulletCollision/Gimpact/btGImpactBvh.h ../../bullet/BulletCollision/Gimpact/btGImpactBvhStructs.h ../../bullet/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h ../../bullet/BulletCollision/Gimpact/btGImpactMassUtil.h ../../bullet/BulletCollision/Gimpact/btGImpactQuantizedBvh.h ../../bullet/BulletCollision/Gimpact/btGImpactQuantizedBvhStructs.h ../../bullet/BulletCollision/Gimpact/btGImpactShape.h ../../bullet/BulletCollision/Gimpact/btGenericPoolAllocator.h ../../bullet/BulletCollision/Gimpact/btGeometryOperations.h ../../bullet/BulletCollision/Gimpact/btQuantization.h ../../bullet/BulletCollision/Gimpact/btTriangleShapeEx.h ../../bullet/BulletCollision/Gimpact/gim_array.h ../../bullet/BulletCollision/Gimpact/gim_basic_geometry_operations.h ../../bullet/BulletCollision/Gimpact/gim_bitset.h ../../bullet/BulletCollision/Gimpact/gim_box_collision.h ../../bullet/BulletCollision/Gimpact/gim_box_set.h ../../bullet/BulletCollision/Gimpact/gim_clip_polygon.h ../../bullet/BulletCollision/Gimpact/gim_contact.h ../../bullet/BulletCollision/Gimpact/gim_geom_types.h ../../bullet/BulletCollision/Gimpact/gim_geometry.h ../../bullet/BulletCollision/Gimpact/gim_hash_table.h ../../bullet/BulletCollision/Gimpact/gim_linear_math.h ../../bullet/BulletCollision/Gimpact/gim_math.h ../../bullet/BulletCollision/Gimpact/gim_memory.h ../../bullet/BulletCollision/Gimpact/gim_pair.h ../../bullet/BulletCollision/Gimpact/gim_radixsort.h ../../bullet/BulletCollision/Gimpact/gim_tri_collision.h ../../bullet/BulletCollision/NarrowPhaseCollision/btComputeGjkEpaPenetration.h ../../bullet/BulletCollision/NarrowPhaseCollision/btContinuousConvexCollision.h ../../bullet/BulletCollision/NarrowPhaseCollision/btConvexCast.h ../../bullet/BulletCollision/NarrowPhaseCollision/btConvexPenetrationDepthSolver.h ../../bullet/BulletCollision/NarrowPhaseCollision/btDiscreteCollisionDetectorInterface.h ../../bullet/BulletCollision/NarrowPhaseCollision/btGjkCollisionDescription.h ../../bullet/BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h ../../bullet/BulletCollision/NarrowPhaseCollision/btGjkEpa2.h ../../bullet/BulletCollision/NarrowPhaseCollision/btGjkEpa3.h ../../bullet/BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h ../../bullet/BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h ../../bullet/BulletCollision/NarrowPhaseCollision/btManifoldPoint.h ../../bullet/BulletCollision/NarrowPhaseCollision/btMinkowskiPenetrationDepthSolver.h ../../bullet/BulletCollision/NarrowPhaseCollision/btMprPenetration.h ../../bullet/BulletCollision/NarrowPhaseCollision/btPersistentManifold.h ../../bullet/BulletCollision/NarrowPhaseCollision/btPointCollector.h ../../bullet/BulletCollision/NarrowPhaseCollision/btPolyhedralContactClipping.h ../../bullet/BulletCollision/NarrowPhaseCollision/btRaycastCallback.h ../../bullet/BulletCollision/NarrowPhaseCollision/btSimplexSolverInterface.h ../../bullet/BulletCollision/NarrowPhaseCollision/btSubSimplexConvexCast.h ../../bullet/BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h ../../bullet/BulletDynamics/Character/btCharacterControllerInterface.h ../../bullet/BulletDynamics/Character/btKinematicCharacterController.h ../../bullet/BulletDynamics/ConstraintSolver/btBatchedConstraints.h ../../bullet/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btConstraintSolver.h ../../bullet/BulletDynamics/ConstraintSolver/btContactConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btContactSolverInfo.h ../../bullet/BulletDynamics/ConstraintSolver/btFixedConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btGearConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h ../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btHinge2Constraint.h ../../bullet/BulletDynamics/ConstraintSolver/btHingeConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btJacobianEntry.h ../../bullet/BulletDynamics/ConstraintSolver/btNNCGConstraintSolver.h ../../bullet/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h ../../bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h ../../bullet/BulletDynamics/ConstraintSolver/btSliderConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btSolve2LinearConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btSolverBody.h ../../bullet/BulletDynamics/ConstraintSolver/btSolverConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btTypedConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btUniversalConstraint.h ../../bullet/BulletDynamics/Dynamics/btActionInterface.h ../../bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h ../../bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h ../../bullet/BulletDynamics/Dynamics/btDynamicsWorld.h ../../bullet/BulletDynamics/Dynamics/btRigidBody.h ../../bullet/BulletDynamics/Dynamics/btSimpleDynamicsWorld.h ../../bullet/BulletDynamics/Dynamics/btSimulationIslandManagerMt.h ../../bullet/BulletDynamics/Featherstone/btMultiBody.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyConstraint.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyFixedConstraint.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyGearConstraint.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyInplaceSolverIslandCallback.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyJointFeedback.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyJointLimitConstraint.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyJointMotor.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyLink.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyLinkCollider.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyMLCPConstraintSolver.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyPoint2Point.h ../../bullet/BulletDynamics/Featherstone/btMultiBodySliderConstraint.h ../../bullet/BulletDynamics/Featherstone/btMultiBodySolverConstraint.h ../../bullet/BulletDynamics/Featherstone/btMultiBodySphericalJointLimit.h ../../bullet/BulletDynamics/Featherstone/btMultiBodySphericalJointMotor.h ../../bullet/BulletDynamics/MLCPSolvers/btDantzigLCP.h ../../bullet/BulletDynamics/MLCPSolvers/btDantzigSolver.h ../../bullet/BulletDynamics/MLCPSolvers/btLemkeAlgorithm.h ../../bullet/BulletDynamics/MLCPSolvers/btLemkeSolver.h ../../bullet/BulletDynamics/MLCPSolvers/btMLCPSolver.h ../../bullet/BulletDynamics/MLCPSolvers/btMLCPSolverInterface.h ../../bullet/BulletDynamics/MLCPSolvers/btPATHSolver.h ../../bullet/BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h ../../bullet/BulletDynamics/Vehicle/btRaycastVehicle.h ../../bullet/BulletDynamics/Vehicle/btVehicleRaycaster.h ../../bullet/BulletDynamics/Vehicle/btWheelInfo.h ../../bullet/BulletInverseDynamics/IDConfig.hpp ../../bullet/BulletInverseDynamics/IDConfigBuiltin.hpp ../../bullet/BulletInverseDynamics/IDConfigEigen.hpp ../../bullet/BulletInverseDynamics/IDErrorMessages.hpp ../../bullet/BulletInverseDynamics/IDMath.hpp ../../bullet/BulletInverseDynamics/MultiBodyTree.hpp ../../bullet/BulletInverseDynamics/details/IDEigenInterface.hpp ../../bullet/BulletInverseDynamics/details/IDLinearMathInterface.hpp ../../bullet/BulletInverseDynamics/details/IDMatVec.hpp ../../bullet/BulletInverseDynamics/details/MultiBodyTreeImpl.hpp ../../bullet/BulletInverseDynamics/details/MultiBodyTreeInitCache.hpp ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableBody.h ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableBodyHelpers.h ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableBodySolver.h ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableContactConstraint.h ../../bullet/BulletSoftBody/DeformableBodyInplaceSolverIslandCallback.h ../../bullet/BulletSoftBody/btCGProjection.h ../../bullet/BulletSoftBody/btConjugateGradient.h ../../bullet/BulletSoftBody/btConjugateResidual.h ../../bullet/BulletSoftBody/btDefaultSoftBodySolver.h ../../bullet/BulletSoftBody/btDeformableBackwardEulerObjective.h ../../bullet/BulletSoftBody/btDeformableBodySolver.h ../../bullet/BulletSoftBody/btDeformableContactConstraint.h ../../bullet/BulletSoftBody/btDeformableContactProjection.h ../../bullet/BulletSoftBody/btDeformableCorotatedForce.h ../../bullet/BulletSoftBody/btDeformableGravityForce.h ../../bullet/BulletSoftBody/btDeformableLagrangianForce.h ../../bullet/BulletSoftBody/btDeformableLinearElasticityForce.h ../../bullet/BulletSoftBody/btDeformableMassSpringForce.h ../../bullet/BulletSoftBody/btDeformableMousePickingForce.h ../../bullet/BulletSoftBody/btDeformableMultiBodyConstraintSolver.h ../../bullet/BulletSoftBody/btDeformableMultiBodyDynamicsWorld.h ../../bullet/BulletSoftBody/btDeformableNeoHookeanForce.h ../../bullet/BulletSoftBody/btKrylovSolver.h ../../bullet/BulletSoftBody/btPreconditioner.h ../../bullet/BulletSoftBody/btSoftBody.h ../../bullet/BulletSoftBody/btSoftBodyConcaveCollisionAlgorithm.h ../../bullet/BulletSoftBody/btSoftBodyData.h ../../bullet/BulletSoftBody/btSoftBodyHelpers.h ../../bullet/BulletSoftBody/btSoftBodyInternals.h ../../bullet/BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h ../../bullet/BulletSoftBody/btSoftBodySolverVertexBuffer.h ../../bullet/BulletSoftBody/btSoftBodySolvers.h ../../bullet/BulletSoftBody/btSoftMultiBodyDynamicsWorld.h ../../bullet/BulletSoftBody/btSoftRigidCollisionAlgorithm.h ../../bullet/BulletSoftBody/btSoftRigidDynamicsWorld.h ../../bullet/BulletSoftBody/btSoftSoftCollisionAlgorithm.h ../../bullet/BulletSoftBody/btSparseSDF.h ../../bullet/BulletSoftBody/poly34.h ../../bullet/LinearMath/TaskScheduler/btThreadSupportInterface.h ../../bullet/LinearMath/btAabbUtil2.h ../../bullet/LinearMath/btAlignedAllocator.h ../../bullet/LinearMath/btAlignedObjectArray.h ../../bullet/LinearMath/btConvexHull.h ../../bullet/LinearMath/btConvexHullComputer.h ../../bullet/LinearMath/btCpuFeatureUtility.h ../../bullet/LinearMath/btDefaultMotionState.h ../../bullet/LinearMath/btGeometryUtil.h ../../bullet/LinearMath/btGrahamScan2dConvexHull.h ../../bullet/LinearMath/btHashMap.h ../../bullet/LinearMath/btIDebugDraw.h ../../bullet/LinearMath/btImplicitQRSVD.h ../../bullet/LinearMath/btList.h ../../bullet/LinearMath/btMatrix3x3.h ../../bullet/LinearMath/btMatrixX.h ../../bullet/LinearMath/btMinMax.h ../../bullet/LinearMath/btModifiedGramSchmidt.h ../../bullet/LinearMath/btMotionState.h ../../bullet/LinearMath/btPolarDecomposition.h ../../bullet/LinearMath/btPoolAllocator.h ../../bullet/LinearMath/btQuadWord.h ../../bullet/LinearMath/btQuaternion.h ../../bullet/LinearMath/btQuickprof.h ../../bullet/LinearMath/btRandom.h ../../bullet/LinearMath/btReducedVector.h ../../bullet/LinearMath/btScalar.h ../../bullet/LinearMath/btSerializer.h ../../bullet/LinearMath/btSpatialAlgebra.h ../../bullet/LinearMath/btStackAlloc.h ../../bullet/LinearMath/btThreads.h ../../bullet/LinearMath/btTransform.h ../../bullet/LinearMath/btTransformUtil.h ../../bullet/LinearMath/btVector3.h ../../bullet/btBulletCollisionCommon.h ../../bullet/btBulletDynamicsCommon.h ../../bullet/clew/clew.h core/Components/attachedenitities.h core/Components/collider.h core/Components/component.h core/Components/dynamicmodel.h core/Components/mesh.h core/Components/meshrenderer2d.h core/Components/mission.h core/Components/networkobject.h core/Components/rigidbody.h core/Components/trajectory.h core/Components/transform.h ../../core/Config/scenarioconfig.h ../../core/Config/sessionmanager.h ../../core/Debug/AppException.h ../../core/Debug/ExceptionMacros.h ../../core/Debug/console.h ../../core/Debug/frame.h ../../core/Debug/profiler.h ../../core/GlobalRegistry.h ../../core/Hierarchy/Components/attachedenitities.h ../../core/Hierarchy/Components/collider.h ../../core/Hierarchy/Components/component.h ../../core/Hierarchy/Components/crosssection.h ../../core/Hierarchy/Components/dynamicmodel.h ../../core/Hierarchy/Components/iffprofile.h ../../core/Hierarchy/Components/mesh.h ../../core/Hierarchy/Components/meshrenderer2d.h ../../core/Hierarchy/Components/mission.h ../../core/Hierarchy/Components/networkobject.h ../../core/Hierarchy/Components/radioprofile.h ../../core/Hierarchy/Components/rigidbody.h ../../core/Hierarchy/Components/sensorprofile.h ../../core/Hierarchy/Components/trajectory.h ../../core/Hierarchy/Components/transform.h ../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.h ../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.h ../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h ../../core/Hierarchy/EntityProfiles/fixedpoints.h ../../core/Hierarchy/EntityProfiles/formation.h ../../core/Hierarchy/EntityProfiles/iff.h ../../core/Hierarchy/EntityProfiles/platform.h ../../core/Hierarchy/EntityProfiles/radio.h ../../core/Hierarchy/EntityProfiles/sensor.h ../../core/Hierarchy/EntityProfiles/specialzone.h ../../core/Hierarchy/EntityProfiles/weapons.h ../../core/Hierarchy/Struct/action.h ../../core/Hierarchy/Struct/color.h ../../core/Hierarchy/Struct/condition.h ../../core/Hierarchy/Struct/constants.h ../../core/Hierarchy/Struct/formationposition.h ../../core/Hierarchy/Struct/geocords.h ../../core/Hierarchy/Struct/parameter.h ../../core/Hierarchy/Struct/task.h ../../core/Hierarchy/Struct/vector.h ../../core/Hierarchy/Struct/waypoints.h ../../core/Hierarchy/Utils/entityutils.h ../../core/Hierarchy/entity.h ../../core/Hierarchy/folder.h ../../core/Hierarchy/hierarchy.h ../../core/Hierarchy/profilecategaory.h ../../core/InputSystem/inputmanager.h ../../core/Network/entitypdu.h ../../core/Network/folderpdu.h ../../core/Network/libs/MessageBus.h ../../core/Network/libs/TransformUpdate.h ../../core/Network/libs/lz4.h ../../core/Network/networkmanager.h ../../core/Network/networktransport.h ../../core/Network/profilepdu.h ../../core/Network/transformpdu.h ../../core/Plugins/pluginmanager.h ../../core/Recorder/recorder.h ../../core/Render/scenerenderer.h ../../core/ScriptEngine/scriptengine.h ../../core/ScriptEngine/scriptenginegis.h ../../core/SharedMemory/sharedmemorywrapper.h ../../core/Simulation/simulation.h ../../core/Simulation/simulation_state.h ../../core/Utility/uuid.h ../../core/structure/database.h core/structure/entity.h core/structure/folder.h core/structure/hierarchy.h ../../core/structure/missioncreator.h ../../core/structure/missionexcuter.h ../../core/structure/runtime.h ../../core/structure/scenario.h ../../dis7/AcknowledgePdu.h ../../dis7/AcknowledgeReliablePdu.h ../../dis7/AcousticEmitter.h ../../dis7/ActionRequestPdu.h ../../dis7/ActionRequestReliablePdu.h ../../dis7/ActionResponsePdu.h ../../dis7/ActionResponseReliablePdu.h ../../dis7/AggregateIdentifier.h ../../dis7/AggregateMarking.h ../../dis7/AggregateType.h ../../dis7/AngleDeception.h ../../dis7/AngularVelocityVector.h ../../dis7/AntennaLocation.h ../../dis7/ArealObjectStatePdu.h ../../dis7/ArticulatedParts.h ../../dis7/Association.h ../../dis7/AttachedParts.h ../../dis7/Attribute.h ../../dis7/AttributePdu.h ../../dis7/BeamAntennaPattern.h ../../dis7/BeamData.h ../../dis7/BeamStatus.h ../../dis7/BlankingSector.h ../../dis7/ClockTime.h ../../dis7/CollisionElasticPdu.h ../../dis7/CollisionPdu.h ../../dis7/CommentPdu.h ../../dis7/CommentReliablePdu.h ../../dis7/CommunicationsNodeID.h ../../dis7/CreateEntityPdu.h ../../dis7/CreateEntityReliablePdu.h ../../dis7/DataPdu.h ../../dis7/DataQueryDatumSpecification.h ../../dis7/DataQueryPdu.h ../../dis7/DataQueryReliablePdu.h ../../dis7/DataReliablePdu.h ../../dis7/DatumSpecification.h ../../dis7/DeadReckoningParameters.h ../../dis7/DesignatorPdu.h ../../dis7/DetonationPdu.h ../../dis7/DirectedEnergyAreaAimpoint.h ../../dis7/DirectedEnergyDamage.h ../../dis7/DirectedEnergyFirePdu.h ../../dis7/DirectedEnergyPrecisionAimpoint.h ../../dis7/DirectedEnergyTargetEnergyDeposition.h ../../dis7/DistributedEmissionsFamilyPdu.h ../../dis7/EEFundamentalParameterData.h ../../dis7/EightByteChunk.h ../../dis7/ElectromagneticEmissionBeamData.h ../../dis7/ElectromagneticEmissionSystemData.h ../../dis7/ElectromagneticEmissionsPdu.h ../../dis7/EmitterSystem.h ../../dis7/EngineFuel.h ../../dis7/EngineFuelReload.h ../../dis7/EntityAssociation.h ../../dis7/EntityDamageStatusPdu.h ../../dis7/EntityID.h ../../dis7/EntityInformationFamilyPdu.h ../../dis7/EntityManagementFamilyPdu.h ../../dis7/EntityMarking.h ../../dis7/EntityStatePdu.h ../../dis7/EntityStateUpdatePdu.h ../../dis7/EntityType.h ../../dis7/EntityTypeVP.h ../../dis7/Environment.h ../../dis7/EnvironmentGeneral.h ../../dis7/EnvironmentType.h ../../dis7/EulerAngles.h ../../dis7/EventIdentifier.h ../../dis7/EventIdentifierLiveEntity.h ../../dis7/EventReportPdu.h ../../dis7/EventReportReliablePdu.h ../../dis7/Expendable.h ../../dis7/ExpendableDescriptor.h ../../dis7/ExpendableReload.h ../../dis7/ExplosionDescriptor.h ../../dis7/FalseTargetsAttribute.h ../../dis7/FastEntityStatePdu.h ../../dis7/FirePdu.h ../../dis7/FixedDatum.h ../../dis7/FourByteChunk.h ../../dis7/FundamentalOperationalData.h ../../dis7/GridAxis.h ../../dis7/GroupIdentifier.h ../../dis7/IFFFundamentalParameterData.h ../../dis7/IFFPdu.h ../../dis7/IOCommunicationsNode.h ../../dis7/IOEffect.h ../../dis7/IffDataSpecification.h ../../dis7/IntercomCommunicationsParameters.h ../../dis7/IntercomIdentifier.h ../../dis7/IntercomSignalPdu.h ../../dis7/IsPartOfPdu.h ../../dis7/JammingTechnique.h ../../dis7/LaunchedMunitionRecord.h ../../dis7/LayerHeader.h ../../dis7/LinearObjectStatePdu.h ../../dis7/LinearSegmentParameter.h ../../dis7/LiveEntityIdentifier.h ../../dis7/LiveEntityPdu.h ../../dis7/LiveSimulationAddress.h ../../dis7/LogisticsFamilyPdu.h ../../dis7/MineEntityIdentifier.h ../../dis7/MinefieldFamilyPdu.h ../../dis7/MinefieldIdentifier.h ../../dis7/MinefieldResponseNackPdu.h ../../dis7/MinefieldStatePdu.h ../../dis7/ModulationParameters.h ../../dis7/ModulationType.h ../../dis7/Munition.h ../../dis7/MunitionDescriptor.h ../../dis7/MunitionReload.h ../../dis7/NamedLocationIdentification.h ../../dis7/ObjectIdentifier.h ../../dis7/ObjectType.h ../../dis7/OwnershipStatus.h ../../dis7/Pdu.h ../../dis7/PduContainer.h ../../dis7/PduHeader.h ../../dis7/PduStatus.h ../../dis7/PduSuperclass.h ../../dis7/PointObjectStatePdu.h ../../dis7/PropulsionSystemData.h ../../dis7/RadioCommunicationsFamilyPdu.h ../../dis7/RadioIdentifier.h ../../dis7/RadioType.h ../../dis7/ReceiverPdu.h ../../dis7/RecordQueryReliablePdu.h ../../dis7/RecordQuerySpecification.h ../../dis7/RecordSpecification.h ../../dis7/RecordSpecificationElement.h ../../dis7/Relationship.h ../../dis7/RemoveEntityPdu.h ../../dis7/RemoveEntityReliablePdu.h ../../dis7/RepairCompletePdu.h ../../dis7/RepairResponsePdu.h ../../dis7/ResupplyOfferPdu.h ../../dis7/ResupplyReceivedPdu.h ../../dis7/SecondaryOperationalData.h ../../dis7/SeesPdu.h ../../dis7/Sensor.h ../../dis7/SeparationVP.h ../../dis7/ServiceRequestPdu.h ../../dis7/SetDataPdu.h ../../dis7/SetDataReliablePdu.h ../../dis7/SimulationAddress.h ../../dis7/SimulationIdentifier.h ../../dis7/SimulationManagementFamilyPdu.h ../../dis7/SimulationManagementPduHeader.h ../../dis7/SimulationManagementWithReliabilityFamilyPdu.h ../../dis7/StandardVariableSpecification.h ../../dis7/StartResumePdu.h ../../dis7/StartResumeReliablePdu.h ../../dis7/StopFreezePdu.h ../../dis7/StopFreezeReliablePdu.h ../../dis7/StorageFuel.h ../../dis7/StorageFuelReload.h ../../dis7/SupplyQuantity.h ../../dis7/SyntheticEnvironmentFamilyPdu.h ../../dis7/SystemIdentifier.h ../../dis7/TotalRecordSets.h ../../dis7/TrackJamData.h ../../dis7/TwoByteChunk.h ../../dis7/UAFundamentalParameter.h ../../dis7/UaPdu.h ../../dis7/UnattachedIdentifier.h ../../dis7/UnsignedDISInteger.h ../../dis7/VariableDatum.h ../../dis7/VariableParameter.h ../../dis7/VariableTransmitterParameters.h ../../dis7/Vector2Float.h ../../dis7/Vector3Double.h ../../dis7/Vector3Float.h ../../dis7/VectoringNozzleSystem.h ../../dis7/WarfareFamilyPdu.h ../../dis7/opendis7_export.h ../../dis7/utils/ConversionUtils.h ../../dis7/utils/DataStream.h ../../dis7/utils/Endian.h ../../dis7/utils/PDUType.h $(DISTDIR)/
-	$(COPY_FILE) --parents ../../GUI/Console/consoleview.cpp ../../GUI/Editors/customresizableoverlaydock.cpp ../../GUI/Editors/databaseeditor.cpp ../../GUI/Editors/recentprojectsmanager.cpp ../../GUI/Editors/runtimeeditor.cpp ../../GUI/Editors/scenarioeditor.cpp ../../GUI/Feedback/projectinformation.cpp ../../GUI/Hierarchytree/addformationdialog.cpp ../../GUI/Hierarchytree/additemdialog.cpp ../../GUI/Hierarchytree/contextmenu.cpp ../../GUI/Hierarchytree/customtrajectorydialog.cpp ../../GUI/Hierarchytree/hierarchyconnector.cpp ../../GUI/Hierarchytree/hierarchytree.cpp ../../GUI/Inspector/customparameterdialog.cpp ../../GUI/Inspector/inspector.cpp ../../GUI/Inspector/template/colortemplate.cpp ../../GUI/Inspector/template/geocordstemplate.cpp ../../GUI/Inspector/template/iconsdialog.cpp ../../GUI/Inspector/template/imagetemplate.cpp ../../GUI/Inspector/template/optiontemplate.cpp ../../GUI/Inspector/template/vectortemplate.cpp ../../GUI/Logger/loggerdialog.cpp ../../GUI/Menubars/menubar.cpp ../../GUI/Menubars/profileinfodialog.cpp ../../GUI/Navigation/navigationpage.cpp ../../GUI/Overview/overview.cpp ../../GUI/Panel/csmdisplay.cpp ../../GUI/Panel/esmdisplay.cpp ../../GUI/Panel/iffdisplay.cpp ../../GUI/Panel/radardisplay.cpp ../../GUI/Panel/radiodisplay.cpp ../../GUI/Plugins/pluginwindow.cpp ../../GUI/Settings/applicationdialog.cpp ../../GUI/Sidebar/sidebarwidget.cpp ../../GUI/Tacticaldisplay/Gis/custommapdialog.cpp ../../GUI/Tacticaldisplay/Gis/gislib.cpp ../../GUI/Tacticaldisplay/Gis/gisnetwork.cpp ../../GUI/Tacticaldisplay/Gis/layerinformationdialog.cpp ../../GUI/Tacticaldisplay/Gis/layerpanel.cpp ../../GUI/Tacticaldisplay/Gis/shapes_feature.cpp ../../GUI/Tacticaldisplay/canvaswidget.cpp ../../GUI/Tacticaldisplay/entityinfodialog.cpp ../../GUI/Tacticaldisplay/scalebar.cpp ../../GUI/Tacticaldisplay/shapepropertiesdialog.cpp ../../GUI/Tacticaldisplay/tacticaldisplay.cpp ../../GUI/Tacticaldisplay/tooltiphelper.cpp ../../GUI/Tacticaldisplay/waypointeditdialog.cpp ../../GUI/Testscript/angelscripthighlighter.cpp ../../GUI/Testscript/testscriptdialog.cpp ../../GUI/Testscript/textscriptwidget.cpp ../../GUI/Timing/graphwidget.cpp ../../GUI/Toolbars/designtoolbar.cpp ../../GUI/Toolbars/networktoolbar.cpp ../../GUI/Toolbars/runtimetoolbar.cpp ../../GUI/Toolbars/standardtoolbar.cpp ../../GUI/docktitlemenu/docktitlemenu.cpp ../../GUI/mainwindow.cpp ../../GUI/measuredistance/measuredistancedialog.cpp ../../GUI/scene3dwidget/scene3dwidget.cpp ../../Setup.cpp ../../angelscript/add_on/scriptarray/scriptarray.cpp ../../angelscript/add_on/scriptstdstring/scriptstdstring.cpp ../../bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvh.cpp ../../bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvhBroadphase.cpp ../../bullet/Bullet3Collision/BroadPhaseCollision/b3OverlappingPairCache.cpp ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3ConvexUtility.cpp ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3CpuNarrowPhase.cpp ../../bullet/Bullet3Common/b3AlignedAllocator.cpp ../../bullet/Bullet3Common/b3Logging.cpp ../../bullet/Bullet3Common/b3Vector3.cpp ../../bullet/Bullet3Dynamics/ConstraintSolver/b3FixedConstraint.cpp ../../bullet/Bullet3Dynamics/ConstraintSolver/b3Generic6DofConstraint.cpp ../../bullet/Bullet3Dynamics/ConstraintSolver/b3PgsJacobiSolver.cpp ../../bullet/Bullet3Dynamics/ConstraintSolver/b3Point2PointConstraint.cpp ../../bullet/Bullet3Dynamics/ConstraintSolver/b3TypedConstraint.cpp ../../bullet/Bullet3Dynamics/b3CpuRigidBodyPipeline.cpp ../../bullet/Bullet3Geometry/b3ConvexHullComputer.cpp ../../bullet/Bullet3Geometry/b3GeometryUtil.cpp ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3BulletFile.cpp ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3Chunk.cpp ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3DNA.cpp ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3File.cpp ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3Serializer.cpp ../../bullet/BulletInverseDynamics/IDMath.cpp ../../bullet/BulletInverseDynamics/MultiBodyTree.cpp ../../bullet/BulletInverseDynamics/details/MultiBodyTreeImpl.cpp ../../bullet/BulletInverseDynamics/details/MultiBodyTreeInitCache.cpp ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableBody.cpp ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableBodyHelpers.cpp ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableBodySolver.cpp ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableContactConstraint.cpp ../../bullet/BulletSoftBody/btDefaultSoftBodySolver.cpp ../../bullet/BulletSoftBody/btDeformableBackwardEulerObjective.cpp ../../bullet/BulletSoftBody/btDeformableBodySolver.cpp ../../bullet/BulletSoftBody/btDeformableContactConstraint.cpp ../../bullet/BulletSoftBody/btDeformableContactProjection.cpp ../../bullet/BulletSoftBody/btDeformableMultiBodyConstraintSolver.cpp ../../bullet/BulletSoftBody/btDeformableMultiBodyDynamicsWorld.cpp ../../bullet/BulletSoftBody/btSoftBody.cpp ../../bullet/BulletSoftBody/btSoftBodyConcaveCollisionAlgorithm.cpp ../../bullet/BulletSoftBody/btSoftBodyHelpers.cpp ../../bullet/BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.cpp ../../bullet/BulletSoftBody/btSoftMultiBodyDynamicsWorld.cpp ../../bullet/BulletSoftBody/btSoftRigidCollisionAlgorithm.cpp ../../bullet/BulletSoftBody/btSoftRigidDynamicsWorld.cpp ../../bullet/BulletSoftBody/btSoftSoftCollisionAlgorithm.cpp ../../bullet/BulletSoftBody/poly34.cpp ../../bullet/btBulletCollisionAll.cpp ../../bullet/btBulletDynamicsAll.cpp ../../bullet/btLinearMathAll.cpp ../../bullet/clew/clew.c ../../core/Config/scenarioconfig.cpp ../../core/Config/sessionmanager.cpp ../../core/Debug/console.cpp ../../core/Debug/frame.cpp ../../core/Debug/profiler.cpp ../../core/GlobalRegistry.cpp ../../core/Hierarchy/Components/attachedenitities.cpp ../../core/Hierarchy/Components/collider.cpp ../../core/Hierarchy/Components/component.cpp ../../core/Hierarchy/Components/crosssection.cpp ../../core/Hierarchy/Components/dynamicmodel.cpp ../../core/Hierarchy/Components/iffprofile.cpp ../../core/Hierarchy/Components/mesh.cpp ../../core/Hierarchy/Components/meshrenderer2d.cpp ../../core/Hierarchy/Components/mission.cpp ../../core/Hierarchy/Components/networkobject.cpp ../../core/Hierarchy/Components/radioprofile.cpp ../../core/Hierarchy/Components/rigidbody.cpp ../../core/Hierarchy/Components/sensorprofile.cpp ../../core/Hierarchy/Components/trajectory.cpp ../../core/Hierarchy/Components/transform.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.cpp ../../core/Hierarchy/EntityProfiles/fixedpoints.cpp ../../core/Hierarchy/EntityProfiles/formation.cpp ../../core/Hierarchy/EntityProfiles/iff.cpp ../../core/Hierarchy/EntityProfiles/platform.cpp ../../core/Hierarchy/EntityProfiles/radio.cpp ../../core/Hierarchy/EntityProfiles/sensor.cpp ../../core/Hierarchy/EntityProfiles/specialzone.cpp ../../core/Hierarchy/EntityProfiles/weapons.cpp ../../core/Hierarchy/Struct/action.cpp ../../core/Hierarchy/Struct/color.cpp ../../core/Hierarchy/Struct/condition.cpp ../../core/Hierarchy/Struct/constants.cpp ../../core/Hierarchy/Struct/formationposition.cpp ../../core/Hierarchy/Struct/geocords.cpp ../../core/Hierarchy/Struct/parameter.cpp ../../core/Hierarchy/Struct/task.cpp ../../core/Hierarchy/Struct/vector.cpp ../../core/Hierarchy/Struct/waypoints.cpp ../../core/Hierarchy/Utils/entityutils.cpp ../../core/Hierarchy/entity.cpp ../../core/Hierarchy/folder.cpp ../../core/Hierarchy/hierarchy.cpp ../../core/Hierarchy/profilecategaory.cpp ../../core/InputSystem/inputmanager.cpp ../../core/Network/entitypdu.cpp ../../core/Network/folderpdu.cpp ../../core/Network/libs/lz4.c ../../core/Network/networkmanager.cpp ../../core/Network/networktransport.cpp ../../core/Network/profilepdu.cpp ../../core/Network/transformpdu.cpp ../../core/Plugins/pluginmanager.cpp ../../core/Recorder/recorder.cpp ../../core/Render/scenerenderer.cpp ../../core/ScriptEngine/scriptengine.cpp ../../core/ScriptEngine/scriptenginegis.cpp ../../core/SharedMemory/sharedmemorywrapper.cpp ../../core/Simulation/simulation.cpp ../../core/Simulation/simulation_state.cpp ../../core/Utility/uuid.cpp ../../core/structure/database.cpp ../../core/structure/missioncreator.cpp ../../core/structure/missionexcuter.cpp ../../core/structure/runtime.cpp ../../core/structure/scenario.cpp ../../dis7/AcknowledgePdu.cpp ../../dis7/AcknowledgeReliablePdu.cpp ../../dis7/AcousticEmitter.cpp ../../dis7/ActionRequestPdu.cpp ../../dis7/ActionRequestReliablePdu.cpp ../../dis7/ActionResponsePdu.cpp ../../dis7/ActionResponseReliablePdu.cpp ../../dis7/AggregateIdentifier.cpp ../../dis7/AggregateMarking.cpp ../../dis7/AggregateType.cpp ../../dis7/AngleDeception.cpp ../../dis7/AngularVelocityVector.cpp ../../dis7/AntennaLocation.cpp ../../dis7/ArealObjectStatePdu.cpp ../../dis7/ArticulatedParts.cpp ../../dis7/Association.cpp ../../dis7/AttachedParts.cpp ../../dis7/Attribute.cpp ../../dis7/AttributePdu.cpp ../../dis7/BeamAntennaPattern.cpp ../../dis7/BeamData.cpp ../../dis7/BeamStatus.cpp ../../dis7/BlankingSector.cpp ../../dis7/ClockTime.cpp ../../dis7/CollisionElasticPdu.cpp ../../dis7/CollisionPdu.cpp ../../dis7/CommentPdu.cpp ../../dis7/CommentReliablePdu.cpp ../../dis7/CommunicationsNodeID.cpp ../../dis7/CreateEntityPdu.cpp ../../dis7/CreateEntityReliablePdu.cpp ../../dis7/DataPdu.cpp ../../dis7/DataQueryDatumSpecification.cpp ../../dis7/DataQueryPdu.cpp ../../dis7/DataQueryReliablePdu.cpp ../../dis7/DataReliablePdu.cpp ../../dis7/DatumSpecification.cpp ../../dis7/DeadReckoningParameters.cpp ../../dis7/DesignatorPdu.cpp ../../dis7/DetonationPdu.cpp ../../dis7/DirectedEnergyAreaAimpoint.cpp ../../dis7/DirectedEnergyDamage.cpp ../../dis7/DirectedEnergyFirePdu.cpp ../../dis7/DirectedEnergyPrecisionAimpoint.cpp ../../dis7/DirectedEnergyTargetEnergyDeposition.cpp ../../dis7/DistributedEmissionsFamilyPdu.cpp ../../dis7/EEFundamentalParameterData.cpp ../../dis7/EightByteChunk.cpp ../../dis7/ElectromagneticEmissionBeamData.cpp ../../dis7/ElectromagneticEmissionSystemData.cpp ../../dis7/ElectromagneticEmissionsPdu.cpp ../../dis7/EmitterSystem.cpp ../../dis7/EngineFuel.cpp ../../dis7/EngineFuelReload.cpp ../../dis7/EntityAssociation.cpp ../../dis7/EntityDamageStatusPdu.cpp ../../dis7/EntityID.cpp ../../dis7/EntityInformationFamilyPdu.cpp ../../dis7/EntityManagementFamilyPdu.cpp ../../dis7/EntityMarking.cpp ../../dis7/EntityStatePdu.cpp ../../dis7/EntityStateUpdatePdu.cpp ../../dis7/EntityType.cpp ../../dis7/EntityTypeVP.cpp ../../dis7/Environment.cpp ../../dis7/EnvironmentGeneral.cpp ../../dis7/EnvironmentType.cpp ../../dis7/EulerAngles.cpp ../../dis7/EventIdentifier.cpp ../../dis7/EventIdentifierLiveEntity.cpp ../../dis7/EventReportPdu.cpp ../../dis7/EventReportReliablePdu.cpp ../../dis7/Expendable.cpp ../../dis7/ExpendableDescriptor.cpp ../../dis7/ExpendableReload.cpp ../../dis7/ExplosionDescriptor.cpp ../../dis7/FalseTargetsAttribute.cpp ../../dis7/FastEntityStatePdu.cpp ../../dis7/FirePdu.cpp ../../dis7/FixedDatum.cpp ../../dis7/FourByteChunk.cpp ../../dis7/FundamentalOperationalData.cpp ../../dis7/GridAxis.cpp ../../dis7/GroupIdentifier.cpp ../../dis7/IFFFundamentalParameterData.cpp ../../dis7/IFFPdu.cpp ../../dis7/IOCommunicationsNode.cpp ../../dis7/IOEffect.cpp ../../dis7/IffDataSpecification.cpp ../../dis7/IntercomCommunicationsParameters.cpp ../../dis7/IntercomIdentifier.cpp ../../dis7/IntercomSignalPdu.cpp ../../dis7/IsPartOfPdu.cpp ../../dis7/JammingTechnique.cpp ../../dis7/LaunchedMunitionRecord.cpp ../../dis7/LayerHeader.cpp ../../dis7/LinearObjectStatePdu.cpp ../../dis7/LinearSegmentParameter.cpp ../../dis7/LiveEntityIdentifier.cpp ../../dis7/LiveEntityPdu.cpp ../../dis7/LiveSimulationAddress.cpp ../../dis7/LogisticsFamilyPdu.cpp ../../dis7/MineEntityIdentifier.cpp ../../dis7/MinefieldFamilyPdu.cpp ../../dis7/MinefieldIdentifier.cpp ../../dis7/MinefieldResponseNackPdu.cpp ../../dis7/MinefieldStatePdu.cpp ../../dis7/ModulationParameters.cpp ../../dis7/ModulationType.cpp ../../dis7/Munition.cpp ../../dis7/MunitionDescriptor.cpp ../../dis7/MunitionReload.cpp ../../dis7/NamedLocationIdentification.cpp ../../dis7/ObjectIdentifier.cpp ../../dis7/ObjectType.cpp ../../dis7/OwnershipStatus.cpp ../../dis7/Pdu.cpp ../../dis7/PduContainer.cpp ../../dis7/PduHeader.cpp ../../dis7/PduStatus.cpp ../../dis7/PduSuperclass.cpp ../../dis7/PointObjectStatePdu.cpp ../../dis7/PropulsionSystemData.cpp ../../dis7/RadioCommunicationsFamilyPdu.cpp ../../dis7/RadioIdentifier.cpp ../../dis7/RadioType.cpp ../../dis7/ReceiverPdu.cpp ../../dis7/RecordQueryReliablePdu.cpp ../../dis7/RecordQuerySpecification.cpp ../../dis7/RecordSpecification.cpp ../../dis7/RecordSpecificationElement.cpp ../../dis7/Relationship.cpp ../../dis7/RemoveEntityPdu.cpp ../../dis7/RemoveEntityReliablePdu.cpp ../../dis7/RepairCompletePdu.cpp ../../dis7/RepairResponsePdu.cpp ../../dis7/ResupplyOfferPdu.cpp ../../dis7/ResupplyReceivedPdu.cpp ../../dis7/SecondaryOperationalData.cpp ../../dis7/SeesPdu.cpp ../../dis7/Sensor.cpp ../../dis7/SeparationVP.cpp ../../dis7/ServiceRequestPdu.cpp ../../dis7/SetDataPdu.cpp ../../dis7/SetDataReliablePdu.cpp ../../dis7/SimulationAddress.cpp ../../dis7/SimulationIdentifier.cpp ../../dis7/SimulationManagementFamilyPdu.cpp ../../dis7/SimulationManagementPduHeader.cpp ../../dis7/SimulationManagementWithReliabilityFamilyPdu.cpp ../../dis7/StandardVariableSpecification.cpp ../../dis7/StartResumePdu.cpp ../../dis7/StartResumeReliablePdu.cpp ../../dis7/StopFreezePdu.cpp ../../dis7/StopFreezeReliablePdu.cpp ../../dis7/StorageFuel.cpp ../../dis7/StorageFuelReload.cpp ../../dis7/SupplyQuantity.cpp ../../dis7/SyntheticEnvironmentFamilyPdu.cpp ../../dis7/SystemIdentifier.cpp ../../dis7/TotalRecordSets.cpp ../../dis7/TrackJamData.cpp ../../dis7/TwoByteChunk.cpp ../../dis7/UAFundamentalParameter.cpp ../../dis7/UaPdu.cpp ../../dis7/UnattachedIdentifier.cpp ../../dis7/UnsignedDISInteger.cpp ../../dis7/VariableDatum.cpp ../../dis7/VariableParameter.cpp ../../dis7/VariableTransmitterParameters.cpp ../../dis7/Vector2Float.cpp ../../dis7/Vector3Double.cpp ../../dis7/Vector3Float.cpp ../../dis7/VectoringNozzleSystem.cpp ../../dis7/WarfareFamilyPdu.cpp ../../dis7/utils/ConversionUtils.cpp ../../dis7/utils/DataStream.cpp ../../main.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents ../../GUI/Console/consoleview-styles.h ../../GUI/Console/consoleview.h ../../GUI/DOCTRINE/doctrine-styles.h ../../GUI/DOCTRINE/doctrineareadefinition.h ../../GUI/DOCTRINE/doctrineassumptionsnotes.h ../../GUI/DOCTRINE/doctrineparameters.h ../../GUI/DOCTRINE/tactical-styles.h ../../GUI/DOCTRINE/tacticalrules.h ../../GUI/Editors/analysiseditor.h ../../GUI/Editors/customresizableoverlaydock.h ../../GUI/Editors/database-styles.h ../../GUI/Editors/databaseeditor.h ../../GUI/Editors/missioneditor.h ../../GUI/Editors/recentprojectsmanager.h ../../GUI/Editors/reportseditor.h ../../GUI/Editors/runtimeeditor.h ../../GUI/Editors/scenarioeditor.h ../../GUI/Feedback/projectinformation-styles.h ../../GUI/Feedback/projectinformation.h ../../GUI/Hierarchytree/addformationdialog.h ../../GUI/Hierarchytree/additemdialog-styles.h ../../GUI/Hierarchytree/additemdialog.h ../../GUI/Hierarchytree/addweapondialog.h ../../GUI/Hierarchytree/contextmenu-styles.h ../../GUI/Hierarchytree/contextmenu.h ../../GUI/Hierarchytree/customtrajectorydialog.h ../../GUI/Hierarchytree/hierarchy-styles.h ../../GUI/Hierarchytree/hierarchyconnector.h ../../GUI/Hierarchytree/hierarchytree.h ../../GUI/Inspector/customparameterdialog.h ../../GUI/Inspector/customparameterdialog.h ../../GUI/Inspector/customparameterdialog.h ../../GUI/Inspector/customparameterdialog.h ../../GUI/Inspector/customparameterdialog.h ../../GUI/Inspector/inspector-styles.h ../../GUI/Inspector/inspector.h ../../GUI/Inspector/template/colortemplate.h ../../GUI/Inspector/template/geocordstemplate.h ../../GUI/Inspector/template/iconsdialog.h ../../GUI/Inspector/template/imagetemplate.h ../../GUI/Inspector/template/optiontemplate.h ../../GUI/Inspector/template/vectortemplate.h ../../GUI/Logger/loggerdialog.h ../../GUI/Menubars/menubar-styles.h ../../GUI/Menubars/menubar.h ../../GUI/Menubars/profileinfodialog-styles.h ../../GUI/Menubars/profileinfodialog.h ../../GUI/Navigation/navigationpage.h ../../GUI/Overview/overview.h ../../GUI/Panel/csmdisplay.h ../../GUI/Panel/displayconstants.h ../../GUI/Panel/esmdisplay.h ../../GUI/Panel/ewdisplay.h ../../GUI/Panel/iffdisplay.h ../../GUI/Panel/radardisplay.h ../../GUI/Panel/radiodisplay.h ../../GUI/Panel/sonardisplay.h ../../GUI/Plugins/pluginwindow.h ../../GUI/Settings/applicationdialog-styles.h ../../GUI/Settings/applicationdialog.h ../../GUI/Sidebar/sidebar-styles.h ../../GUI/Sidebar/sidebarwidget.h ../../GUI/Tacticaldisplay/Gis/custommapdialog.h ../../GUI/Tacticaldisplay/Gis/gislib.h ../../GUI/Tacticaldisplay/Gis/gisnetwork.h ../../GUI/Tacticaldisplay/Gis/layerinformationdialog.h ../../GUI/Tacticaldisplay/Gis/layerpanel-styles.h ../../GUI/Tacticaldisplay/Gis/layerpanel.h ../../GUI/Tacticaldisplay/Gis/shapes_feature.h ../../GUI/Tacticaldisplay/canvaswidget.h ../../GUI/Tacticaldisplay/entityinfodialog-styles.h ../../GUI/Tacticaldisplay/entityinfodialog.h ../../GUI/Tacticaldisplay/scalebar.h ../../GUI/Tacticaldisplay/shapepropertiesdialog.h ../../GUI/Tacticaldisplay/tacticaldisplay.h ../../GUI/Tacticaldisplay/tooltiphelper.h ../../GUI/Tacticaldisplay/waypointeditdialog.h ../../GUI/Testscript/angelscripthighlighter.h ../../GUI/Testscript/testscriptdialog.h ../../GUI/Testscript/textscriptwidget.h ../../GUI/Timing/graphwidget.h ../../GUI/Toolbars/designtoolbar-styles.h ../../GUI/Toolbars/designtoolbar.h ../../GUI/Toolbars/networktoolbar-styles.h ../../GUI/Toolbars/networktoolbar.h ../../GUI/Toolbars/runtimetoolbar-styles.h ../../GUI/Toolbars/runtimetoolbar.h ../../GUI/Toolbars/standardtoolbar.h ../../GUI/docktitlemenu/docktitlemenu.h ../../GUI/mainwindow-styles.h ../../GUI/mainwindow.h ../../GUI/measuredistance/measuredistancedialog-styles.h ../../GUI/measuredistance/measuredistancedialog.h ../../GUI/scene3dwidget/scene3dwidget.h ../../GUI/statusbar.h ../../Setup.h ../../angelscript/add_on/scriptarray/scriptarray.h ../../angelscript/add_on/scriptstdstring/scriptstdstring.h ../../bullet/Bullet3Collision/BroadPhaseCollision/b3BroadphaseCallback.h ../../bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvh.h ../../bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvhBroadphase.h ../../bullet/Bullet3Collision/BroadPhaseCollision/b3OverlappingPair.h ../../bullet/Bullet3Collision/BroadPhaseCollision/b3OverlappingPairCache.h ../../bullet/Bullet3Collision/BroadPhaseCollision/shared/b3Aabb.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3Config.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3Contact4.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3ConvexUtility.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3CpuNarrowPhase.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3RaycastInfo.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3RigidBodyCL.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3BvhSubtreeInfoData.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3BvhTraversal.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3ClipFaces.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3Collidable.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3Contact4Data.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3ContactConvexConvexSAT.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3ContactSphereSphere.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3ConvexPolyhedronData.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3FindConcaveSatAxis.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3FindSeparatingAxis.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3MprPenetration.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3NewContactReduction.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3QuantizedBvhNodeData.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3ReduceContacts.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3RigidBodyData.h ../../bullet/Bullet3Collision/NarrowPhaseCollision/shared/b3UpdateAabbs.h ../../bullet/Bullet3Common/b3AlignedAllocator.h ../../bullet/Bullet3Common/b3AlignedObjectArray.h ../../bullet/Bullet3Common/b3CommandLineArgs.h ../../bullet/Bullet3Common/b3FileUtils.h ../../bullet/Bullet3Common/b3HashMap.h ../../bullet/Bullet3Common/b3Logging.h ../../bullet/Bullet3Common/b3Matrix3x3.h ../../bullet/Bullet3Common/b3MinMax.h ../../bullet/Bullet3Common/b3PoolAllocator.h ../../bullet/Bullet3Common/b3QuadWord.h ../../bullet/Bullet3Common/b3Quaternion.h ../../bullet/Bullet3Common/b3Random.h ../../bullet/Bullet3Common/b3ResizablePool.h ../../bullet/Bullet3Common/b3Scalar.h ../../bullet/Bullet3Common/b3StackAlloc.h ../../bullet/Bullet3Common/b3Transform.h ../../bullet/Bullet3Common/b3TransformUtil.h ../../bullet/Bullet3Common/b3Vector3.h ../../bullet/Bullet3Common/shared/b3Float4.h ../../bullet/Bullet3Common/shared/b3Int2.h ../../bullet/Bullet3Common/shared/b3Int4.h ../../bullet/Bullet3Common/shared/b3Mat3x3.h ../../bullet/Bullet3Common/shared/b3PlatformDefinitions.h ../../bullet/Bullet3Common/shared/b3Quat.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3ContactSolverInfo.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3FixedConstraint.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3Generic6DofConstraint.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3JacobianEntry.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3PgsJacobiSolver.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3Point2PointConstraint.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3SolverBody.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3SolverConstraint.h ../../bullet/Bullet3Dynamics/ConstraintSolver/b3TypedConstraint.h ../../bullet/Bullet3Dynamics/b3CpuRigidBodyPipeline.h ../../bullet/Bullet3Dynamics/shared/b3ContactConstraint4.h ../../bullet/Bullet3Dynamics/shared/b3ConvertConstraint4.h ../../bullet/Bullet3Dynamics/shared/b3Inertia.h ../../bullet/Bullet3Dynamics/shared/b3IntegrateTransforms.h ../../bullet/Bullet3Geometry/b3AabbUtil.h ../../bullet/Bullet3Geometry/b3ConvexHullComputer.h ../../bullet/Bullet3Geometry/b3GeometryUtil.h ../../bullet/Bullet3Geometry/b3GrahamScan2dConvexHull.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/autogenerated/bullet2.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3BulletFile.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3Chunk.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3Common.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3DNA.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3Defines.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3File.h ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3Serializer.h ../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3.h ../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3Internal.h ../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseInterface.h ../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseProxy.h ../../bullet/BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h ../../bullet/BulletCollision/BroadphaseCollision/btDbvt.h ../../bullet/BulletCollision/BroadphaseCollision/btDbvtBroadphase.h ../../bullet/BulletCollision/BroadphaseCollision/btDispatcher.h ../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCache.h ../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCallback.h ../../bullet/BulletCollision/BroadphaseCollision/btQuantizedBvh.h ../../bullet/BulletCollision/BroadphaseCollision/btSimpleBroadphase.h ../../bullet/BulletCollision/CollisionDispatch/SphereTriangleDetector.h ../../bullet/BulletCollision/CollisionDispatch/btActivatingCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btBox2dBox2dCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btBoxBoxCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btBoxBoxDetector.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionConfiguration.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionCreateFunc.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionDispatcher.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionObject.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionWorld.h ../../bullet/BulletCollision/CollisionDispatch/btCollisionWorldImporter.h ../../bullet/BulletCollision/CollisionDispatch/btCompoundCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btCompoundCompoundCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btConvex2dConvex2dAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btConvexConcaveCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btConvexConvexAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btConvexPlaneCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h ../../bullet/BulletCollision/CollisionDispatch/btEmptyCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btGhostObject.h ../../bullet/BulletCollision/CollisionDispatch/btHashedSimplePairCache.h ../../bullet/BulletCollision/CollisionDispatch/btInternalEdgeUtility.h ../../bullet/BulletCollision/CollisionDispatch/btManifoldResult.h ../../bullet/BulletCollision/CollisionDispatch/btSimulationIslandManager.h ../../bullet/BulletCollision/CollisionDispatch/btSphereBoxCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h ../../bullet/BulletCollision/CollisionDispatch/btUnionFind.h ../../bullet/BulletCollision/CollisionShapes/btBox2dShape.h ../../bullet/BulletCollision/CollisionShapes/btBoxShape.h ../../bullet/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h ../../bullet/BulletCollision/CollisionShapes/btCapsuleShape.h ../../bullet/BulletCollision/CollisionShapes/btCollisionMargin.h ../../bullet/BulletCollision/CollisionShapes/btCollisionShape.h ../../bullet/BulletCollision/CollisionShapes/btCompoundShape.h ../../bullet/BulletCollision/CollisionShapes/btConcaveShape.h ../../bullet/BulletCollision/CollisionShapes/btConeShape.h ../../bullet/BulletCollision/CollisionShapes/btConvex2dShape.h ../../bullet/BulletCollision/CollisionShapes/btConvexHullShape.h ../../bullet/BulletCollision/CollisionShapes/btConvexInternalShape.h ../../bullet/BulletCollision/CollisionShapes/btConvexPointCloudShape.h ../../bullet/BulletCollision/CollisionShapes/btConvexPolyhedron.h ../../bullet/BulletCollision/CollisionShapes/btConvexShape.h ../../bullet/BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h ../../bullet/BulletCollision/CollisionShapes/btCylinderShape.h ../../bullet/BulletCollision/CollisionShapes/btEmptyShape.h ../../bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h ../../bullet/BulletCollision/CollisionShapes/btMaterial.h ../../bullet/BulletCollision/CollisionShapes/btMiniSDF.h ../../bullet/BulletCollision/CollisionShapes/btMinkowskiSumShape.h ../../bullet/BulletCollision/CollisionShapes/btMultiSphereShape.h ../../bullet/BulletCollision/CollisionShapes/btMultimaterialTriangleMeshShape.h ../../bullet/BulletCollision/CollisionShapes/btOptimizedBvh.h ../../bullet/BulletCollision/CollisionShapes/btPolyhedralConvexShape.h ../../bullet/BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h ../../bullet/BulletCollision/CollisionShapes/btSdfCollisionShape.h ../../bullet/BulletCollision/CollisionShapes/btShapeHull.h ../../bullet/BulletCollision/CollisionShapes/btSphereShape.h ../../bullet/BulletCollision/CollisionShapes/btStaticPlaneShape.h ../../bullet/BulletCollision/CollisionShapes/btStridingMeshInterface.h ../../bullet/BulletCollision/CollisionShapes/btTetrahedronShape.h ../../bullet/BulletCollision/CollisionShapes/btTriangleBuffer.h ../../bullet/BulletCollision/CollisionShapes/btTriangleCallback.h ../../bullet/BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h ../../bullet/BulletCollision/CollisionShapes/btTriangleIndexVertexMaterialArray.h ../../bullet/BulletCollision/CollisionShapes/btTriangleInfoMap.h ../../bullet/BulletCollision/CollisionShapes/btTriangleMesh.h ../../bullet/BulletCollision/CollisionShapes/btTriangleMeshShape.h ../../bullet/BulletCollision/CollisionShapes/btTriangleShape.h ../../bullet/BulletCollision/CollisionShapes/btUniformScalingShape.h ../../bullet/BulletCollision/Gimpact/btBoxCollision.h ../../bullet/BulletCollision/Gimpact/btClipPolygon.h ../../bullet/BulletCollision/Gimpact/btCompoundFromGimpact.h ../../bullet/BulletCollision/Gimpact/btContactProcessing.h ../../bullet/BulletCollision/Gimpact/btContactProcessingStructs.h ../../bullet/BulletCollision/Gimpact/btGImpactBvh.h ../../bullet/BulletCollision/Gimpact/btGImpactBvhStructs.h ../../bullet/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h ../../bullet/BulletCollision/Gimpact/btGImpactMassUtil.h ../../bullet/BulletCollision/Gimpact/btGImpactQuantizedBvh.h ../../bullet/BulletCollision/Gimpact/btGImpactQuantizedBvhStructs.h ../../bullet/BulletCollision/Gimpact/btGImpactShape.h ../../bullet/BulletCollision/Gimpact/btGenericPoolAllocator.h ../../bullet/BulletCollision/Gimpact/btGeometryOperations.h ../../bullet/BulletCollision/Gimpact/btQuantization.h ../../bullet/BulletCollision/Gimpact/btTriangleShapeEx.h ../../bullet/BulletCollision/Gimpact/gim_array.h ../../bullet/BulletCollision/Gimpact/gim_basic_geometry_operations.h ../../bullet/BulletCollision/Gimpact/gim_bitset.h ../../bullet/BulletCollision/Gimpact/gim_box_collision.h ../../bullet/BulletCollision/Gimpact/gim_box_set.h ../../bullet/BulletCollision/Gimpact/gim_clip_polygon.h ../../bullet/BulletCollision/Gimpact/gim_contact.h ../../bullet/BulletCollision/Gimpact/gim_geom_types.h ../../bullet/BulletCollision/Gimpact/gim_geometry.h ../../bullet/BulletCollision/Gimpact/gim_hash_table.h ../../bullet/BulletCollision/Gimpact/gim_linear_math.h ../../bullet/BulletCollision/Gimpact/gim_math.h ../../bullet/BulletCollision/Gimpact/gim_memory.h ../../bullet/BulletCollision/Gimpact/gim_pair.h ../../bullet/BulletCollision/Gimpact/gim_radixsort.h ../../bullet/BulletCollision/Gimpact/gim_tri_collision.h ../../bullet/BulletCollision/NarrowPhaseCollision/btComputeGjkEpaPenetration.h ../../bullet/BulletCollision/NarrowPhaseCollision/btContinuousConvexCollision.h ../../bullet/BulletCollision/NarrowPhaseCollision/btConvexCast.h ../../bullet/BulletCollision/NarrowPhaseCollision/btConvexPenetrationDepthSolver.h ../../bullet/BulletCollision/NarrowPhaseCollision/btDiscreteCollisionDetectorInterface.h ../../bullet/BulletCollision/NarrowPhaseCollision/btGjkCollisionDescription.h ../../bullet/BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h ../../bullet/BulletCollision/NarrowPhaseCollision/btGjkEpa2.h ../../bullet/BulletCollision/NarrowPhaseCollision/btGjkEpa3.h ../../bullet/BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h ../../bullet/BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h ../../bullet/BulletCollision/NarrowPhaseCollision/btManifoldPoint.h ../../bullet/BulletCollision/NarrowPhaseCollision/btMinkowskiPenetrationDepthSolver.h ../../bullet/BulletCollision/NarrowPhaseCollision/btMprPenetration.h ../../bullet/BulletCollision/NarrowPhaseCollision/btPersistentManifold.h ../../bullet/BulletCollision/NarrowPhaseCollision/btPointCollector.h ../../bullet/BulletCollision/NarrowPhaseCollision/btPolyhedralContactClipping.h ../../bullet/BulletCollision/NarrowPhaseCollision/btRaycastCallback.h ../../bullet/BulletCollision/NarrowPhaseCollision/btSimplexSolverInterface.h ../../bullet/BulletCollision/NarrowPhaseCollision/btSubSimplexConvexCast.h ../../bullet/BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h ../../bullet/BulletDynamics/Character/btCharacterControllerInterface.h ../../bullet/BulletDynamics/Character/btKinematicCharacterController.h ../../bullet/BulletDynamics/ConstraintSolver/btBatchedConstraints.h ../../bullet/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btConstraintSolver.h ../../bullet/BulletDynamics/ConstraintSolver/btContactConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btContactSolverInfo.h ../../bullet/BulletDynamics/ConstraintSolver/btFixedConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btGearConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h ../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btHinge2Constraint.h ../../bullet/BulletDynamics/ConstraintSolver/btHingeConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btJacobianEntry.h ../../bullet/BulletDynamics/ConstraintSolver/btNNCGConstraintSolver.h ../../bullet/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h ../../bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h ../../bullet/BulletDynamics/ConstraintSolver/btSliderConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btSolve2LinearConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btSolverBody.h ../../bullet/BulletDynamics/ConstraintSolver/btSolverConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btTypedConstraint.h ../../bullet/BulletDynamics/ConstraintSolver/btUniversalConstraint.h ../../bullet/BulletDynamics/Dynamics/btActionInterface.h ../../bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h ../../bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h ../../bullet/BulletDynamics/Dynamics/btDynamicsWorld.h ../../bullet/BulletDynamics/Dynamics/btRigidBody.h ../../bullet/BulletDynamics/Dynamics/btSimpleDynamicsWorld.h ../../bullet/BulletDynamics/Dynamics/btSimulationIslandManagerMt.h ../../bullet/BulletDynamics/Featherstone/btMultiBody.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyConstraint.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyFixedConstraint.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyGearConstraint.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyInplaceSolverIslandCallback.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyJointFeedback.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyJointLimitConstraint.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyJointMotor.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyLink.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyLinkCollider.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyMLCPConstraintSolver.h ../../bullet/BulletDynamics/Featherstone/btMultiBodyPoint2Point.h ../../bullet/BulletDynamics/Featherstone/btMultiBodySliderConstraint.h ../../bullet/BulletDynamics/Featherstone/btMultiBodySolverConstraint.h ../../bullet/BulletDynamics/Featherstone/btMultiBodySphericalJointLimit.h ../../bullet/BulletDynamics/Featherstone/btMultiBodySphericalJointMotor.h ../../bullet/BulletDynamics/MLCPSolvers/btDantzigLCP.h ../../bullet/BulletDynamics/MLCPSolvers/btDantzigSolver.h ../../bullet/BulletDynamics/MLCPSolvers/btLemkeAlgorithm.h ../../bullet/BulletDynamics/MLCPSolvers/btLemkeSolver.h ../../bullet/BulletDynamics/MLCPSolvers/btMLCPSolver.h ../../bullet/BulletDynamics/MLCPSolvers/btMLCPSolverInterface.h ../../bullet/BulletDynamics/MLCPSolvers/btPATHSolver.h ../../bullet/BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h ../../bullet/BulletDynamics/Vehicle/btRaycastVehicle.h ../../bullet/BulletDynamics/Vehicle/btVehicleRaycaster.h ../../bullet/BulletDynamics/Vehicle/btWheelInfo.h ../../bullet/BulletInverseDynamics/IDConfig.hpp ../../bullet/BulletInverseDynamics/IDConfigBuiltin.hpp ../../bullet/BulletInverseDynamics/IDConfigEigen.hpp ../../bullet/BulletInverseDynamics/IDErrorMessages.hpp ../../bullet/BulletInverseDynamics/IDMath.hpp ../../bullet/BulletInverseDynamics/MultiBodyTree.hpp ../../bullet/BulletInverseDynamics/details/IDEigenInterface.hpp ../../bullet/BulletInverseDynamics/details/IDLinearMathInterface.hpp ../../bullet/BulletInverseDynamics/details/IDMatVec.hpp ../../bullet/BulletInverseDynamics/details/MultiBodyTreeImpl.hpp ../../bullet/BulletInverseDynamics/details/MultiBodyTreeInitCache.hpp ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableBody.h ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableBodyHelpers.h ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableBodySolver.h ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableContactConstraint.h ../../bullet/BulletSoftBody/DeformableBodyInplaceSolverIslandCallback.h ../../bullet/BulletSoftBody/btCGProjection.h ../../bullet/BulletSoftBody/btConjugateGradient.h ../../bullet/BulletSoftBody/btConjugateResidual.h ../../bullet/BulletSoftBody/btDefaultSoftBodySolver.h ../../bullet/BulletSoftBody/btDeformableBackwardEulerObjective.h ../../bullet/BulletSoftBody/btDeformableBodySolver.h ../../bullet/BulletSoftBody/btDeformableContactConstraint.h ../../bullet/BulletSoftBody/btDeformableContactProjection.h ../../bullet/BulletSoftBody/btDeformableCorotatedForce.h ../../bullet/BulletSoftBody/btDeformableGravityForce.h ../../bullet/BulletSoftBody/btDeformableLagrangianForce.h ../../bullet/BulletSoftBody/btDeformableLinearElasticityForce.h ../../bullet/BulletSoftBody/btDeformableMassSpringForce.h ../../bullet/BulletSoftBody/btDeformableMousePickingForce.h ../../bullet/BulletSoftBody/btDeformableMultiBodyConstraintSolver.h ../../bullet/BulletSoftBody/btDeformableMultiBodyDynamicsWorld.h ../../bullet/BulletSoftBody/btDeformableNeoHookeanForce.h ../../bullet/BulletSoftBody/btKrylovSolver.h ../../bullet/BulletSoftBody/btPreconditioner.h ../../bullet/BulletSoftBody/btSoftBody.h ../../bullet/BulletSoftBody/btSoftBodyConcaveCollisionAlgorithm.h ../../bullet/BulletSoftBody/btSoftBodyData.h ../../bullet/BulletSoftBody/btSoftBodyHelpers.h ../../bullet/BulletSoftBody/btSoftBodyInternals.h ../../bullet/BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h ../../bullet/BulletSoftBody/btSoftBodySolverVertexBuffer.h ../../bullet/BulletSoftBody/btSoftBodySolvers.h ../../bullet/BulletSoftBody/btSoftMultiBodyDynamicsWorld.h ../../bullet/BulletSoftBody/btSoftRigidCollisionAlgorithm.h ../../bullet/BulletSoftBody/btSoftRigidDynamicsWorld.h ../../bullet/BulletSoftBody/btSoftSoftCollisionAlgorithm.h ../../bullet/BulletSoftBody/btSparseSDF.h ../../bullet/BulletSoftBody/poly34.h ../../bullet/LinearMath/TaskScheduler/btThreadSupportInterface.h ../../bullet/LinearMath/btAabbUtil2.h ../../bullet/LinearMath/btAlignedAllocator.h ../../bullet/LinearMath/btAlignedObjectArray.h ../../bullet/LinearMath/btConvexHull.h ../../bullet/LinearMath/btConvexHullComputer.h ../../bullet/LinearMath/btCpuFeatureUtility.h ../../bullet/LinearMath/btDefaultMotionState.h ../../bullet/LinearMath/btGeometryUtil.h ../../bullet/LinearMath/btGrahamScan2dConvexHull.h ../../bullet/LinearMath/btHashMap.h ../../bullet/LinearMath/btIDebugDraw.h ../../bullet/LinearMath/btImplicitQRSVD.h ../../bullet/LinearMath/btList.h ../../bullet/LinearMath/btMatrix3x3.h ../../bullet/LinearMath/btMatrixX.h ../../bullet/LinearMath/btMinMax.h ../../bullet/LinearMath/btModifiedGramSchmidt.h ../../bullet/LinearMath/btMotionState.h ../../bullet/LinearMath/btPolarDecomposition.h ../../bullet/LinearMath/btPoolAllocator.h ../../bullet/LinearMath/btQuadWord.h ../../bullet/LinearMath/btQuaternion.h ../../bullet/LinearMath/btQuickprof.h ../../bullet/LinearMath/btRandom.h ../../bullet/LinearMath/btReducedVector.h ../../bullet/LinearMath/btScalar.h ../../bullet/LinearMath/btSerializer.h ../../bullet/LinearMath/btSpatialAlgebra.h ../../bullet/LinearMath/btStackAlloc.h ../../bullet/LinearMath/btThreads.h ../../bullet/LinearMath/btTransform.h ../../bullet/LinearMath/btTransformUtil.h ../../bullet/LinearMath/btVector3.h ../../bullet/btBulletCollisionCommon.h ../../bullet/btBulletDynamicsCommon.h ../../bullet/clew/clew.h core/Components/attachedenitities.h core/Components/collider.h core/Components/component.h core/Components/dynamicmodel.h core/Components/mesh.h core/Components/meshrenderer2d.h core/Components/mission.h core/Components/networkobject.h core/Components/rigidbody.h core/Components/trajectory.h core/Components/transform.h ../../core/Config/scenarioconfig.h ../../core/Config/sessionmanager.h ../../core/Debug/AppException.h ../../core/Debug/ExceptionMacros.h ../../core/Debug/console.h ../../core/Debug/frame.h ../../core/Debug/profiler.h ../../core/Dynamics/Model/aircraft.h ../../core/Dynamics/dynamics.h ../../core/GlobalRegistry.h ../../core/Hierarchy/Components/attachedenitities.h ../../core/Hierarchy/Components/collider.h ../../core/Hierarchy/Components/component.h ../../core/Hierarchy/Components/crosssection.h ../../core/Hierarchy/Components/dynamicmodel.h ../../core/Hierarchy/Components/iffprofile.h ../../core/Hierarchy/Components/mesh.h ../../core/Hierarchy/Components/meshrenderer2d.h ../../core/Hierarchy/Components/mission.h ../../core/Hierarchy/Components/networkobject.h ../../core/Hierarchy/Components/radioprofile.h ../../core/Hierarchy/Components/rigidbody.h ../../core/Hierarchy/Components/sensorprofile.h ../../core/Hierarchy/Components/trajectory.h ../../core/Hierarchy/Components/transform.h ../../core/Hierarchy/Components/weaponprofile.h ../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.h ../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.h ../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h ../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h ../../core/Hierarchy/EntityProfiles/fixedpoints.h ../../core/Hierarchy/EntityProfiles/formation.h ../../core/Hierarchy/EntityProfiles/iff.h ../../core/Hierarchy/EntityProfiles/platform.h ../../core/Hierarchy/EntityProfiles/radio.h ../../core/Hierarchy/EntityProfiles/sensor.h ../../core/Hierarchy/EntityProfiles/specialzone.h ../../core/Hierarchy/EntityProfiles/weapon.h ../../core/Hierarchy/EntityProfiles/weapons/artillery.h ../../core/Hierarchy/EntityProfiles/weapons/bomb.h ../../core/Hierarchy/EntityProfiles/weapons/chaff.h ../../core/Hierarchy/EntityProfiles/weapons/flare.h ../../core/Hierarchy/EntityProfiles/weapons/missile.h ../../core/Hierarchy/EntityProfiles/weapons/rocket.h ../../core/Hierarchy/EntityProfiles/weapons/torpedo.h ../../core/Hierarchy/Struct/action.h ../../core/Hierarchy/Struct/color.h ../../core/Hierarchy/Struct/condition.h ../../core/Hierarchy/Struct/constants.h ../../core/Hierarchy/Struct/formationposition.h ../../core/Hierarchy/Struct/geocords.h ../../core/Hierarchy/Struct/parameter.h ../../core/Hierarchy/Struct/vector.h ../../core/Hierarchy/Struct/waypoints.h ../../core/Hierarchy/Utils/entityutils.h ../../core/Hierarchy/entity.h ../../core/Hierarchy/folder.h ../../core/Hierarchy/hierarchy.h ../../core/Hierarchy/profilecategaory.h ../../core/InputSystem/inputmanager.h ../../core/Network/entitypdu.h ../../core/Network/folderpdu.h ../../core/Network/libs/MessageBus.h ../../core/Network/libs/TransformUpdate.h ../../core/Network/libs/lz4.h ../../core/Network/networkmanager.h ../../core/Network/networktransport.h ../../core/Network/profilepdu.h ../../core/Network/transformpdu.h ../../core/Plugins/pluginmanager.h ../../core/Recorder/payload.h ../../core/Recorder/recorder.h ../../core/Render/scenerenderer.h ../../core/SQLite/sqlite.h ../../core/ScriptEngine/scriptengine.h ../../core/ScriptEngine/scriptenginegis.h ../../core/SharedMemory/sharedmemorywrapper.h ../../core/Simulation/simulation.h ../../core/Simulation/simulation_state.h ../../core/Utility/uuid.h ../../core/structure/database.h core/structure/entity.h core/structure/folder.h core/structure/hierarchy.h ../../core/structure/missioncreator.h ../../core/structure/missionexcuter.h ../../core/structure/runtime.h ../../core/structure/scenario.h ../../dis7/AcknowledgePdu.h ../../dis7/AcknowledgeReliablePdu.h ../../dis7/AcousticEmitter.h ../../dis7/ActionRequestPdu.h ../../dis7/ActionRequestReliablePdu.h ../../dis7/ActionResponsePdu.h ../../dis7/ActionResponseReliablePdu.h ../../dis7/AggregateIdentifier.h ../../dis7/AggregateMarking.h ../../dis7/AggregateType.h ../../dis7/AngleDeception.h ../../dis7/AngularVelocityVector.h ../../dis7/AntennaLocation.h ../../dis7/ArealObjectStatePdu.h ../../dis7/ArticulatedParts.h ../../dis7/Association.h ../../dis7/AttachedParts.h ../../dis7/Attribute.h ../../dis7/AttributePdu.h ../../dis7/BeamAntennaPattern.h ../../dis7/BeamData.h ../../dis7/BeamStatus.h ../../dis7/BlankingSector.h ../../dis7/ClockTime.h ../../dis7/CollisionElasticPdu.h ../../dis7/CollisionPdu.h ../../dis7/CommentPdu.h ../../dis7/CommentReliablePdu.h ../../dis7/CommunicationsNodeID.h ../../dis7/CreateEntityPdu.h ../../dis7/CreateEntityReliablePdu.h ../../dis7/DataPdu.h ../../dis7/DataQueryDatumSpecification.h ../../dis7/DataQueryPdu.h ../../dis7/DataQueryReliablePdu.h ../../dis7/DataReliablePdu.h ../../dis7/DatumSpecification.h ../../dis7/DeadReckoningParameters.h ../../dis7/DesignatorPdu.h ../../dis7/DetonationPdu.h ../../dis7/DirectedEnergyAreaAimpoint.h ../../dis7/DirectedEnergyDamage.h ../../dis7/DirectedEnergyFirePdu.h ../../dis7/DirectedEnergyPrecisionAimpoint.h ../../dis7/DirectedEnergyTargetEnergyDeposition.h ../../dis7/DistributedEmissionsFamilyPdu.h ../../dis7/EEFundamentalParameterData.h ../../dis7/EightByteChunk.h ../../dis7/ElectromagneticEmissionBeamData.h ../../dis7/ElectromagneticEmissionSystemData.h ../../dis7/ElectromagneticEmissionsPdu.h ../../dis7/EmitterSystem.h ../../dis7/EngineFuel.h ../../dis7/EngineFuelReload.h ../../dis7/EntityAssociation.h ../../dis7/EntityDamageStatusPdu.h ../../dis7/EntityID.h ../../dis7/EntityInformationFamilyPdu.h ../../dis7/EntityManagementFamilyPdu.h ../../dis7/EntityMarking.h ../../dis7/EntityStatePdu.h ../../dis7/EntityStateUpdatePdu.h ../../dis7/EntityType.h ../../dis7/EntityTypeVP.h ../../dis7/Environment.h ../../dis7/EnvironmentGeneral.h ../../dis7/EnvironmentType.h ../../dis7/EulerAngles.h ../../dis7/EventIdentifier.h ../../dis7/EventIdentifierLiveEntity.h ../../dis7/EventReportPdu.h ../../dis7/EventReportReliablePdu.h ../../dis7/Expendable.h ../../dis7/ExpendableDescriptor.h ../../dis7/ExpendableReload.h ../../dis7/ExplosionDescriptor.h ../../dis7/FalseTargetsAttribute.h ../../dis7/FastEntityStatePdu.h ../../dis7/FirePdu.h ../../dis7/FixedDatum.h ../../dis7/FourByteChunk.h ../../dis7/FundamentalOperationalData.h ../../dis7/GridAxis.h ../../dis7/GroupIdentifier.h ../../dis7/IFFFundamentalParameterData.h ../../dis7/IFFPdu.h ../../dis7/IOCommunicationsNode.h ../../dis7/IOEffect.h ../../dis7/IffDataSpecification.h ../../dis7/IntercomCommunicationsParameters.h ../../dis7/IntercomIdentifier.h ../../dis7/IntercomSignalPdu.h ../../dis7/IsPartOfPdu.h ../../dis7/JammingTechnique.h ../../dis7/LaunchedMunitionRecord.h ../../dis7/LayerHeader.h ../../dis7/LinearObjectStatePdu.h ../../dis7/LinearSegmentParameter.h ../../dis7/LiveEntityIdentifier.h ../../dis7/LiveEntityPdu.h ../../dis7/LiveSimulationAddress.h ../../dis7/LogisticsFamilyPdu.h ../../dis7/MineEntityIdentifier.h ../../dis7/MinefieldFamilyPdu.h ../../dis7/MinefieldIdentifier.h ../../dis7/MinefieldResponseNackPdu.h ../../dis7/MinefieldStatePdu.h ../../dis7/ModulationParameters.h ../../dis7/ModulationType.h ../../dis7/Munition.h ../../dis7/MunitionDescriptor.h ../../dis7/MunitionReload.h ../../dis7/NamedLocationIdentification.h ../../dis7/ObjectIdentifier.h ../../dis7/ObjectType.h ../../dis7/OwnershipStatus.h ../../dis7/Pdu.h ../../dis7/PduContainer.h ../../dis7/PduHeader.h ../../dis7/PduStatus.h ../../dis7/PduSuperclass.h ../../dis7/PointObjectStatePdu.h ../../dis7/PropulsionSystemData.h ../../dis7/RadioCommunicationsFamilyPdu.h ../../dis7/RadioIdentifier.h ../../dis7/RadioType.h ../../dis7/ReceiverPdu.h ../../dis7/RecordQueryReliablePdu.h ../../dis7/RecordQuerySpecification.h ../../dis7/RecordSpecification.h ../../dis7/RecordSpecificationElement.h ../../dis7/Relationship.h ../../dis7/RemoveEntityPdu.h ../../dis7/RemoveEntityReliablePdu.h ../../dis7/RepairCompletePdu.h ../../dis7/RepairResponsePdu.h ../../dis7/ResupplyOfferPdu.h ../../dis7/ResupplyReceivedPdu.h ../../dis7/SecondaryOperationalData.h ../../dis7/SeesPdu.h ../../dis7/Sensor.h ../../dis7/SeparationVP.h ../../dis7/ServiceRequestPdu.h ../../dis7/SetDataPdu.h ../../dis7/SetDataReliablePdu.h ../../dis7/SimulationAddress.h ../../dis7/SimulationIdentifier.h ../../dis7/SimulationManagementFamilyPdu.h ../../dis7/SimulationManagementPduHeader.h ../../dis7/SimulationManagementWithReliabilityFamilyPdu.h ../../dis7/StandardVariableSpecification.h ../../dis7/StartResumePdu.h ../../dis7/StartResumeReliablePdu.h ../../dis7/StopFreezePdu.h ../../dis7/StopFreezeReliablePdu.h ../../dis7/StorageFuel.h ../../dis7/StorageFuelReload.h ../../dis7/SupplyQuantity.h ../../dis7/SyntheticEnvironmentFamilyPdu.h ../../dis7/SystemIdentifier.h ../../dis7/TotalRecordSets.h ../../dis7/TrackJamData.h ../../dis7/TwoByteChunk.h ../../dis7/UAFundamentalParameter.h ../../dis7/UaPdu.h ../../dis7/UnattachedIdentifier.h ../../dis7/UnsignedDISInteger.h ../../dis7/VariableDatum.h ../../dis7/VariableParameter.h ../../dis7/VariableTransmitterParameters.h ../../dis7/Vector2Float.h ../../dis7/Vector3Double.h ../../dis7/Vector3Float.h ../../dis7/VectoringNozzleSystem.h ../../dis7/WarfareFamilyPdu.h ../../dis7/opendis7_export.h ../../dis7/utils/ConversionUtils.h ../../dis7/utils/DataStream.h ../../dis7/utils/Endian.h ../../dis7/utils/PDUType.h ../../mission/actions.h ../../mission/ifcondition.h ../../mission/inputs.h ../../mission/task.h ../../mission/taskgroup.h $(DISTDIR)/
+	$(COPY_FILE) --parents ../../GUI/Console/consoleview.cpp ../../GUI/DOCTRINE/doctrineareadefinition.cpp ../../GUI/DOCTRINE/doctrineassumptionsnotes.cpp ../../GUI/DOCTRINE/doctrineparameters.cpp ../../GUI/DOCTRINE/tacticalrules.cpp ../../GUI/Editors/analysiseditor.cpp ../../GUI/Editors/customresizableoverlaydock.cpp ../../GUI/Editors/databaseeditor.cpp ../../GUI/Editors/missioneditor.cpp ../../GUI/Editors/recentprojectsmanager.cpp ../../GUI/Editors/reportseditor.cpp ../../GUI/Editors/runtimeeditor.cpp ../../GUI/Editors/scenarioeditor.cpp ../../GUI/Feedback/projectinformation.cpp ../../GUI/Hierarchytree/addformationdialog.cpp ../../GUI/Hierarchytree/additemdialog.cpp ../../GUI/Hierarchytree/addweapondialog.cpp ../../GUI/Hierarchytree/contextmenu.cpp ../../GUI/Hierarchytree/customtrajectorydialog.cpp ../../GUI/Hierarchytree/hierarchyconnector.cpp ../../GUI/Hierarchytree/hierarchytree.cpp ../../GUI/Inspector/customparameterdialog.cpp ../../GUI/Inspector/inspector.cpp ../../GUI/Inspector/template/colortemplate.cpp ../../GUI/Inspector/template/geocordstemplate.cpp ../../GUI/Inspector/template/iconsdialog.cpp ../../GUI/Inspector/template/imagetemplate.cpp ../../GUI/Inspector/template/optiontemplate.cpp ../../GUI/Inspector/template/vectortemplate.cpp ../../GUI/Logger/loggerdialog.cpp ../../GUI/Menubars/menubar.cpp ../../GUI/Menubars/profileinfodialog.cpp ../../GUI/Navigation/navigationpage.cpp ../../GUI/Overview/overview.cpp ../../GUI/Panel/csmdisplay.cpp ../../GUI/Panel/esmdisplay.cpp ../../GUI/Panel/ewdisplay.cpp ../../GUI/Panel/iffdisplay.cpp ../../GUI/Panel/radardisplay.cpp ../../GUI/Panel/radiodisplay.cpp ../../GUI/Panel/sonardisplay.cpp ../../GUI/Plugins/pluginwindow.cpp ../../GUI/Settings/applicationdialog.cpp ../../GUI/Sidebar/sidebarwidget.cpp ../../GUI/Tacticaldisplay/Gis/custommapdialog.cpp ../../GUI/Tacticaldisplay/Gis/gislib.cpp ../../GUI/Tacticaldisplay/Gis/gisnetwork.cpp ../../GUI/Tacticaldisplay/Gis/layerinformationdialog.cpp ../../GUI/Tacticaldisplay/Gis/layerpanel.cpp ../../GUI/Tacticaldisplay/Gis/shapes_feature.cpp ../../GUI/Tacticaldisplay/canvaswidget.cpp ../../GUI/Tacticaldisplay/entityinfodialog.cpp ../../GUI/Tacticaldisplay/scalebar.cpp ../../GUI/Tacticaldisplay/shapepropertiesdialog.cpp ../../GUI/Tacticaldisplay/tacticaldisplay.cpp ../../GUI/Tacticaldisplay/tooltiphelper.cpp ../../GUI/Tacticaldisplay/waypointeditdialog.cpp ../../GUI/Testscript/angelscripthighlighter.cpp ../../GUI/Testscript/testscriptdialog.cpp ../../GUI/Testscript/textscriptwidget.cpp ../../GUI/Timing/graphwidget.cpp ../../GUI/Toolbars/designtoolbar.cpp ../../GUI/Toolbars/networktoolbar.cpp ../../GUI/Toolbars/runtimetoolbar.cpp ../../GUI/Toolbars/standardtoolbar.cpp ../../GUI/docktitlemenu/docktitlemenu.cpp ../../GUI/mainwindow.cpp ../../GUI/measuredistance/measuredistancedialog.cpp ../../GUI/scene3dwidget/scene3dwidget.cpp ../../GUI/statusbar.cpp ../../Setup.cpp ../../angelscript/add_on/scriptarray/scriptarray.cpp ../../angelscript/add_on/scriptstdstring/scriptstdstring.cpp ../../bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvh.cpp ../../bullet/Bullet3Collision/BroadPhaseCollision/b3DynamicBvhBroadphase.cpp ../../bullet/Bullet3Collision/BroadPhaseCollision/b3OverlappingPairCache.cpp ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3ConvexUtility.cpp ../../bullet/Bullet3Collision/NarrowPhaseCollision/b3CpuNarrowPhase.cpp ../../bullet/Bullet3Common/b3AlignedAllocator.cpp ../../bullet/Bullet3Common/b3Logging.cpp ../../bullet/Bullet3Common/b3Vector3.cpp ../../bullet/Bullet3Dynamics/ConstraintSolver/b3FixedConstraint.cpp ../../bullet/Bullet3Dynamics/ConstraintSolver/b3Generic6DofConstraint.cpp ../../bullet/Bullet3Dynamics/ConstraintSolver/b3PgsJacobiSolver.cpp ../../bullet/Bullet3Dynamics/ConstraintSolver/b3Point2PointConstraint.cpp ../../bullet/Bullet3Dynamics/ConstraintSolver/b3TypedConstraint.cpp ../../bullet/Bullet3Dynamics/b3CpuRigidBodyPipeline.cpp ../../bullet/Bullet3Geometry/b3ConvexHullComputer.cpp ../../bullet/Bullet3Geometry/b3GeometryUtil.cpp ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3BulletFile.cpp ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3Chunk.cpp ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3DNA.cpp ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3File.cpp ../../bullet/Bullet3Serialize/Bullet2FileLoader/b3Serializer.cpp ../../bullet/BulletInverseDynamics/IDMath.cpp ../../bullet/BulletInverseDynamics/MultiBodyTree.cpp ../../bullet/BulletInverseDynamics/details/MultiBodyTreeImpl.cpp ../../bullet/BulletInverseDynamics/details/MultiBodyTreeInitCache.cpp ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableBody.cpp ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableBodyHelpers.cpp ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableBodySolver.cpp ../../bullet/BulletSoftBody/BulletReducedDeformableBody/btReducedDeformableContactConstraint.cpp ../../bullet/BulletSoftBody/btDefaultSoftBodySolver.cpp ../../bullet/BulletSoftBody/btDeformableBackwardEulerObjective.cpp ../../bullet/BulletSoftBody/btDeformableBodySolver.cpp ../../bullet/BulletSoftBody/btDeformableContactConstraint.cpp ../../bullet/BulletSoftBody/btDeformableContactProjection.cpp ../../bullet/BulletSoftBody/btDeformableMultiBodyConstraintSolver.cpp ../../bullet/BulletSoftBody/btDeformableMultiBodyDynamicsWorld.cpp ../../bullet/BulletSoftBody/btSoftBody.cpp ../../bullet/BulletSoftBody/btSoftBodyConcaveCollisionAlgorithm.cpp ../../bullet/BulletSoftBody/btSoftBodyHelpers.cpp ../../bullet/BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.cpp ../../bullet/BulletSoftBody/btSoftMultiBodyDynamicsWorld.cpp ../../bullet/BulletSoftBody/btSoftRigidCollisionAlgorithm.cpp ../../bullet/BulletSoftBody/btSoftRigidDynamicsWorld.cpp ../../bullet/BulletSoftBody/btSoftSoftCollisionAlgorithm.cpp ../../bullet/BulletSoftBody/poly34.cpp ../../bullet/btBulletCollisionAll.cpp ../../bullet/btBulletDynamicsAll.cpp ../../bullet/btLinearMathAll.cpp ../../bullet/clew/clew.c ../../core/Config/scenarioconfig.cpp ../../core/Config/sessionmanager.cpp ../../core/Debug/console.cpp ../../core/Debug/frame.cpp ../../core/Debug/profiler.cpp ../../core/Dynamics/Model/aircraft.cpp ../../core/Dynamics/dynamics.cpp ../../core/GlobalRegistry.cpp ../../core/Hierarchy/Components/attachedenitities.cpp ../../core/Hierarchy/Components/collider.cpp ../../core/Hierarchy/Components/component.cpp ../../core/Hierarchy/Components/crosssection.cpp ../../core/Hierarchy/Components/dynamicmodel.cpp ../../core/Hierarchy/Components/iffprofile.cpp ../../core/Hierarchy/Components/mesh.cpp ../../core/Hierarchy/Components/meshrenderer2d.cpp ../../core/Hierarchy/Components/mission.cpp ../../core/Hierarchy/Components/networkobject.cpp ../../core/Hierarchy/Components/radioprofile.cpp ../../core/Hierarchy/Components/rigidbody.cpp ../../core/Hierarchy/Components/sensorprofile.cpp ../../core/Hierarchy/Components/trajectory.cpp ../../core/Hierarchy/Components/transform.cpp ../../core/Hierarchy/Components/weaponprofile.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.cpp ../../core/Hierarchy/EntityProfiles/fixedpoints.cpp ../../core/Hierarchy/EntityProfiles/formation.cpp ../../core/Hierarchy/EntityProfiles/iff.cpp ../../core/Hierarchy/EntityProfiles/platform.cpp ../../core/Hierarchy/EntityProfiles/radio.cpp ../../core/Hierarchy/EntityProfiles/sensor.cpp ../../core/Hierarchy/EntityProfiles/specialzone.cpp ../../core/Hierarchy/EntityProfiles/weapon.cpp ../../core/Hierarchy/EntityProfiles/weapons/artillery.cpp ../../core/Hierarchy/EntityProfiles/weapons/bomb.cpp ../../core/Hierarchy/EntityProfiles/weapons/chaff.cpp ../../core/Hierarchy/EntityProfiles/weapons/flare.cpp ../../core/Hierarchy/EntityProfiles/weapons/missile.cpp ../../core/Hierarchy/EntityProfiles/weapons/rocket.cpp ../../core/Hierarchy/EntityProfiles/weapons/torpedo.cpp ../../core/Hierarchy/Struct/action.cpp ../../core/Hierarchy/Struct/color.cpp ../../core/Hierarchy/Struct/condition.cpp ../../core/Hierarchy/Struct/constants.cpp ../../core/Hierarchy/Struct/formationposition.cpp ../../core/Hierarchy/Struct/geocords.cpp ../../core/Hierarchy/Struct/parameter.cpp ../../core/Hierarchy/Struct/vector.cpp ../../core/Hierarchy/Struct/waypoints.cpp ../../core/Hierarchy/Utils/entityutils.cpp ../../core/Hierarchy/entity.cpp ../../core/Hierarchy/folder.cpp ../../core/Hierarchy/hierarchy.cpp ../../core/Hierarchy/profilecategaory.cpp ../../core/InputSystem/inputmanager.cpp ../../core/Network/entitypdu.cpp ../../core/Network/folderpdu.cpp ../../core/Network/libs/lz4.c ../../core/Network/networkmanager.cpp ../../core/Network/networktransport.cpp ../../core/Network/profilepdu.cpp ../../core/Network/transformpdu.cpp ../../core/Plugins/pluginmanager.cpp ../../core/Recorder/recorder.cpp ../../core/Render/scenerenderer.cpp ../../core/SQLite/sqlite.cpp ../../core/ScriptEngine/scriptengine.cpp ../../core/ScriptEngine/scriptenginegis.cpp ../../core/SharedMemory/sharedmemorywrapper.cpp ../../core/Simulation/simulation.cpp ../../core/Simulation/simulation_state.cpp ../../core/Utility/uuid.cpp ../../core/structure/database.cpp ../../core/structure/missioncreator.cpp ../../core/structure/missionexcuter.cpp ../../core/structure/runtime.cpp ../../core/structure/scenario.cpp ../../dis7/AcknowledgePdu.cpp ../../dis7/AcknowledgeReliablePdu.cpp ../../dis7/AcousticEmitter.cpp ../../dis7/ActionRequestPdu.cpp ../../dis7/ActionRequestReliablePdu.cpp ../../dis7/ActionResponsePdu.cpp ../../dis7/ActionResponseReliablePdu.cpp ../../dis7/AggregateIdentifier.cpp ../../dis7/AggregateMarking.cpp ../../dis7/AggregateType.cpp ../../dis7/AngleDeception.cpp ../../dis7/AngularVelocityVector.cpp ../../dis7/AntennaLocation.cpp ../../dis7/ArealObjectStatePdu.cpp ../../dis7/ArticulatedParts.cpp ../../dis7/Association.cpp ../../dis7/AttachedParts.cpp ../../dis7/Attribute.cpp ../../dis7/AttributePdu.cpp ../../dis7/BeamAntennaPattern.cpp ../../dis7/BeamData.cpp ../../dis7/BeamStatus.cpp ../../dis7/BlankingSector.cpp ../../dis7/ClockTime.cpp ../../dis7/CollisionElasticPdu.cpp ../../dis7/CollisionPdu.cpp ../../dis7/CommentPdu.cpp ../../dis7/CommentReliablePdu.cpp ../../dis7/CommunicationsNodeID.cpp ../../dis7/CreateEntityPdu.cpp ../../dis7/CreateEntityReliablePdu.cpp ../../dis7/DataPdu.cpp ../../dis7/DataQueryDatumSpecification.cpp ../../dis7/DataQueryPdu.cpp ../../dis7/DataQueryReliablePdu.cpp ../../dis7/DataReliablePdu.cpp ../../dis7/DatumSpecification.cpp ../../dis7/DeadReckoningParameters.cpp ../../dis7/DesignatorPdu.cpp ../../dis7/DetonationPdu.cpp ../../dis7/DirectedEnergyAreaAimpoint.cpp ../../dis7/DirectedEnergyDamage.cpp ../../dis7/DirectedEnergyFirePdu.cpp ../../dis7/DirectedEnergyPrecisionAimpoint.cpp ../../dis7/DirectedEnergyTargetEnergyDeposition.cpp ../../dis7/DistributedEmissionsFamilyPdu.cpp ../../dis7/EEFundamentalParameterData.cpp ../../dis7/EightByteChunk.cpp ../../dis7/ElectromagneticEmissionBeamData.cpp ../../dis7/ElectromagneticEmissionSystemData.cpp ../../dis7/ElectromagneticEmissionsPdu.cpp ../../dis7/EmitterSystem.cpp ../../dis7/EngineFuel.cpp ../../dis7/EngineFuelReload.cpp ../../dis7/EntityAssociation.cpp ../../dis7/EntityDamageStatusPdu.cpp ../../dis7/EntityID.cpp ../../dis7/EntityInformationFamilyPdu.cpp ../../dis7/EntityManagementFamilyPdu.cpp ../../dis7/EntityMarking.cpp ../../dis7/EntityStatePdu.cpp ../../dis7/EntityStateUpdatePdu.cpp ../../dis7/EntityType.cpp ../../dis7/EntityTypeVP.cpp ../../dis7/Environment.cpp ../../dis7/EnvironmentGeneral.cpp ../../dis7/EnvironmentType.cpp ../../dis7/EulerAngles.cpp ../../dis7/EventIdentifier.cpp ../../dis7/EventIdentifierLiveEntity.cpp ../../dis7/EventReportPdu.cpp ../../dis7/EventReportReliablePdu.cpp ../../dis7/Expendable.cpp ../../dis7/ExpendableDescriptor.cpp ../../dis7/ExpendableReload.cpp ../../dis7/ExplosionDescriptor.cpp ../../dis7/FalseTargetsAttribute.cpp ../../dis7/FastEntityStatePdu.cpp ../../dis7/FirePdu.cpp ../../dis7/FixedDatum.cpp ../../dis7/FourByteChunk.cpp ../../dis7/FundamentalOperationalData.cpp ../../dis7/GridAxis.cpp ../../dis7/GroupIdentifier.cpp ../../dis7/IFFFundamentalParameterData.cpp ../../dis7/IFFPdu.cpp ../../dis7/IOCommunicationsNode.cpp ../../dis7/IOEffect.cpp ../../dis7/IffDataSpecification.cpp ../../dis7/IntercomCommunicationsParameters.cpp ../../dis7/IntercomIdentifier.cpp ../../dis7/IntercomSignalPdu.cpp ../../dis7/IsPartOfPdu.cpp ../../dis7/JammingTechnique.cpp ../../dis7/LaunchedMunitionRecord.cpp ../../dis7/LayerHeader.cpp ../../dis7/LinearObjectStatePdu.cpp ../../dis7/LinearSegmentParameter.cpp ../../dis7/LiveEntityIdentifier.cpp ../../dis7/LiveEntityPdu.cpp ../../dis7/LiveSimulationAddress.cpp ../../dis7/LogisticsFamilyPdu.cpp ../../dis7/MineEntityIdentifier.cpp ../../dis7/MinefieldFamilyPdu.cpp ../../dis7/MinefieldIdentifier.cpp ../../dis7/MinefieldResponseNackPdu.cpp ../../dis7/MinefieldStatePdu.cpp ../../dis7/ModulationParameters.cpp ../../dis7/ModulationType.cpp ../../dis7/Munition.cpp ../../dis7/MunitionDescriptor.cpp ../../dis7/MunitionReload.cpp ../../dis7/NamedLocationIdentification.cpp ../../dis7/ObjectIdentifier.cpp ../../dis7/ObjectType.cpp ../../dis7/OwnershipStatus.cpp ../../dis7/Pdu.cpp ../../dis7/PduContainer.cpp ../../dis7/PduHeader.cpp ../../dis7/PduStatus.cpp ../../dis7/PduSuperclass.cpp ../../dis7/PointObjectStatePdu.cpp ../../dis7/PropulsionSystemData.cpp ../../dis7/RadioCommunicationsFamilyPdu.cpp ../../dis7/RadioIdentifier.cpp ../../dis7/RadioType.cpp ../../dis7/ReceiverPdu.cpp ../../dis7/RecordQueryReliablePdu.cpp ../../dis7/RecordQuerySpecification.cpp ../../dis7/RecordSpecification.cpp ../../dis7/RecordSpecificationElement.cpp ../../dis7/Relationship.cpp ../../dis7/RemoveEntityPdu.cpp ../../dis7/RemoveEntityReliablePdu.cpp ../../dis7/RepairCompletePdu.cpp ../../dis7/RepairResponsePdu.cpp ../../dis7/ResupplyOfferPdu.cpp ../../dis7/ResupplyReceivedPdu.cpp ../../dis7/SecondaryOperationalData.cpp ../../dis7/SeesPdu.cpp ../../dis7/Sensor.cpp ../../dis7/SeparationVP.cpp ../../dis7/ServiceRequestPdu.cpp ../../dis7/SetDataPdu.cpp ../../dis7/SetDataReliablePdu.cpp ../../dis7/SimulationAddress.cpp ../../dis7/SimulationIdentifier.cpp ../../dis7/SimulationManagementFamilyPdu.cpp ../../dis7/SimulationManagementPduHeader.cpp ../../dis7/SimulationManagementWithReliabilityFamilyPdu.cpp ../../dis7/StandardVariableSpecification.cpp ../../dis7/StartResumePdu.cpp ../../dis7/StartResumeReliablePdu.cpp ../../dis7/StopFreezePdu.cpp ../../dis7/StopFreezeReliablePdu.cpp ../../dis7/StorageFuel.cpp ../../dis7/StorageFuelReload.cpp ../../dis7/SupplyQuantity.cpp ../../dis7/SyntheticEnvironmentFamilyPdu.cpp ../../dis7/SystemIdentifier.cpp ../../dis7/TotalRecordSets.cpp ../../dis7/TrackJamData.cpp ../../dis7/TwoByteChunk.cpp ../../dis7/UAFundamentalParameter.cpp ../../dis7/UaPdu.cpp ../../dis7/UnattachedIdentifier.cpp ../../dis7/UnsignedDISInteger.cpp ../../dis7/VariableDatum.cpp ../../dis7/VariableParameter.cpp ../../dis7/VariableTransmitterParameters.cpp ../../dis7/Vector2Float.cpp ../../dis7/Vector3Double.cpp ../../dis7/Vector3Float.cpp ../../dis7/VectoringNozzleSystem.cpp ../../dis7/WarfareFamilyPdu.cpp ../../dis7/utils/ConversionUtils.cpp ../../dis7/utils/DataStream.cpp ../../main.cpp ../../mission/actions.cpp ../../mission/ifcondition.cpp ../../mission/inputs.cpp ../../mission/task.cpp ../../mission/taskgroup.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents ../../mission/actions.ui ../../mission/ifcondition.ui ../../mission/inputs.ui ../../mission/task.ui ../../mission/taskgroup.ui $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -2511,66 +2683,132 @@ compiler_rcc_clean:
 qrc_Resources.cpp: ../../Resources.qrc \
 		/usr/lib/qt5/bin/rcc \
 		../../DB/Aircraft.db \
-		../../images/sea/AUV.png \
-		../../images/sea/INS_ARIHANT.png \
-		../../images/sea/INS_RANVIR.png \
-		../../images/sea/INS_KOLKATA.png \
-		../../images/sea/INS_VIKRANT.png \
-		../../images/sea/INS_TALWAR.png \
-		../../images/sea/INS_KAMORTA.png \
+		../../Image/hourglass.png \
+		../../Image/removed.png \
+		../../Image/check-mark.png \
+		../../images/sea/Mistral.png \
+		../../images/sea/Type093A_YUAN.png \
+		../../images/sea/Type052DLuyangIII.png \
 		../../images/sea/USS-Abraham-Lincoln.png \
-		../../images/sea/Hai-\ Kun-class.png \
-		../../images/sea/Ohio-Class\ (SSGN\ Variant).png \
-		../../images/sea/INS_SANDHYAK.png \
-		../../images/sea/Chien-Lung-class.png \
-		../../images/sea/INS_KORA.png \
-		../../images/sea/INS_SUKANYA.png \
-		../../images/sea/Arleigh-Burke-class-destroyers.png \
-		../../images/sea/Type-003-Fujian.png \
-		../../images/sea/INS_SARYU.png \
-		../../images/sea/INS_ABHAY.png \
-		../../images/sea/INS_BRAHMAPUTRA.png \
-		../../images/sea/Fateh-class.png \
-		../../images/sea/INS_SHARDUL.png \
-		../../images/sea/USS-O'Kane.png \
-		../../images/sea/INS_NILGIRI.png \
-		../../images/sea/INS_SHISHUMAR.png \
-		../../images/sea/Type-094(Nuclear).png \
-		../../images/sea/Tareq-class.png \
-		../../images/sea/INS_DELHI.png \
-		../../images/sea/INS_VISAKHAPATNAM.png \
-		../../images/sea/INS_SHIVALIK.png \
-		../../images/sea/INS_GHARIAL.png \
-		../../images/sea/Type-039.png \
-		../../images/sea/INS_KALVARI.png \
-		../../images/sea/INS_SINDHUGHOSH.png \
-		../../images/sea/INS_VIBHUTI.png \
-		../../images/sea/Shandong.png \
-		../../images/sea/Seawolf-Class\ (SSN-21).png \
-		../../images/sea/INS_KUTHAR.png \
-		../../images/sea/Virginia-Class\ (SSN-774).png \
-		../../images/sea/USS_Georgia.png \
 		../../images/sea/SLAVA_CRUISER.png \
+		../../images/sea/Rubis.png \
+		../../images/sea/Atagoclass.png \
+		../../images/sea/INS_DELHI.png \
+		../../images/sea/Sa_ar6.png \
+		../../images/sea/Type-003-Fujian.png \
+		../../images/sea/KeeLung-class.png \
+		../../images/sea/VisakhapatnamclassP15B.png \
+		../../images/sea/Gremyashchiy.png \
+		../../images/sea/Type23_DUKE.png \
+		../../images/sea/Sachsen.png \
+		../../images/sea/FREMM.png \
+		../../images/sea/Kirovclass.png \
+		../../images/sea/INS_SANDHYAK.png \
+		../../images/sea/Type094Jin-class.png \
+		../../images/sea/INS_SARYU.png \
+		../../images/sea/TuoChiang-classCorvette.png \
+		../../images/sea/Alvaro_de_Bazan.png \
+		../../images/sea/INS_KALVARI.png \
+		../../images/sea/Moudge-classFrigate.png \
+		../../images/sea/Ohio-Class\ (SSGN\ Variant).png \
+		../../images/sea/INS_SHARDUL.png \
+		../../images/sea/Tareq-class.png \
+		../../images/sea/Iver_Huitfeldt.png \
+		../../images/sea/Ohio.png \
+		../../images/sea/DelhiclassP15.png \
+		../../images/sea/Buyan-M.png \
+		../../images/sea/INS_TALWAR.png \
+		../../images/sea/Wasp.png \
+		../../images/sea/KolkataclassP15A.png \
+		../../images/sea/Type055Renhai.png \
+		../../images/sea/Type071.png \
+		../../images/sea/Columbia.png \
+		../../images/sea/Type054AFrigate.png \
+		../../images/sea/ChengKung-classFrigate.png \
+		../../images/sea/Fateh-class.png \
+		../../images/sea/INS_ARIHANT.png \
+		../../images/sea/AUV.png \
+		../../images/sea/Astute-removebg-preview.png \
+		../../images/sea/Triesteclass.png \
+		../../images/sea/INS_ABHAY.png \
+		../../images/sea/INS_Vikramaditya.png \
+		../../images/sea/INS_BRAHMAPUTRA.png \
+		../../images/sea/INSVikrant.png \
+		../../images/sea/Yasen-M.png \
+		../../images/sea/Izumoclass.png \
+		../../images/sea/INS_VISAKHAPATNAM.png \
+		../../images/sea/INS_SHISHUMAR.png \
+		../../images/sea/Lada.png \
+		../../images/sea/Type096.png \
+		../../images/sea/Scorpene__Kalvari.png \
+		../../images/sea/Arleigh-Burke-class-destroyers.png \
 		../../images/sea/INS_JALASHWA.png \
+		../../images/sea/INS_SINDHUGHOSH.png \
+		../../images/sea/INS_KAMORTA.png \
+		../../images/sea/Borei-A.png \
+		../../images/sea/Type26_CITY.png \
+		../../images/sea/Steregushchiy.png \
+		../../images/sea/Dreadnought.png \
+		../../images/sea/San_Antonio.png \
+		../../images/sea/INS_SHIVALIK.png \
+		../../images/sea/Hai-\ Kun-class.png \
+		../../images/sea/Shandong.png \
+		../../images/sea/Fridtjof_Nansen.png \
+		../../images/sea/ChienLung-class.png \
+		../../images/sea/Type055_Renhai.png \
+		../../images/sea/Type-094(Nuclear).png \
+		../../images/sea/Ticonderoga-class.png \
+		../../images/sea/Hobartclass.png \
+		../../images/sea/Zumwaltclass.png \
+		../../images/sea/UUVUnderwaterDrone.png \
+		../../images/sea/Chien-Lung-class.png \
+		../../images/sea/INS_KUTHAR.png \
+		../../images/sea/SNLE-3G.png \
+		../../images/sea/INS_KORA.png \
+		../../images/sea/INS_VIBHUTI.png \
+		../../images/sea/INS_SUKANYA.png \
+		../../images/sea/GeraldR.Fordclass.png \
+		../../images/sea/USS_Georgia.png \
+		../../images/sea/Type218SG.png \
+		../../images/sea/INS_NILGIRI.png \
+		../../images/sea/INS_GHARIAL.png \
+		../../images/sea/Horizonclass.png \
+		../../images/sea/INS_RANVIR.png \
+		../../images/sea/USS-O'Kane.png \
+		../../images/sea/Taigei.png \
+		../../images/sea/Seawolf-Class\ (SSN-21).png \
+		../../images/sea/INS_KOLKATA.png \
+		../../images/sea/Shondong-removebg-preview.png \
+		../../images/sea/Type094_JIN_-removebg-preview.png \
+		../../images/sea/Type-039.png \
 		../../images/sea/INS_DHRUV.png \
+		../../images/sea/INS_VIKRANT.png \
+		../../images/sea/ArleighBurkeclassFlightIII.png \
+		../../images/sea/Virginia-Class\ (SSN-774).png \
+		../../images/sea/Type45Daring.png \
+		../../images/sea/Virginia-classSub.png \
+		../../images/sea/Virginia_Block_V.png \
 		../../DB/jsonData/city.json \
 		../../DB/jsonData/entity_DB.json \
 		../../images/air/AirbusA330MRTT.png \
 		../../images/air/DouglasDC-3.png \
-		../../images/air/B-21Raider.png \
+		../../images/air/JF-17Thunder.png \
 		../../images/air/DRDOLakshya.png \
-		../../images/air/DassaultRafaleFighter.png \
 		../../images/air/BoeingAH-64Apache.png \
 		../../images/air/EmbraerKC-390.png \
 		../../images/air/BayraktarTB2.png \
+		../../images/air/E-2KHawkeye(AWACS).png \
+		../../images/air/BoeingKC-135Stratotanker.png \
+		../../images/air/BoeingX-37B.png \
 		../../images/air/SikorskyUH-60BlackHawk.png \
 		../../images/air/SukhoiSu-30MKI.png \
 		../../images/air/SaabJAS39Gripen.png \
-		../../images/air/drdorustom.png \
+		../../images/air/MQ-9BSeaGuardian.png \
 		../../images/air/PhalconAWACS.png \
+		../../images/air/MilMi-17.png \
 		../../images/air/EnglishElectricCanberra.png \
-		../../images/air/MiG-29.png \
-		../../images/air/SR-71BlackbirdRecon.png \
+		../../images/air/KJ-2000\ .png \
+		../../images/air/HALHJT-16Kiran.png \
 		../../images/air/ChengduJ-10.png \
 		../../images/air/AvroLancaster.png \
 		../../images/air/GulfstreamG550.png \
@@ -2582,29 +2820,30 @@ qrc_Resources.cpp: ../../Resources.qrc \
 		../../images/air/F-35Lightning.png \
 		../../images/air/AntonovAn-124.png \
 		../../images/air/DRDOImperialEagle.png \
-		../../images/air/f16falcon.png \
 		../../images/air/AirbusA400MAtlas.png \
-		../../images/air/MikoyanMiG-35.png \
 		../../images/air/F-15Eagle.png \
 		../../images/air/FairchildC-119FlyingBoxcar.png \
 		../../images/air/EADSCASAC-295.png \
 		../../images/air/PilatusPC-7.png \
 		../../images/air/ChengduJ-20.png \
-		../../images/air/BellAH-1Cobraattackhelicopter.png \
 		../../images/air/SEPECATJaguar.png \
-		../../images/air/boeingkc-135stratotanker.png \
 		../../images/air/Saab2000Erieye.png \
+		../../images/air/J-20.png \
 		../../images/air/Tu-95Bomber.png \
 		../../images/air/HALHJT-36Sitara.png \
 		../../images/air/AntonovAn-225.png \
 		../../images/air/F-22Raptor.png \
-		../../images/air/MilMi-26heavy.png \
 		../../images/air/HALTejasMk2.png \
 		../../images/air/Dornier228.png \
 		../../images/air/LockheedP-3Orion.png \
+		../../images/air/F-16V.png \
+		../../images/air/MIG-21.png \
+		../../images/air/Netra(AEW&C).png \
 		../../images/air/Mikoyan-GurevichMiG-23.png \
+		../../images/air/MilMi-26.png \
 		../../images/air/L-39Albatros.png \
-		../../images/air/MilMi-17transporthelicopter.png \
+		../../images/air/E-3Sentry(AWACS).png \
+		../../images/air/F-16Falcon.png \
 		../../images/air/AntonovAn-32.png \
 		../../images/air/KamovKa-31.png \
 		../../images/air/HALTejas.png \
@@ -2612,24 +2851,29 @@ qrc_Resources.cpp: ../../Resources.qrc \
 		../../images/air/HALPrachand.png \
 		../../images/air/C-130JSuperHercules.png \
 		../../images/air/HALRudra.png \
-		../../images/air/HALHJT-16Kirantrainerjet.png \
-		../../images/air/BoeingX-37BExperimental.png \
+		../../images/air/P-3COrion.png \
 		../../images/air/HALHF-24Marut.png \
+		../../images/air/A-50Phalcon.png \
+		../../images/air/Yak-130.png \
 		../../images/air/BoeingE-7.png \
 		../../images/air/DRDORustom-2.png \
-		../../images/air/EurofighterTyphoon.png \
+		../../images/air/F-14Tomcat.png \
+		../../images/air/SR-71_Blackbid.png \
 		../../images/air/MQ-1Predator.png \
-		../../images/air/B-2Spirit.png \
+		../../images/air/EurofighterTyphoon.png \
+		../../images/air/MIG-29.png \
 		../../images/air/MikoyanMiG-27.png \
-		../../images/air/YakovlevYak-130.png \
 		../../images/air/BoeingCH-47.png \
 		../../images/air/IAIHeron.png \
+		../../images/air/DassaultRafale.png \
 		../../images/air/DRDONishant.png \
+		../../images/air/MikoyanMIG-35.png \
 		../../images/air/MitsubishiF-2.png \
 		../../images/air/E-2Hawkeye.png \
 		../../images/air/BoeingC-17GlobemasterIII.png \
 		../../images/air/CAIGWingLoongII.png \
 		../../images/air/SukhoiSu-57.png \
+		../../images/air/T-38Talon.png \
 		../../images/air/IAISearcher.png \
 		../../images/air/T-6Texan.png \
 		../../images/air/HALDhruv.png \
@@ -2638,21 +2882,25 @@ qrc_Resources.cpp: ../../Resources.qrc \
 		../../images/air/HESAShahed136.png \
 		../../images/air/ShenyangJ-16.png \
 		../../images/air/ATR-72MP.png \
+		../../images/air/DRDORustom-1.png \
 		../../images/air/HawkerHunter.png \
 		../../images/air/Tu-160.png \
-		../../images/air/NetraAEWC.png \
-		../../images/air/NorthropT-38Talon.png \
+		../../images/air/J-16.png \
 		../../images/air/NALSaras.png \
+		../../images/air/B-21_Raider.png \
 		../../images/air/MilMi-24.png \
 		../../images/air/TAPAS-BH-201.png \
-		../../images/air/MiG-21.png \
+		../../images/air/J-20MightyDragon.png \
+		../../images/air/KJ-500(AWACS).png \
 		../../images/air/AgustaWestlandAW101.png \
+		../../images/air/BellAH-1Cobra.png \
+		../../images/air/WZ-7SoaringDragon.png \
 		../../images/air/KAIFA-50.png \
 		../../images/air/DassaultMirage2000.png \
 		../../images/air/ShinMaywaUS-2.png \
+		../../images/air/B-2_Spirit.png \
 		../../images/air/BoeingP-8Poseidon.png \
 		../../images/air/IlyushinIl-76.png \
-		../../images/air/CACPACJF-17.png \
 		../../images/air/F-18SuperHornet.png \
 		../../Model/Airplane/11803_Airplane_wing_details_R_diff.jpg \
 		../../Model/Airplane/11803_Airplane_wing_big_L_diff.jpg \
@@ -2681,160 +2929,106 @@ qrc_Resources.cpp: ../../Resources.qrc \
 		../../images/Texture/waall.jpg \
 		../../images/Texture/zone.png \
 		../../images/Texture/ship.png \
+		../../images/Texture/missile.png \
 		../../images/Texture/transport_vehicles-removebg-preview.png \
+		../../images/Texture/blast.png \
 		../../images/Texture/mario.png \
 		../../images/Texture/transport_aircrafts-removebg-preview.png \
 		../../DB/Aircraft.db \
 		../../DB/Aircraft.db \
-		../../images/map.png \
-		../../images/Long_Range_Tracking_Radar-Photoroom.png \
-		../../images/next-button.png \
-		../../images/rotate.png \
-		../../images/scale.png \
-		../../images/component.png \
-		../../images/tree-open.png \
-		../../images/INS_Imphal.png \
-		../../images/Magar-Class.png \
-		../../images/INS_Vikrant.png \
-		../../images/geojson-layers.png \
-		../../images/Dassault_Mirage2000.png \
-		../../images/runtime.png \
-		../../images/OFB_Aditya-Photoroom.png \
-		../../images/Profile-PNG-File.png \
-		../../images/floppy-disk.png \
-		../../images/forest-area.png \
-		../../images/Kalyani_M4-Photoroom.png \
-		../../images/Tethered_Aerostat_Radar_System-Photoroom.png \
-		../../images/stories.png \
-		../../images/INS_Rana-(D52).png \
-		../../images/warning.png \
-		../../images/grid1.png \
-		../../images/timing.png \
-		../../images/record-button.png \
-		../../images/check.png \
-		../../images/view.jpg \
-		../../images/Mahindra_Armado_Armoured_Vehicle-Photoroom.png \
-		../../images/EADS_CASA_C-295.png \
-		../../images/shapes.png \
-		../../images/audit.png \
-		../../images/zoom-out.png \
-		../../images/Armoured_Ambulance_vehicle.png \
-		../../images/Indra.png \
-		../../images/PJT-531_Battlefield_Surveillance_Radar-Photoroom.png \
-		../../images/Renault_Sherpa-Photoroom.png \
-		../../images/stop.png \
-		../../images/log-file.png \
-		../../images/Agusta_Westland_Apache.png \
-		../../images/TATA_Kestrel-Photoroom.png \
-		../../images/sync.png \
-		../../images/T-72_Ajeya-Photoroom.png \
-		../../images/BMP-2_Sarath_Photoroom.png \
-		../../images/subcomponent.png \
-		../../images/status-update.png \
-		../../images/cut.png \
-		../../images/INS_Mumbai-(D62).png \
-		../../images/check-mark.png \
-		../../images/grid.png \
-		../../images/add.png \
-		../../images/success.png \
-		../../images/resume.png \
-		../../images/Mahindra_Rakshak_Armoured_Vehicle-Photoroom.png \
-		../../images/Mikoyan-Gurevich_MiG-21.png \
-		../../images/speed.png \
-		../../images/picture.png \
-		../../images/DRDO_Nishant.png \
-		../../images/INS_Kochi-(D64).png \
-		../../images/check-box.png \
-		../../images/trajectory.png \
-		../../images/DRDO_Imperial_Eagle.png \
-		../../images/Netra.png \
-		../../images/Boeing_CH-47_Chinook.png \
-		../../images/test.png \
-		../../images/Sukhoi_Su-30MKI.png \
-		../../images/DRDO_Rustom-1.png \
-		../../images/technical-drawing.png \
-		../../images/T-90S_Bhishma-Photoroom.png \
-		../../images/zoom-in.png \
-		../../images/qgislayer.png \
-		../../images/step.png \
-		../../images/Swathi_Weapon_Locating-Photoroom.png \
-		../../images/info.png \
-		../../images/database.png \
-		../../images/INS_Ranvir-(D54).png \
-		../../images/star.png \
-		../../images/Mahindra_Marksman-Photoroom.png \
-		../../images/tree-closed.png \
-		../../images/centremap.png \
-		../../images/NBC-Photoroom.png \
-		../../images/play.png \
-		../../images/hospital.png \
-		../../images/DRDO_Prahaar_Missile-Photoroom.png \
-		../../images/disconnect.png \
-		../../images/undo.png \
-		../../images/packet.png \
-		../../images/pause.png \
-		../../images/INS_Chennai-(D65).png \
-		../../images/Antonov_An-32.png \
-		../../images/Boeing_AH-64_Apache.png \
-		../../images/coordinate-system.png \
-		../../images/copy.png \
-		../../images/Central_Acquisition_Radar-Photoroom.png \
-		../../images/photo.png \
-		../../images/paste.png \
-		../../images/redo.png \
-		../../images/TATA_Quick_Vehicle-Photoroom.png \
-		../../images/Shardul-Class.png \
-		../../images/error.png \
-		../../images/Dassault_Rafale.png \
-		../../images/INS_Visakhapatnam.png \
-		../../images/Rajendra_radar(2)-Photoroom.png \
-		../../images/folder.png \
-		../../images/layers.png \
-		../../images/Boeing_C-17_GlobemasterII.png \
-		../../images/add.jpeg \
-		../../images/Kiev-Class.png \
-		../../images/HAL_Tejas.png \
-		../../images/back.png \
-		../../images/database\ (1).png \
-		../../images/entity.png \
-		../../images/mil_mi_24.png \
-		../../images/search.png \
-		../../images/NAMICA-Photoroom.png \
-		../../images/Carrier_Mortar_Tracked-Photoroom.png \
-		../../images/move.png \
-		../../images/start.png \
-		../../images/loading-arrow.png \
-		../../images/Mig-29.png \
-		../../images/airbase.png \
-		../../images/category.png \
-		../../images/lakshya.png \
-		../../images/school.png \
-		../../images/INS_Mormugao-(D67).png \
-		../../images/TAPAS-BH-201.png \
-		../../images/measurement.png \
-		../../images/INS_Delhi-(D61).png \
-		../../images/DRDO_Rustom-2.png \
-		../../images/centre.png \
-		../../images/Arjun_Photoroom.png \
-		../../images/INS_Mysore-(d60).png \
-		../../images/new-document.png \
-		../../images/area.png \
-		../../images/Ashwini_Radar_Photoroom.png \
 		../../images/replay.png \
-		../../images/network.png \
-		../../images/Casspir_Armoured_Personnel_Carrier-Photoroom.png \
-		../../images/DRDO_Ghatak.png \
-		../../images/INS_Kolkata-(D63).png \
-		../../images/preset.png \
-		../../images/INDRA_Mk-II-Photoroom.png \
-		../../images/Fairchild_C-119.png \
+		../../images/log-file.png \
+		../../images/centre.png \
 		../../images/sd.png \
+		../../images/hospital.png \
+		../../images/grid.png \
+		../../images/move.png \
+		../../images/category.png \
+		../../images/audit.png \
+		../../images/paste.png \
+		../../images/record-button.png \
+		../../images/qgislayer.png \
+		../../images/timing.png \
+		../../images/preset.png \
+		../../images/step.png \
+		../../images/play.png \
+		../../images/view.jpg \
+		../../images/star.png \
+		../../images/zoom-out.png \
+		../../images/status-update.png \
+		../../images/speed.png \
+		../../images/back.png \
+		../../images/check-mark.png \
+		../../images/layers.png \
+		../../images/redo.png \
+		../../images/rotate.png \
+		../../images/network.png \
+		../../images/start.png \
+		../../images/grid1.png \
+		../../images/disconnect.png \
+		../../images/add.png \
+		../../images/Profile-PNG-File.png \
+		../../images/check.png \
+		../../images/scale.png \
+		../../images/technical-drawing.png \
+		../../images/school.png \
+		../../images/Shardul-Class.png \
+		../../images/zoom-in.png \
+		../../images/loading-arrow.png \
+		../../images/coordinate-system.png \
+		../../images/measurement.png \
+		../../images/forest-area.png \
+		../../images/warning.png \
+		../../images/folder.png \
+		../../images/trajectory.png \
+		../../images/check-box.png \
+		../../images/centremap.png \
+		../../images/pathway.png \
+		../../images/database\ (1).png \
+		../../images/copy.png \
+		../../images/stop.png \
+		../../images/add.jpeg \
+		../../images/packet.png \
+		../../images/info.png \
+		../../images/new-document.png \
+		../../images/geojson-layers.png \
+		../../images/floppy-disk.png \
+		../../images/pause.png \
+		../../images/next-button.png \
+		../../images/subcomponent.png \
+		../../images/search.png \
+		../../images/map.png \
+		../../images/up.png \
+		../../images/database.png \
+		../../images/test.png \
+		../../images/database\ (2).png \
+		../../images/sync.png \
+		../../images/airbase.png \
+		../../images/runtime.png \
+		../../images/error.png \
+		../../images/tree-open.png \
+		../../images/cut.png \
+		../../images/entity.png \
+		../../images/stories.png \
+		../../images/down.png \
+		../../images/area.png \
+		../../images/success.png \
+		../../images/picture.png \
+		../../images/resume.png \
+		../../images/help.png \
+		../../images/photo.png \
+		../../images/component.png \
+		../../images/shapes.png \
+		../../images/tree-closed.png \
+		../../images/reset.png \
+		../../images/undo.png \
 		../../images/ground/PinakaCommandPost.png \
 		../../images/ground/MahindraMarksman.png \
 		../../images/ground/BMP-2Command.png \
 		../../images/ground/RenaultSherpa.png \
 		../../images/ground/PinakaDiggi.png \
 		../../images/ground/ArudhraRadar.png \
+		../../images/ground/Mobile-Early-Warning.png \
 		../../images/ground/Akash-NG.png \
 		../../images/ground/TetheredAerostatRadarSystem.png \
 		../../images/ground/NuclearRadiationMonitoring.png \
@@ -2843,9 +3037,11 @@ qrc_Resources.cpp: ../../Resources.qrc \
 		../../images/ground/K9Vajra-T.png \
 		../../images/ground/PinakaMulti-BarrelRocketLauncher.png \
 		../../images/ground/TankTransporter.png \
+		../../images/ground/SLC-7.png \
 		../../images/ground/HighMobilityVehicle6x6.png \
 		../../images/ground/UnmannedGroundVehicleDRDO.png \
 		../../images/ground/ATAGS.png \
+		../../images/ground/Bavar-373.png \
 		../../images/ground/NagMissileCarrier.png \
 		../../images/ground/MobileSurveillance.png \
 		../../images/ground/NAMICA.png \
@@ -2873,6 +3069,7 @@ qrc_Resources.cpp: ../../Resources.qrc \
 		../../images/ground/DhanushHowitzer.png \
 		../../images/ground/NBCReconnaissance.png \
 		../../images/ground/MPATGMLauncher.png \
+		../../images/ground/Cognitive-Radar.png \
 		../../images/ground/ArjunMBT.png \
 		../../images/ground/BiologicalReconnaissance.png \
 		../../images/ground/AshokLeylandMineProtectedVehicle.png \
@@ -2881,21 +3078,26 @@ qrc_Resources.cpp: ../../Resources.qrc \
 		../../images/ground/MissileLaunchControl.png \
 		../../images/ground/Igla-S.png \
 		../../images/ground/BharatDynamicsMissileLauncher.png \
+		../../images/ground/S-400_Triumf.png \
 		../../images/ground/ArmouredEngineerReconnaissance.png \
 		../../images/ground/QRSAM.png \
 		../../images/ground/CarrierMortarTracked.png \
 		../../images/ground/DRDOArmouredAmbulance.png \
 		../../images/ground/T-90SBhishma.png \
+		../../images/ground/Bee-Eye-Radar.png \
 		../../images/ground/Muntra-MUGV.png \
 		../../images/ground/OFBAditya.png \
 		../../images/ground/AllTerrainVehicleATV.png \
+		../../images/ground/YLC-8E.png \
 		../../images/ground/SoltamM-46.png \
 		../../images/ground/BMP-2NBCRecon.png \
+		../../images/ground/Passive-Radar.png \
 		../../images/ground/LightSpecialist.png \
 		../../images/ground/AkashSAMSystem.png \
 		../../images/ground/NagATGM.png \
 		../../images/ground/RevathiRadar.png \
 		../../images/ground/BattlefieldManagementSystem.png \
+		../../images/ground/Patriot-Radar-Unit.png \
 		../../images/ground/HeavyEquipmentTransporter.png \
 		../../images/ground/CentralAcquisitionRadar.png \
 		../../images/ground/TruckMountedRadarUnit.png \
@@ -2907,6 +3109,7 @@ qrc_Resources.cpp: ../../Resources.qrc \
 		../../images/ground/ForwardObservation.png \
 		../../images/ground/MahindraArmado.png \
 		../../images/ground/MobileEWJammerVehicle.png \
+		../../images/ground/PatriotPAC-3.png \
 		../../images/ground/RajendraRadar.png \
 		../../images/ground/SPYDERAirDefenceSystem.png \
 		../../images/ground/MountedGunSystemMGS.png \
@@ -2918,10 +3121,13 @@ qrc_Resources.cpp: ../../Resources.qrc \
 		../../images/ground/MobileCommandPost.png \
 		../../images/ground/PinakaMk-II.png \
 		../../images/ground/TATAKestrel.png \
+		../../images/ground/JY-27V.png \
 		../../images/ground/S-300.png \
 		../../images/ground/BMP-2Ambulance.png \
+		../../images/ground/GhadirRadar.png \
 		../../images/ground/AshwiniRadar.png \
 		../../images/ground/FH-77BBofors.png \
+		../../images/ground/Sea-Shore-Radar.png \
 		../../images/ground/DRDOPrahaar.png \
 		../../images/ground/HighMobilityVehicle4x4.png \
 		../../images/ground/HelinaATGMLauncher.png \
@@ -2936,19 +3142,46 @@ compiler_moc_predefs_clean:
 moc_predefs.h: /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 	clang++ -pipe -g -std=gnu++1z -Wall -Wextra -dM -E -o moc_predefs.h /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 
-compiler_moc_header_make_all: moc_consoleview.cpp moc_customresizableoverlaydock.cpp moc_databaseeditor.cpp moc_recentprojectsmanager.cpp moc_runtimeeditor.cpp moc_scenarioeditor.cpp moc_projectinformation.cpp moc_addformationdialog.cpp moc_additemdialog.cpp moc_contextmenu.cpp moc_customtrajectorydialog.cpp moc_hierarchyconnector.cpp moc_hierarchytree.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_inspector.cpp moc_colortemplate.cpp moc_geocordstemplate.cpp moc_iconsdialog.cpp moc_imagetemplate.cpp moc_optiontemplate.cpp moc_vectortemplate.cpp moc_loggerdialog.cpp moc_menubar.cpp moc_profileinfodialog.cpp moc_navigationpage.cpp moc_overview.cpp moc_csmdisplay.cpp moc_esmdisplay.cpp moc_iffdisplay.cpp moc_radardisplay.cpp moc_radiodisplay.cpp moc_applicationdialog.cpp moc_sidebarwidget.cpp moc_custommapdialog.cpp moc_gislib.cpp moc_gisnetwork.cpp moc_layerinformationdialog.cpp moc_layerpanel.cpp moc_canvaswidget.cpp moc_entityinfodialog.cpp moc_scalebar.cpp moc_shapepropertiesdialog.cpp moc_tacticaldisplay.cpp moc_waypointeditdialog.cpp moc_angelscripthighlighter.cpp moc_testscriptdialog.cpp moc_textscriptwidget.cpp moc_graphwidget.cpp moc_designtoolbar.cpp moc_networktoolbar.cpp moc_runtimetoolbar.cpp moc_standardtoolbar.cpp moc_docktitlemenu.cpp moc_mainwindow.cpp moc_measuredistancedialog.cpp moc_scene3dwidget.cpp moc_scenarioconfig.cpp moc_sessionmanager.cpp moc_console.cpp moc_frame.cpp moc_profiler.cpp moc_attachedenitities.cpp moc_collider.cpp moc_crosssection.cpp moc_dynamicmodel.cpp moc_iffprofile.cpp moc_mesh.cpp moc_meshrenderer2d.cpp moc_mission.cpp moc_networkobject.cpp moc_radioprofile.cpp moc_rigidbody.cpp moc_sensorprofile.cpp moc_trajectory.cpp moc_transform.cpp moc_csm.cpp moc_esm.cpp moc_radar.cpp moc_fixedpoints.cpp moc_formation.cpp moc_iff.cpp moc_platform.cpp moc_radio.cpp moc_sensor.cpp moc_specialzone.cpp moc_weapons.cpp moc_action.cpp moc_color.cpp moc_condition.cpp moc_constants.cpp moc_formationposition.cpp moc_geocords.cpp moc_parameter.cpp moc_task.cpp moc_waypoints.cpp moc_entity.cpp moc_folder.cpp moc_hierarchy.cpp moc_profilecategaory.cpp moc_inputmanager.cpp moc_networkmanager.cpp moc_networktransport.cpp moc_pluginmanager.cpp moc_recorder.cpp moc_scenerenderer.cpp moc_scriptengine.cpp moc_sharedmemorywrapper.cpp moc_simulation.cpp moc_simulation_state.cpp moc_database.cpp moc_missioncreator.cpp moc_missionexcuter.cpp moc_runtime.cpp moc_scenario.cpp
+compiler_moc_header_make_all: moc_consoleview.cpp moc_doctrineareadefinition.cpp moc_doctrineassumptionsnotes.cpp moc_doctrineparameters.cpp moc_tacticalrules.cpp moc_analysiseditor.cpp moc_customresizableoverlaydock.cpp moc_databaseeditor.cpp moc_missioneditor.cpp moc_recentprojectsmanager.cpp moc_reportseditor.cpp moc_runtimeeditor.cpp moc_scenarioeditor.cpp moc_projectinformation.cpp moc_addformationdialog.cpp moc_additemdialog.cpp moc_addweapondialog.cpp moc_contextmenu.cpp moc_customtrajectorydialog.cpp moc_hierarchyconnector.cpp moc_hierarchytree.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_inspector.cpp moc_colortemplate.cpp moc_geocordstemplate.cpp moc_iconsdialog.cpp moc_imagetemplate.cpp moc_optiontemplate.cpp moc_vectortemplate.cpp moc_loggerdialog.cpp moc_menubar.cpp moc_profileinfodialog.cpp moc_navigationpage.cpp moc_overview.cpp moc_csmdisplay.cpp moc_esmdisplay.cpp moc_ewdisplay.cpp moc_iffdisplay.cpp moc_radardisplay.cpp moc_radiodisplay.cpp moc_sonardisplay.cpp moc_applicationdialog.cpp moc_sidebarwidget.cpp moc_custommapdialog.cpp moc_gislib.cpp moc_gisnetwork.cpp moc_layerinformationdialog.cpp moc_layerpanel.cpp moc_canvaswidget.cpp moc_entityinfodialog.cpp moc_scalebar.cpp moc_shapepropertiesdialog.cpp moc_tacticaldisplay.cpp moc_waypointeditdialog.cpp moc_angelscripthighlighter.cpp moc_testscriptdialog.cpp moc_textscriptwidget.cpp moc_graphwidget.cpp moc_designtoolbar.cpp moc_networktoolbar.cpp moc_runtimetoolbar.cpp moc_standardtoolbar.cpp moc_docktitlemenu.cpp moc_mainwindow.cpp moc_measuredistancedialog.cpp moc_scene3dwidget.cpp moc_statusbar.cpp moc_scenarioconfig.cpp moc_sessionmanager.cpp moc_console.cpp moc_frame.cpp moc_profiler.cpp moc_attachedenitities.cpp moc_collider.cpp moc_crosssection.cpp moc_dynamicmodel.cpp moc_iffprofile.cpp moc_mesh.cpp moc_meshrenderer2d.cpp moc_mission.cpp moc_networkobject.cpp moc_radioprofile.cpp moc_rigidbody.cpp moc_sensorprofile.cpp moc_trajectory.cpp moc_transform.cpp moc_weaponprofile.cpp moc_csm.cpp moc_esm.cpp moc_radar.cpp moc_sonar.cpp moc_fixedpoints.cpp moc_formation.cpp moc_iff.cpp moc_platform.cpp moc_radio.cpp moc_sensor.cpp moc_specialzone.cpp moc_weapon.cpp moc_artillery.cpp moc_bomb.cpp moc_chaff.cpp moc_flare.cpp moc_missile.cpp moc_rocket.cpp moc_torpedo.cpp moc_action.cpp moc_color.cpp moc_condition.cpp moc_constants.cpp moc_formationposition.cpp moc_geocords.cpp moc_parameter.cpp moc_waypoints.cpp moc_entity.cpp moc_folder.cpp moc_hierarchy.cpp moc_profilecategaory.cpp moc_inputmanager.cpp moc_networkmanager.cpp moc_networktransport.cpp moc_pluginmanager.cpp moc_recorder.cpp moc_scenerenderer.cpp moc_sqlite.cpp moc_scriptengine.cpp moc_sharedmemorywrapper.cpp moc_simulation.cpp moc_simulation_state.cpp moc_database.cpp moc_missioncreator.cpp moc_missionexcuter.cpp moc_runtime.cpp moc_scenario.cpp moc_actions.cpp moc_ifcondition.cpp moc_inputs.cpp moc_task.cpp moc_taskgroup.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) moc_consoleview.cpp moc_customresizableoverlaydock.cpp moc_databaseeditor.cpp moc_recentprojectsmanager.cpp moc_runtimeeditor.cpp moc_scenarioeditor.cpp moc_projectinformation.cpp moc_addformationdialog.cpp moc_additemdialog.cpp moc_contextmenu.cpp moc_customtrajectorydialog.cpp moc_hierarchyconnector.cpp moc_hierarchytree.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_inspector.cpp moc_colortemplate.cpp moc_geocordstemplate.cpp moc_iconsdialog.cpp moc_imagetemplate.cpp moc_optiontemplate.cpp moc_vectortemplate.cpp moc_loggerdialog.cpp moc_menubar.cpp moc_profileinfodialog.cpp moc_navigationpage.cpp moc_overview.cpp moc_csmdisplay.cpp moc_esmdisplay.cpp moc_iffdisplay.cpp moc_radardisplay.cpp moc_radiodisplay.cpp moc_applicationdialog.cpp moc_sidebarwidget.cpp moc_custommapdialog.cpp moc_gislib.cpp moc_gisnetwork.cpp moc_layerinformationdialog.cpp moc_layerpanel.cpp moc_canvaswidget.cpp moc_entityinfodialog.cpp moc_scalebar.cpp moc_shapepropertiesdialog.cpp moc_tacticaldisplay.cpp moc_waypointeditdialog.cpp moc_angelscripthighlighter.cpp moc_testscriptdialog.cpp moc_textscriptwidget.cpp moc_graphwidget.cpp moc_designtoolbar.cpp moc_networktoolbar.cpp moc_runtimetoolbar.cpp moc_standardtoolbar.cpp moc_docktitlemenu.cpp moc_mainwindow.cpp moc_measuredistancedialog.cpp moc_scene3dwidget.cpp moc_scenarioconfig.cpp moc_sessionmanager.cpp moc_console.cpp moc_frame.cpp moc_profiler.cpp moc_attachedenitities.cpp moc_collider.cpp moc_crosssection.cpp moc_dynamicmodel.cpp moc_iffprofile.cpp moc_mesh.cpp moc_meshrenderer2d.cpp moc_mission.cpp moc_networkobject.cpp moc_radioprofile.cpp moc_rigidbody.cpp moc_sensorprofile.cpp moc_trajectory.cpp moc_transform.cpp moc_csm.cpp moc_esm.cpp moc_radar.cpp moc_fixedpoints.cpp moc_formation.cpp moc_iff.cpp moc_platform.cpp moc_radio.cpp moc_sensor.cpp moc_specialzone.cpp moc_weapons.cpp moc_action.cpp moc_color.cpp moc_condition.cpp moc_constants.cpp
-	-$(DEL_FILE) moc_formationposition.cpp moc_geocords.cpp moc_parameter.cpp moc_task.cpp moc_waypoints.cpp moc_entity.cpp moc_folder.cpp moc_hierarchy.cpp moc_profilecategaory.cpp moc_inputmanager.cpp moc_networkmanager.cpp moc_networktransport.cpp moc_pluginmanager.cpp moc_recorder.cpp moc_scenerenderer.cpp moc_scriptengine.cpp moc_sharedmemorywrapper.cpp moc_simulation.cpp moc_simulation_state.cpp moc_database.cpp moc_missioncreator.cpp moc_missionexcuter.cpp moc_runtime.cpp moc_scenario.cpp
+	-$(DEL_FILE) moc_consoleview.cpp moc_doctrineareadefinition.cpp moc_doctrineassumptionsnotes.cpp moc_doctrineparameters.cpp moc_tacticalrules.cpp moc_analysiseditor.cpp moc_customresizableoverlaydock.cpp moc_databaseeditor.cpp moc_missioneditor.cpp moc_recentprojectsmanager.cpp moc_reportseditor.cpp moc_runtimeeditor.cpp moc_scenarioeditor.cpp moc_projectinformation.cpp moc_addformationdialog.cpp moc_additemdialog.cpp moc_addweapondialog.cpp moc_contextmenu.cpp moc_customtrajectorydialog.cpp moc_hierarchyconnector.cpp moc_hierarchytree.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_customparameterdialog.cpp moc_inspector.cpp moc_colortemplate.cpp moc_geocordstemplate.cpp moc_iconsdialog.cpp moc_imagetemplate.cpp moc_optiontemplate.cpp moc_vectortemplate.cpp moc_loggerdialog.cpp moc_menubar.cpp moc_profileinfodialog.cpp moc_navigationpage.cpp moc_overview.cpp moc_csmdisplay.cpp moc_esmdisplay.cpp moc_ewdisplay.cpp moc_iffdisplay.cpp moc_radardisplay.cpp moc_radiodisplay.cpp moc_sonardisplay.cpp moc_applicationdialog.cpp moc_sidebarwidget.cpp moc_custommapdialog.cpp moc_gislib.cpp moc_gisnetwork.cpp moc_layerinformationdialog.cpp moc_layerpanel.cpp moc_canvaswidget.cpp moc_entityinfodialog.cpp moc_scalebar.cpp moc_shapepropertiesdialog.cpp moc_tacticaldisplay.cpp moc_waypointeditdialog.cpp moc_angelscripthighlighter.cpp moc_testscriptdialog.cpp moc_textscriptwidget.cpp moc_graphwidget.cpp moc_designtoolbar.cpp moc_networktoolbar.cpp moc_runtimetoolbar.cpp moc_standardtoolbar.cpp moc_docktitlemenu.cpp moc_mainwindow.cpp moc_measuredistancedialog.cpp moc_scene3dwidget.cpp moc_statusbar.cpp moc_scenarioconfig.cpp moc_sessionmanager.cpp moc_console.cpp moc_frame.cpp moc_profiler.cpp moc_attachedenitities.cpp moc_collider.cpp moc_crosssection.cpp moc_dynamicmodel.cpp moc_iffprofile.cpp moc_mesh.cpp moc_meshrenderer2d.cpp moc_mission.cpp moc_networkobject.cpp moc_radioprofile.cpp moc_rigidbody.cpp moc_sensorprofile.cpp moc_trajectory.cpp
+	-$(DEL_FILE) moc_transform.cpp moc_weaponprofile.cpp moc_csm.cpp moc_esm.cpp moc_radar.cpp moc_sonar.cpp moc_fixedpoints.cpp moc_formation.cpp moc_iff.cpp moc_platform.cpp moc_radio.cpp moc_sensor.cpp moc_specialzone.cpp moc_weapon.cpp moc_artillery.cpp moc_bomb.cpp moc_chaff.cpp moc_flare.cpp moc_missile.cpp moc_rocket.cpp moc_torpedo.cpp moc_action.cpp moc_color.cpp moc_condition.cpp moc_constants.cpp moc_formationposition.cpp moc_geocords.cpp moc_parameter.cpp moc_waypoints.cpp moc_entity.cpp moc_folder.cpp moc_hierarchy.cpp moc_profilecategaory.cpp moc_inputmanager.cpp moc_networkmanager.cpp moc_networktransport.cpp moc_pluginmanager.cpp moc_recorder.cpp moc_scenerenderer.cpp moc_sqlite.cpp moc_scriptengine.cpp moc_sharedmemorywrapper.cpp moc_simulation.cpp moc_simulation_state.cpp moc_database.cpp moc_missioncreator.cpp moc_missionexcuter.cpp moc_runtime.cpp moc_scenario.cpp moc_actions.cpp moc_ifcondition.cpp moc_inputs.cpp moc_task.cpp moc_taskgroup.cpp
 moc_consoleview.cpp: ../../GUI/Console/consoleview.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Console/consoleview.h -o moc_consoleview.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Console/consoleview.h -o moc_consoleview.cpp
+
+moc_doctrineareadefinition.cpp: ../../GUI/DOCTRINE/doctrineareadefinition.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/DOCTRINE/doctrineareadefinition.h -o moc_doctrineareadefinition.cpp
+
+moc_doctrineassumptionsnotes.cpp: ../../GUI/DOCTRINE/doctrineassumptionsnotes.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/DOCTRINE/doctrineassumptionsnotes.h -o moc_doctrineassumptionsnotes.cpp
+
+moc_doctrineparameters.cpp: ../../GUI/DOCTRINE/doctrineparameters.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/DOCTRINE/doctrineparameters.h -o moc_doctrineparameters.cpp
+
+moc_tacticalrules.cpp: ../../GUI/DOCTRINE/tacticalrules.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/DOCTRINE/tacticalrules.h -o moc_tacticalrules.cpp
+
+moc_analysiseditor.cpp: ../../GUI/Editors/analysiseditor.h \
+		../../GUI/Editors/recentprojectsmanager.h \
+		../../GUI/Editors/reportseditor.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Editors/analysiseditor.h -o moc_analysiseditor.cpp
 
 moc_customresizableoverlaydock.cpp: ../../GUI/Editors/customresizableoverlaydock.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Editors/customresizableoverlaydock.h -o moc_customresizableoverlaydock.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Editors/customresizableoverlaydock.h -o moc_customresizableoverlaydock.cpp
 
 moc_databaseeditor.cpp: ../../GUI/Editors/databaseeditor.h \
 		../../GUI/Hierarchytree/hierarchyconnector.h \
@@ -2992,12 +3225,16 @@ moc_databaseeditor.cpp: ../../GUI/Editors/databaseeditor.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -3124,19 +3361,219 @@ moc_databaseeditor.cpp: ../../GUI/Editors/databaseeditor.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../GUI/Menubars/profileinfodialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Editors/databaseeditor.h -o moc_databaseeditor.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Editors/databaseeditor.h -o moc_databaseeditor.cpp
+
+moc_missioneditor.cpp: ../../GUI/Editors/missioneditor.h \
+		../../GUI/Hierarchytree/hierarchyconnector.h \
+		../../GUI/Inspector/inspector.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/Hierarchy/EntityProfiles/platform.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Components/iffprofile.h \
+		../../core/Hierarchy/EntityProfiles/iff.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/radioprofile.h \
+		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
+		../../core/Hierarchy/EntityProfiles/formation.h \
+		../../core/Hierarchy/Struct/formationposition.h \
+		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		../../GUI/Tacticaldisplay/tacticaldisplay.h \
+		../../core/Render/scenerenderer.h \
+		../../GUI/Tacticaldisplay/canvaswidget.h \
+		../../GUI/Tacticaldisplay/Gis/gislib.h \
+		../../GUI/Tacticaldisplay/Gis/gisnetwork.h \
+		../../GUI/measuredistance/measuredistancedialog.h \
+		../../GUI/Tacticaldisplay/Gis/shapes_feature.h \
+		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
+		../../GUI/scene3dwidget/scene3dwidget.h \
+		../../GUI/Tacticaldisplay/scalebar.h \
+		../../GUI/Hierarchytree/hierarchytree.h \
+		../../GUI/Editors/recentprojectsmanager.h \
+		../../GUI/Console/consoleview.h \
+		../../core/Debug/console.h \
+		../../core/structure/scenario.h \
+		../../core/ScriptEngine/scriptengine.h \
+		../../angelscript/include/angelscript.h \
+		../../angelscript/add_on/scriptarray/scriptarray.h \
+		../../core/Config/scenarioconfig.h \
+		../../core/Config/sessionmanager.h \
+		../../core/Simulation/simulation.h \
+		../../bullet/btBulletDynamicsCommon.h \
+		../../bullet/btBulletCollisionCommon.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionWorld.h \
+		../../bullet/LinearMath/btVector3.h \
+		../../bullet/LinearMath/btScalar.h \
+		../../bullet/LinearMath/btMinMax.h \
+		../../bullet/LinearMath/btAlignedAllocator.h \
+		../../bullet/LinearMath/btTransform.h \
+		../../bullet/LinearMath/btMatrix3x3.h \
+		../../bullet/LinearMath/btQuaternion.h \
+		../../bullet/LinearMath/btQuadWord.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObject.h \
+		../../bullet/LinearMath/btMotionState.h \
+		../../bullet/LinearMath/btAlignedObjectArray.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionDispatcher.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDispatcher.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btPersistentManifold.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btManifoldPoint.h \
+		../../bullet/LinearMath/btTransformUtil.h \
+		../../bullet/BulletCollision/CollisionDispatch/btManifoldResult.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btDiscreteCollisionDetectorInterface.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseProxy.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionCreateFunc.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCache.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseInterface.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btBoxShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btPolyhedralConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexInternalShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionMargin.h \
+		../../bullet/LinearMath/btAabbUtil2.h \
+		../../bullet/BulletCollision/CollisionShapes/btSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCapsuleShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCylinderShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConeShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btStaticPlaneShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConcaveShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexHullShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMesh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h \
+		../../bullet/BulletCollision/CollisionShapes/btStridingMeshInterface.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btOptimizedBvh.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btQuantizedBvh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleInfoMap.h \
+		../../bullet/LinearMath/btHashMap.h \
+		../../bullet/LinearMath/btSerializer.h \
+		../../bullet/BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCompoundShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTetrahedronShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btEmptyShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btMultiSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btUniformScalingShape.h \
+		../../bullet/BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btActivatingCollisionAlgorithm.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionConfiguration.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btSimpleBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvtBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvt.h \
+		../../bullet/LinearMath/btQuickprof.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3Internal.h \
+		../../bullet/LinearMath/btDefaultMotionState.h \
+		../../bullet/LinearMath/btIDebugDraw.h \
+		../../bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btDynamicsWorld.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btContactSolverInfo.h \
+		../../bullet/LinearMath/btThreads.h \
+		../../bullet/BulletDynamics/Dynamics/btSimpleDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btRigidBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btJacobianEntry.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btTypedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHingeConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSliderConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btUniversalConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHinge2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGearConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btFixedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConstraintSolver.h \
+		../../bullet/BulletDynamics/Vehicle/btRaycastVehicle.h \
+		../../bullet/BulletDynamics/Vehicle/btVehicleRaycaster.h \
+		../../bullet/BulletDynamics/Vehicle/btWheelInfo.h \
+		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
+		../../core/Recorder/recorder.h \
+		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
+		../../core/Network/networkmanager.h \
+		../../core/Network/networktransport.h \
+		../../core/Network/libs/TransformUpdate.h \
+		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
+		../../GUI/DOCTRINE/doctrineparameters.h \
+		../../GUI/DOCTRINE/tacticalrules.h \
+		../../GUI/DOCTRINE/doctrineassumptionsnotes.h \
+		../../GUI/DOCTRINE/doctrineareadefinition.h \
+		../../GUI/Menubars/profileinfodialog.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Editors/missioneditor.h -o moc_missioneditor.cpp
 
 moc_recentprojectsmanager.cpp: ../../GUI/Editors/recentprojectsmanager.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Editors/recentprojectsmanager.h -o moc_recentprojectsmanager.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Editors/recentprojectsmanager.h -o moc_recentprojectsmanager.cpp
+
+moc_reportseditor.cpp: ../../GUI/Editors/reportseditor.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Editors/reportseditor.h -o moc_reportseditor.cpp
 
 moc_runtimeeditor.cpp: ../../GUI/Editors/runtimeeditor.h \
 		../../GUI/Console/consoleview.h \
@@ -3181,12 +3618,16 @@ moc_runtimeeditor.cpp: ../../GUI/Editors/runtimeeditor.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -3211,14 +3652,8 @@ moc_runtimeeditor.cpp: ../../GUI/Editors/runtimeeditor.h \
 		../../GUI/Logger/loggerdialog.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
-		../../GUI/Timing/graphwidget.h \
-		../../GUI/Toolbars/networktoolbar.h \
-		../../core/Network/networkmanager.h \
-		../../core/Network/networktransport.h \
-		../../core/Network/libs/TransformUpdate.h \
-		../../core/Debug/console.h \
-		../../core/structure/runtime.h \
-		../../core/Config/sessionmanager.h \
+		../../core/Recorder/payload.h \
+		../../core/SQLite/sqlite.h \
 		../../core/Simulation/simulation.h \
 		../../bullet/btBulletDynamicsCommon.h \
 		../../bullet/btBulletCollisionCommon.h \
@@ -3319,7 +3754,16 @@ moc_runtimeeditor.cpp: ../../GUI/Editors/runtimeeditor.h \
 		../../bullet/BulletDynamics/Vehicle/btVehicleRaycaster.h \
 		../../bullet/BulletDynamics/Vehicle/btWheelInfo.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
+		../../core/Network/networkmanager.h \
+		../../core/Network/networktransport.h \
+		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
+		../../GUI/Timing/graphwidget.h \
+		../../GUI/Toolbars/networktoolbar.h \
+		../../core/Debug/console.h \
+		../../core/structure/runtime.h \
+		../../core/Config/sessionmanager.h \
 		../../core/Debug/profiler.h \
 		../../core/Debug/frame.h \
 		../../core/ScriptEngine/scriptengine.h \
@@ -3333,16 +3777,21 @@ moc_runtimeeditor.cpp: ../../GUI/Editors/runtimeeditor.h \
 		../../GUI/Feedback/projectinformation.h \
 		../../GUI/Testscript/textscriptwidget.h \
 		../../GUI/Panel/radardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../GUI/Panel/iffdisplay.h \
 		../../GUI/Panel/radiodisplay.h \
 		../../core/Hierarchy/EntityProfiles/radio.h \
 		../../GUI/Panel/csmdisplay.h \
 		../../GUI/Panel/esmdisplay.h \
+		../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
 		../../GUI/Menubars/profileinfodialog.h \
 		../../GUI/Editors/customresizableoverlaydock.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Editors/runtimeeditor.h -o moc_runtimeeditor.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Editors/runtimeeditor.h -o moc_runtimeeditor.cpp
 
 moc_scenarioeditor.cpp: ../../GUI/Editors/scenarioeditor.h \
 		../../GUI/Console/consoleview.h \
@@ -3387,12 +3836,16 @@ moc_scenarioeditor.cpp: ../../GUI/Editors/scenarioeditor.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -3522,42 +3975,83 @@ moc_scenarioeditor.cpp: ../../GUI/Editors/scenarioeditor.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../GUI/Editors/customresizableoverlaydock.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Editors/scenarioeditor.h -o moc_scenarioeditor.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Editors/scenarioeditor.h -o moc_scenarioeditor.cpp
 
 moc_projectinformation.cpp: ../../GUI/Feedback/projectinformation.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Feedback/projectinformation.h -o moc_projectinformation.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Feedback/projectinformation.h -o moc_projectinformation.cpp
 
 moc_addformationdialog.cpp: ../../GUI/Hierarchytree/addformationdialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Hierarchytree/addformationdialog.h -o moc_addformationdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Hierarchytree/addformationdialog.h -o moc_addformationdialog.cpp
 
 moc_additemdialog.cpp: ../../GUI/Hierarchytree/additemdialog.h \
 		../../GUI/Hierarchytree/customtrajectorydialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Hierarchytree/additemdialog.h -o moc_additemdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Hierarchytree/additemdialog.h -o moc_additemdialog.cpp
+
+moc_addweapondialog.cpp: ../../GUI/Hierarchytree/addweapondialog.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Hierarchytree/addweapondialog.h -o moc_addweapondialog.cpp
 
 moc_contextmenu.cpp: ../../GUI/Hierarchytree/contextmenu.h \
 		../../GUI/Hierarchytree/additemdialog.h \
 		../../GUI/Hierarchytree/customtrajectorydialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Hierarchytree/contextmenu.h -o moc_contextmenu.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Hierarchytree/contextmenu.h -o moc_contextmenu.cpp
 
 moc_customtrajectorydialog.cpp: ../../GUI/Hierarchytree/customtrajectorydialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Hierarchytree/customtrajectorydialog.h -o moc_customtrajectorydialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Hierarchytree/customtrajectorydialog.h -o moc_customtrajectorydialog.cpp
 
 moc_hierarchyconnector.cpp: ../../GUI/Hierarchytree/hierarchyconnector.h \
 		../../GUI/Inspector/inspector.h \
@@ -3600,12 +4094,16 @@ moc_hierarchyconnector.cpp: ../../GUI/Hierarchytree/hierarchyconnector.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -3624,7 +4122,7 @@ moc_hierarchyconnector.cpp: ../../GUI/Hierarchytree/hierarchyconnector.h \
 		../../GUI/Editors/recentprojectsmanager.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Hierarchytree/hierarchyconnector.h -o moc_hierarchyconnector.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Hierarchytree/hierarchyconnector.h -o moc_hierarchyconnector.cpp
 
 moc_hierarchytree.cpp: ../../GUI/Hierarchytree/hierarchytree.h \
 		../../core/Hierarchy/entity.h \
@@ -3659,37 +4157,34 @@ moc_hierarchytree.cpp: ../../GUI/Hierarchytree/hierarchytree.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Hierarchytree/hierarchytree.h -o moc_hierarchytree.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Hierarchytree/hierarchytree.h -o moc_hierarchytree.cpp
 
 moc_customparameterdialog.cpp: ../../GUI/Inspector/customparameterdialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/customparameterdialog.h -o moc_customparameterdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/customparameterdialog.h -o moc_customparameterdialog.cpp
 
 moc_customparameterdialog.cpp: ../../GUI/Inspector/customparameterdialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/customparameterdialog.h -o moc_customparameterdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/customparameterdialog.h -o moc_customparameterdialog.cpp
 
 moc_customparameterdialog.cpp: ../../GUI/Inspector/customparameterdialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/customparameterdialog.h -o moc_customparameterdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/customparameterdialog.h -o moc_customparameterdialog.cpp
 
 moc_customparameterdialog.cpp: ../../GUI/Inspector/customparameterdialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/customparameterdialog.h -o moc_customparameterdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/customparameterdialog.h -o moc_customparameterdialog.cpp
 
 moc_customparameterdialog.cpp: ../../GUI/Inspector/customparameterdialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/customparameterdialog.h -o moc_customparameterdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/customparameterdialog.h -o moc_customparameterdialog.cpp
 
 moc_inspector.cpp: ../../GUI/Inspector/inspector.h \
 		../../core/Hierarchy/hierarchy.h \
@@ -3731,44 +4226,48 @@ moc_inspector.cpp: ../../GUI/Inspector/inspector.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/inspector.h -o moc_inspector.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/inspector.h -o moc_inspector.cpp
 
 moc_colortemplate.cpp: ../../GUI/Inspector/template/colortemplate.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/template/colortemplate.h -o moc_colortemplate.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/template/colortemplate.h -o moc_colortemplate.cpp
 
 moc_geocordstemplate.cpp: ../../GUI/Inspector/template/geocordstemplate.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/template/geocordstemplate.h -o moc_geocordstemplate.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/template/geocordstemplate.h -o moc_geocordstemplate.cpp
 
 moc_iconsdialog.cpp: ../../GUI/Inspector/template/iconsdialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/template/iconsdialog.h -o moc_iconsdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/template/iconsdialog.h -o moc_iconsdialog.cpp
 
 moc_imagetemplate.cpp: ../../GUI/Inspector/template/imagetemplate.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/template/imagetemplate.h -o moc_imagetemplate.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/template/imagetemplate.h -o moc_imagetemplate.cpp
 
 moc_optiontemplate.cpp: ../../GUI/Inspector/template/optiontemplate.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/template/optiontemplate.h -o moc_optiontemplate.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/template/optiontemplate.h -o moc_optiontemplate.cpp
 
 moc_vectortemplate.cpp: ../../GUI/Inspector/template/vectortemplate.h \
 		../../GUI/Inspector/inspector.h \
@@ -3811,19 +4310,23 @@ moc_vectortemplate.cpp: ../../GUI/Inspector/template/vectortemplate.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/template/vectortemplate.h -o moc_vectortemplate.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Inspector/template/vectortemplate.h -o moc_vectortemplate.cpp
 
 moc_loggerdialog.cpp: ../../GUI/Logger/loggerdialog.h \
 		../../core/Recorder/recorder.h \
@@ -3860,9 +4363,6 @@ moc_loggerdialog.cpp: ../../GUI/Logger/loggerdialog.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
@@ -3870,30 +4370,151 @@ moc_loggerdialog.cpp: ../../GUI/Logger/loggerdialog.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Recorder/payload.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/SQLite/sqlite.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
+		../../core/Hierarchy/EntityProfiles/formation.h \
+		../../core/Hierarchy/Struct/formationposition.h \
+		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		../../core/Simulation/simulation.h \
+		../../bullet/btBulletDynamicsCommon.h \
+		../../bullet/btBulletCollisionCommon.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionWorld.h \
+		../../bullet/LinearMath/btVector3.h \
+		../../bullet/LinearMath/btScalar.h \
+		../../bullet/LinearMath/btMinMax.h \
+		../../bullet/LinearMath/btAlignedAllocator.h \
+		../../bullet/LinearMath/btTransform.h \
+		../../bullet/LinearMath/btMatrix3x3.h \
+		../../bullet/LinearMath/btQuaternion.h \
+		../../bullet/LinearMath/btQuadWord.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObject.h \
+		../../bullet/LinearMath/btMotionState.h \
+		../../bullet/LinearMath/btAlignedObjectArray.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionDispatcher.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDispatcher.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btPersistentManifold.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btManifoldPoint.h \
+		../../bullet/LinearMath/btTransformUtil.h \
+		../../bullet/BulletCollision/CollisionDispatch/btManifoldResult.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btDiscreteCollisionDetectorInterface.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseProxy.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionCreateFunc.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCache.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseInterface.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btBoxShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btPolyhedralConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexInternalShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionMargin.h \
+		../../bullet/LinearMath/btAabbUtil2.h \
+		../../bullet/BulletCollision/CollisionShapes/btSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCapsuleShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCylinderShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConeShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btStaticPlaneShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConcaveShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexHullShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMesh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h \
+		../../bullet/BulletCollision/CollisionShapes/btStridingMeshInterface.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btOptimizedBvh.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btQuantizedBvh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleInfoMap.h \
+		../../bullet/LinearMath/btHashMap.h \
+		../../bullet/LinearMath/btSerializer.h \
+		../../bullet/BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCompoundShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTetrahedronShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btEmptyShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btMultiSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btUniformScalingShape.h \
+		../../bullet/BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btActivatingCollisionAlgorithm.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionConfiguration.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btSimpleBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvtBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvt.h \
+		../../bullet/LinearMath/btQuickprof.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3Internal.h \
+		../../bullet/LinearMath/btDefaultMotionState.h \
+		../../bullet/LinearMath/btIDebugDraw.h \
+		../../bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btDynamicsWorld.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btContactSolverInfo.h \
+		../../bullet/LinearMath/btThreads.h \
+		../../bullet/BulletDynamics/Dynamics/btSimpleDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btRigidBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btJacobianEntry.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btTypedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHingeConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSliderConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btUniversalConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHinge2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGearConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btFixedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConstraintSolver.h \
+		../../bullet/BulletDynamics/Vehicle/btRaycastVehicle.h \
+		../../bullet/BulletDynamics/Vehicle/btVehicleRaycaster.h \
+		../../bullet/BulletDynamics/Vehicle/btWheelInfo.h \
+		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
+		../../core/Network/networkmanager.h \
+		../../core/Network/networktransport.h \
+		../../core/Network/libs/TransformUpdate.h \
+		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Logger/loggerdialog.h -o moc_loggerdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Logger/loggerdialog.h -o moc_loggerdialog.cpp
 
 moc_menubar.cpp: ../../GUI/Menubars/menubar.h \
 		../../GUI/Feedback/projectinformation.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Menubars/menubar.h -o moc_menubar.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Menubars/menubar.h -o moc_menubar.cpp
 
 moc_profileinfodialog.cpp: ../../GUI/Menubars/profileinfodialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Menubars/profileinfodialog.h -o moc_profileinfodialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Menubars/profileinfodialog.h -o moc_profileinfodialog.cpp
 
 moc_navigationpage.cpp: ../../GUI/Navigation/navigationpage.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Navigation/navigationpage.h -o moc_navigationpage.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Navigation/navigationpage.h -o moc_navigationpage.cpp
 
 moc_overview.cpp: ../../GUI/Overview/overview.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Overview/overview.h -o moc_overview.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Overview/overview.h -o moc_overview.cpp
 
 moc_csmdisplay.cpp: ../../GUI/Panel/csmdisplay.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
@@ -3929,9 +4550,6 @@ moc_csmdisplay.cpp: ../../GUI/Panel/csmdisplay.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -3941,6 +4559,13 @@ moc_csmdisplay.cpp: ../../GUI/Panel/csmdisplay.h \
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -3949,7 +4574,7 @@ moc_csmdisplay.cpp: ../../GUI/Panel/csmdisplay.h \
 		../../core/Debug/frame.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Panel/csmdisplay.h -o moc_csmdisplay.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Panel/csmdisplay.h -o moc_csmdisplay.cpp
 
 moc_esmdisplay.cpp: ../../GUI/Panel/esmdisplay.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
@@ -3985,9 +4610,6 @@ moc_esmdisplay.cpp: ../../GUI/Panel/esmdisplay.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -3997,6 +4619,13 @@ moc_esmdisplay.cpp: ../../GUI/Panel/esmdisplay.h \
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -4005,7 +4634,65 @@ moc_esmdisplay.cpp: ../../GUI/Panel/esmdisplay.h \
 		../../core/Debug/frame.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Panel/esmdisplay.h -o moc_esmdisplay.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Panel/esmdisplay.h -o moc_esmdisplay.cpp
+
+moc_ewdisplay.cpp: ../../GUI/Panel/ewdisplay.h \
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/Hierarchy/EntityProfiles/platform.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		../../core/Hierarchy/Components/iffprofile.h \
+		../../core/Hierarchy/EntityProfiles/iff.h \
+		../../core/Hierarchy/Components/radioprofile.h \
+		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
+		../../core/Hierarchy/EntityProfiles/formation.h \
+		../../core/Hierarchy/Struct/formationposition.h \
+		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Panel/ewdisplay.h -o moc_ewdisplay.cpp
 
 moc_iffdisplay.cpp: ../../GUI/Panel/iffdisplay.h \
 		../../core/Hierarchy/EntityProfiles/iff.h \
@@ -4041,9 +4728,6 @@ moc_iffdisplay.cpp: ../../GUI/Panel/iffdisplay.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -4053,13 +4737,20 @@ moc_iffdisplay.cpp: ../../GUI/Panel/iffdisplay.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Panel/iffdisplay.h -o moc_iffdisplay.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Panel/iffdisplay.h -o moc_iffdisplay.cpp
 
 moc_radardisplay.cpp: ../../GUI/Panel/radardisplay.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
@@ -4095,9 +4786,6 @@ moc_radardisplay.cpp: ../../GUI/Panel/radardisplay.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -4107,13 +4795,22 @@ moc_radardisplay.cpp: ../../GUI/Panel/radardisplay.h \
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Panel/radardisplay.h -o moc_radardisplay.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Panel/radardisplay.h -o moc_radardisplay.cpp
 
 moc_radiodisplay.cpp: ../../GUI/Panel/radiodisplay.h \
 		../../core/Hierarchy/EntityProfiles/radio.h \
@@ -4153,12 +4850,16 @@ moc_radiodisplay.cpp: ../../GUI/Panel/radiodisplay.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -4168,43 +4869,103 @@ moc_radiodisplay.cpp: ../../GUI/Panel/radiodisplay.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Panel/radiodisplay.h -o moc_radiodisplay.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Panel/radiodisplay.h -o moc_radiodisplay.cpp
+
+moc_sonardisplay.cpp: ../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/Hierarchy/EntityProfiles/platform.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Components/iffprofile.h \
+		../../core/Hierarchy/EntityProfiles/iff.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/radioprofile.h \
+		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
+		../../core/Hierarchy/EntityProfiles/formation.h \
+		../../core/Hierarchy/Struct/formationposition.h \
+		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Panel/sonardisplay.h -o moc_sonardisplay.cpp
 
 moc_applicationdialog.cpp: ../../GUI/Settings/applicationdialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Settings/applicationdialog.h -o moc_applicationdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Settings/applicationdialog.h -o moc_applicationdialog.cpp
 
 moc_sidebarwidget.cpp: ../../GUI/Sidebar/sidebarwidget.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Sidebar/sidebarwidget.h -o moc_sidebarwidget.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Sidebar/sidebarwidget.h -o moc_sidebarwidget.cpp
 
 moc_custommapdialog.cpp: ../../GUI/Tacticaldisplay/Gis/custommapdialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/Gis/custommapdialog.h -o moc_custommapdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/Gis/custommapdialog.h -o moc_custommapdialog.cpp
 
 moc_gislib.cpp: ../../GUI/Tacticaldisplay/Gis/gislib.h \
 		../../GUI/Tacticaldisplay/Gis/gisnetwork.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/Gis/gislib.h -o moc_gislib.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/Gis/gislib.h -o moc_gislib.cpp
 
 moc_gisnetwork.cpp: ../../GUI/Tacticaldisplay/Gis/gisnetwork.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/Gis/gisnetwork.h -o moc_gisnetwork.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/Gis/gisnetwork.h -o moc_gisnetwork.cpp
 
 moc_layerinformationdialog.cpp: ../../GUI/Tacticaldisplay/Gis/layerinformationdialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/Gis/layerinformationdialog.h -o moc_layerinformationdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/Gis/layerinformationdialog.h -o moc_layerinformationdialog.cpp
 
 moc_layerpanel.cpp: ../../GUI/Tacticaldisplay/Gis/layerpanel.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/Gis/layerpanel.h -o moc_layerpanel.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/Gis/layerpanel.h -o moc_layerpanel.cpp
 
 moc_canvaswidget.cpp: ../../GUI/Tacticaldisplay/canvaswidget.h \
 		../../GUI/Tacticaldisplay/Gis/gislib.h \
@@ -4243,13 +5004,10 @@ moc_canvaswidget.cpp: ../../GUI/Tacticaldisplay/canvaswidget.h \
 		../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/canvaswidget.h -o moc_canvaswidget.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/canvaswidget.h -o moc_canvaswidget.cpp
 
 moc_entityinfodialog.cpp: ../../GUI/Tacticaldisplay/entityinfodialog.h \
 		../../GUI/Tacticaldisplay/canvaswidget.h \
@@ -4289,9 +5047,6 @@ moc_entityinfodialog.cpp: ../../GUI/Tacticaldisplay/entityinfodialog.h \
 		../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
@@ -4303,23 +5058,30 @@ moc_entityinfodialog.cpp: ../../GUI/Tacticaldisplay/entityinfodialog.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/entityinfodialog.h -o moc_entityinfodialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/entityinfodialog.h -o moc_entityinfodialog.cpp
 
 moc_scalebar.cpp: ../../GUI/Tacticaldisplay/scalebar.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/scalebar.h -o moc_scalebar.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/scalebar.h -o moc_scalebar.cpp
 
 moc_shapepropertiesdialog.cpp: ../../GUI/Tacticaldisplay/shapepropertiesdialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/shapepropertiesdialog.h -o moc_shapepropertiesdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/shapepropertiesdialog.h -o moc_shapepropertiesdialog.cpp
 
 moc_tacticaldisplay.cpp: ../../GUI/Tacticaldisplay/tacticaldisplay.h \
 		../../core/Render/scenerenderer.h \
@@ -4355,9 +5117,6 @@ moc_tacticaldisplay.cpp: ../../GUI/Tacticaldisplay/tacticaldisplay.h \
 		../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
@@ -4365,6 +5124,13 @@ moc_tacticaldisplay.cpp: ../../GUI/Tacticaldisplay/tacticaldisplay.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../GUI/Tacticaldisplay/canvaswidget.h \
 		../../GUI/Tacticaldisplay/Gis/gislib.h \
 		../../GUI/Tacticaldisplay/Gis/gisnetwork.h \
@@ -4375,28 +5141,28 @@ moc_tacticaldisplay.cpp: ../../GUI/Tacticaldisplay/tacticaldisplay.h \
 		../../GUI/Tacticaldisplay/scalebar.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/tacticaldisplay.h -o moc_tacticaldisplay.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/tacticaldisplay.h -o moc_tacticaldisplay.cpp
 
 moc_waypointeditdialog.cpp: ../../GUI/Tacticaldisplay/waypointeditdialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/waypointeditdialog.h -o moc_waypointeditdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Tacticaldisplay/waypointeditdialog.h -o moc_waypointeditdialog.cpp
 
 moc_angelscripthighlighter.cpp: ../../GUI/Testscript/angelscripthighlighter.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Testscript/angelscripthighlighter.h -o moc_angelscripthighlighter.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Testscript/angelscripthighlighter.h -o moc_angelscripthighlighter.cpp
 
 moc_testscriptdialog.cpp: ../../GUI/Testscript/testscriptdialog.h \
 		../../GUI/Testscript/angelscripthighlighter.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Testscript/testscriptdialog.h -o moc_testscriptdialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Testscript/testscriptdialog.h -o moc_testscriptdialog.cpp
 
 moc_textscriptwidget.cpp: ../../GUI/Testscript/textscriptwidget.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Testscript/textscriptwidget.h -o moc_textscriptwidget.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Testscript/textscriptwidget.h -o moc_textscriptwidget.cpp
 
 moc_graphwidget.cpp: ../../GUI/Timing/graphwidget.h \
 		../../core/Hierarchy/hierarchy.h \
@@ -4438,19 +5204,23 @@ moc_graphwidget.cpp: ../../GUI/Timing/graphwidget.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Timing/graphwidget.h -o moc_graphwidget.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Timing/graphwidget.h -o moc_graphwidget.cpp
 
 moc_designtoolbar.cpp: ../../GUI/Toolbars/designtoolbar.h \
 		../../GUI/Tacticaldisplay/canvaswidget.h \
@@ -4490,15 +5260,12 @@ moc_designtoolbar.cpp: ../../GUI/Toolbars/designtoolbar.h \
 		../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
 		../../GUI/Tacticaldisplay/Gis/layerinformationdialog.h \
 		../../core/Config/scenarioconfig.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Toolbars/designtoolbar.h -o moc_designtoolbar.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Toolbars/designtoolbar.h -o moc_designtoolbar.cpp
 
 moc_networktoolbar.cpp: ../../GUI/Toolbars/networktoolbar.h \
 		../../core/Network/networkmanager.h \
@@ -4540,12 +5307,16 @@ moc_networktoolbar.cpp: ../../GUI/Toolbars/networktoolbar.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Network/networktransport.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
@@ -4555,7 +5326,7 @@ moc_networktoolbar.cpp: ../../GUI/Toolbars/networktoolbar.h \
 		../../core/Network/libs/TransformUpdate.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Toolbars/networktoolbar.h -o moc_networktoolbar.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Toolbars/networktoolbar.h -o moc_networktoolbar.cpp
 
 moc_runtimetoolbar.cpp: ../../GUI/Toolbars/runtimetoolbar.h \
 		../../GUI/Logger/loggerdialog.h \
@@ -4593,9 +5364,6 @@ moc_runtimetoolbar.cpp: ../../GUI/Toolbars/runtimetoolbar.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
@@ -4603,27 +5371,141 @@ moc_runtimetoolbar.cpp: ../../GUI/Toolbars/runtimetoolbar.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
-		../../GUI/Timing/graphwidget.h \
-		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Recorder/payload.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
+		../../core/SQLite/sqlite.h \
+		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		../../core/Simulation/simulation.h \
+		../../bullet/btBulletDynamicsCommon.h \
+		../../bullet/btBulletCollisionCommon.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionWorld.h \
+		../../bullet/LinearMath/btVector3.h \
+		../../bullet/LinearMath/btScalar.h \
+		../../bullet/LinearMath/btMinMax.h \
+		../../bullet/LinearMath/btAlignedAllocator.h \
+		../../bullet/LinearMath/btTransform.h \
+		../../bullet/LinearMath/btMatrix3x3.h \
+		../../bullet/LinearMath/btQuaternion.h \
+		../../bullet/LinearMath/btQuadWord.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObject.h \
+		../../bullet/LinearMath/btMotionState.h \
+		../../bullet/LinearMath/btAlignedObjectArray.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionDispatcher.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDispatcher.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btPersistentManifold.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btManifoldPoint.h \
+		../../bullet/LinearMath/btTransformUtil.h \
+		../../bullet/BulletCollision/CollisionDispatch/btManifoldResult.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btDiscreteCollisionDetectorInterface.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseProxy.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionCreateFunc.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCache.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseInterface.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btBoxShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btPolyhedralConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexInternalShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionMargin.h \
+		../../bullet/LinearMath/btAabbUtil2.h \
+		../../bullet/BulletCollision/CollisionShapes/btSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCapsuleShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCylinderShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConeShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btStaticPlaneShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConcaveShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexHullShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMesh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h \
+		../../bullet/BulletCollision/CollisionShapes/btStridingMeshInterface.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btOptimizedBvh.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btQuantizedBvh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleInfoMap.h \
+		../../bullet/LinearMath/btHashMap.h \
+		../../bullet/LinearMath/btSerializer.h \
+		../../bullet/BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCompoundShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTetrahedronShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btEmptyShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btMultiSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btUniformScalingShape.h \
+		../../bullet/BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btActivatingCollisionAlgorithm.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionConfiguration.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btSimpleBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvtBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvt.h \
+		../../bullet/LinearMath/btQuickprof.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3Internal.h \
+		../../bullet/LinearMath/btDefaultMotionState.h \
+		../../bullet/LinearMath/btIDebugDraw.h \
+		../../bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btDynamicsWorld.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btContactSolverInfo.h \
+		../../bullet/LinearMath/btThreads.h \
+		../../bullet/BulletDynamics/Dynamics/btSimpleDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btRigidBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btJacobianEntry.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btTypedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHingeConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSliderConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btUniversalConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHinge2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGearConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btFixedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConstraintSolver.h \
+		../../bullet/BulletDynamics/Vehicle/btRaycastVehicle.h \
+		../../bullet/BulletDynamics/Vehicle/btVehicleRaycaster.h \
+		../../bullet/BulletDynamics/Vehicle/btWheelInfo.h \
+		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
+		../../core/Network/networkmanager.h \
+		../../core/Network/networktransport.h \
+		../../core/Network/libs/TransformUpdate.h \
+		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
+		../../GUI/Timing/graphwidget.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Toolbars/runtimetoolbar.h -o moc_runtimetoolbar.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Toolbars/runtimetoolbar.h -o moc_runtimetoolbar.cpp
 
 moc_standardtoolbar.cpp: ../../GUI/Toolbars/standardtoolbar.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Toolbars/standardtoolbar.h -o moc_standardtoolbar.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/Toolbars/standardtoolbar.h -o moc_standardtoolbar.cpp
 
 moc_docktitlemenu.cpp: ../../GUI/docktitlemenu/docktitlemenu.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/docktitlemenu/docktitlemenu.h -o moc_docktitlemenu.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/docktitlemenu/docktitlemenu.h -o moc_docktitlemenu.cpp
 
 moc_mainwindow.cpp: ../../GUI/mainwindow.h \
 		../../GUI/Editors/databaseeditor.h \
@@ -4668,12 +5550,16 @@ moc_mainwindow.cpp: ../../GUI/mainwindow.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -4800,10 +5686,12 @@ moc_mainwindow.cpp: ../../GUI/mainwindow.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../GUI/Menubars/profileinfodialog.h \
 		../../GUI/Editors/scenarioeditor.h \
 		../../GUI/Toolbars/designtoolbar.h \
@@ -4813,9 +5701,15 @@ moc_mainwindow.cpp: ../../GUI/mainwindow.h \
 		../../GUI/Feedback/projectinformation.h \
 		../../GUI/Testscript/textscriptwidget.h \
 		../../GUI/Editors/customresizableoverlaydock.h \
+		../../GUI/Editors/missioneditor.h \
+		../../GUI/DOCTRINE/doctrineparameters.h \
+		../../GUI/DOCTRINE/tacticalrules.h \
+		../../GUI/DOCTRINE/doctrineassumptionsnotes.h \
+		../../GUI/DOCTRINE/doctrineareadefinition.h \
 		../../GUI/Editors/runtimeeditor.h \
 		../../GUI/Toolbars/runtimetoolbar.h \
 		../../GUI/Logger/loggerdialog.h \
+		../../core/SQLite/sqlite.h \
 		../../GUI/Timing/graphwidget.h \
 		../../GUI/Toolbars/networktoolbar.h \
 		../../core/structure/runtime.h \
@@ -4826,21 +5720,29 @@ moc_mainwindow.cpp: ../../GUI/mainwindow.h \
 		../../sharedMemorylib/EntityHandler.h \
 		../../sharedMemorylib/struct.h \
 		../../GUI/Panel/radardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../GUI/Panel/iffdisplay.h \
 		../../GUI/Panel/radiodisplay.h \
 		../../core/Hierarchy/EntityProfiles/radio.h \
 		../../GUI/Panel/csmdisplay.h \
 		../../GUI/Panel/esmdisplay.h \
+		../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
 		../../GUI/Navigation/navigationpage.h \
 		../../GUI/Settings/applicationdialog.h \
+		../../GUI/Editors/analysiseditor.h \
+		../../GUI/Editors/reportseditor.h \
+		../../GUI/statusbar.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/mainwindow.h -o moc_mainwindow.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/mainwindow.h -o moc_mainwindow.cpp
 
 moc_measuredistancedialog.cpp: ../../GUI/measuredistance/measuredistancedialog.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/measuredistance/measuredistancedialog.h -o moc_measuredistancedialog.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/measuredistance/measuredistancedialog.h -o moc_measuredistancedialog.cpp
 
 moc_scene3dwidget.cpp: ../../GUI/scene3dwidget/scene3dwidget.h \
 		../../core/Hierarchy/Struct/vector.h \
@@ -4852,33 +5754,38 @@ moc_scene3dwidget.cpp: ../../GUI/scene3dwidget/scene3dwidget.h \
 		../../core/Hierarchy/Struct/constants.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/scene3dwidget/scene3dwidget.h -o moc_scene3dwidget.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/scene3dwidget/scene3dwidget.h -o moc_scene3dwidget.cpp
+
+moc_statusbar.cpp: ../../GUI/statusbar.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../GUI/statusbar.h -o moc_statusbar.cpp
 
 moc_scenarioconfig.cpp: ../../core/Config/scenarioconfig.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Config/scenarioconfig.h -o moc_scenarioconfig.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Config/scenarioconfig.h -o moc_scenarioconfig.cpp
 
 moc_sessionmanager.cpp: ../../core/Config/sessionmanager.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Config/sessionmanager.h -o moc_sessionmanager.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Config/sessionmanager.h -o moc_sessionmanager.cpp
 
 moc_console.cpp: ../../core/Debug/console.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Debug/console.h -o moc_console.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Debug/console.h -o moc_console.cpp
 
 moc_frame.cpp: ../../core/Debug/frame.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Debug/frame.h -o moc_frame.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Debug/frame.h -o moc_frame.cpp
 
 moc_profiler.cpp: ../../core/Debug/profiler.h \
 		../../core/Debug/frame.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Debug/profiler.h -o moc_profiler.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Debug/profiler.h -o moc_profiler.cpp
 
 moc_attachedenitities.cpp: ../../core/Hierarchy/Components/attachedenitities.h \
 		../../core/Hierarchy/Components/component.h \
@@ -4886,7 +5793,7 @@ moc_attachedenitities.cpp: ../../core/Hierarchy/Components/attachedenitities.h \
 		../../core/Hierarchy/Struct/constants.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/attachedenitities.h -o moc_attachedenitities.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/attachedenitities.h -o moc_attachedenitities.cpp
 
 moc_collider.cpp: ../../core/Hierarchy/Components/collider.h \
 		../../core/Hierarchy/Components/component.h \
@@ -4895,14 +5802,14 @@ moc_collider.cpp: ../../core/Hierarchy/Components/collider.h \
 		../../core/Hierarchy/Struct/constants.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/collider.h -o moc_collider.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/collider.h -o moc_collider.cpp
 
 moc_crosssection.cpp: ../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/component.h \
 		../../core/Utility/uuid.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/crosssection.h -o moc_crosssection.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/crosssection.h -o moc_crosssection.cpp
 
 moc_dynamicmodel.cpp: ../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/transform.h \
@@ -4928,7 +5835,7 @@ moc_dynamicmodel.cpp: ../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Struct/waypoints.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/dynamicmodel.h -o moc_dynamicmodel.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/dynamicmodel.h -o moc_dynamicmodel.cpp
 
 moc_iffprofile.cpp: ../../core/Hierarchy/Components/iffprofile.h \
 		../../core/Hierarchy/Components/component.h \
@@ -4964,19 +5871,16 @@ moc_iffprofile.cpp: ../../core/Hierarchy/Components/iffprofile.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/iffprofile.h -o moc_iffprofile.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/iffprofile.h -o moc_iffprofile.cpp
 
 moc_mesh.cpp: ../../core/Hierarchy/Components/mesh.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Struct/vector.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/mesh.h -o moc_mesh.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/mesh.h -o moc_mesh.cpp
 
 moc_meshrenderer2d.cpp: ../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Components/component.h \
@@ -4986,18 +5890,15 @@ moc_meshrenderer2d.cpp: ../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Struct/vector.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/meshrenderer2d.h -o moc_meshrenderer2d.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/meshrenderer2d.h -o moc_meshrenderer2d.cpp
 
 moc_mission.cpp: ../../core/Hierarchy/Components/mission.h \
 		../../core/Hierarchy/Components/component.h \
 		../../core/Utility/uuid.h \
 		../../core/Hierarchy/Struct/constants.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/mission.h -o moc_mission.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/mission.h -o moc_mission.cpp
 
 moc_networkobject.cpp: ../../core/Hierarchy/Components/networkobject.h \
 		../../core/Hierarchy/Components/transform.h \
@@ -5022,14 +5923,14 @@ moc_networkobject.cpp: ../../core/Hierarchy/Components/networkobject.h \
 		../../core/Hierarchy/Struct/constants.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/networkobject.h -o moc_networkobject.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/networkobject.h -o moc_networkobject.cpp
 
 moc_radioprofile.cpp: ../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/component.h \
 		../../core/Utility/uuid.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/radioprofile.h -o moc_radioprofile.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/radioprofile.h -o moc_radioprofile.cpp
 
 moc_rigidbody.cpp: ../../core/Hierarchy/Components/rigidbody.h \
 		../../core/Hierarchy/Components/component.h \
@@ -5037,7 +5938,7 @@ moc_rigidbody.cpp: ../../core/Hierarchy/Components/rigidbody.h \
 		../../core/Hierarchy/Struct/vector.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/rigidbody.h -o moc_rigidbody.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/rigidbody.h -o moc_rigidbody.cpp
 
 moc_sensorprofile.cpp: ../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/Components/component.h \
@@ -5073,12 +5974,9 @@ moc_sensorprofile.cpp: ../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/sensorprofile.h -o moc_sensorprofile.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/sensorprofile.h -o moc_sensorprofile.cpp
 
 moc_trajectory.cpp: ../../core/Hierarchy/Components/trajectory.h \
 		../../core/Hierarchy/Components/component.h \
@@ -5088,7 +5986,7 @@ moc_trajectory.cpp: ../../core/Hierarchy/Components/trajectory.h \
 		../../core/Hierarchy/Struct/geocords.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/trajectory.h -o moc_trajectory.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/trajectory.h -o moc_trajectory.cpp
 
 moc_transform.cpp: ../../core/Hierarchy/Components/transform.h \
 		../../core/Hierarchy/Components/component.h \
@@ -5110,7 +6008,46 @@ moc_transform.cpp: ../../core/Hierarchy/Components/transform.h \
 		../../dis7/PduSuperclass.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/transform.h -o moc_transform.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/transform.h -o moc_transform.cpp
+
+moc_weaponprofile.cpp: ../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Components/weaponprofile.h -o moc_weaponprofile.cpp
 
 moc_csm.cpp: ../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
@@ -5146,12 +6083,9 @@ moc_csm.cpp: ../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.h -o moc_csm.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.h -o moc_csm.cpp
 
 moc_esm.cpp: ../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
@@ -5187,14 +6121,12 @@ moc_esm.cpp: ../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.h -o moc_esm.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.h -o moc_esm.cpp
 
 moc_radar.cpp: ../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
 		../../core/Hierarchy/entity.h \
 		../../core/Hierarchy/Components/attachedenitities.h \
@@ -5228,12 +6160,49 @@ moc_radar.cpp: ../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h -o moc_radar.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h -o moc_radar.cpp
+
+moc_sonar.cpp: ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h \
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h -o moc_sonar.cpp
 
 moc_fixedpoints.cpp: ../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/entity.h \
@@ -5268,12 +6237,9 @@ moc_fixedpoints.cpp: ../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/fixedpoints.h -o moc_fixedpoints.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/fixedpoints.h -o moc_fixedpoints.cpp
 
 moc_formation.cpp: ../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -5309,12 +6275,9 @@ moc_formation.cpp: ../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/formation.h -o moc_formation.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/formation.h -o moc_formation.cpp
 
 moc_iff.cpp: ../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/entity.h \
@@ -5349,12 +6312,9 @@ moc_iff.cpp: ../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/iff.h -o moc_iff.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/iff.h -o moc_iff.cpp
 
 moc_platform.cpp: ../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
@@ -5392,15 +6352,19 @@ moc_platform.cpp: ../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/platform.h -o moc_platform.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/platform.h -o moc_platform.cpp
 
 moc_radio.cpp: ../../core/Hierarchy/EntityProfiles/radio.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
@@ -5439,15 +6403,19 @@ moc_radio.cpp: ../../core/Hierarchy/EntityProfiles/radio.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/radio.h -o moc_radio.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/radio.h -o moc_radio.cpp
 
 moc_sensor.cpp: ../../core/Hierarchy/EntityProfiles/sensor.h \
 		../../core/Hierarchy/entity.h \
@@ -5482,12 +6450,9 @@ moc_sensor.cpp: ../../core/Hierarchy/EntityProfiles/sensor.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/sensor.h -o moc_sensor.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/sensor.h -o moc_sensor.cpp
 
 moc_specialzone.cpp: ../../core/Hierarchy/EntityProfiles/specialzone.h \
 		../../core/Hierarchy/entity.h \
@@ -5522,14 +6487,11 @@ moc_specialzone.cpp: ../../core/Hierarchy/EntityProfiles/specialzone.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/specialzone.h -o moc_specialzone.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/specialzone.h -o moc_specialzone.cpp
 
-moc_weapons.cpp: ../../core/Hierarchy/EntityProfiles/weapons.h \
+moc_weapon.cpp: ../../core/Hierarchy/EntityProfiles/weapon.h \
 		../../core/Hierarchy/entity.h \
 		../../core/Hierarchy/Components/attachedenitities.h \
 		../../core/Hierarchy/Components/component.h \
@@ -5562,34 +6524,305 @@ moc_weapons.cpp: ../../core/Hierarchy/EntityProfiles/weapons.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
+		../../core/Hierarchy/Components/crosssection.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/weapons.h -o moc_weapons.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/weapon.h -o moc_weapon.cpp
+
+moc_artillery.cpp: ../../core/Hierarchy/EntityProfiles/weapons/artillery.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/weapons/artillery.h -o moc_artillery.cpp
+
+moc_bomb.cpp: ../../core/Hierarchy/EntityProfiles/weapons/bomb.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/weapons/bomb.h -o moc_bomb.cpp
+
+moc_chaff.cpp: ../../core/Hierarchy/EntityProfiles/weapons/chaff.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/weapons/chaff.h -o moc_chaff.cpp
+
+moc_flare.cpp: ../../core/Hierarchy/EntityProfiles/weapons/flare.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/weapons/flare.h -o moc_flare.cpp
+
+moc_missile.cpp: ../../core/Hierarchy/EntityProfiles/weapons/missile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/weapons/missile.h -o moc_missile.cpp
+
+moc_rocket.cpp: ../../core/Hierarchy/EntityProfiles/weapons/rocket.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/weapons/rocket.h -o moc_rocket.cpp
+
+moc_torpedo.cpp: ../../core/Hierarchy/EntityProfiles/weapons/torpedo.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/EntityProfiles/weapons/torpedo.h -o moc_torpedo.cpp
 
 moc_action.cpp: ../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Struct/constants.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/action.h -o moc_action.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/action.h -o moc_action.cpp
 
 moc_color.cpp: ../../core/Hierarchy/Struct/color.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/color.h -o moc_color.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/color.h -o moc_color.cpp
 
 moc_condition.cpp: ../../core/Hierarchy/Struct/condition.h \
 		../../core/Hierarchy/Struct/constants.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/condition.h -o moc_condition.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/condition.h -o moc_condition.cpp
 
 moc_constants.cpp: ../../core/Hierarchy/Struct/constants.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/constants.h -o moc_constants.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/constants.h -o moc_constants.cpp
 
 moc_formationposition.cpp: ../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/entity.h \
@@ -5624,39 +6857,28 @@ moc_formationposition.cpp: ../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/formationposition.h -o moc_formationposition.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/formationposition.h -o moc_formationposition.cpp
 
 moc_geocords.cpp: ../../core/Hierarchy/Struct/geocords.h \
 		../../core/Hierarchy/Struct/vector.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/geocords.h -o moc_geocords.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/geocords.h -o moc_geocords.cpp
 
 moc_parameter.cpp: ../../core/Hierarchy/Struct/parameter.h \
 		../../core/Hierarchy/Struct/constants.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/parameter.h -o moc_parameter.cpp
-
-moc_task.cpp: ../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/constants.h \
-		../../core/Hierarchy/Struct/action.h \
-		moc_predefs.h \
-		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/task.h -o moc_task.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/parameter.h -o moc_parameter.cpp
 
 moc_waypoints.cpp: ../../core/Hierarchy/Struct/waypoints.h \
 		../../core/Hierarchy/Struct/vector.h \
 		../../core/Hierarchy/Struct/geocords.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/waypoints.h -o moc_waypoints.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/Struct/waypoints.h -o moc_waypoints.cpp
 
 moc_entity.cpp: ../../core/Hierarchy/entity.h \
 		../../core/Hierarchy/Components/attachedenitities.h \
@@ -5690,12 +6912,9 @@ moc_entity.cpp: ../../core/Hierarchy/entity.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/entity.h -o moc_entity.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/entity.h -o moc_entity.cpp
 
 moc_folder.cpp: ../../core/Hierarchy/folder.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
@@ -5734,15 +6953,19 @@ moc_folder.cpp: ../../core/Hierarchy/folder.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/folder.h -o moc_folder.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/folder.h -o moc_folder.cpp
 
 moc_hierarchy.cpp: ../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
@@ -5783,19 +7006,23 @@ moc_hierarchy.cpp: ../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/hierarchy.h -o moc_hierarchy.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/hierarchy.h -o moc_hierarchy.cpp
 
 moc_profilecategaory.cpp: ../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -5835,20 +7062,24 @@ moc_profilecategaory.cpp: ../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/profilecategaory.h -o moc_profilecategaory.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Hierarchy/profilecategaory.h -o moc_profilecategaory.cpp
 
 moc_inputmanager.cpp: ../../core/InputSystem/inputmanager.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/InputSystem/inputmanager.h -o moc_inputmanager.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/InputSystem/inputmanager.h -o moc_inputmanager.cpp
 
 moc_networkmanager.cpp: ../../core/Network/networkmanager.h \
 		../../core/Hierarchy/profilecategaory.h \
@@ -5889,12 +7120,16 @@ moc_networkmanager.cpp: ../../core/Network/networkmanager.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Network/networktransport.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
@@ -5904,12 +7139,12 @@ moc_networkmanager.cpp: ../../core/Network/networkmanager.h \
 		../../core/Network/libs/TransformUpdate.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Network/networkmanager.h -o moc_networkmanager.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Network/networkmanager.h -o moc_networkmanager.cpp
 
 moc_networktransport.cpp: ../../core/Network/networktransport.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Network/networktransport.h -o moc_networktransport.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Network/networktransport.h -o moc_networktransport.cpp
 
 moc_pluginmanager.cpp: ../../core/Plugins/pluginmanager.h \
 		../../core/Config/scenarioconfig.h \
@@ -5952,12 +7187,16 @@ moc_pluginmanager.cpp: ../../core/Plugins/pluginmanager.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -6065,15 +7304,17 @@ moc_pluginmanager.cpp: ../../core/Plugins/pluginmanager.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../core/Render/scenerenderer.h \
 		../../core/Debug/console.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Plugins/pluginmanager.h -o moc_pluginmanager.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Plugins/pluginmanager.h -o moc_pluginmanager.cpp
 
 moc_recorder.cpp: ../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
@@ -6109,9 +7350,6 @@ moc_recorder.cpp: ../../core/Recorder/recorder.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
@@ -6119,9 +7357,19 @@ moc_recorder.cpp: ../../core/Recorder/recorder.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Recorder/payload.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Recorder/recorder.h -o moc_recorder.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Recorder/recorder.h -o moc_recorder.cpp
 
 moc_scenerenderer.cpp: ../../core/Render/scenerenderer.h \
 		../../core/Hierarchy/Components/mesh.h \
@@ -6156,9 +7404,6 @@ moc_scenerenderer.cpp: ../../core/Render/scenerenderer.h \
 		../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
@@ -6166,9 +7411,182 @@ moc_scenerenderer.cpp: ../../core/Render/scenerenderer.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Render/scenerenderer.h -o moc_scenerenderer.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Render/scenerenderer.h -o moc_scenerenderer.cpp
+
+moc_sqlite.cpp: ../../core/SQLite/sqlite.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/Hierarchy/EntityProfiles/platform.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Components/iffprofile.h \
+		../../core/Hierarchy/EntityProfiles/iff.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/radioprofile.h \
+		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
+		../../core/Hierarchy/EntityProfiles/formation.h \
+		../../core/Hierarchy/Struct/formationposition.h \
+		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		../../core/Simulation/simulation.h \
+		../../bullet/btBulletDynamicsCommon.h \
+		../../bullet/btBulletCollisionCommon.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionWorld.h \
+		../../bullet/LinearMath/btVector3.h \
+		../../bullet/LinearMath/btScalar.h \
+		../../bullet/LinearMath/btMinMax.h \
+		../../bullet/LinearMath/btAlignedAllocator.h \
+		../../bullet/LinearMath/btTransform.h \
+		../../bullet/LinearMath/btMatrix3x3.h \
+		../../bullet/LinearMath/btQuaternion.h \
+		../../bullet/LinearMath/btQuadWord.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObject.h \
+		../../bullet/LinearMath/btMotionState.h \
+		../../bullet/LinearMath/btAlignedObjectArray.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionDispatcher.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDispatcher.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btPersistentManifold.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btManifoldPoint.h \
+		../../bullet/LinearMath/btTransformUtil.h \
+		../../bullet/BulletCollision/CollisionDispatch/btManifoldResult.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btDiscreteCollisionDetectorInterface.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseProxy.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionCreateFunc.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCache.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseInterface.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btBoxShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btPolyhedralConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexInternalShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionMargin.h \
+		../../bullet/LinearMath/btAabbUtil2.h \
+		../../bullet/BulletCollision/CollisionShapes/btSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCapsuleShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCylinderShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConeShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btStaticPlaneShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConcaveShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexHullShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMesh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h \
+		../../bullet/BulletCollision/CollisionShapes/btStridingMeshInterface.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btOptimizedBvh.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btQuantizedBvh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleInfoMap.h \
+		../../bullet/LinearMath/btHashMap.h \
+		../../bullet/LinearMath/btSerializer.h \
+		../../bullet/BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCompoundShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTetrahedronShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btEmptyShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btMultiSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btUniformScalingShape.h \
+		../../bullet/BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btActivatingCollisionAlgorithm.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionConfiguration.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btSimpleBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvtBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvt.h \
+		../../bullet/LinearMath/btQuickprof.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3Internal.h \
+		../../bullet/LinearMath/btDefaultMotionState.h \
+		../../bullet/LinearMath/btIDebugDraw.h \
+		../../bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btDynamicsWorld.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btContactSolverInfo.h \
+		../../bullet/LinearMath/btThreads.h \
+		../../bullet/BulletDynamics/Dynamics/btSimpleDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btRigidBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btJacobianEntry.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btTypedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHingeConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSliderConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btUniversalConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHinge2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGearConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btFixedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConstraintSolver.h \
+		../../bullet/BulletDynamics/Vehicle/btRaycastVehicle.h \
+		../../bullet/BulletDynamics/Vehicle/btVehicleRaycaster.h \
+		../../bullet/BulletDynamics/Vehicle/btWheelInfo.h \
+		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
+		../../core/Recorder/recorder.h \
+		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
+		../../core/Network/networkmanager.h \
+		../../core/Network/networktransport.h \
+		../../core/Network/libs/TransformUpdate.h \
+		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/SQLite/sqlite.h -o moc_sqlite.cpp
 
 moc_scriptengine.cpp: ../../core/ScriptEngine/scriptengine.h \
 		../../GUI/Hierarchytree/hierarchytree.h \
@@ -6204,9 +7622,6 @@ moc_scriptengine.cpp: ../../core/ScriptEngine/scriptengine.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -6217,6 +7632,13 @@ moc_scriptengine.cpp: ../../core/ScriptEngine/scriptengine.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -6232,7 +7654,7 @@ moc_scriptengine.cpp: ../../core/ScriptEngine/scriptengine.h \
 		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/ScriptEngine/scriptengine.h -o moc_scriptengine.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/ScriptEngine/scriptengine.h -o moc_scriptengine.cpp
 
 moc_sharedmemorywrapper.cpp: ../../core/SharedMemory/sharedmemorywrapper.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
@@ -6268,15 +7690,12 @@ moc_sharedmemorywrapper.cpp: ../../core/SharedMemory/sharedmemorywrapper.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../sharedMemorylib/sharedMemory.h \
 		../../sharedMemorylib/EntityHandler.h \
 		../../sharedMemorylib/struct.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/SharedMemory/sharedmemorywrapper.h -o moc_sharedmemorywrapper.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/SharedMemory/sharedmemorywrapper.h -o moc_sharedmemorywrapper.cpp
 
 moc_simulation.cpp: ../../core/Simulation/simulation.h \
 		../../bullet/btBulletDynamicsCommon.h \
@@ -6410,9 +7829,6 @@ moc_simulation.cpp: ../../core/Simulation/simulation.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
@@ -6420,11 +7836,19 @@ moc_simulation.cpp: ../../core/Simulation/simulation.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
-		../../core/Network/networkmanager.h \
+		../../core/Recorder/payload.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
+		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
@@ -6433,14 +7857,15 @@ moc_simulation.cpp: ../../core/Simulation/simulation.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Simulation/simulation.h -o moc_simulation.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Simulation/simulation.h -o moc_simulation.cpp
 
 moc_simulation_state.cpp: ../../core/Simulation/simulation_state.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Simulation/simulation_state.h -o moc_simulation_state.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/Simulation/simulation_state.h -o moc_simulation_state.cpp
 
 moc_database.cpp: ../../core/structure/database.h \
 		../../core/Config/scenarioconfig.h \
@@ -6483,12 +7908,16 @@ moc_database.cpp: ../../core/structure/database.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -6596,15 +8025,17 @@ moc_database.cpp: ../../core/structure/database.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../core/Render/scenerenderer.h \
 		../../core/Debug/console.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/structure/database.h -o moc_database.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/structure/database.h -o moc_database.cpp
 
 moc_missioncreator.cpp: ../../core/structure/missioncreator.h \
 		../../core/Hierarchy/folder.h \
@@ -6644,15 +8075,19 @@ moc_missioncreator.cpp: ../../core/structure/missioncreator.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/structure/missioncreator.h -o moc_missioncreator.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/structure/missioncreator.h -o moc_missioncreator.cpp
 
 moc_missionexcuter.cpp: ../../core/structure/missionexcuter.h \
 		../../core/Hierarchy/entity.h \
@@ -6687,12 +8122,9 @@ moc_missionexcuter.cpp: ../../core/structure/missionexcuter.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/structure/missionexcuter.h -o moc_missionexcuter.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/structure/missionexcuter.h -o moc_missionexcuter.cpp
 
 moc_runtime.cpp: ../../core/structure/runtime.h \
 		../../core/Config/scenarioconfig.h \
@@ -6735,12 +8167,16 @@ moc_runtime.cpp: ../../core/structure/runtime.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -6848,10 +8284,12 @@ moc_runtime.cpp: ../../core/structure/runtime.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../core/Render/scenerenderer.h \
 		../../core/Debug/console.h \
 		../../core/Debug/profiler.h \
@@ -6870,9 +8308,10 @@ moc_runtime.cpp: ../../core/structure/runtime.h \
 		../../sharedMemorylib/sharedMemory.h \
 		../../sharedMemorylib/EntityHandler.h \
 		../../sharedMemorylib/struct.h \
+		../../core/SQLite/sqlite.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/structure/runtime.h -o moc_runtime.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/structure/runtime.h -o moc_runtime.cpp
 
 moc_scenario.cpp: ../../core/structure/scenario.h \
 		../../core/ScriptEngine/scriptengine.h \
@@ -6909,9 +8348,6 @@ moc_scenario.cpp: ../../core/structure/scenario.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -6922,6 +8358,13 @@ moc_scenario.cpp: ../../core/structure/scenario.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -7039,34 +8482,112 @@ moc_scenario.cpp: ../../core/structure/scenario.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../core/Debug/console.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_2.0.93_19feb/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/structure/scenario.h -o moc_scenario.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../core/structure/scenario.h -o moc_scenario.cpp
+
+moc_actions.cpp: ../../mission/actions.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../mission/actions.h -o moc_actions.cpp
+
+moc_ifcondition.cpp: ../../mission/ifcondition.h \
+		../../mission/actions.h \
+		../../mission/inputs.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../mission/ifcondition.h -o moc_ifcondition.cpp
+
+moc_inputs.cpp: ../../mission/inputs.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../mission/inputs.h -o moc_inputs.cpp
+
+moc_task.cpp: ../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../mission/task.h -o moc_task.cpp
+
+moc_taskgroup.cpp: ../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/angelscript/include -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/bullet -I/usr/include/qgis -I/usr/include/qgis/core -I/usr/include/qgis/gui -I/usr/include/qgis/analysis -I/home/arti-rajpoot/Downloads/TDF_3.0.43_17mrach/sharedMemorylib -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtSvg -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/Qt3DExtras -I/usr/include/x86_64-linux-gnu/qt5/Qt3DRender -I/usr/include/x86_64-linux-gnu/qt5/Qt3DInput -I/usr/include/x86_64-linux-gnu/qt5/Qt3DLogic -I/usr/include/x86_64-linux-gnu/qt5/Qt3DCore -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtWebSockets -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../mission/taskgroup.h -o moc_taskgroup.cpp
 
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:
 compiler_moc_source_make_all:
 compiler_moc_source_clean:
-compiler_uic_make_all:
+compiler_uic_make_all: ui_actions.h ui_ifcondition.h ui_inputs.h ui_task.h ui_taskgroup.h
 compiler_uic_clean:
+	-$(DEL_FILE) ui_actions.h ui_ifcondition.h ui_inputs.h ui_task.h ui_taskgroup.h
+ui_actions.h: ../../mission/actions.ui \
+		/usr/lib/qt5/bin/uic
+	/usr/lib/qt5/bin/uic ../../mission/actions.ui -o ui_actions.h
+
+ui_ifcondition.h: ../../mission/ifcondition.ui \
+		/usr/lib/qt5/bin/uic
+	/usr/lib/qt5/bin/uic ../../mission/ifcondition.ui -o ui_ifcondition.h
+
+ui_inputs.h: ../../mission/inputs.ui \
+		/usr/lib/qt5/bin/uic
+	/usr/lib/qt5/bin/uic ../../mission/inputs.ui -o ui_inputs.h
+
+ui_task.h: ../../mission/task.ui \
+		/usr/lib/qt5/bin/uic
+	/usr/lib/qt5/bin/uic ../../mission/task.ui -o ui_task.h
+
+ui_taskgroup.h: ../../mission/taskgroup.ui \
+		/usr/lib/qt5/bin/uic
+	/usr/lib/qt5/bin/uic ../../mission/taskgroup.ui -o ui_taskgroup.h
+
 compiler_yacc_decl_make_all:
 compiler_yacc_decl_clean:
 compiler_yacc_impl_make_all:
 compiler_yacc_impl_clean:
 compiler_lex_make_all:
 compiler_lex_clean:
-compiler_clean: compiler_rcc_clean compiler_moc_predefs_clean compiler_moc_header_clean 
+compiler_clean: compiler_rcc_clean compiler_moc_predefs_clean compiler_moc_header_clean compiler_uic_clean 
 
 ####### Compile
 
 consoleview.o: ../../GUI/Console/consoleview.cpp ../../GUI/Console/consoleview.h \
 		../../GUI/Console/consoleview-styles.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o consoleview.o ../../GUI/Console/consoleview.cpp
+
+doctrineareadefinition.o: ../../GUI/DOCTRINE/doctrineareadefinition.cpp ../../GUI/DOCTRINE/doctrineareadefinition.h \
+		../../GUI/DOCTRINE/doctrine-styles.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o doctrineareadefinition.o ../../GUI/DOCTRINE/doctrineareadefinition.cpp
+
+doctrineassumptionsnotes.o: ../../GUI/DOCTRINE/doctrineassumptionsnotes.cpp ../../GUI/DOCTRINE/doctrineassumptionsnotes.h \
+		../../GUI/DOCTRINE/doctrine-styles.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o doctrineassumptionsnotes.o ../../GUI/DOCTRINE/doctrineassumptionsnotes.cpp
+
+doctrineparameters.o: ../../GUI/DOCTRINE/doctrineparameters.cpp ../../GUI/DOCTRINE/doctrineparameters.h \
+		../../GUI/DOCTRINE/doctrine-styles.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o doctrineparameters.o ../../GUI/DOCTRINE/doctrineparameters.cpp
+
+tacticalrules.o: ../../GUI/DOCTRINE/tacticalrules.cpp ../../GUI/DOCTRINE/tacticalrules.h \
+		../../GUI/DOCTRINE/tactical-styles.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o tacticalrules.o ../../GUI/DOCTRINE/tacticalrules.cpp
+
+analysiseditor.o: ../../GUI/Editors/analysiseditor.cpp ../../GUI/Editors/analysiseditor.h \
+		../../GUI/Editors/recentprojectsmanager.h \
+		../../GUI/Editors/reportseditor.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o analysiseditor.o ../../GUI/Editors/analysiseditor.cpp
 
 customresizableoverlaydock.o: ../../GUI/Editors/customresizableoverlaydock.cpp ../../GUI/Editors/customresizableoverlaydock.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o customresizableoverlaydock.o ../../GUI/Editors/customresizableoverlaydock.cpp
@@ -7113,12 +8634,16 @@ databaseeditor.o: ../../GUI/Editors/databaseeditor.cpp ../../GUI/Editors/databas
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -7245,10 +8770,12 @@ databaseeditor.o: ../../GUI/Editors/databaseeditor.cpp ../../GUI/Editors/databas
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../GUI/Menubars/profileinfodialog.h \
 		../../GUI/Feedback/projectinformation.h \
 		../../GUI/Menubars/menubar.h \
@@ -7258,8 +8785,206 @@ databaseeditor.o: ../../GUI/Editors/databaseeditor.cpp ../../GUI/Editors/databas
 		../../GUI/Inspector/inspector-styles.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o databaseeditor.o ../../GUI/Editors/databaseeditor.cpp
 
+missioneditor.o: ../../GUI/Editors/missioneditor.cpp ../../GUI/Editors/missioneditor.h \
+		../../GUI/Hierarchytree/hierarchyconnector.h \
+		../../GUI/Inspector/inspector.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/Hierarchy/EntityProfiles/platform.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Components/iffprofile.h \
+		../../core/Hierarchy/EntityProfiles/iff.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/radioprofile.h \
+		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
+		../../core/Hierarchy/EntityProfiles/formation.h \
+		../../core/Hierarchy/Struct/formationposition.h \
+		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		../../GUI/Tacticaldisplay/tacticaldisplay.h \
+		../../core/Render/scenerenderer.h \
+		../../GUI/Tacticaldisplay/canvaswidget.h \
+		../../GUI/Tacticaldisplay/Gis/gislib.h \
+		../../GUI/Tacticaldisplay/Gis/gisnetwork.h \
+		../../GUI/measuredistance/measuredistancedialog.h \
+		../../GUI/Tacticaldisplay/Gis/shapes_feature.h \
+		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
+		../../GUI/scene3dwidget/scene3dwidget.h \
+		../../GUI/Tacticaldisplay/scalebar.h \
+		../../GUI/Hierarchytree/hierarchytree.h \
+		../../GUI/Editors/recentprojectsmanager.h \
+		../../GUI/Console/consoleview.h \
+		../../core/Debug/console.h \
+		../../core/structure/scenario.h \
+		../../core/ScriptEngine/scriptengine.h \
+		../../angelscript/include/angelscript.h \
+		../../angelscript/add_on/scriptarray/scriptarray.h \
+		../../core/Config/scenarioconfig.h \
+		../../core/Config/sessionmanager.h \
+		../../core/Simulation/simulation.h \
+		../../bullet/btBulletDynamicsCommon.h \
+		../../bullet/btBulletCollisionCommon.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionWorld.h \
+		../../bullet/LinearMath/btVector3.h \
+		../../bullet/LinearMath/btScalar.h \
+		../../bullet/LinearMath/btMinMax.h \
+		../../bullet/LinearMath/btAlignedAllocator.h \
+		../../bullet/LinearMath/btTransform.h \
+		../../bullet/LinearMath/btMatrix3x3.h \
+		../../bullet/LinearMath/btQuaternion.h \
+		../../bullet/LinearMath/btQuadWord.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObject.h \
+		../../bullet/LinearMath/btMotionState.h \
+		../../bullet/LinearMath/btAlignedObjectArray.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionDispatcher.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDispatcher.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btPersistentManifold.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btManifoldPoint.h \
+		../../bullet/LinearMath/btTransformUtil.h \
+		../../bullet/BulletCollision/CollisionDispatch/btManifoldResult.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btDiscreteCollisionDetectorInterface.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseProxy.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionCreateFunc.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCache.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseInterface.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btBoxShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btPolyhedralConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexInternalShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionMargin.h \
+		../../bullet/LinearMath/btAabbUtil2.h \
+		../../bullet/BulletCollision/CollisionShapes/btSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCapsuleShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCylinderShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConeShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btStaticPlaneShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConcaveShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexHullShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMesh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h \
+		../../bullet/BulletCollision/CollisionShapes/btStridingMeshInterface.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btOptimizedBvh.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btQuantizedBvh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleInfoMap.h \
+		../../bullet/LinearMath/btHashMap.h \
+		../../bullet/LinearMath/btSerializer.h \
+		../../bullet/BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCompoundShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTetrahedronShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btEmptyShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btMultiSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btUniformScalingShape.h \
+		../../bullet/BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btActivatingCollisionAlgorithm.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionConfiguration.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btSimpleBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvtBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvt.h \
+		../../bullet/LinearMath/btQuickprof.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3Internal.h \
+		../../bullet/LinearMath/btDefaultMotionState.h \
+		../../bullet/LinearMath/btIDebugDraw.h \
+		../../bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btDynamicsWorld.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btContactSolverInfo.h \
+		../../bullet/LinearMath/btThreads.h \
+		../../bullet/BulletDynamics/Dynamics/btSimpleDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btRigidBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btJacobianEntry.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btTypedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHingeConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSliderConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btUniversalConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHinge2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGearConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btFixedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConstraintSolver.h \
+		../../bullet/BulletDynamics/Vehicle/btRaycastVehicle.h \
+		../../bullet/BulletDynamics/Vehicle/btVehicleRaycaster.h \
+		../../bullet/BulletDynamics/Vehicle/btWheelInfo.h \
+		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
+		../../core/Recorder/recorder.h \
+		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
+		../../core/Network/networkmanager.h \
+		../../core/Network/networktransport.h \
+		../../core/Network/libs/TransformUpdate.h \
+		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
+		../../GUI/DOCTRINE/doctrineparameters.h \
+		../../GUI/DOCTRINE/tacticalrules.h \
+		../../GUI/DOCTRINE/doctrineassumptionsnotes.h \
+		../../GUI/DOCTRINE/doctrineareadefinition.h \
+		../../GUI/Menubars/profileinfodialog.h \
+		../../GUI/Feedback/projectinformation.h \
+		../../GUI/Menubars/menubar.h \
+		../../GUI/Toolbars/standardtoolbar.h \
+		../../GUI/Settings/applicationdialog.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o missioneditor.o ../../GUI/Editors/missioneditor.cpp
+
 recentprojectsmanager.o: ../../GUI/Editors/recentprojectsmanager.cpp ../../GUI/Editors/recentprojectsmanager.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o recentprojectsmanager.o ../../GUI/Editors/recentprojectsmanager.cpp
+
+reportseditor.o: ../../GUI/Editors/reportseditor.cpp ../../GUI/Editors/reportseditor.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o reportseditor.o ../../GUI/Editors/reportseditor.cpp
 
 runtimeeditor.o: ../../GUI/Editors/runtimeeditor.cpp ../../GUI/Editors/runtimeeditor.h \
 		../../GUI/Console/consoleview.h \
@@ -7304,12 +9029,16 @@ runtimeeditor.o: ../../GUI/Editors/runtimeeditor.cpp ../../GUI/Editors/runtimeed
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -7334,14 +9063,8 @@ runtimeeditor.o: ../../GUI/Editors/runtimeeditor.cpp ../../GUI/Editors/runtimeed
 		../../GUI/Logger/loggerdialog.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
-		../../GUI/Timing/graphwidget.h \
-		../../GUI/Toolbars/networktoolbar.h \
-		../../core/Network/networkmanager.h \
-		../../core/Network/networktransport.h \
-		../../core/Network/libs/TransformUpdate.h \
-		../../core/Debug/console.h \
-		../../core/structure/runtime.h \
-		../../core/Config/sessionmanager.h \
+		../../core/Recorder/payload.h \
+		../../core/SQLite/sqlite.h \
 		../../core/Simulation/simulation.h \
 		../../bullet/btBulletDynamicsCommon.h \
 		../../bullet/btBulletCollisionCommon.h \
@@ -7442,7 +9165,16 @@ runtimeeditor.o: ../../GUI/Editors/runtimeeditor.cpp ../../GUI/Editors/runtimeed
 		../../bullet/BulletDynamics/Vehicle/btVehicleRaycaster.h \
 		../../bullet/BulletDynamics/Vehicle/btWheelInfo.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
+		../../core/Network/networkmanager.h \
+		../../core/Network/networktransport.h \
+		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
+		../../GUI/Timing/graphwidget.h \
+		../../GUI/Toolbars/networktoolbar.h \
+		../../core/Debug/console.h \
+		../../core/structure/runtime.h \
+		../../core/Config/sessionmanager.h \
 		../../core/Debug/profiler.h \
 		../../core/Debug/frame.h \
 		../../core/ScriptEngine/scriptengine.h \
@@ -7456,16 +9188,22 @@ runtimeeditor.o: ../../GUI/Editors/runtimeeditor.cpp ../../GUI/Editors/runtimeed
 		../../GUI/Feedback/projectinformation.h \
 		../../GUI/Testscript/textscriptwidget.h \
 		../../GUI/Panel/radardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../GUI/Panel/iffdisplay.h \
 		../../GUI/Panel/radiodisplay.h \
 		../../core/Hierarchy/EntityProfiles/radio.h \
 		../../GUI/Panel/csmdisplay.h \
 		../../GUI/Panel/esmdisplay.h \
+		../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
 		../../GUI/Menubars/profileinfodialog.h \
 		../../GUI/Editors/customresizableoverlaydock.h \
 		../../GUI/Sidebar/sidebarwidget.h \
 		../../core/structure/scenario.h \
-		../../GUI/Settings/applicationdialog.h
+		../../GUI/Settings/applicationdialog.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o runtimeeditor.o ../../GUI/Editors/runtimeeditor.cpp
 
 scenarioeditor.o: ../../GUI/Editors/scenarioeditor.cpp ../../GUI/Editors/scenarioeditor.h \
@@ -7511,12 +9249,16 @@ scenarioeditor.o: ../../GUI/Editors/scenarioeditor.cpp ../../GUI/Editors/scenari
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -7646,10 +9388,12 @@ scenarioeditor.o: ../../GUI/Editors/scenarioeditor.cpp ../../GUI/Editors/scenari
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../GUI/Editors/customresizableoverlaydock.h \
 		../../GUI/Sidebar/sidebarwidget.h \
 		../../core/structure/scenario.h \
@@ -7661,6 +9405,7 @@ scenarioeditor.o: ../../GUI/Editors/scenarioeditor.cpp ../../GUI/Editors/scenari
 		../../sharedMemorylib/sharedMemory.h \
 		../../sharedMemorylib/EntityHandler.h \
 		../../sharedMemorylib/struct.h \
+		../../core/SQLite/sqlite.h \
 		../../GUI/Menubars/profileinfodialog.h \
 		../../GUI/Settings/applicationdialog.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o scenarioeditor.o ../../GUI/Editors/scenarioeditor.cpp
@@ -7714,12 +9459,16 @@ additemdialog.o: ../../GUI/Hierarchytree/additemdialog.cpp ../../GUI/Hierarchytr
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -7851,10 +9600,12 @@ additemdialog.o: ../../GUI/Hierarchytree/additemdialog.cpp ../../GUI/Hierarchytr
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../GUI/Menubars/profileinfodialog.h \
 		../../GUI/Editors/scenarioeditor.h \
 		../../GUI/Toolbars/designtoolbar.h \
@@ -7864,9 +9615,15 @@ additemdialog.o: ../../GUI/Hierarchytree/additemdialog.cpp ../../GUI/Hierarchytr
 		../../GUI/Feedback/projectinformation.h \
 		../../GUI/Testscript/textscriptwidget.h \
 		../../GUI/Editors/customresizableoverlaydock.h \
+		../../GUI/Editors/missioneditor.h \
+		../../GUI/DOCTRINE/doctrineparameters.h \
+		../../GUI/DOCTRINE/tacticalrules.h \
+		../../GUI/DOCTRINE/doctrineassumptionsnotes.h \
+		../../GUI/DOCTRINE/doctrineareadefinition.h \
 		../../GUI/Editors/runtimeeditor.h \
 		../../GUI/Toolbars/runtimetoolbar.h \
 		../../GUI/Logger/loggerdialog.h \
+		../../core/SQLite/sqlite.h \
 		../../GUI/Timing/graphwidget.h \
 		../../GUI/Toolbars/networktoolbar.h \
 		../../core/structure/runtime.h \
@@ -7877,30 +9634,29 @@ additemdialog.o: ../../GUI/Hierarchytree/additemdialog.cpp ../../GUI/Hierarchytr
 		../../sharedMemorylib/EntityHandler.h \
 		../../sharedMemorylib/struct.h \
 		../../GUI/Panel/radardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../GUI/Panel/iffdisplay.h \
 		../../GUI/Panel/radiodisplay.h \
 		../../GUI/Panel/csmdisplay.h \
 		../../GUI/Panel/esmdisplay.h \
+		../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
 		../../GUI/Navigation/navigationpage.h \
 		../../GUI/Settings/applicationdialog.h \
+		../../GUI/Editors/analysiseditor.h \
+		../../GUI/Editors/reportseditor.h \
+		../../GUI/statusbar.h \
 		../../Setup.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o additemdialog.o ../../GUI/Hierarchytree/additemdialog.cpp
 
-contextmenu.o: ../../GUI/Hierarchytree/contextmenu.cpp ../../GUI/Hierarchytree/contextmenu.h \
-		../../GUI/Hierarchytree/additemdialog.h \
-		../../GUI/Hierarchytree/customtrajectorydialog.h \
-		../../GUI/Hierarchytree/contextmenu-styles.h \
-		../../core/Hierarchy/hierarchy.h \
-		../../core/Hierarchy/profilecategaory.h \
-		../../core/Hierarchy/folder.h \
-		../../core/Hierarchy/EntityProfiles/platform.h \
-		../../core/Hierarchy/Components/crosssection.h \
-		../../core/Hierarchy/Components/component.h \
-		../../core/Utility/uuid.h \
-		../../core/Hierarchy/Components/iffprofile.h \
-		../../core/Hierarchy/EntityProfiles/iff.h \
+addweapondialog.o: ../../GUI/Hierarchytree/addweapondialog.cpp ../../GUI/Hierarchytree/addweapondialog.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
 		../../core/Hierarchy/entity.h \
 		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
 		../../core/Hierarchy/Struct/constants.h \
 		../../core/Hierarchy/Components/transform.h \
 		../../core/Hierarchy/Struct/geocords.h \
@@ -7929,12 +9685,82 @@ contextmenu.o: ../../GUI/Hierarchytree/contextmenu.cpp ../../GUI/Hierarchytree/c
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/Hierarchy/EntityProfiles/platform.h \
+		../../core/Hierarchy/Components/iffprofile.h \
+		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
+		../../core/Hierarchy/EntityProfiles/formation.h \
+		../../core/Hierarchy/Struct/formationposition.h \
+		../../core/Hierarchy/EntityProfiles/specialzone.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o addweapondialog.o ../../GUI/Hierarchytree/addweapondialog.cpp
+
+contextmenu.o: ../../GUI/Hierarchytree/contextmenu.cpp ../../GUI/Hierarchytree/contextmenu.h \
+		../../GUI/Hierarchytree/additemdialog.h \
+		../../GUI/Hierarchytree/customtrajectorydialog.h \
+		../../GUI/Hierarchytree/contextmenu-styles.h \
+		../../GUI/Hierarchytree/addweapondialog.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/Hierarchy/EntityProfiles/platform.h \
+		../../core/Hierarchy/Components/iffprofile.h \
+		../../core/Hierarchy/EntityProfiles/iff.h \
+		../../core/Hierarchy/Components/radioprofile.h \
+		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -8065,10 +9891,12 @@ contextmenu.o: ../../GUI/Hierarchytree/contextmenu.cpp ../../GUI/Hierarchytree/c
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../GUI/Menubars/profileinfodialog.h \
 		../../GUI/Editors/scenarioeditor.h \
 		../../GUI/Toolbars/designtoolbar.h \
@@ -8078,9 +9906,15 @@ contextmenu.o: ../../GUI/Hierarchytree/contextmenu.cpp ../../GUI/Hierarchytree/c
 		../../GUI/Feedback/projectinformation.h \
 		../../GUI/Testscript/textscriptwidget.h \
 		../../GUI/Editors/customresizableoverlaydock.h \
+		../../GUI/Editors/missioneditor.h \
+		../../GUI/DOCTRINE/doctrineparameters.h \
+		../../GUI/DOCTRINE/tacticalrules.h \
+		../../GUI/DOCTRINE/doctrineassumptionsnotes.h \
+		../../GUI/DOCTRINE/doctrineareadefinition.h \
 		../../GUI/Editors/runtimeeditor.h \
 		../../GUI/Toolbars/runtimetoolbar.h \
 		../../GUI/Logger/loggerdialog.h \
+		../../core/SQLite/sqlite.h \
 		../../GUI/Timing/graphwidget.h \
 		../../GUI/Toolbars/networktoolbar.h \
 		../../core/structure/runtime.h \
@@ -8091,13 +9925,28 @@ contextmenu.o: ../../GUI/Hierarchytree/contextmenu.cpp ../../GUI/Hierarchytree/c
 		../../sharedMemorylib/EntityHandler.h \
 		../../sharedMemorylib/struct.h \
 		../../GUI/Panel/radardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../GUI/Panel/iffdisplay.h \
 		../../GUI/Panel/radiodisplay.h \
 		../../core/Hierarchy/EntityProfiles/radio.h \
 		../../GUI/Panel/csmdisplay.h \
 		../../GUI/Panel/esmdisplay.h \
+		../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
 		../../GUI/Navigation/navigationpage.h \
-		../../GUI/Settings/applicationdialog.h
+		../../GUI/Settings/applicationdialog.h \
+		../../GUI/Editors/analysiseditor.h \
+		../../GUI/Editors/reportseditor.h \
+		../../GUI/statusbar.h \
+		../../core/Hierarchy/EntityProfiles/weapons/missile.h \
+		../../core/Hierarchy/EntityProfiles/weapons/bomb.h \
+		../../core/Hierarchy/EntityProfiles/weapons/torpedo.h \
+		../../core/Hierarchy/EntityProfiles/weapons/artillery.h \
+		../../core/Hierarchy/EntityProfiles/weapons/rocket.h \
+		../../core/Hierarchy/EntityProfiles/weapons/flare.h \
+		../../core/Hierarchy/EntityProfiles/weapons/chaff.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o contextmenu.o ../../GUI/Hierarchytree/contextmenu.cpp
 
 customtrajectorydialog.o: ../../GUI/Hierarchytree/customtrajectorydialog.cpp ../../GUI/Hierarchytree/customtrajectorydialog.h
@@ -8144,12 +9993,16 @@ hierarchyconnector.o: ../../GUI/Hierarchytree/hierarchyconnector.cpp ../../GUI/H
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -8282,10 +10135,12 @@ hierarchyconnector.o: ../../GUI/Hierarchytree/hierarchyconnector.cpp ../../GUI/H
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../GUI/Menubars/profileinfodialog.h \
 		../../GUI/Editors/scenarioeditor.h \
 		../../GUI/Toolbars/designtoolbar.h \
@@ -8296,6 +10151,7 @@ hierarchyconnector.o: ../../GUI/Hierarchytree/hierarchyconnector.cpp ../../GUI/H
 		../../GUI/Editors/runtimeeditor.h \
 		../../GUI/Toolbars/runtimetoolbar.h \
 		../../GUI/Logger/loggerdialog.h \
+		../../core/SQLite/sqlite.h \
 		../../GUI/Timing/graphwidget.h \
 		../../GUI/Toolbars/networktoolbar.h \
 		../../core/structure/runtime.h \
@@ -8306,14 +10162,21 @@ hierarchyconnector.o: ../../GUI/Hierarchytree/hierarchyconnector.cpp ../../GUI/H
 		../../sharedMemorylib/EntityHandler.h \
 		../../sharedMemorylib/struct.h \
 		../../GUI/Panel/radardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../GUI/Panel/iffdisplay.h \
 		../../GUI/Panel/radiodisplay.h \
 		../../core/Hierarchy/EntityProfiles/radio.h \
 		../../GUI/Panel/csmdisplay.h \
 		../../GUI/Panel/esmdisplay.h \
+		../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
 		../../core/Hierarchy/Utils/entityutils.h \
 		../../GUI/Hierarchytree/addformationdialog.h \
-		../../Setup.h
+		../../GUI/Settings/applicationdialog.h \
+		../../Setup.h \
+		../../GUI/Hierarchytree/addweapondialog.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o hierarchyconnector.o ../../GUI/Hierarchytree/hierarchyconnector.cpp
 
 hierarchytree.o: ../../GUI/Hierarchytree/hierarchytree.cpp ../../GUI/Hierarchytree/hierarchytree.h \
@@ -8349,9 +10212,6 @@ hierarchytree.o: ../../GUI/Hierarchytree/hierarchytree.cpp ../../GUI/Hierarchytr
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../GUI/Hierarchytree/contextmenu.h \
 		../../GUI/Hierarchytree/additemdialog.h \
 		../../GUI/Hierarchytree/customtrajectorydialog.h \
@@ -8402,12 +10262,16 @@ inspector.o: ../../GUI/Inspector/inspector.cpp ../../GUI/Inspector/inspector.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -8464,12 +10328,16 @@ colortemplate.o: ../../GUI/Inspector/template/colortemplate.cpp ../../GUI/Inspec
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -8518,12 +10386,16 @@ geocordstemplate.o: ../../GUI/Inspector/template/geocordstemplate.cpp ../../GUI/
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -8577,12 +10449,16 @@ imagetemplate.o: ../../GUI/Inspector/template/imagetemplate.cpp ../../GUI/Inspec
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -8635,12 +10511,16 @@ vectortemplate.o: ../../GUI/Inspector/template/vectortemplate.cpp ../../GUI/Insp
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -8683,16 +10563,134 @@ loggerdialog.o: ../../GUI/Logger/loggerdialog.cpp ../../GUI/Logger/loggerdialog.
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
-		../../core/Hierarchy/EntityProfiles/sensor.h
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Recorder/payload.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/SQLite/sqlite.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
+		../../core/Hierarchy/EntityProfiles/formation.h \
+		../../core/Hierarchy/Struct/formationposition.h \
+		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		../../core/Simulation/simulation.h \
+		../../bullet/btBulletDynamicsCommon.h \
+		../../bullet/btBulletCollisionCommon.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionWorld.h \
+		../../bullet/LinearMath/btVector3.h \
+		../../bullet/LinearMath/btScalar.h \
+		../../bullet/LinearMath/btMinMax.h \
+		../../bullet/LinearMath/btAlignedAllocator.h \
+		../../bullet/LinearMath/btTransform.h \
+		../../bullet/LinearMath/btMatrix3x3.h \
+		../../bullet/LinearMath/btQuaternion.h \
+		../../bullet/LinearMath/btQuadWord.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObject.h \
+		../../bullet/LinearMath/btMotionState.h \
+		../../bullet/LinearMath/btAlignedObjectArray.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionDispatcher.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDispatcher.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btPersistentManifold.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btManifoldPoint.h \
+		../../bullet/LinearMath/btTransformUtil.h \
+		../../bullet/BulletCollision/CollisionDispatch/btManifoldResult.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btDiscreteCollisionDetectorInterface.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseProxy.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionCreateFunc.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCache.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseInterface.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btBoxShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btPolyhedralConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexInternalShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionMargin.h \
+		../../bullet/LinearMath/btAabbUtil2.h \
+		../../bullet/BulletCollision/CollisionShapes/btSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCapsuleShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCylinderShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConeShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btStaticPlaneShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConcaveShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexHullShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMesh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h \
+		../../bullet/BulletCollision/CollisionShapes/btStridingMeshInterface.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btOptimizedBvh.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btQuantizedBvh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleInfoMap.h \
+		../../bullet/LinearMath/btHashMap.h \
+		../../bullet/LinearMath/btSerializer.h \
+		../../bullet/BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCompoundShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTetrahedronShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btEmptyShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btMultiSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btUniformScalingShape.h \
+		../../bullet/BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btActivatingCollisionAlgorithm.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionConfiguration.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btSimpleBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvtBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvt.h \
+		../../bullet/LinearMath/btQuickprof.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3Internal.h \
+		../../bullet/LinearMath/btDefaultMotionState.h \
+		../../bullet/LinearMath/btIDebugDraw.h \
+		../../bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btDynamicsWorld.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btContactSolverInfo.h \
+		../../bullet/LinearMath/btThreads.h \
+		../../bullet/BulletDynamics/Dynamics/btSimpleDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btRigidBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btJacobianEntry.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btTypedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHingeConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSliderConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btUniversalConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHinge2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGearConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btFixedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConstraintSolver.h \
+		../../bullet/BulletDynamics/Vehicle/btRaycastVehicle.h \
+		../../bullet/BulletDynamics/Vehicle/btVehicleRaycaster.h \
+		../../bullet/BulletDynamics/Vehicle/btWheelInfo.h \
+		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
+		../../core/Network/networkmanager.h \
+		../../core/Network/networktransport.h \
+		../../core/Network/libs/TransformUpdate.h \
+		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o loggerdialog.o ../../GUI/Logger/loggerdialog.cpp
 
 menubar.o: ../../GUI/Menubars/menubar.cpp ../../GUI/Menubars/menubar.h \
@@ -8746,9 +10744,6 @@ csmdisplay.o: ../../GUI/Panel/csmdisplay.cpp ../../GUI/Panel/csmdisplay.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -8758,6 +10753,13 @@ csmdisplay.o: ../../GUI/Panel/csmdisplay.cpp ../../GUI/Panel/csmdisplay.h \
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -8802,9 +10804,6 @@ esmdisplay.o: ../../GUI/Panel/esmdisplay.cpp ../../GUI/Panel/esmdisplay.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -8814,6 +10813,13 @@ esmdisplay.o: ../../GUI/Panel/esmdisplay.cpp ../../GUI/Panel/esmdisplay.h \
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -8823,6 +10829,63 @@ esmdisplay.o: ../../GUI/Panel/esmdisplay.cpp ../../GUI/Panel/esmdisplay.h \
 		../../core/Hierarchy/Utils/entityutils.h \
 		../../core/Debug/console.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o esmdisplay.o ../../GUI/Panel/esmdisplay.cpp
+
+ewdisplay.o: ../../GUI/Panel/ewdisplay.cpp ../../GUI/Panel/ewdisplay.h \
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/Hierarchy/EntityProfiles/platform.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		../../core/Hierarchy/Components/iffprofile.h \
+		../../core/Hierarchy/EntityProfiles/iff.h \
+		../../core/Hierarchy/Components/radioprofile.h \
+		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
+		../../core/Hierarchy/EntityProfiles/formation.h \
+		../../core/Hierarchy/Struct/formationposition.h \
+		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		../../core/Debug/console.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o ewdisplay.o ../../GUI/Panel/ewdisplay.cpp
 
 iffdisplay.o: ../../GUI/Panel/iffdisplay.cpp ../../GUI/Panel/iffdisplay.h \
 		../../core/Hierarchy/EntityProfiles/iff.h \
@@ -8858,9 +10921,6 @@ iffdisplay.o: ../../GUI/Panel/iffdisplay.cpp ../../GUI/Panel/iffdisplay.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -8870,6 +10930,13 @@ iffdisplay.o: ../../GUI/Panel/iffdisplay.cpp ../../GUI/Panel/iffdisplay.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -8912,9 +10979,6 @@ radardisplay.o: ../../GUI/Panel/radardisplay.cpp ../../GUI/Panel/radardisplay.h 
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -8924,10 +10988,19 @@ radardisplay.o: ../../GUI/Panel/radardisplay.cpp ../../GUI/Panel/radardisplay.h 
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../core/Hierarchy/Utils/entityutils.h \
 		../../core/Debug/console.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o radardisplay.o ../../GUI/Panel/radardisplay.cpp
@@ -8970,12 +11043,16 @@ radiodisplay.o: ../../GUI/Panel/radiodisplay.cpp ../../GUI/Panel/radiodisplay.h 
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -8986,6 +11063,64 @@ radiodisplay.o: ../../GUI/Panel/radiodisplay.cpp ../../GUI/Panel/radiodisplay.h 
 		../../core/Hierarchy/Utils/entityutils.h \
 		../../core/Debug/console.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o radiodisplay.o ../../GUI/Panel/radiodisplay.cpp
+
+sonardisplay.o: ../../GUI/Panel/sonardisplay.cpp ../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/Hierarchy/EntityProfiles/platform.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Components/iffprofile.h \
+		../../core/Hierarchy/EntityProfiles/iff.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/radioprofile.h \
+		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
+		../../core/Hierarchy/EntityProfiles/formation.h \
+		../../core/Hierarchy/Struct/formationposition.h \
+		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o sonardisplay.o ../../GUI/Panel/sonardisplay.cpp
 
 pluginwindow.o: ../../GUI/Plugins/pluginwindow.cpp ../../GUI/Plugins/pluginwindow.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o pluginwindow.o ../../GUI/Plugins/pluginwindow.cpp
@@ -9035,12 +11170,16 @@ applicationdialog.o: ../../GUI/Settings/applicationdialog.cpp ../../GUI/Settings
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -9167,10 +11306,12 @@ applicationdialog.o: ../../GUI/Settings/applicationdialog.cpp ../../GUI/Settings
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../GUI/Menubars/profileinfodialog.h \
 		../../GUI/Editors/scenarioeditor.h \
 		../../GUI/Toolbars/designtoolbar.h \
@@ -9180,9 +11321,15 @@ applicationdialog.o: ../../GUI/Settings/applicationdialog.cpp ../../GUI/Settings
 		../../GUI/Feedback/projectinformation.h \
 		../../GUI/Testscript/textscriptwidget.h \
 		../../GUI/Editors/customresizableoverlaydock.h \
+		../../GUI/Editors/missioneditor.h \
+		../../GUI/DOCTRINE/doctrineparameters.h \
+		../../GUI/DOCTRINE/tacticalrules.h \
+		../../GUI/DOCTRINE/doctrineassumptionsnotes.h \
+		../../GUI/DOCTRINE/doctrineareadefinition.h \
 		../../GUI/Editors/runtimeeditor.h \
 		../../GUI/Toolbars/runtimetoolbar.h \
 		../../GUI/Logger/loggerdialog.h \
+		../../core/SQLite/sqlite.h \
 		../../GUI/Timing/graphwidget.h \
 		../../GUI/Toolbars/networktoolbar.h \
 		../../core/structure/runtime.h \
@@ -9193,12 +11340,21 @@ applicationdialog.o: ../../GUI/Settings/applicationdialog.cpp ../../GUI/Settings
 		../../sharedMemorylib/EntityHandler.h \
 		../../sharedMemorylib/struct.h \
 		../../GUI/Panel/radardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../GUI/Panel/iffdisplay.h \
 		../../GUI/Panel/radiodisplay.h \
 		../../core/Hierarchy/EntityProfiles/radio.h \
 		../../GUI/Panel/csmdisplay.h \
 		../../GUI/Panel/esmdisplay.h \
-		../../GUI/Navigation/navigationpage.h
+		../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
+		../../GUI/Navigation/navigationpage.h \
+		../../GUI/Editors/analysiseditor.h \
+		../../GUI/Editors/reportseditor.h \
+		../../GUI/statusbar.h \
+		../../Setup.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o applicationdialog.o ../../GUI/Settings/applicationdialog.cpp
 
 sidebarwidget.o: ../../GUI/Sidebar/sidebarwidget.cpp ../../GUI/Sidebar/sidebarwidget.h \
@@ -9258,10 +11414,7 @@ layerpanel.o: ../../GUI/Tacticaldisplay/Gis/layerpanel.cpp ../../GUI/Tacticaldis
 		../../core/Hierarchy/Struct/parameter.h \
 		../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
-		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h
+		../../core/Hierarchy/Components/mission.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o layerpanel.o ../../GUI/Tacticaldisplay/Gis/layerpanel.cpp
 
 shapes_feature.o: ../../GUI/Tacticaldisplay/Gis/shapes_feature.cpp ../../GUI/Tacticaldisplay/Gis/shapes_feature.h \
@@ -9301,9 +11454,6 @@ shapes_feature.o: ../../GUI/Tacticaldisplay/Gis/shapes_feature.cpp ../../GUI/Tac
 		../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
 		../../core/Debug/console.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o shapes_feature.o ../../GUI/Tacticaldisplay/Gis/shapes_feature.cpp
@@ -9345,9 +11495,6 @@ canvaswidget.o: ../../GUI/Tacticaldisplay/canvaswidget.cpp ../../GUI/Tacticaldis
 		../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
 		../../GUI/Hierarchytree/additemdialog.h \
 		../../GUI/Hierarchytree/customtrajectorydialog.h \
@@ -9361,6 +11508,13 @@ canvaswidget.o: ../../GUI/Tacticaldisplay/canvaswidget.cpp ../../GUI/Tacticaldis
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../GUI/mainwindow.h \
 		../../GUI/Editors/databaseeditor.h \
 		../../GUI/Hierarchytree/hierarchyconnector.h \
@@ -9487,10 +11641,12 @@ canvaswidget.o: ../../GUI/Tacticaldisplay/canvaswidget.cpp ../../GUI/Tacticaldis
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../GUI/Menubars/profileinfodialog.h \
 		../../GUI/Editors/scenarioeditor.h \
 		../../GUI/Toolbars/designtoolbar.h \
@@ -9500,9 +11656,15 @@ canvaswidget.o: ../../GUI/Tacticaldisplay/canvaswidget.cpp ../../GUI/Tacticaldis
 		../../GUI/Feedback/projectinformation.h \
 		../../GUI/Testscript/textscriptwidget.h \
 		../../GUI/Editors/customresizableoverlaydock.h \
+		../../GUI/Editors/missioneditor.h \
+		../../GUI/DOCTRINE/doctrineparameters.h \
+		../../GUI/DOCTRINE/tacticalrules.h \
+		../../GUI/DOCTRINE/doctrineassumptionsnotes.h \
+		../../GUI/DOCTRINE/doctrineareadefinition.h \
 		../../GUI/Editors/runtimeeditor.h \
 		../../GUI/Toolbars/runtimetoolbar.h \
 		../../GUI/Logger/loggerdialog.h \
+		../../core/SQLite/sqlite.h \
 		../../GUI/Timing/graphwidget.h \
 		../../GUI/Toolbars/networktoolbar.h \
 		../../core/structure/runtime.h \
@@ -9513,12 +11675,20 @@ canvaswidget.o: ../../GUI/Tacticaldisplay/canvaswidget.cpp ../../GUI/Tacticaldis
 		../../sharedMemorylib/EntityHandler.h \
 		../../sharedMemorylib/struct.h \
 		../../GUI/Panel/radardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../GUI/Panel/iffdisplay.h \
 		../../GUI/Panel/radiodisplay.h \
 		../../GUI/Panel/csmdisplay.h \
 		../../GUI/Panel/esmdisplay.h \
+		../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
 		../../GUI/Navigation/navigationpage.h \
 		../../GUI/Settings/applicationdialog.h \
+		../../GUI/Editors/analysiseditor.h \
+		../../GUI/Editors/reportseditor.h \
+		../../GUI/statusbar.h \
 		../../GUI/Tacticaldisplay/entityinfodialog.h \
 		../../core/Hierarchy/Utils/entityutils.h \
 		../../GUI/Tacticaldisplay/waypointeditdialog.h \
@@ -9563,9 +11733,6 @@ entityinfodialog.o: ../../GUI/Tacticaldisplay/entityinfodialog.cpp ../../GUI/Tac
 		../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
@@ -9577,6 +11744,13 @@ entityinfodialog.o: ../../GUI/Tacticaldisplay/entityinfodialog.cpp ../../GUI/Tac
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -9627,9 +11801,6 @@ tacticaldisplay.o: ../../GUI/Tacticaldisplay/tacticaldisplay.cpp ../../GUI/Tacti
 		../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
@@ -9637,6 +11808,13 @@ tacticaldisplay.o: ../../GUI/Tacticaldisplay/tacticaldisplay.cpp ../../GUI/Tacti
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../GUI/Tacticaldisplay/canvaswidget.h \
 		../../GUI/Tacticaldisplay/Gis/gislib.h \
 		../../GUI/Tacticaldisplay/Gis/gisnetwork.h \
@@ -9684,12 +11862,16 @@ tooltiphelper.o: ../../GUI/Tacticaldisplay/tooltiphelper.cpp ../../GUI/Tacticald
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../GUI/Tacticaldisplay/canvaswidget.h \
 		../../GUI/Tacticaldisplay/Gis/gislib.h \
 		../../GUI/Tacticaldisplay/Gis/gisnetwork.h \
@@ -9755,12 +11937,16 @@ graphwidget.o: ../../GUI/Timing/graphwidget.cpp ../../GUI/Timing/graphwidget.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -9867,10 +12053,12 @@ graphwidget.o: ../../GUI/Timing/graphwidget.cpp ../../GUI/Timing/graphwidget.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
-		../../core/Network/libs/MessageBus.h
+		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o graphwidget.o ../../GUI/Timing/graphwidget.cpp
 
 designtoolbar.o: ../../GUI/Toolbars/designtoolbar.cpp ../../GUI/Toolbars/designtoolbar.h \
@@ -9911,9 +12099,6 @@ designtoolbar.o: ../../GUI/Toolbars/designtoolbar.cpp ../../GUI/Toolbars/designt
 		../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
 		../../GUI/Tacticaldisplay/Gis/layerinformationdialog.h \
 		../../core/Config/scenarioconfig.h \
@@ -9928,6 +12113,13 @@ designtoolbar.o: ../../GUI/Toolbars/designtoolbar.cpp ../../GUI/Toolbars/designt
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Debug/console.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o designtoolbar.o ../../GUI/Toolbars/designtoolbar.cpp
 
@@ -9971,12 +12163,16 @@ networktoolbar.o: ../../GUI/Toolbars/networktoolbar.cpp ../../GUI/Toolbars/netwo
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Network/networktransport.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
@@ -10023,9 +12219,6 @@ runtimetoolbar.o: ../../GUI/Toolbars/runtimetoolbar.cpp ../../GUI/Toolbars/runti
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
@@ -10033,42 +12226,22 @@ runtimetoolbar.o: ../../GUI/Toolbars/runtimetoolbar.cpp ../../GUI/Toolbars/runti
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
-		../../GUI/Timing/graphwidget.h \
-		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Recorder/payload.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
+		../../core/SQLite/sqlite.h \
+		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
-		../../GUI/Toolbars/runtimetoolbar-styles.h \
-		../../GUI/Editors/runtimeeditor.h \
-		../../GUI/Console/consoleview.h \
-		../../GUI/Hierarchytree/hierarchyconnector.h \
-		../../GUI/Inspector/inspector.h \
-		../../GUI/Tacticaldisplay/tacticaldisplay.h \
-		../../core/Render/scenerenderer.h \
-		../../GUI/Tacticaldisplay/canvaswidget.h \
-		../../GUI/Tacticaldisplay/Gis/gislib.h \
-		../../GUI/Tacticaldisplay/Gis/gisnetwork.h \
-		../../GUI/measuredistance/measuredistancedialog.h \
-		../../GUI/Tacticaldisplay/Gis/shapes_feature.h \
-		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
-		../../GUI/scene3dwidget/scene3dwidget.h \
-		../../GUI/Tacticaldisplay/scalebar.h \
-		../../GUI/Hierarchytree/hierarchytree.h \
-		../../GUI/Editors/recentprojectsmanager.h \
-		../../GUI/Toolbars/standardtoolbar.h \
-		../../GUI/Toolbars/designtoolbar.h \
-		../../GUI/Tacticaldisplay/Gis/layerinformationdialog.h \
-		../../core/Config/scenarioconfig.h \
-		../../GUI/Toolbars/networktoolbar.h \
-		../../core/Network/networkmanager.h \
-		../../core/Network/networktransport.h \
-		../../core/Network/libs/TransformUpdate.h \
-		../../core/Debug/console.h \
-		../../core/structure/runtime.h \
-		../../core/Config/sessionmanager.h \
 		../../core/Simulation/simulation.h \
 		../../bullet/btBulletDynamicsCommon.h \
 		../../bullet/btBulletCollisionCommon.h \
@@ -10169,7 +12342,37 @@ runtimetoolbar.o: ../../GUI/Toolbars/runtimetoolbar.cpp ../../GUI/Toolbars/runti
 		../../bullet/BulletDynamics/Vehicle/btVehicleRaycaster.h \
 		../../bullet/BulletDynamics/Vehicle/btWheelInfo.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
+		../../core/Network/networkmanager.h \
+		../../core/Network/networktransport.h \
+		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
+		../../GUI/Timing/graphwidget.h \
+		../../GUI/Toolbars/runtimetoolbar-styles.h \
+		../../GUI/Editors/runtimeeditor.h \
+		../../GUI/Console/consoleview.h \
+		../../GUI/Hierarchytree/hierarchyconnector.h \
+		../../GUI/Inspector/inspector.h \
+		../../GUI/Tacticaldisplay/tacticaldisplay.h \
+		../../core/Render/scenerenderer.h \
+		../../GUI/Tacticaldisplay/canvaswidget.h \
+		../../GUI/Tacticaldisplay/Gis/gislib.h \
+		../../GUI/Tacticaldisplay/Gis/gisnetwork.h \
+		../../GUI/measuredistance/measuredistancedialog.h \
+		../../GUI/Tacticaldisplay/Gis/shapes_feature.h \
+		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
+		../../GUI/scene3dwidget/scene3dwidget.h \
+		../../GUI/Tacticaldisplay/scalebar.h \
+		../../GUI/Hierarchytree/hierarchytree.h \
+		../../GUI/Editors/recentprojectsmanager.h \
+		../../GUI/Toolbars/standardtoolbar.h \
+		../../GUI/Toolbars/designtoolbar.h \
+		../../GUI/Tacticaldisplay/Gis/layerinformationdialog.h \
+		../../core/Config/scenarioconfig.h \
+		../../GUI/Toolbars/networktoolbar.h \
+		../../core/Debug/console.h \
+		../../core/structure/runtime.h \
+		../../core/Config/sessionmanager.h \
 		../../core/Debug/profiler.h \
 		../../core/Debug/frame.h \
 		../../core/ScriptEngine/scriptengine.h \
@@ -10183,11 +12386,16 @@ runtimetoolbar.o: ../../GUI/Toolbars/runtimetoolbar.cpp ../../GUI/Toolbars/runti
 		../../GUI/Feedback/projectinformation.h \
 		../../GUI/Testscript/textscriptwidget.h \
 		../../GUI/Panel/radardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../GUI/Panel/iffdisplay.h \
 		../../GUI/Panel/radiodisplay.h \
 		../../core/Hierarchy/EntityProfiles/radio.h \
 		../../GUI/Panel/csmdisplay.h \
 		../../GUI/Panel/esmdisplay.h \
+		../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
 		../../GUI/Menubars/profileinfodialog.h \
 		../../GUI/Editors/customresizableoverlaydock.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o runtimetoolbar.o ../../GUI/Toolbars/runtimetoolbar.cpp
@@ -10244,12 +12452,16 @@ mainwindow.o: ../../GUI/mainwindow.cpp ../../GUI/mainwindow.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -10376,10 +12588,12 @@ mainwindow.o: ../../GUI/mainwindow.cpp ../../GUI/mainwindow.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../GUI/Menubars/profileinfodialog.h \
 		../../GUI/Editors/scenarioeditor.h \
 		../../GUI/Toolbars/designtoolbar.h \
@@ -10389,9 +12603,15 @@ mainwindow.o: ../../GUI/mainwindow.cpp ../../GUI/mainwindow.h \
 		../../GUI/Feedback/projectinformation.h \
 		../../GUI/Testscript/textscriptwidget.h \
 		../../GUI/Editors/customresizableoverlaydock.h \
+		../../GUI/Editors/missioneditor.h \
+		../../GUI/DOCTRINE/doctrineparameters.h \
+		../../GUI/DOCTRINE/tacticalrules.h \
+		../../GUI/DOCTRINE/doctrineassumptionsnotes.h \
+		../../GUI/DOCTRINE/doctrineareadefinition.h \
 		../../GUI/Editors/runtimeeditor.h \
 		../../GUI/Toolbars/runtimetoolbar.h \
 		../../GUI/Logger/loggerdialog.h \
+		../../core/SQLite/sqlite.h \
 		../../GUI/Timing/graphwidget.h \
 		../../GUI/Toolbars/networktoolbar.h \
 		../../core/structure/runtime.h \
@@ -10402,13 +12622,21 @@ mainwindow.o: ../../GUI/mainwindow.cpp ../../GUI/mainwindow.h \
 		../../sharedMemorylib/EntityHandler.h \
 		../../sharedMemorylib/struct.h \
 		../../GUI/Panel/radardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../GUI/Panel/iffdisplay.h \
 		../../GUI/Panel/radiodisplay.h \
 		../../core/Hierarchy/EntityProfiles/radio.h \
 		../../GUI/Panel/csmdisplay.h \
 		../../GUI/Panel/esmdisplay.h \
+		../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
 		../../GUI/Navigation/navigationpage.h \
 		../../GUI/Settings/applicationdialog.h \
+		../../GUI/Editors/analysiseditor.h \
+		../../GUI/Editors/reportseditor.h \
+		../../GUI/statusbar.h \
 		../../GUI/mainwindow-styles.h \
 		../../Setup.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mainwindow.o ../../GUI/mainwindow.cpp
@@ -10426,6 +12654,9 @@ scene3dwidget.o: ../../GUI/scene3dwidget/scene3dwidget.cpp ../../GUI/scene3dwidg
 		../../core/Utility/uuid.h \
 		../../core/Hierarchy/Struct/constants.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o scene3dwidget.o ../../GUI/scene3dwidget/scene3dwidget.cpp
+
+statusbar.o: ../../GUI/statusbar.cpp ../../GUI/statusbar.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o statusbar.o ../../GUI/statusbar.cpp
 
 Setup.o: ../../Setup.cpp ../../Setup.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Setup.o ../../Setup.cpp
@@ -12513,6 +14744,12 @@ profiler.o: ../../core/Debug/profiler.cpp ../../core/Debug/profiler.h \
 		../../core/Debug/frame.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o profiler.o ../../core/Debug/profiler.cpp
 
+aircraft.o: ../../core/Dynamics/Model/aircraft.cpp ../../core/Dynamics/Model/aircraft.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o aircraft.o ../../core/Dynamics/Model/aircraft.cpp
+
+dynamics.o: ../../core/Dynamics/dynamics.cpp ../../core/Dynamics/dynamics.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o dynamics.o ../../core/Dynamics/dynamics.cpp
+
 GlobalRegistry.o: ../../core/GlobalRegistry.cpp ../../core/GlobalRegistry.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o GlobalRegistry.o ../../core/GlobalRegistry.cpp
 
@@ -12563,12 +14800,16 @@ collider.o: ../../core/Hierarchy/Components/collider.cpp ../../core/Hierarchy/Co
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -12614,12 +14855,16 @@ component.o: ../../core/Hierarchy/Components/component.cpp ../../core/Hierarchy/
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -12766,9 +15011,6 @@ dynamicmodel.o: ../../core/Hierarchy/Components/dynamicmodel.cpp ../../core/Hier
 		../../core/Hierarchy/Components/mesh.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
@@ -12776,11 +15018,19 @@ dynamicmodel.o: ../../core/Hierarchy/Components/dynamicmodel.cpp ../../core/Hier
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
-		../../core/Network/networkmanager.h \
+		../../core/Recorder/payload.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
+		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
@@ -12789,6 +15039,7 @@ dynamicmodel.o: ../../core/Hierarchy/Components/dynamicmodel.cpp ../../core/Hier
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../core/Hierarchy/Utils/entityutils.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o dynamicmodel.o ../../core/Hierarchy/Components/dynamicmodel.cpp
 
@@ -12826,9 +15077,6 @@ iffprofile.o: ../../core/Hierarchy/Components/iffprofile.cpp ../../core/Hierarch
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/GlobalRegistry.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
@@ -12838,6 +15086,13 @@ iffprofile.o: ../../core/Hierarchy/Components/iffprofile.cpp ../../core/Hierarch
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -12860,10 +15115,7 @@ meshrenderer2d.o: ../../core/Hierarchy/Components/meshrenderer2d.cpp ../../core/
 mission.o: ../../core/Hierarchy/Components/mission.cpp ../../core/Hierarchy/Components/mission.h \
 		../../core/Hierarchy/Components/component.h \
 		../../core/Utility/uuid.h \
-		../../core/Hierarchy/Struct/constants.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h
+		../../core/Hierarchy/Struct/constants.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mission.o ../../core/Hierarchy/Components/mission.cpp
 
 networkobject.o: ../../core/Hierarchy/Components/networkobject.cpp ../../core/Hierarchy/Components/networkobject.h \
@@ -12928,11 +15180,15 @@ radioprofile.o: ../../core/Hierarchy/Components/radioprofile.cpp ../../core/Hier
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -12982,13 +15238,11 @@ sensorprofile.o: ../../core/Hierarchy/Components/sensorprofile.cpp ../../core/Hi
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/GlobalRegistry.h \
 		../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.h \
 		../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.h \
 		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -12997,10 +15251,20 @@ sensorprofile.o: ../../core/Hierarchy/Components/sensorprofile.cpp ../../core/Hi
 		../../core/Hierarchy/Components/iffprofile.h \
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
-		../../core/Hierarchy/EntityProfiles/specialzone.h
+		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o sensorprofile.o ../../core/Hierarchy/Components/sensorprofile.cpp
 
 trajectory.o: ../../core/Hierarchy/Components/trajectory.cpp ../../core/Hierarchy/Components/trajectory.h \
@@ -13146,9 +15410,6 @@ transform.o: ../../core/Hierarchy/Components/transform.cpp ../../core/Hierarchy/
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
@@ -13156,11 +15417,19 @@ transform.o: ../../core/Hierarchy/Components/transform.cpp ../../core/Hierarchy/
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
-		../../core/Network/networkmanager.h \
+		../../core/Recorder/payload.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
+		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
@@ -13168,8 +15437,72 @@ transform.o: ../../core/Hierarchy/Components/transform.cpp ../../core/Hierarchy/
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		../../core/Network/libs/TransformUpdate.h \
-		../../core/Network/libs/MessageBus.h
+		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o transform.o ../../core/Hierarchy/Components/transform.cpp
+
+weaponprofile.o: ../../core/Hierarchy/Components/weaponprofile.cpp ../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		../../core/GlobalRegistry.h \
+		../../core/Hierarchy/EntityProfiles/weapons/missile.h \
+		../../core/Hierarchy/EntityProfiles/weapons/bomb.h \
+		../../core/Hierarchy/EntityProfiles/weapons/torpedo.h \
+		../../core/Hierarchy/EntityProfiles/weapons/artillery.h \
+		../../core/Hierarchy/EntityProfiles/weapons/rocket.h \
+		../../core/Hierarchy/EntityProfiles/weapons/flare.h \
+		../../core/Hierarchy/EntityProfiles/weapons/chaff.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/Hierarchy/EntityProfiles/platform.h \
+		../../core/Hierarchy/Components/iffprofile.h \
+		../../core/Hierarchy/EntityProfiles/iff.h \
+		../../core/Hierarchy/Components/radioprofile.h \
+		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
+		../../core/Hierarchy/EntityProfiles/formation.h \
+		../../core/Hierarchy/Struct/formationposition.h \
+		../../core/Hierarchy/EntityProfiles/specialzone.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o weaponprofile.o ../../core/Hierarchy/Components/weaponprofile.cpp
 
 csm.o: ../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
@@ -13205,9 +15538,6 @@ csm.o: ../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.cpp ../../core/Hie
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Utils/entityutils.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
@@ -13218,6 +15548,13 @@ csm.o: ../../core/Hierarchy/EntityProfiles/SensorProfiles/csm.cpp ../../core/Hie
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -13259,9 +15596,6 @@ esm.o: ../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.cpp ../../core/Hie
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Utils/entityutils.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
@@ -13272,6 +15606,13 @@ esm.o: ../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.cpp ../../core/Hie
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -13279,6 +15620,7 @@ esm.o: ../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.cpp ../../core/Hie
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o esm.o ../../core/Hierarchy/EntityProfiles/SensorProfiles/esm.cpp
 
 radar.o: ../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
 		../../core/Hierarchy/entity.h \
 		../../core/Hierarchy/Components/attachedenitities.h \
@@ -13312,9 +15654,6 @@ radar.o: ../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.cpp ../../core
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Utils/entityutils.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
@@ -13325,11 +15664,87 @@ radar.o: ../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.cpp ../../core
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o radar.o ../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.cpp
+
+radarmodel.o: ../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o radarmodel.o ../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.cpp
+
+sonar.o: ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h \
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
+		../../core/Hierarchy/Utils/entityutils.h \
+		../../core/Hierarchy/EntityProfiles/platform.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		../../core/Hierarchy/Components/iffprofile.h \
+		../../core/Hierarchy/EntityProfiles/iff.h \
+		../../core/Hierarchy/Components/radioprofile.h \
+		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
+		../../core/Hierarchy/EntityProfiles/formation.h \
+		../../core/Hierarchy/Struct/formationposition.h \
+		../../core/Hierarchy/EntityProfiles/specialzone.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o sonar.o ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar.cpp
+
+active_sonar.o: ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o active_sonar.o ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.cpp
+
+sonar_model.o: ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.cpp ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o sonar_model.o ../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.cpp
 
 fixedpoints.o: ../../core/Hierarchy/EntityProfiles/fixedpoints.cpp ../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/entity.h \
@@ -13364,9 +15779,6 @@ fixedpoints.o: ../../core/Hierarchy/EntityProfiles/fixedpoints.cpp ../../core/Hi
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Utils/entityutils.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
@@ -13378,6 +15790,13 @@ fixedpoints.o: ../../core/Hierarchy/EntityProfiles/fixedpoints.cpp ../../core/Hi
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
@@ -13419,9 +15838,6 @@ formation.o: ../../core/Hierarchy/EntityProfiles/formation.cpp ../../core/Hierar
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Utils/entityutils.h \
 		../../core/GlobalRegistry.h \
 		../../core/Hierarchy/hierarchy.h \
@@ -13434,6 +15850,13 @@ formation.o: ../../core/Hierarchy/EntityProfiles/formation.cpp ../../core/Hierar
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		../../core/Debug/console.h
@@ -13472,9 +15895,6 @@ iff.o: ../../core/Hierarchy/EntityProfiles/iff.cpp ../../core/Hierarchy/EntityPr
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -13484,6 +15904,13 @@ iff.o: ../../core/Hierarchy/EntityProfiles/iff.cpp ../../core/Hierarchy/EntityPr
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -13529,12 +15956,16 @@ platform.o: ../../core/Hierarchy/EntityProfiles/platform.cpp ../../core/Hierarch
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/radio.h \
 		../../core/Hierarchy/Utils/entityutils.h \
 		../../core/GlobalRegistry.h \
@@ -13547,7 +15978,164 @@ platform.o: ../../core/Hierarchy/EntityProfiles/platform.cpp ../../core/Hierarch
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		../../core/Debug/console.h \
 		../../core/Debug/profiler.h \
-		../../core/Debug/frame.h
+		../../core/Debug/frame.h \
+		../../GUI/Editors/runtimeeditor.h \
+		../../GUI/Console/consoleview.h \
+		../../GUI/Hierarchytree/hierarchyconnector.h \
+		../../GUI/Inspector/inspector.h \
+		../../GUI/Tacticaldisplay/tacticaldisplay.h \
+		../../core/Render/scenerenderer.h \
+		../../GUI/Tacticaldisplay/canvaswidget.h \
+		../../GUI/Tacticaldisplay/Gis/gislib.h \
+		../../GUI/Tacticaldisplay/Gis/gisnetwork.h \
+		../../GUI/measuredistance/measuredistancedialog.h \
+		../../GUI/Tacticaldisplay/Gis/shapes_feature.h \
+		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
+		../../GUI/scene3dwidget/scene3dwidget.h \
+		../../GUI/Tacticaldisplay/scalebar.h \
+		../../GUI/Hierarchytree/hierarchytree.h \
+		../../GUI/Editors/recentprojectsmanager.h \
+		../../GUI/Toolbars/standardtoolbar.h \
+		../../GUI/Toolbars/designtoolbar.h \
+		../../GUI/Tacticaldisplay/Gis/layerinformationdialog.h \
+		../../core/Config/scenarioconfig.h \
+		../../GUI/Toolbars/runtimetoolbar.h \
+		../../GUI/Logger/loggerdialog.h \
+		../../core/Recorder/recorder.h \
+		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
+		../../core/SQLite/sqlite.h \
+		../../core/Simulation/simulation.h \
+		../../bullet/btBulletDynamicsCommon.h \
+		../../bullet/btBulletCollisionCommon.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionWorld.h \
+		../../bullet/LinearMath/btVector3.h \
+		../../bullet/LinearMath/btScalar.h \
+		../../bullet/LinearMath/btMinMax.h \
+		../../bullet/LinearMath/btAlignedAllocator.h \
+		../../bullet/LinearMath/btTransform.h \
+		../../bullet/LinearMath/btMatrix3x3.h \
+		../../bullet/LinearMath/btQuaternion.h \
+		../../bullet/LinearMath/btQuadWord.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObject.h \
+		../../bullet/LinearMath/btMotionState.h \
+		../../bullet/LinearMath/btAlignedObjectArray.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionDispatcher.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDispatcher.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btPersistentManifold.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btManifoldPoint.h \
+		../../bullet/LinearMath/btTransformUtil.h \
+		../../bullet/BulletCollision/CollisionDispatch/btManifoldResult.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btDiscreteCollisionDetectorInterface.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseProxy.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionCreateFunc.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCache.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseInterface.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btBoxShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btPolyhedralConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexInternalShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionMargin.h \
+		../../bullet/LinearMath/btAabbUtil2.h \
+		../../bullet/BulletCollision/CollisionShapes/btSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCapsuleShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCylinderShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConeShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btStaticPlaneShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConcaveShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexHullShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMesh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h \
+		../../bullet/BulletCollision/CollisionShapes/btStridingMeshInterface.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btOptimizedBvh.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btQuantizedBvh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleInfoMap.h \
+		../../bullet/LinearMath/btHashMap.h \
+		../../bullet/LinearMath/btSerializer.h \
+		../../bullet/BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCompoundShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTetrahedronShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btEmptyShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btMultiSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btUniformScalingShape.h \
+		../../bullet/BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btActivatingCollisionAlgorithm.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionConfiguration.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btSimpleBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvtBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvt.h \
+		../../bullet/LinearMath/btQuickprof.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3Internal.h \
+		../../bullet/LinearMath/btDefaultMotionState.h \
+		../../bullet/LinearMath/btIDebugDraw.h \
+		../../bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btDynamicsWorld.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btContactSolverInfo.h \
+		../../bullet/LinearMath/btThreads.h \
+		../../bullet/BulletDynamics/Dynamics/btSimpleDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btRigidBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btJacobianEntry.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btTypedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHingeConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSliderConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btUniversalConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHinge2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGearConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btFixedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConstraintSolver.h \
+		../../bullet/BulletDynamics/Vehicle/btRaycastVehicle.h \
+		../../bullet/BulletDynamics/Vehicle/btVehicleRaycaster.h \
+		../../bullet/BulletDynamics/Vehicle/btWheelInfo.h \
+		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
+		../../core/Network/networkmanager.h \
+		../../core/Network/networktransport.h \
+		../../core/Network/libs/TransformUpdate.h \
+		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
+		../../GUI/Timing/graphwidget.h \
+		../../GUI/Toolbars/networktoolbar.h \
+		../../core/structure/runtime.h \
+		../../core/Config/sessionmanager.h \
+		../../core/ScriptEngine/scriptengine.h \
+		../../angelscript/include/angelscript.h \
+		../../angelscript/add_on/scriptarray/scriptarray.h \
+		../../core/SharedMemory/sharedmemorywrapper.h \
+		../../sharedMemorylib/sharedMemory.h \
+		../../sharedMemorylib/EntityHandler.h \
+		../../sharedMemorylib/struct.h \
+		../../GUI/Menubars/menubar.h \
+		../../GUI/Feedback/projectinformation.h \
+		../../GUI/Testscript/textscriptwidget.h \
+		../../GUI/Panel/radardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
+		../../GUI/Panel/iffdisplay.h \
+		../../GUI/Panel/radiodisplay.h \
+		../../GUI/Panel/csmdisplay.h \
+		../../GUI/Panel/esmdisplay.h \
+		../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
+		../../GUI/Menubars/profileinfodialog.h \
+		../../GUI/Editors/customresizableoverlaydock.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o platform.o ../../core/Hierarchy/EntityProfiles/platform.cpp
 
 radio.o: ../../core/Hierarchy/EntityProfiles/radio.cpp ../../core/Hierarchy/EntityProfiles/radio.h \
@@ -13587,12 +16175,16 @@ radio.o: ../../core/Hierarchy/EntityProfiles/radio.cpp ../../core/Hierarchy/Enti
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -13638,9 +16230,6 @@ sensor.o: ../../core/Hierarchy/EntityProfiles/sensor.cpp ../../core/Hierarchy/En
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Utils/entityutils.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
@@ -13651,6 +16240,13 @@ sensor.o: ../../core/Hierarchy/EntityProfiles/sensor.cpp ../../core/Hierarchy/En
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -13692,9 +16288,6 @@ specialzone.o: ../../core/Hierarchy/EntityProfiles/specialzone.cpp ../../core/Hi
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Utils/entityutils.h \
 		../../core/GlobalRegistry.h \
 		../../core/Hierarchy/hierarchy.h \
@@ -13707,13 +16300,20 @@ specialzone.o: ../../core/Hierarchy/EntityProfiles/specialzone.cpp ../../core/Hi
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Debug/console.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o specialzone.o ../../core/Hierarchy/EntityProfiles/specialzone.cpp
 
-weapons.o: ../../core/Hierarchy/EntityProfiles/weapons.cpp ../../core/Hierarchy/EntityProfiles/weapons.h \
+weapon.o: ../../core/Hierarchy/EntityProfiles/weapon.cpp ../../core/Hierarchy/EntityProfiles/weapon.h \
 		../../core/Hierarchy/entity.h \
 		../../core/Hierarchy/Components/attachedenitities.h \
 		../../core/Hierarchy/Components/component.h \
@@ -13746,26 +16346,323 @@ weapons.o: ../../core/Hierarchy/EntityProfiles/weapons.cpp ../../core/Hierarchy/
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
-		../../core/Hierarchy/hierarchy.h \
-		../../core/Hierarchy/profilecategaory.h \
-		../../core/Hierarchy/folder.h \
-		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
+		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/iffprofile.h \
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		../../core/Debug/console.h \
-		../../core/GlobalRegistry.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o weapons.o ../../core/Hierarchy/EntityProfiles/weapons.cpp
+		../../core/Hierarchy/Utils/entityutils.h \
+		../../core/GlobalRegistry.h \
+		../../GUI/Tacticaldisplay/canvaswidget.h \
+		../../GUI/Tacticaldisplay/Gis/gislib.h \
+		../../GUI/Tacticaldisplay/Gis/gisnetwork.h \
+		../../GUI/measuredistance/measuredistancedialog.h \
+		../../GUI/Tacticaldisplay/Gis/shapes_feature.h \
+		../../GUI/Tacticaldisplay/Gis/layerpanel.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o weapon.o ../../core/Hierarchy/EntityProfiles/weapon.cpp
+
+artillery.o: ../../core/Hierarchy/EntityProfiles/weapons/artillery.cpp ../../core/Hierarchy/EntityProfiles/weapons/artillery.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o artillery.o ../../core/Hierarchy/EntityProfiles/weapons/artillery.cpp
+
+bomb.o: ../../core/Hierarchy/EntityProfiles/weapons/bomb.cpp ../../core/Hierarchy/EntityProfiles/weapons/bomb.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o bomb.o ../../core/Hierarchy/EntityProfiles/weapons/bomb.cpp
+
+chaff.o: ../../core/Hierarchy/EntityProfiles/weapons/chaff.cpp ../../core/Hierarchy/EntityProfiles/weapons/chaff.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o chaff.o ../../core/Hierarchy/EntityProfiles/weapons/chaff.cpp
+
+flare.o: ../../core/Hierarchy/EntityProfiles/weapons/flare.cpp ../../core/Hierarchy/EntityProfiles/weapons/flare.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o flare.o ../../core/Hierarchy/EntityProfiles/weapons/flare.cpp
+
+missile.o: ../../core/Hierarchy/EntityProfiles/weapons/missile.cpp ../../core/Hierarchy/EntityProfiles/weapons/missile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		../../core/Hierarchy/EntityProfiles/platform.h \
+		../../core/Hierarchy/Components/iffprofile.h \
+		../../core/Hierarchy/EntityProfiles/iff.h \
+		../../core/Hierarchy/Components/radioprofile.h \
+		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Hierarchy/Utils/entityutils.h \
+		../../GUI/Tacticaldisplay/canvaswidget.h \
+		../../GUI/Tacticaldisplay/Gis/gislib.h \
+		../../GUI/Tacticaldisplay/Gis/gisnetwork.h \
+		../../GUI/measuredistance/measuredistancedialog.h \
+		../../GUI/Tacticaldisplay/Gis/shapes_feature.h \
+		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
+		../../core/Hierarchy/EntityProfiles/formation.h \
+		../../core/Hierarchy/Struct/formationposition.h \
+		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		../../core/GlobalRegistry.h \
+		../../core/Debug/console.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o missile.o ../../core/Hierarchy/EntityProfiles/weapons/missile.cpp
+
+rocket.o: ../../core/Hierarchy/EntityProfiles/weapons/rocket.cpp ../../core/Hierarchy/EntityProfiles/weapons/rocket.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o rocket.o ../../core/Hierarchy/EntityProfiles/weapons/rocket.cpp
+
+torpedo.o: ../../core/Hierarchy/EntityProfiles/weapons/torpedo.cpp ../../core/Hierarchy/EntityProfiles/weapons/torpedo.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/crosssection.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o torpedo.o ../../core/Hierarchy/EntityProfiles/weapons/torpedo.cpp
 
 action.o: ../../core/Hierarchy/Struct/action.cpp ../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Struct/constants.h
@@ -13814,16 +16711,20 @@ formationposition.o: ../../core/Hierarchy/Struct/formationposition.cpp ../../cor
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
-		../../core/Hierarchy/EntityProfiles/sensor.h
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o formationposition.o ../../core/Hierarchy/Struct/formationposition.cpp
 
 geocords.o: ../../core/Hierarchy/Struct/geocords.cpp ../../core/Hierarchy/Struct/geocords.h \
@@ -13833,12 +16734,6 @@ geocords.o: ../../core/Hierarchy/Struct/geocords.cpp ../../core/Hierarchy/Struct
 parameter.o: ../../core/Hierarchy/Struct/parameter.cpp ../../core/Hierarchy/Struct/parameter.h \
 		../../core/Hierarchy/Struct/constants.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o parameter.o ../../core/Hierarchy/Struct/parameter.cpp
-
-task.o: ../../core/Hierarchy/Struct/task.cpp ../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/constants.h \
-		../../core/Hierarchy/Struct/action.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o task.o ../../core/Hierarchy/Struct/task.cpp
 
 vector.o: ../../core/Hierarchy/Struct/vector.cpp ../../core/Hierarchy/Struct/vector.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o vector.o ../../core/Hierarchy/Struct/vector.cpp
@@ -13884,9 +16779,6 @@ entity.o: ../../core/Hierarchy/entity.cpp ../../core/Hierarchy/entity.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/GlobalRegistry.h \
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/hierarchy.h \
@@ -13898,6 +16790,13 @@ entity.o: ../../core/Hierarchy/entity.cpp ../../core/Hierarchy/entity.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -13942,12 +16841,16 @@ folder.o: ../../core/Hierarchy/folder.cpp ../../core/Hierarchy/folder.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Debug/console.h \
 		../../core/GlobalRegistry.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
@@ -13999,12 +16902,16 @@ hierarchy.o: ../../core/Hierarchy/hierarchy.cpp ../../core/Hierarchy/hierarchy.h
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -14051,12 +16958,16 @@ profilecategaory.o: ../../core/Hierarchy/profilecategaory.cpp ../../core/Hierarc
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Debug/console.h \
 		../../core/GlobalRegistry.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
@@ -14143,12 +17054,16 @@ networkmanager.o: ../../core/Network/networkmanager.cpp ../../core/Network/netwo
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Network/networktransport.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
@@ -14232,12 +17147,16 @@ pluginmanager.o: ../../core/Plugins/pluginmanager.cpp ../../core/Plugins/pluginm
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -14345,10 +17264,12 @@ pluginmanager.o: ../../core/Plugins/pluginmanager.cpp ../../core/Plugins/pluginm
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../core/Render/scenerenderer.h \
 		../../core/Debug/console.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o pluginmanager.o ../../core/Plugins/pluginmanager.cpp
@@ -14387,9 +17308,6 @@ recorder.o: ../../core/Recorder/recorder.cpp ../../core/Recorder/recorder.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
@@ -14397,9 +17315,17 @@ recorder.o: ../../core/Recorder/recorder.cpp ../../core/Recorder/recorder.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
-		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Recorder/payload.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
+		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -14507,7 +17433,8 @@ recorder.o: ../../core/Recorder/recorder.cpp ../../core/Recorder/recorder.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
-		../../core/Network/libs/MessageBus.h
+		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o recorder.o ../../core/Recorder/recorder.cpp
 
 scenerenderer.o: ../../core/Render/scenerenderer.cpp ../../core/Render/scenerenderer.h \
@@ -14543,9 +17470,6 @@ scenerenderer.o: ../../core/Render/scenerenderer.cpp ../../core/Render/scenerend
 		../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
@@ -14553,10 +17477,181 @@ scenerenderer.o: ../../core/Render/scenerenderer.cpp ../../core/Render/scenerend
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		../../core/Debug/console.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o scenerenderer.o ../../core/Render/scenerenderer.cpp
+
+sqlite.o: ../../core/SQLite/sqlite.cpp ../../core/SQLite/sqlite.h \
+		../../core/Hierarchy/hierarchy.h \
+		../../core/Hierarchy/profilecategaory.h \
+		../../core/Hierarchy/folder.h \
+		../../core/Hierarchy/EntityProfiles/platform.h \
+		../../core/Hierarchy/Components/crosssection.h \
+		../../core/Hierarchy/Components/component.h \
+		../../core/Utility/uuid.h \
+		../../core/Hierarchy/Components/iffprofile.h \
+		../../core/Hierarchy/EntityProfiles/iff.h \
+		../../core/Hierarchy/entity.h \
+		../../core/Hierarchy/Components/attachedenitities.h \
+		../../core/Hierarchy/Struct/constants.h \
+		../../core/Hierarchy/Components/transform.h \
+		../../core/Hierarchy/Struct/geocords.h \
+		../../core/Hierarchy/Struct/vector.h \
+		../../core/Network/transformpdu.h \
+		../../dis7/DataPdu.h \
+		../../dis7/FixedDatum.h \
+		../../dis7/utils/DataStream.h \
+		../../dis7/utils/Endian.h \
+		../../dis7/opendis7_export.h \
+		../../dis7/VariableDatum.h \
+		../../dis7/EightByteChunk.h \
+		../../dis7/SimulationManagementFamilyPdu.h \
+		../../dis7/EntityID.h \
+		../../dis7/SimulationAddress.h \
+		../../dis7/Pdu.h \
+		../../dis7/PduSuperclass.h \
+		../../core/Hierarchy/Components/trajectory.h \
+		../../core/Hierarchy/Struct/waypoints.h \
+		../../core/Hierarchy/Components/rigidbody.h \
+		../../core/Hierarchy/Components/collider.h \
+		../../core/Hierarchy/Components/networkobject.h \
+		../../core/Hierarchy/Struct/parameter.h \
+		../../core/Hierarchy/Components/meshrenderer2d.h \
+		../../core/Hierarchy/Components/mesh.h \
+		../../core/Hierarchy/Struct/color.h \
+		../../core/Hierarchy/Components/dynamicmodel.h \
+		../../core/Hierarchy/Components/mission.h \
+		../../core/Hierarchy/Components/radioprofile.h \
+		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
+		../../core/Hierarchy/EntityProfiles/formation.h \
+		../../core/Hierarchy/Struct/formationposition.h \
+		../../core/Hierarchy/EntityProfiles/specialzone.h \
+		../../core/Simulation/simulation.h \
+		../../bullet/btBulletDynamicsCommon.h \
+		../../bullet/btBulletCollisionCommon.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionWorld.h \
+		../../bullet/LinearMath/btVector3.h \
+		../../bullet/LinearMath/btScalar.h \
+		../../bullet/LinearMath/btMinMax.h \
+		../../bullet/LinearMath/btAlignedAllocator.h \
+		../../bullet/LinearMath/btTransform.h \
+		../../bullet/LinearMath/btMatrix3x3.h \
+		../../bullet/LinearMath/btQuaternion.h \
+		../../bullet/LinearMath/btQuadWord.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObject.h \
+		../../bullet/LinearMath/btMotionState.h \
+		../../bullet/LinearMath/btAlignedObjectArray.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionDispatcher.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDispatcher.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btPersistentManifold.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btManifoldPoint.h \
+		../../bullet/LinearMath/btTransformUtil.h \
+		../../bullet/BulletCollision/CollisionDispatch/btManifoldResult.h \
+		../../bullet/BulletCollision/NarrowPhaseCollision/btDiscreteCollisionDetectorInterface.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseProxy.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionCreateFunc.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCache.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btBroadphaseInterface.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btOverlappingPairCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btBoxShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btPolyhedralConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexInternalShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCollisionMargin.h \
+		../../bullet/LinearMath/btAabbUtil2.h \
+		../../bullet/BulletCollision/CollisionShapes/btSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCapsuleShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCylinderShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConeShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btStaticPlaneShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btConcaveShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleCallback.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexHullShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMesh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h \
+		../../bullet/BulletCollision/CollisionShapes/btStridingMeshInterface.h \
+		../../bullet/BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btOptimizedBvh.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btQuantizedBvh.h \
+		../../bullet/BulletCollision/CollisionShapes/btTriangleInfoMap.h \
+		../../bullet/LinearMath/btHashMap.h \
+		../../bullet/LinearMath/btSerializer.h \
+		../../bullet/BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btCompoundShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btTetrahedronShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btEmptyShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btMultiSphereShape.h \
+		../../bullet/BulletCollision/CollisionShapes/btUniformScalingShape.h \
+		../../bullet/BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btActivatingCollisionAlgorithm.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h \
+		../../bullet/BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h \
+		../../bullet/BulletCollision/CollisionDispatch/btCollisionConfiguration.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btSimpleBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvtBroadphase.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btDbvt.h \
+		../../bullet/LinearMath/btQuickprof.h \
+		../../bullet/BulletCollision/BroadphaseCollision/btAxisSweep3Internal.h \
+		../../bullet/LinearMath/btDefaultMotionState.h \
+		../../bullet/LinearMath/btIDebugDraw.h \
+		../../bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btDynamicsWorld.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btContactSolverInfo.h \
+		../../bullet/LinearMath/btThreads.h \
+		../../bullet/BulletDynamics/Dynamics/btSimpleDynamicsWorld.h \
+		../../bullet/BulletDynamics/Dynamics/btRigidBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btJacobianEntry.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btTypedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSolverBody.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHingeConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSliderConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btUniversalConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btHinge2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btGearConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btFixedConstraint.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h \
+		../../bullet/BulletDynamics/ConstraintSolver/btConstraintSolver.h \
+		../../bullet/BulletDynamics/Vehicle/btRaycastVehicle.h \
+		../../bullet/BulletDynamics/Vehicle/btVehicleRaycaster.h \
+		../../bullet/BulletDynamics/Vehicle/btWheelInfo.h \
+		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
+		../../core/Recorder/recorder.h \
+		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
+		../../core/Network/networkmanager.h \
+		../../core/Network/networktransport.h \
+		../../core/Network/libs/TransformUpdate.h \
+		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o sqlite.o ../../core/SQLite/sqlite.cpp
 
 scriptengine.o: ../../core/ScriptEngine/scriptengine.cpp ../../core/ScriptEngine/scriptengine.h \
 		../../GUI/Hierarchytree/hierarchytree.h \
@@ -14592,9 +17687,6 @@ scriptengine.o: ../../core/ScriptEngine/scriptengine.cpp ../../core/ScriptEngine
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -14605,6 +17697,13 @@ scriptengine.o: ../../core/ScriptEngine/scriptengine.cpp ../../core/ScriptEngine
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -14723,10 +17822,12 @@ scriptengine.o: ../../core/ScriptEngine/scriptengine.cpp ../../core/ScriptEngine
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../core/structure/runtime.h \
 		../../core/Config/scenarioconfig.h \
 		../../core/Config/sessionmanager.h \
@@ -14737,6 +17838,7 @@ scriptengine.o: ../../core/ScriptEngine/scriptengine.cpp ../../core/ScriptEngine
 		../../sharedMemorylib/sharedMemory.h \
 		../../sharedMemorylib/EntityHandler.h \
 		../../sharedMemorylib/struct.h \
+		../../core/SQLite/sqlite.h \
 		../../core/ScriptEngine/scriptenginegis.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o scriptengine.o ../../core/ScriptEngine/scriptengine.cpp
 
@@ -14780,9 +17882,6 @@ scriptenginegis.o: ../../core/ScriptEngine/scriptenginegis.cpp ../../core/Script
 		../../core/Hierarchy/Components/meshrenderer2d.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
 		../../angelscript/add_on/scriptstdstring/scriptstdstring.h \
 		../../core/GlobalRegistry.h \
@@ -14893,11 +17992,19 @@ scriptenginegis.o: ../../core/ScriptEngine/scriptenginegis.cpp ../../core/Script
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
-		../../core/Network/networkmanager.h \
+		../../core/Recorder/payload.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
+		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
@@ -14906,6 +18013,7 @@ scriptenginegis.o: ../../core/ScriptEngine/scriptenginegis.cpp ../../core/Script
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../core/structure/runtime.h \
 		../../core/Config/scenarioconfig.h \
 		../../core/Config/sessionmanager.h \
@@ -14918,7 +18026,8 @@ scriptenginegis.o: ../../core/ScriptEngine/scriptenginegis.cpp ../../core/Script
 		../../core/SharedMemory/sharedmemorywrapper.h \
 		../../sharedMemorylib/sharedMemory.h \
 		../../sharedMemorylib/EntityHandler.h \
-		../../sharedMemorylib/struct.h
+		../../sharedMemorylib/struct.h \
+		../../core/SQLite/sqlite.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o scriptenginegis.o ../../core/ScriptEngine/scriptenginegis.cpp
 
 sharedmemorywrapper.o: ../../core/SharedMemory/sharedmemorywrapper.cpp ../../core/SharedMemory/sharedmemorywrapper.h \
@@ -14955,13 +18064,11 @@ sharedmemorywrapper.o: ../../core/SharedMemory/sharedmemorywrapper.cpp ../../cor
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../sharedMemorylib/sharedMemory.h \
 		../../sharedMemorylib/EntityHandler.h \
 		../../sharedMemorylib/struct.h \
 		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
@@ -14969,6 +18076,13 @@ sharedmemorywrapper.o: ../../core/SharedMemory/sharedmemorywrapper.cpp ../../cor
 		../../core/Hierarchy/EntityProfiles/iff.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Debug/console.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o sharedmemorywrapper.o ../../core/SharedMemory/sharedmemorywrapper.cpp
 
@@ -15104,9 +18218,6 @@ simulation.o: ../../core/Simulation/simulation.cpp ../../core/Simulation/simulat
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/EntityProfiles/platform.h \
 		../../core/Hierarchy/Components/crosssection.h \
 		../../core/Hierarchy/Components/iffprofile.h \
@@ -15114,11 +18225,19 @@ simulation.o: ../../core/Simulation/simulation.cpp ../../core/Simulation/simulat
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
-		../../core/Network/networkmanager.h \
+		../../core/Recorder/payload.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
+		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
@@ -15127,21 +18246,23 @@ simulation.o: ../../core/Simulation/simulation.cpp ../../core/Simulation/simulat
 		../../core/Hierarchy/EntityProfiles/specialzone.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../core/Debug/console.h \
 		../../core/Debug/profiler.h \
 		../../core/Debug/frame.h \
-		../../GUI/mainwindow.h \
-		../../GUI/Editors/databaseeditor.h \
-		../../GUI/Hierarchytree/hierarchyconnector.h \
-		../../GUI/Inspector/inspector.h \
-		../../GUI/Tacticaldisplay/tacticaldisplay.h \
-		../../core/Render/scenerenderer.h \
+		../../core/Hierarchy/Utils/entityutils.h \
 		../../GUI/Tacticaldisplay/canvaswidget.h \
 		../../GUI/Tacticaldisplay/Gis/gislib.h \
 		../../GUI/Tacticaldisplay/Gis/gisnetwork.h \
 		../../GUI/measuredistance/measuredistancedialog.h \
 		../../GUI/Tacticaldisplay/Gis/shapes_feature.h \
 		../../GUI/Tacticaldisplay/Gis/layerpanel.h \
+		../../GUI/mainwindow.h \
+		../../GUI/Editors/databaseeditor.h \
+		../../GUI/Hierarchytree/hierarchyconnector.h \
+		../../GUI/Inspector/inspector.h \
+		../../GUI/Tacticaldisplay/tacticaldisplay.h \
+		../../core/Render/scenerenderer.h \
 		../../GUI/scene3dwidget/scene3dwidget.h \
 		../../GUI/Tacticaldisplay/scalebar.h \
 		../../GUI/Hierarchytree/hierarchytree.h \
@@ -15162,9 +18283,15 @@ simulation.o: ../../core/Simulation/simulation.cpp ../../core/Simulation/simulat
 		../../GUI/Feedback/projectinformation.h \
 		../../GUI/Testscript/textscriptwidget.h \
 		../../GUI/Editors/customresizableoverlaydock.h \
+		../../GUI/Editors/missioneditor.h \
+		../../GUI/DOCTRINE/doctrineparameters.h \
+		../../GUI/DOCTRINE/tacticalrules.h \
+		../../GUI/DOCTRINE/doctrineassumptionsnotes.h \
+		../../GUI/DOCTRINE/doctrineareadefinition.h \
 		../../GUI/Editors/runtimeeditor.h \
 		../../GUI/Toolbars/runtimetoolbar.h \
 		../../GUI/Logger/loggerdialog.h \
+		../../core/SQLite/sqlite.h \
 		../../GUI/Timing/graphwidget.h \
 		../../GUI/Toolbars/networktoolbar.h \
 		../../core/structure/runtime.h \
@@ -15173,13 +18300,21 @@ simulation.o: ../../core/Simulation/simulation.cpp ../../core/Simulation/simulat
 		../../sharedMemorylib/EntityHandler.h \
 		../../sharedMemorylib/struct.h \
 		../../GUI/Panel/radardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../GUI/Panel/iffdisplay.h \
 		../../GUI/Panel/radiodisplay.h \
 		../../core/Hierarchy/EntityProfiles/radio.h \
 		../../GUI/Panel/csmdisplay.h \
 		../../GUI/Panel/esmdisplay.h \
+		../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
 		../../GUI/Navigation/navigationpage.h \
-		../../GUI/Settings/applicationdialog.h
+		../../GUI/Settings/applicationdialog.h \
+		../../GUI/Editors/analysiseditor.h \
+		../../GUI/Editors/reportseditor.h \
+		../../GUI/statusbar.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o simulation.o ../../core/Simulation/simulation.cpp
 
 simulation_state.o: ../../core/Simulation/simulation_state.cpp ../../core/Simulation/simulation_state.h
@@ -15229,12 +18364,16 @@ database.o: ../../core/structure/database.cpp ../../core/structure/database.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -15342,10 +18481,12 @@ database.o: ../../core/structure/database.cpp ../../core/structure/database.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../core/Render/scenerenderer.h \
 		../../core/Debug/console.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o database.o ../../core/structure/database.cpp
@@ -15388,12 +18529,16 @@ missioncreator.o: ../../core/structure/missioncreator.cpp ../../core/structure/m
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
-		../../core/Hierarchy/EntityProfiles/sensor.h
+		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o missioncreator.o ../../core/structure/missioncreator.cpp
 
 missionexcuter.o: ../../core/structure/missionexcuter.cpp ../../core/structure/missionexcuter.h \
@@ -15428,10 +18573,7 @@ missionexcuter.o: ../../core/structure/missionexcuter.cpp ../../core/structure/m
 		../../core/Hierarchy/Components/mesh.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
-		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h
+		../../core/Hierarchy/Components/mission.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o missionexcuter.o ../../core/structure/missionexcuter.cpp
 
 runtime.o: ../../core/structure/runtime.cpp ../../core/structure/runtime.h \
@@ -15475,12 +18617,16 @@ runtime.o: ../../core/structure/runtime.cpp ../../core/structure/runtime.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -15588,10 +18734,12 @@ runtime.o: ../../core/structure/runtime.cpp ../../core/structure/runtime.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../core/Render/scenerenderer.h \
 		../../core/Debug/console.h \
 		../../core/Debug/profiler.h \
@@ -15609,7 +18757,8 @@ runtime.o: ../../core/structure/runtime.cpp ../../core/structure/runtime.h \
 		../../core/SharedMemory/sharedmemorywrapper.h \
 		../../sharedMemorylib/sharedMemory.h \
 		../../sharedMemorylib/EntityHandler.h \
-		../../sharedMemorylib/struct.h
+		../../sharedMemorylib/struct.h \
+		../../core/SQLite/sqlite.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o runtime.o ../../core/structure/runtime.cpp
 
 scenario.o: ../../core/structure/scenario.cpp ../../core/structure/scenario.h \
@@ -15647,9 +18796,6 @@ scenario.o: ../../core/structure/scenario.cpp ../../core/structure/scenario.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/hierarchy.h \
 		../../core/Hierarchy/profilecategaory.h \
 		../../core/Hierarchy/folder.h \
@@ -15660,6 +18806,13 @@ scenario.o: ../../core/structure/scenario.cpp ../../core/structure/scenario.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -15777,10 +18930,12 @@ scenario.o: ../../core/structure/scenario.cpp ../../core/structure/scenario.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../core/Debug/console.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o scenario.o ../../core/structure/scenario.cpp
 
@@ -17399,12 +20554,16 @@ main.o: ../../main.cpp ../../GUI/mainwindow.h \
 		../../core/Hierarchy/Struct/color.h \
 		../../core/Hierarchy/Components/dynamicmodel.h \
 		../../core/Hierarchy/Components/mission.h \
-		../../core/Hierarchy/Struct/task.h \
-		../../core/Hierarchy/Struct/condition.h \
-		../../core/Hierarchy/Struct/action.h \
 		../../core/Hierarchy/Components/radioprofile.h \
 		../../core/Hierarchy/Components/sensorprofile.h \
 		../../core/Hierarchy/EntityProfiles/sensor.h \
+		../../core/Hierarchy/Components/weaponprofile.h \
+		../../core/Hierarchy/EntityProfiles/weapon.h \
+		../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
 		../../core/Hierarchy/EntityProfiles/fixedpoints.h \
 		../../core/Hierarchy/EntityProfiles/formation.h \
 		../../core/Hierarchy/Struct/formationposition.h \
@@ -17531,10 +20690,12 @@ main.o: ../../main.cpp ../../GUI/mainwindow.h \
 		../../bullet/BulletDynamics/Dynamics/btActionInterface.h \
 		../../core/Recorder/recorder.h \
 		../../core/Simulation/simulation_state.h \
+		../../core/Recorder/payload.h \
 		../../core/Network/networkmanager.h \
 		../../core/Network/networktransport.h \
 		../../core/Network/libs/TransformUpdate.h \
 		../../core/Network/libs/MessageBus.h \
+		../../core/Dynamics/Model/aircraft.h \
 		../../GUI/Menubars/profileinfodialog.h \
 		../../GUI/Editors/scenarioeditor.h \
 		../../GUI/Toolbars/designtoolbar.h \
@@ -17544,9 +20705,15 @@ main.o: ../../main.cpp ../../GUI/mainwindow.h \
 		../../GUI/Feedback/projectinformation.h \
 		../../GUI/Testscript/textscriptwidget.h \
 		../../GUI/Editors/customresizableoverlaydock.h \
+		../../GUI/Editors/missioneditor.h \
+		../../GUI/DOCTRINE/doctrineparameters.h \
+		../../GUI/DOCTRINE/tacticalrules.h \
+		../../GUI/DOCTRINE/doctrineassumptionsnotes.h \
+		../../GUI/DOCTRINE/doctrineareadefinition.h \
 		../../GUI/Editors/runtimeeditor.h \
 		../../GUI/Toolbars/runtimetoolbar.h \
 		../../GUI/Logger/loggerdialog.h \
+		../../core/SQLite/sqlite.h \
 		../../GUI/Timing/graphwidget.h \
 		../../GUI/Toolbars/networktoolbar.h \
 		../../core/structure/runtime.h \
@@ -17557,15 +20724,53 @@ main.o: ../../main.cpp ../../GUI/mainwindow.h \
 		../../sharedMemorylib/EntityHandler.h \
 		../../sharedMemorylib/struct.h \
 		../../GUI/Panel/radardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
 		../../GUI/Panel/iffdisplay.h \
 		../../GUI/Panel/radiodisplay.h \
 		../../core/Hierarchy/EntityProfiles/radio.h \
 		../../GUI/Panel/csmdisplay.h \
 		../../GUI/Panel/esmdisplay.h \
+		../../GUI/Panel/sonardisplay.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h \
+		../../core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h \
 		../../GUI/Navigation/navigationpage.h \
 		../../GUI/Settings/applicationdialog.h \
+		../../GUI/Editors/analysiseditor.h \
+		../../GUI/Editors/reportseditor.h \
+		../../GUI/statusbar.h \
 		../../Setup.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../../main.cpp
+
+actions.o: ../../mission/actions.cpp ../../mission/actions.h \
+		ui_actions.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o actions.o ../../mission/actions.cpp
+
+ifcondition.o: ../../mission/ifcondition.cpp ../../mission/ifcondition.h \
+		../../mission/actions.h \
+		../../mission/inputs.h \
+		ui_ifcondition.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o ifcondition.o ../../mission/ifcondition.cpp
+
+inputs.o: ../../mission/inputs.cpp ../../mission/inputs.h \
+		ui_inputs.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o inputs.o ../../mission/inputs.cpp
+
+task.o: ../../mission/task.cpp ../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		../../mission/taskgroup.h \
+		ui_task.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o task.o ../../mission/task.cpp
+
+taskgroup.o: ../../mission/taskgroup.cpp ../../mission/taskgroup.h \
+		../../mission/task.h \
+		../../mission/actions.h \
+		../../mission/ifcondition.h \
+		../../mission/inputs.h \
+		ui_taskgroup.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o taskgroup.o ../../mission/taskgroup.cpp
 
 qrc_Resources.o: qrc_Resources.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o qrc_Resources.o qrc_Resources.cpp
@@ -17573,14 +20778,35 @@ qrc_Resources.o: qrc_Resources.cpp
 moc_consoleview.o: moc_consoleview.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_consoleview.o moc_consoleview.cpp
 
+moc_doctrineareadefinition.o: moc_doctrineareadefinition.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_doctrineareadefinition.o moc_doctrineareadefinition.cpp
+
+moc_doctrineassumptionsnotes.o: moc_doctrineassumptionsnotes.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_doctrineassumptionsnotes.o moc_doctrineassumptionsnotes.cpp
+
+moc_doctrineparameters.o: moc_doctrineparameters.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_doctrineparameters.o moc_doctrineparameters.cpp
+
+moc_tacticalrules.o: moc_tacticalrules.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_tacticalrules.o moc_tacticalrules.cpp
+
+moc_analysiseditor.o: moc_analysiseditor.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_analysiseditor.o moc_analysiseditor.cpp
+
 moc_customresizableoverlaydock.o: moc_customresizableoverlaydock.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_customresizableoverlaydock.o moc_customresizableoverlaydock.cpp
 
 moc_databaseeditor.o: moc_databaseeditor.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_databaseeditor.o moc_databaseeditor.cpp
 
+moc_missioneditor.o: moc_missioneditor.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_missioneditor.o moc_missioneditor.cpp
+
 moc_recentprojectsmanager.o: moc_recentprojectsmanager.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_recentprojectsmanager.o moc_recentprojectsmanager.cpp
+
+moc_reportseditor.o: moc_reportseditor.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_reportseditor.o moc_reportseditor.cpp
 
 moc_runtimeeditor.o: moc_runtimeeditor.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_runtimeeditor.o moc_runtimeeditor.cpp
@@ -17596,6 +20822,9 @@ moc_addformationdialog.o: moc_addformationdialog.cpp
 
 moc_additemdialog.o: moc_additemdialog.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_additemdialog.o moc_additemdialog.cpp
+
+moc_addweapondialog.o: moc_addweapondialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_addweapondialog.o moc_addweapondialog.cpp
 
 moc_contextmenu.o: moc_contextmenu.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_contextmenu.o moc_contextmenu.cpp
@@ -17654,6 +20883,9 @@ moc_csmdisplay.o: moc_csmdisplay.cpp
 moc_esmdisplay.o: moc_esmdisplay.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_esmdisplay.o moc_esmdisplay.cpp
 
+moc_ewdisplay.o: moc_ewdisplay.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_ewdisplay.o moc_ewdisplay.cpp
+
 moc_iffdisplay.o: moc_iffdisplay.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_iffdisplay.o moc_iffdisplay.cpp
 
@@ -17662,6 +20894,9 @@ moc_radardisplay.o: moc_radardisplay.cpp
 
 moc_radiodisplay.o: moc_radiodisplay.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_radiodisplay.o moc_radiodisplay.cpp
+
+moc_sonardisplay.o: moc_sonardisplay.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_sonardisplay.o moc_sonardisplay.cpp
 
 moc_applicationdialog.o: moc_applicationdialog.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_applicationdialog.o moc_applicationdialog.cpp
@@ -17738,6 +20973,9 @@ moc_measuredistancedialog.o: moc_measuredistancedialog.cpp
 moc_scene3dwidget.o: moc_scene3dwidget.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_scene3dwidget.o moc_scene3dwidget.cpp
 
+moc_statusbar.o: moc_statusbar.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_statusbar.o moc_statusbar.cpp
+
 moc_scenarioconfig.o: moc_scenarioconfig.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_scenarioconfig.o moc_scenarioconfig.cpp
 
@@ -17795,6 +21033,9 @@ moc_trajectory.o: moc_trajectory.cpp
 moc_transform.o: moc_transform.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_transform.o moc_transform.cpp
 
+moc_weaponprofile.o: moc_weaponprofile.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_weaponprofile.o moc_weaponprofile.cpp
+
 moc_csm.o: moc_csm.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_csm.o moc_csm.cpp
 
@@ -17803,6 +21044,9 @@ moc_esm.o: moc_esm.cpp
 
 moc_radar.o: moc_radar.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_radar.o moc_radar.cpp
+
+moc_sonar.o: moc_sonar.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_sonar.o moc_sonar.cpp
 
 moc_fixedpoints.o: moc_fixedpoints.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_fixedpoints.o moc_fixedpoints.cpp
@@ -17825,8 +21069,29 @@ moc_sensor.o: moc_sensor.cpp
 moc_specialzone.o: moc_specialzone.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_specialzone.o moc_specialzone.cpp
 
-moc_weapons.o: moc_weapons.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_weapons.o moc_weapons.cpp
+moc_weapon.o: moc_weapon.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_weapon.o moc_weapon.cpp
+
+moc_artillery.o: moc_artillery.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_artillery.o moc_artillery.cpp
+
+moc_bomb.o: moc_bomb.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_bomb.o moc_bomb.cpp
+
+moc_chaff.o: moc_chaff.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_chaff.o moc_chaff.cpp
+
+moc_flare.o: moc_flare.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_flare.o moc_flare.cpp
+
+moc_missile.o: moc_missile.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_missile.o moc_missile.cpp
+
+moc_rocket.o: moc_rocket.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_rocket.o moc_rocket.cpp
+
+moc_torpedo.o: moc_torpedo.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_torpedo.o moc_torpedo.cpp
 
 moc_action.o: moc_action.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_action.o moc_action.cpp
@@ -17848,9 +21113,6 @@ moc_geocords.o: moc_geocords.cpp
 
 moc_parameter.o: moc_parameter.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_parameter.o moc_parameter.cpp
-
-moc_task.o: moc_task.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_task.o moc_task.cpp
 
 moc_waypoints.o: moc_waypoints.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_waypoints.o moc_waypoints.cpp
@@ -17885,6 +21147,9 @@ moc_recorder.o: moc_recorder.cpp
 moc_scenerenderer.o: moc_scenerenderer.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_scenerenderer.o moc_scenerenderer.cpp
 
+moc_sqlite.o: moc_sqlite.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_sqlite.o moc_sqlite.cpp
+
 moc_scriptengine.o: moc_scriptengine.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_scriptengine.o moc_scriptengine.cpp
 
@@ -17911,6 +21176,21 @@ moc_runtime.o: moc_runtime.cpp
 
 moc_scenario.o: moc_scenario.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_scenario.o moc_scenario.cpp
+
+moc_actions.o: moc_actions.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_actions.o moc_actions.cpp
+
+moc_ifcondition.o: moc_ifcondition.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_ifcondition.o moc_ifcondition.cpp
+
+moc_inputs.o: moc_inputs.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_inputs.o moc_inputs.cpp
+
+moc_task.o: moc_task.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_task.o moc_task.cpp
+
+moc_taskgroup.o: moc_taskgroup.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_taskgroup.o moc_taskgroup.cpp
 
 ####### Install
 

@@ -37,6 +37,8 @@ const QString SearchBar = R"(
         border-radius: 2px;
     }
 )";
+
+
 const QString ProfileDropdown = R"(
     QComboBox {
         background-color: #1A3652;
@@ -114,8 +116,7 @@ const QString TreeWidget = R"(
         alternate-background-color: #0F2636;
         font-size: 13px;
     }
-    QTreeView::item {
-        color: white;
+  QTreeView::item {
         background-color: #0F2636;
         height: 26px;
         padding: 4px 2px;

@@ -47,7 +47,6 @@ void VectorTemplate::setupVectorCell(int row, const QString &fullKey, const QJso
         pasteYAction->setEnabled(copiedVectorData.contains("y"));
         QAction *pasteZAction = pasteComponentMenu->addAction("Paste Z");
         pasteZAction->setEnabled(copiedVectorData.contains("z"));
-
         QAction *selectedAction = contextMenu.exec(mapToGlobal(pos));
 
         if (selectedAction == copyVectorAction) {

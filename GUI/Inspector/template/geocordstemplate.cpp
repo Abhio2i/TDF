@@ -88,15 +88,12 @@ void GeocordsTemplate::setupGeocordsCell(int row, const QString &fullKey, const 
         if (inspectorRef) {
             delta["_id"] = inspectorRef->getMainID();
         }
-
         emit valueChanged(connectedID, name, delta);
     };
-
     connect(latEdit, &QLineEdit::editingFinished, this, updateValue);
     connect(lonEdit, &QLineEdit::editingFinished, this, updateValue);
     connect(altEdit, &QLineEdit::editingFinished, this, updateValue);
     connect(headEdit, &QLineEdit::editingFinished, this, updateValue);
-
     tableWidget->setRowHeight(row, ROW_HEIGHT * 4);
     tableWidget->setCellWidget(row, 1, this);
 }

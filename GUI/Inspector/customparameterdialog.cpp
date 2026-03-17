@@ -89,7 +89,6 @@ void CustomParameterDialog::validateInput()
     QString name = nameEdit->text().trimmed();
     QString type = typeCombo->currentText();
     QString value = valueEdit->text().trimmed();
-
     // Validate name
     if (name.isEmpty()) {
         QMessageBox::warning(this, "Invalid Input", "Parameter name cannot be empty.");

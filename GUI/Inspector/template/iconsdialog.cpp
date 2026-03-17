@@ -56,9 +56,7 @@ IconsDialog::IconsDialog(QWidget *parent)
     listWidget->setGridSize(QSize(120, 120));
     listWidget->setWordWrap(true);
     listWidget->setStyleSheet(InspectorStyles::IconsDialog_listWidget);
-
     loadAllImagesAutomatically();
-
     if (allImages.isEmpty()) {
         QLabel *noImagesLabel = new QLabel("No images found in resources.", this);
         noImagesLabel->setStyleSheet(InspectorStyles::IconsDialog_noImagesLabel);
@@ -66,7 +64,6 @@ IconsDialog::IconsDialog(QWidget *parent)
         listWidget->hide();
         mainLayout->addWidget(noImagesLabel);
     }
-
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     QPushButton *okButton = new QPushButton("OK", this);
     QPushButton *cancelButton = new QPushButton("Cancel", this);
@@ -91,13 +88,11 @@ IconsDialog::IconsDialog(QWidget *parent)
             "",
             "Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)"
             );
-
         if (!filePath.isEmpty()) {
             m_selectedPath = filePath;
             accept();
         }
     });
-
     connect(okButton, &QPushButton::clicked, this, &QDialog::accept);
     connect(cancelButton, &QPushButton::clicked, this, &QDialog::reject);
     connect(listWidget, &QListWidget::itemDoubleClicked, this, &QDialog::accept);
@@ -143,17 +138,12 @@ void IconsDialog::loadAllImagesAutomatically()
     for (const QString &prefix : resourcePrefixes) {
         scanResourcePrefix(prefix, imageExtensions);
     }
-
-    qDebug() << "Total images found:" << allImages.count();
-
     // Display all images initially
     filterImages("");
 }
 
 void IconsDialog::scanResourcePrefix(const QString &prefix, const QStringList &extensions)
 {
-    qDebug() << "Scanning prefix:" << prefix;
-
     // Use QDirIterator to recursively scan the resource prefix
     QDirIterator it(prefix, extensions, QDir::Files, QDirIterator::Subdirectories);
 
@@ -169,7 +159,6 @@ void IconsDialog::scanResourcePrefix(const QString &prefix, const QStringList &e
                 break;
             }
         }
-
         if (!isDuplicate) {
             // Validate image
             QPixmap pixmap(filePath);
@@ -194,13 +183,11 @@ bool IconsDialog::addImageToList(const QString &imagePath, const QString &fileNa
     if (!pixmap.isNull()) {
         // Create scaled pixmap with fixed size for consistency
         QPixmap scaledPixmap = pixmap.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-
         QListWidgetItem *item = new QListWidgetItem(
             QIcon(scaledPixmap),
             fileName
             );
         item->setData(Qt::UserRole, imagePath);
-
         // Set tooltip with white text
         item->setToolTip(QString("<div style='color: white; background-color: #333; padding: 5px;'>"
                                  "<b>%1</b><br>"
@@ -209,26 +196,20 @@ bool IconsDialog::addImageToList(const QString &imagePath, const QString &fileNa
 
         // Set text color to white for the item
         item->setForeground(Qt::white);
-
         // Set text alignment to center
         item->setTextAlignment(Qt::AlignCenter);
-
         // Enable word wrap for long file names
         item->setFlags(item->flags() | Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-
         listWidget->addItem(item);
         return true;
     }
 
     return false;
 }
-
 void IconsDialog::filterImages(const QString &searchText)
 {
     if (!listWidget) return;
-
     listWidget->clear();
-
     for (const auto &imagePair : allImages) {
         QString fileName = imagePair.first;
         QString filePath = imagePair.second;
@@ -239,7 +220,6 @@ void IconsDialog::filterImages(const QString &searchText)
         }
     }
 
-    qDebug() << "Filtered images:" << listWidget->count() << "/ Total:" << allImages.count();
 }
 
 void IconsDialog::onSearchTextChanged(const QString &text)

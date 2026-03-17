@@ -54,6 +54,7 @@ public:
     void componentRemoved(QString entityID, QString componentName);
     // Remove subcomponent from entity
     void subComponentRemoved(QString compID,QString subCompID, QString componentName);
+    void subComponentRenamed(QString compID, QString subCompID, QString newName);
     // Rename profile in tree
     void profileRenamed(QString ID, QString name);
     // Rename folder in tree
@@ -76,6 +77,8 @@ public:
     void setLibraryFileName(const QString& fileName);
     void selectMultipleEntitiesInTree(const QList<QString>& entityIds);
     QMap<QString, QTreeWidgetItem*> Items;
+    void updateEntityActiveState(const QString& entityID, bool active);
+    void setEntityActiveState(const QString& entityId, bool active);
 
 signals:
     void copyItemsRequested(QList<QVariantMap> data);
@@ -108,6 +111,11 @@ signals:
     //formation
     void addFormationRequested(QList<QVariantMap> selectedEntities);
     void libraryFileNameChanged(const QString& fileName);
+    void setEntitiesActiveRequested(QList<QVariantMap> entities, bool active);
+    void addWeaponToEntitiesRequested(QList<QVariantMap> entities);
+    void addSensorToEntitiesRequested(QList<QVariantMap> entities);
+    void addTeamToEntitiesRequested(QList<QVariantMap> entities, QString team);
+
 
 protected:
     // %%% Event Handlers %%%

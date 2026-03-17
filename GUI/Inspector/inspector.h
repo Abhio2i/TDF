@@ -96,6 +96,7 @@ public slots:
     void refreshForDeveloperMode();
     /* Reset inspector to initial state */
     void resetState();
+    void storeInitialData(const QJsonObject& data);
 
 signals:
     // %%% Focus Signals %%%
@@ -112,7 +113,7 @@ signals:
                           QString parameterType, bool add);
     /* Signal trajectory waypoints modification */
     void trajectoryWaypointsChanged(QString entityId, QJsonArray waypoints);
-
+void resetComponentRequested(const QString& entityID, const QString& componentName);
 private slots:
     // %%% Clipboard Operations %%%
     /* Copy current component data */
@@ -146,6 +147,7 @@ private:
     bool m_locked;                    // Locked state flag
     QPushButton *currentlyExpandedButton = nullptr; // Currently expanded section button
     int m_itemHeight;
+    QJsonObject m_initialComponentData;
     // %%% Multi-Component Handling %%%
     /* Process multi-component container */
     void handleMultiComponentContainer(QString ID, QString name, QJsonObject object);

@@ -110,6 +110,11 @@ public slots:
 
 
     //================ GIS wrappers (AngelScript exposed) ====================
+
+    Q_INVOKABLE void canvasCreateVectorLayer(const std::string &layerName);
+    Q_INVOKABLE void canvasSelectLayer(const std::string &layerName);
+    //Q_INVOKABLE void canvasRenameShape(const std::string &id,const std::string &newName);
+
     //Q_INVOKABLE void canvasAddCircle(const std::string &name, float x, float y, float radius);
     Q_INVOKABLE void canvasAddCircle(const std::string &name, float radius);
     // Q_INVOKABLE void canvasAddRectangle(const std::string &name, float x, float y, float width, float height);

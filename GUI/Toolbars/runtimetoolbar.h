@@ -57,7 +57,8 @@ signals:
     // Signal radar display toggle
     void radarDisplayToggled();
     void timeChanged(float newTimeInSeconds);
-        void simulationStateChanged(SimulationState state);
+    void simulationStateChanged(SimulationState state);
+    void resetTriggered();
 
 public:
     // Update elapsed time
@@ -69,6 +70,9 @@ public:
     // Stop action
     QAction *stopAction;
       void setSimulationState(SimulationState state);
+    void storeSnapshot(const QJsonObject& hierarchySnapshot);
+       QJsonObject m_initialSnapshot;
+      QJsonObject getSnapshot() const { return m_initialSnapshot; }
     // Next step action
 private slots:
     void timingActionTriggered() {
@@ -100,6 +104,7 @@ private:
     // Elapsed time in seconds
     float elapsedSeconds;
     // Timing dialog instance
+    QAction *resetAction;
 
 
     // %%% Utility Methods %%%

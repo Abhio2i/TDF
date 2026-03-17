@@ -27,8 +27,6 @@ void TDFManager::initializeTDFStructure()
         return;
     }
 
-
-
     // Create folder structure
     createFolderStructure();
 
@@ -39,9 +37,8 @@ void TDFManager::initializeTDFStructure()
     // Copy city.json if it doesn't exist in TDF/CityData
     QString cityJsonDest = m_cityDataFolderPath + "/city.json";
     copyResourceIfNeeded(":/jsonData/DB/jsonData/city.json", cityJsonDest);
-
     m_initialized = true;
-    qDebug() << "TDF initialization complete";
+
 }
 
 void TDFManager::createFolderStructure()
@@ -133,3 +130,5 @@ QString TDFManager::getCityJsonPath()
     // Otherwise return resource path
     return ":/jsonData/DB/jsonData/city.json";
 }
+
+

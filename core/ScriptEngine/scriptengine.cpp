@@ -49,7 +49,7 @@ static float Math_Random()
 static QString geoToString(double lat, double lon)
 {
     return QString("Lat:%1 Lon:%2")
-        .arg(lat, 0, 'f', 6)
+    .arg(lat, 0, 'f', 6)
         .arg(lon, 0, 'f', 6);
 }
 
@@ -387,13 +387,13 @@ CScriptArray* ScriptEngine::findEntitiesByType(int typeId) {
         qDebug() << "[EntityFinder] No entities of this type";
     } else if (count == 1) {
         qDebug().noquote() << QString("[EntityFinder] Found 1 entity named %1 of \"%2\" Type")
-                                  .arg(QString::fromStdString(names.str()))
-                                  .arg(QString::fromStdString(typeName));
+        .arg(QString::fromStdString(names.str()))
+            .arg(QString::fromStdString(typeName));
     } else {
         qDebug().noquote() << QString("[EntityFinder] Found %1 entities named %2 of \"%3\" Type")
-                                  .arg((int)count)
-                                  .arg(QString::fromStdString(names.str()))
-                                  .arg(QString::fromStdString(typeName));
+        .arg((int)count)
+            .arg(QString::fromStdString(names.str()))
+            .arg(QString::fromStdString(typeName));
     }
 
     return arr;
@@ -1258,6 +1258,24 @@ void ScriptEngine::selectEntityDisplay(IFF* iff) {
     emit requestDisplayTab("IFF");  // or "Iff" depending on your tab name
 }
 
+void ScriptEngine::canvasCreateVectorLayer(const std::string &layerName)
+{
+    if (!gisEngine) return;
+    gisEngine->canvasCreateVectorLayer(layerName);
+}
+
+void ScriptEngine::canvasSelectLayer(const std::string &layerName)
+{
+    if (!gisEngine) return;
+    gisEngine->canvasSelectLayer(layerName);
+}
+
+// void ScriptEngine::canvasRenameShape(const std::string &newName)
+// {
+//     if (!gisEngine) return;
+//     gisEngine->canvasRenameShape(newName);
+// }
+
 // Set active city in GIS engine using city name
 void ScriptEngine::useCity(const std::string& cityName)
 {
@@ -2008,10 +2026,26 @@ ScriptEngine::ScriptEngine()
                                  asCALL_THISCALL);
 
     // ================= GIS AUTOSCRIPT BINDINGS by amjad =================
+
+    r = engine->RegisterObjectMethod(
+        "ScriptEngine",
+        "void canvasCreateVectorLayer(const string &in)",
+        asMETHOD(ScriptEngine, canvasCreateVectorLayer),
+        asCALL_THISCALL
+        );
+    Q_ASSERT(r >= 0);
+
+    r = engine->RegisterObjectMethod("ScriptEngine",
+                                     "void canvasSelectLayer(const string &in)",
+                                     asMETHOD(ScriptEngineGIS,canvasSelectLayer),
+                                     asCALL_THISCALL);
+    Q_ASSERT(r >= 0);
+
     // selected shap
     r = engine->RegisterObjectMethod("ScriptEngine",
                                      "void setCanvasSelectedShape(const string &in)",
                                      asMETHOD(ScriptEngine, setCanvasSelectedShape), asCALL_THISCALL); Q_ASSERT(s >= 0);
+    Q_ASSERT(r >= 0);
 
     // Circle
     // r = engine->RegisterObjectMethod("ScriptEngine",

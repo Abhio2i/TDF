@@ -53,6 +53,12 @@ public:
     // std::vector<QJsonObject> array;
     std::vector<Waypoints*> Trajectories;
     int current = 0;
+    bool reverse = false;
+    void goHome();
+    void activateSensors();
+    void deactivateSensors();
+    void makeFormation();
+    void deformation();
     QJsonObject customParameters; // Added to store custom parameters
     void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QString data3 = "") override;
     void removeSubComponent(std::string ID) override;

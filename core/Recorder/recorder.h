@@ -15,6 +15,7 @@
 #include <core/Hierarchy/EntityProfiles/platform.h>
 #include <cmath>
 #include "payload.h"
+#include <core/Hierarchy/profilecategaory.h>
 
 
 // Forward declarations to avoid circular includes
@@ -326,11 +327,34 @@ public:
     // Index & ID Start
     int maxIndex = 0;
     //std::unordered_map<QString,int> entitiesIDIndex;
-    EntitiesDetailsList m_entitiesDetailsList;
-    EntitiesCreatedList m_entitiesCreatedList;
-    EntitiesUpdatedList m_entitiesUpdatedList;
-    EntitiesDeletedList m_entitiesDeletedList;
-    QHash<QString, int> entitiesIDIndex;
+
+    /************  ProfileCategories  ************/
+    ProfileCategoriesDetailsList m_profileCategoriesDetailsList;
+    ProfileCategoriesCRUDList    m_profileCategoriesCRUDList;
+
+    int maxProfileIndex  = 0;
+    QHash<QString, int>          profileCategoriesIDIndex;
+
+    void profileCategoriesUpdate(QString ID,
+                                 QString profileName,
+                                 Operation operation);
+    void profileCategoriesDeleted(QString ID);
+
+    /****************  Entities   ****************/
+    EntitiesDetailsList   m_entitiesDetailsList;
+    EntitiesCreatedList   m_entitiesCreatedList;
+    EntitiesUpdatedList   m_entitiesUpdatedList;
+    EntitiesDeletedList   m_entitiesDeletedList;
+    EntitiesMeshRenderer2DList     m_entitiesMeshRenderer2DList;
+    EntitiesMeshRenderer2DCRUDList m_entitiesMeshRenderer2DCRUDList;
+    EntitiesMeshRenderer2DCRUD entitiesMeshRenderer2DCRUD;
+    EntitiesMeshRenderer2D     entitiesMeshRenderer2D;
+    EntitiesTrajectoryList m_entitiesTrajectoryList;
+    EntitiesTrajectoryCRUDList m_entitiesTrajectoryCRUDList;
+    EntitiesTrajectoryCRUD entitiesTrajectoryCRUD;
+    EntitiesTrajectory entitiesTrajectory;
+    TrajectoryWaypoint trajectoryWaypoint;
+    QHash<QString, int>   entitiesIDIndex;
     void inspectEntitiesIDIndex();
     void inspectEntitiesUpdatedList();
     // Index & ID End
@@ -339,12 +363,13 @@ public:
     int frameIndex = 0;
     // Frame Index End
 
-
     // To Insert All entity from Start of Recording
     void entityAddedAllFromStart();
     void entityAddedInBetween(const QString &parentID, const QString &ID, const QString &entityName);
     void entityUpdatesInBetween();
     void entityRemovedInBetween(const QString &ID);
+    void meshRenderer2DCRUD(const QString &ID, MeshRenderer2D* meshRenderer2D, Operation operation = Operation::CREATE);
+    void trajectoryCRUD(const QString &ID, std::vector<Waypoints*> Trajectories,Operation operation = Operation::CREATE);
     void framePayLoad();
 signals:
     void entityCreated(const QString &parentID, const QString &id, const QString &name, const qint64 &created);
@@ -369,18 +394,21 @@ private:
     /*  Custom enum for Selective Debugging  */
 public:
     typedef enum {
-        D_NULL            = 0b100000000000,
-        D_JustPrint       = 0b010000000000,
-        D_Timer           = 0b001000000000,
-        D_RecordingStatus = 0b000100000000,
-        D_RecordingUpdate = 0b000010000000,
-        D_BeforeStart     = 0b000001000000,
-        D_EntityCreated   = 0b000000100000,
-        D_EntityUpdated   = 0b000000010000,
-        D_EntityDeleted   = 0b000000001000,
-        D_FramePayLoad    = 0b000000000100,
-        D_EntitiesIDIndex = 0b000000000010,
-        D_UpdatesInBTW    = 0b000000000001
+        D_NULL              = 0b1000000000000000000000000000000,
+        D_JustPrint         = 0b0100000000000000000000000000000,
+        D_Timer             = 0b0010000000000000000000000000000,
+        D_RecordingStatus   = 0b0001000000000000000000000000000,
+        D_RecordingUpdate   = 0b0000100000000000000000000000000,
+        D_BeforeStart       = 0b0000010000000000000000000000000,
+        D_EntityCreated     = 0b0000001000000000000000000000000,
+        D_EntityUpdated     = 0b0000000100000000000000000000000,
+        D_EntityDeleted     = 0b0000000010000000000000000000000,
+        D_FramePayLoad      = 0b0000000001000000000000000000000,
+        D_EntitiesIDIndex   = 0b0000000000100000000000000000000,
+        D_UpdatesInBTW      = 0b0000000000010000000000000000000,
+        D_ProfileCategories = 0b0000000000001000000000000000000,
+        D_TrajectoryCRUD    = 0b0000000000000100000000000000000,
+        D_MeshRenderer2D    = 0b0000000000000010000000000000000
     }debugOptions;
     Q_ENUM(debugOptions)
 
@@ -391,14 +419,21 @@ private:
      *   Custom Debugging    */
     /*  ===> " USE ME " for debugging   <===*/
     int debugList = D_JustPrint
-                    | D_RecordingStatus
-                    | D_RecordingUpdate
-                    | D_BeforeStart
-                    | D_EntityCreated
-                    | D_EntityUpdated
-                    | D_EntitiesIDIndex
-                    | D_EntityDeleted
-                    | D_UpdatesInBTW;
+                    // | D_Timer
+                    // | D_RecordingStatus
+                    // | D_RecordingUpdate
+                    // | D_BeforeStart
+                    // | D_EntityCreated
+                    // | D_EntityUpdated
+                    // | D_EntityDeleted
+                    // | D_FramePayLoad
+                    // | D_EntitiesIDIndex
+                    // | D_UpdatesInBTW
+                    // | D_ProfileCategories
+                    // | D_TrajectoryCRUD
+                    | D_MeshRenderer2D
+        ;
+
     /*   To find the the debugOptions inside
      *   debugType or not "Helping Function" */
     bool dbgIsAllow(const debugOptions &currentdebugType);
@@ -568,18 +603,35 @@ signals:
 
 public:
     std::unordered_map<int, EntitiesDetails> entitiesIndexDetails;
+    std::unordered_map<int, ProfileCategoriesDetails> profileCategoriesIndexDetails;
+
+    void cleanHierarchy();
+    void setProfileCategoriesDetails();
     void setEntitiesIndexDetails();
 
+    void setEntitiesMeshRenderer2D();
+    void crudEntitiesMeshRenderer2D();
+    std::unordered_map<int, EntitiesMeshRenderer2D>
+        entitiesMeshRenderer2DIndex;
+
+    void setEntitiesTrajectory();
+    std::unordered_map<int, EntitiesTrajectory>
+        entitiesTrajectoryIndex;
+    void crudEntitiesTrajectory();
+    void crudProfileCategoriesDetails();
     void createEntitiesCreateList();
     void updateEntitiesUpdatedList();
     void deleteEntitiesDeletedList();
 signals:
+    void createProfileCategories(ProfileCategaory *profileCategaory);
+    void deleteProfileCategories(QString ID);
     void createEntitiesCreate(QString parentId,QString ID,QString EntityName,bool Profile);
     void updateEntities();
     void deleteEntities(QString parentId, QString ID, bool Profile);
     /*---------   Update Data on Canvas End   ---------*/
 public:
     std::unordered_map<int,std::pair<std::string, std::string>> entitiesMap;
+    std::unordered_map<int,std::pair<std::string, std::string>> profileCategoriesMap;
     std::vector<qint64> frameMap;
 
     void loadFrameEntitiesData();
@@ -599,14 +651,18 @@ private:
     /*  Custom enum for Selective Debugging  */
 public:
     typedef enum {
-        D_NULL            = 0b100000000000,
-        D_JustPrint       = 0b010000000000,
-        D_Timer           = 0b001000000000,
-        D_MaxFrameIndexNDuration = 0b000100000000,
-        D_EntitiesIndexDetails   = 0b000010000000,
-        D_EntitiesCreateList     = 0b000001000000,
-        D_EntitiesDeletedList    = 0b000000100000,
-        D_PayLoad_Inspect        = 0b000000010000
+        D_NULL                          = 0b100000000000000000000,
+        D_JustPrint                     = 0b010000000000000000000,
+        D_Timer                         = 0b001000000000000000000,
+        D_MaxFrameIndexNDuration        = 0b000100000000000000000,
+        D_EntitiesIndexDetails          = 0b000010000000000000000,
+        D_ProfileCategoriesIndexDetails = 0b000001000000000000000,
+        D_EntitiesCreateList            = 0b000000100000000000000,
+        D_EntitiesDeletedList           = 0b000000010000000000000,
+        D_PayLoad_Inspect               = 0b000000001000000000000,
+        D_CleanHierarchy                = 0b000000000100000000000,
+        D_MeshRenderer                  = 0b000000000010000000000,
+        D_EntitiesTrajectory            = 0b000000000001000000000
     }debugReplay;
     Q_ENUM(debugReplay)
 
@@ -617,13 +673,18 @@ private:
      *   Custom Debugging    */
     /*  ===> " USE ME " for debugging   <===*/
     int debugList = D_JustPrint
-                    | D_EntitiesDeletedList
-                    | D_PayLoad_Inspect
-        //| D_Timer
-        //| D_EntitiesCreateList
-        //| D_MaxFrameIndexNDuration
-        //| D_EntitiesIndexDetails
+                    // |D_EntitiesDeletedList
+                    // |D_PayLoad_Inspect
+                    // |D_ProfileCategoriesIndexDetails
+                    // |D_CleanHierarchy
+                    // | D_MeshRenderer
+                    | D_EntitiesTrajectory
         ;
+    //| D_Timer
+    //| D_EntitiesCreateList
+    //| D_MaxFrameIndexNDuration
+    //| D_EntitiesIndexDetails
+    ;
 
     /*   To find the the debugOptions inside
      *   debugType or not "Helping Function" */

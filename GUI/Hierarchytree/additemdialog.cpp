@@ -1,5 +1,4 @@
 
-// }
 /* ========================================================================= */
 /* File: additemdialog.cpp                                                  */
 /* Purpose: Implementation of dialog for adding items with components       */
@@ -562,7 +561,8 @@ void AddItemDialog::setupUI(DialogType type)
     bool isComponentSensorAdd = (m_dialogMode == ComponentSensorMode) || (specificType == "sensors");
     bool isComponentIFFAdd = (m_dialogMode == ComponentIFFMode) || (specificType == "iffs");
     bool isComponentRadioAdd = (m_dialogMode == ComponentRadioMode) || (specificType == "radios");
-    bool isForComponentAdd = isComponentSensorAdd || isComponentIFFAdd || isComponentRadioAdd;
+    bool isComponentWeaponAdd = (m_dialogMode == ComponentWeaponMode) || (specificType == "weapons");
+    bool isForComponentAdd = isComponentSensorAdd || isComponentIFFAdd || isComponentRadioAdd || isComponentWeaponAdd;
     bool isForSensor = isProfileSensorAdd || isComponentSensorAdd;
     bool shouldShowEntitySelection = false;
     if (!isDatabaseEditor && type == EntityType && !isForComponentAdd &&
@@ -678,6 +678,7 @@ void AddItemDialog::setupUI(DialogType type)
         if (isComponentSensorAdd) placeholderText = "Select Sensor";
         else if (isComponentIFFAdd) placeholderText = "Select IFF";
         else if (isComponentRadioAdd) placeholderText = "Select Radio";
+        else if (isComponentWeaponAdd) placeholderText = "Select Weapon";
 
         profileComboBox->addItem(placeholderText);
         profileComboBox->setCurrentIndex(0);
@@ -692,6 +693,8 @@ void AddItemDialog::setupUI(DialogType type)
             populateIFFProfiles();
         } else if (isComponentRadioAdd) {
             populateRadioProfiles();
+        } else if (isComponentWeaponAdd) {
+            populateWeaponProfiles();
         }
 
         profileComboBox->setMinimumWidth(250);
@@ -755,6 +758,8 @@ void AddItemDialog::setupUI(DialogType type)
         defaultName = "IFF";
     } else if (isComponentRadioAdd) {
         defaultName = "Radio";
+    } else if (isComponentWeaponAdd) {
+        defaultName = "Weapon";
     } else {
         defaultName = getDefaultName(type);
     }
@@ -785,9 +790,9 @@ void AddItemDialog::setupUI(DialogType type)
         sensorTypeLayout->addWidget(sensorLabel);
 
         sensorTypeComboBox = new QComboBox(this);
-        sensorTypeComboBox->addItems({"Generic", "CSM", "ESM"});
+        sensorTypeComboBox->addItems({"Generic", "CSM", "ESM", "Sonar"});
         sensorTypeComboBox->setCurrentText("Generic");
-         sensorTypeComboBox->setStyleSheet("color: white;");
+        sensorTypeComboBox->setStyleSheet("color: white;");
         sensorTypeLayout->addWidget(sensorTypeComboBox);
         sensorTypeLayout->addStretch();
         mainLayout->addLayout(sensorTypeLayout);
@@ -961,7 +966,7 @@ void AddItemDialog::setupUI(DialogType type)
                            specificType == "IFF" ||
                            specificType == "Radio" ||
                            specificType == "Sensor" ||
-                           specificType == "Weapon" ||
+                           (specificType == "Weapon" && isDatabaseEditor) || // scenario mein Weapon = bigger dialog
                            specificType == "FixedPoint" ||
                            isProfileSensorAdd ||
                            isComponentSensorAdd ||
@@ -995,13 +1000,15 @@ void AddItemDialog::setupUI(DialogType type)
             windowTitle = "Add IFFs";
         } else if (isComponentRadioAdd) {
             windowTitle = "Add Radios";
+        } else if (isComponentWeaponAdd) {
+            windowTitle = "Add Weapons";
         } else if (isProfileSensorAdd) {
             windowTitle = "Add Sensor";
         } else {
             windowTitle = "Add Entity";
         }
 
-        if (isComponentSensorAdd || isComponentIFFAdd || isComponentRadioAdd) {
+        if (isComponentSensorAdd || isComponentIFFAdd || isComponentRadioAdd || isComponentWeaponAdd) {
             setFixedSize(350, 220);
         } else if (isProfileSensorAdd) {
             setFixedSize(350, 260);
@@ -1044,6 +1051,10 @@ void AddItemDialog::setupUI(DialogType type)
         } else if (specificType == "FixedPoints") {
             windowTitle = "Add Fixed Point";
             setFixedSize(500, 550);
+        } else if (specificType == "Weapon") {
+            // Scenario/Runtime editor: Search Entity field + name field
+            windowTitle = "Add Weapon";
+            setFixedSize(450, 320);
         } else {
             windowTitle = "Add Entity";
             setFixedSize(450, 450);
@@ -1160,6 +1171,7 @@ QString AddItemDialog::getComponentType() const {
     if (m_dialogMode == ComponentSensorMode) return "sensors";
     if (m_dialogMode == ComponentIFFMode) return "iffs";
     if (m_dialogMode == ComponentRadioMode) return "radios";
+    if (m_dialogMode == ComponentWeaponMode) return "weapons";
     return "";
 }
 
@@ -1218,6 +1230,12 @@ void AddItemDialog::populateIFFProfiles()
 void AddItemDialog::populateRadioProfiles()
 {
     populateProfiles("Radio");
+}
+
+/* Populate weapon profiles — mirrors Radio pattern exactly */
+void AddItemDialog::populateWeaponProfiles()
+{
+    populateProfiles("Weapon");
 }
 
 // %%% NEW: Clear Entity Selection %%%
@@ -1380,6 +1398,9 @@ QString AddItemDialog::determineProfileContext(const QString& specificType,
     }
     else if (dialogMode == ComponentRadioMode) {
         return "Radio";
+    }
+    else if (dialogMode == ComponentWeaponMode) {
+        return "Weapon";
     }
     else if (dialogMode == ComponentSensorMode) {
         return "Sensor";

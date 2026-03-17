@@ -23,6 +23,7 @@ public:
     /* Defines the types of editors that use recent projects */
     enum EditorType {
         ScenarioEditor,   // For scenario editing applications
+         MissionEditor,
         RuntimeEditor,    // For runtime editing applications
         DatabaseEditor,   // For database editing applications
          LibraryData

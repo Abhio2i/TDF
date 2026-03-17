@@ -1,7 +1,5 @@
-
 /* ========================================================================= */
 /* File: layerpanel.cpp                                                     */
-/* Purpose: Enhanced layer panel with visibility toggle                    */
 /* Written by: Waris Ali                                                   */
 /* ========================================================================= */
 
@@ -13,6 +11,7 @@
 #include <QDebug>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QShortcut>
 #include <QFileDialog>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -20,8 +19,17 @@
 #include <QFile>
 #include <QTextStream>
 #include <QtMath>
+#include <cstring>
+#include <cmath>
 #include <QDir>
+#include <qgscoordinatetransform.h>
+#include <qgsproject.h>
 #include <core/Hierarchy/Struct/vector.h>
+#include "GUI/Tacticaldisplay/Gis/gislib.h"
+
+static RasterLayer makeDefaultExtents(const RasterLayer& rl, CanvasWidget* canvas);
+
+
 
 // %%% Constructor %%%
 /* Initialize layer panel with tree view and context menu */
@@ -57,7 +65,7 @@ void LayerPanel::setupUI()
     layout->setContentsMargins(5, 5, 5, 5);
     layout->setSpacing(0);
 
-    // Create 3-column tree
+    // Create tree widget for layer management
     layerTree = new QTreeWidget(mainWidget);
     layerTree->setColumnCount(3);
     layerTree->setHeaderHidden(true);
@@ -66,9 +74,13 @@ void LayerPanel::setupUI()
     layerTree->setDragEnabled(true);
     layerTree->setAcceptDrops(true);
     layerTree->setDropIndicatorShown(true);
-    layerTree->setDragDropMode(QAbstractItemView::InternalMove);
+    // DragDrop mode: our eventFilter intercepts drops before Qt reparents items
+    layerTree->setDragDropMode(QAbstractItemView::DragDrop);
     layerTree->setRootIsDecorated(false);
-    layerTree->setIndentation(12);
+    layerTree->setIndentation(20);
+
+    // Install event filter on the viewport so LayerPanel::eventFilter() handles shape->layer drops
+    layerTree->viewport()->installEventFilter(this);
 
     // Column sizing: col0 stretches, col1 and col2 are fixed 28px
     layerTree->setColumnCount(2);
@@ -146,14 +158,16 @@ void LayerPanel::setupContextMenu()
     contextMenu->setStyleSheet(LayerPanelStyles::ContextMenu);
 
     // Create actions
-    addLayerAction = new QAction("Add Layer", this);
-    // removeLayerAction = new QAction("Remove Layer", this);
+    addLayerAction = new QAction("Add Vector Layer", this);
+    addRasterLayerAction = new QAction("Add Raster Layer", this);
+    removeLayerAction = new QAction("Remove Layer", this);
     renameLayerAction = new QAction("Rename Layer", this);
     exportLayerAction = new QAction("Export Layer", this);
 
     // Connect actions
     connect(addLayerAction, &QAction::triggered, this, &LayerPanel::addLayer);
-    // connect(removeLayerAction, &QAction::triggered, this, &LayerPanel::removeLayer);
+    connect(addRasterLayerAction, &QAction::triggered, this, &LayerPanel::addRasterLayer);
+    connect(removeLayerAction, &QAction::triggered, this, &LayerPanel::removeLayer);
     connect(renameLayerAction, &QAction::triggered, this, &LayerPanel::renameLayer);
     connect(exportLayerAction, &QAction::triggered, this, &LayerPanel::exportLayer);
 }
@@ -175,25 +189,33 @@ void LayerPanel::showContextMenu(const QPoint &pos)
         // ONLY show "Add Layer" on the root "Layers" item
         if (itemText == "Layers") {
             contextMenu->addAction(addLayerAction);
+            contextMenu->addAction(addRasterLayerAction);
             showMenu = true;
         }
-        // For actual layer items (not root, not shapes)
-        else if (selectedItem->parent() &&
-                 selectedItem->parent()->text(0) == "Layers") {
-            // This is a layer - show layer-specific actions
+        // For actual layer items (vector or raster) — identified via maps, not text
+        else if (isLayerItem(selectedItem) ||
+                 rasterLayerItems.values().contains(selectedItem)) {
             contextMenu->addAction(removeLayerAction);
             contextMenu->addSeparator();
             contextMenu->addAction(renameLayerAction);
-            contextMenu->addSeparator();
-            contextMenu->addAction(exportLayerAction);
+            // Export only makes sense for vector layers
+            if (isLayerItem(selectedItem)) {
+                contextMenu->addSeparator();
+                contextMenu->addAction(exportLayerAction);
+            }
             showMenu = true;
         }
-        // For shape items - optionally show shape-specific actions
-        // or don't show menu at all
+        // For shape items - show rename option
         else if (selectedItem->parent() &&
                  selectedItem->parent()->text(0) != "Layers") {
-            // Shape item - no menu for shapes
-            return;
+            // Shape item - show rename action
+            QString shapeId = selectedItem->data(0, Qt::UserRole).toString();
+            QAction* renameShapeAction = new QAction("Rename Shape", this);
+            connect(renameShapeAction, &QAction::triggered, this, [this, shapeId]() {
+                renameShape(shapeId);
+            });
+            contextMenu->addAction(renameShapeAction);
+            showMenu = true;
         }
     } else {
         // Empty area click - no menu
@@ -277,13 +299,45 @@ void LayerPanel::addLayer()
     emit layerAdded(layerName);
 }
 
+// Add layer via script by amjad
+void LayerPanel::addLayerFromScript(const QString& name)
+{
+    if (layerExists(name))
+        return;
+
+    if (!rootLayersItem)
+        return;
+
+    QTreeWidgetItem *newLayer = new QTreeWidgetItem();
+    newLayer->setText(0, name);
+    newLayer->setFlags(newLayer->flags() | Qt::ItemIsEditable);
+
+    rootLayersItem->addChild(newLayer);
+
+    layerItems[name] = newLayer;
+    layerShapes[name] = QStringList();
+    layerVisibility[name] = true;
+
+    createVisibilityToggle(name, newLayer);
+
+    setActiveLayer(name);
+
+    // refresh tree UI
+    QTreeWidget* tree = rootLayersItem->treeWidget();
+    if (tree) {
+        tree->expandItem(rootLayersItem);
+        tree->setCurrentItem(newLayer);
+        tree->viewport()->update();
+    }
+}
+
 // %%% Remove Layer %%%
-/* Remove selected layer and its children */
+/* Remove selected layer — works for both vector and raster layers */
 void LayerPanel::removeLayer()
 {
     QTreeWidgetItem *selectedItem = layerTree->currentItem();
 
-    if (!selectedItem || selectedItem->text(0) == "Layers") {
+    if (!selectedItem) {
         QMessageBox msgBox(this);
         msgBox.setStyleSheet(LayerPanelStyles::MessageBox);
         msgBox.setWindowTitle("No Selection");
@@ -293,19 +347,27 @@ void LayerPanel::removeLayer()
         return;
     }
 
-    QString layerName = getFullLayerName(selectedItem);
-    int shapeCount = layerShapes.value(layerName).count();
-    int childCount = selectedItem->childCount();
+    // Resolve name from UserRole (works for both vector and raster)
+    QString layerName = selectedItem->data(0, Qt::UserRole).toString();
+    if (layerName.isEmpty())
+        layerName = getFullLayerName(selectedItem);
 
-    // Confirm deletion
-    QString message = QString("Are you sure you want to remove layer '%1'?")
-                          .arg(layerName);
-    if (shapeCount > 0) {
-        message += QString("\n\nThis will also remove %1 shape(s).").arg(shapeCount);
+    // Determine type
+    const bool isRaster = rasterLayers.contains(layerName);
+    const bool isVector = layerItems.contains(layerName);
+
+    if (!isRaster && !isVector) {
+        // Not a layer row (e.g. shape child or root) — nothing to do
+        return;
     }
-    if (childCount > 0) {
-        message += QString("\n\nThis will also remove %1 child layer(s).").arg(childCount);
-    }
+
+    // Build confirmation message
+    int shapeCount = isVector ? layerShapes.value(layerName).count() : 0;
+    QString message = QString("Are you sure you want to remove layer '%1'?").arg(layerName);
+    if (shapeCount > 0)
+        message += QString("\n\nThis will also permanently delete %1 shape(s).").arg(shapeCount);
+    if (isRaster)
+        message += "\n\nThe raster image file will NOT be deleted from disk.";
 
     QMessageBox msgBox(this);
     msgBox.setStyleSheet(LayerPanelStyles::MessageBox);
@@ -314,138 +376,440 @@ void LayerPanel::removeLayer()
     msgBox.setIcon(QMessageBox::Question);
     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
 
-    if (msgBox.exec() == QMessageBox::Yes) {
-        // Remove from maps
-        layerItems.remove(layerName);
-        layerVisibility.remove(layerName);
+    if (msgBox.exec() != QMessageBox::Yes)
+        return;
 
-        // Remove all shapes in this layer
+    // ── Remove from tree ──────────────────────────────────────────────────
+    QTreeWidgetItem* parent = selectedItem->parent();
+    if (parent)
+        parent->removeChild(selectedItem);
+    else
+        layerTree->takeTopLevelItem(layerTree->indexOfTopLevelItem(selectedItem));
+    delete selectedItem;
+
+    if (isVector) {
+        // ── Vector layer cleanup ──────────────────────────────────────────
         QStringList shapes = layerShapes.value(layerName);
+
+        // Notify canvas to erase shapes from tempMeshes BEFORE clearing maps
+        emit layerWithShapesRemoved(shapes);
+
         for (const QString& shapeId : shapes) {
             shapeToLayer.remove(shapeId);
+            shapeDisplayNames.remove(shapeId);
         }
 
+        layerItems.remove(layerName);
         layerShapes.remove(layerName);
+        layerVisibility.remove(layerName);
+        layerNameLabels.remove(layerName);
+        expandButtons.remove(layerName);
 
-        // Remove visibility toggle widget
         if (visibilityToggleWidgets.contains(layerName)) {
-            QWidget* toggleWidget = visibilityToggleWidgets.value(layerName);
-            visibilityToggleWidgets.remove(layerName);
-            if (toggleWidget) {
-                delete toggleWidget;
-            }
+            delete visibilityToggleWidgets.take(layerName);
         }
 
-        // Remove from tree
-        QTreeWidgetItem *parent = selectedItem->parent();
-        if (parent) {
-            parent->removeChild(selectedItem);
-        } else {
-            int index = layerTree->indexOfTopLevelItem(selectedItem);
-            layerTree->takeTopLevelItem(index);
-        }
-        delete selectedItem;
-
-        // Clear active layer if it was removed
+        // Update active layer
         if (activeLayerName == layerName) {
             activeLayerName.clear();
             clearActiveLayerVisual();
-
-            // Try to set another layer as active
-            if (!layerItems.isEmpty()) {
+            if (!layerItems.isEmpty())
                 setActiveLayer(layerItems.firstKey());
-            }
         }
 
-        // Emit signal
+        emit layerRemoved(layerName);
+
+    } else {
+        // ── Raster layer cleanup ──────────────────────────────────────────
+        rasterLayers.remove(layerName);
+        rasterLayerItems.remove(layerName);
+        rasterLayerOrder.removeAll(layerName);
+        rasterNameLabels.remove(layerName);
+        rasterExpandButtons.remove(layerName);
+
+        if (rasterVisibilityWidgets.contains(layerName)) {
+            delete rasterVisibilityWidgets.take(layerName);
+        }
+
+        // Trigger canvas repaint so the raster is no longer drawn
+        emit rasterLayerChanged();
         emit layerRemoved(layerName);
     }
 }
 
 // %%% Rename Layer %%%
 /* Rename selected layer */
+bool LayerPanel::eventFilter(QObject* obj, QEvent* event)
+{
+    // ── Shape-to-layer drag-and-drop (intercepted on layerTree->viewport()) ──
+    if (obj == layerTree->viewport()) {
+
+        if (event->type() == QEvent::DragEnter) {
+            QDragEnterEvent* de = static_cast<QDragEnterEvent*>(event);
+            // Only accept drags that started inside the tree itself
+            if (de->source() == layerTree) {
+                de->acceptProposedAction();
+                return true;
+            }
+            de->ignore();
+            return true;
+        }
+
+        if (event->type() == QEvent::DragMove) {
+            QDragMoveEvent* dm = static_cast<QDragMoveEvent*>(event);
+            if (dm->source() != layerTree) { dm->ignore(); return true; }
+
+            QTreeWidgetItem* dragged = layerTree->currentItem();
+            // Use resolveDropTargetLayer so empty layers (no visible child rows)
+            // are found even when itemAt() returns nullptr over the blank area.
+            QTreeWidgetItem* target  = resolveDropTargetLayer(dm->pos());
+            if (isValidShapeToLayerDrop(dragged, target))
+                dm->acceptProposedAction();
+            else
+                dm->ignore();
+            return true;
+        }
+
+        if (event->type() == QEvent::Drop) {
+            QDropEvent* de = static_cast<QDropEvent*>(event);
+            if (de->source() != layerTree) { de->ignore(); return true; }
+
+            QTreeWidgetItem* dragged = layerTree->currentItem();
+            // Same fix: resolve through empty space onto the layer row above.
+            QTreeWidgetItem* target  = resolveDropTargetLayer(de->pos());
+
+            if (!isValidShapeToLayerDrop(dragged, target)) {
+                de->ignore();
+                return true;
+            }
+
+            // Resolve target layer name from UserRole (set in createVisibilityToggle)
+            QString targetLayerName = target->data(0, Qt::UserRole).toString();
+            if (targetLayerName.isEmpty()) {
+                targetLayerName = target->text(0);
+                int idx = targetLayerName.indexOf(" (");
+                if (idx > 0) targetLayerName = targetLayerName.left(idx);
+            }
+
+            QString shapeId = dragged->data(0, Qt::UserRole).toString();
+
+            de->acceptProposedAction();   // consume BEFORE moveShapeToLayer
+            moveShapeToLayer(shapeId, targetLayerName);
+            return true;
+        }
+    }
+
+    // ── Double-click on layer name label -> inline rename ─────────────────
+    if (event->type() == QEvent::MouseButtonDblClick) {
+        QWidget* w = qobject_cast<QWidget*>(obj);
+        if (w) {
+            // Check for vector layer name
+            QVariant vProp = w->property("layerName");
+            if (vProp.isValid()) {
+                renameLayerByName(vProp.toString());
+                return true;   // consume event
+            }
+            // Check for raster layer name
+            QVariant rProp = w->property("rasterLayerName");
+            if (rProp.isValid()) {
+                renameLayerByName(rProp.toString());
+                return true;
+            }
+        }
+    }
+    return QDockWidget::eventFilter(obj, event);
+}
+
+bool LayerPanel::isLayerItem(QTreeWidgetItem* item) const
+{
+    if (!item) return false;
+    return layerItems.values().contains(item);
+}
+
+bool LayerPanel::isShapeItem(QTreeWidgetItem* item) const
+{
+    if (!item) return false;
+    QString id = item->data(0, Qt::UserRole).toString();
+    return !id.isEmpty() && shapeToLayer.contains(id);
+}
+
+bool LayerPanel::isValidShapeToLayerDrop(QTreeWidgetItem* dragged,
+                                         QTreeWidgetItem* target) const
+{
+    if (!isShapeItem(dragged) || !isLayerItem(target)) return false;
+
+    // Disallow dropping onto the layer the shape already belongs to
+    QString shapeId   = dragged->data(0, Qt::UserRole).toString();
+    QString curLayer  = shapeToLayer.value(shapeId);
+    QString tgtLayer  = target->data(0, Qt::UserRole).toString();
+
+    if (tgtLayer.isEmpty()) {
+        for (auto it = layerItems.constBegin(); it != layerItems.constEnd(); ++it) {
+            if (it.value() == target) { tgtLayer = it.key(); break; }
+        }
+    }
+
+    return !tgtLayer.isEmpty() && tgtLayer != curLayer;
+}
+
+QTreeWidgetItem* LayerPanel::resolveDropTargetLayer(const QPoint& viewportPos) const
+{
+    QTreeWidgetItem* item = layerTree->itemAt(viewportPos);
+
+    // Direct hit on a known layer row
+    if (isLayerItem(item)) return item;
+
+    // Hit on a shape row — return its parent layer
+    if (isShapeItem(item) && isLayerItem(item->parent())) return item->parent();
+
+    // No item hit (empty space) — scan upward row-by-row
+    const int rowH = (layerTree->sizeHintForRow(0) > 4) ? layerTree->sizeHintForRow(0) : 26;
+    for (int y = viewportPos.y() - 1; y >= 0; y -= rowH) {
+        QTreeWidgetItem* candidate = layerTree->itemAt(QPoint(viewportPos.x(), y));
+        if (!candidate) continue;
+        if (isLayerItem(candidate))              return candidate;
+        if (isShapeItem(candidate) &&
+            isLayerItem(candidate->parent()))    return candidate->parent();
+    }
+
+    return nullptr;
+}
+
 void LayerPanel::renameLayer()
 {
-    QTreeWidgetItem *selectedItem = layerTree->currentItem();
+    renameLayerByName(QString());   // delegates to the shared implementation
+}
 
-    if (!selectedItem || selectedItem->text(0) == "Layers") {
-        QMessageBox msgBox(this);
-        msgBox.setStyleSheet(LayerPanelStyles::MessageBox);
-        msgBox.setWindowTitle("No Selection");
-        msgBox.setText("Please select a layer to rename!");
-        msgBox.setIcon(QMessageBox::Warning);
-        msgBox.exec();
+/* ─────────────────────────────────────────────────────────────────────────────
+ * renameLayerByName()
+ *
+ * Shared rename implementation called from:
+ * ───────────────────────────────────────────────────────────────────────── */
+void LayerPanel::renameLayerByName(const QString& targetName)
+{
+    // ── 1. Resolve which layer to rename ──────────────────────────────────
+    QString oldName = targetName;
+
+    if (oldName.isEmpty()) {
+        QTreeWidgetItem* sel = layerTree->currentItem();
+        if (!sel || sel->text(0) == "Layers") {
+            QMessageBox msgBox(this);
+            msgBox.setStyleSheet(LayerPanelStyles::MessageBox);
+            msgBox.setWindowTitle("No Selection");
+            msgBox.setText("Please select a layer to rename!");
+            msgBox.setIcon(QMessageBox::Warning);
+            msgBox.exec();
+            return;
+        }
+        oldName = getFullLayerName(sel);
+        // For items whose text was replaced by a widget, fall back to UserRole
+        if (oldName.isEmpty())
+            oldName = sel->data(0, Qt::UserRole).toString();
+    }
+
+    if (oldName.isEmpty()) return;
+
+    const bool isRaster = rasterLayers.contains(oldName);
+    const bool isVector = layerItems.contains(oldName);
+    if (!isRaster && !isVector) return;
+
+    // ── 2. Inline QLineEdit placed over the name label ────────────────────
+    // Find the name label widget so we can position the editor over it.
+    QLabel* nameLabel = isRaster
+                            ? rasterNameLabels.value(oldName, nullptr)
+                            :  layerNameLabels.value(oldName, nullptr);
+
+    // If the label is available, show an in-place QLineEdit over it.
+    // Otherwise fall back to a QInputDialog.
+    if (nameLabel && nameLabel->isVisible()) {
+        // Create a QLineEdit child of the label's parent widget
+        QLineEdit* editor = new QLineEdit(nameLabel->parentWidget());
+        editor->setText(oldName);
+        editor->selectAll();
+        editor->setGeometry(nameLabel->geometry());
+        editor->setStyleSheet(
+            "QLineEdit {"
+            "  background: #1A3A5C;"
+            "  color: white;"
+            "  border: 1px solid #4A90D9;"
+            "  border-radius: 3px;"
+            "  font-size: 13px;"
+            "  padding: 0 2px;"
+            "}");
+        editor->show();
+        editor->setFocus();
+
+        // Guard flag — prevents editingFinished firing a second time after
+        // returnPressed or Escape already committed/cancelled the edit.
+        bool* committed = new bool(false);
+
+        // Lambda that commits the rename — runs at most once.
+        auto commit = [this, editor, oldName, nameLabel, isRaster, committed](bool apply) {
+            if (*committed) return;   // ← swallow the duplicate signal
+            *committed = true;
+
+            const QString newName = editor->text().trimmed();
+            editor->hide();
+            nameLabel->show();
+            editor->deleteLater();
+            delete committed;
+
+            if (!apply || newName.isEmpty() || newName == oldName) return;
+
+            // Duplicate check — exclude oldName itself (it's still in the map
+            const bool existsElsewhere =
+                (layerItems.contains(newName)   && newName != oldName) ||
+                (rasterLayers.contains(newName) && newName != oldName);
+
+            if (existsElsewhere) {
+                QMessageBox msgBox(this);
+                msgBox.setStyleSheet(LayerPanelStyles::MessageBox);
+                msgBox.setWindowTitle("Duplicate Name");
+                msgBox.setText("A layer named \"" + newName + "\" already exists!");
+                msgBox.setIcon(QMessageBox::Warning);
+                msgBox.exec();
+                return;
+            }
+
+            applyLayerRename(oldName, newName, isRaster);
+        };
+
+        // Hide label while editing so they don't overlap
+        nameLabel->hide();
+
+        // editingFinished fires on both Return and focus-loss — we use it as
+        connect(editor, &QLineEdit::editingFinished, this,
+                [commit]() { commit(true); });
+
+        // Escape key cancels without renaming
+        QShortcut* esc = new QShortcut(QKeySequence(Qt::Key_Escape), editor);
+        connect(esc, &QShortcut::activated, this,
+                [commit, editor]() {
+                    editor->clearFocus();   // triggers editingFinished → commit(false)
+                    // But committed guard means only this path fires
+                    commit(false);
+                });
         return;
     }
 
-    QString oldName = getFullLayerName(selectedItem);
-
-    // Get new layer name from user
+    // ── 3. Fallback: QInputDialog ─────────────────────────────────────────
     bool ok;
     QString newName = QInputDialog::getText(this,
                                             "Rename Layer",
                                             "New Layer Name:",
                                             QLineEdit::Normal,
-                                            oldName,
-                                            &ok);
+                                            oldName, &ok);
+    if (!ok || newName.trimmed().isEmpty() || newName.trimmed() == oldName) return;
+    newName = newName.trimmed();
 
-    if (!ok || newName.isEmpty()) {
-        if (ok && newName.isEmpty()) {
-            QMessageBox msgBox(this);
-            msgBox.setStyleSheet(LayerPanelStyles::MessageBox);
-            msgBox.setWindowTitle("Invalid Name");
-            msgBox.setText("Layer name cannot be empty!");
-            msgBox.setIcon(QMessageBox::Warning);
-            msgBox.exec();
-        }
-        return;
-    }
-
-    // Check if new name is different
-    if (newName == oldName) {
-        return;
-    }
-
-    // Check if layer name already exists
-    if (layerExists(newName)) {
+    if (layerItems.contains(newName) || rasterLayers.contains(newName)) {
         QMessageBox msgBox(this);
         msgBox.setStyleSheet(LayerPanelStyles::MessageBox);
         msgBox.setWindowTitle("Duplicate Name");
-        msgBox.setText("A layer with this name already exists!");
+        msgBox.setText("A layer named \"" + newName + "\" already exists!");
         msgBox.setIcon(QMessageBox::Warning);
         msgBox.exec();
         return;
     }
 
-    // Update maps
-    layerItems[newName] = layerItems.take(oldName);
-    layerShapes[newName] = layerShapes.take(oldName);
-    layerVisibility[newName] = layerVisibility.take(oldName);
-
-    // Update reverse lookup for shapes
-    QStringList shapes = layerShapes.value(newName);
-    for (const QString& shapeId : shapes) {
-        shapeToLayer[shapeId] = newName;
-    }
-
-    // Update active layer name if needed
-    if (activeLayerName == oldName) {
-        activeLayerName = newName;
-    }
-
-    // Update visibility toggle widget map
-    if (visibilityToggleWidgets.contains(oldName)) {
-        QWidget* toggleWidget = visibilityToggleWidgets.take(oldName);
-        visibilityToggleWidgets[newName] = toggleWidget;
-    }
-
-    // Update tree item
-    selectedItem->setData(0, Qt::UserRole, newName);
-    selectedItem->setText(0, newName);
-
-    // Update shape count
-    updateLayerShapeCount(newName);
+    applyLayerRename(oldName, newName, isRaster);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * applyLayerRename()
+ * Performs all map-key renames and UI updates after the new name is confirmed.
+ * ───────────────────────────────────────────────────────────────────────── */
+void LayerPanel::applyLayerRename(const QString& oldName, const QString& newName,
+                                  bool isRaster)
+{
+    if (isRaster) {
+        // ── Raster layer rename ───────────────────────────────────────────
+        if (!rasterLayers.contains(oldName)) return;
+
+        // Update the RasterLayer struct's own name field
+        RasterLayer rl = rasterLayers.take(oldName);
+        rl.name = newName;
+        rasterLayers[newName] = rl;
+
+        // Re-key all raster maps
+        if (rasterLayerItems.contains(oldName))
+            rasterLayerItems[newName] = rasterLayerItems.take(oldName);
+        if (rasterVisibilityWidgets.contains(oldName))
+            rasterVisibilityWidgets[newName] = rasterVisibilityWidgets.take(oldName);
+        if (rasterExpandButtons.contains(oldName))
+            rasterExpandButtons[newName] = rasterExpandButtons.take(oldName);
+
+        // Re-key name label map + update displayed text
+        if (rasterNameLabels.contains(oldName)) {
+            QLabel* lbl = rasterNameLabels.take(oldName);
+            lbl->setText(newName);
+            // Update the property used by eventFilter for future double-clicks
+            lbl->setProperty("rasterLayerName", newName);
+            rasterNameLabels[newName] = lbl;
+        }
+
+        // Update layerOrder list
+        int idx = rasterLayerOrder.indexOf(oldName);
+        if (idx >= 0) rasterLayerOrder[idx] = newName;
+
+        // Update tree item UserRole
+        if (rasterLayerItems.contains(newName))
+            rasterLayerItems[newName]->setData(0, Qt::UserRole, newName);
+
+        // Update the col0Widget property used by the eventFilter
+        if (rasterLayerItems.contains(newName)) {
+            QWidget* w = layerTree->itemWidget(rasterLayerItems[newName], 0);
+            if (w) w->setProperty("rasterLayerName", newName);
+        }
+
+    } else {
+        // ── Vector layer rename ───────────────────────────────────────────
+        if (!layerItems.contains(oldName)) return;
+
+        // Re-key all vector maps
+        layerItems[newName]          = layerItems.take(oldName);
+        layerShapes[newName]         = layerShapes.take(oldName);
+        layerVisibility[newName]     = layerVisibility.take(oldName);
+
+        // Update reverse shape→layer lookup
+        for (const QString& shapeId : layerShapes.value(newName))
+            shapeToLayer[shapeId] = newName;
+
+        // Active layer
+        if (activeLayerName == oldName)
+            activeLayerName = newName;
+
+        // Visibility toggle widget map
+        if (visibilityToggleWidgets.contains(oldName))
+            visibilityToggleWidgets[newName] = visibilityToggleWidgets.take(oldName);
+
+        // Expand button map
+        if (expandButtons.contains(oldName))
+            expandButtons[newName] = expandButtons.take(oldName);
+
+        // Re-key name label map + update displayed text
+        if (layerNameLabels.contains(oldName)) {
+            QLabel* lbl = layerNameLabels.take(oldName);
+            lbl->setText(newName);
+            lbl->setProperty("layerName", newName);
+            layerNameLabels[newName] = lbl;
+        }
+
+        // Update tree item
+        layerItems[newName]->setData(0, Qt::UserRole, newName);
+
+        // Update the col0Widget property
+        {
+            QWidget* w = layerTree->itemWidget(layerItems[newName], 0);
+            if (w) w->setProperty("layerName", newName);
+        }
+
+        updateLayerShapeCount(newName);
+    }
+
+    qDebug() << "Layer renamed:" << oldName << "→" << newName;
+}
+
 
 // %%% Layer Selection Changed %%%
 /* Handle layer selection change */
@@ -547,14 +911,137 @@ void LayerPanel::removeShapeFromLayer(const QString& shapeId)
     // Remove from tree
     removeShapeItemFromTree(shapeId);
 
+    // Clean up display name
+    shapeDisplayNames.remove(shapeId);
+
     // Update shape count
     updateLayerShapeCount(layerName);
+}
+
+// ============================================================================
+// moveShapeToLayer
+// Transfers a shape from its current layer to targetLayerName.
+// ============================================================================
+void LayerPanel::moveShapeToLayer(const QString& shapeId,
+                                  const QString& targetLayerName)
+{
+    // ── 1. Validate ──────────────────────────────────────────────────────
+    if (shapeId.isEmpty() || targetLayerName.isEmpty()) return;
+
+    const QString sourceLayerName = shapeToLayer.value(shapeId);
+    if (sourceLayerName.isEmpty()) {
+        qWarning() << "moveShapeToLayer: shapeId" << shapeId << "has no source layer";
+        return;
+    }
+    if (sourceLayerName == targetLayerName) return;   // already there
+    if (!layerExists(targetLayerName)) {
+        qWarning() << "moveShapeToLayer: target layer" << targetLayerName << "does not exist";
+        return;
+    }
+
+    // ── 2. Determine shape type (needed to re-create the tree item) ──────
+    const QString shapeType = getShapeTypeFromId(shapeId);
+
+    // Preserve any custom display name the user may have set
+    const QString displayName = shapeDisplayNames.value(shapeId, QString());
+
+    // ── 3. Remove from source layer's data structures ────────────────────
+    layerShapes[sourceLayerName].removeAll(shapeId);
+    shapeToLayer.remove(shapeId);
+    removeShapeItemFromTree(shapeId);          // deletes the QTreeWidgetItem
+    updateLayerShapeCount(sourceLayerName);
+
+    // ── 4. Add to target layer's data structures ─────────────────────────
+    if (!layerShapes[targetLayerName].contains(shapeId))
+        layerShapes[targetLayerName].append(shapeId);
+    shapeToLayer[shapeId] = targetLayerName;
+
+    // Restore display name before calling addShapeItemToTree so it picks it up
+    if (!displayName.isEmpty())
+        shapeDisplayNames[shapeId] = displayName;
+
+    addShapeItemToTree(targetLayerName, shapeId, shapeType);
+    updateLayerShapeCount(targetLayerName);
+
+    // ── 5. Expand the target layer so the user sees the moved shape ───────
+    QTreeWidgetItem* targetItem = layerItems.value(targetLayerName, nullptr);
+    if (targetItem) targetItem->setExpanded(true);
+
+    // ── 6. Notify canvas to re-render ─────────────────────────────────────
+    emit layerVisibilityChanged(sourceLayerName,
+                                layerVisibility.value(sourceLayerName, true));
+    emit layerVisibilityChanged(targetLayerName,
+                                layerVisibility.value(targetLayerName, true));
+
+    // Dedicated signal for any other interested observers
+    emit shapeMovedToLayer(shapeId, sourceLayerName, targetLayerName);
+
+    qDebug() << "Shape" << shapeId << "moved from layer"
+             << sourceLayerName << "→" << targetLayerName;
 }
 
 /* Get layer name for a shape */
 QString LayerPanel::getLayerForShape(const QString& shapeId) const
 {
     return shapeToLayer.value(shapeId);
+}
+
+/* Get custom display name for a shape */
+QString LayerPanel::getShapeDisplayName(const QString& shapeId) const
+{
+    return shapeDisplayNames.value(shapeId, shapeId);
+}
+
+/* Set custom display name for a shape and update tree UI */
+void LayerPanel::setShapeDisplayName(const QString& shapeId, const QString& displayName)
+{
+    shapeDisplayNames[shapeId] = displayName;
+
+    // Update the name label inside the shape row widget
+    for (QTreeWidgetItem *layerItem : layerItems.values()) {
+        for (int i = 0; i < layerItem->childCount(); ++i) {
+            QTreeWidgetItem *child = layerItem->child(i);
+            if (child->data(0, Qt::UserRole).toString() == shapeId) {
+                // Find the QLabel that holds the display name inside the widget
+                QWidget* w = layerTree->itemWidget(child, 0);
+                if (w) {
+                    QLabel* lbl = w->findChild<QLabel*>("", Qt::FindDirectChildrenOnly);
+                    // The name label is the second QLabel (after the dot icon)
+                    QList<QLabel*> labels = w->findChildren<QLabel*>();
+                    if (labels.size() >= 2)
+                        labels[1]->setText(displayName);
+                    else if (labels.size() == 1)
+                        labels[0]->setText(displayName);
+                }
+                return;
+            }
+        }
+    }
+}
+
+/* Rename a shape via dialog */
+void LayerPanel::renameShape(const QString& shapeId)
+{
+    // Get current display name
+    QString currentName = shapeDisplayNames.contains(shapeId)
+                              ? shapeDisplayNames[shapeId]
+                              : shapeId;
+
+    QInputDialog dlg(this);
+    dlg.setStyleSheet(LayerPanelStyles::InputDialog);
+    dlg.setWindowTitle("Rename Shape");
+    dlg.setLabelText("Enter new name for this shape:");
+    dlg.setTextValue(currentName);
+    dlg.resize(350, 120);
+
+    if (dlg.exec() != QDialog::Accepted)
+        return;
+
+    QString newName = dlg.textValue().trimmed();
+    if (newName.isEmpty() || newName == currentName)
+        return;
+
+    setShapeDisplayName(shapeId, newName);
 }
 
 
@@ -580,6 +1067,26 @@ void LayerPanel::updateLayerShapeCount(const QString& layerName)
     // Still store name in UserData for getFullLayerName()
     item->setData(0, Qt::UserRole, layerName);
 }
+/* Highlight the shape row in the tree that matches shapeId */
+void LayerPanel::selectShapeInPanel(const QString& shapeId)
+{
+    if (shapeId.isEmpty()) return;
+
+    for (QTreeWidgetItem* layerItem : layerItems.values()) {
+        for (int i = 0; i < layerItem->childCount(); ++i) {
+            QTreeWidgetItem* child = layerItem->child(i);
+            if (child->data(0, Qt::UserRole).toString() == shapeId) {
+                // Make sure the parent layer is expanded
+                layerItem->setExpanded(true);
+                // Select and scroll to the item
+                layerTree->setCurrentItem(child);
+                layerTree->scrollToItem(child, QAbstractItemView::EnsureVisible);
+                return;
+            }
+        }
+    }
+}
+
 // %%% Layer Queries %%%
 /* Check if layer exists */
 bool LayerPanel::layerExists(const QString& layerName) const
@@ -696,24 +1203,47 @@ void LayerPanel::addShapeItemToTree(const QString& layerName, const QString& sha
         return;
     }
 
-    // Create shape item
+    QString shapeSuffix;
+    int underscoreIdx = shapeId.lastIndexOf('_');
+    if (underscoreIdx >= 0)
+        shapeSuffix = shapeId.mid(underscoreIdx);   // includes the "_", e.g. "_1"
+
+    QString displayName = shapeDisplayNames.contains(shapeId)
+                              ? shapeDisplayNames[shapeId]
+                              : QString("%1%2").arg(shapeType, shapeSuffix);
+
+    // Create the tree item (no visible text — widget handles display)
     QTreeWidgetItem *shapeItem = new QTreeWidgetItem(layerItem);
-    shapeItem->setText(0, QString("%1 - %2").arg(shapeType, shapeId));
     shapeItem->setData(0, Qt::UserRole, shapeId);
     shapeItem->setFlags(shapeItem->flags() & ~Qt::ItemIsEditable);
+    shapeItem->setText(0, "");   // widget takes over
 
-    // Set colors for dark background
-    if (shapeType == "Circle") {
-        shapeItem->setForeground(0, QBrush(QColor(255, 165, 0)));      // Orange
-    } else if (shapeType == "Rectangle") {
-        shapeItem->setForeground(0, QBrush(QColor(77, 166, 255)));     // Light Blue
-    } else if (shapeType == "Polygon") {
-        shapeItem->setForeground(0, QBrush(QColor(111, 207, 151)));    // Green
-    } else if (shapeType == "Line") {
-        shapeItem->setForeground(0, QBrush(QColor(255, 107, 107)));    // Red
-    } else if (shapeType == "Point") {
-        shapeItem->setForeground(0, QBrush(QColor(255, 217, 102)));    // Yellow
-    }
+    // Build a widget with explicit left-padding so the row looks indented
+    // relative to the layer header above it.
+    QWidget* shapeWidget = new QWidget();
+    shapeWidget->setStyleSheet("background: transparent;");
+    QHBoxLayout* shapeLayout = new QHBoxLayout(shapeWidget);
+    // 28 px left margin creates the visible indent beyond the tree indentation
+    shapeLayout->setContentsMargins(8, 0, 2, 0);
+    shapeLayout->setSpacing(4);
+
+    // Small neutral dash indent marker
+    QLabel* dotLabel = new QLabel("–");
+    dotLabel->setFixedWidth(12);
+    dotLabel->setStyleSheet("color: #7A8FA6; background: transparent; font-size: 10px;");
+
+    // Shape name label — plain white, no type-based colour
+    QLabel* nameLabel = new QLabel(displayName);
+    nameLabel->setStyleSheet("color: #C8D6E0; background: transparent; font-size: 12px;");
+    nameLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    // Store shapeId so rename can update this label later
+    nameLabel->setProperty("shapeId", shapeId);
+
+    shapeLayout->addWidget(dotLabel);
+    shapeLayout->addWidget(nameLabel);
+    shapeLayout->addStretch();
+
+    layerTree->setItemWidget(shapeItem, 0, shapeWidget);
 
     // Expand layer to show new shape
     layerItem->setExpanded(true);
@@ -771,13 +1301,26 @@ void LayerPanel::createVisibilityToggle(const QString& layerName, QTreeWidgetIte
     col0Layout->addWidget(nameLabel);
     col0Layout->addStretch();
 
-    // Store label so we can update name on rename
-    // (optional: store in a map if needed)
+    // Store label so renameLayer() can update the displayed text directly
+    layerNameLabels[layerName] = nameLabel;
+
     layerTree->setItemWidget(item, 0, col0Widget);
     item->setText(0, "");  // Clear text since widget handles display
+    // Set UserRole immediately so isLayerItem / resolveDropTargetLayer can
+    item->setData(0, Qt::UserRole, layerName);
 
     // Store expand button reference
     expandButtons[layerName] = expandBtn;
+
+    // ── Double-click on the label → inline rename ─────────────────────
+    nameLabel->installEventFilter(this);
+    nameLabel->setProperty("layerName", layerName);
+    nameLabel->setCursor(Qt::IBeamCursor);
+    nameLabel->setToolTip("Double-click to rename");
+    connect(nameLabel, &QLabel::linkActivated, this, [this](){});  // dummy — keeps label alive
+    // Use a lambda via a small helper QObject to catch mouseDoubleClickEvent
+    col0Widget->installEventFilter(this);
+    col0Widget->setProperty("layerName", layerName);
 
     // ── Column 1: ✓/✗ Visibility button ──────────────────────────────
     QPushButton* visBtn = new QPushButton("✓");
@@ -822,8 +1365,15 @@ void LayerPanel::createVisibilityToggle(const QString& layerName, QTreeWidgetIte
             });
 
     // ── Connect visibility button ─────────────────────────────────────
-    connect(visBtn, &QPushButton::clicked, this, [this, layerName]() {
-        onVisibilityToggleClicked(layerName);
+    connect(visBtn, &QPushButton::clicked, this, [this, col1Widget]() {
+        // Capture col1Widget not layerName: layerName is stale after rename.
+        for (auto it = visibilityToggleWidgets.constBegin();
+             it != visibilityToggleWidgets.constEnd(); ++it) {
+            if (it.value() == col1Widget) {
+                onVisibilityToggleClicked(it.key());
+                return;
+            }
+        }
     });
 }
 // =====================================================================
@@ -1862,12 +2412,6 @@ QJsonObject LayerPanel::getGeometryAsGeoJSON(const MeshEntry& entry)
         // Get radius from size (in same units as center coordinates - degrees)
         double radius = entry.size ? entry.size->x() : 0.001;  // Default ~111m if no size
 
-        // Convert radius from degrees to proper lat/lon offsets
-        // If radius is in meters, convert to degrees:
-        // Uncomment these lines if radius is in meters:
-        // double radiusLat = radius / 111320.0;
-        // double radiusLon = radius / (111320.0 * qCos(qDegreesToRadians(center.y())));
-
         // If radius is already in degrees (your case), use directly:
         double radiusLat = radius;
         double radiusLon = radius;
@@ -2289,7 +2833,11 @@ QJsonObject LayerPanel::toJson() const
         QJsonArray shapesArray;
         QStringList shapes = layerShapes.value(layerName);
         for (const QString& shapeId : shapes) {
-            shapesArray.append(shapeId);
+            QJsonObject shapeObj;
+            shapeObj["id"] = shapeId;
+            if (shapeDisplayNames.contains(shapeId))
+                shapeObj["displayName"] = shapeDisplayNames[shapeId];
+            shapesArray.append(shapeObj);
         }
         layerObj["shapes"] = shapesArray;
 
@@ -2393,9 +2941,25 @@ void LayerPanel::fromJson(const QJsonObject& json)
         QJsonArray shapesArray = layerObj["shapes"].toArray();
         QStringList shapes;
         for (const QJsonValue& shapeVal : shapesArray) {
-            QString shapeId = shapeVal.toString();
+            QString shapeId;
+            QString displayName;
+
+            // Support both old format (plain string) and new format (object with id + displayName)
+            if (shapeVal.isString()) {
+                shapeId = shapeVal.toString();
+            } else if (shapeVal.isObject()) {
+                QJsonObject shapeObj = shapeVal.toObject();
+                shapeId = shapeObj["id"].toString();
+                displayName = shapeObj["displayName"].toString();
+            }
+
+            if (shapeId.isEmpty()) continue;
+
             shapes.append(shapeId);
             shapeToLayer[shapeId] = layerName;
+
+            if (!displayName.isEmpty())
+                shapeDisplayNames[shapeId] = displayName;
 
             // *** CRITICAL FIX: Add shape item to tree ***
             QString shapeType = getShapeTypeFromId(shapeId);
@@ -2774,4 +3338,715 @@ QString LayerPanel::createWKTGeometry(const MeshEntry& entry)
 
         return QString("POLYGON((%1))").arg(points.join(","));
     }
+}
+// %%% Add Raster Layer %%%
+/* Open a file dialog, load the selected raster image and add it to the panel */
+void LayerPanel::addRasterLayer()
+{
+    // ── 1. File dialog ────────────────────────────────────────────────────
+    QString filePath = QFileDialog::getOpenFileName(
+        this,
+        "Open Raster Layer",
+        QDir::homePath(),
+        "Raster Images (*.tif *.tiff *.jpg *.jpeg *.png *.bmp *.gif *.webp);;"
+        "GeoTIFF (*.tif *.tiff);;"
+        "JPEG (*.jpg *.jpeg);;"
+        "PNG (*.png);;"
+        "BMP (*.bmp);;"
+        "GIF (*.gif);;"
+        "WebP (*.webp);;"
+        "All Files (*)");
+
+    if (filePath.isEmpty())
+        return;
+
+    // ── 2. Load image ─────────────────────────────────────────────────────
+    QPixmap pixmap(filePath);
+    if (pixmap.isNull()) {
+        QMessageBox msgBox(this);
+        msgBox.setStyleSheet(LayerPanelStyles::MessageBox);
+        msgBox.setWindowTitle("Load Error");
+        msgBox.setText(QString("Could not load image:\n%1\n\n"
+                               "Make sure the file is a valid raster format.")
+                           .arg(filePath));
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.exec();
+        return;
+    }
+
+    // ── 3. Derive a unique display name ───────────────────────────────────
+    QString baseName  = QFileInfo(filePath).baseName();
+    QString layerName = baseName;
+    int suffix = 1;
+    while (layerExists(layerName) || rasterLayers.contains(layerName))
+        layerName = QString("%1_%2").arg(baseName).arg(suffix++);
+
+    // ── 4. Build a preliminary RasterLayer with the pixmap ────────────────
+    RasterLayer rl;
+    rl.name     = layerName;
+    rl.filePath = filePath;
+    rl.pixmap   = pixmap;
+    rl.visible  = true;
+    rl.opacity  = 1.0;
+    // extents left at default (0,0,0,0) — will be filled below
+
+    // ── 5. Determine geographic extents ───────────────────────────────────
+    bool georefFound = false;
+
+    // Priority 1: world-file (.tfw, .jgw, .pgw, …)
+    if (!georefFound)
+        georefFound = readWorldFile(filePath, rl);
+
+    // Priority 2: embedded GeoTIFF tags (TIFF files only)
+    if (!georefFound)
+        georefFound = readGeoTiffExtents(filePath, rl);
+
+    // Priority 3: sensible view-centred default
+    if (!georefFound) {
+        rl = makeDefaultExtents(rl, m_canvasWidget);
+    }
+
+    // ── 6. Register ───────────────────────────────────────────────────────
+    rasterLayers[layerName]   = rl;
+    rasterLayerOrder.append(layerName);
+
+    // ── 7. Create tree item + toggle ──────────────────────────────────────
+    createRasterLayerItem(layerName);
+
+    // ── 8. Notify canvas ─────────────────────────────────────────────────
+    emit rasterLayerChanged();
+
+    if (m_canvasWidget && m_canvasWidget->gislib) {
+        m_canvasWidget->gislib->fitToBounds(
+            rl.minLat, rl.minLon,
+            rl.maxLat, rl.maxLon,
+            0   // zoomOffset = 0 (use the auto-computed zoom level)
+            );
+    }
+
+    qDebug() << "✓ Raster layer added:" << layerName
+             << "| georef:" << (georefFound ? "yes" : "no (default)")
+             << "| extents: lon[" << rl.minLon << "," << rl.maxLon << "]"
+             << "lat[" << rl.minLat << "," << rl.maxLat << "]"
+             << "| size:" << pixmap.width() << "x" << pixmap.height();
+}
+
+/* Create a tree widget item for a raster layer, including its visibility toggle */
+void LayerPanel::createRasterLayerItem(const QString& layerName)
+{
+    // ── Tree item ─────────────────────────────────────────────────────────
+    QTreeWidgetItem* item = new QTreeWidgetItem(rootLayersItem);
+    item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+    item->setData(0, Qt::UserRole, layerName);
+    rasterLayerItems[layerName] = item;
+
+    // ── Column 0: [▶] + icon + name label ────────────────────────────────
+    QWidget* col0Widget = new QWidget();
+    col0Widget->setStyleSheet("background: transparent;");
+    QHBoxLayout* col0Layout = new QHBoxLayout(col0Widget);
+    col0Layout->setContentsMargins(4, 0, 0, 0);
+    col0Layout->setSpacing(4);
+
+    // Expand button (kept consistent with vector layer style)
+    QPushButton* expandBtn = new QPushButton("▶");
+    expandBtn->setFixedSize(16, 16);
+    expandBtn->setFlat(true);
+    expandBtn->setCursor(Qt::PointingHandCursor);
+    expandBtn->setToolTip("Expand / Collapse");
+    expandBtn->setStyleSheet(
+        "QPushButton {"
+        "  border: none; background: transparent;"
+        "  color: #AAAAAA; font-size: 10px; font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "  color: #FFFFFF;"
+        "  background: rgba(255,255,255,0.15);"
+        "  border-radius: 3px;"
+        "}"
+        );
+
+    // Small raster icon (🗺 or a coloured square to distinguish from vector)
+    QLabel* iconLabel = new QLabel("🗺");
+    iconLabel->setFixedWidth(18);
+    iconLabel->setStyleSheet("color: #F0A500; background: transparent; font-size: 12px;");
+
+    // Layer name label
+    QLabel* nameLabel = new QLabel(layerName);
+    nameLabel->setStyleSheet(
+        "color: #F0D090;"             // Warm amber — visually distinct from vector (white)
+        "background: transparent;"
+        "font-size: 13px;");
+    nameLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    col0Layout->addWidget(expandBtn);
+    col0Layout->addWidget(iconLabel);
+    col0Layout->addWidget(nameLabel);
+    col0Layout->addStretch();
+
+    layerTree->setItemWidget(item, 0, col0Widget);
+    item->setText(0, "");   // widget handles display
+    item->setData(0, Qt::UserRole, layerName);
+
+    rasterExpandButtons[layerName] = expandBtn;
+
+    // Store name label for rename updates
+    rasterNameLabels[layerName] = nameLabel;
+
+    // Double-click on the name label or its container → rename
+    nameLabel->installEventFilter(this);
+    nameLabel->setProperty("rasterLayerName", layerName);
+    nameLabel->setCursor(Qt::IBeamCursor);
+    nameLabel->setToolTip("Double-click to rename");
+    col0Widget->installEventFilter(this);
+    col0Widget->setProperty("rasterLayerName", layerName);
+
+    // ── Column 1: ✓/✗ visibility button ──────────────────────────────────
+    QPushButton* visBtn = new QPushButton("✓");
+    visBtn->setFixedSize(22, 22);
+    visBtn->setFlat(true);
+    visBtn->setCursor(Qt::PointingHandCursor);
+    visBtn->setToolTip("Show / Hide raster layer");
+    visBtn->setStyleSheet(
+        "QPushButton {"
+        "  border: none; background: transparent;"
+        "  color: #4CAF50; font-size: 13px; font-weight: bold;"
+        "}"
+        "QPushButton:hover { background: rgba(255,255,255,0.15); border-radius: 3px; }"
+        );
+
+    QWidget* col1Widget = new QWidget();
+    col1Widget->setStyleSheet("background: transparent;");
+    QHBoxLayout* col1Layout = new QHBoxLayout(col1Widget);
+    col1Layout->setContentsMargins(3, 0, 3, 0);
+    col1Layout->setSpacing(0);
+    col1Layout->addWidget(visBtn);
+
+    layerTree->setItemWidget(item, 1, col1Widget);
+    rasterVisibilityWidgets[layerName] = col1Widget;
+
+    // ── Connect expand button ─────────────────────────────────────────────
+    connect(expandBtn, &QPushButton::clicked, this, [this, item, expandBtn]() {
+        item->setExpanded(!item->isExpanded());
+        expandBtn->setText(item->isExpanded() ? "▼" : "▶");
+    });
+    connect(layerTree, &QTreeWidget::itemExpanded,
+            this, [expandBtn, item](QTreeWidgetItem* changed) {
+                if (changed == item) expandBtn->setText("▼");
+            });
+    connect(layerTree, &QTreeWidget::itemCollapsed,
+            this, [expandBtn, item](QTreeWidgetItem* changed) {
+                if (changed == item) expandBtn->setText("▶");
+            });
+
+    // ── Connect visibility button ─────────────────────────────────────────
+    connect(visBtn, &QPushButton::clicked, this,
+            [this, col1Widget]() {
+                // Capture col1Widget not layerName: stale after rename.
+                for (auto it = rasterVisibilityWidgets.constBegin();
+                     it != rasterVisibilityWidgets.constEnd(); ++it) {
+                    if (it.value() == col1Widget) {
+                        onRasterVisibilityToggleClicked(it.key());
+                        return;
+                    }
+                }
+            });
+
+    // Expand the root so the new entry is immediately visible
+    if (rootLayersItem) {
+        rootLayersItem->setExpanded(true);
+    }
+}
+
+/* Handle raster visibility toggle button click */
+void LayerPanel::onRasterVisibilityToggleClicked(const QString& layerName)
+{
+    if (!rasterLayers.contains(layerName)) return;
+
+    bool newVisible = !rasterLayers[layerName].visible;
+    rasterLayers[layerName].visible = newVisible;
+
+    updateRasterVisibilityIcon(layerName, newVisible);
+
+    // Reuse layerVisibilityChanged so canvas auto-repaints (same slot already
+    // connected in CanvasWidget::setLayerPanel).
+    emit layerVisibilityChanged(layerName, newVisible);
+    emit rasterLayerChanged();
+}
+
+/* Update the raster visibility toggle button appearance */
+void LayerPanel::updateRasterVisibilityIcon(const QString& layerName, bool visible)
+{
+    QWidget* w = rasterVisibilityWidgets.value(layerName, nullptr);
+    if (!w) return;
+
+    QPushButton* visBtn = w->findChild<QPushButton*>();
+    if (!visBtn) return;
+
+    if (visible) {
+        visBtn->setText("✓");
+        visBtn->setStyleSheet(
+            "QPushButton {"
+            "  border: none; background: transparent;"
+            "  color: #4CAF50; font-size: 13px; font-weight: bold;"
+            "}"
+            "QPushButton:hover { background: rgba(255,255,255,0.15); border-radius: 3px; }"
+            );
+        visBtn->setToolTip("Click to hide raster layer");
+    } else {
+        visBtn->setText("✗");
+        visBtn->setStyleSheet(
+            "QPushButton {"
+            "  border: none; background: transparent;"
+            "  color: #F44336; font-size: 13px; font-weight: bold;"
+            "}"
+            "QPushButton:hover { background: rgba(255,255,255,0.15); border-radius: 3px; }"
+            );
+        visBtn->setToolTip("Click to show raster layer");
+    }
+}
+
+void LayerPanel::drawRasterLayers(QPainter& painter, GISlib* gislib) const
+{
+    if (!gislib) return;
+
+    painter.save();
+
+    for (const QString& name : rasterLayerOrder) {
+        if (!rasterLayers.contains(name)) continue;
+        const RasterLayer& rl = rasterLayers[name];
+
+        if (!rl.visible)        continue;
+        if (rl.pixmap.isNull()) continue;
+
+        // geoToCanvas(lat, lon) — latitude first
+        QPointF topLeft  = gislib->geoToCanvas(rl.maxLat, rl.minLon);
+        QPointF botRight = gislib->geoToCanvas(rl.minLat, rl.maxLon);
+
+        QRectF destRect(topLeft, botRight);
+
+        if (destRect.width() < 1.0 || destRect.height() < 1.0)
+            continue;
+
+        painter.setOpacity(rl.opacity);
+        painter.drawPixmap(destRect, rl.pixmap,
+                           QRectF(0, 0, rl.pixmap.width(), rl.pixmap.height()));
+    }
+
+    painter.setOpacity(1.0);
+    painter.restore();
+}
+
+
+/* =========================================================================
+   readWorldFile()
+   Reads a plain-text world-file sidecar for geographic extents.
+   Writes ONLY to local variables; copies to `out` only on verified success.
+   ========================================================================= */
+bool LayerPanel::readWorldFile(const QString& imagePath, RasterLayer& out)
+{
+    QFileInfo fi(imagePath);
+    QString base = fi.absolutePath() + "/" + fi.completeBaseName();
+    QString ext  = fi.suffix().toLower();
+
+    QStringList candidates;
+    if      (ext == "tif"  || ext == "tiff")  candidates << "tfw" << "tifw" << "wld";
+    else if (ext == "jpg"  || ext == "jpeg")  candidates << "jgw" << "jpgw" << "wld";
+    else if (ext == "png")                    candidates << "pgw" << "pngw" << "wld";
+    else if (ext == "bmp")                    candidates << "bpw" << "wld";
+    else if (ext == "gif")                    candidates << "gfw" << "wld";
+    else if (ext == "webp")                   candidates << "wld";
+    else                                      candidates << "wld";
+
+    for (const QString& wext : candidates) {
+        QFile wf(base + "." + wext);
+        if (!wf.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
+
+        QTextStream ts(&wf);
+        QStringList lines;
+        while (!ts.atEnd()) {
+            QString line = ts.readLine().trimmed();
+            if (!line.isEmpty()) lines << line;
+        }
+        wf.close();
+
+        if (lines.size() < 6) continue;
+
+        bool ok1, ok4, ok5, ok6;
+        double pixW  = lines[0].toDouble(&ok1);
+        double pixH  = lines[3].toDouble(&ok4);   // negative for north-up
+        double ulLon = lines[4].toDouble(&ok5);
+        double ulLat = lines[5].toDouble(&ok6);
+
+        if (!(ok1 && ok4 && ok5 && ok6)) continue;
+        if (pixW == 0.0 || pixH == 0.0)  continue;
+
+        int imgW = out.pixmap.width();
+        int imgH = out.pixmap.height();
+        if (imgW <= 0 || imgH <= 0)      continue;
+
+        // ── Compute extents into LOCAL variables first ────────────────────
+        // World-file gives the centre of the upper-left pixel.
+        double minLon = ulLon - pixW * 0.5;
+        double maxLat = ulLat - pixH * 0.5;      // pixH < 0 → maxLat > ulLat
+        double maxLon = ulLon + pixW * (imgW - 0.5);
+        double minLat = ulLat + pixH * (imgH - 0.5);  // pixH < 0 → minLat < ulLat
+
+        // Ensure min < max (handle non-standard sign conventions)
+        if (minLon > maxLon) std::swap(minLon, maxLon);
+        if (minLat > maxLat) std::swap(minLat, maxLat);
+
+        // ── Strict geographic sanity check ────────────────────────────────
+        if (minLon < -180.1 || maxLon > 180.1)  continue;
+        if (minLat < -90.1  || maxLat > 90.1)   continue;
+        if (maxLon - minLon < 1e-9)              continue;
+        if (maxLat - minLat < 1e-9)              continue;
+
+        // ── Only now write to `out` ───────────────────────────────────────
+        out.minLon = minLon;
+        out.maxLon = maxLon;
+        out.minLat = minLat;
+        out.maxLat = maxLat;
+
+        qDebug() << "  ✓ World file:" << (base + "." + wext)
+                 << "lon[" << minLon << "," << maxLon << "]"
+                 << "lat[" << minLat << "," << maxLat << "]";
+        return true;
+    }
+    return false;
+}
+
+/*
+ * readGeoTiffExtents
+ */
+bool LayerPanel::readGeoTiffExtents(const QString& imagePath, RasterLayer& out)
+{
+    const QString ext = QFileInfo(imagePath).suffix().toLower();
+    if (ext != "tif" && ext != "tiff")
+        return false;
+
+    QFile f(imagePath);
+    if (!f.open(QIODevice::ReadOnly)) return false;
+    QByteArray data = f.read(4 * 1024 * 1024);  // 4 MB
+    f.close();
+
+    if (data.size() < 8) return false;
+
+    // ── Byte order ────────────────────────────────────────────────────────
+    bool le;
+    if      (data[0]=='I' && data[1]=='I') le = true;
+    else if (data[0]=='M' && data[1]=='M') le = false;
+    else return false;
+
+    auto u16 = [&](int o) -> quint16 {
+        if (o+1 >= data.size()) return 0;
+        quint8 a=quint8(data[o]), b=quint8(data[o+1]);
+        return le ? quint16(quint16(b)<<8|a) : quint16(quint16(a)<<8|b);
+    };
+    auto u32 = [&](int o) -> quint32 {
+        if (o+3 >= data.size()) return 0;
+        quint8 a=quint8(data[o]),b=quint8(data[o+1]),
+            c=quint8(data[o+2]),d=quint8(data[o+3]);
+        return le ? (quint32(d)<<24|quint32(c)<<16|quint32(b)<<8|a)
+                  : (quint32(a)<<24|quint32(b)<<16|quint32(c)<<8|d);
+    };
+    auto f64 = [&](int o) -> double {
+        if (o+7 >= data.size()) return 0.0;
+        quint8 buf[8];
+        if (le) for(int i=0;i<8;i++) buf[i]=quint8(data[o+i]);
+        else    for(int i=0;i<8;i++) buf[i]=quint8(data[o+7-i]);
+        double v; memcpy(&v,buf,8); return v;
+    };
+    auto u16at = [&](int o) -> quint16 {  // alias for clarity
+        return u16(o);
+    };
+
+    if (u16(2) != 42) return false;  // not classic TIFF
+
+    quint32 ifdOff = u32(4);
+    if (!ifdOff || ifdOff+2 >= (quint32)data.size()) return false;
+
+    const int nTags = u16(ifdOff);
+    const int tagBase = ifdOff + 2;
+
+    // ── TIFF type sizes ───────────────────────────────────────────────────
+    // We need: SHORT(3)=2bytes, LONG(4)=4bytes, DOUBLE(12)=8bytes
+
+    // ── Tags we care about ────────────────────────────────────────────────
+    constexpr quint16 TAG_PIXEL_SCALE = 33550;
+    constexpr quint16 TAG_TIEPOINT   = 33922;
+    constexpr quint16 TAG_GEOKEY_DIR = 34735;  // SHORT array: GeoKey directory
+    constexpr quint16 TAG_GEODOUBLE  = 34736;  // DOUBLE array: GeoKey double values
+    // 34737 = GeoAsciiParamsTag (strings, not needed here)
+
+    double scaleX = 0, scaleY = 0;
+    double tiePixI=0, tiePixJ=0, tieGeoX=0, tieGeoY=0;
+    bool hasScale=false, hasTie=false;
+
+    QVector<quint16> geoKeys;
+    QVector<double>  geoDoubles;
+
+    for (int i = 0; i < nTags; i++) {
+        const int eb = tagBase + i*12;
+        if (eb+11 >= data.size()) break;
+
+        const quint16 tag   = u16(eb);
+        const quint16 type  = u16(eb+2);
+        const quint32 count = u32(eb+4);
+        const quint32 voff  = u32(eb+8);  // value or offset to value
+
+        // ── ModelPixelScaleTag (33550) — 3 doubles: ScaleX, ScaleY, ScaleZ ──
+        if (tag == TAG_PIXEL_SCALE && type == 12 && count >= 2) {
+            // Always at a file offset (3*8=24 bytes > 4)
+            if (voff+15 < (quint32)data.size()) {
+                double sx = f64(voff);
+                double sy = f64(voff+8);
+                if (sx > 0 && sy > 0) {
+                    scaleX = sx;
+                    scaleY = sy;
+                    hasScale = true;
+                }
+            }
+        }
+        // ── ModelTiepointTag (33922) — N*6 doubles ──────────────────────────
+        else if (tag == TAG_TIEPOINT && type == 12 && count >= 6) {
+            if (voff+47 < (quint32)data.size()) {
+                tiePixI = f64(voff);      // pixel I (col)
+                tiePixJ = f64(voff+8);    // pixel J (row)
+                // f64(voff+16) = K, skip
+                tieGeoX = f64(voff+24);   // X: lon (geographic) or Easting (projected)
+                tieGeoY = f64(voff+32);   // Y: lat (geographic) or Northing (projected)
+                hasTie  = true;
+            }
+        }
+        // ── GeoKeyDirectoryTag (34735) — SHORT array ─────────────────────────
+        else if (tag == TAG_GEOKEY_DIR && type == 3) {
+            const quint32 bytes = count * 2;
+            if (bytes <= 4) {
+                // Packed in the offset field
+                for (quint32 k=0; k<count; k++)
+                    geoKeys.append(u16at(eb+8 + k*2));
+            } else if (voff + bytes <= (quint32)data.size()) {
+                for (quint32 k=0; k<count; k++)
+                    geoKeys.append(u16at(voff + k*2));
+            }
+        }
+        // ── GeoDoubleParamsTag (34736) — DOUBLE array ────────────────────────
+        else if (tag == TAG_GEODOUBLE && type == 12) {
+            const quint32 bytes = count * 8;
+            if (voff + bytes <= (quint32)data.size()) {
+                for (quint32 k=0; k<count; k++)
+                    geoDoubles.append(f64(voff + k*8));
+            }
+        }
+    }
+
+    if (!hasScale || !hasTie) {
+        qDebug() << "  ✗ GeoTIFF: missing scale or tiepoint tags in" << imagePath;
+        return false;
+    }
+
+    const int imgW = out.pixmap.width();
+    const int imgH = out.pixmap.height();
+    if (imgW <= 0 || imgH <= 0) return false;
+
+    // ── Compute bounding box corners in native CRS ────────────────────────
+    // Tie-point maps pixel(tiePixI, tiePixJ) → native(tieGeoX, tieGeoY)
+    // scaleX/Y are always positive in GeoTIFF (Y increases northward → subtract for rows)
+    const double ulX = tieGeoX - tiePixI * scaleX;  // upper-left
+    const double ulY = tieGeoY + tiePixJ * scaleY;
+    const double lrX = ulX + imgW * scaleX;          // lower-right
+    const double lrY = ulY - imgH * scaleY;
+
+    qDebug() << "  GeoTIFF native bbox: UL(" << ulX << "," << ulY
+             << ")  LR(" << lrX << "," << lrY << ")";
+    qDebug() << "  GeoTIFF scale: X=" << scaleX << " Y=" << scaleY;
+    qDebug() << "  Image size:" << imgW << "x" << imgH;
+
+    // ── Parse GeoKey directory to determine CRS ───────────────────────────
+    int modelType  = -1;
+    int epsgCode   = -1;
+
+    if (geoKeys.size() >= 4) {
+        const int numKeys = geoKeys[3];
+        for (int k = 0; k < numKeys; k++) {
+            const int b = 4 + k*4;
+            if (b+3 >= geoKeys.size()) break;
+
+            const quint16 keyId  = geoKeys[b];
+            const quint16 tagLoc = geoKeys[b+1];
+            const quint16 kcount = geoKeys[b+2];
+            const quint16 valOff = geoKeys[b+3];
+
+            // For inline SHORT values: tagLoc==0, Count==1, Value is valOff itself
+            if (tagLoc == 0 && kcount == 1) {
+                if (keyId == 1024) modelType = valOff;  // GTModelTypeGeoKey
+                if (keyId == 2048) epsgCode  = valOff;  // GeographicTypeGeoKey
+                if (keyId == 3072) epsgCode  = valOff;  // ProjectedCSTypeGeoKey
+            }
+            // For values stored in GeoDoubleParams: tagLoc==34736
+            // (not needed for CRS identification — EPSG codes are always short ints)
+        }
+    }
+
+    qDebug() << "  GeoTIFF GeoKeys: modelType=" << modelType << " epsgCode=" << epsgCode;
+
+    // ── Determine if reprojection is needed ───────────────────────────────
+
+    bool needsReproject = false;
+
+    if (modelType == 1) {
+        needsReproject = true;
+    } else if (modelType == 2) {
+        needsReproject = false;
+    } else {
+        // No GeoKeys — auto-detect by coordinate range
+        const double maxAbsX = qMax(std::abs(ulX), std::abs(lrX));
+        const double maxAbsY = qMax(std::abs(ulY), std::abs(lrY));
+        needsReproject = (maxAbsX > 180.0 || maxAbsY > 90.0);
+        qDebug() << "  GeoTIFF: no GeoKey modelType — auto-detect needsReproject="
+                 << needsReproject;
+    }
+
+    // ── If EPSG not found, guess from coordinate ranges ───────────────────
+    if (needsReproject && epsgCode <= 0) {
+        qDebug() << "  ✗ GeoTIFF: projected CRS but EPSG code unknown — cannot reproject";
+        return false;
+    }
+
+    double minLon, maxLon, minLat, maxLat;
+
+    if (!needsReproject) {
+        // ── Geographic CRS — values are already degrees ───────────────────
+        minLon = qMin(ulX, lrX);
+        maxLon = qMax(ulX, lrX);
+        minLat = qMin(ulY, lrY);
+        maxLat = qMax(ulY, lrY);
+
+    } else {
+        // ── Projected CRS — reproject all 4 corners to WGS84 ─────────────
+        const QString srcEpsgStr = QString("EPSG:%1").arg(epsgCode);
+        QgsCoordinateReferenceSystem srcCrs(srcEpsgStr);
+        QgsCoordinateReferenceSystem wgs84("EPSG:4326");
+
+        if (!srcCrs.isValid()) {
+            qDebug() << "  ✗ GeoTIFF: cannot create CRS for" << srcEpsgStr;
+            return false;
+        }
+
+        QgsCoordinateTransform xform(srcCrs, wgs84, QgsProject::instance());
+
+        // All 4 corners — handles rotated/skewed projections correctly
+        const double corners[4][2] = {
+            { ulX, ulY },   // upper-left
+            { lrX, ulY },   // upper-right
+            { ulX, lrY },   // lower-left
+            { lrX, lrY },   // lower-right
+        };
+
+        minLon =  1e18; maxLon = -1e18;
+        minLat =  1e18; maxLat = -1e18;
+
+        for (const auto& c : corners) {
+            try {
+                QgsPointXY geo = xform.transform(QgsPointXY(c[0], c[1]));
+                minLon = qMin(minLon, geo.x());
+                maxLon = qMax(maxLon, geo.x());
+                minLat = qMin(minLat, geo.y());
+                maxLat = qMax(maxLat, geo.y());
+                qDebug() << "    Native(" << c[0] << "," << c[1]
+                         << ") → WGS84(" << geo.x() << "," << geo.y() << ")";
+            } catch (QgsCsException& e) {
+                qDebug() << "  ✗ GeoTIFF reprojection failed:" << e.what();
+                return false;
+            }
+        }
+
+        // qDebug() << "  ✓ Reprojected" << srcEpsgStr << "→ EPSG:4326";
+    }
+
+    // ── Final sanity check ────────────────────────────────────────────────
+    if (minLon < -180.1 || maxLon > 180.1) {
+        qDebug() << "  ✗ GeoTIFF lon out of range:" << minLon << maxLon;
+        return false;
+    }
+    if (minLat < -90.1 || maxLat > 90.1) {
+        qDebug() << "  ✗ GeoTIFF lat out of range:" << minLat << maxLat;
+        return false;
+    }
+    if (maxLon - minLon < 1e-9 || maxLat - minLat < 1e-9) {
+        qDebug() << "  ✗ GeoTIFF zero-size extent";
+        return false;
+    }
+
+    // ── Write to out only after all validation passes ─────────────────────
+    out.minLon = minLon;
+    out.maxLon = maxLon;
+    out.minLat = minLat;
+    out.maxLat = maxLat;
+
+    // qDebug() << "  ✓ GeoTIFF final extents: lon[" << minLon << "," << maxLon
+    //          << "]  lat[" << minLat << "," << maxLat << "]";
+    return true;
+}
+
+/* =========================================================================
+   HELPER — compute a sensible default bounding box when no georef exists.
+   ========================================================================= */
+static RasterLayer makeDefaultExtents(const RasterLayer& rl, CanvasWidget* canvas)
+{
+    RasterLayer out = rl;
+
+    const int imgW = rl.pixmap.width();
+    const int imgH = rl.pixmap.height();
+
+    double centreLon = 0.0;
+    double centreLat = 20.0;  // sensible world-view default
+    double degPerPixLon = 0.1;
+    double degPerPixLat = 0.1;
+
+    if (canvas && canvas->gislib) {
+        GISlib* gis = canvas->gislib;
+
+        // Get the map centre in geographic coordinates
+        QPointF centreCanvas(gis->width() / 2.0, gis->height() / 2.0);
+        QPointF centreGeo = gis->canvasToGeo(centreCanvas);
+        centreLon = centreGeo.x();
+        centreLat = centreGeo.y();
+
+        // Compute degrees-per-pixel by sampling two pixels apart
+        // This uses the actual geoToCanvas/canvasToGeo math — no zoom access needed
+        QPointF p1 = gis->canvasToGeo(QPointF(gis->width()/2.0,       gis->height()/2.0));
+        QPointF p2 = gis->canvasToGeo(QPointF(gis->width()/2.0 + 1.0, gis->height()/2.0));
+        QPointF p3 = gis->canvasToGeo(QPointF(gis->width()/2.0,       gis->height()/2.0 + 1.0));
+
+        // How many degrees does 1 canvas pixel span in each direction?
+        degPerPixLon = std::abs(p2.x() - p1.x());
+        degPerPixLat = std::abs(p3.y() - p1.y());
+
+        // Guard against degenerate values
+        if (degPerPixLon < 1e-12) degPerPixLon = 0.001;
+        if (degPerPixLat < 1e-12) degPerPixLat = 0.001;
+    }
+
+    // Image geographic span = pixel count × degrees-per-pixel
+    const double spanLon = imgW * degPerPixLon;
+    const double spanLat = imgH * degPerPixLat;
+
+    out.minLon = centreLon - spanLon / 2.0;
+    out.maxLon = centreLon + spanLon / 2.0;
+    out.minLat = centreLat - spanLat / 2.0;
+    out.maxLat = centreLat + spanLat / 2.0;
+
+    // Clamp to valid geo range
+    out.minLon = std::max(out.minLon, -180.0);
+    out.maxLon = std::min(out.maxLon,  180.0);
+    out.minLat = std::max(out.minLat, -85.0511);
+    out.maxLat = std::min(out.maxLat,  85.0511);
+
+    // qDebug() << "  ℹ No georef — pixel-scale default:"
+    //          << "lon[" << out.minLon << "," << out.maxLon << "]"
+    //          << "lat[" << out.minLat << "," << out.maxLat << "]"
+    //          << "| deg/px: lon=" << degPerPixLon << " lat=" << degPerPixLat;
+
+    return out;
 }

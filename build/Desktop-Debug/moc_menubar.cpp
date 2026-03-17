@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_MenuBar_t {
-    QByteArrayData data[27];
-    char stringdata0[454];
+    QByteArrayData data[28];
+    char stringdata0[479];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -58,7 +58,8 @@ QT_MOC_LITERAL(22, 355, 14), // "pauseTriggered"
 QT_MOC_LITERAL(23, 370, 16), // "profileTriggered"
 QT_MOC_LITERAL(24, 387, 20), // "applicationTriggered"
 QT_MOC_LITERAL(25, 408, 16), // "loadXmlTriggered"
-QT_MOC_LITERAL(26, 425, 28) // "openRuntimeInstanceTriggered"
+QT_MOC_LITERAL(26, 425, 28), // "openRuntimeInstanceTriggered"
+QT_MOC_LITERAL(27, 454, 24) // "openMissionFileTriggered"
 
     },
     "MenuBar\0feedbackTriggered\0\0newFileTriggered\0"
@@ -73,7 +74,8 @@ QT_MOC_LITERAL(26, 425, 28) // "openRuntimeInstanceTriggered"
     "deleteTriggered\0playTriggered\0"
     "pauseTriggered\0profileTriggered\0"
     "applicationTriggered\0loadXmlTriggered\0"
-    "openRuntimeInstanceTriggered"
+    "openRuntimeInstanceTriggered\0"
+    "openMissionFileTriggered"
 };
 #undef QT_MOC_LITERAL
 
@@ -83,41 +85,43 @@ static const uint qt_meta_data_MenuBar[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-      25,   14, // methods
+      26,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
        0,       // flags
-      25,       // signalCount
+      26,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    0,  139,    2, 0x06 /* Public */,
-       3,    0,  140,    2, 0x06 /* Public */,
-       4,    0,  141,    2, 0x06 /* Public */,
-       5,    0,  142,    2, 0x06 /* Public */,
-       6,    0,  143,    2, 0x06 /* Public */,
-       7,    0,  144,    2, 0x06 /* Public */,
-       8,    0,  145,    2, 0x06 /* Public */,
-       9,    0,  146,    2, 0x06 /* Public */,
-      10,    0,  147,    2, 0x06 /* Public */,
-      11,    0,  148,    2, 0x06 /* Public */,
-      12,    0,  149,    2, 0x06 /* Public */,
-      13,    0,  150,    2, 0x06 /* Public */,
-      14,    0,  151,    2, 0x06 /* Public */,
-      15,    0,  152,    2, 0x06 /* Public */,
-      16,    0,  153,    2, 0x06 /* Public */,
-      17,    0,  154,    2, 0x06 /* Public */,
-      18,    0,  155,    2, 0x06 /* Public */,
-      19,    0,  156,    2, 0x06 /* Public */,
-      20,    0,  157,    2, 0x06 /* Public */,
-      21,    0,  158,    2, 0x06 /* Public */,
-      22,    0,  159,    2, 0x06 /* Public */,
-      23,    0,  160,    2, 0x06 /* Public */,
-      24,    0,  161,    2, 0x06 /* Public */,
-      25,    0,  162,    2, 0x06 /* Public */,
-      26,    0,  163,    2, 0x06 /* Public */,
+       1,    0,  144,    2, 0x06 /* Public */,
+       3,    0,  145,    2, 0x06 /* Public */,
+       4,    0,  146,    2, 0x06 /* Public */,
+       5,    0,  147,    2, 0x06 /* Public */,
+       6,    0,  148,    2, 0x06 /* Public */,
+       7,    0,  149,    2, 0x06 /* Public */,
+       8,    0,  150,    2, 0x06 /* Public */,
+       9,    0,  151,    2, 0x06 /* Public */,
+      10,    0,  152,    2, 0x06 /* Public */,
+      11,    0,  153,    2, 0x06 /* Public */,
+      12,    0,  154,    2, 0x06 /* Public */,
+      13,    0,  155,    2, 0x06 /* Public */,
+      14,    0,  156,    2, 0x06 /* Public */,
+      15,    0,  157,    2, 0x06 /* Public */,
+      16,    0,  158,    2, 0x06 /* Public */,
+      17,    0,  159,    2, 0x06 /* Public */,
+      18,    0,  160,    2, 0x06 /* Public */,
+      19,    0,  161,    2, 0x06 /* Public */,
+      20,    0,  162,    2, 0x06 /* Public */,
+      21,    0,  163,    2, 0x06 /* Public */,
+      22,    0,  164,    2, 0x06 /* Public */,
+      23,    0,  165,    2, 0x06 /* Public */,
+      24,    0,  166,    2, 0x06 /* Public */,
+      25,    0,  167,    2, 0x06 /* Public */,
+      26,    0,  168,    2, 0x06 /* Public */,
+      27,    0,  169,    2, 0x06 /* Public */,
 
  // signals: parameters
+    QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
@@ -178,6 +182,7 @@ void MenuBar::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, voi
         case 22: _t->applicationTriggered(); break;
         case 23: _t->loadXmlTriggered(); break;
         case 24: _t->openRuntimeInstanceTriggered(); break;
+        case 25: _t->openMissionFileTriggered(); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
@@ -357,6 +362,13 @@ void MenuBar::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, voi
                 return;
             }
         }
+        {
+            using _t = void (MenuBar::*)();
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&MenuBar::openMissionFileTriggered)) {
+                *result = 25;
+                return;
+            }
+        }
     }
     (void)_a;
 }
@@ -390,13 +402,13 @@ int MenuBar::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 25)
+        if (_id < 26)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 25;
+        _id -= 26;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 25)
+        if (_id < 26)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 25;
+        _id -= 26;
     }
     return _id;
 }
@@ -549,6 +561,12 @@ void MenuBar::loadXmlTriggered()
 void MenuBar::openRuntimeInstanceTriggered()
 {
     QMetaObject::activate(this, &staticMetaObject, 24, nullptr);
+}
+
+// SIGNAL 25
+void MenuBar::openMissionFileTriggered()
+{
+    QMetaObject::activate(this, &staticMetaObject, 25, nullptr);
 }
 QT_WARNING_POP
 QT_END_MOC_NAMESPACE

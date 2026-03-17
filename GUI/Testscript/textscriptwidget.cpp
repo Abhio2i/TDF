@@ -24,14 +24,21 @@
 TextScriptItemWidget::TextScriptItemWidget(const QString &fileName, const QString &filePath, QWidget *parent)
     : QWidget(parent)
 {
-    // Set up layout
+    // Set up layout with proper margins
     QHBoxLayout *layout = new QHBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(5);
-    // Add file name label
+    layout->setContentsMargins(8, 4, 8, 4);
+    layout->setSpacing(8);
+
+    // Make widget expand horizontally and have fixed height
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    setFixedHeight(32);
+
+
     QLabel *nameLabel = new QLabel(fileName, this);
+    nameLabel->setStyleSheet("background: transparent; color: white;");
+    nameLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     layout->addWidget(nameLabel);
-    layout->addStretch();
+
     // Create play button
     playButton = new QPushButton(this);
     playButton->setIcon(QIcon(":/icons/images/play.png"));
@@ -42,57 +49,35 @@ TextScriptItemWidget::TextScriptItemWidget(const QString &fileName, const QStrin
         "   border: none;"
         "   background: transparent;"
         "}"
+        "QPushButton:hover {"
+        "   background-color: #1A3652;"
+        "   border-radius: 3px;"
+        "}"
         "QPushButton[active=true] {"
-        "   background-color: #505050;"
-        "   border: 1px solid #707070;"
+        "   background-color: #2d5a9c;"
+        "   border-radius: 3px;"
         "}");
     layout->addWidget(playButton);
-    // // Create pause button
-    // pauseButton = new QPushButton(this);
-    // pauseButton->setIcon(QIcon(":/icons/images/pause.png"));
-    // pauseButton->setFixedSize(24, 24);
-    // pauseButton->setToolTip("Pause Script");
-    // pauseButton->setStyleSheet(
-    //     "QPushButton {"
-    //     "   border: none;"
-    //     "   background: transparent;"
-    //     "}"
-    //     "QPushButton[active=true] {"
-    //     "   background-color: #505050;"
-    //     "   border: 1px solid #707070;"
-    //     "}");
-    // layout->addWidget(pauseButton);
+
     // Connect button signals
     connect(playButton, &QPushButton::clicked, this, [this, filePath]() {
         emit playClicked(filePath);
     });
-    // connect(pauseButton, &QPushButton::clicked, this, [this, filePath]() {
-    //     emit pauseClicked(filePath);
-    // });
+
     // Set initial button state
     setActiveButton("none");
-    // Verify icons
     if (playButton->icon().isNull()) {
-       //Console::error("Failed to load play icon from :/icons/images/play.png");
-    } else {
-       //Console::log("Play icon loaded successfully for :/icons/images/play.png");
+
     }
-
 }
-
 // %%% TextScriptItemWidget Methods %%%
 /* Set active state for play or pause button */
 void TextScriptItemWidget::setActiveButton(const QString &state)
 {
     playButton->setProperty("active", state == "play");
-    // pauseButton->setProperty("active", state == "pause");
     playButton->style()->unpolish(playButton);
     playButton->style()->polish(playButton);
-    // pauseButton->style()->unpolish(pauseButton);
-    // pauseButton->style()->polish(pauseButton);
 }
-
-// %%% TextScriptWidget Constructor %%%
 /* Initialize script management widget */
 TextScriptWidget::TextScriptWidget(QWidget *parent)
     : QWidget(parent)
@@ -101,42 +86,79 @@ TextScriptWidget::TextScriptWidget(QWidget *parent)
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(5);
-    // Create add script button
+
+    // Create a horizontal layout for button to control alignment
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->setContentsMargins(0, 0, 0, 0);
+
+    // Create add script button - WITHOUT fixed width
     addScriptButton = new QPushButton(QIcon(":/icons/images/add.png"), tr("Add Script"), this);
-    addScriptButton->setFixedWidth(100);
     addScriptButton->setStyleSheet(
         "QPushButton {"
-        "   border: 1px solid #707070;"
-        "   background-color: #404040;"
-        "   padding: 5px;"
+        "   border: 2px solid #27446d;"
+        "   background-color: #0F2636;"
+        "   padding: 8px 12px;"
         "   color: white;"
         "   font-weight: bold;"
+        "   border-radius: 4px;"
+        "   text-align: left;"
         "}"
         "QPushButton:hover {"
-        "   background-color: #505050;"
-        "   color: white;"
-        "   font-weight: bold;"
+        "   background-color: #1A3652;"
+        "   border: 2px solid #27446d;"
         "}");
-    layout->addWidget(addScriptButton);
-    // Create file list widget
+
+    // Make button expand to full width
+    addScriptButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    buttonLayout->addWidget(addScriptButton);
+    layout->addLayout(buttonLayout);
     fileListWidget = new QListWidget(this);
     fileListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    fileListWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+    fileListWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+    fileListWidget->setUniformItemSizes(true);
+    fileListWidget->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+
+    // StyleSheet for full line selection
+    fileListWidget->setStyleSheet(
+        "QListWidget {"
+        "   background-color: #0F2636;"
+        "   border: 2px solid #27446d;"
+        "   outline: none;"
+        "}"
+        "QListWidget::item {"
+        "   background-color: transparent;"
+        "   border: none;"
+        "   margin: 0px;"
+        "   padding: 0px;"
+        "}"
+        "QListWidget::item:selected {"
+        "   background-color: #2d5a9c;"
+        "   border: none;"
+        "}"
+        "QListWidget::item:selected:!active {"
+        "   background-color: #1A3652;"
+        "}"
+        "QListWidget::item:hover {"
+        "   background-color: #1A3652;"
+        "}"
+        "QListWidget::item:selected:hover {"
+        "   background-color: #1A3652;"
+        "}");
+
     layout->addWidget(fileListWidget);
+
     // Connect signals
-    connect(fileListWidget, &QListWidget::customContextMenuRequested, this, &TextScriptWidget::handleCustomContextMenu);
-    connect(addScriptButton, &QPushButton::clicked, this, &TextScriptWidget::handleAddScriptButtonClicked);
-    // Verify add button icon
-    if (addScriptButton->icon().isNull()) {
-       //Console::error("Failed to load add icon from :/icons/images/add.png");
-    } else {
-       //Console::log("Add icon loaded successfully for :/icons/images/add.png");
-    }
+    connect(fileListWidget, &QListWidget::customContextMenuRequested,
+            this, &TextScriptWidget::handleCustomContextMenu);
+    connect(addScriptButton, &QPushButton::clicked,
+            this, &TextScriptWidget::handleAddScriptButtonClicked);
+
     // Load script files
     QString projectDir = QCoreApplication::applicationDirPath() + "/../..";
     QString testScriptPath = QDir(projectDir).absoluteFilePath("Testscript");
     loadScriptFiles(testScriptPath);
 }
-
 // %%% Script File Management %%%
 /* Load script files from directory */
 void TextScriptWidget::loadScriptFiles(const QString &directoryPath)
@@ -144,39 +166,40 @@ void TextScriptWidget::loadScriptFiles(const QString &directoryPath)
     QDir dir(directoryPath);
     if (!dir.exists()) {
         fileListWidget->addItem("Directory not found: " + directoryPath);
-       //Console::error("Directory not found: " + directoryPath.toStdString());
         return;
     }
+
     // Filter for .as files
     dir.setNameFilters(QStringList() << "*.as");
     dir.setFilter(QDir::Files | QDir::NoDotAndDotDot);
     QFileInfoList fileList = dir.entryInfoList();
+
     if (fileList.isEmpty()) {
         fileListWidget->addItem("No .as files found in directory");
-       //Console::log("No .as files found in directory: " + directoryPath.toStdString());
         return;
     }
+
     // Clear existing items and status
     fileListWidget->clear();
     fileStatus.clear();
     activeButtonState.clear();
-    // Add script items
     for (const QFileInfo &fileInfo : fileList) {
         QString filePath = fileInfo.absoluteFilePath();
         QListWidgetItem *item = new QListWidgetItem(fileListWidget);
         item->setData(Qt::UserRole, filePath);
-        TextScriptItemWidget *itemWidget = new TextScriptItemWidget(fileInfo.fileName(), filePath, fileListWidget);
-        item->setSizeHint(itemWidget->sizeHint());
+        item->setSizeHint(QSize(fileListWidget->width(), 32));
+        TextScriptItemWidget *itemWidget = new TextScriptItemWidget(
+            fileInfo.fileName(), filePath, fileListWidget);
         fileListWidget->setItemWidget(item, itemWidget);
-        connect(itemWidget, &TextScriptItemWidget::playClicked, this, &TextScriptWidget::handlePlayClicked);
-        connect(itemWidget, &TextScriptItemWidget::pauseClicked, this, &TextScriptWidget::handlePauseClicked);
+        connect(itemWidget, &TextScriptItemWidget::playClicked,
+                this, &TextScriptWidget::handlePlayClicked);
+        connect(itemWidget, &TextScriptItemWidget::pauseClicked,
+                this, &TextScriptWidget::handlePauseClicked);
         fileStatus[filePath] = "none";
         activeButtonState[filePath] = "none";
         updateStatusIcon(item, "none");
     }
-   //Console::log("Loaded " + std::to_string(fileList.size()) + " .as files from directory: " + directoryPath.toStdString());
 }
-
 /* Update status icon for script item */
 void TextScriptWidget::updateStatusIcon(QListWidgetItem *item, const QString &status)
 {
@@ -194,17 +217,13 @@ void TextScriptWidget::updateStatusIcon(QListWidgetItem *item, const QString &st
         item->setIcon(QIcon(iconPath));
         item->setToolTip("Status: Error");
     } else {
-        iconPath = "";
-        item->setIcon(QIcon());
+        item->setIcon(QIcon());  // Clear icon
         item->setToolTip("Status: Not run");
     }
-    if (!item->icon().isNull()) {
-       //Console::log("Status icon set to " + status.toStdString() + " for item using " + iconPath.toStdString());
-    } else if (status != "none") {
-       //Console::error("Failed to load status icon for status: " + status.toStdString() + " at " + iconPath.toStdString());
-    }
-}
 
+    // Force item to update
+    item->setData(Qt::DecorationRole, item->icon());
+}
 // %%% Context Menu Handlers %%%
 /* Handle context menu for script items */
 void TextScriptWidget::handleCustomContextMenu(const QPoint &pos)
@@ -229,10 +248,7 @@ void TextScriptWidget::handleCustomContextMenu(const QPoint &pos)
 void TextScriptWidget::handlePlayClicked(const QString &filePath)
 {
     emit runScriptFile(filePath);
-
     activeButtonState[filePath] = "play";
-
-    // UI state update only (no fake status)
     for (int i = 0; i < fileListWidget->count(); ++i) {
         QListWidgetItem *item = fileListWidget->item(i);
         if (item->data(Qt::UserRole).toString() == filePath) {
@@ -244,8 +260,6 @@ void TextScriptWidget::handlePlayClicked(const QString &filePath)
             break;
         }
     }
-
-   //Console::log("▶ Running script file: " + filePath.toStdString());
 }
 
 /* Handle pause button click for script */
@@ -254,7 +268,6 @@ void TextScriptWidget::handlePauseClicked(const QString &filePath)
     emit pauseScript(filePath);
     activeButtonState[filePath] = "pause";
     fileStatus[filePath] = "none";
-    // Update item status
     for (int i = 0; i < fileListWidget->count(); ++i) {
         QListWidgetItem *item = fileListWidget->item(i);
         if (item->data(Qt::UserRole).toString() == filePath) {
@@ -266,7 +279,6 @@ void TextScriptWidget::handlePauseClicked(const QString &filePath)
             break;
         }
     }
-   //Console::log("Pause clicked for script: " + filePath.toStdString() + ", status set to none");
 }
 
 /* Handle rename action for script */
@@ -277,7 +289,6 @@ void TextScriptWidget::handleRenameAction()
     if (!item) return;
     TextScriptItemWidget *itemWidget = qobject_cast<TextScriptItemWidget*>(fileListWidget->itemWidget(item));
     if (!itemWidget) return;
-    // Prompt for new name
     bool ok;
     QString newName = QInputDialog::getText(this, "Rename File", "New file name:", QLineEdit::Normal,
                                             QFileInfo(filePath).fileName(), &ok);
@@ -294,10 +305,8 @@ void TextScriptWidget::handleRenameAction()
             itemWidget->findChild<QLabel*>()->setText(newName);
             fileStatus[newFilePath] = fileStatus.take(filePath);
             activeButtonState[newFilePath] = activeButtonState.take(filePath);
-           //Console::log("Renamed script from " + filePath.toStdString() + " to " + newFilePath.toStdString());
         } else {
             QMessageBox::warning(this, "Rename Failed", "Could not rename the file.");
-           //Console::error("Failed to rename script: " + filePath.toStdString());
         }
     }
 }
@@ -322,10 +331,8 @@ void TextScriptWidget::handleRemoveAction()
             delete item;
             fileStatus.remove(filePath);
             activeButtonState.remove(filePath);
-           //Console::log("Removed script: " + filePath.toStdString());
         } else {
             QMessageBox::warning(this, "Remove Failed", "Could not remove the file.");
-           //Console::error("Failed to remove script: " + filePath.toStdString());
         }
     }
 }
@@ -335,12 +342,10 @@ void TextScriptWidget::handleAddScriptButtonClicked()
 {
     QString projectDir = QCoreApplication::applicationDirPath() + "/../..";
     QString testScriptPath = QDir(projectDir).absoluteFilePath("Testscript");
-    // Open add script dialog
     TestScriptDialog *window = new TestScriptDialog(this, false);
     connect(window, &TestScriptDialog::runScriptstring, this, &TextScriptWidget::runScriptstring);
     connect(window, &TestScriptDialog::closed, this, [=]() {
         loadScriptFiles(testScriptPath);
-       //Console::log("New script added or canceled, reloading script files from: " + testScriptPath.toStdString());
         window->deleteLater();
     });
     window->show();
@@ -351,18 +356,15 @@ void TextScriptWidget::handleEditAction()
 {
     QString filePath = fileListWidget->property("selectedFilePath").toString();
     if (filePath.isEmpty()) {
-       //Console::error("No file selected for editing");
         QMessageBox::warning(this, "Edit Failed", "No file selected for editing.");
         return;
     }
     QString projectDir = QCoreApplication::applicationDirPath() + "/../..";
     QString testScriptPath = QDir(projectDir).absoluteFilePath("Testscript");
-    // Open edit script dialog
     TestScriptDialog *window = new TestScriptDialog(this, true, filePath);
     connect(window, &TestScriptDialog::runScriptstring, this, &TextScriptWidget::runScriptstring);
     connect(window, &TestScriptDialog::closed, this, [=]() {
         loadScriptFiles(testScriptPath);
-       //Console::log("Script edited and saved or canceled, reloading script files: " + filePath.toStdString());
         window->deleteLater();
     });
     window->show();

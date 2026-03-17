@@ -25,7 +25,6 @@ class HierarchyConnector : public QObject
     Q_OBJECT
 
 public:
-
     // Get singleton instance
     static HierarchyConnector* instance();
     // Connect signals for hierarchy and UI

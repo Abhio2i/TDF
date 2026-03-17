@@ -24,11 +24,11 @@ void Specialzone::Update(float delta){
             if(!entity || !entity->Active || entity->isDestroy || !entity->transform || !entity->dynamicModel) continue;
             float distance = transform->matrix->translation().distanceToPoint(entity->transform->matrix->translation())*1000;
             // qDebug()<<distance;
-            float alt = entity->dynamicModel->currentAltitude * KMtoFT;
+            float alt = entity->dynamicModel->currentAltitude * 1;//KMtoFT;
             if(distance < collider->CollideRadius && alt > MinAltitude && alt < MaxAltitude){
-
+                entity->dynamicModel->windAngle = direction;
                 entity->dynamicModel->windDierction = getDynamicWind(direction,  time);
-                entity->dynamicModel->windSpeed = getDynamicSpeed(Speed,  time);
+                entity->dynamicModel->windSpeed = Speed;//getDynamicSpeed(Speed,  time);
             }
         }
     }

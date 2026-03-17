@@ -99,7 +99,7 @@ void DynamicModel::FollowTrajectory() {
         Platform* mPlatform = dynamic_cast<Platform*>(followEntity);
         DynamicModel* mModel = mPlatform ? mPlatform->dynamicModel : nullptr;
 
-        if (mTransform && mModel && mPlatform->trajectory->getTargetWaypoint()->formation) {
+        if (mTransform && mModel && mPlatform->trajectory->getTargetWaypoint()&&mPlatform->trajectory->getTargetWaypoint()->formation) {
             // --- 2. TURN DETECTION & COMMITMENT SYSTEM ---
             float leaderHeading = mTransform->matrix->rotation().toEulerAngles().y();
             float myHeading = transform->matrix->rotation().toEulerAngles().y();
@@ -305,6 +305,10 @@ void DynamicModel::FollowTrajectory() {
         }
     }
 
+    if(followTarget){
+        return;
+    }
+
     if(trajectory->Trajectories.size()<2) return;
     QVector3D current = transform->matrix->translation();
     QVector2D last(current.x(),current.z());
@@ -464,6 +468,9 @@ void DynamicModel::FollowTrajectory() {
     // windDierction.setZ(0);
     // windSpeed = 0;
     // // ////////////////////////////////////////////////////
+
+
+
     transform->trailData.push_back(QVector3D(transform->getLatitude(),0,transform->getLongitude()));
     if( transform->trailData.capacity()>54000){
         transform->trailData.erase(transform->trailData.begin());
@@ -479,34 +486,45 @@ void DynamicModel::FollowTrajectory() {
 
     // //qDebug()<<metredis;
     if (trajectory->Trajectories.size() > trajectory->current &&  metredis < (currentSpeed/3.6f) *2.f) {
-        trajectory->current += 1;
-        // //qDebug()<<"time :"<<time;
-        if(trajectory->current >= trajectory->Trajectories.size()){
-            endTime = time;
-            moveSpeed = 0;
+        if(trajectory->reverse){
+            trajectory->current -= 1;
+            if(trajectory->current <= 0){
+                endTime = time;
+                moveSpeed = 0;
+            }
+            trajectory->current = trajectory->current <= 0 ? 0: trajectory->current;
+        }else{
+            trajectory->current += 1;
+            // //qDebug()<<"time :"<<time;
+            if(trajectory->current >= trajectory->Trajectories.size()){
+                endTime = time;
+                moveSpeed = 0;
+            }
+            trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? 0: trajectory->current;
+            if(tgtSpd > 0){
+                moveSpeed = tgtSpd;
+                if(moveSpeed <minSpeed){
+                    moveSpeed = minSpeed;
+                }
+                if(moveSpeed > maxSpeed){
+                    moveSpeed = maxSpeed;
+                }
+                if(Altitude>maxAltitude){
+                    Altitude = maxAltitude;
+                }
+                if(Altitude<0){
+                    Altitude = 0;
+                }
+                //movespd = (tgtSpd/3600.0f);//km/h to km/s
+                moveSpeed = tgtSpd;
+                if(target_qvec.y() > 0){
+                    //alt = target_qvec.y() * FTtoKM;
+                    Altitude = target_qvec.y();
+                }
+            }
         }
-        trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? 0: trajectory->current;
-        if(tgtSpd > 0){
-            moveSpeed = tgtSpd;
-            if(moveSpeed <minSpeed){
-                moveSpeed = minSpeed;
-            }
-            if(moveSpeed > maxSpeed){
-                moveSpeed = maxSpeed;
-            }
-            if(Altitude>maxAltitude){
-                Altitude = maxAltitude;
-            }
-            if(Altitude<0){
-                Altitude = 0;
-            }
-            //movespd = (tgtSpd/3600.0f);//km/h to km/s
-            moveSpeed = tgtSpd;
-            if(target_qvec.y() > 0){
-                //alt = target_qvec.y() * FTtoKM;
-                Altitude = target_qvec.y();
-            }
-        }
+
+
     }
 
 }

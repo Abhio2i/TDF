@@ -4,6 +4,7 @@
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/esm.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/radar.h"
 #include "core/Hierarchy/hierarchy.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h"
 
 SensorProfile::SensorProfile(Hierarchy* h):Component(h) {
     Active = true;
@@ -56,7 +57,19 @@ void SensorProfile::addSubComponent(std::string name, QString data1, QString dat
         sensors->insert({esm->ID,esm});
         parent->Sensors->insert({esm->ID,esm});
         emit parent->subComponentAdded(QString::fromStdString(ID),QString::fromStdString(esm->ID),QString::fromStdString(name));
-    }
+
+} else if(data1 == "Sonar"){
+    Sonar* sonar = new Sonar(parent);
+    sonar->parentEntity = parentEntity;
+    sonar->Name = name;
+    sensors->insert({sonar->ID, sonar});
+    parent->Sensors->insert({sonar->ID, sonar});
+    emit parent->subComponentAdded(
+        QString::fromStdString(ID),
+        QString::fromStdString(sonar->ID),
+        QString::fromStdString(name));
+}
+
 
 }
 

@@ -82,6 +82,7 @@ public:
 
     //====8feb====
     void setLibraryActionsVisible(bool visible);
+    QAction* getOpenMissionFileAction();
 
 
 signals:
@@ -136,6 +137,8 @@ signals:
     void applicationTriggered();
     void loadXmlTriggered();
     void openRuntimeInstanceTriggered();
+    void openMissionFileTriggered();
+
 
 private:
     // %%% Menu Components %%%
@@ -198,6 +201,8 @@ private:
     QAction *applicationAction;
     QAction* loadXmlAction;
     QAction* openRuntimeInstanceAction;
+    QAction* openMissionFileAction;
+
 };
 
 #endif // MENUBAR_H

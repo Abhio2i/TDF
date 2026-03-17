@@ -375,10 +375,8 @@ void DatabaseEditor::clearUnsavedChanges()
 void DatabaseEditor::setupStatusBar()
 {
     statusBar = new QStatusBar(this);
-    setStatusBar(statusBar);
     statusBar->showMessage("Ready");
 }
-
 /* Update status bar with message */
 void DatabaseEditor::updateStatusBar(const QString &message)
 {
@@ -391,21 +389,21 @@ void DatabaseEditor::updateStatusBar(const QString &message)
 /* Load project from file with progress dialog */
 void DatabaseEditor::loadRecentProject(const QString& filePath)
 {
-    QProgressDialog* loadingDialog = new QProgressDialog(this);
-    loadingDialog->setLabelText("Loading...");
-    loadingDialog->setCancelButton(nullptr);
-    loadingDialog->setRange(0, 0);
-    loadingDialog->setMinimumDuration(0);
-    loadingDialog->setWindowModality(Qt::WindowModal);
-    loadingDialog->setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
-    loadingDialog->setFixedSize(250, 80);
-    loadingDialog->move(geometry().center() - loadingDialog->rect().center());
-    loadingDialog->show();
-    QCoreApplication::processEvents();
+    // QProgressDialog* loadingDialog = new QProgressDialog(this);
+    // loadingDialog->setLabelText("Loading...");
+    // loadingDialog->setCancelButton(nullptr);
+    // loadingDialog->setRange(0, 0);
+    // loadingDialog->setMinimumDuration(0);
+    // loadingDialog->setWindowModality(Qt::WindowModal);
+    // loadingDialog->setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
+    // loadingDialog->setFixedSize(250, 80);
+    // loadingDialog->move(geometry().center() - loadingDialog->rect().center());
+    // loadingDialog->show();
+    // QCoreApplication::processEvents();
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this, "Error", "Failed to open scenario file");
-        loadingDialog->deleteLater();
+        // loadingDialog->deleteLater();
         return;
     }
     QByteArray data = file.readAll();
@@ -414,13 +412,13 @@ void DatabaseEditor::loadRecentProject(const QString& filePath)
     QJsonDocument doc = QJsonDocument::fromJson(data, &err);
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
         QMessageBox::warning(this, "Error", "Invalid scenario file format");
-        loadingDialog->deleteLater();
+        // loadingDialog->deleteLater();
         return;
     }
     QJsonObject obj = doc.object();
     if (!obj.contains("hierarchy")) {
         QMessageBox::warning(this, "Error", "Not a valid scenario file");
-        loadingDialog->deleteLater();
+        // loadingDialog->deleteLater();
         return;
     }
     QJsonObject hier = obj["hierarchy"].toObject();
@@ -428,8 +426,8 @@ void DatabaseEditor::loadRecentProject(const QString& filePath)
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
     RecentProjectsManager::instance()->addToRecentProjects(filePath, RecentProjectsManager::ScenarioEditor);
-    loadingDialog->close();
-    loadingDialog->deleteLater();
+    // loadingDialog->close();
+    // loadingDialog->deleteLater();
     updateStatusBar("Scenario loaded: " + QFileInfo(filePath).fileName());
 }
 
@@ -455,22 +453,22 @@ void DatabaseEditor::showApplicationDialog()
 }
 void DatabaseEditor::loadFromJsonFile(const QString &filePath)
 {
-    QProgressDialog* loadingDialog = new QProgressDialog(this);
-    loadingDialog->setLabelText("Loading...");
-    loadingDialog->setCancelButton(nullptr);
-    loadingDialog->setRange(0, 0);
-    loadingDialog->setMinimumDuration(0);
-    loadingDialog->setWindowModality(Qt::WindowModal);
-    loadingDialog->setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
-    loadingDialog->setFixedSize(250, 80);
-    loadingDialog->move(geometry().center() - loadingDialog->rect().center());
-    loadingDialog->show();
-    QCoreApplication::processEvents();
+    // QProgressDialog* loadingDialog = new QProgressDialog(this);
+    // loadingDialog->setLabelText("Loading...");
+    // loadingDialog->setCancelButton(nullptr);
+    // loadingDialog->setRange(0, 0);
+    // loadingDialog->setMinimumDuration(0);
+    // loadingDialog->setWindowModality(Qt::WindowModal);
+    // loadingDialog->setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
+    // loadingDialog->setFixedSize(250, 80);
+    // loadingDialog->move(geometry().center() - loadingDialog->rect().center());
+    // loadingDialog->show();
+    // QCoreApplication::processEvents();
 
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this, "Error", QString("Failed to open JSON file: %1").arg(filePath));
-        loadingDialog->deleteLater();
+        // loadingDialog->deleteLater();
         return;
     }
     QByteArray data = file.readAll();
@@ -479,7 +477,7 @@ void DatabaseEditor::loadFromJsonFile(const QString &filePath)
     QJsonDocument doc = QJsonDocument::fromJson(data, &err);
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
         QMessageBox::warning(this, "Error", QString("Failed to parse JSON: %1").arg(err.errorString()));
-        loadingDialog->deleteLater();
+        // loadingDialog->deleteLater();
         return;
     }
 
@@ -495,8 +493,8 @@ void DatabaseEditor::loadFromJsonFile(const QString &filePath)
 
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
-    loadingDialog->close();
-    loadingDialog->deleteLater();
+    // loadingDialog->close();
+    // loadingDialog->deleteLater();
     updateStatusBar("Project loaded: " + QFileInfo(filePath).fileName());
 }
 // %%% Tree Item Selection Handler %%%
@@ -514,7 +512,6 @@ void DatabaseEditor::onTreeItemSelected(QVariantMap data)
     } else {
         type = data["type"].toString();
     }
-
     QString name = data["name"].toString();
     QString ID = data["parentId"].toString();
     QString displayName = capitalizeFirstLetter(name);

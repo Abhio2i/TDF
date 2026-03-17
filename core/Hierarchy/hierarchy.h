@@ -168,6 +168,8 @@ signals:
 
     void subComponentRenamed(QString componentId, QString subCompId, QString newName);
 
+    void meshRenderer2DisAdded(const QString &ID, MeshRenderer2D* meshRenderer2D);
+    void trajectoryisAdded(const QString &ID, Trajectory* trajectory);
 };
 
 #endif // HIERARCHY_H

@@ -243,18 +243,6 @@ void Recording::insertRecord(const QJsonObject &data)
 
 
 
-void Recording::entityAddedAllFromStart()
-{
-    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
-    for (const auto& platform : *m_Platforms) {
-        std::string name      = platform.second->Name.c_str();
-        std::string parentID  = platform.second->parentID;
-        std::string ID   = platform.first.c_str();
-        entityAddedInBetween(parentID.c_str(), ID.c_str(), name.c_str());
-    }
-}
-
-
 
 void Recording::recordingStart()
 {
@@ -272,7 +260,7 @@ void Recording::recordingStart()
     if(recordingTimer->isActive() == false){
         recordingTimer->start(recordingPeriod);
     }
-    //entityAddedAllFromStart();
+    entityAddedAllFromStart();
     connect(recordingTimer, &QTimer::timeout, this, [this]() {
         durationShared += recordingPeriod;
         ++frameIndex;
@@ -284,29 +272,72 @@ void Recording::recordingStart()
     });
     //emit started();
 }
+
+void Recording::entityAddedAllFromStart()
+{
+    std::unordered_map<std::string, ProfileCategaory*> m_ProfileCategories
+        = m_hierarchy->ProfileCategories;
+    for(const auto& profileCategories : m_ProfileCategories){
+        profileCategoriesUpdate(profileCategories.first.c_str(),
+                                profileCategories.second->Name.c_str(),Operation::CREATE);
+    }
+    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
+    for (const auto& platform : *m_Platforms) {
+        std::string name      = platform.second->Name.c_str();
+        std::string parentID  = platform.second->parentID;
+        std::string ID   = platform.first.c_str();
+        entityAddedInBetween(parentID.c_str(), ID.c_str(), name.c_str());
+        if(platform.second->meshRenderer2d){
+            meshRenderer2DCRUD(platform.first.c_str(),platform.second->meshRenderer2d);
+        }
+        if(platform.second->trajectory){
+            trajectoryCRUD(platform.first.c_str(),platform.second->trajectory->Trajectories);
+        }
+
+        //std::vector<Waypoints*> Trajectories;
+    }
+
+
+
+}
+
 void Recording::framePayLoad()
 {
     PayLoad payload{
         durationShared,
         frameIndex,
+        m_entitiesMeshRenderer2DList,
+        m_entitiesMeshRenderer2DCRUDList,
+        m_profileCategoriesDetailsList,
+        m_profileCategoriesCRUDList,
         m_entitiesDetailsList,
         m_entitiesCreatedList,
         m_entitiesUpdatedList,
-        m_entitiesDeletedList
+        m_entitiesDeletedList,
+        m_entitiesTrajectoryList,
+        m_entitiesTrajectoryCRUDList
     };
 
     str = QString(
               "Frame PayLoad:=> "
               "Duration: %1  "
               "Frame Index: %2  "
-              "Entities ID No: %3  "
-              "Details List No: %4  "
-              "Created List No: %5  "
-              "Updated List No: %6  "
-              "Deleted List No: %7  "
+              "Mesh Renderer2D No: %3  "
+              "Mesh Renderer 2D CRUD No: %4  "
+              "Profile Categories No: %5  "
+              "Profile Categories CRUD No: %6  "
+              "Entities ID No: %7  "
+              "Details List No: %8  "
+              "Created List No: %9  "
+              "Updated List No: %10  "
+              "Deleted List No: %11  "
               ).arg(
                   QString::number(durationShared),
                   QString::number(frameIndex),
+                  QString::number(payload.entitiesMeshRenderer2DList.size()),
+                  QString::number(payload.entitiesMeshRenderer2DCRUDList.size()),
+                  QString::number(payload.profileCategoriesDetailsList.size()),
+                  QString::number(payload.profileCategoriesCRUDList.size()),
                   QString::number(entitiesIDIndex.size()),
                   QString::number(payload.entitiesDetailsList.size()),
                   QString::number(payload.entitiesCreatedList.size()),
@@ -316,10 +347,16 @@ void Recording::framePayLoad()
     debug(str,D_FramePayLoad);
     emit sendPayLoad(payload);
     str = QString();
+    m_entitiesMeshRenderer2DList      = EntitiesMeshRenderer2DList();
+    m_entitiesMeshRenderer2DCRUDList  = EntitiesMeshRenderer2DCRUDList();
+    m_profileCategoriesDetailsList = ProfileCategoriesDetailsList();
+    m_profileCategoriesCRUDList    = ProfileCategoriesCRUDList();
     m_entitiesDetailsList = EntitiesDetailsList();
     m_entitiesCreatedList = EntitiesCreatedList();
     m_entitiesUpdatedList = EntitiesUpdatedList();
     m_entitiesDeletedList = EntitiesDeletedList();
+    m_entitiesTrajectoryList     = EntitiesTrajectoryList();
+    m_entitiesTrajectoryCRUDList = EntitiesTrajectoryCRUDList();
 }
 
 
@@ -383,10 +420,16 @@ void Recording::saveFile()
 
 }
 
+
 //In Between Running simulation
 
-void Recording::entityAddedInBetween(const QString &parentID, const QString &ID, const QString &entityName)
+void Recording::entityAddedInBetween(const QString &parentID,
+                                     const QString &ID,
+                                     const QString &entityName)
 {
+    if(entitiesIDIndex.contains(ID)){
+        return;
+    }
     str = QString(
               "Parent ID   : %1\n"
               "ID          : %2\n"
@@ -405,11 +448,108 @@ void Recording::entityAddedInBetween(const QString &parentID, const QString &ID,
     };
     m_entitiesCreatedList.push_back(m_createdList);
 
-    entitiesIDIndex.insert(ID,maxIndex);
+    entitiesIDIndex[ID] = maxIndex;
     inspectEntitiesIDIndex();
     debug(str,D_EntityCreated);
     //emit entityCreated(parentID, ID, entityName, durationShared);
 }
+
+/*
+ *    struct ProfileCategories {
+ *        int       index;
+ *        QString   name;
+ *        QString   ID;
+ *    };
+ */
+
+void Recording::profileCategoriesUpdate(QString ID,
+                                        QString profileName, Operation operation)
+{
+
+    // If Already Exist
+    if(profileCategoriesIDIndex.contains(ID)){
+        /* For Debug */
+        str = QString("Already Exist : ");
+        str += QString(
+                   "True\n"
+                   "ID : %1\n"
+                   "Entity Name : %2\n"
+                   "Operation: %3\n"
+                   ).arg( ID, profileName,QString::number(operation));
+        debug(str,D_ProfileCategories);
+
+        return;
+    }
+
+
+    // Insert In HashMap
+    profileCategoriesIDIndex[ID] = ++maxProfileIndex;
+
+    /* Insert In profileCategoriesIDIndex inside
+       m_profileCategoriesDetailsList */
+    ProfileCategoriesDetails profileCategoriesDetails;
+    profileCategoriesDetails.index = maxProfileIndex;
+    profileCategoriesDetails.ID    = ID;
+    profileCategoriesDetails.name  = profileName;
+    m_profileCategoriesDetailsList.push_back(profileCategoriesDetails);
+
+    /* For Profile Name*/
+    ProfileCategoriesCRUD profileCategoriesCRUD;
+    profileCategoriesCRUD.index = maxProfileIndex;
+    profileCategoriesCRUD.operation = operation;
+    m_profileCategoriesCRUDList.push_back(profileCategoriesCRUD);
+
+    /* For Debug */
+    str = QString(
+              "False => Creating new one\n"
+              "ID : %1\n"
+              "Entity Name : %2\n"
+              "Index: %3\n"
+              "Operation: %4\n"
+              ).arg(profileCategoriesDetails.ID,
+                   profileCategoriesDetails.name,
+                   QString::number(profileCategoriesCRUD.index),
+                   QString::number(profileCategoriesCRUD.operation));
+    debug(str,D_ProfileCategories);
+
+}
+
+void Recording::profileCategoriesDeleted(QString ID)
+{
+    str = QString("Already Exist : ");
+    // If Not Already Exist
+    if(!profileCategoriesIDIndex.contains(ID)){
+        /* For Debug */
+        str += QString(
+                   "FAIL\n"
+                   "ID : %1\n"
+                   ).arg( ID);
+        debug(str,D_ProfileCategories);
+        return;
+    }
+
+    /* For Profile Name*/
+    ProfileCategoriesCRUD profileCategoriesCRUD;
+    profileCategoriesCRUD.index = profileCategoriesIDIndex.value(ID);
+    profileCategoriesCRUD.operation = Operation::DELETE;
+    m_profileCategoriesCRUDList.push_back(profileCategoriesCRUD);
+
+    /* For Debug */
+    str += QString(
+               "False => Creating new one\n"
+               "ID : %1\n"
+               "Index: %2\n"
+               "Operation: %3\n"
+               ).arg(ID,
+                    QString::number(profileCategoriesIDIndex.value(ID)),
+                    QString::number(profileCategoriesCRUD.operation));
+    // Remove In HashMap
+    profileCategoriesIDIndex.remove(ID);
+    debug(str,D_ProfileCategories);
+}
+
+
+
 /*
  *    int    index       ;
  *    double longitude   ;
@@ -431,9 +571,12 @@ void Recording::entityUpdatesInBetween()
     for(auto i = entitiesIDIndex.begin(), end = entitiesIDIndex.end();
          i != end ; ++i){
         QString m_str = i.key();
+        if(m_Platforms->find(m_str.toStdString()) == m_Platforms->end()){
+            continue;
+        }
         platform = m_Platforms->at(m_str.toStdString());
         m_str += "Index :" + QString(i.value());
-        if(platform != nullptr){
+        if(platform){
             m_entitiesUpdated.index       = i.value();
             m_entitiesUpdated.longitude   = platform->transform->getLongitude();
             m_entitiesUpdated.latitude    = platform->transform->getLatitude();
@@ -476,6 +619,137 @@ void Recording::entityRemovedInBetween(const QString &ID)
 
     //emit entityDeleted(ID,durationShared);
 }
+/*
+ *       struct EntitiesMeshRenderer2D {
+ *           int index;
+ *           bool Active;
+ *           QString Sprite;
+ *           QString Texture;
+ *           int color;
+ *           int color2;
+ *       };
+ *       using EntitiesMeshRenderer2DList = std::vector<EntitiesMeshRenderer2D>;
+ *
+ *       struct EntitiesMeshRenderer2DCRUD {
+ *           int       index;
+ *           Operation operation;
+ *       };
+ *       using EntitiesMeshRenderer2DCRUDList = std::vector<EntitiesMeshRenderer2DCRUD>;
+ */
+void Recording::meshRenderer2DCRUD(const QString &ID, MeshRenderer2D* meshRenderer2D, Operation operation)
+{
+    if(!entitiesIDIndex.contains(ID)){
+        str =  QString("Failed to Add ID: %1").arg(ID);
+        debug(str,D_MeshRenderer2D);
+        return;
+    }
+    entitiesMeshRenderer2DCRUD= EntitiesMeshRenderer2DCRUD();
+    entitiesMeshRenderer2DCRUD.index     = entitiesIDIndex.value(ID);
+    entitiesMeshRenderer2DCRUD.operation = operation;
+    m_entitiesMeshRenderer2DCRUDList.push_back(entitiesMeshRenderer2DCRUD);
+
+    switch(operation){
+        entitiesMeshRenderer2D = EntitiesMeshRenderer2D();
+    case Operation::CREATE:
+        entitiesMeshRenderer2D.index   = entitiesIDIndex.value(ID);
+        entitiesMeshRenderer2D.Active  = meshRenderer2D->Active;
+        entitiesMeshRenderer2D.Sprite  = meshRenderer2D->Sprite->c_str();
+        entitiesMeshRenderer2D.Texture = meshRenderer2D->Texture->c_str();
+        entitiesMeshRenderer2D.color   = meshRenderer2D->color->name(QColor::HexArgb);
+        entitiesMeshRenderer2D.color2  = meshRenderer2D->color2->name(QColor::HexArgb);
+        m_entitiesMeshRenderer2DList.push_back(entitiesMeshRenderer2D);
+        break;
+    case Operation::UPDATE:
+        entitiesMeshRenderer2D.index   = entitiesIDIndex.value(ID);
+        entitiesMeshRenderer2D.Active  = meshRenderer2D->Active;
+        entitiesMeshRenderer2D.Sprite  = meshRenderer2D->Sprite->c_str();
+        entitiesMeshRenderer2D.Texture = meshRenderer2D->Texture->c_str();
+        entitiesMeshRenderer2D.color   = meshRenderer2D->color->name(QColor::HexArgb);
+        entitiesMeshRenderer2D.color2  = meshRenderer2D->color2->name(QColor::HexArgb);
+        m_entitiesMeshRenderer2DList.push_back(entitiesMeshRenderer2D);
+        break;
+    default:
+        break;
+    }
+    debug(QString::number(m_entitiesMeshRenderer2DList.size()),D_MeshRenderer2D);
+}
+/*
+ *       struct TrajectoryWaypoint {
+ *           double geo_latitude;
+ *           double geo_longitude;
+ *           double geo_altitude;
+ *           double geo_Heading;
+ *           float  vector_x;
+ *           float  vector_y;
+ *           float  vector_z;
+ *           double speed     = 0;
+ *           bool   sensor    = false;
+ *           bool   formation = false;
+ *       };
+ */
+
+void Recording::trajectoryCRUD(const QString &ID,
+                               std::vector<Waypoints *> Trajectories,
+                               Operation operation)
+{
+    entitiesTrajectoryCRUD = EntitiesTrajectoryCRUD();
+    entitiesTrajectoryCRUD.index     = entitiesIDIndex.value(ID);
+    entitiesTrajectoryCRUD.operation = operation;
+    m_entitiesTrajectoryCRUDList.push_back(entitiesTrajectoryCRUD);
+    int i = 0;
+    switch(operation){
+    case Operation::CREATE:
+
+        entitiesTrajectory = EntitiesTrajectory();
+        entitiesTrajectory.index     = entitiesIDIndex.value(ID);
+        /* Iterate Each element*/
+
+        for(auto it = Trajectories.begin();
+             it != Trajectories.end(); ++it){
+            trajectoryWaypoint = TrajectoryWaypoint();
+            trajectoryWaypoint.index         = i++;
+            trajectoryWaypoint.geo_latitude  = (*it)->geocord->latitude ;
+            trajectoryWaypoint.geo_longitude = (*it)->geocord->longitude;
+            trajectoryWaypoint.geo_altitude  = (*it)->geocord->altitude ;
+            trajectoryWaypoint.geo_Heading   = (*it)->geocord->Heading  ;
+            trajectoryWaypoint.vector_x = (*it)->position->x;
+            trajectoryWaypoint.vector_y = (*it)->position->y;
+            trajectoryWaypoint.vector_z = (*it)->position->z;
+            trajectoryWaypoint.speed     = (*it)->speed;
+            trajectoryWaypoint.sensor    = (*it)->sensor;
+            trajectoryWaypoint.formation = (*it)->formation;
+            entitiesTrajectory.Trajectories.push_back(trajectoryWaypoint);
+        }
+        m_entitiesTrajectoryList.push_back(entitiesTrajectory);
+        break;
+
+    case Operation::UPDATE:
+        entitiesTrajectory = EntitiesTrajectory();
+        entitiesTrajectory.index     = entitiesIDIndex.value(ID);
+        /* Iterate Each element*/
+        for(auto it = Trajectories.begin();
+             it != Trajectories.end(); ++it){
+            trajectoryWaypoint = TrajectoryWaypoint();
+            trajectoryWaypoint.index         = i++;
+            trajectoryWaypoint.geo_latitude  = (*it)->geocord->latitude ;
+            trajectoryWaypoint.geo_longitude = (*it)->geocord->longitude;
+            trajectoryWaypoint.geo_altitude  = (*it)->geocord->altitude ;
+            trajectoryWaypoint.geo_Heading   = (*it)->geocord->Heading  ;
+            trajectoryWaypoint.vector_x = (*it)->position->x;
+            trajectoryWaypoint.vector_y = (*it)->position->y;
+            trajectoryWaypoint.vector_z = (*it)->position->z;
+            trajectoryWaypoint.speed     = (*it)->speed;
+            trajectoryWaypoint.sensor    = (*it)->sensor;
+            trajectoryWaypoint.formation = (*it)->formation;
+            entitiesTrajectory.Trajectories.push_back(trajectoryWaypoint);
+        }
+        m_entitiesTrajectoryList.push_back(entitiesTrajectory);
+
+    default:
+        break;
+    }
+    debug(QString::number(Trajectories.size()),D_TrajectoryCRUD);
+}
 void Recording::inspectEntitiesIDIndex()
 {
     std::string m_str = "Inspection of Entities ID Index: \n";
@@ -515,7 +789,6 @@ void Recording::inspectEntitiesUpdatedList()
     }
     debug(m_str, D_UpdatesInBTW);
 }
-
 
 
 // void Recording::entityRemovedInBetween(std::string ID)
@@ -678,6 +951,7 @@ void Replay::replayStart()
     //QTimer::singleShot(durationLength, replayTimer, &QTimer::stop);
 
     frameIndex = 0;
+    cleanHierarchy();
     payload.entitiesDetailsList = {};
     entitiesIndexDetails = {};
 
@@ -700,13 +974,45 @@ void Replay::framePayLoad()
     payload.frameIndex = frameIndex;
     emit getPayLoad(&payload);
     str = QString("  Duration : %1  ").arg(durationShared);
+    if(profileCategoriesIndexDetails.empty() && !payload.profileCategoriesDetailsList.empty()){
+        setProfileCategoriesDetails();
+        str += QString("[ Profile Categories Details Update Size: %1 ] ")
+                   .arg(payload.profileCategoriesDetailsList.size());
+    }
+    if(!payload.profileCategoriesCRUDList.empty()){
+        crudProfileCategoriesDetails();
+        str += QString("[ Profile Categories Details CRUD Size: %1 ] ").arg(payload.profileCategoriesCRUDList.size());
+    }
+    // if(!payload.entitiesTrajectoryCRUDList.empty()){
+    //     str += QString("[ Entities Trajectory CRUD Size: %1 ] ")
+    //     .arg(payload.entitiesTrajectoryCRUDList.size());
+    // }
     if(entitiesIndexDetails.empty() && !payload.entitiesDetailsList.empty()){
         setEntitiesIndexDetails();
         str += QString("[ Index Detail Update Size: %1 ] ").arg(payload.entitiesDetailsList.size());
     }
+
     if(!payload.entitiesCreatedList.empty()){
         createEntitiesCreateList();
         str += QString("[ Entities Created Size: %1 ] ").arg(payload.entitiesCreatedList.size());
+    }
+    if(!payload.entitiesMeshRenderer2DList.empty()){
+        str += QString("[ Entities Mesh Renderer Update Size: %1 ] ")
+        .arg(payload.entitiesMeshRenderer2DList.size());
+        setEntitiesMeshRenderer2D();
+    }
+    if(!payload.entitiesMeshRenderer2DCRUDList.empty()){
+        str += QString("[ Entities Mesh Renderer CRUD Size: %1 ] ")
+        .arg(payload.entitiesMeshRenderer2DCRUDList.size());
+        crudEntitiesMeshRenderer2D();
+    }
+
+    if(!payload.entitiesTrajectoryList.empty()
+        || !payload.entitiesTrajectoryCRUDList.empty()){
+        setEntitiesTrajectory();
+        str += QString("[ Entities Trajectory Update Size: %1 And CRUD Size: %2 ] ")
+                   .arg(payload.entitiesTrajectoryList.size(),
+                        payload.entitiesTrajectoryCRUDList.size());
     }
     if(!payload.entitiesUpdatedList.empty()){
         updateEntitiesUpdatedList();
@@ -716,10 +1022,50 @@ void Replay::framePayLoad()
         deleteEntitiesDeletedList();
         str += QString("[ Entities Deleted Size: %1 ] ").arg(payload.entitiesDeletedList.size());
     }
+
+
     debug(str,D_PayLoad_Inspect);
+    payload.profileCategoriesCRUDList = {};
     payload.entitiesCreatedList = {};
     payload.entitiesUpdatedList = {};
     payload.entitiesDeletedList = {};
+    payload.entitiesMeshRenderer2DList     = {};
+    payload.entitiesMeshRenderer2DCRUDList = {};
+    payload.entitiesTrajectoryList     = {};
+    payload.entitiesTrajectoryCRUDList = {};
+}
+
+void Replay::cleanHierarchy()
+{
+    // std::unordered_map<std::string, ProfileCategaory*>
+    //     profileCategaory = m_hierarchy->ProfileCategories;
+    // std::unordered_map<std::string, Platform*>
+    //     *platforn        = m_hierarchy->Platforms;
+
+    // profileCategaory.clear();
+    // platforn->clear();
+    m_hierarchy->fromJson(QJsonObject({}));
+}
+
+
+void Replay::setProfileCategoriesDetails()
+{
+    for(auto pcd = payload.profileCategoriesDetailsList.begin();
+         pcd != payload.profileCategoriesDetailsList.end();
+         ++pcd)
+    {
+        profileCategoriesIndexDetails[pcd->index] =*pcd ;
+    }
+    str = QString(
+              "Profile Categories Details Map of Index Details Size: %1   \n")
+              .arg(profileCategoriesIndexDetails.size());
+
+    for(auto id = profileCategoriesIndexDetails.begin();
+         id != profileCategoriesIndexDetails.end(); ++id)
+    {
+        str += QString("Index: %1   \n").arg(id->first);
+    }
+    debug(str,D_ProfileCategoriesIndexDetails);
 }
 
 void Replay::setEntitiesIndexDetails()
@@ -729,7 +1075,7 @@ void Replay::setEntitiesIndexDetails()
          ed != payload.entitiesDetailsList.end();
          ++ed)
     {
-        entitiesIndexDetails.insert({ed->index,*ed});
+        entitiesIndexDetails[ed->index] = *ed;
     }
     str = QString(
               "Entities Map of Index Details Size: %1   \n")
@@ -743,6 +1089,200 @@ void Replay::setEntitiesIndexDetails()
     debug(str,D_EntitiesIndexDetails);
 }
 
+void Replay::setEntitiesMeshRenderer2D()
+{
+    for(auto emr = payload.entitiesMeshRenderer2DList.begin();
+         emr != payload.entitiesMeshRenderer2DList.end();
+         ++emr)
+    {
+        entitiesMeshRenderer2DIndex[emr->index] = *emr;
+    }
+    str = QString(
+              "Entities Mesh Renderer 2D Index Size: %1   \n")
+              .arg(entitiesMeshRenderer2DIndex.size());
+    str += "{  ";
+    for(auto id = entitiesMeshRenderer2DIndex.begin();
+         id != entitiesMeshRenderer2DIndex.end(); ++id)
+    {
+        str += QString("[ Index: %1 => %2 ] , ")
+        .arg(QString::number(id->first), id->second.Sprite);
+    }
+    str += "  }";
+    debug(str,D_MeshRenderer);
+}
+
+void Replay::crudEntitiesMeshRenderer2D()
+{
+    // //For Mesh render
+    str = "Mesh CRUD Operation";
+    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
+    for(auto etc = payload.entitiesMeshRenderer2DCRUDList.begin();
+         etc != payload.entitiesMeshRenderer2DCRUDList.end();
+         ++etc){
+        if(entitiesMeshRenderer2DIndex.find(etc->index)
+            == entitiesMeshRenderer2DIndex.end()){
+            str += "Failed to Add Mesh For Index: "+QString::number(etc->index);
+            continue;
+        }
+        EntitiesMeshRenderer2D emr = entitiesMeshRenderer2DIndex.at(etc->index);
+        EntitiesDetails &ed = entitiesIndexDetails.at(etc->index);
+        Platform *platform = m_Platforms->at(ed.ID.toStdString());
+        platform->meshRenderer2d->Sprite->clear();
+        platform->meshRenderer2d->Sprite->append(emr.Sprite.toStdString());
+    }
+    debug(str, D_MeshRenderer);
+}
+
+void Replay::setEntitiesTrajectory()
+{
+    str = QString("EntitiesTrajectory { ");
+    for(auto et = payload.entitiesTrajectoryList.begin();
+         et != payload.entitiesTrajectoryList.end();
+         ++et)
+    {
+        // For index of Trajectory
+        entitiesTrajectoryIndex[et->index] = *et;
+        // To Debug
+        str += QString(
+                   " [ Index: %1 and Size: %2 ] ,"
+                   ).arg(QString::number(et->index),
+                        QString::number(et->Trajectories.size()));
+    }
+    str += QString("  }  \n   ");
+    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
+    str += QString("EntitiesCRUD { ");
+    for(auto etc = payload.entitiesTrajectoryCRUDList.begin();
+         etc != payload.entitiesTrajectoryCRUDList.end();
+         ++etc)
+    {
+        // For index of Trajectory
+        EntitiesDetails ed;
+        try {
+            ed = entitiesIndexDetails.at(etc->index);
+        }
+        catch (std::out_of_range e) {
+            str += QString("Failed entitiesIndexDetails Caught: %1")
+            .arg(QString(e.what()));
+            continue;
+        }
+
+        Platform* platform = m_Platforms->at(ed.ID.toStdString());
+        EntitiesTrajectory et;
+        try {
+            et = entitiesTrajectoryIndex.at(etc->index);
+        }
+        catch (std::out_of_range e) {
+            str += QString("Failed entitiesTrajectoryIndex Caught: %1")
+            .arg(QString(e.what()));
+            continue;
+        }
+
+        switch (etc->operation) {
+        case Operation::CREATE:
+            if(platform->trajectory){
+                for (Waypoints* wp : platform->trajectory->Trajectories) {
+                    delete wp->position;
+                    delete wp;
+                }
+                platform->trajectory->Trajectories.clear();
+                for(auto tw = et.Trajectories.begin();
+                     tw != et.Trajectories.end();
+                     ++tw){
+                    Waypoints* newWaypoint = new Waypoints();
+                    newWaypoint->position = new Vector(tw->vector_x, tw->vector_y, tw->vector_z);
+                    newWaypoint->speed = tw->speed;
+                    newWaypoint->formation = tw->formation;
+                    newWaypoint->sensor = tw->sensor;
+                    platform->trajectory->addTrajectory(newWaypoint);
+                }
+            }
+            break;
+        case Operation::UPDATE:
+            if(platform->trajectory){
+                for (Waypoints* wp : platform->trajectory->Trajectories) {
+                    delete wp->position;
+                    delete wp;
+                }
+                platform->trajectory->Trajectories.clear();
+                for(auto tw = et.Trajectories.begin();
+                     tw != et.Trajectories.end();
+                     ++tw){
+                    Waypoints* newWaypoint = new Waypoints();
+                    newWaypoint->position = new Vector(tw->vector_x, tw->vector_y, tw->vector_z);
+                    newWaypoint->speed = tw->speed;
+                    newWaypoint->formation = tw->formation;
+                    newWaypoint->sensor = tw->sensor;
+                    platform->trajectory->addTrajectory(newWaypoint);
+                }
+            }
+            break;
+        case Operation::DELETE:
+            if(platform->trajectory){
+                for (Waypoints* wp : platform->trajectory->Trajectories) {
+                    delete wp->position;
+                    delete wp;
+                }
+                platform->trajectory->Trajectories.clear();
+            }
+            break;
+        default:
+            break;
+        }
+        // To Debug
+        // str += QString(
+        //            " [ Index: %1 and Size: %2 ] ,"
+        //            ).arg(QString::number(etc->index),
+        //                 QString::number(etc->Trajectories.size()));
+    }
+    str += QString("  }");
+    debug(str,D_EntitiesTrajectory);
+}
+
+void Replay::crudProfileCategoriesDetails()
+{
+    std::unordered_map<std::string, ProfileCategaory*> pc = m_hierarchy->ProfileCategories;
+    str = QString();
+    for(auto pcc = payload.profileCategoriesCRUDList.cbegin();
+         pcc != payload.profileCategoriesCRUDList.cend();
+         ++pcc)
+    {
+        ProfileCategoriesDetails pcd;
+        try {
+            pcd = profileCategoriesIndexDetails.at(pcc->index);
+        }
+        catch (std::out_of_range e) {
+            str += QString("Failed profileCategoriesIndexDetails Caught: %1")
+            .arg(QString(e.what()));
+            continue;
+        }
+        auto exist = pc.find(pcd.ID.toStdString());
+
+        if(pcc->operation == Operation::CREATE && exist == pc.end()){
+            ProfileCategaory* profile = new ProfileCategaory(m_hierarchy);
+            profile->Name = pcd.name.toStdString();
+            profile->ID   = pcd.ID.toStdString();
+            QJsonObject profileObj;
+            profileObj.insert("name",pcd.name);
+            profileObj.insert("id",pcd.ID);
+            emit createProfileCategories(profile);
+            //profile->fromJson(profileObj);
+            str += QString(
+                       "[ Entity Name: %1 \t"
+                       "ID: %2 \t"
+                       "Index: %3 \t ]"
+                       ).arg(profile->Name.c_str(),
+                            profile->ID.c_str(),
+                            QString::number(pcd.index));
+
+        }
+        if(pcc->operation == Operation::DELETE && exist != pc.end()){
+            emit deleteProfileCategories(pcd.ID);
+        }
+        //emit createEntitiesCreate(ed.parentID, ed.ID, ed.name, true);
+    }
+    debug(str,D_EntitiesCreateList);
+}
+
 void Replay::createEntitiesCreateList()
 {
     std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
@@ -751,25 +1291,49 @@ void Replay::createEntitiesCreateList()
          ec != payload.entitiesCreatedList.end();
          ++ec)
     {
-        EntitiesDetails &ed = entitiesIndexDetails.at(ec->index);
-        str += QString(
-                   "Entity Name: %1 \t"
-                   "ID: %2 \t"
-                   ).arg(ed.name,ed.ID);
+        if(entitiesIndexDetails.find(ec->index) != entitiesIndexDetails.end()){
+            EntitiesDetails &ed = entitiesIndexDetails.at(ec->index);
+            str += QString(
+                       "Entity Name: %1 \t"
+                       "ID: %2 \t"
+                       ).arg(ed.name,ed.ID);
 
-        emit createEntitiesCreate(ed.parentID, ed.ID, ed.name, true);
-        Platform* platform = m_Platforms->at(ed.ID.toStdString());
-        platform->addComponent("transform");
-        platform->addComponent("crossSection");
-        platform->addComponent("trajectory");
-        platform->addComponent("rigidbody");
-        platform->addComponent("dynamicModel");
-        platform->addComponent("collider");
-        platform->addComponent("bitmap");
-        platform->addComponent("sensors");
-        platform->addComponent("iffs");
-        platform->addComponent("radios");
+            emit createEntitiesCreate(ed.parentID, ed.ID, ed.name, true);
+            Platform* platform = m_Platforms->at(ed.ID.toStdString());
+            platform->addComponent("transform");
+            platform->addComponent("crossSection");
+            platform->addComponent("trajectory");
+            platform->addComponent("rigidbody");
+            platform->addComponent("dynamicModel");
+            platform->addComponent("bitmap");
+            platform->addComponent("collider");
+            platform->addComponent("sensors");
+            platform->addComponent("iffs");
+            platform->addComponent("radios");
+        }
+        //For Trajectory
+        // EntitiesTrajectory et = entitiesTrajectoryIndex.at(ec->index);
+        // if(platform->trajectory){
+        //     for (Waypoints* wp : platform->trajectory->Trajectories) {
+        //         delete wp->position;
+        //         delete wp;
+        //     }
+        //     platform->trajectory->Trajectories.clear();
+        //     for(auto tw = et.Trajectories.begin();
+        //          tw != et.Trajectories.end();
+        //          ++tw){
+        //         Waypoints* newWaypoint = new Waypoints();
+        //         newWaypoint->position = new Vector(tw->vector_x, tw->vector_y, tw->vector_z);
+        //         newWaypoint->speed = tw->speed;
+        //         newWaypoint->formation = tw->formation;
+        //         newWaypoint->sensor = tw->sensor;
+        //         platform->trajectory->addTrajectory(newWaypoint);
+        //     }
+        // }
+        //platform->trajectory->addWaypoint();
+
     }
+
     debug(str,D_EntitiesCreateList);
 }
 /*
@@ -791,30 +1355,23 @@ void Replay::updateEntitiesUpdatedList()
          eu != payload.entitiesUpdatedList.end();
          ++eu)
     {
-        EntitiesDetails &ed = entitiesIndexDetails.at(eu->index);
+        if(entitiesIndexDetails.find(eu->index) != entitiesIndexDetails.end()){
+            EntitiesDetails &ed = entitiesIndexDetails.at(eu->index);
 
-        auto it = m_Platforms->find(ed.ID.toStdString());
-        if(it == m_Platforms->end() ){
-            continue;
-        }else{
-            Platform* platform = m_Platforms->at(ed.ID.toStdString());
-            platform->transform->setLongitude (eu->longitude);
-            platform->transform->setLatitude  (eu->latitude );
-            platform->transform->setAltitude  (eu->altitude );
-            platform->transform->setHeading   (eu->heading  );
-            platform->dynamicModel->turnRate     = eu->turn_radius;
-            platform->dynamicModel->currentSpeed = eu->curr_speed ;
-            platform->dynamicModel->climbRate    = eu->climb_rate ;
-
-            // platform->transform->getLongitude();
-            // platform->transform->getLatitude();
-            // platform->transform->getAltitude();
-            // platform->transform->getHeading();
-            // platform->dynamicModel->turnRate;
-            // platform->dynamicModel->currentSpeed;
-            // platform->dynamicModel->climbRate;
+            auto it = m_Platforms->find(ed.ID.toStdString());
+            if(it == m_Platforms->end() ){
+                continue;
+            }else{
+                Platform* platform = m_Platforms->at(ed.ID.toStdString());
+                platform->transform->setLongitude (eu->longitude);
+                platform->transform->setLatitude  (eu->latitude );
+                platform->transform->setAltitude  (eu->altitude );
+                platform->transform->setHeading   (eu->heading  );
+                platform->dynamicModel->turnRate     = eu->turn_radius;
+                platform->dynamicModel->currentSpeed = eu->curr_speed ;
+                platform->dynamicModel->climbRate    = eu->climb_rate ;
+            }
         }
-
         //emit createEntitiesCreate(ed.parentID, ed.ID, ed.name, false);
     }
     emit render(0.01);
@@ -827,12 +1384,16 @@ void Replay::deleteEntitiesDeletedList()
          edl != payload.entitiesDeletedList.end();
          ++edl)
     {
-        EntitiesDetails &ed = entitiesIndexDetails.at(edl->index);
-        str += QString(
-                   "[ ID : %1 ,"
-                   "Index : %2 ] ")
-                   .arg(ed.ID,ed.index);
-        emit deleteEntities(ed.parentID, ed.ID, true);
+        if(entitiesIndexDetails.find(edl->index)
+            != entitiesIndexDetails.end()){
+            EntitiesDetails &ed = entitiesIndexDetails
+                                      .at(edl->index);
+            str += QString(
+                       "[ ID : %1 ,"
+                       "Index : %2 ] ")
+                       .arg(ed.ID,ed.index);
+            emit deleteEntities(ed.parentID, ed.ID, true);
+        }
     }
     debug(str,D_EntitiesDeletedList);
 }
@@ -929,6 +1490,7 @@ void Replay::playAgain()
     qDebug()<<"Replay Play Again!";
     replayTimer->stop();
     durationShared = 0;
+    frameIndex = 0;
     m_recorder->loggerStatus = Recorder::S_REPLAY_MODE;
     m_recorder->update(m_recorder->loggerStatus);
 }

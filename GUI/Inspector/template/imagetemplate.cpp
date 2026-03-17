@@ -15,15 +15,12 @@ ImageTemplate::ImageTemplate(Inspector *inspector, QWidget *parent)
 void ImageTemplate::setupImageCell(int row, const QString &fullKey, const QJsonObject &obj, QTableWidget *tableWidget)
 {
     QString currentPath = obj["value"].toString();
-
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
-
     QLabel *imageLabel = new QLabel();
     imageLabel->setFixedSize(IMAGE_SIZE, IMAGE_SIZE);
     imageLabel->setScaledContents(true);
     imageLabel->setStyleSheet(InspectorStyles::ImagePreviewLabel);
-
     if (!currentPath.isEmpty()) {
         QPixmap pixmap(currentPath);
         if (!pixmap.isNull()) {
@@ -36,17 +33,13 @@ void ImageTemplate::setupImageCell(int row, const QString &fullKey, const QJsonO
         imageLabel->setText("No Image");
         imageLabel->setAlignment(Qt::AlignCenter);
     }
-
     QLineEdit *lineEdit = new QLineEdit(currentPath);
     lineEdit->setStyleSheet(InspectorStyles::ImageLineEdit);
-
     QPushButton *browseBtn = new QPushButton("Select Image");
     browseBtn->setStyleSheet(InspectorStyles::ImageBrowseButton);
-
     layout->addWidget(imageLabel);
     layout->addWidget(lineEdit);
     layout->addWidget(browseBtn);
-
     connect(browseBtn, &QPushButton::clicked, this, [=]() {
         IconsDialog dialog(this);
         if (dialog.exec() == QDialog::Accepted) {
@@ -58,17 +51,14 @@ void ImageTemplate::setupImageCell(int row, const QString &fullKey, const QJsonO
                     imageLabel->setPixmap(pixmap.scaled(imageLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
                     imageLabel->setText("");
                 }
-
                 QJsonObject delta;
                 QJsonObject spriteObj;
                 spriteObj["value"] = selectedPath;
                 spriteObj["type"] = "image";
                 delta[fullKey] = spriteObj;
-
                 if (inspectorRef) {
                     delta["_id"] = inspectorRef->getMainID();
                 }
-
                 emit valueChanged(connectedID, name, delta);
             }
         }
@@ -89,20 +79,16 @@ void ImageTemplate::setupImageCell(int row, const QString &fullKey, const QJsonO
             imageLabel->setText("No Image");
             imageLabel->setAlignment(Qt::AlignCenter);
         }
-
         QJsonObject delta;
         QJsonObject spriteObj;
         spriteObj["value"] = filePath;
         spriteObj["type"] = "image";
         delta[fullKey] = spriteObj;
-
         if (inspectorRef) {
             delta["_id"] = inspectorRef->getMainID();
         }
-
         emit valueChanged(connectedID, name, delta);
     });
-
     tableWidget->setRowHeight(row, ROW_HEIGHT);
     tableWidget->setCellWidget(row, 1, this);
 }

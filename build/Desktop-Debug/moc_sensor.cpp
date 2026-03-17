@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_Sensor_t {
-    QByteArrayData data[7];
-    char stringdata0[82];
+    QByteArrayData data[9];
+    char stringdata0[110];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -36,14 +36,16 @@ QT_MOC_LITERAL(0, 0, 6), // "Sensor"
 QT_MOC_LITERAL(1, 7, 27), // "availableConnectionsUpdated"
 QT_MOC_LITERAL(2, 35, 0), // ""
 QT_MOC_LITERAL(3, 36, 8), // "msgArray"
-QT_MOC_LITERAL(4, 45, 21), // "DetectionCapabilities"
-QT_MOC_LITERAL(5, 67, 3), // "All"
-QT_MOC_LITERAL(6, 71, 10) // "MovingOnly"
+QT_MOC_LITERAL(4, 45, 13), // "enemyDetected"
+QT_MOC_LITERAL(5, 59, 13), // "enemyNotFound"
+QT_MOC_LITERAL(6, 73, 21), // "DetectionCapabilities"
+QT_MOC_LITERAL(7, 95, 3), // "All"
+QT_MOC_LITERAL(8, 99, 10) // "MovingOnly"
 
     },
     "Sensor\0availableConnectionsUpdated\0\0"
-    "msgArray\0DetectionCapabilities\0All\0"
-    "MovingOnly"
+    "msgArray\0enemyDetected\0enemyNotFound\0"
+    "DetectionCapabilities\0All\0MovingOnly"
 };
 #undef QT_MOC_LITERAL
 
@@ -53,25 +55,29 @@ static const uint qt_meta_data_Sensor[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-       1,   14, // methods
+       3,   14, // methods
        0,    0, // properties
-       1,   22, // enums/sets
+       1,   34, // enums/sets
        0,    0, // constructors
        0,       // flags
-       1,       // signalCount
+       3,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    1,   19,    2, 0x06 /* Public */,
+       1,    1,   29,    2, 0x06 /* Public */,
+       4,    0,   32,    2, 0x06 /* Public */,
+       5,    0,   33,    2, 0x06 /* Public */,
 
  // signals: parameters
     QMetaType::Void, QMetaType::QJsonArray,    3,
+    QMetaType::Void,
+    QMetaType::Void,
 
  // enums: name, alias, flags, count, data
-       4,    4, 0x2,    2,   27,
+       6,    6, 0x2,    2,   39,
 
  // enum data: key, value
-       5, uint(Sensor::DetectionCapabilities::All),
-       6, uint(Sensor::DetectionCapabilities::MovingOnly),
+       7, uint(Sensor::DetectionCapabilities::All),
+       8, uint(Sensor::DetectionCapabilities::MovingOnly),
 
        0        // eod
 };
@@ -83,6 +89,8 @@ void Sensor::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void
         (void)_t;
         switch (_id) {
         case 0: _t->availableConnectionsUpdated((*reinterpret_cast< const QJsonArray(*)>(_a[1]))); break;
+        case 1: _t->enemyDetected(); break;
+        case 2: _t->enemyNotFound(); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
@@ -91,6 +99,20 @@ void Sensor::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void
             using _t = void (Sensor::*)(const QJsonArray & );
             if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&Sensor::availableConnectionsUpdated)) {
                 *result = 0;
+                return;
+            }
+        }
+        {
+            using _t = void (Sensor::*)();
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&Sensor::enemyDetected)) {
+                *result = 1;
+                return;
+            }
+        }
+        {
+            using _t = void (Sensor::*)();
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&Sensor::enemyNotFound)) {
+                *result = 2;
                 return;
             }
         }
@@ -126,13 +148,13 @@ int Sensor::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 1)
+        if (_id < 3)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 1;
+        _id -= 3;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 1)
+        if (_id < 3)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 1;
+        _id -= 3;
     }
     return _id;
 }
@@ -142,6 +164,18 @@ void Sensor::availableConnectionsUpdated(const QJsonArray & _t1)
 {
     void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
     QMetaObject::activate(this, &staticMetaObject, 0, _a);
+}
+
+// SIGNAL 1
+void Sensor::enemyDetected()
+{
+    QMetaObject::activate(this, &staticMetaObject, 1, nullptr);
+}
+
+// SIGNAL 2
+void Sensor::enemyNotFound()
+{
+    QMetaObject::activate(this, &staticMetaObject, 2, nullptr);
 }
 QT_WARNING_POP
 QT_END_MOC_NAMESPACE

@@ -1,5 +1,8 @@
 void main(ScriptEngine@ e)
 {
+    // add layer
+    e.canvasCreateVectorLayer("Layer1");
+
     // Set city context
     e.useCity("Bhopal");
 

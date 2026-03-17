@@ -172,6 +172,8 @@ Runtime::Runtime() {
         }
     });
     connect(replay,&Replay::updateScene,scenerenderer,&SceneRenderer::Render);
+    connect(replay,&Replay::createProfileCategories,hierarchy,&Hierarchy::addProfileCategaoryWithObject);
+    connect(replay,&Replay::deleteProfileCategories,hierarchy,&Hierarchy::removeProfileCategaory);
     connect(replay,&Replay::createEntitiesCreate,hierarchy,&Hierarchy::addEntityViaLogger);
     connect(replay,&Replay::deleteEntities,hierarchy,&Hierarchy::removeEntity);
     /* -------------------------------------------------------

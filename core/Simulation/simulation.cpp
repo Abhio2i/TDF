@@ -1,9 +1,10 @@
-
 #include "simulation.h"
 #include <algorithm>
 #include <core/Debug/console.h>
 #include "core/Debug/profiler.h"
 #include "core/Hierarchy/Utils/entityutils.h"
+#include "core/Hierarchy/EntityProfiles/weapon.h"
+#include "GUI/Tacticaldisplay/canvaswidget.h"
 #include <QJsonObject>
 #include <QtMath>
 #include <GUI/mainwindow.h>
@@ -164,7 +165,19 @@ void Simulation::startf() {
     /* Shared Memory By Himanshu */
 
     for (auto& [id, comp] : physicsComponent) {
+        if (comp.platform) comp.platform->Start();
         if (comp.dynamicModel) comp.dynamicModel->start();
+
+        // For weapon entities: (re)start the flight monitor so missiles
+        // launch as soon as their entity becomes Active.
+        // if (comp.base && comp.base->type == Constants::EntityType::Weapon) {
+        //     Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
+        //     if (weapon) {
+        //         // Ensure canvas is always set before launch
+        //         if (m_canvas) weapon->setCanvas(m_canvas);
+        //         weapon->startFlightMonitor();
+        //     }
+        // }
     }
 
 }
@@ -188,6 +201,14 @@ void Simulation::stop() {
     updateTimer->stop();
     isPlay = false;
     complete = true;
+
+    // Stop all weapon flight monitors cleanly
+    for (auto& [id, comp] : physicsComponent) {
+        if (comp.base && comp.base->type == Constants::EntityType::Weapon) {
+            Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
+            if (weapon) weapon->stopFlightMonitor();
+        }
+    }
 
     /* Shared Memory By Himanshu */
     Status = SimulationStateNS::STOP;
@@ -407,6 +428,34 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
         }
     }
 
+    // ── Weapon entity: register in physics + start missile flight monitor ───
+    if (entity->type == Constants::EntityType::Weapon) {
+        Weapon* weapon = dynamic_cast<Weapon*>(entity);
+        if (weapon) {
+            PhysicsComponent component;
+            component.name        = weapon->Name;
+            component.base        = entity;
+            component.platform    = nullptr;
+            component.weapon      = weapon;
+            component.zone        = nullptr;
+            component.transform   = weapon->transform;
+            component.rigidbody   = weapon->rigidbody;
+            component.collider    = weapon->collider;
+            component.dynamicModel= weapon->dynamicModel;
+            component.aircraft    = nullptr;   // weapons use own flight model
+            physicsComponent[weapon->ID] = component;
+
+            // Set canvas so blast PNG renders on detonation
+            if (m_canvas) weapon->setCanvas(m_canvas);
+
+            // Start the missile flight monitor: it will call missileStart()
+            // automatically as soon as weapon->Active becomes true.
+            // weapon->startFlightMonitor();
+            Console::log("[Simulation] Weapon registered + flight monitor started: "
+                         + weapon->Name);
+        }
+    }
+
     if (entity->type == Constants::EntityType::SpecialZone) {
         Specialzone* zone = dynamic_cast<Specialzone*>(entity);
         PhysicsComponent component;
@@ -449,6 +498,12 @@ void Simulation::entityRemoved(QString ID) {
 
     auto physIt = physicsComponent.find(key);
     if (physIt != physicsComponent.end()) {
+        // Stop weapon flight monitor before removing
+        if (physIt->second.base &&
+            physIt->second.base->type == Constants::EntityType::Weapon) {
+            Weapon* weapon = dynamic_cast<Weapon*>(physIt->second.base);
+            if (weapon) weapon->stopFlightMonitor();
+        }
         physicsComponent.erase(physIt);
     }
 
@@ -540,9 +595,20 @@ void Simulation::updateDynamics(float dt,PhysicsComponent *comp){
     Vector target = *comp->dynamicModel->trajectory->getTargetWaypoint()->position;
     //float tgtSpd = comp.dynamicModel->trajectory->getTargetWaypoint()->speed;
     FlatXYZ targt = geoToFlatXYZ(target.x,target.z,target.y);
-    comp->aircraft->TargetPosition.x = targt.x * 1000.f;
-    comp->aircraft->TargetPosition.y = targt.y / 3.281f;
-    comp->aircraft->TargetPosition.z = targt.z * 1000.f;
+    if(comp->dynamicModel->followTarget){
+        targt = geoToFlatXYZ(comp->dynamicModel->followEntity->transform->getLatitude(),
+                             comp->dynamicModel->followEntity->transform->getLongitude(),
+                             comp->dynamicModel->followEntity->transform->getAltitude());
+        comp->aircraft->TargetPosition.x = targt.x * 1000.f;
+        comp->aircraft->TargetPosition.y = targt.y / 3.281f;
+        comp->aircraft->TargetPosition.z = targt.z * 1000.f;
+
+    }else{
+        comp->aircraft->TargetPosition.x = targt.x * 1000.f;
+        comp->aircraft->TargetPosition.y = targt.y / 3.281f;
+        comp->aircraft->TargetPosition.z = targt.z * 1000.f;
+    }
+
 
     comp->aircraft->FixedUpdate(dt);
 
@@ -619,7 +685,10 @@ void Simulation::calculatePhysics() {
         if(physicsComponent.size()>70){
             opt = simMin<num && num< simMax;
         }
-
+        if(comp.base->type == Constants::EntityType::Weapon) {
+            Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
+            if (weapon&&weapon->isLaunched&&!weapon->isDead) weapon->missileUpdate(dt);
+        }
         if (comp.platform && opt){
             QElapsedTimer timer;
             timer.start();  // Start measuring

@@ -1,38 +1,39 @@
 /* ========================================================================= */
-/* File: navigationpage.h                                                   */
+/* File: navigationpage.h                                                    */
 /* Purpose: Defines widget for navigation page with editor buttons           */
-// Written by   : Arti Rajpoot
+/* Written by: Arti Rajpoot                                                  */
 /* ========================================================================= */
-
 #ifndef NAVIGATIONPAGE_H
 #define NAVIGATIONPAGE_H
 
-#include <QWidget>                                // For widget base class
-#include <QPushButton>                            // For push button widget
-#include <QToolButton>                            // For tool button widget
+#include <QWidget>
+#include <QPushButton>
+#include <QToolButton>
 
 // %%% Class Definition %%%
 /* Widget for navigation page */
 class NavigationPage : public QWidget
 {
     Q_OBJECT
-
 public:
     // Initialize navigation page
     explicit NavigationPage(QWidget *parent = nullptr);
+    void restorePreviousButton();
+
 signals:
     // Signal editor request
     void editorRequested(const QString &editorKey);
+
 private:
     // %%% UI Components %%%
-    // List of navigation buttons
     QList<QToolButton*> navButtons;
-    // Active navigation button
-    QToolButton* activeButton = nullptr;
+    QToolButton* activeButton   = nullptr;
+    QToolButton* previousButton = nullptr;
+
     // %%% Utility Methods %%%
-    // Create navigation button
-    QToolButton* createNavButton(const QString &iconPath, const QString &label, const QString &editorKey);
-    // Set active button
+    QToolButton* createNavButton(const QString &iconPath,
+                                 const QString &label,
+                                 const QString &editorKey);
     void setActiveButton(QToolButton* button);
 };
 

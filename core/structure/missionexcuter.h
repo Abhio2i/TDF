@@ -2,7 +2,7 @@
 #define MISSIONEXCUTER_H
 #include <QObject>
 #include <core/Hierarchy/entity.h>
-#include <core/Hierarchy/Struct/task.h>
+// #include <core/Hierarchy/Struct/task.h>
 
 class MissionExcuter: public QObject
 {
@@ -19,7 +19,7 @@ public:
     Entity *entity;
 
     std::string missionTable;
-    std::unordered_map<std::string, Task> *taskGroup;
+    // std::unordered_map<std::string, Task> *taskGroup;
 
     void start();
     void pause();

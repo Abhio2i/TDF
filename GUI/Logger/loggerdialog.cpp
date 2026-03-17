@@ -168,6 +168,7 @@ LoggerDialog::LoggerDialog(QWidget *parent, Recorder* recorderParam)
             background-color: #d0d0d0;
         }
     )");
+
 }
 
 void LoggerDialog::setupMenuBar()
@@ -343,9 +344,25 @@ QWidget* LoggerDialog::createRecordingControls()
     stopRecordingButton->setIconSize(QSize(24, 24));
     stopRecordingButton->setEnabled(false);
 
+    databaseButton = new QToolButton(this);
+    databaseButton->setIcon(QIcon(":/icons/images/database.png"));
+    databaseButton->setToolTip(tr("Connect to DataBase"));
+    databaseButton->setFixedSize(28, 28);
+    databaseButton->setIconSize(QSize(24, 24));
+    databaseButton->setEnabled(true);
+
+    debugButton = new QToolButton(this);
+    debugButton->setIcon(QIcon(":/icons/images/log-file.png"));
+    debugButton->setToolTip(tr("Connect to DataBase"));
+    debugButton->setFixedSize(28, 28);
+    debugButton->setIconSize(QSize(24, 24));
+    debugButton->setEnabled(true);
+
     controlLayout->addWidget(recordButton);
     controlLayout->addWidget(pauseRecordingButton);
     controlLayout->addWidget(stopRecordingButton);
+    controlLayout->addWidget(databaseButton);
+    controlLayout->addWidget(debugButton);
     controlLayout->addStretch();
 
     return container;
@@ -392,11 +409,19 @@ QWidget* LoggerDialog::createReplayControls()
     loadRecordingButton->setFixedSize(28, 28);
     loadRecordingButton->setIconSize(QSize(24, 24));
 
+    databaseButtonReplay = new QToolButton(this);
+    databaseButtonReplay->setIcon(QIcon(":/icons/images/database.png"));
+    databaseButtonReplay->setToolTip(tr("Connect to DataBase"));
+    databaseButtonReplay->setFixedSize(28, 28);
+    databaseButtonReplay->setIconSize(QSize(24, 24));
+    databaseButtonReplay->setEnabled(true);
+
     controlLayout->addWidget(startReplayButton);
     controlLayout->addWidget(pauseResumeReplayButton);
     controlLayout->addWidget(previousFrameButton);
     controlLayout->addWidget(nextFrameButton);
     controlLayout->addWidget(loadRecordingButton);
+    controlLayout->addWidget(databaseButtonReplay);
     controlLayout->addStretch();
 
     return container;
@@ -406,18 +431,20 @@ void LoggerDialog::setupConnections()
 {
 
     connect(recordButton, &QToolButton::clicked, this, [this]() {
+        inspectRecorder();
         recordingStartTime = QDateTime::currentDateTime();
-        timelineWidget->setRecordingStartTime(recordingStartTime);
-        timelineWidget->setRecordingDuration(0);
-        timelineWidget->clearBookmarks();
-
+        // timelineWidget->setRecordingStartTime(recordingStartTime);
+        // timelineWidget->setRecordingDuration(0);
+        // timelineWidget->clearBookmarks();
         recordingDateLabel->setText(recordingStartTime.toString("yyyy-MM-dd hh:mm:ss"));
-
         loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
-
-        emit recordingStart();
-
-
+        emit recordingStart(*recorder);
+        inspectRecorder();
+        timelineWidget->setValues(
+            loggerMode     ,
+            bookmarkDblPtr,
+            durationDblPtr);
+        timelineWidget->startUpdateUI();
         recordButton->setToolTip(tr("Recording..."));
         recordButton->setObjectName("recordingActive");
         recordButton->setStyleSheet("");
@@ -433,9 +460,9 @@ void LoggerDialog::setupConnections()
     connect(pauseRecordingButton, &QToolButton::clicked, this, [this]() {
 
         if (!isRecordingPaused) {
-            timelineWidget->pauseRecording();
+            //timelineWidget->pauseRecording();
         } else {
-            timelineWidget->resumeRecording();
+            //timelineWidget->resumeRecording();
         }
         if (!isRecordingPaused) {
             //loggerStatusLabel->setText(tr("Recording Paused"));
@@ -444,7 +471,7 @@ void LoggerDialog::setupConnections()
             pauseRecordingButton->setToolTip(tr("Resume Recording"));
             isRecordingPaused = true;
             emit recordingPause();
-
+            timelineWidget->pause();
         } else {
             //loggerStatusLabel->setText(tr("Recording"));
             loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
@@ -452,6 +479,7 @@ void LoggerDialog::setupConnections()
             pauseRecordingButton->setToolTip(tr("Pause Recording"));
             isRecordingPaused = false;
             emit recordingResume();
+            timelineWidget->resume();
         }
     });
 
@@ -459,7 +487,7 @@ void LoggerDialog::setupConnections()
         if (recordingStartTime.isValid()) {
 
             emit recordingStop();
-
+            timelineWidget->stop();
 
             recordButton->setToolTip(tr("Start Recording"));
             recordButton->setObjectName("");
@@ -469,7 +497,7 @@ void LoggerDialog::setupConnections()
             stopRecordingButton->setEnabled(false);
             //loggerStatusLabel->setText(tr("Stopped"));
             loggerStatusLabel->setStyleSheet("font-weight: normal; color: #666;");
-            timelineWidget->setRecordingDuration(0);
+            //timelineWidget->setRecordingDuration(0);
             recordingStartTime = QDateTime();
 
             isRecordingPaused = false;
@@ -479,12 +507,22 @@ void LoggerDialog::setupConnections()
     });
 
     connect(loadRecordingButton, &QToolButton::clicked, this, [this]() {
-        if (filePath.isEmpty()) {
-            // qDebug() << "No recording loaded to replay!";
-            QMessageBox::warning(this, tr("Warning"), tr("No recording loaded to replay!"));
-            emit replayFileUnloaded();
+        if(!dbStatusPtr || dbStatusPtr == nullptr){
+            QMessageBox::warning(this, tr("Warning"), tr("DataBase Pointer Not Defined!"));
             return;
         }
+
+        switch(*dbStatusPtr){
+        case SQLite::DISCONNECTED:
+            QMessageBox::warning(this, tr("Warning"), tr("DataBase is Disconnected!"));
+            return;
+            break;
+        case SQLite::CONNECTED:
+            qDebug()<<"DataBase is Connected";
+            //QMessageBox::warning(this, tr("Warning"), tr("DataBase is Connected"));
+            break;
+        }
+
         pauseResumeReplayButton->setEnabled(true);
         pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
         pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
@@ -497,35 +535,50 @@ void LoggerDialog::setupConnections()
     });
 
     connect(startReplayButton, &QToolButton::clicked, this, [this]() {
-        if (filePath.isEmpty()) {
-            // qDebug() << "No recording loaded to replay!";
-            QMessageBox::warning(this, tr("Warning"), tr("No recording loaded to replay!"));
+        emit getDBStatus();
+        if(!dbStatusPtr || dbStatusPtr == nullptr){
+            QMessageBox::warning(this, tr("Warning"), tr("DataBase Pointer Not Defined!"));
             return;
         }
+        switch(*dbStatusPtr){
+        case SQLite::DISCONNECTED:
+            QMessageBox::warning(this, tr("Warning"), tr("DataBase is Disconnected!"));
+            return;
+            break;
+        case SQLite::CONNECTED:
+            qDebug()<<"DataBase is Connected";
+            //QMessageBox::warning(this, tr("Warning"), tr("DataBase is Connected"));
+            break;
+        }
+        inspectRecorder();
+        timelineWidget->setValues(
+            loggerMode     ,
+            bookmarkDblPtr,
+            durationDblPtr);
         emit replayStart();
-        emit startReplay();
-        //loggerStatusLabel->setText(tr("Replaying"));
-        loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
 
+        //loggerStatusLabel->setText(tr("Replaying"));
+        //Enableing buttton Start
+        loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
         startReplayButton->setEnabled(false);
         pauseResumeReplayButton->setEnabled(true);
+        previousFrameButton->    setEnabled(true);
+        nextFrameButton->        setEnabled(true);
+        //Enableing buttton End
+
         pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
         pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
-        isReplayPaused = false;
-
         // qDebug() << "Replay started - file path:" << filePath;
     });
 
     connect(pauseResumeReplayButton, &QToolButton::clicked, this, [this]() {
-        emit toggleReplayPause();   // Call merged replay function
-
-        if (!isReplayPaused) {
+        //emit toggleReplayPause();   // Call merged replay function
+        if (! (*replayModePtr == Replay::replayModes::PAUSE)) {
             // UI Updates for Pause
             //loggerStatusLabel->setText(tr("Replay Paused"));
             loggerStatusLabel->setStyleSheet("font-weight: bold; color: #f39c12;");
             pauseResumeReplayButton->setIcon(QIcon(":/icons/images/resume.png"));
             pauseResumeReplayButton->setToolTip(tr("Resume Replay"));
-            isReplayPaused = true;
             emit replayPause();
         } else {
             // UI Updates for Resume
@@ -533,7 +586,6 @@ void LoggerDialog::setupConnections()
             loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
             pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
             pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
-            isReplayPaused = false;
             emit replayResume();
         }
     });
@@ -562,17 +614,32 @@ void LoggerDialog::setupConnections()
         emit bookmarkClicked(note, timestampMs);
         // qDebug() << "Bookmark clicked: Note =" << note << ", Timestamp =" << timestampMs << "ms";
     });
+
+    connect(databaseButton, &QToolButton::clicked,this, [this]() {
+        emit dbInit();
+    });
+    connect(databaseButtonReplay, &QToolButton::clicked,this, [this]() {
+        emit dbConnect();
+    });
+
+    qDebug() << "Logger is setting up";
 }
+
+
 void LoggerDialog::loggerModeChange(Recorder::loggerModes mode)
 {
+    setRecorder();
+
     modeOfLogger = mode;
     switch(modeOfLogger){
     case Recorder::RECORDING:
         debugString = "RECORDING";
+
         break;
     case Recorder::REPLAY:
         debugString = "REPLAY";
         recordingDateLabel->setText("No recording");
+
         break;
     default:
         break;
@@ -580,6 +647,13 @@ void LoggerDialog::loggerModeChange(Recorder::loggerModes mode)
     // qDebug()<<"Logger : Logger mode is changed"<<debugString;
     recorderInfo();
     emit loggerModeSend(modeOfLogger);
+    if(!timelineWidget){
+        timelineWidget->setValues(
+            loggerMode     ,
+            bookmarkDblPtr,
+            durationDblPtr);
+    }
+    inspectRecorder();
 }
 
 void LoggerDialog::recorderInfo()
@@ -760,7 +834,7 @@ void LoggerDialog::switchToRecordingMode()
 {
 
     loggerModeChange(Recorder::RECORDING);
-
+    inspectRecorder();
 
     timelineWidget->replayMode = false;
     timelineWidget->modeisRecording = true;
@@ -772,15 +846,21 @@ void LoggerDialog::switchToRecordingMode()
     updateRecordingDurationLabel(0);
 
     emit requestReplayReset();
-    //qDebug() << "Switched to Recording Mode";
-
+    qDebug() << "Switched to Recording Mode";
+    if(timelineWidget){
+        timelineWidget->setValues(
+            loggerMode     ,
+            bookmarkDblPtr,
+            durationDblPtr);
+    }
 }
 
 void LoggerDialog::switchToReplayMode()
 {
     //Defining the mode of Logger
-    loggerModeChange(Recorder::REPLAY);
 
+    loggerModeChange(Recorder::REPLAY);
+    inspectRecorder();
     timelineWidget->replayMode = true;
     timelineWidget->modeisRecording = false;
     //loggerStatusLabel->setText(tr("Replay Mode"));
@@ -789,6 +869,12 @@ void LoggerDialog::switchToReplayMode()
     timelineWidget->setRecordingDuration(0);
     updateRecordingDurationLabel(0);
     emit requestReplayReset();
+    if(timelineWidget){
+        timelineWidget->setValues(
+            loggerMode    ,
+            bookmarkDblPtr,
+            durationDblPtr);
+    }
 
 }
 
@@ -866,3 +952,210 @@ void LoggerDialog::updateReplayProgress(qint64 timestamp)
 void LoggerDialog::replayFromBookmark(const QString& note, qint64 timestamp)
 {
 }
+
+
+void LoggerDialog::setC_Duration()
+{
+
+}
+
+
+
+
+void LoggerDialog::inspectRecorder()
+{
+    std::string report = "Inpecter Report:\n";
+
+    //Recorder Start
+    if(recorder){
+        report += "\tRecorder Exist\n";
+    }else{
+        report += "\tRecorder Not Exist\n";
+        qDebug()<<report.c_str();
+        return;
+    }
+    //Recorder End
+
+    //Mode Start
+    qDebug()<<"Inside inspect:"<<recorder->modeOfLogger;
+    if(recorder->modeOfLogger == Recorder::loggerModes::RECORDING){
+        report += "\tLogger Mode Exist\n";
+        report += "\tLogger Mode is: ";
+        loggerMode    = recorder->modeOfLogger;
+        loggerModePtr = &recorder->modeOfLogger;
+        report += "Recording\n";
+        report += "\tSet Up Logger Mode Double pointer\n";
+
+        recordingModePtr = &recorder->m_recording->mode;
+        report += "Recording Mode\n";
+        report += "\tSet Up Recording Mode pointer\n";
+        qDebug()<<*recordingModePtr;
+    }else if(recorder->modeOfLogger == Recorder::loggerModes::REPLAY){
+        report += "\tLogger Mode Exist\n";
+        report += "\tLogger Mode is: ";
+        loggerMode    = recorder->modeOfLogger;
+        loggerModePtr = &recorder->modeOfLogger;
+        report += "Replay\n";
+        report += "\tSet Up Logger Mode Double pointer\n";
+
+        replayModePtr = &recorder->m_replay->mode;
+        report += "Replay Mode\n";
+        report += "\tSet Up Replay Mode pointer\n";
+        qDebug()<<*replayModePtr;
+    }
+    else{
+        report += "\tLogger Mode Exist Not Exist\n";
+        qDebug()<<report.c_str();
+        return;
+    }
+
+
+    //Mode End
+
+    if(recorder->durationPtr){
+        report += "\tDuration Exist\n";
+    }else if(recorder->durationPtr == nullptr){
+        report += "\tDuration is Nullptr\n";
+    }else{
+        report += "\tDuration Not Exist\n";
+        qDebug()<<report.c_str();
+        return;
+    }
+
+    if(recorder->durationPtr != nullptr){
+        report += "\tDuration is Have Value: ";
+        durationPtr = recorder->durationPtr;
+        report += qintToTime(*durationPtr);
+        report += "\n";
+    }
+    if(recorder->durationPtr != nullptr){
+        report += "\tDuration Double Pointer is Have Value: ";
+        durationDblPtr = &recorder->durationPtr;
+        report += qintToTime(**durationDblPtr);
+        report += "\n";
+    }
+
+    // Left Right Timer Start
+    if(recorder->leftTimer && recorder->rightTimer){
+        report += "\tLeft & Right Timer Exist\n";
+    }else{
+        report += "\tLeft & Right Timer Not Exist\n";
+        qDebug()<<report.c_str();
+        return;
+    }
+
+    if(recorder->leftTimer != nullptr || recorder->rightTimer != nullptr){
+        leftTimer  = recorder->leftTimer;
+        rightTimer = recorder->rightTimer;
+        report += "\tTimer has Value:-> Left: ";
+        report += qintToTime(*leftTimer);
+        report += " Right: ";
+        report += qintToTime(*rightTimer);
+        report += "\n";
+    }else{
+        report += "\tLeft & Right Timer is Nullptr\n";
+    }
+
+    if(recorder->leftTimer != nullptr || recorder->rightTimer != nullptr){
+        leftTimerDblPtr  = &recorder->leftTimer;
+        rightTimerDblPtr = &recorder->rightTimer;
+        report += "\tSet up Double pointer in Timer has Value:-> Left: ";
+        report += qintToTime(**leftTimerDblPtr);
+        report += " Right: ";
+        report += qintToTime(**leftTimerDblPtr);
+        report += "\n";
+    }else{
+        report += "\tLeft & Right Timer is Nullptr\n";
+    }
+    // Left Right Timer Start
+
+    // Bookmark Start
+    if(recorder->bookmarks){
+        report += "\tBookmark Exist\n";
+    }else{
+        report += "\tBookmark Not Exist\n";
+        qDebug()<<report.c_str();
+        return;
+    }
+
+    if(recorder->bookmarks != nullptr){
+        report += "\tBookmark Has Values:->";
+        bookmarks = recorder->bookmarks;
+        for(auto i = bookmarks->begin(); i != bookmarks->end(); i++){
+            report += " (t:";
+            report += qintToTime(i->second);
+            report += ", m:";
+            report += i->first.toStdString();
+            report += "),";
+        }
+        report += "\n";
+    }else{
+        report += "\tBookmark is Nullptr\n";
+    }
+
+    if(recorder->bookmarks != nullptr){
+        report += "\tSet Up Bookmark Double Pointer Has Values:->";
+        bookmarkDblPtr = &recorder->bookmarks;
+        QList<QPair<QString, qint64>>* tempbookmarks = *bookmarkDblPtr;
+        for(auto i = tempbookmarks->begin(); i != tempbookmarks->end(); i++){
+            report += " (t:";
+            report += qintToTime(i->second);
+            report += ", m:";
+            report += i->first.toStdString();
+            report += "),";
+        }
+        report += "\n";
+    }else{
+        report += "\tBookmark is Nullptr\n";
+    }
+    // Bookmark End
+
+    qDebug()<<report.c_str();
+}
+
+void LoggerDialog::setRecorder()
+{
+    qDebug()<<"Logger Recorder is set";
+    if(recorder == nullptr){
+        emit getRecorder();
+    }
+
+}
+
+// void LoggerDialog::receiveRecorder(Recorder &r_recoder)
+// {
+//     recorder = &r_recoder;
+// }
+
+void LoggerDialog::updateDuration()
+{
+
+    int seconds = **(durationDblPtr) / 1000;
+    int minutes = seconds / 60;
+    int hours = minutes / 60;
+    QString durationText = QString("%1:%2:%3")
+                               .arg(hours, 2, 10, QLatin1Char('0'))
+                               .arg(minutes % 60, 2, 10, QLatin1Char('0'))
+                               .arg(seconds % 60, 2, 10, QLatin1Char('0'));
+    //qDebug()<<durationText;
+    if(timelineWidget){
+        timelineWidget->updateTimelineWidget();
+    }
+    durationLabel->setText(durationText);
+}
+
+
+std::string LoggerDialog::qintToTime(qint64 m_duration)
+{
+    int seconds = m_duration / 1000;
+    int minutes = seconds / 60;
+    int hours = minutes / 60;
+    QString durationText = QString("%1:%2:%3")
+                               .arg(hours, 2, 10, QLatin1Char('0'))
+                               .arg(minutes % 60, 2, 10, QLatin1Char('0'))
+                               .arg(seconds % 60, 2, 10, QLatin1Char('0'));
+    std::string stdString = durationText.toStdString();
+    return stdString;
+}
+
+

@@ -1,7 +1,7 @@
 /* ========================================================================= */
 /* File: hierarchyconnector.cpp                                             */
 /* Purpose: Manages connections between hierarchy, UI, and file operations   */
-
+// Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #include "hierarchyconnector.h"                     // For hierarchy connector class
@@ -19,6 +19,8 @@
 #include "GUI/Editors/scenarioeditor.h"            // For scenario editor
 #include "GUI/Editors/runtimeeditor.h"             // For runtime editor
 #include "GUI/Hierarchytree/contextmenu.h"         // For context menu
+#include "core/Hierarchy/EntityProfiles/weapon.h"  // For Weapon type (weapon attach)
+#include "core/Hierarchy/EntityProfiles/platform.h" // For Platform type (weapon attach)
 #include "qapplication.h"                          // For application instance
 #include "GUI/Tacticaldisplay/canvaswidget.h"      // For canvas widget
 #include <QSettings>                               // For settings storage
@@ -26,7 +28,9 @@
 #include <QRandomGenerator>                        // For random number generation
 #include <core/Hierarchy/Utils/entityutils.h>      // For entity utilities
 #include <GUI/Hierarchytree/addformationdialog.h>
+#include <GUI/Settings/applicationdialog.h>
 #include "Setup.h"
+#include "GUI/Hierarchytree/addweapondialog.h"
 // %%% Static Instance %%%
 /* Singleton instance */
 HierarchyConnector* HierarchyConnector::m_instance = nullptr;
@@ -80,11 +84,25 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
         return;
     }
     treeView->getContextMenu()->m_hierarchy = hierarchy;
-
     // Connect hierarchy to tree view
     connect(hierarchy, &Hierarchy::profileAdded, treeView, &HierarchyTree::profileAdded);
     connect(hierarchy, &Hierarchy::folderAdded, treeView, &HierarchyTree::folderAdded);
-    connect(hierarchy, &Hierarchy::entityAdded, treeView, &HierarchyTree::entityAdded);
+    // connect(hierarchy, &Hierarchy::entityAdded, treeView, &HierarchyTree::entityAdded);
+    connect(hierarchy, &Hierarchy::entityAdded, treeView,
+            [=](QString parentID, QString ID, QString entityName) {
+                treeView->entityAdded(parentID, ID, entityName);
+
+                // fromJson complete hone ke baad check karo
+                QTimer::singleShot(0, treeView, [=]() {
+                    if (!hierarchy->Entities) return;
+                    auto it = hierarchy->Entities->find(ID.toStdString());
+                    if (it != hierarchy->Entities->end()) {
+                        if (!it->second->Active) {
+                            treeView->setEntityActiveState(ID, false);
+                        }
+                    }
+                });
+            });
     connect(hierarchy, &Hierarchy::profileRemoved, treeView, &HierarchyTree::profileRemoved);
     connect(hierarchy, &Hierarchy::folderRemoved, treeView, &HierarchyTree::folderRemoved);
     connect(hierarchy, &Hierarchy::entityRemoved, treeView, &HierarchyTree::entityRemoved);
@@ -92,6 +110,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
     connect(hierarchy, &Hierarchy::componentRemoved, treeView, &HierarchyTree::componentRemoved);
     connect(hierarchy, &Hierarchy::subComponentAdded, treeView, &HierarchyTree::subComponentAdded);
     connect(hierarchy, &Hierarchy::subComponentRemoved, treeView, &HierarchyTree::subComponentRemoved);
+    connect(hierarchy, &Hierarchy::subComponentRenamed,
+            treeView, &HierarchyTree::subComponentRenamed);
 
     // Connect tree view context menu to hierarchy
     connect(treeView->getContextMenu(), &ContextMenu::addProfileRequested,
@@ -113,7 +133,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                 if (!dialog) {
                     return;
                 }
-
                 QString sensorType = dialog->getSensorType();
                 Entity* newEntity = hierarchy->addEntity(parentId, entityName, isProfileParent);
 
@@ -211,34 +230,36 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                             lat = latAtRadius + (QRandomGenerator::global()->generateDouble() - 0.5) * 0.1;
                             lon = lonAtRadius + (QRandomGenerator::global()->generateDouble() - 0.5) * 0.1;
                         }else
-                        if (trajectoryType == "Circle" ){
-                            if(dialog->customDialog.getStartPoint() == "intial"){
-                                lat = latAtRadius;
-                                lon = lonAtRadius;
-                            }
-                            if(dialog->customDialog.getCirclePoint() == "Clockwise"){
-                                head += headOffset;
-                            }else{
-                                head -=headOffset;
-                            }
+                            if (trajectoryType == "Circle" ){
+                                if(dialog->customDialog.getStartPoint() == "intial"){
+                                    lat = latAtRadius;
+                                    lon = lonAtRadius;
+                                }
+                                if(dialog->customDialog.getCirclePoint() == "Clockwise"){
+                                    head += headOffset;
+                                }else{
+                                    head -=headOffset;
+                                }
 
-                        }else
-                        if(trajectoryType == "Spiral"){
-                            if(dialog->customDialog.getStartPoint() == "intial"){
-                                lat = latAtRadius;
-                                lon = lonAtRadius;
-                            }
-                            if(dialog->customDialog.getCirclePoint() == "Clockwise"){
-                                head += headOffset * (1 + waypointcount/100);
-                            }else{
-                                head -=headOffset * (1 + waypointcount/100);
-                            }
-                            waypointoffsetlength *=1.02;
-                        }else {
-                            lat = latAtRadius;
-                            lon = lonAtRadius;
-                        }
+                            }else
+                                if(trajectoryType == "Spiral"){
+                                    if(dialog->customDialog.getStartPoint() == "intial"){
+                                        lat = latAtRadius;
+                                        lon = lonAtRadius;
+                                    }
+                                    if(dialog->customDialog.getCirclePoint() == "Clockwise"){
+                                        head += headOffset * (1 + waypointcount/100);
+                                    }else{
+                                        head -=headOffset * (1 + waypointcount/100);
+                                    }
+                                    waypointoffsetlength *=1.02;
+                                }else {
+                                    lat = latAtRadius;
+                                    lon = lonAtRadius;
+                                }
                     }
+                    emit hierarchy->trajectoryisAdded(
+                        platform->ID.c_str(),platform->trajectory);
 
                     // Add sensor, IFF, and radio components
                     std::string id = platform->sensors->ID;
@@ -266,11 +287,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                         const int speed = minspd + (QRandomGenerator::global()->generateDouble() * (maxspd - minspd));
                         const int turnRad = minturn + (QRandomGenerator::global()->generateDouble() * (maxturn - minturn));
 
-                        // platform->dynamicModel->minSpeed = minspd;
-                        // platform->dynamicModel->maxSpeed = maxspd;
                         platform->dynamicModel->moveSpeed = speed;
                         platform->dynamicModel->turnRate = turnRad;
-
                         // Set radar ranges
                         const int minRadRng = dialog->getMinRadarRange();
                         const int maxRadRng = dialog->getMaxRadarRange();
@@ -279,7 +297,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                             const int RadarRng = minRadRng + (QRandomGenerator::global()->generateDouble() * (maxRadRng - minRadRng));
                             s->range = RadarRng;
                         }
-
                         // Set radio ranges
                         const int minRadioRng = dialog->getMinRadioRange();
                         const int maxRadioRng = dialog->getMaxRadioRange();
@@ -309,9 +326,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                                          "No items copied. Please copy items first.");
                     return;
                 }
-
                 if (itemsToPaste.isEmpty()) {
-
                     return;
                 }
 
@@ -397,12 +412,9 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                             QString newId = QString::fromStdString(Uuid::generateShortUniqueID());
                             entityJson["id"] = newId;
                             entityJson["parent_id"] = targetId;
-
                             Entity* newEntity = hierarchy->addEntityFromJson(targetId, entityJson, isProfile);
-
                             if (newEntity) {
                                 successCount++;
-
                             }
                         }
                     } catch (const std::exception& e) {
@@ -421,7 +433,200 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                     } catch (const std::exception& e) {
                     }
                 }
+            });
+    connect(treeView, &HierarchyTree::setEntitiesActiveRequested,
+            this, [=](QList<QVariantMap> entities, bool active) {
+                for (const QVariantMap& data : entities) {
+                    QString entityID = data["ID"].toString();
 
+                    if (!hierarchy->Entities) return;
+                    if (hierarchy->Entities->find(entityID.toStdString())
+                        == hierarchy->Entities->end()) continue;
+
+                    // active field entity ke _self mein hoti hai
+                    QJsonObject delta;
+                    delta["active"] = active;
+
+                    hierarchy->UpdateComponent(entityID, "_self", delta);
+                    treeView->setEntityActiveState(entityID, active);
+                }
+            });
+
+    // ── Bulk Add Weapon ───────────────────────────────────────────────────
+    connect(treeView, &HierarchyTree::addWeaponToEntitiesRequested, this,
+            [=](QList<QVariantMap> entities) {
+                if (entities.isEmpty()) return;
+
+                Hierarchy* dbHierarchy = library ? library : hierarchy;
+
+                AddWeaponDialog dlg(treeView, dbHierarchy, false);
+                if (dlg.exec() != QDialog::Accepted) return;
+
+                QString selectedId  = dlg.selectedEntityId();
+                QString weaponName  = dlg.weaponName().trimmed();
+                QString weaponType  = dlg.weaponTypeStr();
+                if (weaponName.isEmpty()) return;
+
+                for (const QVariantMap& data : entities) {
+                    QString entityID = data["ID"].toString();
+
+                    if (!hierarchy->Entities) continue;
+                    auto it = hierarchy->Entities->find(entityID.toStdString());
+                    if (it == hierarchy->Entities->end()) continue;
+
+                    Platform* platform = dynamic_cast<Platform*>(it->second);
+                    if (!platform) continue;
+
+                    // Weapon object banao
+                    Weapon* weapon = new Weapon(hierarchy);
+                    weapon->Name = weaponName.toStdString();
+                    weapon->parentEntity = platform;
+                    weapon->ID = Uuid::generateShortUniqueID();
+
+                    // WeaponProfile create karo agar nahi hai
+                    if (!platform->weapons) {
+                        WeaponProfile* weapProfile = new WeaponProfile(hierarchy);
+                        weapProfile->ID = Uuid::generateShortUniqueID();
+                        weapProfile->parentID = entityID.toStdString();
+                        weapProfile->parentEntity = platform;
+                        platform->weapons = weapProfile;
+                    }
+
+                    if (!platform->weapons || !platform->weapons->weapons) {
+                        delete weapon;
+                        continue;
+                    }
+
+                    // DB se config copy karo agar selected hai
+                    if (!selectedId.isEmpty() && dbHierarchy) {
+                        auto dbIt = dbHierarchy->Weapons->find(selectedId.toStdString());
+                        if (dbIt != dbHierarchy->Weapons->end() && dbIt->second) {
+                            std::string savedId     = weapon->ID;
+                            std::string savedName   = weapon->Name;
+                            std::string savedParent = weapon->parentID;
+                            weapon->fromJson(dbIt->second->toJson());
+                            weapon->ID       = savedId;
+                            weapon->Name     = savedName;
+                            weapon->parentID = savedParent;
+                        }
+                    }
+
+                    platform->weapons->weapons->insert({weapon->ID, weapon});
+                    hierarchy->Weapons->insert({weapon->ID, weapon});
+                    hierarchy->Entities->insert({weapon->ID, weapon});
+
+                    // UI update signals
+                    emit hierarchy->subComponentAdded(
+                        QString::fromStdString(platform->weapons->ID),
+                        QString::fromStdString(weapon->ID),
+                        weaponName);
+
+                    QString weaponQID = QString::fromStdString(weapon->ID);
+                    for (const std::string& compName : weapon->getSupportedComponents()) {
+                        std::string compID;
+                        if      (compName == "transform"    && weapon->transform)      compID = weapon->transform->ID;
+                        else if (compName == "rigidbody"    && weapon->rigidbody)      compID = weapon->rigidbody->ID;
+                        else if (compName == "collider"     && weapon->collider)       compID = weapon->collider->ID;
+                        else if (compName == "trajectory"   && weapon->trajectory)     compID = weapon->trajectory->ID;
+                        else if (compName == "bitmap"       && weapon->meshRenderer2d) compID = weapon->meshRenderer2d->ID;
+                        else if (compName == "dynamicModel" && weapon->dynamicModel)   compID = weapon->dynamicModel->ID;
+                        else if (compName == "crossSection" && weapon->crossSection)   compID = weapon->crossSection->ID;
+                        else continue;
+                        emit hierarchy->componentAdded(
+                            weaponQID,
+                            QString::fromStdString(compID),
+                            QString::fromStdString(compName));
+                    }
+                }
+            });
+
+
+    // ── Bulk Add Sensor ───────────────────────────────────────────────────
+    connect(treeView, &HierarchyTree::addSensorToEntitiesRequested, this,
+            [=](QList<QVariantMap> entities) {
+                if (entities.isEmpty()) return;
+
+                Hierarchy* dbHierarchy = library ? library : hierarchy;
+
+                AddItemDialog dialog(AddItemDialog::EntityType,
+                                     "sensors",
+                                     AddItemDialog::ComponentSensorMode,
+                                     dbHierarchy,
+                                     treeView);
+                if (dialog.exec() != QDialog::Accepted) return;
+                if (dialog.getName().isEmpty()) return;
+
+                QString sensorName  = dialog.getName();
+                QString sensorType  = dialog.getSensorType();
+                QString profileId   = dialog.getProfileId();
+
+                for (const QVariantMap& data : entities) {
+                    QString entityID = data["ID"].toString();
+
+                    // Entity find karo
+                    if (!hierarchy->Entities) continue;
+                    auto it = hierarchy->Entities->find(entityID.toStdString());
+                    if (it == hierarchy->Entities->end()) continue;
+
+                    // Platform cast karo
+                    Platform* platform = dynamic_cast<Platform*>(it->second);
+                    if (!platform || !platform->sensors) continue;
+
+                    // Sensors component ka ID lo — yahi chahiye addSubComponent ko
+                    QString sensorsComponentID = QString::fromStdString(platform->sensors->ID);
+
+                    // Seedha addSubComponent call karo, signal emit nahi
+                    hierarchy->addSubComponent(sensorsComponentID,
+                                               ComponentType::SensorProfile,
+                                               sensorName,
+                                               sensorType,
+                                               profileId);
+
+
+                }
+            });
+
+
+    // ── Bulk Set Team ─────────────────────────────────────────────────────
+    connect(treeView, &HierarchyTree::addTeamToEntitiesRequested, this,
+            [=](QList<QVariantMap> entities, QString team) {
+                for (const QVariantMap& data : entities) {
+                    QString entityID = data["ID"].toString();
+
+                    if (!hierarchy->Entities) continue;
+                    auto it = hierarchy->Entities->find(entityID.toStdString());
+                    if (it == hierarchy->Entities->end()) continue;
+
+                    // Pehle existing Team field ka full JSON lo
+                    // taaki options array preserve rahe
+                    QJsonObject entityJson = it->second->toJson();
+
+                    QJsonObject teamObj;
+
+                    // Agar entity mein already Team field hai to uske options reuse karo
+                    if (entityJson.contains("Team") && entityJson["Team"].isObject()) {
+                        teamObj = entityJson["Team"].toObject();
+                        teamObj["value"] = team;  // sirf value update karo
+                    } else {
+                        // Fallback: pura option object banao
+                        QJsonArray options;
+                        const QStringList teamList = {
+                            "RedTeam","BlueTeam","GreenTeam","YellowTeam",
+                            "GreyTeam","AlphaTeam","BetaTeam","GammaTeam"
+                        };
+                        for (const QString& t : teamList) {
+                            options.append(t);
+                        }
+                        teamObj["type"]    = "option";
+                        teamObj["options"] = options;
+                        teamObj["value"]   = team;
+                    }
+
+                    QJsonObject delta;
+                    delta["Team"] = teamObj;
+
+                    hierarchy->UpdateComponent(entityID, "_self", delta);
+                }
             });
     // Connect remove entity and component actions
     connect(treeView->getContextMenu(), &ContextMenu::removeEntityRequested,
@@ -445,6 +650,107 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                 } else if (componentType == "radios") {
                     hierarchy->addSubComponent(entityID, ComponentType::RadioProfile,
                                                componentName, sensorType, sensorProfileId);
+                } else if (componentType == "weapons") {
+                    // ✅ FIXED: Proper weapon creation with complete error handling
+                    try {
+                        // Validate inputs
+                        if (entityID.isEmpty() || componentType.isEmpty() || componentName.isEmpty()) {
+                            QMessageBox::warning(nullptr, "Validation Error",
+                                                 "Invalid weapon data provided");
+                            return;
+                        }
+
+                        // Validate hierarchy exists
+                        if (!hierarchy || !hierarchy->Entities) {
+                            QMessageBox::critical(nullptr, "Error",
+                                                  "Hierarchy not available for weapon creation");
+                            return;
+                        }
+
+                        // Find parent entity
+                        auto it = hierarchy->Entities->find(entityID.toStdString());
+                        if (it == hierarchy->Entities->end()) {
+                            QMessageBox::warning(nullptr, "Error",
+                                                 "Parent entity not found in hierarchy");
+                            return;
+                        }
+
+                        Entity* parentEntity = it->second;
+                        if (!parentEntity) {
+                            QMessageBox::critical(nullptr, "Error",
+                                                  "Parent entity is null");
+                            return;
+                        }
+
+                        // Cast to platform
+                        Platform* platform = dynamic_cast<Platform*>(parentEntity);
+                        if (!platform) {
+                            QMessageBox::critical(nullptr, "Type Error",
+                                                  "Parent entity must be a Platform to add weapons");
+                            return;
+                        }
+
+                        // Create weapon entity
+                        Weapon* weapon = new Weapon(hierarchy);
+                        weapon->Name = componentName.toStdString();
+                        weapon->parentEntity = platform;
+                        weapon->ID = Uuid::generateShortUniqueID();
+
+                        // Create or get weapon profile container
+                        if (!platform->weapons) {
+                            WeaponProfile* weapProfile = new WeaponProfile(hierarchy);
+                            weapProfile->ID = Uuid::generateShortUniqueID();
+                            weapProfile->parentID = entityID.toStdString();
+                            weapProfile->parentEntity = platform;
+                            platform->weapons = weapProfile;
+                        }
+
+                        // Add weapon to profile's weapons map
+                        if (platform->weapons && platform->weapons->weapons) {
+                            platform->weapons->weapons->insert({weapon->ID, weapon});
+                            hierarchy->Weapons->insert({weapon->ID, weapon});
+                            // CRITICAL: also register in Entities so getComponentData(weaponID) finds it
+                            hierarchy->Entities->insert({weapon->ID, weapon});
+
+                            // Emit signal to update UI — adds Weapon_1 node under WeaponProfile
+                            emit hierarchy->subComponentAdded(
+                                QString::fromStdString(platform->weapons->ID),
+                                QString::fromStdString(weapon->ID),
+                                componentName
+                                );
+
+                            // Emit componentAdded for every auto-integrated component
+                            // so they appear as children of the weapon node in the tree.
+                            // The weapon constructor already created all 7; we just need
+                            // the UI to know about them.
+                            QString weaponQID = QString::fromStdString(weapon->ID);
+                            for (const std::string& compName : weapon->getSupportedComponents()) {
+                                QString qCompName = QString::fromStdString(compName);
+                                // Resolve the actual component ID from the weapon's pointer
+                                std::string compID;
+                                if      (compName == "transform"    && weapon->transform)      compID = weapon->transform->ID;
+                                else if (compName == "rigidbody"    && weapon->rigidbody)      compID = weapon->rigidbody->ID;
+                                else if (compName == "collider"     && weapon->collider)       compID = weapon->collider->ID;
+                                else if (compName == "trajectory"   && weapon->trajectory)     compID = weapon->trajectory->ID;
+                                else if (compName == "bitmap"       && weapon->meshRenderer2d) compID = weapon->meshRenderer2d->ID;
+                                else if (compName == "dynamicModel" && weapon->dynamicModel)   compID = weapon->dynamicModel->ID;
+                                else if (compName == "crossSection" && weapon->crossSection)   compID = weapon->crossSection->ID;
+                                else continue;
+                                emit hierarchy->componentAdded(
+                                    weaponQID,
+                                    QString::fromStdString(compID),
+                                    qCompName);
+                            }
+                        } else {
+                            QMessageBox::critical(nullptr, "Error",
+                                                  "Failed to initialize weapon system");
+                            delete weapon;
+                            return;
+                        }
+                    } catch (const std::exception& e) {
+                        QMessageBox::critical(nullptr, "Error",
+                                              QString("Failed to create weapon: %1").arg(e.what()));
+                    }
                 }
             });
     // Connect tactical display if provided
@@ -454,6 +760,17 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
     // Connect inspector if provided
     if (inspector) {
         connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
+
+        // ── NEW: Inspector se active/inactive change pe tree color update ──
+        connect(inspector, &Inspector::valueChanged, this,
+                [=](QString entityID, QString componentName, QJsonObject delta) {
+                    // Sirf "_self" component aur "active" field ke liye
+                    if (!componentName.contains("_self")) return;
+                    if (!delta.contains("active")) return;
+
+                    bool active = delta["active"].toBool();
+                    treeView->setEntityActiveState(entityID, active);
+                });
     }
     // Connect rename signals
     connect(hierarchy, &Hierarchy::profileRenamed, treeView, &HierarchyTree::profileRenamed);
@@ -465,21 +782,22 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                 QString type = data["type"].toString();
                 QString id = data["ID"].toString();
                 QString name = data["name"].toString();
+                QString parentID = data["parentId"].toString();
                 if (type == "profile") {
                     hierarchy->renameProfileCategaory(id, name);
                 } else if (type == "folder") {
                     hierarchy->renameFolder(id, name);
                 } else if (type == "entity") {
                     hierarchy->renameEntity(id, name);
+                }else if (type == "subcomponent") {
+                    hierarchy->renameSubComponent(parentID, id, name);
                 }
             });
-
     // Connect copy-paste signals
     connect(treeView->getContextMenu(), &ContextMenu::copyItemRequested,
             treeView, &HierarchyTree::copyItemRequested);
     connect(treeView->getContextMenu(), &ContextMenu::pasteItemRequested,
             treeView, &HierarchyTree::pasteItemRequested);
-
     // Handle copy action
     connect(treeView, &HierarchyTree::copyItemRequested, this,
             [this, hierarchy, treeView](QVariantMap data) {
@@ -494,7 +812,6 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                     treeView->getContextMenu()->m_copiedItems.clear();
                 }
             });
-
     // ✅ Handle multi-copy action
     connect(treeView, &HierarchyTree::copyItemsRequested, this,
             [this, hierarchy, treeView](QList<QVariantMap> dataList) {
@@ -566,9 +883,9 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                         return;
                     }
                 }else
-                if (entityIt == copySource->Entities->end()) {
-                    return;
-                }
+                    if (entityIt == copySource->Entities->end()) {
+                        return;
+                    }
                 QJsonObject entityJson = entityIt->second->toJson();
                 Constants::EntityType sourcetype = entityIt->second->type;
                 Constants::EntityType type;
@@ -593,10 +910,9 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy,Hierarchy* library,
                             senstype = it->second->subTypeToString(it->second->subType);
                         }
                     }else
-                    if (it != copySource->Sensors->end() && it->second != nullptr) {
-                        senstype = it->second->subTypeToString(it->second->subType);
-                    }
-
+                        if (it != copySource->Sensors->end() && it->second != nullptr) {
+                            senstype = it->second->subTypeToString(it->second->subType);
+                        }
                     hierarchy->addSubComponent(targetId, ComponentType::SensorProfile, srname, senstype, sourceId);
                 } else if ((trname == "iffs" || type == Constants::EntityType::Platform) &&
                            sourcetype == Constants::EntityType::IFF) {
@@ -845,6 +1161,7 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
     connect(library, &Hierarchy::profileAdded, libTree, &HierarchyTree::profileAdded);
     connect(library, &Hierarchy::folderAdded, libTree, &HierarchyTree::folderAdded);
     connect(library, &Hierarchy::entityAdded, libTree, &HierarchyTree::entityAdded);
+
     connect(library, &Hierarchy::componentAdded, libTree, &HierarchyTree::componentAdded);
     connect(library, &Hierarchy::subComponentAdded, libTree, &HierarchyTree::subComponentAdded);
     connect(library, &Hierarchy::profileRemoved, libTree, &HierarchyTree::profileRemoved);
@@ -975,19 +1292,46 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
     });
 }
 
-// %%% Data Initialization %%%
-/* Initialize library data */
 void HierarchyConnector::initializeLibraryData(Hierarchy* library)
 {
-    // Validate input
     if (!library) {
         return;
     }
-    // QString resourcePath = ":/DB/DB/Aircraft.db";
-        // QFile jsonFile(resourcePath);
+
+    // Always add default profile categories (structure hamesha chahiye)
+    ProfileCategaory* platform = library->addProfileCategaory("Platform");
+    if (platform) platform->setProfileType(Constants::EntityType::Platform);
+
+    ProfileCategaory* sensor = library->addProfileCategaory("Sensor");
+    if (sensor) sensor->setProfileType(Constants::EntityType::Sensor);
+
+    ProfileCategaory* radio = library->addProfileCategaory("Radio");
+    if (radio) radio->setProfileType(Constants::EntityType::Radio);
+
+    ProfileCategaory* iff = library->addProfileCategaory("IFF");
+    if (iff) iff->setProfileType(Constants::EntityType::IFF);
+
+    ProfileCategaory* weapon = library->addProfileCategaory("Weapon");
+    if (weapon) weapon->setProfileType(Constants::EntityType::Weapon);
+
+    ProfileCategaory* specialZone = library->addProfileCategaory("SpecialZone");
+    if (specialZone) specialZone->setProfileType(Constants::EntityType::SpecialZone);
+
+    ProfileCategaory* fixedPoints = library->addProfileCategaory("FixedPoints");
+    if (fixedPoints) fixedPoints->setProfileType(Constants::EntityType::FixedPoint);
+
+    ProfileCategaory* formation = library->addProfileCategaory("Formation");
+    if (formation) formation->setProfileType(Constants::EntityType::Formation);
+
+    // If database disabled in settings — profiles structure ban gayi, Aircraft.db skip
+    if (!ApplicationDialog::getGlobalDatabaseEnabled()) {
+        qDebug() << "[HierarchyConnector] Default database disabled, skipping Aircraft.db load.";
+        return;
+    }
+
+    // Database enabled — Aircraft.db se full data load karo
     QString aircraftDbPath = TDFManager::instance()->getAircraftDbPath();
     QFile jsonFile(aircraftDbPath);
-
 
     if (jsonFile.open(QIODevice::ReadOnly)) {
         QByteArray data = jsonFile.readAll();
@@ -998,53 +1342,40 @@ void HierarchyConnector::initializeLibraryData(Hierarchy* library)
 
         if (parseError.error == QJsonParseError::NoError && doc.isObject()) {
             QJsonObject obj = doc.object();
-
-            // Check if it contains hierarchy data
             if (obj.contains("hierarchy")) {
                 QJsonObject hierarchyObj = obj["hierarchy"].toObject();
+
+                // ✅ FIXED: Don't call clear() - fromJson will replace data
                 library->fromJson(hierarchyObj);
-                return; // Successfully loaded from JSON
+                return;
             } else {
                 qWarning() << "JSON file does not contain 'hierarchy' key";
             }
         } else {
-            qWarning() << "Failed to parse JSON from resource:" << parseError.errorString();
+            qWarning() << "Failed to parse JSON:" << parseError.errorString();
         }
     } else {
-
+        qWarning() << "[HierarchyConnector] Could not open aircraft DB file:" << aircraftDbPath;
     }
+
+    // Fallback — Aircraft.db nahi mila to Platform > Air > FighterJet add karo
     qWarning() << "Using fallback default library data";
-    // Add platform profile
-    ProfileCategaory* platform = library->addProfileCategaory("Platform");
-    if (!platform) {
-        return;
-    }
-    platform->setProfileType(Constants::EntityType::Platform);
-    // Add air folder
-    Folder* air = platform->addFolder("Air");
-    if (!air) {
-        return;
-    }
-    // Add fighter jet entity
-    Entity* fighterJet = air->addEntity("FighterJet");
-    if (!fighterJet) {
-        return;
-    }
-
-    // Add components to fighter jet
-    QStringList components = {"transform"};
-    QSet<QString> addedComponents;
-    for (const QString& comp : components) {
-        try {
-            fighterJet->addComponent(comp.toStdString());
-            addedComponents.insert(comp);
-            emit library->componentAdded(QString::fromStdString(fighterJet->ID), "ID", comp);
-        } catch (const std::exception& e) {
-            // Ignore exceptions
+    if (platform) {
+        Folder* air = platform->addFolder("Air");
+        if (air) {
+            Entity* fighterJet = air->addEntity("FighterJet");
+            if (fighterJet) {
+                try {
+                    fighterJet->addComponent("transform");
+                    emit library->componentAdded(
+                        QString::fromStdString(fighterJet->ID), "ID", "transform");
+                } catch (const std::exception& e) {
+                    Q_UNUSED(e)
+                }
+            }
         }
     }
 }
-
 /* Initialize dummy data for hierarchy */
 void HierarchyConnector::initializeDummyData(Hierarchy* hierarchy)
 {
@@ -1110,8 +1441,6 @@ void HierarchyConnector::initializeDummyData(Hierarchy* hierarchy)
 
     }
 }
-
-
 void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hierarchy, TacticalDisplay* tacticalDisplay)
 {
     MenuBar* menuBar = qobject_cast<MenuBar*>(parent->menuBar());
@@ -1388,7 +1717,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
         QString startPath = ensureTDFFolder();
         QString lastFilePath = getLastSavedFilePath(parent);
         QString currentDate = QDate::currentDate().toString("yyyy-MM-dd");
-
         auto extractBaseNameWithoutDate = [](const QString& baseName) -> QString {
             QRegularExpression datePattern("_\\d{4}-\\d{2}-\\d{2}$|_\\d{2}-\\d{2}-\\d{4}$");
             QString cleanName = baseName;
@@ -1581,6 +1909,7 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
         }
     });
 }
+
 // %%% Library Operations %%%
 /* Load JSON to library */
 void HierarchyConnector::loadToLibrary(QMainWindow* parent)
@@ -1590,17 +1919,18 @@ void HierarchyConnector::loadToLibrary(QMainWindow* parent)
     }
 
     Hierarchy* targetLibrary = nullptr;
-       HierarchyTree* targetLibTreeView = nullptr;
+    HierarchyTree* targetLibTreeView = nullptr;
 
     if (ScenarioEditor* se = qobject_cast<ScenarioEditor*>(parent)) {
         targetLibrary = se->library;
-          targetLibTreeView = se->libTreeView;
+        targetLibTreeView = se->libTreeView;
     } else if (RuntimeEditor* re = qobject_cast<RuntimeEditor*>(parent)) {
         targetLibrary = re->library;
-               targetLibTreeView = re->libTreeView;
+        targetLibTreeView = re->libTreeView;
     }
 
     if (!targetLibrary) {
+        QMessageBox::critical(parent, "Error", "Library not available");
         return;
     }
 
@@ -1629,6 +1959,7 @@ void HierarchyConnector::loadToLibrary(QMainWindow* parent)
 
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::critical(parent, "Error", "Cannot open file");
         return;
     }
 
@@ -1637,26 +1968,43 @@ void HierarchyConnector::loadToLibrary(QMainWindow* parent)
 
     QJsonParseError err;
     QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+        QMessageBox::critical(parent, "Error",
+                              QString("Invalid JSON file: %1").arg(err.errorString()));
         return;
     }
 
     QJsonObject obj = doc.object();
-    if (obj.contains("hierarchy")) {
-        QJsonObject hier = obj["hierarchy"].toObject();
+    if (!obj.contains("hierarchy")) {
+        QMessageBox::critical(parent, "Error", "No hierarchy data in file");
+        return;
+    }
 
-        // ✅ Clear existing library and load new data
-        targetLibrary->clear();
+    QJsonObject hier = obj["hierarchy"].toObject();
+
+    // ✅ FIXED: Don't call clear() - it causes crash
+    // Just load the JSON directly - it will replace existing data
+    try {
         targetLibrary->fromJson(hier);
 
-        if (libTreeView) {
-            libTreeView->getTreeWidget()->update();
-        }
+        // Update UI
         if (targetLibTreeView) {
             targetLibTreeView->setLibraryFileName(filePath);
+            // Refresh the tree view
+            targetLibTreeView->getTreeWidget()->clearSelection();
+            targetLibTreeView->getTreeWidget()->update();
         }
+
+        // Add to recent projects
         RecentProjectsManager::instance()->addToRecentProjects(filePath,
                                                                RecentProjectsManager::LibraryData);
+
+        qDebug() << "[HierarchyConnector] Library loaded successfully from:" << filePath;
+
+    } catch (const std::exception& e) {
+        QMessageBox::critical(parent, "Error",
+                              QString("Failed to load library: %1").arg(e.what()));
     }
 }
 // %%% Recent Projects Management %%%
@@ -1752,26 +2100,26 @@ void HierarchyConnector::openXmlFile(Hierarchy* hierarchy,QString fullPath)
                                     QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
                                     plf->dynamicModel->Altitude = value.toFloat();
                                 }else
-                                if(Name.text().contains("turn_rate")){
-                                    QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
-                                    plf->dynamicModel->turnRate = value.toFloat();
-                                }else
-                                if(Name.text().contains("acceleration")){
-                                    QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
-                                    plf->dynamicModel->Acceleration = value.toFloat();
-                                }else
-                                if(Name.text().contains("deceleration")){
-                                    QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
-                                    plf->dynamicModel->Decceleration = value.toFloat();
-                                }else
-                                if(Name.text().contains("climb_rate")){
-                                    QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
-                                    plf->dynamicModel->climbRate = value.toFloat();
-                                }else
-                                if(Name.text().contains("dive_rate")){
-                                    QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
-                                    plf->dynamicModel->diveRate = value.toFloat();
-                                }
+                                    if(Name.text().contains("turn_rate")){
+                                        QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
+                                        plf->dynamicModel->turnRate = value.toFloat();
+                                    }else
+                                        if(Name.text().contains("acceleration")){
+                                            QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
+                                            plf->dynamicModel->Acceleration = value.toFloat();
+                                        }else
+                                            if(Name.text().contains("deceleration")){
+                                                QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
+                                                plf->dynamicModel->Decceleration = value.toFloat();
+                                            }else
+                                                if(Name.text().contains("climb_rate")){
+                                                    QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
+                                                    plf->dynamicModel->climbRate = value.toFloat();
+                                                }else
+                                                    if(Name.text().contains("dive_rate")){
+                                                        QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
+                                                        plf->dynamicModel->diveRate = value.toFloat();
+                                                    }
                             }
                         }
 
@@ -1783,14 +2131,14 @@ void HierarchyConnector::openXmlFile(Hierarchy* hierarchy,QString fullPath)
                                     QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
                                     plf->collider->Width = value.toFloat();
                                 }else
-                                if(Name.text().contains("length")){
-                                    QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
-                                    plf->collider->Length = value.toFloat();
-                                }else
-                                if(Name.text().contains("height")){
-                                    QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
-                                    plf->collider->Height = value.toFloat();
-                                }
+                                    if(Name.text().contains("length")){
+                                        QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
+                                        plf->collider->Length = value.toFloat();
+                                    }else
+                                        if(Name.text().contains("height")){
+                                            QString value = Name.parentNode().toElement().elementsByTagName("Value").at(0).toElement().text();
+                                            plf->collider->Height = value.toFloat();
+                                        }
 
                             }
                         }

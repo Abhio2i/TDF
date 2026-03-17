@@ -55,7 +55,6 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     resize(1100, 600);
     setupEnhancedDockWidgets();
     setupToolBars();
-    setupStatusBar();
     // Initialize scenario components
     Scenario *scenario = new Scenario();
     hierarchy = scenario->hierarchy;
@@ -380,10 +379,7 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     connect(hierarchy, &Hierarchy::profileRenamed, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::folderRenamed, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::entityRenamed, this, &ScenarioEditor::markUnsavedChanges);
-
 }
-
-
 void ScenarioEditor::setupEnhancedDockWidgets()
 {
     tacticalDisplay = new TacticalDisplay(this);
@@ -441,7 +437,6 @@ void ScenarioEditor::setupEnhancedDockWidgets()
                                "CustomResizableOverlayDock::title { "
                                "background-color: #1A3A4F; "
                                "color: white; "
-
                                "font-weight: bold; }");
 
     // --- 3. Right Side Panels (isLeftPanel = false) ---
@@ -483,7 +478,6 @@ void ScenarioEditor::setupEnhancedDockWidgets()
                              "CustomResizableOverlayDock::title { "
                              "background-color: #1A3A4F; "
                              "color: white; "
-
                              "font-weight: bold; }");
 
     // Connect layer panel to canvas
@@ -903,7 +897,7 @@ void ScenarioEditor::resetLayout()
         consoleDock->raise();
         sidebarDock->raise();
         inspectorDock->raise();
-        updateStatusBar("Scenario Editor layout reset to initial state");
+
     });
 }
 
@@ -987,50 +981,12 @@ ScenarioEditor::~ScenarioEditor()
 /* Load scenario from JSON file */
 void ScenarioEditor::loadFromJsonFile(const QString &filePath)
 {
-    // Create loading dialog
-    QProgressDialog* loadingDialog = new QProgressDialog(this);
-    loadingDialog->setLabelText("Loading...");
-    loadingDialog->setCancelButton(nullptr);
-    loadingDialog->setRange(0, 0);
-    loadingDialog->setMinimumDuration(0);
-    loadingDialog->setWindowModality(Qt::WindowModal);
-    loadingDialog->setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog | Qt::WindowStaysOnTopHint);
-    loadingDialog->setWindowTitle("");
-    loadingDialog->setFixedSize(250, 80);
-    loadingDialog->setStyleSheet(R"(
-        QProgressDialog {
-            background-color: #f0f0f0;
-            border: 1px solid #cccccc;
-            border-radius: 0px;
-        }
-        QLabel {
-            color: #333333;
-            font-size: 13px;
-            font-family: "Segoe UI";
-            padding: 5px;
-            margin: 0px;
-        }
-        QProgressBar {
-            border: 1px solid #bbbbbb;
-            background-color: #ffffff;
-            text-align: center;
-            height: 20px;
-        }
-        QProgressBar::chunk {
-            background-color: #4da6ff;
-            border: none;
-        }
-    )");
-    loadingDialog->move(geometry().center() - loadingDialog->rect().center());
-    loadingDialog->show();
-    QCoreApplication::processEvents();
 
-    // Open and read file
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this, "Error",
                              QString("Failed to open JSON file: %1").arg(filePath));
-        loadingDialog->deleteLater();
+        // loadingDialog->deleteLater();
         return;
     }
 
@@ -1043,7 +999,7 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
         QMessageBox::warning(this, "Error",
                              QString("Failed to parse JSON: %1").arg(err.errorString()));
-        loadingDialog->deleteLater();
+        // loadingDialog->deleteLater();
         return;
     }
 
@@ -1051,26 +1007,21 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
 
     // Load hierarchy data
     if (obj.contains("hierarchy")) {
-        loadingDialog->setLabelText("Loading...");
+        // loadingDialog->setLabelText("Loading...");
         QCoreApplication::processEvents();
-
         QJsonObject hier = obj["hierarchy"].toObject();
         hierarchy->fromJson(hier);
-
         QCoreApplication::processEvents();
-
         if (treeView && treeView->getTreeWidget()) {
             treeView->getTreeWidget()->update();
         }
-
         QCoreApplication::processEvents();
     }
 
     // Load tactical display data
     if (tacticalDisplay && obj.contains("tactical")) {
-        loadingDialog->setLabelText("Loading...");
+        // loadingDialog->setLabelText("Loading...");
         QCoreApplication::processEvents();
-
         QJsonObject tac = obj["tactical"].toObject();
         tacticalDisplay->canvas->fromJson(tac);
     }
@@ -1080,8 +1031,8 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
     clearUnsavedChanges();
 
     // Cleanup loading dialog
-    loadingDialog->close();
-    loadingDialog->deleteLater();
+    // loadingDialog->close();
+    // loadingDialog->deleteLater();
 
     // updateStatusBar("Project loaded: " + QFileInfo(filePath).fileName());
 }
@@ -1107,22 +1058,13 @@ void ScenarioEditor::clearUnsavedChanges()
     }
 }
 
-// %%% Status Bar Management %%%
-/* Setup status bar */
-void ScenarioEditor::setupStatusBar()
-{
-    statusBar = new QStatusBar(this);
-    setStatusBar(statusBar);
-    statusBar->showMessage("Ready");
-}
-
 /* Update status bar message */
-void ScenarioEditor::updateStatusBar(const QString &message)
-{
-    if (statusBar) {
-        statusBar->showMessage(message);
-    }
-}
+// void ScenarioEditor::updateStatusBar(const QString &message)
+// {
+//     if (statusBar) {
+//         statusBar->showMessage(message);
+//     }
+// }
 
 // %%% Recent Project Loading %%%
 /* Load recent project */
@@ -1220,7 +1162,6 @@ void ScenarioEditor::loadRecentProject(const QString& filePath)
     loadingDialog->close();
     loadingDialog->deleteLater();
 
-    updateStatusBar("Scenario loaded: " + QFileInfo(filePath).fileName());
 }
 
 // %%% Recent Project Trigger %%%
@@ -1261,55 +1202,6 @@ void ScenarioEditor::onRunScriptFileRequested(const QString& filePath)
     QString scriptSource = in.readAll();
     file.close();
     scriptengine->loadAndCompileScript(scriptSource);
-}
-void ScenarioEditor::onRecentLibraryTriggered()
-{
-    connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
-            this, [=](const QString& filePath, RecentProjectsManager::EditorType type) {
-                if (type == RecentProjectsManager::LibraryData && !filePath.isEmpty()) {
-                    // **DIRECT LOAD - NO FILE DIALOG** ✅
-                    QFile file(filePath);
-                    if (!file.open(QIODevice::ReadOnly)) {
-                        QMessageBox::warning(this, "Error",
-                                             "Failed to open library file:\n" + filePath);
-                        return;
-                    }
-
-                    QByteArray data = file.readAll();
-                    file.close();
-
-                    QJsonParseError err;
-                    QJsonDocument doc = QJsonDocument::fromJson(data, &err);
-                    if (err.error != QJsonParseError::NoError || !doc.isObject()) {
-                        QMessageBox::warning(this, "Error",
-                                             "Invalid library file format:\n" + err.errorString());
-                        return;
-                    }
-
-                    QJsonObject obj = doc.object();
-                    if (obj.contains("hierarchy")) {
-                        QJsonObject hier = obj["hierarchy"].toObject();
-
-                        // Clear and load library
-                        library->clear();
-                        library->fromJson(hier);
-
-                        // Update tree view
-                        if (libTreeView) {
-                            libTreeView->getTreeWidget()->update();
-
-                            // **UPDATE LIBRARY TITLE** ✅
-                            libTreeView->setLibraryFileName(filePath);
-                        }
-
-                        updateStatusBar("Library loaded: " + QFileInfo(filePath).fileName());
-                    } else {
-                        QMessageBox::warning(this, "Error",
-                                             "No 'hierarchy' data found in file");
-                    }
-                }
-            }, Qt::UniqueConnection);
-    RecentProjectsManager::instance()->showRecentLibraryMenu(this);
 }
 
 

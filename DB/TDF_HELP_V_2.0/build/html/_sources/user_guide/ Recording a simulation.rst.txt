@@ -1,4 +1,0 @@
-Simulation
-==============================
-
-Content goes here...

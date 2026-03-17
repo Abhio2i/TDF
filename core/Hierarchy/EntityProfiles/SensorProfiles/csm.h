@@ -8,7 +8,6 @@ class CSM: public Sensor
     Q_OBJECT
 public:
     explicit CSM(Hierarchy* h);
-    bool on = false;
     // float frequency = 8;//ghz
     // float azimuth = 60;//deg
     // float range = 100;//km

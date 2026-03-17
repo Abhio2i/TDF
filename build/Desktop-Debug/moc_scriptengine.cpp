@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_ScriptEngine_t {
-    QByteArrayData data[96];
-    char stringdata0[1195];
+    QByteArrayData data[98];
+    char stringdata0[1237];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -76,58 +76,60 @@ QT_MOC_LITERAL(40, 453, 4), // "type"
 QT_MOC_LITERAL(41, 458, 14), // "getAllEntities"
 QT_MOC_LITERAL(42, 473, 15), // "getAllEntityIds"
 QT_MOC_LITERAL(43, 489, 11), // "renderscene"
-QT_MOC_LITERAL(44, 501, 15), // "canvasAddCircle"
-QT_MOC_LITERAL(45, 517, 6), // "radius"
-QT_MOC_LITERAL(46, 524, 18), // "canvasAddRectangle"
-QT_MOC_LITERAL(47, 543, 1), // "w"
-QT_MOC_LITERAL(48, 545, 1), // "h"
-QT_MOC_LITERAL(49, 547, 16), // "canvasAddPolygon"
-QT_MOC_LITERAL(50, 564, 3), // "pts"
-QT_MOC_LITERAL(51, 568, 15), // "canvasStartLine"
-QT_MOC_LITERAL(52, 584, 18), // "canvasAddLinePoint"
-QT_MOC_LITERAL(53, 603, 3), // "lon"
-QT_MOC_LITERAL(54, 607, 3), // "lat"
-QT_MOC_LITERAL(55, 611, 16), // "canvasFinishLine"
-QT_MOC_LITERAL(56, 628, 14), // "canvasAddPoint"
-QT_MOC_LITERAL(57, 643, 1), // "x"
-QT_MOC_LITERAL(58, 645, 1), // "y"
-QT_MOC_LITERAL(59, 647, 16), // "onBitmapSelected"
-QT_MOC_LITERAL(60, 664, 10), // "bitmapType"
-QT_MOC_LITERAL(61, 675, 18), // "getBitmapImagePath"
-QT_MOC_LITERAL(62, 694, 21), // "onBitmapImageSelected"
-QT_MOC_LITERAL(63, 716, 20), // "canvasToggleAirbases"
-QT_MOC_LITERAL(64, 737, 24), // "canvasImportGeoJsonLayer"
-QT_MOC_LITERAL(65, 762, 24), // "canvasToggleGeoJsonLayer"
-QT_MOC_LITERAL(66, 787, 9), // "layerName"
-QT_MOC_LITERAL(67, 797, 7), // "visible"
-QT_MOC_LITERAL(68, 805, 30), // "canvasStartDistanceMeasurement"
-QT_MOC_LITERAL(69, 836, 21), // "canvasAddMeasurePoint"
-QT_MOC_LITERAL(70, 858, 28), // "canvasGetLastSegmentDistance"
-QT_MOC_LITERAL(71, 887, 22), // "canvasGetTotalDistance"
-QT_MOC_LITERAL(72, 910, 24), // "canvasSetMeasurementUnit"
-QT_MOC_LITERAL(73, 935, 4), // "unit"
-QT_MOC_LITERAL(74, 940, 15), // "canvasSwitchMap"
-QT_MOC_LITERAL(75, 956, 7), // "mapName"
-QT_MOC_LITERAL(76, 964, 22), // "switchCoordinateSystem"
-QT_MOC_LITERAL(77, 987, 6), // "system"
-QT_MOC_LITERAL(78, 994, 9), // "moveShape"
-QT_MOC_LITERAL(79, 1004, 9), // "shapeName"
-QT_MOC_LITERAL(80, 1014, 11), // "rotateShape"
-QT_MOC_LITERAL(81, 1026, 8), // "angleDeg"
-QT_MOC_LITERAL(82, 1035, 16), // "showShapeHistory"
-QT_MOC_LITERAL(83, 1052, 16), // "hideShapeHistory"
-QT_MOC_LITERAL(84, 1069, 19), // "restoreShapeHistory"
-QT_MOC_LITERAL(85, 1089, 7), // "addText"
-QT_MOC_LITERAL(86, 1097, 4), // "text"
-QT_MOC_LITERAL(87, 1102, 18), // "addShapeProperties"
-QT_MOC_LITERAL(88, 1121, 1), // "r"
-QT_MOC_LITERAL(89, 1123, 1), // "g"
-QT_MOC_LITERAL(90, 1125, 1), // "b"
-QT_MOC_LITERAL(91, 1127, 15), // "borderThickness"
-QT_MOC_LITERAL(92, 1143, 11), // "deleteshape"
-QT_MOC_LITERAL(93, 1155, 22), // "setCanvasSelectedShape"
-QT_MOC_LITERAL(94, 1178, 7), // "useCity"
-QT_MOC_LITERAL(95, 1186, 8) // "cityName"
+QT_MOC_LITERAL(44, 501, 23), // "canvasCreateVectorLayer"
+QT_MOC_LITERAL(45, 525, 9), // "layerName"
+QT_MOC_LITERAL(46, 535, 17), // "canvasSelectLayer"
+QT_MOC_LITERAL(47, 553, 15), // "canvasAddCircle"
+QT_MOC_LITERAL(48, 569, 6), // "radius"
+QT_MOC_LITERAL(49, 576, 18), // "canvasAddRectangle"
+QT_MOC_LITERAL(50, 595, 1), // "w"
+QT_MOC_LITERAL(51, 597, 1), // "h"
+QT_MOC_LITERAL(52, 599, 16), // "canvasAddPolygon"
+QT_MOC_LITERAL(53, 616, 3), // "pts"
+QT_MOC_LITERAL(54, 620, 15), // "canvasStartLine"
+QT_MOC_LITERAL(55, 636, 18), // "canvasAddLinePoint"
+QT_MOC_LITERAL(56, 655, 3), // "lon"
+QT_MOC_LITERAL(57, 659, 3), // "lat"
+QT_MOC_LITERAL(58, 663, 16), // "canvasFinishLine"
+QT_MOC_LITERAL(59, 680, 14), // "canvasAddPoint"
+QT_MOC_LITERAL(60, 695, 1), // "x"
+QT_MOC_LITERAL(61, 697, 1), // "y"
+QT_MOC_LITERAL(62, 699, 16), // "onBitmapSelected"
+QT_MOC_LITERAL(63, 716, 10), // "bitmapType"
+QT_MOC_LITERAL(64, 727, 18), // "getBitmapImagePath"
+QT_MOC_LITERAL(65, 746, 21), // "onBitmapImageSelected"
+QT_MOC_LITERAL(66, 768, 20), // "canvasToggleAirbases"
+QT_MOC_LITERAL(67, 789, 24), // "canvasImportGeoJsonLayer"
+QT_MOC_LITERAL(68, 814, 24), // "canvasToggleGeoJsonLayer"
+QT_MOC_LITERAL(69, 839, 7), // "visible"
+QT_MOC_LITERAL(70, 847, 30), // "canvasStartDistanceMeasurement"
+QT_MOC_LITERAL(71, 878, 21), // "canvasAddMeasurePoint"
+QT_MOC_LITERAL(72, 900, 28), // "canvasGetLastSegmentDistance"
+QT_MOC_LITERAL(73, 929, 22), // "canvasGetTotalDistance"
+QT_MOC_LITERAL(74, 952, 24), // "canvasSetMeasurementUnit"
+QT_MOC_LITERAL(75, 977, 4), // "unit"
+QT_MOC_LITERAL(76, 982, 15), // "canvasSwitchMap"
+QT_MOC_LITERAL(77, 998, 7), // "mapName"
+QT_MOC_LITERAL(78, 1006, 22), // "switchCoordinateSystem"
+QT_MOC_LITERAL(79, 1029, 6), // "system"
+QT_MOC_LITERAL(80, 1036, 9), // "moveShape"
+QT_MOC_LITERAL(81, 1046, 9), // "shapeName"
+QT_MOC_LITERAL(82, 1056, 11), // "rotateShape"
+QT_MOC_LITERAL(83, 1068, 8), // "angleDeg"
+QT_MOC_LITERAL(84, 1077, 16), // "showShapeHistory"
+QT_MOC_LITERAL(85, 1094, 16), // "hideShapeHistory"
+QT_MOC_LITERAL(86, 1111, 19), // "restoreShapeHistory"
+QT_MOC_LITERAL(87, 1131, 7), // "addText"
+QT_MOC_LITERAL(88, 1139, 4), // "text"
+QT_MOC_LITERAL(89, 1144, 18), // "addShapeProperties"
+QT_MOC_LITERAL(90, 1163, 1), // "r"
+QT_MOC_LITERAL(91, 1165, 1), // "g"
+QT_MOC_LITERAL(92, 1167, 1), // "b"
+QT_MOC_LITERAL(93, 1169, 15), // "borderThickness"
+QT_MOC_LITERAL(94, 1185, 11), // "deleteshape"
+QT_MOC_LITERAL(95, 1197, 22), // "setCanvasSelectedShape"
+QT_MOC_LITERAL(96, 1220, 7), // "useCity"
+QT_MOC_LITERAL(97, 1228, 8) // "cityName"
 
     },
     "ScriptEngine\0requestSidebarView\0\0"
@@ -144,15 +146,17 @@ QT_MOC_LITERAL(95, 1186, 8) // "cityName"
     "removeEntity\0entityID\0getEntityById\0"
     "Entity*\0findEntitiesByType\0CScriptArray*\0"
     "type\0getAllEntities\0getAllEntityIds\0"
-    "renderscene\0canvasAddCircle\0radius\0"
-    "canvasAddRectangle\0w\0h\0canvasAddPolygon\0"
-    "pts\0canvasStartLine\0canvasAddLinePoint\0"
-    "lon\0lat\0canvasFinishLine\0canvasAddPoint\0"
-    "x\0y\0onBitmapSelected\0bitmapType\0"
-    "getBitmapImagePath\0onBitmapImageSelected\0"
-    "canvasToggleAirbases\0canvasImportGeoJsonLayer\0"
-    "canvasToggleGeoJsonLayer\0layerName\0"
-    "visible\0canvasStartDistanceMeasurement\0"
+    "renderscene\0canvasCreateVectorLayer\0"
+    "layerName\0canvasSelectLayer\0canvasAddCircle\0"
+    "radius\0canvasAddRectangle\0w\0h\0"
+    "canvasAddPolygon\0pts\0canvasStartLine\0"
+    "canvasAddLinePoint\0lon\0lat\0canvasFinishLine\0"
+    "canvasAddPoint\0x\0y\0onBitmapSelected\0"
+    "bitmapType\0getBitmapImagePath\0"
+    "onBitmapImageSelected\0canvasToggleAirbases\0"
+    "canvasImportGeoJsonLayer\0"
+    "canvasToggleGeoJsonLayer\0visible\0"
+    "canvasStartDistanceMeasurement\0"
     "canvasAddMeasurePoint\0"
     "canvasGetLastSegmentDistance\0"
     "canvasGetTotalDistance\0canvasSetMeasurementUnit\0"
@@ -173,7 +177,7 @@ static const uint qt_meta_data_ScriptEngine[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-      50,   14, // methods
+      52,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -181,60 +185,62 @@ static const uint qt_meta_data_ScriptEngine[] = {
        4,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    1,  264,    2, 0x06 /* Public */,
-       4,    1,  267,    2, 0x06 /* Public */,
-       6,    1,  270,    2, 0x06 /* Public */,
-       8,    1,  273,    2, 0x06 /* Public */,
+       1,    1,  274,    2, 0x06 /* Public */,
+       4,    1,  277,    2, 0x06 /* Public */,
+       6,    1,  280,    2, 0x06 /* Public */,
+       8,    1,  283,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-      10,    1,  276,    2, 0x0a /* Public */,
-      12,    1,  279,    2, 0x0a /* Public */,
-      16,    3,  282,    2, 0x0a /* Public */,
-      21,    3,  289,    2, 0x0a /* Public */,
-      23,    2,  296,    2, 0x0a /* Public */,
-      24,    2,  301,    2, 0x0a /* Public */,
-      27,    2,  306,    2, 0x0a /* Public */,
-      29,    2,  311,    2, 0x0a /* Public */,
-      31,    1,  316,    2, 0x0a /* Public */,
-      32,    2,  319,    2, 0x0a /* Public */,
-      34,    2,  324,    2, 0x0a /* Public */,
-      36,    1,  329,    2, 0x0a /* Public */,
-      38,    1,  332,    2, 0x0a /* Public */,
-      41,    0,  335,    2, 0x0a /* Public */,
-      42,    0,  336,    2, 0x0a /* Public */,
-      43,    0,  337,    2, 0x0a /* Public */,
-      44,    2,  338,    2, 0x0a /* Public */,
-      46,    3,  343,    2, 0x0a /* Public */,
-      49,    2,  350,    2, 0x0a /* Public */,
-      51,    0,  355,    2, 0x0a /* Public */,
-      52,    2,  356,    2, 0x0a /* Public */,
-      55,    0,  361,    2, 0x0a /* Public */,
-      56,    3,  362,    2, 0x0a /* Public */,
-      59,    3,  369,    2, 0x0a /* Public */,
-      61,    1,  376,    2, 0x0a /* Public */,
-      62,    3,  379,    2, 0x0a /* Public */,
-      63,    0,  386,    2, 0x0a /* Public */,
-      64,    1,  387,    2, 0x0a /* Public */,
-      65,    2,  390,    2, 0x0a /* Public */,
-      68,    0,  395,    2, 0x0a /* Public */,
-      69,    2,  396,    2, 0x0a /* Public */,
-      70,    0,  401,    2, 0x0a /* Public */,
-      71,    0,  402,    2, 0x0a /* Public */,
-      72,    1,  403,    2, 0x0a /* Public */,
-      74,    1,  406,    2, 0x0a /* Public */,
-      76,    1,  409,    2, 0x0a /* Public */,
-      78,    3,  412,    2, 0x0a /* Public */,
-      80,    2,  419,    2, 0x0a /* Public */,
-      82,    1,  424,    2, 0x0a /* Public */,
-      83,    0,  427,    2, 0x0a /* Public */,
-      84,    1,  428,    2, 0x0a /* Public */,
-      85,    3,  431,    2, 0x0a /* Public */,
-      87,    5,  438,    2, 0x0a /* Public */,
-      92,    1,  449,    2, 0x0a /* Public */,
+      10,    1,  286,    2, 0x0a /* Public */,
+      12,    1,  289,    2, 0x0a /* Public */,
+      16,    3,  292,    2, 0x0a /* Public */,
+      21,    3,  299,    2, 0x0a /* Public */,
+      23,    2,  306,    2, 0x0a /* Public */,
+      24,    2,  311,    2, 0x0a /* Public */,
+      27,    2,  316,    2, 0x0a /* Public */,
+      29,    2,  321,    2, 0x0a /* Public */,
+      31,    1,  326,    2, 0x0a /* Public */,
+      32,    2,  329,    2, 0x0a /* Public */,
+      34,    2,  334,    2, 0x0a /* Public */,
+      36,    1,  339,    2, 0x0a /* Public */,
+      38,    1,  342,    2, 0x0a /* Public */,
+      41,    0,  345,    2, 0x0a /* Public */,
+      42,    0,  346,    2, 0x0a /* Public */,
+      43,    0,  347,    2, 0x0a /* Public */,
+      44,    1,  348,    2, 0x0a /* Public */,
+      46,    1,  351,    2, 0x0a /* Public */,
+      47,    2,  354,    2, 0x0a /* Public */,
+      49,    3,  359,    2, 0x0a /* Public */,
+      52,    2,  366,    2, 0x0a /* Public */,
+      54,    0,  371,    2, 0x0a /* Public */,
+      55,    2,  372,    2, 0x0a /* Public */,
+      58,    0,  377,    2, 0x0a /* Public */,
+      59,    3,  378,    2, 0x0a /* Public */,
+      62,    3,  385,    2, 0x0a /* Public */,
+      64,    1,  392,    2, 0x0a /* Public */,
+      65,    3,  395,    2, 0x0a /* Public */,
+      66,    0,  402,    2, 0x0a /* Public */,
+      67,    1,  403,    2, 0x0a /* Public */,
+      68,    2,  406,    2, 0x0a /* Public */,
+      70,    0,  411,    2, 0x0a /* Public */,
+      71,    2,  412,    2, 0x0a /* Public */,
+      72,    0,  417,    2, 0x0a /* Public */,
+      73,    0,  418,    2, 0x0a /* Public */,
+      74,    1,  419,    2, 0x0a /* Public */,
+      76,    1,  422,    2, 0x0a /* Public */,
+      78,    1,  425,    2, 0x0a /* Public */,
+      80,    3,  428,    2, 0x0a /* Public */,
+      82,    2,  435,    2, 0x0a /* Public */,
+      84,    1,  440,    2, 0x0a /* Public */,
+      85,    0,  443,    2, 0x0a /* Public */,
+      86,    1,  444,    2, 0x0a /* Public */,
+      87,    3,  447,    2, 0x0a /* Public */,
+      89,    5,  454,    2, 0x0a /* Public */,
+      94,    1,  465,    2, 0x0a /* Public */,
 
  // methods: name, argc, parameters, tag, flags
-      93,    1,  452,    2, 0x02 /* Public */,
-      94,    1,  455,    2, 0x02 /* Public */,
+      95,    1,  468,    2, 0x02 /* Public */,
+      96,    1,  471,    2, 0x02 /* Public */,
 
  // signals: parameters
     QMetaType::Void, QMetaType::QString,    3,
@@ -259,38 +265,40 @@ static const uint qt_meta_data_ScriptEngine[] = {
     0x80000000 | 39,
     0x80000000 | 39,
     QMetaType::Void,
-    QMetaType::Void, 0x80000000 | 14, QMetaType::Float,   15,   45,
-    QMetaType::Void, 0x80000000 | 14, QMetaType::Float, QMetaType::Float,   15,   47,   48,
-    QMetaType::Void, 0x80000000 | 14, 0x80000000 | 39,   15,   50,
+    QMetaType::Void, 0x80000000 | 14,   45,
+    QMetaType::Void, 0x80000000 | 14,   45,
+    QMetaType::Void, 0x80000000 | 14, QMetaType::Float,   15,   48,
+    QMetaType::Void, 0x80000000 | 14, QMetaType::Float, QMetaType::Float,   15,   50,   51,
+    QMetaType::Void, 0x80000000 | 14, 0x80000000 | 39,   15,   53,
     QMetaType::Void,
-    QMetaType::Void, QMetaType::Float, QMetaType::Float,   53,   54,
+    QMetaType::Void, QMetaType::Float, QMetaType::Float,   56,   57,
     QMetaType::Void,
-    QMetaType::Void, 0x80000000 | 14, QMetaType::Float, QMetaType::Float,   15,   57,   58,
-    QMetaType::Void, 0x80000000 | 14, QMetaType::Float, QMetaType::Float,   60,   57,   58,
-    QMetaType::Void, 0x80000000 | 14,   60,
-    QMetaType::Void, 0x80000000 | 14, QMetaType::Float, QMetaType::Float,    9,   53,   54,
+    QMetaType::Void, 0x80000000 | 14, QMetaType::Float, QMetaType::Float,   15,   60,   61,
+    QMetaType::Void, 0x80000000 | 14, QMetaType::Float, QMetaType::Float,   63,   60,   61,
+    QMetaType::Void, 0x80000000 | 14,   63,
+    QMetaType::Void, 0x80000000 | 14, QMetaType::Float, QMetaType::Float,    9,   56,   57,
     QMetaType::Void,
     QMetaType::Void, 0x80000000 | 14,    9,
-    QMetaType::Void, 0x80000000 | 14, QMetaType::Bool,   66,   67,
+    QMetaType::Void, 0x80000000 | 14, QMetaType::Bool,   45,   69,
     QMetaType::Void,
-    QMetaType::Void, QMetaType::Double, QMetaType::Double,   53,   54,
+    QMetaType::Void, QMetaType::Double, QMetaType::Double,   56,   57,
     QMetaType::Double,
     QMetaType::Double,
-    QMetaType::Void, 0x80000000 | 14,   73,
     QMetaType::Void, 0x80000000 | 14,   75,
     QMetaType::Void, 0x80000000 | 14,   77,
-    QMetaType::Void, 0x80000000 | 14, QMetaType::Double, QMetaType::Double,   79,   53,   54,
-    QMetaType::Void, 0x80000000 | 14, QMetaType::Double,   79,   81,
     QMetaType::Void, 0x80000000 | 14,   79,
+    QMetaType::Void, 0x80000000 | 14, QMetaType::Double, QMetaType::Double,   81,   56,   57,
+    QMetaType::Void, 0x80000000 | 14, QMetaType::Double,   81,   83,
+    QMetaType::Void, 0x80000000 | 14,   81,
     QMetaType::Void,
-    QMetaType::Void, 0x80000000 | 14,   79,
-    QMetaType::Void, 0x80000000 | 14, QMetaType::Double, QMetaType::Double,   86,   53,   54,
-    QMetaType::Void, 0x80000000 | 14, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int,   79,   88,   89,   90,   91,
+    QMetaType::Void, 0x80000000 | 14,   81,
+    QMetaType::Void, 0x80000000 | 14, QMetaType::Double, QMetaType::Double,   88,   56,   57,
+    QMetaType::Void, 0x80000000 | 14, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int,   81,   90,   91,   92,   93,
     QMetaType::Void, 0x80000000 | 14,   25,
 
  // methods: parameters
-    QMetaType::Void, 0x80000000 | 14,   79,
-    QMetaType::Void, 0x80000000 | 14,   95,
+    QMetaType::Void, 0x80000000 | 14,   81,
+    QMetaType::Void, 0x80000000 | 14,   97,
 
        0        // eod
 };
@@ -328,38 +336,40 @@ void ScriptEngine::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id
         case 18: { CScriptArray* _r = _t->getAllEntityIds();
             if (_a[0]) *reinterpret_cast< CScriptArray**>(_a[0]) = std::move(_r); }  break;
         case 19: _t->renderscene(); break;
-        case 20: _t->canvasAddCircle((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< float(*)>(_a[2]))); break;
-        case 21: _t->canvasAddRectangle((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< float(*)>(_a[2])),(*reinterpret_cast< float(*)>(_a[3]))); break;
-        case 22: _t->canvasAddPolygon((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< CScriptArray*(*)>(_a[2]))); break;
-        case 23: _t->canvasStartLine(); break;
-        case 24: _t->canvasAddLinePoint((*reinterpret_cast< float(*)>(_a[1])),(*reinterpret_cast< float(*)>(_a[2]))); break;
-        case 25: _t->canvasFinishLine(); break;
-        case 26: _t->canvasAddPoint((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< float(*)>(_a[2])),(*reinterpret_cast< float(*)>(_a[3]))); break;
-        case 27: _t->onBitmapSelected((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< float(*)>(_a[2])),(*reinterpret_cast< float(*)>(_a[3]))); break;
-        case 28: _t->getBitmapImagePath((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
-        case 29: _t->onBitmapImageSelected((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< float(*)>(_a[2])),(*reinterpret_cast< float(*)>(_a[3]))); break;
-        case 30: _t->canvasToggleAirbases(); break;
-        case 31: _t->canvasImportGeoJsonLayer((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
-        case 32: _t->canvasToggleGeoJsonLayer((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< bool(*)>(_a[2]))); break;
-        case 33: _t->canvasStartDistanceMeasurement(); break;
-        case 34: _t->canvasAddMeasurePoint((*reinterpret_cast< double(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
-        case 35: { double _r = _t->canvasGetLastSegmentDistance();
+        case 20: _t->canvasCreateVectorLayer((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
+        case 21: _t->canvasSelectLayer((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
+        case 22: _t->canvasAddCircle((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< float(*)>(_a[2]))); break;
+        case 23: _t->canvasAddRectangle((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< float(*)>(_a[2])),(*reinterpret_cast< float(*)>(_a[3]))); break;
+        case 24: _t->canvasAddPolygon((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< CScriptArray*(*)>(_a[2]))); break;
+        case 25: _t->canvasStartLine(); break;
+        case 26: _t->canvasAddLinePoint((*reinterpret_cast< float(*)>(_a[1])),(*reinterpret_cast< float(*)>(_a[2]))); break;
+        case 27: _t->canvasFinishLine(); break;
+        case 28: _t->canvasAddPoint((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< float(*)>(_a[2])),(*reinterpret_cast< float(*)>(_a[3]))); break;
+        case 29: _t->onBitmapSelected((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< float(*)>(_a[2])),(*reinterpret_cast< float(*)>(_a[3]))); break;
+        case 30: _t->getBitmapImagePath((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
+        case 31: _t->onBitmapImageSelected((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< float(*)>(_a[2])),(*reinterpret_cast< float(*)>(_a[3]))); break;
+        case 32: _t->canvasToggleAirbases(); break;
+        case 33: _t->canvasImportGeoJsonLayer((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
+        case 34: _t->canvasToggleGeoJsonLayer((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< bool(*)>(_a[2]))); break;
+        case 35: _t->canvasStartDistanceMeasurement(); break;
+        case 36: _t->canvasAddMeasurePoint((*reinterpret_cast< double(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
+        case 37: { double _r = _t->canvasGetLastSegmentDistance();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 36: { double _r = _t->canvasGetTotalDistance();
+        case 38: { double _r = _t->canvasGetTotalDistance();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 37: _t->canvasSetMeasurementUnit((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
-        case 38: _t->canvasSwitchMap((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
-        case 39: _t->switchCoordinateSystem((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
-        case 40: _t->moveShape((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2])),(*reinterpret_cast< double(*)>(_a[3]))); break;
-        case 41: _t->rotateShape((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
-        case 42: _t->showShapeHistory((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
-        case 43: _t->hideShapeHistory(); break;
-        case 44: _t->restoreShapeHistory((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
-        case 45: _t->addText((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2])),(*reinterpret_cast< double(*)>(_a[3]))); break;
-        case 46: _t->addShapeProperties((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3])),(*reinterpret_cast< int(*)>(_a[4])),(*reinterpret_cast< int(*)>(_a[5]))); break;
-        case 47: _t->deleteshape((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
-        case 48: _t->setCanvasSelectedShape((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
-        case 49: _t->useCity((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
+        case 39: _t->canvasSetMeasurementUnit((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
+        case 40: _t->canvasSwitchMap((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
+        case 41: _t->switchCoordinateSystem((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
+        case 42: _t->moveShape((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2])),(*reinterpret_cast< double(*)>(_a[3]))); break;
+        case 43: _t->rotateShape((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
+        case 44: _t->showShapeHistory((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
+        case 45: _t->hideShapeHistory(); break;
+        case 46: _t->restoreShapeHistory((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
+        case 47: _t->addText((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2])),(*reinterpret_cast< double(*)>(_a[3]))); break;
+        case 48: _t->addShapeProperties((*reinterpret_cast< const std::string(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3])),(*reinterpret_cast< int(*)>(_a[4])),(*reinterpret_cast< int(*)>(_a[5]))); break;
+        case 49: _t->deleteshape((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
+        case 50: _t->setCanvasSelectedShape((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
+        case 51: _t->useCity((*reinterpret_cast< const std::string(*)>(_a[1]))); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
@@ -424,13 +434,13 @@ int ScriptEngine::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 50)
+        if (_id < 52)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 50;
+        _id -= 52;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 50)
+        if (_id < 52)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 50;
+        _id -= 52;
     }
     return _id;
 }

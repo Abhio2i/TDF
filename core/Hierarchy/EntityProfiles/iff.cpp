@@ -320,6 +320,7 @@ void IFF::fromJson(const QJsonObject& obj) {
 
 
 void IFF::scan(){
+    if(!Active)return;
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
     if(!parentEntity) return;
     Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
@@ -340,7 +341,7 @@ void IFF::scan(){
 
                         // horizontal angle (Y axis) : x vs z
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
-            if (metredis<emittingRange && entity->emittingFrequency==emittingFrequency) // .position() is assumed
+            if (entity->Active&&metredis<emittingRange && entity->emittingFrequency==emittingFrequency) // .position() is assumed
             {
                 //qDebug()<< "detect";
                 if (detects.count(platform) == 0)

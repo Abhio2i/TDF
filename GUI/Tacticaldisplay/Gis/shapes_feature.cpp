@@ -84,6 +84,7 @@ void ShapesFeature::handleShapeDrawing(const QString& shapeType, const QPointF& 
     }
 }
 
+
 // ============================================================================
 // NEW: Layer Integration Helper
 // ============================================================================
@@ -861,32 +862,56 @@ void ShapesFeature::scriptAddLinePoint(const QPointF& geoPos) {
     drawLine(geoPos, false);
 }
 
-void ShapesFeature::scriptFinishLine() {
-    if (m_tempLineVertices.size() < 2) return;
+void ShapesFeature::scriptFinishLine()
+{
+    if (m_tempLineVertices.size() < 2)
+        return;
 
+    QString lineName = QString("Line_%1").arg(m_vertexCounter++);
+
+    MeshEntry entry;
+    entry.name = lineName;
+    entry.position = new QVector3D(0,0,0);
+    entry.rotation = new QQuaternion();
+    entry.size = new QVector3D(0,0,1);
+    entry.velocity = new QVector3D(0,0,0);
+    entry.trajectory = nullptr;
+    entry.collider = nullptr;
+    entry.bitmapPath = "";
+    entry.text = "";
+
+    entry.mesh = new Mesh();
+    entry.mesh->color = new QColor(Qt::red);
+    entry.mesh->lineWidth = 3;
+    entry.mesh->closePath = false;
+
+    // add vertices to the line mesh
     for (Vector* v : m_tempLineVertices) {
-        MeshEntry entry;
-        entry.name = QString("LineVertex_%1").arg(m_vertexCounter++);
-        entry.position = new QVector3D(v->x, v->y, 0);
-        entry.rotation = new QQuaternion();
-        entry.size = new QVector3D(0, 0, 1);
-        entry.velocity = new QVector3D(0, 0, 0);
-        entry.trajectory = nullptr;
-        entry.collider = nullptr;
-        entry.bitmapPath = "";
-        entry.text = "";
-        entry.mesh = new Mesh();
-        entry.mesh->color = new QColor(Qt::red);
-        entry.mesh->lineWidth = 3;
-        entry.mesh->closePath = true;
-        entry.mesh->polygen.push_back(new Vector(0, 0, 0));
-        m_canvas->tempMeshes.push_back(entry);
+        entry.mesh->polygen.push_back(new Vector(v->x, v->y, 0));
     }
 
-    drawLine(QPointF(m_tempLineVertices.back()->x, m_tempLineVertices.back()->y), true);
+    m_canvas->tempMeshes.push_back(entry);
 
-    m_canvas->currentMode = Translate;
+    // add to layer
+    addShapeToActiveLayer(lineName, "Line");
+
     m_canvas->selectedShape.clear();
+
+    // force exit drawing state
+    m_canvas->currentMode = Translate;
+    m_canvas->setShapeDrawingMode(false, "");
+
+    // clear internal shape tool
+    m_canvas->selectedShape = "";
+
+    m_canvas->setCursor(Qt::ArrowCursor);
+
+    for (auto* v : m_tempLineVertices)
+        delete v;
+
+    m_tempLineVertices.clear();
+    m_tempLineCanvasPoints.clear();
+
     m_canvas->Refresh();
 }
 
@@ -904,6 +929,7 @@ bool ShapesFeature::isPointNearLineSegment(const QPointF& p, const QPointF& v1, 
     return QVector2D(p - projection).length() < tolerance;
 }
 
+///////////// moveshape using script by amjad ///////////////
 void ShapesFeature::moveShapeByScript(MeshEntry* entry, const QPointF& newGeoPos)
 {
     if (!entry || !entry->position) return;
@@ -912,6 +938,75 @@ void ShapesFeature::moveShapeByScript(MeshEntry* entry, const QPointF& newGeoPos
 
     entry->position->setX(newGeoPos.x());
     entry->position->setY(newGeoPos.y());
+
+    m_canvas->Refresh();
+}
+
+// draw circle and adjust their radius by amjad
+void ShapesFeature::drawCircle(const QPointF& geoPos, float radiusDeg)
+{
+    MeshEntry entry;
+    entry.name = QString("TempCircle_%1").arg(m_circleCounter++);
+    entry.position = new QVector3D(geoPos.x(), geoPos.y(), 0);
+    entry.rotation = new QQuaternion();
+    entry.size = new QVector3D(radiusDeg, radiusDeg, 1);
+    entry.circleRadius = radiusDeg;
+
+    entry.velocity = new QVector3D(0, 0, 0);
+    entry.mesh = new Mesh();
+    entry.mesh->color = new QColor(Qt::red);
+    entry.mesh->lineWidth = 2;
+    entry.mesh->closePath = true;
+
+    const int SEG = 64;
+    for (int i = 0; i < SEG; ++i) {
+        float a = (2 * M_PI * i) / SEG;
+        entry.mesh->polygen.push_back(
+            new Vector(std::cos(a) * radiusDeg,
+                       std::sin(a) * radiusDeg, 0));
+    }
+
+    m_canvas->tempMeshes.push_back(entry);
+
+    // add to layer
+    // addShapeToActiveLayer(entry.name, "Circle");
+
+    m_canvas->Refresh();
+}
+
+// draw rectange and adjust their heigth and width by amjad
+void ShapesFeature::drawRectangle(
+    const QPointF& geoPos,
+    float widthDeg,
+    float heightDeg)
+{
+    MeshEntry entry;
+    entry.name = QString("TempRectangle_%1").arg(m_rectCounter++);
+    entry.position = new QVector3D(geoPos.x(), geoPos.y(), 0);
+    entry.rotation = new QQuaternion();
+
+    entry.size = new QVector3D(widthDeg, heightDeg, 1);
+    // entry.isScriptShape = true;
+
+    entry.velocity = new QVector3D(0, 0, 0);
+    entry.mesh = new Mesh();
+    entry.mesh->color = new QColor(Qt::red);
+    entry.mesh->lineWidth = 2;
+    entry.mesh->closePath = true;
+
+    float hw = widthDeg  / 2.0f;
+    float hh = heightDeg / 2.0f;
+
+    entry.mesh->polygen = {
+        new Vector(-hw, -hh, 0),
+        new Vector( hw, -hh, 0),
+        new Vector( hw,  hh, 0),
+        new Vector(-hw,  hh, 0)
+    };
+
+    m_canvas->tempMeshes.push_back(entry);
+
+    addShapeToActiveLayer(entry.name, "Rectangle");
 
     m_canvas->Refresh();
 }

@@ -1,6 +1,9 @@
 void main(ScriptEngine@ e) {
     Print("\n## Section: Plotting Polygon over India ##");
 
+     // add layer
+    e.canvasCreateVectorLayer("Layer1");
+
     // Format: "Longitude, Latitude" 
     array<string> indiaPoints = {
         "77.0, 30.0", // North

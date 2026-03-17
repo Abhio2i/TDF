@@ -10,6 +10,7 @@ CSM::CSM(Hierarchy* h) : Sensor(h) {
 }
 
 void CSM::scan(){
+    if(!Active)return;
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
     if(!parentEntity) return;
     Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
@@ -32,7 +33,7 @@ void CSM::scan(){
             float fre1 = entity->minFrequency;
             float fre2 = entity->maxFrequency;
             // qDebug()<<yAngle<<","<<detectCheck(localPos,metredis)<<","<<(fre1 < frequency && fre2> frequency);
-            if (detectCheck(localPos,metredis) && fre1 < frequency && fre2> frequency)  // .position() is assumed
+            if (entity->Active && detectCheck(localPos,metredis) && fre1 < frequency && fre2> frequency)  // .position() is assumed
             {
                 //qDebug()<< "detect";
                 if (ewdetects.count(platform) == 0)
@@ -72,7 +73,7 @@ void CSM::scan(){
 
 QJsonObject CSM::toJson() const {
     QJsonObject obj;
-    obj["on"] = on;
+    obj["active"] = Active;
     obj["name"] = QString::fromStdString(Name);
     obj["SensorType"] = "CSM";
     obj["id"] = QString::fromStdString(ID);
@@ -89,8 +90,8 @@ void CSM::fromJson(const QJsonObject& obj) {
     if (obj.contains("id")){
         ID = obj["id"].toString().toStdString();
     }
-    if (obj.contains("on"))
-        on = obj["on"].toBool();
+    if (obj.contains("active"))
+        Active = obj["active"].toBool();
     if (obj.contains("default") && obj["default"].isObject()) {
         QJsonObject defaultObj = obj["default"].toObject();
         if (defaultObj.contains("range"))

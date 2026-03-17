@@ -167,14 +167,10 @@ void HierarchyTree::updateProfileDropdown()
     profileFilterCombo->clear();
     profileFilterCombo->addItem("All Profiles");
     profileFilterCombo->setItemData(0, "All Profiles", Qt::UserRole);
-
     QStringList profiles = getAllProfileNames();
     profiles.sort();
-
     for (const QString& profile : profiles) {
-
         profileFilterCombo->addItem(profile);
-
         int lastIndex = profileFilterCombo->count() - 1;
         profileFilterCombo->setItemData(lastIndex, profile, Qt::UserRole);
     }
@@ -195,9 +191,7 @@ void HierarchyTree::onSearchTextChanged(const QString& text)
     QString profileFilter = "All Profiles";
 
     if (profileFilterCombo->currentIndex() > 0) {
-
         profileFilter = profileFilterCombo->currentData(Qt::UserRole).toString();
-
         if (profileFilter.isEmpty()) {
             profileFilter = profileFilterCombo->currentText();
         }
@@ -223,11 +217,9 @@ void HierarchyTree::onProfileFilterChanged(int index)
             profileFilter = profileFilterCombo->currentText();
         }
     }
-
     filterHierarchy(profileFilter, searchBar->text());
     emit profileFilterChanged(profileFilter);
 }
-
 /* Filter hierarchy based on profile and search text */
 void HierarchyTree::filterHierarchy(const QString& profileFilter, const QString& searchText)
 {
@@ -613,6 +605,77 @@ void HierarchyTree::entityRenamed(QString ID, QString name)
 
 ContextMenu *HierarchyTree::getContextMenu() const { return contextMenu; }
 
+// void HierarchyTree::showContextMenu(const QPoint &pos)
+// {
+//     if (islib) return;
+//     QList<QTreeWidgetItem*> selectedItems = tree->selectedItems();
+//     if (selectedItems.size() > 1) {
+//         QMenu contextMenu(this);
+//         QAction *copyAction = contextMenu.addAction("Copy");
+//         QAction *deleteAction = contextMenu.addAction("Delete");
+//         QAction *addFormationAction = nullptr;
+//         bool allArePlatformEntities = true;
+//         QList<QVariantMap> selectedEntities;
+
+//         for (QTreeWidgetItem* item : selectedItems) {
+//             QVariantMap data = item->data(0, Qt::UserRole).toMap();
+//             QString type = data["type"].toString();
+
+//             if (type == "entity") {
+//                 // Check if it's under a Platform profile
+//                 QString parentId = data["parentId"].toString();
+//                 if (Items.contains(parentId)) {
+//                     QVariantMap parentData = Items[parentId]->data(0, Qt::UserRole).toMap();
+//                     QString parentType;
+
+//                     if (parentData["type"].type() == QVariant::Map) {
+//                         QVariantMap typeData = parentData["type"].toMap();
+//                         if (typeData.contains("type") && typeData["type"].toString() == "option") {
+//                             parentType = "profile";
+//                             if (typeData.contains("value")) {
+//                                 QString profileType = typeData["value"].toString();
+//                                 if (profileType == "Platform") {
+//                                     selectedEntities.append(data);
+//                                     continue;
+//                                 }
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//             allArePlatformEntities = false;
+//             break;
+//         }
+
+//         if (allArePlatformEntities && selectedEntities.size() >= 2) {
+//             addFormationAction = contextMenu.addAction("Add Formation");
+//             contextMenu.insertAction(deleteAction, addFormationAction);
+//         }
+
+//         connect(copyAction, &QAction::triggered, this, [=]() {
+//             QList<QVariantMap> selectedEntities = getSelectedEntities();
+//             if (!selectedEntities.isEmpty()) {
+//                 copiedItems = selectedEntities;
+//                 if (this->contextMenu) {
+//                     this->contextMenu->m_copiedItems = selectedEntities;
+//                 }
+//                 emit copyItemsRequested(selectedEntities);
+
+//             }
+//         });
+//         connect(deleteAction, &QAction::triggered, this, [=]() {
+//             int result = QMessageBox::question(this, "Confirm Delete",
+//                                                "Are you sure you want to delete the selected items?",
+//                                                QMessageBox::Yes | QMessageBox::No);
+//             if (result == QMessageBox::Yes) {
+//                 removeSelectedEntities();
+//             }
+//         });
+//         if (addFormationAction) {
+//             connect(addFormationAction, &QAction::triggered, this, [=]() {
+//                 emit addFormationRequested(selectedEntities);
+//             });
+//         }
 void HierarchyTree::showContextMenu(const QPoint &pos)
 {
     if (islib) return;
@@ -621,6 +684,15 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
         QMenu contextMenu(this);
         QAction *copyAction = contextMenu.addAction("Copy");
         QAction *deleteAction = contextMenu.addAction("Delete");
+
+        // ── NEW: Active / Inactive toggle ─────────────────────────────────
+        QAction *setActiveAction   = contextMenu.addAction("Set Active");
+        QAction *setInactiveAction = contextMenu.addAction("Set Inactive");
+        // ─────────────────────────────────────────────────────────────────
+        QAction *addWeaponAction   = contextMenu.addAction("Add Weapon");
+        QAction *addSensorAction   = contextMenu.addAction("Add Sensor");
+        QAction *addTeamAction     = contextMenu.addAction("Set Team");
+
         QAction *addFormationAction = nullptr;
         bool allArePlatformEntities = true;
         QList<QVariantMap> selectedEntities;
@@ -630,12 +702,10 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
             QString type = data["type"].toString();
 
             if (type == "entity") {
-                // Check if it's under a Platform profile
                 QString parentId = data["parentId"].toString();
                 if (Items.contains(parentId)) {
                     QVariantMap parentData = Items[parentId]->data(0, Qt::UserRole).toMap();
                     QString parentType;
-
                     if (parentData["type"].type() == QVariant::Map) {
                         QVariantMap typeData = parentData["type"].toMap();
                         if (typeData.contains("type") && typeData["type"].toString() == "option") {
@@ -668,9 +738,9 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
                     this->contextMenu->m_copiedItems = selectedEntities;
                 }
                 emit copyItemsRequested(selectedEntities);
-
             }
         });
+
         connect(deleteAction, &QAction::triggered, this, [=]() {
             int result = QMessageBox::question(this, "Confirm Delete",
                                                "Are you sure you want to delete the selected items?",
@@ -679,6 +749,90 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
                 removeSelectedEntities();
             }
         });
+
+        // ── NEW: Active connect ───────────────────────────────────────────
+        connect(setActiveAction, &QAction::triggered, this, [=]() {
+            QList<QVariantMap> entities = getSelectedEntities();
+            emit setEntitiesActiveRequested(entities, true);
+        });
+
+        connect(setInactiveAction, &QAction::triggered, this, [=]() {
+            QList<QVariantMap> entities = getSelectedEntities();
+            emit setEntitiesActiveRequested(entities, false);
+        });
+        connect(addWeaponAction, &QAction::triggered, this, [=]() {
+            QList<QVariantMap> entities = getSelectedEntities();
+            emit addWeaponToEntitiesRequested(entities);
+        });
+
+        connect(addSensorAction, &QAction::triggered, this, [=]() {
+            QList<QVariantMap> entities = getSelectedEntities();
+            emit addSensorToEntitiesRequested(entities);
+        });
+
+
+
+
+        connect(addTeamAction, &QAction::triggered, this, [=]() {
+            QStringList teams = {"RedTeam","BlueTeam","GreenTeam","YellowTeam",
+                                 "GreyTeam","AlphaTeam","BetaTeam","GammaTeam"};
+            bool ok;
+
+            QInputDialog dialog(this);
+            dialog.setWindowTitle("Set Team");
+            dialog.setLabelText("Select Team:");
+            dialog.setComboBoxItems(teams);
+            dialog.setComboBoxEditable(false);
+            dialog.setInputMode(QInputDialog::TextInput);
+            dialog.setStyleSheet(R"(
+        QInputDialog, QDialog {
+            background-color: #0F2636;
+            color: white;
+        }
+        QLabel {
+            color: white;
+            background-color: #0F2636;
+        }
+        QComboBox {
+            background-color: #1A3652;
+            color: white;
+            border: 1px solid #27446d;
+            padding: 4px;
+            border-radius: 3px;
+        }
+        QComboBox QAbstractItemView {
+            background-color: #1A3652;
+            color: white;
+            selection-background-color: #27446d;
+            selection-color: white;
+            border: 1px solid #27446d;
+        }
+
+        QPushButton {
+            background-color: #1A3652;
+            color: white;
+            border: 1px solid #27446d;
+            padding: 5px 15px;
+            border-radius: 3px;
+        }
+        QPushButton:hover {
+            background-color: #27446d;
+        }
+        QDialogButtonBox {
+            background-color: #0F2636;
+        }
+    )");
+
+            if (dialog.exec() == QDialog::Accepted) {
+                QString team = dialog.textValue();
+                if (!team.isEmpty()) {
+                    emit addTeamToEntitiesRequested(getSelectedEntities(), team);
+                }
+            }
+        });
+
+        // ─────────────────────────────────────────────────────────────────
+
         if (addFormationAction) {
             connect(addFormationAction, &QAction::triggered, this, [=]() {
                 emit addFormationRequested(selectedEntities);
@@ -826,7 +980,6 @@ QList<QVariantMap> HierarchyTree::getSelectedEntities() const
     for (QTreeWidgetItem* item : selectedItems) {
         QVariantMap data = item->data(0, Qt::UserRole).toMap();
         QString type = data["type"].toString();
-
         if (type == "entity") {
             entities.append(data);
         }
@@ -930,5 +1083,38 @@ void HierarchyTree::selectMultipleEntitiesInTree(const QList<QString>& entityIds
     // Emit the multi-selection signal
     if (!selectedDataList.isEmpty()) {
         emit itemsSelected(selectedDataList);
+    }
+}
+void HierarchyTree::subComponentRenamed(QString componentId, QString subCompId, QString newName)
+{
+    // Tree mein subCompId wala item dhundho aur naam update karo
+    QTreeWidgetItemIterator it(getTreeWidget());
+    while (*it) {
+        QVariantMap data = (*it)->data(0, Qt::UserRole).toMap();
+        if (data["ID"].toString() == subCompId && data["type"].toString() == "subcomponent") {
+            (*it)->setText(0, newName);
+            break;
+        }
+        ++it;
+    }
+}
+
+void HierarchyTree::setEntityActiveState(const QString& entityId, bool active)
+{
+    if (!Items.contains(entityId))
+        return;
+
+    QTreeWidgetItem* item = Items[entityId];
+    if (!item)
+        return;
+
+    if (active) {
+        // Restore normal white text
+        item->setForeground(0, QColor(255, 255, 255));
+        item->setToolTip(0, "");
+    } else {
+        // Gray out to signal inactive state
+        item->setForeground(0, QColor(120, 120, 120));
+        item->setToolTip(0, "Inactive");
     }
 }

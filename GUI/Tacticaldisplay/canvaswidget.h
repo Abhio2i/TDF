@@ -33,18 +33,18 @@ class ShapesFeature;
 
 struct MeshEntry {
     QString name;                           // Name identifier for the mesh
-    Qt3DCore::QTransform* transform;        // 3D transformation
-    Transform* coreTransform;
+    Qt3DCore::QTransform* transform = nullptr;        // 3D transformation
+    Transform* coreTransform = nullptr;
     QVector3D* position;                    // Position in 3D space
     QQuaternion* rotation;                  // Rotation as quaternion
-    QVector3D* velocity;                    // Velocity vector
+    QVector3D* velocity = nullptr;                    // Velocity vector
     QVector3D* size;                        // Size/scaling factors
     Mesh* mesh;                           // Mesh geometry data
-    Entity* entity;
+    Entity* entity = nullptr;
     Platform* platform = nullptr;
-    Collider* collider;                     // Collision detection component
-    Trajectory* trajectory;               // Path/trajectory data
-    DynamicModel* dynamicModel;
+    Collider* collider = nullptr;                     // Collision detection component
+    Trajectory* trajectory = nullptr;               // Path/trajectory data
+    DynamicModel* dynamicModel = nullptr;
     QString bitmapPath;                     // Path to bitmap image
     QString text;                           // Text content for text entities
     QPolygonF polyline;
@@ -56,7 +56,9 @@ struct MeshEntry {
     int textSize;             // Font size
     bool isTextSelected;      // Selection flag for text
     int individualImageSize = -1;
-   QColor trajectoryColor = Qt::blue;
+    QColor trajectoryColor = Qt::blue;
+
+    float circleRadius = 0.0f;   // geo degrees (used only for circles) by amjad
 };
 
 /* TransformMode enumeration section */
@@ -288,6 +290,7 @@ private:
     bool showRadio = true;       // Default radio visible
     bool showImage = true;
     bool showTooltip = false;
+    bool showTrajectories = true;
     // Mode and state flags
     bool isDrawingTrajectory = false;  // Currently drawing trajectory
     QString selectedBitmapType;  // Selected bitmap type for placement
@@ -354,6 +357,7 @@ signals:
 
     void MoveEntity(QString ID);  // Entity movement signal
     void trajectoryUpdated(QString entityId, QJsonArray waypoints);  // Trajectory update signal
+    void trajectoryUpdatedforLogger(QString entityId, std::vector<Waypoints *> Trajectories);
     void airbaseLayerToggled(bool visible);  // Airbase layer toggle signal
 
     // GeoJSON signals

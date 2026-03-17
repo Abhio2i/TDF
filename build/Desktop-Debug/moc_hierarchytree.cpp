@@ -23,8 +23,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_HierarchyTree_t {
-    QByteArrayData data[36];
-    char stringdata0[548];
+    QByteArrayData data[43];
+    char stringdata0[681];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -64,11 +64,18 @@ QT_MOC_LITERAL(27, 401, 21), // "addFormationRequested"
 QT_MOC_LITERAL(28, 423, 16), // "selectedEntities"
 QT_MOC_LITERAL(29, 440, 22), // "libraryFileNameChanged"
 QT_MOC_LITERAL(30, 463, 8), // "fileName"
-QT_MOC_LITERAL(31, 472, 19), // "onSearchTextChanged"
-QT_MOC_LITERAL(32, 492, 4), // "text"
-QT_MOC_LITERAL(33, 497, 22), // "onProfileFilterChanged"
-QT_MOC_LITERAL(34, 520, 5), // "index"
-QT_MOC_LITERAL(35, 526, 21) // "updateProfileDropdown"
+QT_MOC_LITERAL(31, 472, 26), // "setEntitiesActiveRequested"
+QT_MOC_LITERAL(32, 499, 8), // "entities"
+QT_MOC_LITERAL(33, 508, 6), // "active"
+QT_MOC_LITERAL(34, 515, 28), // "addWeaponToEntitiesRequested"
+QT_MOC_LITERAL(35, 544, 28), // "addSensorToEntitiesRequested"
+QT_MOC_LITERAL(36, 573, 26), // "addTeamToEntitiesRequested"
+QT_MOC_LITERAL(37, 600, 4), // "team"
+QT_MOC_LITERAL(38, 605, 19), // "onSearchTextChanged"
+QT_MOC_LITERAL(39, 625, 4), // "text"
+QT_MOC_LITERAL(40, 630, 22), // "onProfileFilterChanged"
+QT_MOC_LITERAL(41, 653, 5), // "index"
+QT_MOC_LITERAL(42, 659, 21) // "updateProfileDropdown"
 
     },
     "HierarchyTree\0copyItemsRequested\0\0"
@@ -84,6 +91,10 @@ QT_MOC_LITERAL(35, 526, 21) // "updateProfileDropdown"
     "entitySelected\0Entity*\0entity\0"
     "addFormationRequested\0selectedEntities\0"
     "libraryFileNameChanged\0fileName\0"
+    "setEntitiesActiveRequested\0entities\0"
+    "active\0addWeaponToEntitiesRequested\0"
+    "addSensorToEntitiesRequested\0"
+    "addTeamToEntitiesRequested\0team\0"
     "onSearchTextChanged\0text\0"
     "onProfileFilterChanged\0index\0"
     "updateProfileDropdown"
@@ -96,33 +107,37 @@ static const uint qt_meta_data_HierarchyTree[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-      17,   14, // methods
+      21,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
        0,       // flags
-      14,       // signalCount
+      18,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    1,   99,    2, 0x06 /* Public */,
-       5,    2,  102,    2, 0x06 /* Public */,
-       8,    1,  107,    2, 0x06 /* Public */,
-      11,    1,  110,    2, 0x06 /* Public */,
-      13,    1,  113,    2, 0x06 /* Public */,
-      15,    1,  116,    2, 0x06 /* Public */,
-      16,    1,  119,    2, 0x06 /* Public */,
-      17,    1,  122,    2, 0x06 /* Public */,
-      18,    1,  125,    2, 0x06 /* Public */,
-      19,    2,  128,    2, 0x06 /* Public */,
-      22,    2,  133,    2, 0x06 /* Public */,
-      24,    2,  138,    2, 0x06 /* Public */,
-      27,    1,  143,    2, 0x06 /* Public */,
-      29,    1,  146,    2, 0x06 /* Public */,
+       1,    1,  119,    2, 0x06 /* Public */,
+       5,    2,  122,    2, 0x06 /* Public */,
+       8,    1,  127,    2, 0x06 /* Public */,
+      11,    1,  130,    2, 0x06 /* Public */,
+      13,    1,  133,    2, 0x06 /* Public */,
+      15,    1,  136,    2, 0x06 /* Public */,
+      16,    1,  139,    2, 0x06 /* Public */,
+      17,    1,  142,    2, 0x06 /* Public */,
+      18,    1,  145,    2, 0x06 /* Public */,
+      19,    2,  148,    2, 0x06 /* Public */,
+      22,    2,  153,    2, 0x06 /* Public */,
+      24,    2,  158,    2, 0x06 /* Public */,
+      27,    1,  163,    2, 0x06 /* Public */,
+      29,    1,  166,    2, 0x06 /* Public */,
+      31,    2,  169,    2, 0x06 /* Public */,
+      34,    1,  174,    2, 0x06 /* Public */,
+      35,    1,  177,    2, 0x06 /* Public */,
+      36,    2,  180,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-      31,    1,  149,    2, 0x08 /* Private */,
-      33,    1,  152,    2, 0x08 /* Private */,
-      35,    0,  155,    2, 0x08 /* Private */,
+      38,    1,  185,    2, 0x08 /* Private */,
+      40,    1,  188,    2, 0x08 /* Private */,
+      42,    0,  191,    2, 0x08 /* Private */,
 
  // signals: parameters
     QMetaType::Void, 0x80000000 | 3,    4,
@@ -139,10 +154,14 @@ static const uint qt_meta_data_HierarchyTree[] = {
     QMetaType::Void, 0x80000000 | 25, QMetaType::QVariantMap,   26,    4,
     QMetaType::Void, 0x80000000 | 3,   28,
     QMetaType::Void, QMetaType::QString,   30,
+    QMetaType::Void, 0x80000000 | 3, QMetaType::Bool,   32,   33,
+    QMetaType::Void, 0x80000000 | 3,   32,
+    QMetaType::Void, 0x80000000 | 3,   32,
+    QMetaType::Void, 0x80000000 | 3, QMetaType::QString,   32,   37,
 
  // slots: parameters
-    QMetaType::Void, QMetaType::QString,   32,
-    QMetaType::Void, QMetaType::Int,   34,
+    QMetaType::Void, QMetaType::QString,   39,
+    QMetaType::Void, QMetaType::Int,   41,
     QMetaType::Void,
 
        0        // eod
@@ -168,9 +187,13 @@ void HierarchyTree::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
         case 11: _t->entitySelected((*reinterpret_cast< Entity*(*)>(_a[1])),(*reinterpret_cast< QVariantMap(*)>(_a[2]))); break;
         case 12: _t->addFormationRequested((*reinterpret_cast< QList<QVariantMap>(*)>(_a[1]))); break;
         case 13: _t->libraryFileNameChanged((*reinterpret_cast< const QString(*)>(_a[1]))); break;
-        case 14: _t->onSearchTextChanged((*reinterpret_cast< const QString(*)>(_a[1]))); break;
-        case 15: _t->onProfileFilterChanged((*reinterpret_cast< int(*)>(_a[1]))); break;
-        case 16: _t->updateProfileDropdown(); break;
+        case 14: _t->setEntitiesActiveRequested((*reinterpret_cast< QList<QVariantMap>(*)>(_a[1])),(*reinterpret_cast< bool(*)>(_a[2]))); break;
+        case 15: _t->addWeaponToEntitiesRequested((*reinterpret_cast< QList<QVariantMap>(*)>(_a[1]))); break;
+        case 16: _t->addSensorToEntitiesRequested((*reinterpret_cast< QList<QVariantMap>(*)>(_a[1]))); break;
+        case 17: _t->addTeamToEntitiesRequested((*reinterpret_cast< QList<QVariantMap>(*)>(_a[1])),(*reinterpret_cast< QString(*)>(_a[2]))); break;
+        case 18: _t->onSearchTextChanged((*reinterpret_cast< const QString(*)>(_a[1]))); break;
+        case 19: _t->onProfileFilterChanged((*reinterpret_cast< int(*)>(_a[1]))); break;
+        case 20: _t->updateProfileDropdown(); break;
         default: ;
         }
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
@@ -205,6 +228,34 @@ void HierarchyTree::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
             }
             break;
         case 12:
+            switch (*reinterpret_cast<int*>(_a[1])) {
+            default: *reinterpret_cast<int*>(_a[0]) = -1; break;
+            case 0:
+                *reinterpret_cast<int*>(_a[0]) = qRegisterMetaType< QList<QVariantMap> >(); break;
+            }
+            break;
+        case 14:
+            switch (*reinterpret_cast<int*>(_a[1])) {
+            default: *reinterpret_cast<int*>(_a[0]) = -1; break;
+            case 0:
+                *reinterpret_cast<int*>(_a[0]) = qRegisterMetaType< QList<QVariantMap> >(); break;
+            }
+            break;
+        case 15:
+            switch (*reinterpret_cast<int*>(_a[1])) {
+            default: *reinterpret_cast<int*>(_a[0]) = -1; break;
+            case 0:
+                *reinterpret_cast<int*>(_a[0]) = qRegisterMetaType< QList<QVariantMap> >(); break;
+            }
+            break;
+        case 16:
+            switch (*reinterpret_cast<int*>(_a[1])) {
+            default: *reinterpret_cast<int*>(_a[0]) = -1; break;
+            case 0:
+                *reinterpret_cast<int*>(_a[0]) = qRegisterMetaType< QList<QVariantMap> >(); break;
+            }
+            break;
+        case 17:
             switch (*reinterpret_cast<int*>(_a[1])) {
             default: *reinterpret_cast<int*>(_a[0]) = -1; break;
             case 0:
@@ -312,6 +363,34 @@ void HierarchyTree::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
                 return;
             }
         }
+        {
+            using _t = void (HierarchyTree::*)(QList<QVariantMap> , bool );
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&HierarchyTree::setEntitiesActiveRequested)) {
+                *result = 14;
+                return;
+            }
+        }
+        {
+            using _t = void (HierarchyTree::*)(QList<QVariantMap> );
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&HierarchyTree::addWeaponToEntitiesRequested)) {
+                *result = 15;
+                return;
+            }
+        }
+        {
+            using _t = void (HierarchyTree::*)(QList<QVariantMap> );
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&HierarchyTree::addSensorToEntitiesRequested)) {
+                *result = 16;
+                return;
+            }
+        }
+        {
+            using _t = void (HierarchyTree::*)(QList<QVariantMap> , QString );
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&HierarchyTree::addTeamToEntitiesRequested)) {
+                *result = 17;
+                return;
+            }
+        }
     }
 }
 
@@ -344,13 +423,13 @@ int HierarchyTree::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 17)
+        if (_id < 21)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 17;
+        _id -= 21;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 17)
+        if (_id < 21)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 17;
+        _id -= 21;
     }
     return _id;
 }
@@ -451,6 +530,34 @@ void HierarchyTree::libraryFileNameChanged(const QString & _t1)
 {
     void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
     QMetaObject::activate(this, &staticMetaObject, 13, _a);
+}
+
+// SIGNAL 14
+void HierarchyTree::setEntitiesActiveRequested(QList<QVariantMap> _t1, bool _t2)
+{
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t2))) };
+    QMetaObject::activate(this, &staticMetaObject, 14, _a);
+}
+
+// SIGNAL 15
+void HierarchyTree::addWeaponToEntitiesRequested(QList<QVariantMap> _t1)
+{
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    QMetaObject::activate(this, &staticMetaObject, 15, _a);
+}
+
+// SIGNAL 16
+void HierarchyTree::addSensorToEntitiesRequested(QList<QVariantMap> _t1)
+{
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    QMetaObject::activate(this, &staticMetaObject, 16, _a);
+}
+
+// SIGNAL 17
+void HierarchyTree::addTeamToEntitiesRequested(QList<QVariantMap> _t1, QString _t2)
+{
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t2))) };
+    QMetaObject::activate(this, &staticMetaObject, 17, _a);
 }
 QT_WARNING_POP
 QT_END_MOC_NAMESPACE

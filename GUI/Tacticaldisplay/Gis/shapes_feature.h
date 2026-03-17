@@ -64,6 +64,15 @@ public:
     void scriptAddLinePoint(const QPointF& geoPos);
     void scriptFinishLine();
 
+    // Script based circle by amjad
+    void drawCircle(const QPointF& geoPos, float radiusDeg);
+
+    // Script update for radius by amjad
+    void updateCircleRadius(MeshEntry* entry, float radiusDeg);
+
+    // Script rectangle by amjad
+    void drawRectangle(const QPointF& geoPos, float widthDeg, float heightDeg);
+
     // Helper functions
     static bool isPointNearLineSegment(const QPointF& p, const QPointF& v1, const QPointF& v2, qreal tolerance);
     int getPolygonCounter() { return m_polygonCounter++; }

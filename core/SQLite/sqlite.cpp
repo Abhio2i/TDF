@@ -97,23 +97,23 @@ void SQLite::applyPragmas()
 // }
 void SQLite::dbInit()
 {
-   qDebug() << "Database Init";
+    qDebug() << "Database Init";
 
-   QString buildPath = QCoreApplication::applicationDirPath();
-   QString dbPath = buildPath + "/simulation.db";
+    QString buildPath = QCoreApplication::applicationDirPath();
+    QString dbPath = buildPath + "/simulation.db";
 
-   close();
+    close();
 
-   if (QFile::exists(dbPath)) {
-       QFile::remove(dbPath);
-       qDebug() << "Old DB removed";
-   }
+    if (QFile::exists(dbPath)) {
+        QFile::remove(dbPath);
+        qDebug() << "Old DB removed";
+    }
 
-   if (!open(dbPath))
-       return;
-   qDebug()<<"DB Location"<<dbPath;
-   createTables();
-   //insertEntities();
+    if (!open(dbPath))
+        return;
+    qDebug()<<"DB Location"<<dbPath;
+    createTables();
+    //insertEntities();
 }
 
 void SQLite::dbConnect()
@@ -138,16 +138,59 @@ void SQLite::dbConnect()
 //
 void SQLite::createTables()
 {
-    /*exec(R"(
-        CREATE TABLE entities (
-            indexNo  INTEGER PRIMARY KEY AUTOINCREMENT,
+    /*
+*       struct ProfileCategoriesDetails {
+*           int       index;
+*           QString   name;
+*           QString   ID;
+*       };
+*       using ProfileCategoriesDetailsList = std::vector<ProfileCategoriesDetails>;
+*/
+
+    exec(R"(
+        CREATE TABLE profileCategoriesDetails  (
+            indexNo  INTEGER PRIMARY KEY,
             name     TEXT,
-            id       TEXT UNIQUE,
-            profile  BOOLEAN,
-            created  BIGINT,
-            deleted  BIGINT
+            id       TEXT UNIQUE
         )
-    )");*/
+    )");
+    /*
+ *
+ *        enum Operation {
+*           CREATE = true,
+*           DELETE = false,
+*       };
+*
+*       struct ProfileCategoriesCRUD {
+*           int       index;
+*           Operation operation;
+*       };
+*       using ProfileCategoriesCRUDList = std::vector<ProfileCategoriesCRUD>;
+*
+*/
+    exec(R"(
+        CREATE TABLE ProfileCategoriesCRUD  (
+            operation   INTEGER,
+            indexNo     INTEGER PRIMARY KEY,
+            frameIndex  INTEGER,
+            FOREIGN KEY (indexNo)    REFERENCES profileCategoriesDetails(indexNo),
+            FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
+        )
+    )");
+
+
+
+    /*
+*
+*
+*       struct EntitiesDetails {
+*           int index;
+*           QString name;
+*           QString parentID;
+*           QString ID;
+*       };
+*       using EntitiesDetailsList = std::vector<EntitiesDetails>;
+*/
 
     exec(R"(
         CREATE TABLE   frameMap (
@@ -202,24 +245,99 @@ void SQLite::createTables()
         )
     )");
 
-
-    /*exec(R"(
-        CREATE TABLE frames (
-            changeNo    INTEGER PRIMARY KEY AUTOINCREMENT,
-            longitude   DOUBLE,
-            latitude    DOUBLE,
-            altitude    DOUBLE,
-            heading     DOUBLE,
-            turn_radius FLOAT,
-            curr_speed  FLOAT,
-            climb_rate  FLOAT,
-            frameIndex  INTEGER,
+    /*
+ *       struct EntitiesMeshRenderer2D {
+ *           int index;
+ *           bool Active;
+ *           QString Sprite;
+ *           QString Texture;
+ *           QString color;
+ *           QString color2;
+ *       };
+ *       using EntitiesMeshRenderer2DList = std::vector<EntitiesMeshRenderer2D>;
+ */
+    exec(R"(
+        CREATE TABLE entitiesMeshRenderer2D  (
             indexNo     INTEGER,
-            FOREIGN KEY (indexNo) REFERENCES entities(indexNo),
+            frameIndex  INTEGER,
+            Active      BOOLEAN,
+            Sprite      TEXT,
+            Texture     TEXT,
+            color       TEXT,
+            color2      TEXT,
+            FOREIGN KEY (indexNo)    REFERENCES entitiesDetails(indexNo),
             FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
         )
-    )");*/
+    )");
+    /*
+ *
+ *       struct EntitiesMeshRenderer2DCRUD {
+ *           int       index;
+ *           Operation operation;
+ *       };
+ *       using EntitiesMeshRenderer2DCRUDList = std::vector<EntitiesMeshRenderer2DCRUD>;
+ */
+    exec(R"(
+        CREATE TABLE entitiesMeshRenderer2DCRUD  (
+            operation   INTEGER,
+            indexNo     INTEGER,
+            frameIndex  INTEGER,
+            FOREIGN KEY (indexNo)    REFERENCES entitiesDetails(indexNo),
+            FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
+        )
+    )");
 
+    /*
+ *      struct TrajectoryWaypoint {
+ *          int    index;
+ *          double geo_latitude;
+ *          double geo_longitude;
+ *          double geo_altitude;
+ *          double geo_Heading;
+ *          float  vector_x;
+ *          float  vector_y;
+ *          float  vector_z;
+ *          double speed     = 0;
+ *          bool   sensor    = false;
+ *          bool   formation = false;
+ *      };
+ */
+    exec(R"(
+        CREATE TABLE trajectoryWaypoint  (
+            indexNo        INTEGER,
+            waypoint_index INTEGER,
+            frameIndex    INTEGER,
+            geo_latitude  DOUBLE,
+            geo_longitude DOUBLE,
+            geo_altitude  DOUBLE,
+            geo_Heading   DOUBLE,
+            vector_x      FLOAT,
+            vector_y      FLOAT,
+            vector_z      FLOAT,
+            speed         DOUBLE,
+            sensor        BOOLEAN,
+            formation     BOOLEAN,
+            FOREIGN KEY (indexNo)    REFERENCES entitiesDetails(indexNo),
+            FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
+        )
+    )");
+
+    /*
+ *      struct EntitiesTrajectoryCRUD {
+ *          int index;
+ *          Operation operation;
+ *      };
+ */
+
+    exec(R"(
+        CREATE TABLE entitiesTrajectoryCRUD  (
+            operation   INTEGER,
+            indexNo     INTEGER,
+            frameIndex  INTEGER,
+            FOREIGN KEY (indexNo)    REFERENCES entitiesDetails(indexNo),
+            FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
+        )
+    )");
 
 }
 
@@ -235,11 +353,11 @@ void SQLite::createTables()
  */
 void SQLite::receivePayLoad(PayLoad m_payLoad){
     QString m_str = QString(
-            "Receive_PayLoad => "
-            "TimeStamo: %1 ,"
-           "Frame Index: %2 ,").arg(
-            QString::number(m_payLoad.timestamp),
-            QString::number(m_payLoad.frameIndex));
+                        "Receive_PayLoad => "
+                        "TimeStamo: %1 ,"
+                        "Frame Index: %2 ,").arg(
+                            QString::number(m_payLoad.timestamp),
+                            QString::number(m_payLoad.frameIndex));
     QString p = "PASS";
     QString f = "FAIL";
 
@@ -251,8 +369,26 @@ void SQLite::receivePayLoad(PayLoad m_payLoad){
         m_str += f;
     }
 
+    m_str += "\n  Profile_Categories_Details: ";
+    if((m_payLoad.profileCategoriesDetailsList.size() > 0) &&
+        (insertProfileCategoriesDetails(m_payLoad.profileCategoriesDetailsList))){
+        m_str += p;
+    }else{
+        m_str += f;
+    }
+
+    m_str += "\n  Profile_Categories_CRUD: ";
+    if((m_payLoad.profileCategoriesCRUDList.size() > 0) &&
+        (insertProfileCategoriesCRUD(m_payLoad.frameIndex,
+                                     m_payLoad.profileCategoriesCRUDList)))
+    {
+        m_str += p;
+    }else{
+        m_str += f;
+    }
+
     m_str += "\n  Insert_Entities_Details: ";
-    if((m_payLoad.entitiesDetailsList.size() > 0) && (insertEntitiesDetails(m_payLoad.entitiesDetailsList)))                      {
+    if((m_payLoad.entitiesDetailsList.size() > 0) && (insertEntitiesDetails(m_payLoad.entitiesDetailsList))){
         m_str += p;
     }else{
         m_str += f;
@@ -264,6 +400,29 @@ void SQLite::receivePayLoad(PayLoad m_payLoad){
     }else{
         m_str += f;
     }
+    /*
+ *      using EntitiesMeshRenderer2DCRUDList = std::vector<EntitiesMeshRenderer2DCRUD>;
+ *      using EntitiesMeshRenderer2DList = std::vector<EntitiesMeshRenderer2D>;
+ */
+    m_str += "\n  Mesh Renderer List: ";
+    if((m_payLoad.entitiesMeshRenderer2DList.size() > 0) &&
+        (insertEntitiesMeshRenderer2D(m_payLoad.frameIndex,
+                                      m_payLoad.entitiesMeshRenderer2DList))){
+        m_str += p;
+    }else{
+        m_str += f;
+    }
+
+    m_str += "\n  Mesh Renderer CRUD: ";
+    if((m_payLoad.entitiesMeshRenderer2DCRUDList.size() > 0) &&
+        (insertEntitiesMeshRenderer2DCRUD(m_payLoad.frameIndex,
+                                          m_payLoad.entitiesMeshRenderer2DCRUDList))){
+        m_str += p;
+    }else{
+        m_str += f;
+    }
+
+
 
     m_str += "\n  Insert_Entities_Updated: ";
     if((m_payLoad.entitiesUpdatedList.size() > 0) && (insertEntitiesUpdated(m_payLoad.frameIndex, m_payLoad.entitiesUpdatedList))){
@@ -279,7 +438,23 @@ void SQLite::receivePayLoad(PayLoad m_payLoad){
         m_str += f;
     }
 
-    qDebug()<<m_str;
+
+    m_str += "\n  Trajectory List: ";
+    if((m_payLoad.entitiesTrajectoryList.size() > 0) && (insertEntitiesTrajectory(m_payLoad.frameIndex, m_payLoad.entitiesTrajectoryList))){
+        m_str += p;
+    }else{
+        m_str += f;
+    }
+
+    m_str += "\n  Trajectory CRUD: ";
+    if((m_payLoad.entitiesTrajectoryCRUDList.size() > 0) && (insertEntitiesTrajectoryCRUD(m_payLoad.frameIndex, m_payLoad.entitiesTrajectoryCRUDList))){
+        m_str += p;
+    }else{
+        m_str += f;
+    }
+
+
+    debug(m_str,D_GetPayLoad);
 }
 
 bool SQLite::insertFrameMap(int frameIndex, qint64 timestamp)
@@ -293,7 +468,7 @@ bool SQLite::insertFrameMap(int frameIndex, qint64 timestamp)
     query.prepare(
         "INSERT INTO frameMap (frameIndex, timestamp) "
         "VALUES (:frameIndex, :timestamp)"
-    );
+        );
 
     query.bindValue(":frameIndex", frameIndex);
     query.bindValue(":timestamp", timestamp);
@@ -304,6 +479,69 @@ bool SQLite::insertFrameMap(int frameIndex, qint64 timestamp)
     }
     return true;
 }
+
+/*
+*       CREATE TABLE profileCategoriesDetails  (
+*                   indexNo  INTEGER PRIMARY KEY,
+*                   name     TEXT,
+*                   id       TEXT UNIQUE
+*               )
+*/
+bool SQLite::insertProfileCategoriesDetails(
+    ProfileCategoriesDetailsList m_profileCategoriesDetailsList)
+{
+    QSqlQuery query(database());
+    query.prepare(R"(
+        INSERT INTO profileCategoriesDetails
+        (indexNo, name, id)
+        VALUES (:indexNo, :name, :id)
+       )");
+    for(auto i : m_profileCategoriesDetailsList){
+        query.bindValue(":indexNo"  ,i.index);
+        query.bindValue(":name"     ,i.name);
+        query.bindValue(":id"       ,i.ID);
+        if (!query.exec()) {
+            qCritical() << "Insertion Insert Profile Categories Details failed:"
+                        << query.lastError().text();
+            return false;
+        } else {
+            qDebug() << "Insertion Insert Profile Categories Details successful!";
+        }
+    }
+    return true;
+}
+/*
+*        CREATE TABLE ProfileCategoriesCRUD  (
+*            operation   INTEGER,
+*            indexNo     INTEGER PRIMARY KEY,
+*            frameIndex  INTEGER,
+*            FOREIGN KEY (indexNo)    REFERENCES profileCategoriesDetails(indexNo),
+*            FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
+*        )
+*/
+bool SQLite::insertProfileCategoriesCRUD(int frameIndex,
+                                         ProfileCategoriesCRUDList m_profileCategoriesCRUDList)
+{
+    QSqlQuery query(database());
+    query.prepare(R"(
+        INSERT INTO ProfileCategoriesCRUD
+        ( operation, frameIndex, indexNo)
+        VALUES ( :operation, :frameIndex, :indexNo)
+        )");
+    for(auto i : m_profileCategoriesCRUDList){
+        query.bindValue(":operation"   ,i.operation);
+        query.bindValue(":frameIndex"  ,frameIndex);
+        query.bindValue(":indexNo"     ,i.index);
+        if (!query.exec()) {
+            qCritical() << "Insertion Insert Entities Creation failed:" << query.lastError().text();
+            return false;
+        } else {
+            qDebug() << "Insertion Insert Entities Creation successful!";
+        }
+    }
+    return true;
+}
+
 bool SQLite::insertEntitiesDetails(EntitiesDetailsList m_entitiesDetailsList)
 {
     QSqlQuery query(database());
@@ -312,23 +550,12 @@ bool SQLite::insertEntitiesDetails(EntitiesDetailsList m_entitiesDetailsList)
         (indexNo, name, id, parentID, profile)
         VALUES (:indexNo, :name, :id, :parentID, :profile)
        )");
-    for(auto i : m_entitiesDetailsList){
+    for(EntitiesDetails i : m_entitiesDetailsList){
         query.bindValue(":indexNo"  ,i.index);
         query.bindValue(":name"     ,i.name);
         query.bindValue(":id"       ,i.ID);
         query.bindValue(":parentID" ,i.parentID);
         query.bindValue(":profile" ,true);
-        // str = QString(
-        //           "Index No: %1  "
-        //           "Name: %2  "
-        //           "ID: %3  "
-        //           "Parent ID: %4  "
-        //           "Profile: %5  ").arg(
-        //         QString::number(i.index),
-        //         i.name,
-        //         i.ID,
-        //         i.parentID,
-        //         QString::number(true));
 
         if (!query.exec()) {
             qCritical() << "Insertion Insert Entities Details failed:" << query.lastError().text();
@@ -437,6 +664,186 @@ bool SQLite::insertEntitiesDeleted(int frameIndex, EntitiesDeletedList m_entitie
     return true;
 }
 
+/*
+ *        CREATE TABLE entitiesMeshRenderer2DCRUD  (
+ *            operation   INTEGER,
+ *            indexNo     INTEGER,
+ *            frameIndex  INTEGER,
+ *            FOREIGN KEY (indexNo)    REFERENCES entitiesDetails(indexNo),
+ *            FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
+ *        )
+ */
+bool SQLite::insertEntitiesMeshRenderer2DCRUD(int frameIndex,
+                                              EntitiesMeshRenderer2DCRUDList m_entitiesMeshRenderer2DCRUDList)
+{
+    QSqlQuery query(database());
+    query.prepare(R"(
+        INSERT INTO entitiesMeshRenderer2DCRUD
+        (operation, indexNo, frameIndex)
+        VALUES (:operation, :indexNo, :frameIndex)
+        )");
+    for(auto i : m_entitiesMeshRenderer2DCRUDList){
+        query.bindValue(":operation"   ,i.operation);
+        query.bindValue(":indexNo"     ,i.index);
+        query.bindValue(":frameIndex"  ,frameIndex);
+        if (!query.exec()) {
+            qCritical() << "Insertion Trajectory CRUD failed:" << query.lastError().text();
+            return false;
+        } else {
+            qDebug() << "Insertion Trajectory CRUD successful!";
+        }
+    }
+    return true;
+}
+
+
+/*
+ *      CREATE TABLE entitiesMeshRenderer2D  (
+ *                  indexNo     INTEGER,
+ *                  frameIndex  INTEGER,
+ *                  Active      BOOLEAN,
+ *                  Sprite      TEXT,
+ *                  Texture     TEXT,
+ *                  color       TEXT,
+ *                  color2      TEXT,
+ *                  FOREIGN KEY (indexNo)    REFERENCES entitiesDetails(indexNo),
+ *                  FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
+ *              )
+ */
+bool SQLite::insertEntitiesMeshRenderer2D(int frameIndex,
+                                          EntitiesMeshRenderer2DList m_entitiesMeshRenderer2DList)
+{
+    QSqlQuery query(database());
+    query.prepare(R"(
+        INSERT INTO entitiesMeshRenderer2D
+        (indexNo, frameIndex,
+        Active, Sprite, Texture, color, color2)
+        VALUES (:indexNo , :frameIndex,
+        :Active, :Sprite, :Texture, :color, :color2)
+        )");
+    for(auto emr = m_entitiesMeshRenderer2DList.begin();
+         emr != m_entitiesMeshRenderer2DList.end();
+         ++emr){
+        query.bindValue(":indexNo"   ,(*emr).index  );
+        query.bindValue(":frameIndex",frameIndex );
+        query.bindValue(":Active"    ,(*emr).Active );
+        query.bindValue(":Sprite"    ,(*emr).Sprite );
+        query.bindValue(":Texture"   ,(*emr).Texture);
+        query.bindValue(":color"     ,(*emr).color  );
+        query.bindValue(":color2"    ,(*emr).color2 );
+        if (!query.exec()) {
+            qCritical() << "Insertion Trajectory CRUD failed:" << query.lastError().text();
+            return false;
+        } else {
+            qDebug() << "Insertion Trajectory CRUD successful!";
+        }
+    }
+    return true;
+}
+
+
+
+
+/*
+ *  CREATE TABLE trajectoryWaypoint  (
+ *      indexNo       INTEGER,
+ *      frameIndex    INTEGER,
+ *      geo_latitude  DOUBLE,
+ *      geo_longitude DOUBLE,
+ *      geo_altitude  DOUBLE,
+ *      geo_Heading   DOUBLE,
+ *      vector_x      FLOAT,
+ *      vector_y      FLOAT,
+ *      vector_z      FLOAT,
+ *      speed         DOUBLE,
+ *      sensor        BOOLEAN,
+ *      formation     BOOLEAN,
+ *      FOREIGN KEY (indexNo)    REFERENCES entitiesDetails(indexNo),
+ *      FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
+ *  )
+ *
+ *
+ */
+bool SQLite::insertEntitiesTrajectory
+    (int frameIndex,EntitiesTrajectoryList m_entitiesTrajectoryList)
+{
+    QSqlQuery query(database());
+    query.prepare(R"(
+        INSERT INTO trajectoryWaypoint
+        (indexNo, waypoint_index, frameIndex,
+        geo_latitude, geo_longitude,
+        geo_altitude, geo_Heading,
+        vector_x, vector_y, vector_z,
+        speed, sensor, formation
+        )
+        VALUES (:indexNo, :index,:frameIndex,
+        :geo_latitude, :geo_longitude,
+        :geo_altitude, :geo_Heading,
+        :vector_x, :vector_y, :vector_z,
+        :speed, :sensor, :formation)
+       )");
+    for(auto etl  = m_entitiesTrajectoryList.begin();
+         etl !=  m_entitiesTrajectoryList.end(); ++etl){
+        for(auto tw : (*etl).Trajectories){
+            query.bindValue(":indexNo"      ,(*etl).index);
+            query.bindValue(":index"      ,  tw.index);
+            query.bindValue(":frameIndex"   ,frameIndex);
+            query.bindValue(":geo_latitude" ,tw.geo_latitude);
+            query.bindValue(":geo_longitude",tw.geo_longitude);
+            query.bindValue(":geo_altitude" ,tw.geo_altitude);
+            query.bindValue(":geo_Heading"  ,tw.geo_Heading);
+            query.bindValue(":vector_x"     ,tw.vector_x);
+            query.bindValue(":vector_y"     ,tw.vector_y);
+            query.bindValue(":vector_z"     ,tw.vector_z);
+            query.bindValue(":speed"        ,tw.speed);
+            query.bindValue(":sensor"       ,tw.sensor);
+            query.bindValue(":formation    ",tw.formation);
+            if (!query.exec()) {
+                qCritical() << "Insertion Trajectory Waypoint failed:"
+                            << query.lastError().text();
+                return false;
+            } else {
+                qDebug() << "Insertion Trajectory Waypoint successful!";
+            }
+        }
+    }
+    return true;
+}
+/*
+ *        CREATE TABLE entitiesTrajectoryCRUD  (
+ *            operation   INTEGER,
+ *            indexNo     INTEGER,
+ *            frameIndex  INTEGER,
+ *            FOREIGN KEY (indexNo)    REFERENCES entitiesDetails(indexNo),
+ *            FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
+ *        )
+ */
+bool SQLite::insertEntitiesTrajectoryCRUD
+    (int frameIndex,
+     EntitiesTrajectoryCRUDList m_entitiesTrajectoryCRUDList)
+{
+    QSqlQuery query(database());
+    query.prepare(R"(
+        INSERT INTO entitiesTrajectoryCRUD
+        (operation, indexNo, frameIndex)
+        VALUES (:operation, :indexNo, :frameIndex)
+        )");
+    for(auto i : m_entitiesTrajectoryCRUDList){
+        query.bindValue(":operation"   ,i.operation);
+        query.bindValue(":indexNo"     ,i.index);
+        query.bindValue(":frameIndex"  ,frameIndex);
+        if (!query.exec()) {
+            qCritical() << "Insertion Trajectory CRUD failed:" << query.lastError().text();
+            return false;
+        } else {
+            qDebug() << "Insertion Trajectory CRUD successful!";
+        }
+    }
+    return true;
+}
+
+
+
 
 
 /*******************************************
@@ -460,6 +867,30 @@ void SQLite::setPayLoad(PayLoad &payLoad)
                    "\t Entities Details List Size: %1 \n")
                    .arg(QString::number(payLoad.entitiesDetailsList.size()));
     }
+    if(payLoad.entitiesTrajectoryList.empty()){
+        setProfileCategoriesDetails(payLoad.profileCategoriesDetailsList);
+        str += QString(
+                   "\t Entities Trajectory List Size: %1 \n")
+                   .arg(QString::number(payLoad.entitiesTrajectoryList.size()));
+    }
+    if(payLoad.profileCategoriesCRUDList.empty()){
+        setProfileCategoriesCRUD(payLoad.frameIndex, payLoad.profileCategoriesCRUDList);
+        str += QString(
+                   "\t Profile Categories CRUD List Size: %1 \n")
+                   .arg(QString::number(payLoad.profileCategoriesCRUDList.size()));
+    }
+    if(payLoad.profileCategoriesDetailsList.empty()){
+        setProfileCategoriesDetails(payLoad.profileCategoriesDetailsList);
+        str += QString(
+                   "\t Profile Categories Details List Size: %1 \n")
+                   .arg(QString::number(payLoad.profileCategoriesDetailsList.size()));
+    }
+    if(payLoad.profileCategoriesCRUDList.empty()){
+        setProfileCategoriesCRUD(payLoad.frameIndex, payLoad.profileCategoriesCRUDList);
+        str += QString(
+                   "\t Profile Categories CRUD List Size: %1 \n")
+                   .arg(QString::number(payLoad.profileCategoriesCRUDList.size()));
+    }
     if(payLoad.entitiesCreatedList.empty()){
         setEntitiesCreatedList(payLoad.frameIndex, payLoad.entitiesCreatedList);
         str += QString(
@@ -477,6 +908,30 @@ void SQLite::setPayLoad(PayLoad &payLoad)
         str += QString(
                    "\t Entities Deleted List Size: %1 \n")
                    .arg(QString::number(payLoad.entitiesDeletedList.size()));
+    }
+    if(payLoad.entitiesMeshRenderer2DList.empty()){
+        setEntitiesMeshRenderer2D(payLoad.frameIndex,    payLoad.entitiesMeshRenderer2DList);
+        str += QString(
+                   "\t Entities Mesh Renderer List Size: %1 \n")
+                   .arg(QString::number(payLoad.entitiesMeshRenderer2DList.size()));
+    }
+    if(payLoad.entitiesMeshRenderer2DCRUDList.empty()){
+        setEntitiesMeshRenderer2DCRUD(payLoad.frameIndex, payLoad.entitiesMeshRenderer2DCRUDList);
+        str += QString(
+                   "\t Entities Mesh Renderer CRUD List Size: %1 \n")
+                   .arg(QString::number(payLoad.entitiesMeshRenderer2DCRUDList.size()));
+    }
+    if(payLoad.entitiesTrajectoryList.empty()){
+        setEntitiesTrajectory(payLoad.frameIndex, payLoad.entitiesTrajectoryList);
+        str += QString(
+                   "\t Entities Trajectory List Size: %1 \n")
+                   .arg(QString::number(payLoad.entitiesTrajectoryList.size()));
+    }
+    if(payLoad.entitiesTrajectoryCRUDList.empty()){
+        setEntitiesTrajectoryCRUD(payLoad.frameIndex, payLoad.entitiesTrajectoryCRUDList);
+        str += QString(
+                   "\t Entities Trajectory CRUD List Size: %1 \n")
+                   .arg(QString::number(payLoad.entitiesTrajectoryCRUDList.size()));
     }
     debug(str,D_SetPayLoad);
 }
@@ -510,6 +965,7 @@ void SQLite::setTimeStamp(const int &frameIndex, qint64 &timestamp)
     return;
 }
 
+
 void SQLite::setFrameIndexNDuration(int &maxFrameIndex, qint64 &maxDuration)
 {
     QSqlQuery query(database());
@@ -526,6 +982,71 @@ void SQLite::setFrameIndexNDuration(int &maxFrameIndex, qint64 &maxDuration)
         maxDuration   = query.value(1).toLongLong();
     }
 }
+/*
+*       CREATE TABLE profileCategoriesDetails  (
+*                   indexNo  INTEGER PRIMARY KEY,
+*                   name     TEXT,
+*                   id       TEXT UNIQUE
+*               )
+*/
+void SQLite::setProfileCategoriesDetails(
+    ProfileCategoriesDetailsList &profileCategoriesDetailsList)
+{
+    QSqlQuery query(database());
+
+    query.prepare(R"(
+        SELECT indexNo, name, id
+        FROM profileCategoriesDetails
+    )");
+
+    if (!query.exec()) {
+        qCritical() << query.lastError().text();
+        return;
+    }
+
+    while (query.next()) {
+        ProfileCategoriesDetails pcd;
+
+        pcd.index    = query.value(0).toInt();
+        pcd.name     = query.value(1).toString();
+        pcd.ID       = query.value(2).toString();   // id column
+        profileCategoriesDetailsList.push_back(pcd);
+    }
+}
+
+/*
+*        CREATE TABLE ProfileCategoriesCRUD  (
+*            operation   INTEGER,
+*            indexNo     INTEGER PRIMARY KEY,
+*            frameIndex  INTEGER,
+*            FOREIGN KEY (indexNo)    REFERENCES profileCategoriesDetails(indexNo),
+*            FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
+*        )
+*/
+void SQLite::setProfileCategoriesCRUD(int &frameIndex,
+                                      ProfileCategoriesCRUDList &profileCategoriesCRUDList)
+{
+    QSqlQuery query(database());
+    query.prepare(R"(
+        SELECT operation, indexNo FROM ProfileCategoriesCRUD
+        WHERE frameIndex = :frameIndex
+    )");
+    query.bindValue(":frameIndex"  ,frameIndex);
+    if (!query.exec()) {
+        qCritical() << query.lastError().text();
+        return;
+    }
+
+    while (query.next()) {
+        ProfileCategoriesCRUD pcc;
+        pcc.operation    = static_cast<Operation>(query.value(0).toInt());
+        pcc.index        = query.value(1).toInt();
+        profileCategoriesCRUDList.push_back(pcc);
+    }
+}
+
+
+
 
 /*
     CREATE TABLE entitiesDetails  (
@@ -665,6 +1186,189 @@ void SQLite::setEntitiesDeletedList(
         EntitiesDeleted entitiesDeleted;
         entitiesDeleted.index    = query.value(0).toInt();
         entitiesDeletedList.push_back(entitiesDeleted);
+    }
+}
+
+/*
+ *      CREATE TABLE entitiesMeshRenderer2D  (
+ *                  indexNo     INTEGER,
+ *                  frameIndex  INTEGER,
+ *                  Active      BOOLEAN,
+ *                  Sprite      TEXT,
+ *                  Texture     TEXT,
+ *                  color       TEXT,
+ *                  color2      TEXT,
+ *                  FOREIGN KEY (indexNo)    REFERENCES entitiesDetails(indexNo),
+ *                  FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
+ *              )
+ */
+
+void SQLite::setEntitiesMeshRenderer2D(const int &frameIndex,
+                                       EntitiesMeshRenderer2DList &entitiesMeshRenderer2DList)
+{
+    QSqlQuery query(database());
+
+    query.prepare(R"(
+        SELECT indexNo, Active, Sprite, Texture, color, color2
+        FROM entitiesMeshRenderer2D
+        WHERE frameIndex = :frameIndex
+    )");
+    query.bindValue(":frameIndex"  ,frameIndex);
+
+    if (!query.exec()) {
+        qCritical() << query.lastError().text();
+        return;
+    }
+
+    while (query.next()) {
+        EntitiesMeshRenderer2D emr;
+        emr.index    = query.value(0).toInt();
+        emr.Active   = query.value(1).toBool();
+        emr.Sprite   = query.value(2).toString();
+        emr.Texture  = query.value(3).toString();
+        emr.color    = query.value(4).toString();
+        emr.color2   = query.value(5).toString();
+        // emr.name     = query.value(1).toString();
+        // emr.ID       = query.value(2).toString();   // id column
+        entitiesMeshRenderer2DList.push_back(emr);
+    }
+}
+
+/*
+ *        CREATE TABLE entitiesMeshRenderer2DCRUD  (
+ *            operation   INTEGER,
+ *            indexNo     INTEGER,
+ *            frameIndex  INTEGER,
+ *            FOREIGN KEY (indexNo)    REFERENCES entitiesDetails(indexNo),
+ *            FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
+ *        )
+ */
+
+void SQLite::setEntitiesMeshRenderer2DCRUD(const int &frameIndex,
+                                           EntitiesMeshRenderer2DCRUDList &entitiesMeshRenderer2DCRUDList)
+{
+    QSqlQuery query(database());
+    query.prepare(R"(
+        SELECT operation, indexNo FROM entitiesMeshRenderer2DCRUD
+        WHERE frameIndex = :frameIndex
+    )");
+    query.bindValue(":frameIndex"  ,frameIndex);
+    if (!query.exec()) {
+        qCritical() << query.lastError().text();
+        return;
+    }
+
+    while (query.next()) {
+        EntitiesMeshRenderer2DCRUD emrc;
+        emrc.operation    = static_cast<Operation>(query.value(0).toInt());
+        emrc.index        = query.value(1).toInt();
+        entitiesMeshRenderer2DCRUDList.push_back(emrc);
+    }
+}
+
+/*
+ *  CREATE TABLE trajectoryWaypoint  (
+ *      indexNo       INTEGER,
+ *      frameIndex    INTEGER,
+ *      geo_latitude  DOUBLE,
+ *      geo_longitude DOUBLE,
+ *      geo_altitude  DOUBLE,
+ *      geo_Heading   DOUBLE,
+ *      vector_x      FLOAT,
+ *      vector_y      FLOAT,
+ *      vector_z      FLOAT,
+ *      speed         DOUBLE,
+ *      sensor        BOOLEAN,
+ *      formation     BOOLEAN,
+ *      FOREIGN KEY (indexNo)    REFERENCES entitiesDetails(indexNo),
+ *      FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
+ *  )
+ */
+
+void SQLite::setEntitiesTrajectory(int &frameIndex,
+                                   EntitiesTrajectoryList &entitiesTrajectoryList)
+{
+    QSqlQuery query(database());
+
+    // query.prepare(R"(
+    //     SELECT indexNo,
+    //     geo_latitude, geo_longitude, geo_altitude, geo_Heading,
+    //     vector_x, vector_y, vector_z,
+    //     speed, sensor, formation
+    //     FROM trajectoryWaypoint
+    //     WHERE frameIndex = :frameIndex
+    //     ORDER BY indexNo ASC, first_name DESC
+    // )");
+    query.prepare(R"(
+            SELECT indexNo, waypoint_index,
+            geo_latitude, geo_longitude, geo_altitude, geo_Heading,
+            vector_x, vector_y, vector_z,
+            speed, sensor, formation
+            FROM trajectoryWaypoint
+            WHERE frameIndex = :frameIndex
+            ORDER BY indexNo ASC, waypoint_index ASC
+    )");
+    query.bindValue(":frameIndex"  ,frameIndex);
+    if (!query.exec()) {
+        qCritical() << query.lastError().text();
+        return;
+    }
+    EntitiesTrajectory et = EntitiesTrajectory();
+    //int prevIndex = -1;
+    std::unordered_map <int ,EntitiesTrajectory> entitiesTrajectoryIndex;
+    while (query.next()) {
+        TrajectoryWaypoint tw;
+        int index        =  query.value(0).toInt();
+        tw.index         =  query.value(1 ).toInt();
+        tw.geo_latitude  =  query.value(2 ).toDouble();   // id column
+        tw.geo_longitude =  query.value(3 ).toDouble();
+        tw.geo_altitude  =  query.value(4 ).toDouble();
+        tw.geo_Heading   =  query.value(5 ).toDouble();
+        tw.vector_x      =  query.value(6 ).toFloat();
+        tw.vector_y      =  query.value(7 ).toFloat();
+        tw.vector_z      =  query.value(8 ).toFloat();
+        tw.speed         =  query.value(9 ).toDouble();
+        tw.sensor        =  query.value(10).toBool();
+        tw.formation     =  query.value(11).toBool();
+        entitiesTrajectoryIndex[index].Trajectories.push_back(tw);
+    }
+
+    for(auto eti = entitiesTrajectoryIndex.begin();
+         eti != entitiesTrajectoryIndex.end();
+         ++eti){
+        EntitiesTrajectory et;
+        et       = (*eti).second;
+        et.index = (*eti).first;
+        entitiesTrajectoryList.push_back(et);
+    }
+}
+/*
+ *        CREATE TABLE entitiesTrajectoryCRUD  (
+ *            operation   INTEGER,
+ *            indexNo     INTEGER,
+ *            frameIndex  INTEGER,
+ *            FOREIGN KEY (indexNo)    REFERENCES entitiesDetails(indexNo),
+ *            FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
+ *        )
+ */
+void SQLite::setEntitiesTrajectoryCRUD(int &frameIndex, EntitiesTrajectoryCRUDList &entitiesTrajectoryCRUDList)
+{
+    QSqlQuery query(database());
+    query.prepare(R"(
+        SELECT operation, indexNo FROM entitiesTrajectoryCRUD
+        WHERE frameIndex = :frameIndex
+    )");
+    query.bindValue(":frameIndex"  ,frameIndex);
+    if (!query.exec()) {
+        qCritical() << query.lastError().text();
+        return;
+    }
+
+    while (query.next()) {
+        EntitiesTrajectoryCRUD etc;
+        etc.operation    = static_cast<Operation>(query.value(0).toInt());
+        etc.index        = query.value(1).toInt();
+        entitiesTrajectoryCRUDList.push_back(etc);
     }
 }
 /*******************************************

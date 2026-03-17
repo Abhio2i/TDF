@@ -33,6 +33,11 @@ public:
     // Set currently selected shape name
     void setCanvasSelectedShape(const std::string &shapeName);
 
+    // Vector layer management
+    void canvasCreateVectorLayer(const std::string &layerName);
+    void canvasSelectLayer(const std::string &layerName);
+    void canvasRenameShape(const std::string &id,const std::string &newName);
+
     // ===== Script Line Tool =====
     void canvasStartLine();   // Begin line drawing mode
     void canvasAddLinePoint(float lon, float lat);   // Add a point to the current line (longitude, latitude)

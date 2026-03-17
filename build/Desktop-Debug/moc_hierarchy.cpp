@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_Hierarchy_t {
-    QByteArrayData data[49];
-    char stringdata0[612];
+    QByteArrayData data[59];
+    char stringdata0[756];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -80,7 +80,17 @@ QT_MOC_LITERAL(44, 558, 24), // "entitySubComponentUpdate"
 QT_MOC_LITERAL(45, 583, 11), // "getJsonData"
 QT_MOC_LITERAL(46, 595, 3), // "obj"
 QT_MOC_LITERAL(47, 599, 6), // "status"
-QT_MOC_LITERAL(48, 606, 5) // "value"
+QT_MOC_LITERAL(48, 606, 5), // "value"
+QT_MOC_LITERAL(49, 612, 19), // "subComponentRenamed"
+QT_MOC_LITERAL(50, 632, 11), // "componentId"
+QT_MOC_LITERAL(51, 644, 9), // "subCompId"
+QT_MOC_LITERAL(52, 654, 7), // "newName"
+QT_MOC_LITERAL(53, 662, 21), // "meshRenderer2DisAdded"
+QT_MOC_LITERAL(54, 684, 15), // "MeshRenderer2D*"
+QT_MOC_LITERAL(55, 700, 14), // "meshRenderer2D"
+QT_MOC_LITERAL(56, 715, 17), // "trajectoryisAdded"
+QT_MOC_LITERAL(57, 733, 11), // "Trajectory*"
+QT_MOC_LITERAL(58, 745, 10) // "trajectory"
 
     },
     "Hierarchy\0Init\0\0profileAddedPointer\0"
@@ -100,7 +110,11 @@ QT_MOC_LITERAL(48, 606, 5) // "value"
     "entityPhysicsRemoved\0entityUpdate\0"
     "entityComponentUpdate\0delta\0"
     "entitySubComponentUpdate\0getJsonData\0"
-    "obj\0status\0value"
+    "obj\0status\0value\0subComponentRenamed\0"
+    "componentId\0subCompId\0newName\0"
+    "meshRenderer2DisAdded\0MeshRenderer2D*\0"
+    "meshRenderer2D\0trajectoryisAdded\0"
+    "Trajectory*\0trajectory"
 };
 #undef QT_MOC_LITERAL
 
@@ -110,41 +124,44 @@ static const uint qt_meta_data_Hierarchy[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-      27,   14, // methods
+      30,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
        0,       // flags
-      27,       // signalCount
+      30,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    0,  149,    2, 0x06 /* Public */,
-       3,    1,  150,    2, 0x06 /* Public */,
-       6,    2,  153,    2, 0x06 /* Public */,
-      10,    2,  158,    2, 0x06 /* Public */,
-      13,    2,  163,    2, 0x06 /* Public */,
-      16,    3,  168,    2, 0x06 /* Public */,
-      18,    3,  175,    2, 0x06 /* Public */,
-      20,    3,  182,    2, 0x06 /* Public */,
-      22,    3,  189,    2, 0x06 /* Public */,
-      24,    1,  196,    2, 0x06 /* Public */,
-      25,    1,  199,    2, 0x06 /* Public */,
-      26,    1,  202,    2, 0x06 /* Public */,
-      27,    3,  205,    2, 0x06 /* Public */,
-      30,    2,  212,    2, 0x06 /* Public */,
-      31,    3,  217,    2, 0x06 /* Public */,
-      32,    2,  224,    2, 0x06 /* Public */,
-      35,    2,  229,    2, 0x06 /* Public */,
-      36,    2,  234,    2, 0x06 /* Public */,
-      37,    2,  239,    2, 0x06 /* Public */,
-      38,    1,  244,    2, 0x06 /* Public */,
-      39,    2,  247,    2, 0x06 /* Public */,
-      40,    1,  252,    2, 0x06 /* Public */,
-      41,    1,  255,    2, 0x06 /* Public */,
-      42,    3,  258,    2, 0x06 /* Public */,
-      44,    3,  265,    2, 0x06 /* Public */,
-      45,    1,  272,    2, 0x06 /* Public */,
-      47,    1,  275,    2, 0x06 /* Public */,
+       1,    0,  164,    2, 0x06 /* Public */,
+       3,    1,  165,    2, 0x06 /* Public */,
+       6,    2,  168,    2, 0x06 /* Public */,
+      10,    2,  173,    2, 0x06 /* Public */,
+      13,    2,  178,    2, 0x06 /* Public */,
+      16,    3,  183,    2, 0x06 /* Public */,
+      18,    3,  190,    2, 0x06 /* Public */,
+      20,    3,  197,    2, 0x06 /* Public */,
+      22,    3,  204,    2, 0x06 /* Public */,
+      24,    1,  211,    2, 0x06 /* Public */,
+      25,    1,  214,    2, 0x06 /* Public */,
+      26,    1,  217,    2, 0x06 /* Public */,
+      27,    3,  220,    2, 0x06 /* Public */,
+      30,    2,  227,    2, 0x06 /* Public */,
+      31,    3,  232,    2, 0x06 /* Public */,
+      32,    2,  239,    2, 0x06 /* Public */,
+      35,    2,  244,    2, 0x06 /* Public */,
+      36,    2,  249,    2, 0x06 /* Public */,
+      37,    2,  254,    2, 0x06 /* Public */,
+      38,    1,  259,    2, 0x06 /* Public */,
+      39,    2,  262,    2, 0x06 /* Public */,
+      40,    1,  267,    2, 0x06 /* Public */,
+      41,    1,  270,    2, 0x06 /* Public */,
+      42,    3,  273,    2, 0x06 /* Public */,
+      44,    3,  280,    2, 0x06 /* Public */,
+      45,    1,  287,    2, 0x06 /* Public */,
+      47,    1,  290,    2, 0x06 /* Public */,
+      49,    3,  293,    2, 0x06 /* Public */,
+      53,    2,  300,    2, 0x06 /* Public */,
+      56,    2,  305,    2, 0x06 /* Public */,
 
  // signals: parameters
     QMetaType::Void,
@@ -174,6 +191,9 @@ static const uint qt_meta_data_Hierarchy[] = {
     QMetaType::Void, QMetaType::QString, QMetaType::QString, QMetaType::QJsonObject,   14,   34,   43,
     QMetaType::Void, QMetaType::QJsonObject,   46,
     QMetaType::Void, QMetaType::QString,   48,
+    QMetaType::Void, QMetaType::QString, QMetaType::QString, QMetaType::QString,   50,   51,   52,
+    QMetaType::Void, QMetaType::QString, 0x80000000 | 54,   14,   55,
+    QMetaType::Void, QMetaType::QString, 0x80000000 | 57,   14,   58,
 
        0        // eod
 };
@@ -211,6 +231,9 @@ void Hierarchy::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, v
         case 24: _t->entitySubComponentUpdate((*reinterpret_cast< QString(*)>(_a[1])),(*reinterpret_cast< QString(*)>(_a[2])),(*reinterpret_cast< QJsonObject(*)>(_a[3]))); break;
         case 25: _t->getJsonData((*reinterpret_cast< const QJsonObject(*)>(_a[1]))); break;
         case 26: _t->status((*reinterpret_cast< QString(*)>(_a[1]))); break;
+        case 27: _t->subComponentRenamed((*reinterpret_cast< QString(*)>(_a[1])),(*reinterpret_cast< QString(*)>(_a[2])),(*reinterpret_cast< QString(*)>(_a[3]))); break;
+        case 28: _t->meshRenderer2DisAdded((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< MeshRenderer2D*(*)>(_a[2]))); break;
+        case 29: _t->trajectoryisAdded((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< Trajectory*(*)>(_a[2]))); break;
         default: ;
         }
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
@@ -249,6 +272,20 @@ void Hierarchy::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, v
             default: *reinterpret_cast<int*>(_a[0]) = -1; break;
             case 1:
                 *reinterpret_cast<int*>(_a[0]) = qRegisterMetaType< Entity* >(); break;
+            }
+            break;
+        case 28:
+            switch (*reinterpret_cast<int*>(_a[1])) {
+            default: *reinterpret_cast<int*>(_a[0]) = -1; break;
+            case 1:
+                *reinterpret_cast<int*>(_a[0]) = qRegisterMetaType< MeshRenderer2D* >(); break;
+            }
+            break;
+        case 29:
+            switch (*reinterpret_cast<int*>(_a[1])) {
+            default: *reinterpret_cast<int*>(_a[0]) = -1; break;
+            case 1:
+                *reinterpret_cast<int*>(_a[0]) = qRegisterMetaType< Trajectory* >(); break;
             }
             break;
         }
@@ -443,6 +480,27 @@ void Hierarchy::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, v
                 return;
             }
         }
+        {
+            using _t = void (Hierarchy::*)(QString , QString , QString );
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&Hierarchy::subComponentRenamed)) {
+                *result = 27;
+                return;
+            }
+        }
+        {
+            using _t = void (Hierarchy::*)(const QString & , MeshRenderer2D * );
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&Hierarchy::meshRenderer2DisAdded)) {
+                *result = 28;
+                return;
+            }
+        }
+        {
+            using _t = void (Hierarchy::*)(const QString & , Trajectory * );
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&Hierarchy::trajectoryisAdded)) {
+                *result = 29;
+                return;
+            }
+        }
     }
 }
 
@@ -475,13 +533,13 @@ int Hierarchy::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 27)
+        if (_id < 30)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 27;
+        _id -= 30;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 27)
+        if (_id < 30)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 27;
+        _id -= 30;
     }
     return _id;
 }
@@ -672,6 +730,27 @@ void Hierarchy::status(QString _t1)
 {
     void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
     QMetaObject::activate(this, &staticMetaObject, 26, _a);
+}
+
+// SIGNAL 27
+void Hierarchy::subComponentRenamed(QString _t1, QString _t2, QString _t3)
+{
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t2))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t3))) };
+    QMetaObject::activate(this, &staticMetaObject, 27, _a);
+}
+
+// SIGNAL 28
+void Hierarchy::meshRenderer2DisAdded(const QString & _t1, MeshRenderer2D * _t2)
+{
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t2))) };
+    QMetaObject::activate(this, &staticMetaObject, 28, _a);
+}
+
+// SIGNAL 29
+void Hierarchy::trajectoryisAdded(const QString & _t1, Trajectory * _t2)
+{
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t2))) };
+    QMetaObject::activate(this, &staticMetaObject, 29, _a);
 }
 QT_WARNING_POP
 QT_END_MOC_NAMESPACE

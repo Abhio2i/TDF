@@ -1,4 +1,3 @@
-
 #ifndef SIMULATION_H
 #define SIMULATION_H
 
@@ -21,12 +20,16 @@
 
 #include "core/Dynamics/Model/aircraft.h"
 #include "simulation_state.h"
+#include "core/Hierarchy/EntityProfiles/weapon.h"
+// Forward declare CanvasWidget to avoid heavy include in header
+class CanvasWidget;
 // #include <core/SharedMemory/sharedmemory.h> //Shared Memory By Himanshu
 
 struct PhysicsComponent {
     std::string name;
     Entity *base = nullptr;
     Platform *platform = nullptr;
+    Weapon *weapon = nullptr;
     Specialzone *zone = nullptr;
     Transform *transform = nullptr;
     DynamicModel *dynamicModel = nullptr;
@@ -80,6 +83,9 @@ public:
     MessageQueue<TransformUpdate> incomingTransforms;
     void applyPendingNetworkUpdates();//by Aman
     void enqueueTransformUpdate(const TransformUpdate& msg);
+
+    // Set canvas so weapons can display blast effects on detonation
+    void setCanvas(CanvasWidget* canvas) { m_canvas = canvas; }
 private:
     void frame();
     int rate = 1;
@@ -109,10 +115,9 @@ signals:
     void sendMode(SimulationStateNS::State status);//Shared Memory By Himanshu
     void sendUpdate();//Recording By Himanshu
 
-
-
 private:
     NetworkManager *networkManager = nullptr;
+    CanvasWidget   *m_canvas       = nullptr;   // for weapon blast effects
     btBroadphaseInterface* broadphase;
     btDefaultCollisionConfiguration* collisionConfiguration;
     btCollisionDispatcher* dispatcher;

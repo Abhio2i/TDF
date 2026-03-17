@@ -1,5 +1,8 @@
 void main(ScriptEngine@ e) {
 
+     // add layer
+    e.canvasCreateVectorLayer("Layer1");
+
     // Plot a point on the canvas
     e.canvasAddPoint("Point", 78.34, 28.59);
 

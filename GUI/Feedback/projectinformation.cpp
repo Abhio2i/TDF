@@ -68,7 +68,7 @@ Feedback::Feedback(QWidget *parent)
     versionTitleLabel->setStyleSheet(ProjectInformationStyles::TitleLabel);
     versionTitleLabel->setMinimumWidth(80);
 
-    QLabel *versionLabel = new QLabel("2.0.92");
+    QLabel *versionLabel = new QLabel("3.0.43");
     QFont versionFont;
     versionFont.setPointSize(11);
     versionFont.setBold(true);

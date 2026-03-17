@@ -206,6 +206,7 @@ void Radio::fromJson(const QJsonObject& obj) {
 
 
 void Radio::scan(){
+    if(!Active)return;
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
     if(!parentEntity) return;
     Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
@@ -234,7 +235,7 @@ void Radio::scan(){
             // horizontal angle (Y axis) : x vs z
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
             //qDebug()<<localPos<<","<<yAngle;
-            if (metredis<Range&&connect) // .position() is assumed
+            if (entity->Active&&metredis<Range&&connect) // .position() is assumed
             {
                 //qDebug()<< "detect";
                 if (detects.count(platform) == 0)

@@ -50,3 +50,5 @@ void OptionTemplate::setupOptionCell(int row, const QString &fullKey, const QJso
     tableWidget->setRowHeight(row, ROW_HEIGHT);
     tableWidget->setCellWidget(row, 1, this);
 }
+
+

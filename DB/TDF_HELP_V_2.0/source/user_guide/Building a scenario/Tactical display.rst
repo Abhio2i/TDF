@@ -1,4 +1,0 @@
-Tactical display
-===============
-
-

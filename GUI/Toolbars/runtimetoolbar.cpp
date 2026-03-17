@@ -62,6 +62,8 @@ RuntimeToolBar::RuntimeToolBar(QWidget *parent) : QToolBar(parent)
     blinkState = false;
     createActions();
     setupToolBar();
+
+
 }
 
 // Initialize toolbar state
@@ -106,7 +108,22 @@ void RuntimeToolBar::createActions()
         setSimulationState(STOPPED);
         emit stopTriggered();
     });
+    // Reset Action
+    resetAction = new QAction(QIcon(withWhiteBg(":/icons/images/reset.png")), tr("Reset"), this);
+    resetAction->setCheckable(false);
+    resetAction->setToolTip(tr("Reset simulation to initial state"));
+    connect(resetAction, &QAction::triggered, this, [this]() {
+        // Stop simulation first
+        setSimulationState(STOPPED);
+        emit stopTriggered();
 
+        // Reset time
+        elapsedSeconds = 0;
+        updateTimeDisplay();
+
+        // Restore snapshot and notify
+        emit resetTriggered();
+    });
     // Next Step Action (Step button)
     nextStepAction = new QAction(QIcon(withWhiteBg(":/icons/images/step.png")), tr("Next Step"), this);
     nextStepAction->setCheckable(false);
@@ -194,7 +211,17 @@ void RuntimeToolBar::createActions()
     QToolButton *speedIcon = new QToolButton(this);
     speedIcon->setIcon(QIcon(withWhiteBg(":/icons/images/speed.png")));
     speedIcon->setToolTip(tr("Adjust Speed"));
-    speedIcon->setStyleSheet(RuntimeToolbarStyles::SpeedIconButton);
+    // speedIcon->setStyleSheet(RuntimeToolbarStyles::SpeedIconButton);
+    speedIcon->setStyleSheet(RuntimeToolbarStyles::SpeedIconButton + R"(
+    QToolTip {
+        background-color: #1A3652;
+        color: white;
+        border: 1px solid #0078D4;
+        border-radius: 3px;
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+)");
     speedIcon->setIconSize(ICON_SIZE);
 
     // Speed slider for adjusting simulation speed
@@ -205,7 +232,17 @@ void RuntimeToolBar::createActions()
     speedSlider->setMaximumWidth(150);
     speedSlider->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     speedSlider->setToolTip(tr("Current Speed: %1").arg(speedSlider->value()));
-    speedSlider->setStyleSheet(RuntimeToolbarStyles::SpeedSlider);
+    // speedSlider->setStyleSheet(RuntimeToolbarStyles::SpeedSlider);
+    speedSlider->setStyleSheet(RuntimeToolbarStyles::SpeedSlider + R"(
+    QToolTip {
+        background-color: #1A3652;
+        color: white;
+        border: 1px solid #0078D4;
+        border-radius: 3px;
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+)");
 
     // Time display label
     timeLabel = new QLabel("00:00:00", this);
@@ -278,7 +315,8 @@ void RuntimeToolBar::setupToolBar()
 
     addAction(startAction);
     addAction(pauseAction);
-    addAction(stopAction);
+    // addAction(stopAction);
+    addAction(resetAction);
     addAction(nextStepAction);
     addAction(timingAction);
     addAction(loggerAction);
@@ -455,4 +493,8 @@ void RuntimeToolBar::updateSimulationStatus()
 {
     blinkState = !blinkState;
     updateStatusDisplay();
+}
+void RuntimeToolBar::storeSnapshot(const QJsonObject& hierarchySnapshot)
+{
+    m_initialSnapshot = hierarchySnapshot;
 }

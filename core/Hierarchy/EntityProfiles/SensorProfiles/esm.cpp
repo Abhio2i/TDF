@@ -8,6 +8,7 @@ ESM::ESM(Hierarchy* h) : Sensor(h) {
 }
 
 void ESM::scan(){
+    if(!Active)return;
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
     if(!parentEntity) return;
     Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
@@ -31,7 +32,7 @@ void ESM::scan(){
             //Radar side
             QVector3D radarlocalpos = platform->transform->inverseTransformPoint(source->matrix->translation());
 
-            if (detectCheck(localPos,metredis) && entity->detectCheck(radarlocalpos,metredis,2) && entity->frequency==frequency) // .position() is assumed
+            if (entity->Active && detectCheck(localPos,metredis) && entity->detectCheck(radarlocalpos,metredis,2) && entity->frequency==frequency) // .position() is assumed
             {
                 //qDebug()<< "detect";
                 if (ewdetects.count(platform) == 0)
@@ -73,7 +74,7 @@ QJsonObject ESM::toJson() const {
     QJsonObject obj;
     obj["id"] = QString::fromStdString(ID);
     obj["name"] = QString::fromStdString(Name);
-    obj["on"] = on;
+    obj["active"] = Active;
     obj["SensorType"] = "ESM";
     QJsonObject defaultObj;
     defaultObj["type"] = "Section";
@@ -88,8 +89,8 @@ void ESM::fromJson(const QJsonObject& obj) {
     if (obj.contains("id")){
         ID = obj["id"].toString().toStdString();
     }
-    if (obj.contains("on"))
-        on = obj["on"].toBool();
+    if (obj.contains("active"))
+        Active = obj["active"].toBool();
     if (obj.contains("default") && obj["default"].isObject()) {
         QJsonObject defaultObj = obj["default"].toObject();
         if (defaultObj.contains("range"))

@@ -82,7 +82,7 @@ private slots:
     void resetLayout();
     void onRecentProjectTriggered();
     void loadRecentProject(const QString& filePath);
-    void onRecentLibraryTriggered();
+    // void onRecentLibraryTriggered();
     // void clearRecentProjects();
 
 signals:
@@ -134,11 +134,8 @@ private:
     int inspectorCount = 0;
     // List of inspectors
     QList<Inspector*> inspectors;
-    // %%% Status Bar %%%
-    // Configure status bar
-    void setupStatusBar();
     // Update status bar message
-    void updateStatusBar(const QString &message);
+    // void updateStatusBar(const QString &message);
     // Status bar widget
     QStatusBar *statusBar;
     Simulation *simulation;

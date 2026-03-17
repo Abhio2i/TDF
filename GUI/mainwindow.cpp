@@ -1,8 +1,9 @@
 //============================================================================
 // File        : mainwindow.cpp
 // Description : Implementation of MainWindow class for the main application
-//               window that manages database, scenario, and runtime editors
-//               with navigation, unsaved changes handling, and editor switching.
+//               window that manages database, scenario, mission, and runtime
+//               editors with navigation, unsaved changes handling, and editor
+//               switching.
 //               Written by Arti Rajpoot
 //============================================================================
 #include "mainwindow.h"
@@ -21,52 +22,53 @@
 #include "Setup.h"
 #include <QProxyStyle>
 #include <QStyleFactory>
+#include <QDesktopServices>
+#include <GUI/statusbar.h>
+
 ScenarioConfig* MainWindow::scenarioconfig = nullptr;
 MainWindow* MainWindow::s_instance = nullptr;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
-
     setStyleSheet(MainWindowStyles::MainWindow);
-        qApp->setStyle(QStyleFactory::create("Fusion"));
+    qApp->setStyle(QStyleFactory::create("Fusion"));
+    QPalette darkPalette;
+    darkPalette.setColor(QPalette::Window, QColor("#0F2636"));
+    darkPalette.setColor(QPalette::WindowText, Qt::white);
+    darkPalette.setColor(QPalette::ToolTipBase, Qt::white);
+    darkPalette.setColor(QPalette::ToolTipText, Qt::white);
+    darkPalette.setColor(QPalette::Text, Qt::white);
+    darkPalette.setColor(QPalette::ButtonText, Qt::white);
+    darkPalette.setColor(QPalette::BrightText, Qt::red);
+    darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
+    darkPalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
+    qApp->setPalette(darkPalette);
+    qApp->setStyleSheet(qApp->styleSheet() + MainWindowStyles::ToolTip);
 
-
-        QPalette darkPalette;
-        darkPalette.setColor(QPalette::Window, QColor("#0F2636"));
-        darkPalette.setColor(QPalette::WindowText, Qt::white);
-        // darkPalette.setColor(QPalette::Base, QColor(25, 25, 25));
-        // darkPalette.setColor(QPalette::AlternateBase, QColor(45, 45, 45));
-        darkPalette.setColor(QPalette::ToolTipBase, Qt::white);
-        darkPalette.setColor(QPalette::ToolTipText, Qt::white);
-        darkPalette.setColor(QPalette::Text, Qt::white);
-        // darkPalette.setColor(QPalette::Button, QColor(45, 45, 45));
-        darkPalette.setColor(QPalette::ButtonText, Qt::white);
-        darkPalette.setColor(QPalette::BrightText, Qt::red);
-        darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
-        darkPalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
-        // darkPalette.setColor(QPalette::HighlightedText, Qt::black);
-        qApp->setPalette(darkPalette);
-        qApp->setStyleSheet(qApp->styleSheet() + MainWindowStyles::ToolTip);
     MainWindow::s_instance = this;
     MainWindow::scenarioconfig = new ScenarioConfig();
+    ApplicationDialog::setGlobalDatabaseEnabled(scenarioconfig->getSavedDatabaseEnabled());
+    ApplicationDialog::setGlobalDatabasePath(scenarioconfig->getSavedDatabasePath());
+
     setWindowTitle("Indigenous Scenario and Sensor Simulation Toolkit");
     if (scenarioconfig && !scenarioconfig->software_version.isEmpty()) {
         setWindowTitle(windowTitle() + QString(" - V_%1").arg(scenarioconfig->software_version));
     }
+
     resize(1900, 1000);
     setupUI();
     setAttribute(Qt::WA_DeleteOnClose);
 }
 
+// CHANGE 16 — Destructor
 MainWindow::~MainWindow()
 {
-    qDebug()<<"Mainwindow delete";
-    //Console::log("Mainwindow delete");
     std::cout << "Mainwindow delete";
     delete databaseEditor;
-    delete scenarioEditor;
-    delete runtimeEditor;
-    // Qt's parent-child relationship handles cleanup
+    if (scenarioEditor) delete scenarioEditor;
+    if (missionEditor)  delete missionEditor;
+    if (runtimeEditor)  delete runtimeEditor;
+     if (analysisEditor)  delete analysisEditor;
 }
 
 void MainWindow::setupUI()
@@ -93,6 +95,67 @@ void MainWindow::setupUI()
     topBarLayout->addWidget(navigationPage);
     topBarLayout->addStretch();
 
+    QPushButton *helpButton = new QPushButton(this);
+    helpButton->setObjectName("helpButton");
+    helpButton->setFixedSize(24, 24);
+    helpButton->setToolTip("Help");
+    helpButton->setCursor(Qt::PointingHandCursor);
+    helpButton->setIcon(QIcon(":/icons/images/help.png"));
+    helpButton->setIconSize(QSize(22, 22));
+    helpButton->setText("");
+    helpButton->setStyleSheet(
+        "QPushButton#helpButton {"
+        "  background-color: transparent;"
+        "  border: none;"
+        "  border-radius: 0px;"
+        "}"
+        "QPushButton#helpButton:hover {"
+        "  background-color: rgba(0, 191, 255, 0.12);"
+        "  border-radius: 4px;"
+        "}"
+        );
+
+    topBarLayout->addWidget(helpButton);
+    topBarLayout->setContentsMargins(0, 0, 10, 0);
+
+    connect(helpButton, &QPushButton::clicked, this, [=]() {
+        QString appDirPath = QApplication::applicationDirPath();
+        qDebug() << "App dir:" << appDirPath;
+
+        QDir dir(appDirPath);
+        QString tdfBasePath;
+
+        while (!dir.isRoot()) {
+            if (dir.dirName().contains("TDF", Qt::CaseInsensitive)) {
+                tdfBasePath = dir.absolutePath();
+                break;
+            }
+            dir.cdUp();
+        }
+
+        if (!tdfBasePath.isEmpty()) {
+            QString helpPath = tdfBasePath + "/DB";
+            QDir dbDir(helpPath);
+            QStringList helpDirs = dbDir.entryList(QStringList() << "TDF_HELP_V_*", QDir::Dirs | QDir::NoDotAndDotDot);
+
+            if (!helpDirs.isEmpty()) {
+                QString htmlFilePath = helpPath + "/" + helpDirs.first() + "/build/html/index.html";
+                qDebug() << "Help file path:" << htmlFilePath;
+
+                if (QFileInfo::exists(htmlFilePath)) {
+                    QUrl url = QUrl::fromLocalFile(htmlFilePath);
+                    QProcess::startDetached("google-chrome", QStringList() << "--new-window" << url.toString());
+                } else {
+                    QMessageBox::warning(this, "Error", "index.html not found!");
+                }
+            } else {
+                QMessageBox::warning(this, "Error", "TDF_HELP_V_* directory not found!");
+            }
+        } else {
+            QMessageBox::warning(this, "Error", "TDF directory not found!");
+        }
+    });
+
     // ========== Main Content Area ==========
     QWidget *centralWidget = new QWidget(this);
     centralWidget->setStyleSheet(MainWindowStyles::CentralWidget);
@@ -101,43 +164,39 @@ void MainWindow::setupUI()
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
-    // Add top bar first
     mainLayout->addWidget(topBarWidget);
 
-    // Add stacked widget for editors
     stackedWidget = new QStackedWidget(centralWidget);
     stackedWidget->setStyleSheet(MainWindowStyles::StackedWidget);
     mainLayout->addWidget(stackedWidget);
 
-    // Create editors
     databaseEditor = new DatabaseEditor(centralWidget);
-    scenarioEditor = new ScenarioEditor(centralWidget);
-    runtimeEditor = new RuntimeEditor(centralWidget);
-
-    // Add editors to stacked widget
     stackedWidget->addWidget(databaseEditor);
-    stackedWidget->addWidget(scenarioEditor);
-    stackedWidget->addWidget(runtimeEditor);
+    scenarioEditor = nullptr;
+    missionEditor  = nullptr;    // CHANGE 1
+    runtimeEditor  = nullptr;
+      analysisEditor = nullptr;
 
     setCentralWidget(centralWidget);
 
-    connect(navigationPage, &NavigationPage::editorRequested, this, &MainWindow::switchEditor);
+    // ========== Status Bar with Save Button ==========
+    m_statusBar = new StatusBar(this);
+    setStatusBar(m_statusBar);
 
+    connect(m_statusBar, &StatusBar::saveRequested, this, [=]() {
+        QMainWindow *currentEditor = getCurrentEditor();
+        if (currentEditor) saveToSameFileWithTDFSupport(currentEditor);
+    });
+
+    connect(navigationPage, &NavigationPage::editorRequested, this, &MainWindow::switchEditor);
     connect(databaseEditor, &DatabaseEditor::unsavedChangesChanged,
             this, &MainWindow::onUnsavedChangesChanged);
-    connect(scenarioEditor, &ScenarioEditor::unsavedChangesChanged,
-            this, &MainWindow::onUnsavedChangesChanged);
-    connect(runtimeEditor, &RuntimeEditor::unsavedChangesChanged,
-            this, &MainWindow::onUnsavedChangesChanged);
-
     stackedWidget->setCurrentWidget(databaseEditor);
     setupMenuBarConnections();
 }
 
 void MainWindow::setupMenuBarConnections()
 {
-
-
     // File Menu Connections
     connect(mainMenuBar, &MenuBar::newFileTriggered, this, [=]() {
         QMainWindow *currentEditor = getCurrentEditor();
@@ -150,6 +209,11 @@ void MainWindow::setupMenuBarConnections()
                 scEditor->hierarchy->fromJson(QJsonObject());
                 HierarchyConnector::instance()->initializeDummyData(scEditor->hierarchy);
                 scEditor->clearUnsavedChanges();
+                // CHANGE 3 — newFileTriggered: MissionEditor branch
+            } else if (MissionEditor* msEditor = qobject_cast<MissionEditor*>(currentEditor)) {
+                msEditor->hierarchy->fromJson(QJsonObject());
+                HierarchyConnector::instance()->initializeDummyData(msEditor->hierarchy);
+                msEditor->clearUnsavedChanges();
             } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(currentEditor)) {
                 rtEditor->hierarchy->fromJson(QJsonObject());
                 HierarchyConnector::instance()->initializeDummyData(rtEditor->hierarchy);
@@ -170,6 +234,9 @@ void MainWindow::setupMenuBarConnections()
             editorType = RecentProjectsManager::ScenarioEditor;
         } else if (qobject_cast<RuntimeEditor*>(currentEditor)) {
             editorType = RecentProjectsManager::RuntimeEditor;
+            // CHANGE 4 — recentProjectTriggered: MissionEditor branch
+        } else if (qobject_cast<MissionEditor*>(currentEditor)) {
+            editorType = RecentProjectsManager::MissionEditor;
         } else {
             return;
         }
@@ -177,29 +244,29 @@ void MainWindow::setupMenuBarConnections()
         RecentProjectsManager::instance()->showRecentProjectsMenu(this, editorType);
     });
 
-    // Load File - Use HierarchyConnector's file operations
+    // Load File
     connect(mainMenuBar->getLoadAction(), &QAction::triggered, this, [=]() {
         QMainWindow *currentEditor = getCurrentEditor();
         if (!currentEditor) return;
 
-        // Delegate to the current editor's file operations
         if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(currentEditor)) {
-            // Call the same file operations as scenario editor
             loadFileWithTDFSupport(dbEditor, RecentProjectsManager::DatabaseEditor, "db", "Database Files (*.db)");
         } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(currentEditor)) {
             loadFileWithTDFSupport(scEditor, RecentProjectsManager::ScenarioEditor, "sc", "Scenario Files (*.sc)");
+            // CHANGE 5 — getLoadAction: MissionEditor branch
+        } else if (MissionEditor* msEditor = qobject_cast<MissionEditor*>(currentEditor)) {
+            loadFileWithTDFSupport(msEditor, RecentProjectsManager::MissionEditor,
+                                   "ms", "Mission Files (*.ms)");
         } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(currentEditor)) {
             loadFileWithTDFSupport(rtEditor, RecentProjectsManager::RuntimeEditor, "rn",
                                    "Runtime & Scenario Files (*.rn *.sc);;Runtime Files (*.rn);;Scenario Files (*.sc);;All Files (*)");
         }
     });
 
-    // Load to Library - Use HierarchyConnector
+    // Load to Library
     connect(mainMenuBar->getLoadToLibraryAction(), &QAction::triggered, this, [=]() {
         QMainWindow *currentEditor = getCurrentEditor();
         if (!currentEditor) return;
-
-        // Use HierarchyConnector's loadToLibrary function
         HierarchyConnector::instance()->loadToLibrary(currentEditor);
     });
 
@@ -213,7 +280,6 @@ void MainWindow::setupMenuBarConnections()
         QString scenarioPath = tdfPath + "/Scenario";
         QString instanceFolderPath = scenarioPath + "/Scerioinstance";
 
-        // Check if Scerioinstance folder exists
         QDir instanceDir(instanceFolderPath);
         if (!instanceDir.exists()) {
             QMessageBox msgBox(this);
@@ -226,7 +292,6 @@ void MainWindow::setupMenuBarConnections()
             return;
         }
 
-        // Get list of .sc files in the instance folder
         QStringList filters;
         filters << "*.sc";
         instanceDir.setNameFilters(filters);
@@ -242,7 +307,6 @@ void MainWindow::setupMenuBarConnections()
             return;
         }
 
-        // Show file selection dialog
         QFileDialog fileDialog(this);
         fileDialog.setStyleSheet(MainWindowStyles::FileDialog);
         QString filePath = QFileDialog::getOpenFileName(
@@ -252,39 +316,79 @@ void MainWindow::setupMenuBarConnections()
             "Scenario Instance Files (*.sc);;All Files (*.*)"
             );
 
-        if (filePath.isEmpty()) {
-            return;
-        }
+        if (filePath.isEmpty()) return;
 
-        // Load the selected file in appropriate editor
         if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(currentEditor)) {
             rtEditor->loadFromJsonFile(filePath);
-            RecentProjectsManager::instance()->addToRecentProjects(filePath,
-                                                                   RecentProjectsManager::RuntimeEditor);
-        }
-        else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(currentEditor)) {
+            RecentProjectsManager::instance()->addToRecentProjects(filePath, RecentProjectsManager::RuntimeEditor);
+        } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(currentEditor)) {
             scEditor->loadFromJsonFile(filePath);
-            RecentProjectsManager::instance()->addToRecentProjects(filePath,
-                                                                   RecentProjectsManager::ScenarioEditor);
+            RecentProjectsManager::instance()->addToRecentProjects(filePath, RecentProjectsManager::ScenarioEditor);
         }
     });
 
-    // Save As - Use TDF folder structure
+    // Save As
     connect(mainMenuBar->getSaveAction(), &QAction::triggered, this, [=]() {
         QMainWindow *currentEditor = getCurrentEditor();
         if (!currentEditor) return;
-
         saveFileWithTDFSupport(currentEditor);
     });
 
-    // Save (same path) - Use TDF folder structure
+    // Save (same path)
     connect(mainMenuBar->getSameSaveAction(), &QAction::triggered, this, [=]() {
         QMainWindow *currentEditor = getCurrentEditor();
         if (!currentEditor) return;
-
         saveToSameFileWithTDFSupport(currentEditor);
     });
+    connect(mainMenuBar->getOpenMissionFileAction(), &QAction::triggered, this, [=]() {
+        QMainWindow *currentEditor = getCurrentEditor();
+        if (!qobject_cast<RuntimeEditor*>(currentEditor)) return;
 
+        QString startPath = ensureTDFSubfolder("Mission");
+        QFileDialog fileDialog(this);
+        fileDialog.setStyleSheet(MainWindowStyles::FileDialog);
+        QString filePath = QFileDialog::getOpenFileName(
+            this,
+            "Open Mission File",
+            startPath,
+            "Mission Files (*.ms);;All Files (*.*)"
+            );
+        if (filePath.isEmpty()) return;
+
+        RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(currentEditor);
+
+        QFile file(filePath);
+        if (!file.open(QIODevice::ReadOnly)) {
+            QMessageBox::warning(this, "Error", "Failed to open mission file:\n" + filePath);
+            return;
+        }
+        QByteArray data = file.readAll();
+        file.close();
+
+        QJsonParseError err;
+        QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+        if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+            QMessageBox::warning(this, "Error", "Invalid mission file format:\n" + err.errorString());
+            return;
+        }
+
+        // ✅ Static variable mein store karo
+        QJsonObject obj = doc.object();
+        RuntimeEditor::s_missionData     = obj;
+        RuntimeEditor::s_missionFilePath = filePath;
+
+        // If missionEditor already exists, load doctrine data into it
+        if (missionEditor) {
+            missionEditor->loadFromJsonFile(filePath);
+        }
+
+        // Show a status bar message confirming load
+        if (m_statusBar)
+            m_statusBar->setFileName(filePath, false);
+
+        RecentProjectsManager::instance()->addToRecentProjects(
+            filePath, RecentProjectsManager::MissionEditor);
+    });
     // Load XML
     connect(mainMenuBar->getLoadXmlAction(), &QAction::triggered, this, [=]() {
         QMainWindow *currentEditor = getCurrentEditor();
@@ -295,13 +399,15 @@ void MainWindow::setupMenuBarConnections()
         QString filePath = QFileDialog::getOpenFileName(this, "Open XML",
                                                         QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
                                                         "XML Files (*.xml)");
-
         if (filePath.isEmpty()) return;
 
         if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(currentEditor)) {
             HierarchyConnector::instance()->openXmlFile(dbEditor->hierarchy, filePath);
         } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(currentEditor)) {
             HierarchyConnector::instance()->openXmlFile(scEditor->hierarchy, filePath);
+            // CHANGE 6 — getLoadXmlAction: MissionEditor branch
+        } else if (MissionEditor* msEditor = qobject_cast<MissionEditor*>(currentEditor)) {
+            HierarchyConnector::instance()->openXmlFile(msEditor->hierarchy, filePath);
         } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(currentEditor)) {
             HierarchyConnector::instance()->openXmlFile(rtEditor->hierarchy, filePath);
         }
@@ -334,8 +440,115 @@ void MainWindow::setupMenuBarConnections()
                         rtEditor->simulation, &Simulation::setFps);
             }
         }
+        connect(&dialog, &ApplicationDialog::databaseSettingsChanged,
+                this, [=](bool enabled, const QString& path) {
+                    if (scenarioconfig) {
+                        scenarioconfig->saveDatabaseSettings(enabled, path);
+                    }
+                });
 
         dialog.exec();
+    });
+
+    // Recent Project Library
+    connect(mainMenuBar, &MenuBar::recentProjectLibraryTriggered, this, [=]() {
+        QMainWindow *currentEditor = getCurrentEditor();
+        if (!currentEditor) return;
+
+        if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(currentEditor)) {
+            connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
+                    this, [=](const QString& filePath, RecentProjectsManager::EditorType type) {
+                        if (type != RecentProjectsManager::LibraryData || filePath.isEmpty()) return;
+
+                        showLoadingOverlay("Loading Database...");
+                        QCoreApplication::processEvents();
+
+                        QFile file(filePath);
+                        if (!file.open(QIODevice::ReadOnly)) {
+                            hideLoadingOverlay();
+                            QMessageBox::warning(this, "Error", "Failed to open library file:\n" + filePath);
+                            return;
+                        }
+
+                        if (m_loadingLabel) { m_loadingLabel->setText("Loading Database..."); QCoreApplication::processEvents(); }
+
+                        QByteArray data = file.readAll();
+                        file.close();
+
+                        QJsonParseError err;
+                        QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+                        if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+                            hideLoadingOverlay();
+                            QMessageBox::warning(this, "Error", "Invalid library file format:\n" + err.errorString());
+                            return;
+                        }
+
+                        QJsonObject obj = doc.object();
+                        if (obj.contains("hierarchy")) {
+                            if (m_loadingLabel) { m_loadingLabel->setText("Loading Database..."); QCoreApplication::processEvents(); }
+                            scEditor->library->clear();
+                            scEditor->library->fromJson(obj["hierarchy"].toObject());
+                            if (m_loadingLabel) { m_loadingLabel->setText("Updating Tree View..."); QCoreApplication::processEvents(); }
+                            if (scEditor->libTreeView) {
+                                scEditor->libTreeView->setLibraryFileName(filePath);
+                                scEditor->libTreeView->getTreeWidget()->update();
+                            }
+                            RecentProjectsManager::instance()->addToRecentProjects(filePath, RecentProjectsManager::LibraryData);
+                        }
+                        hideLoadingOverlay();
+                    }, Qt::UniqueConnection);
+
+            RecentProjectsManager::instance()->showRecentLibraryMenu(this);
+
+        } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(currentEditor)) {
+            connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
+                    this, [=](const QString& filePath, RecentProjectsManager::EditorType type) {
+                        if (type != RecentProjectsManager::LibraryData || filePath.isEmpty()) return;
+
+                        showLoadingOverlay("Loading Database...");
+                        QCoreApplication::processEvents();
+
+                        QFile file(filePath);
+                        if (!file.open(QIODevice::ReadOnly)) {
+                            hideLoadingOverlay();
+                            QMessageBox::warning(this, "Error", "Failed to open library file:\n" + filePath);
+                            return;
+                        }
+
+                        if (m_loadingLabel) { m_loadingLabel->setText("Loading Database..."); QCoreApplication::processEvents(); }
+
+                        QByteArray data = file.readAll();
+                        file.close();
+
+                        QJsonParseError err;
+                        QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+                        if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+                            hideLoadingOverlay();
+                            QMessageBox::warning(this, "Error", "Invalid library file format:\n" + err.errorString());
+                            return;
+                        }
+
+                        QJsonObject obj = doc.object();
+                        if (obj.contains("hierarchy")) {
+                            if (m_loadingLabel) { m_loadingLabel->setText("Loading Database..."); QCoreApplication::processEvents(); }
+                            rtEditor->library->clear();
+                            rtEditor->library->fromJson(obj["hierarchy"].toObject());
+                            if (m_loadingLabel) { m_loadingLabel->setText("Updating Tree View..."); QCoreApplication::processEvents(); }
+                            if (rtEditor->libTreeView) {
+                                rtEditor->libTreeView->setLibraryFileName(filePath);
+                                rtEditor->libTreeView->getTreeWidget()->update();
+                            }
+                            RecentProjectsManager::instance()->addToRecentProjects(filePath, RecentProjectsManager::LibraryData);
+                        }
+                        hideLoadingOverlay();
+                    }, Qt::UniqueConnection);
+
+            RecentProjectsManager::instance()->showRecentLibraryMenu(this);
+
+        } else {
+            QMessageBox::information(this, "Recent Library",
+                                     "Recent Library is only available in Scenario and Runtime editors.");
+        }
     });
 
     // Exit
@@ -350,58 +563,55 @@ QString MainWindow::ensureTDFSubfolder(const QString& subfolderName)
     QString targetPath = tdfPath + "/" + subfolderName;
 
     QDir dir;
-    // Create TDF folder if it doesn't exist
-    if (!dir.exists(tdfPath)) {
-        dir.mkpath(tdfPath);
-    }
-
-    // Create subfolder (Database, Scenario, or Runtime) if it doesn't exist
-    if (!dir.exists(targetPath)) {
-        dir.mkpath(targetPath);
-    }
+    if (!dir.exists(tdfPath))    dir.mkpath(tdfPath);
+    if (!dir.exists(targetPath)) dir.mkpath(targetPath);
 
     return targetPath;
 }
 
-// Helper function to load file with TDF support
+// CHANGE 7 — loadFileWithTDFSupport: MissionEditor subfolder mapping + loading branch
 void MainWindow::loadFileWithTDFSupport(QMainWindow* editor,
                                         RecentProjectsManager::EditorType editorType,
                                         const QString& extension,
                                         const QString& filter)
 {
     QString subfolderName;
-    if (editorType == RecentProjectsManager::DatabaseEditor) {
-        subfolderName = "Database";
-    } else if (editorType == RecentProjectsManager::ScenarioEditor) {
-        subfolderName = "Scenario";
-    } else if (editorType == RecentProjectsManager::RuntimeEditor) {
-        subfolderName = "Runtime";
-    }
+    if      (editorType == RecentProjectsManager::DatabaseEditor) subfolderName = "Database";
+    else if (editorType == RecentProjectsManager::ScenarioEditor) subfolderName = "Scenario";
+    else if (editorType == RecentProjectsManager::MissionEditor)  subfolderName = "Mission";   // CHANGE 7a
+    else if (editorType == RecentProjectsManager::RuntimeEditor)  subfolderName = "Runtime";
 
     QString startPath = ensureTDFSubfolder(subfolderName);
-
-    QFileDialog fileDialog(this);
-    fileDialog.setStyleSheet(MainWindowStyles::FileDialog);
-    QString filePath = QFileDialog::getOpenFileName(this,
-                                                    "Open File",
-                                                    startPath,
-                                                    filter);
+    QString filePath = QFileDialog::getOpenFileName(this, "Open File", startPath, filter);
 
     if (filePath.isEmpty()) return;
 
+    showLoadingOverlay("Loading file...");
+    QCoreApplication::processEvents();
+
     if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(editor)) {
+        if (m_loadingLabel) { m_loadingLabel->setText("Loading Database..."); QCoreApplication::processEvents(); }
         dbEditor->loadFromJsonFile(filePath);
         RecentProjectsManager::instance()->addToRecentProjects(filePath, editorType);
     } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(editor)) {
+        if (m_loadingLabel) { m_loadingLabel->setText("Loading Scenario..."); QCoreApplication::processEvents(); }
         scEditor->loadFromJsonFile(filePath);
         RecentProjectsManager::instance()->addToRecentProjects(filePath, editorType);
+        // CHANGE 7b — MissionEditor loading branch
+    } else if (MissionEditor* msEditor = qobject_cast<MissionEditor*>(editor)) {
+        if (m_loadingLabel) { m_loadingLabel->setText("Loading Mission..."); QCoreApplication::processEvents(); }
+        msEditor->loadFromJsonFile(filePath);
+        RecentProjectsManager::instance()->addToRecentProjects(filePath, editorType);
     } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(editor)) {
+        if (m_loadingLabel) { m_loadingLabel->setText("Loading Runtime..."); QCoreApplication::processEvents(); }
         rtEditor->loadFromJsonFile(filePath);
         RecentProjectsManager::instance()->addToRecentProjects(filePath, editorType);
     }
+
+    hideLoadingOverlay();
 }
 
-// Helper function to save file with TDF support
+
 void MainWindow::saveFileWithTDFSupport(QMainWindow* editor)
 {
     RecentProjectsManager::EditorType editorType;
@@ -414,24 +624,23 @@ void MainWindow::saveFileWithTDFSupport(QMainWindow* editor)
 
     if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(editor)) {
         editorType = RecentProjectsManager::DatabaseEditor;
-        extension = "db";
-        subfolderName = "Database";
-        defaultPrefix = "Database";
+        extension = "db"; subfolderName = "Database"; defaultPrefix = "Database";
         hierarchy = dbEditor->hierarchy;
         lastFilePath = dbEditor->lastSavedFilePath;
     } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(editor)) {
         editorType = RecentProjectsManager::ScenarioEditor;
-        extension = "sc";
-        subfolderName = "Scenario";
-        defaultPrefix = "Scenario";
+        extension = "sc"; subfolderName = "Scenario"; defaultPrefix = "Scenario";
         hierarchy = scEditor->hierarchy;
         tacticalDisplay = scEditor->tacticalDisplay;
         lastFilePath = scEditor->lastSavedFilePath;
-    } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(editor)) {
+    }  else if (MissionEditor* msEditor = qobject_cast<MissionEditor*>(editor)) {
+    editorType = RecentProjectsManager::MissionEditor;
+    extension = "ms"; subfolderName = "Mission"; defaultPrefix = "Mission";
+    lastFilePath = msEditor->lastSavedFilePath;
+
+} else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(editor)) {
         editorType = RecentProjectsManager::RuntimeEditor;
-        extension = "rn";
-        subfolderName = "Runtime";
-        defaultPrefix = "Runtime";
+        extension = "rn"; subfolderName = "Runtime"; defaultPrefix = "Runtime";
         hierarchy = rtEditor->hierarchy;
         tacticalDisplay = rtEditor->tacticalDisplay;
         lastFilePath = rtEditor->lastSavedFilePath;
@@ -443,11 +652,9 @@ void MainWindow::saveFileWithTDFSupport(QMainWindow* editor)
     QString currentDate = QDate::currentDate().toString("yyyy-MM-dd");
     QString defaultFileName;
 
-    // Generate default filename
     if (!lastFilePath.isEmpty()) {
         QFileInfo fileInfo(lastFilePath);
         QString baseName = fileInfo.completeBaseName();
-        // Remove date pattern if present
         QRegularExpression datePattern("_\\d{4}-\\d{2}-\\d{2}$");
         baseName.remove(datePattern);
         defaultFileName = baseName + "_" + currentDate + "." + extension;
@@ -464,51 +671,55 @@ void MainWindow::saveFileWithTDFSupport(QMainWindow* editor)
                                                     "Save File",
                                                     startPath + "/" + defaultFileName,
                                                     filter);
-
     if (filePath.isEmpty()) return;
 
-    // Ensure correct extension
     QFileInfo fileInfo(filePath);
-    if (fileInfo.suffix().isEmpty()) {
-        filePath += "." + extension;
-    }
+    if (fileInfo.suffix().isEmpty()) filePath += "." + extension;
 
-    // Prepare JSON data
+    // Build JSON object to save
     QJsonObject obj;
-    obj["hierarchy"] = hierarchy->toJson();
-    if (tacticalDisplay != nullptr) {
-        obj["tactical"] = tacticalDisplay->canvas->toJson();
+    if (MissionEditor* msEditor = qobject_cast<MissionEditor*>(editor)) {
+        // .ms files save ONLY doctrine panel data, NOT hierarchy
+        if (msEditor->doctrinePanel)
+            obj["doctrine"]       = msEditor->doctrinePanel->toJson();
+        if (msEditor->tacticalPanel)
+            obj["tactical"] = msEditor->tacticalPanel->toJsonBothTeams();
+        // if (msEditor->assumptionsPanel)
+        //     obj["assumptions"]    = msEditor->assumptionsPanel->toJson();
+        // if (msEditor->areaDefinitionPanel)
+        //     obj["areaDefinition"] = msEditor->areaDefinitionPanel->toJson();
+    } else {
+        obj["hierarchy"] = hierarchy->toJson();
+        if (tacticalDisplay != nullptr)
+            obj["tactical"] = tacticalDisplay->canvas->toJson();
     }
 
-    // Save file
     QFile file(filePath);
     if (file.open(QIODevice::WriteOnly)) {
         QJsonDocument doc(obj);
         file.write(doc.toJson(QJsonDocument::Indented));
         file.close();
 
-        // Update last saved path
         if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(editor)) {
             dbEditor->lastSavedFilePath = filePath;
             dbEditor->clearUnsavedChanges();
         } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(editor)) {
             scEditor->lastSavedFilePath = filePath;
             scEditor->clearUnsavedChanges();
+        } else if (MissionEditor* msEditor = qobject_cast<MissionEditor*>(editor)) {
+            msEditor->lastSavedFilePath = filePath;
+            msEditor->clearUnsavedChanges();
         } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(editor)) {
             rtEditor->lastSavedFilePath = filePath;
             rtEditor->clearUnsavedChanges();
-
-            // For Runtime Editor, create scenario instance copy
-            if (editorType == RecentProjectsManager::RuntimeEditor) {
+            if (editorType == RecentProjectsManager::RuntimeEditor)
                 createScenarioInstanceCopy(filePath, obj);
-            }
         }
 
         RecentProjectsManager::instance()->addToRecentProjects(filePath, editorType);
     }
 }
 
-// Helper function to save to same file
 void MainWindow::saveToSameFileWithTDFSupport(QMainWindow* editor)
 {
     RecentProjectsManager::EditorType editorType;
@@ -520,21 +731,22 @@ void MainWindow::saveToSameFileWithTDFSupport(QMainWindow* editor)
 
     if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(editor)) {
         editorType = RecentProjectsManager::DatabaseEditor;
-        expectedExtension = "db";
-        expectedSubfolder = "Database";
+        expectedExtension = "db"; expectedSubfolder = "Database";
         hierarchy = dbEditor->hierarchy;
         filePath = dbEditor->lastSavedFilePath;
     } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(editor)) {
         editorType = RecentProjectsManager::ScenarioEditor;
-        expectedExtension = "sc";
-        expectedSubfolder = "Scenario";
+        expectedExtension = "sc"; expectedSubfolder = "Scenario";
         hierarchy = scEditor->hierarchy;
         tacticalDisplay = scEditor->tacticalDisplay;
         filePath = scEditor->lastSavedFilePath;
-    } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(editor)) {
+       } else if (MissionEditor* msEditor = qobject_cast<MissionEditor*>(editor)) {
+    editorType = RecentProjectsManager::MissionEditor;
+    expectedExtension = "ms"; expectedSubfolder = "Mission";
+    filePath = msEditor->lastSavedFilePath;
+    }else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(editor)) {
         editorType = RecentProjectsManager::RuntimeEditor;
-        expectedExtension = "rn";
-        expectedSubfolder = "Runtime";
+        expectedExtension = "rn"; expectedSubfolder = "Runtime";
         hierarchy = rtEditor->hierarchy;
         tacticalDisplay = rtEditor->tacticalDisplay;
         filePath = rtEditor->lastSavedFilePath;
@@ -542,27 +754,35 @@ void MainWindow::saveToSameFileWithTDFSupport(QMainWindow* editor)
         return;
     }
 
-    // If no previous save, trigger Save As
     if (filePath.isEmpty()) {
         saveFileWithTDFSupport(editor);
         return;
     }
 
-    // Check if file is in correct TDF folder
     QString tdfPath = QDir::homePath() + "/TDF/" + expectedSubfolder;
     QFileInfo fileInfo(filePath);
 
     if (!filePath.startsWith(tdfPath) || fileInfo.suffix().toLower() != expectedExtension) {
-        // File is not in the correct location, trigger Save As
         saveFileWithTDFSupport(editor);
         return;
     }
 
-    // Save to the same file
+    // Build JSON object to save
     QJsonObject obj;
-    obj["hierarchy"] = hierarchy->toJson();
-    if (tacticalDisplay != nullptr) {
-        obj["tactical"] = tacticalDisplay->canvas->toJson();
+    if (MissionEditor* msEditor = qobject_cast<MissionEditor*>(editor)) {
+        // .ms files save ONLY doctrine panel data, NOT hierarchy
+        if (msEditor->doctrinePanel)
+            obj["doctrine"]       = msEditor->doctrinePanel->toJson();
+        if (msEditor->tacticalPanel)
+            obj["tactical"] = msEditor->tacticalPanel->toJsonBothTeams();
+        // if (msEditor->assumptionsPanel)
+        //     obj["assumptions"]    = msEditor->assumptionsPanel->toJson();
+        // if (msEditor->areaDefinitionPanel)
+        //     obj["areaDefinition"] = msEditor->areaDefinitionPanel->toJson();
+    } else {
+        obj["hierarchy"] = hierarchy->toJson();
+        if (tacticalDisplay != nullptr)
+            obj["tactical"] = tacticalDisplay->canvas->toJson();
     }
 
     QFile file(filePath);
@@ -571,47 +791,36 @@ void MainWindow::saveToSameFileWithTDFSupport(QMainWindow* editor)
         file.write(doc.toJson(QJsonDocument::Indented));
         file.close();
 
-        // Clear unsaved changes
         if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(editor)) {
             dbEditor->clearUnsavedChanges();
         } else if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(editor)) {
             scEditor->clearUnsavedChanges();
+        } else if (MissionEditor* msEditor = qobject_cast<MissionEditor*>(editor)) {
+            msEditor->clearUnsavedChanges();
         } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(editor)) {
             rtEditor->clearUnsavedChanges();
-
-            // For Runtime Editor, create scenario instance copy
-            if (editorType == RecentProjectsManager::RuntimeEditor) {
+            if (editorType == RecentProjectsManager::RuntimeEditor)
                 createScenarioInstanceCopy(filePath, obj);
-            }
         }
 
         RecentProjectsManager::instance()->addToRecentProjects(filePath, editorType);
     }
 }
-
 // Helper function to create scenario instance copy
 void MainWindow::createScenarioInstanceCopy(const QString& runtimeFilePath, const QJsonObject& data)
 {
     QFileInfo runtimeFileInfo(runtimeFilePath);
-    if (runtimeFileInfo.suffix().toLower() != "rn") {
-        return;
-    }
+    if (runtimeFileInfo.suffix().toLower() != "rn") return;
 
     QString homeDir = QDir::homePath();
     QString tdfPath = homeDir + "/TDF";
     QString scenarioPath = tdfPath + "/Scenario";
     QString instanceFolderPath = scenarioPath + "/Scerioinstance";
 
-    // Create scenario instance folder if it doesn't exist
     QDir dir;
-    if (!dir.exists(scenarioPath)) {
-        dir.mkpath(scenarioPath);
-    }
-    if (!dir.exists(instanceFolderPath)) {
-        dir.mkpath(instanceFolderPath);
-    }
+    if (!dir.exists(scenarioPath))       dir.mkpath(scenarioPath);
+    if (!dir.exists(instanceFolderPath)) dir.mkpath(instanceFolderPath);
 
-    // Create scenario instance file name
     QString runtimeFileName = runtimeFileInfo.completeBaseName();
     QString scenarioFileName;
 
@@ -625,7 +834,6 @@ void MainWindow::createScenarioInstanceCopy(const QString& runtimeFilePath, cons
 
     QString scenarioFilePath = instanceFolderPath + "/" + scenarioFileName;
 
-    // Save the copy with .sc extension
     QFile scenarioFile(scenarioFilePath);
     if (scenarioFile.open(QIODevice::WriteOnly)) {
         QJsonDocument doc(data);
@@ -634,45 +842,57 @@ void MainWindow::createScenarioInstanceCopy(const QString& runtimeFilePath, cons
     }
 }
 
+// CHANGE 10 — getCurrentEditor: MissionEditor check
 QMainWindow* MainWindow::getCurrentEditor() const
 {
     QWidget *currentWidget = stackedWidget->currentWidget();
     if (currentWidget == databaseEditor)
         return databaseEditor;
-    else if (currentWidget == scenarioEditor)
+    else if (scenarioEditor && currentWidget == scenarioEditor)
         return scenarioEditor;
-    else if (currentWidget == runtimeEditor)
+    else if (missionEditor && currentWidget == missionEditor)   // CHANGE 10
+        return missionEditor;
+    else if (runtimeEditor && currentWidget == runtimeEditor)
         return runtimeEditor;
+    else if (analysisEditor  && currentWidget == analysisEditor)
+        return analysisEditor;
     return nullptr;
 }
 
+// CHANGE 11 — handleUnsavedChanges: MissionEditor blocks
 bool MainWindow::handleUnsavedChanges()
 {
     QMainWindow *currentEditor = getCurrentEditor();
-    if (!currentEditor)
-        return true;
+    if (!currentEditor) return true;
 
     bool hasUnsavedChanges = false;
     QString editorName;
     QString lastSavedFilePath;
 
-    // Check which editor is current and get its unsaved changes status
     if (currentEditor == databaseEditor) {
         hasUnsavedChanges = databaseEditor->hasUnsavedChanges;
         editorName = "Database Editor";
         lastSavedFilePath = databaseEditor->lastSavedFilePath;
-    } else if (currentEditor == scenarioEditor) {
+    } else if (scenarioEditor && currentEditor == scenarioEditor) {
         hasUnsavedChanges = scenarioEditor->hasUnsavedChanges;
         editorName = "Scenario Editor";
         lastSavedFilePath = scenarioEditor->lastSavedFilePath;
-    } else if (currentEditor == runtimeEditor) {
+        // CHANGE 11a — MissionEditor unsaved-changes metadata
+    } else if (missionEditor && currentEditor == missionEditor) {
+        hasUnsavedChanges  = missionEditor->hasUnsavedChanges;
+        editorName         = "Mission Editor";
+        lastSavedFilePath  = missionEditor->lastSavedFilePath;
+    } else if (runtimeEditor && currentEditor == runtimeEditor) {
         hasUnsavedChanges = runtimeEditor->hasUnsavedChanges;
         editorName = "Runtime Editor";
         lastSavedFilePath = runtimeEditor->lastSavedFilePath;
+    }else if (analysisEditor && currentEditor == analysisEditor) {
+        hasUnsavedChanges = analysisEditor->hasUnsavedChanges;
+        editorName = "Analysis Editor";
+        lastSavedFilePath = analysisEditor->lastSavedFilePath;
     }
 
-    if (!hasUnsavedChanges)
-        return true;
+    if (!hasUnsavedChanges) return true;
 
     QMessageBox msgBox(this);
     msgBox.setStyleSheet(MainWindowStyles::MessageBox);
@@ -684,66 +904,56 @@ bool MainWindow::handleUnsavedChanges()
     QMessageBox::StandardButton reply = (QMessageBox::StandardButton)msgBox.exec();
 
     if (reply == QMessageBox::Save) {
+        if (!mainMenuBar) { qWarning() << "Main menu bar not found"; return false; }
 
-        if (!mainMenuBar) {
-            qWarning() << "Main menu bar not found";
-            return false;
-        }
+        QAction *saveAction = lastSavedFilePath.isEmpty()
+                                  ? mainMenuBar->getSaveAction()
+                                  : mainMenuBar->getSameSaveAction();
 
-        // Determine which save action to use
-        QAction *saveAction = nullptr;
-        if (lastSavedFilePath.isEmpty()) {
-            saveAction = mainMenuBar->getSaveAction();
-        } else {
-            saveAction = mainMenuBar->getSameSaveAction();
-        }
+        if (!saveAction) { qWarning() << "Save action not found"; return false; }
 
-        if (!saveAction) {
-            qWarning() << "Save action not found in main menu bar";
-            return false;
-        }
-
-        // Trigger the save action
         saveAction->trigger();
-
-        // Process events to ensure save completes
         QCoreApplication::processEvents();
         QCoreApplication::processEvents();
-
-        // Small delay to ensure file write completes
         QThread::msleep(100);
         QCoreApplication::processEvents();
 
-        // Check if changes were actually saved
         bool stillHasUnsaved = false;
         if (currentEditor == databaseEditor) {
             stillHasUnsaved = databaseEditor->hasUnsavedChanges;
-        } else if (currentEditor == scenarioEditor) {
+        } else if (scenarioEditor && currentEditor == scenarioEditor) {
             stillHasUnsaved = scenarioEditor->hasUnsavedChanges;
-        } else if (currentEditor == runtimeEditor) {
+            // CHANGE 11b — MissionEditor stillHasUnsaved check
+        } else if (missionEditor && currentEditor == missionEditor) {
+            stillHasUnsaved = missionEditor->hasUnsavedChanges;
+        } else if (runtimeEditor && currentEditor == runtimeEditor) {
             stillHasUnsaved = runtimeEditor->hasUnsavedChanges;
+        }else if (analysisEditor && currentEditor == analysisEditor) {
+            stillHasUnsaved = analysisEditor->hasUnsavedChanges;
         }
 
+
         if (stillHasUnsaved) {
-            // Save failed or was cancelled
             QMessageBox::warning(this, "Save Failed",
                                  "Failed to save changes. Please try again or choose Discard.");
             return false;
         }
 
-        // Update window title
         updateWindowTitleForCurrentEditor();
-
-        // Return true to allow switching
         return true;
 
     } else if (reply == QMessageBox::Discard) {
         if (currentEditor == databaseEditor) {
             databaseEditor->clearUnsavedChanges();
-        } else if (currentEditor == scenarioEditor) {
+        } else if (scenarioEditor && currentEditor == scenarioEditor) {
             scenarioEditor->clearUnsavedChanges();
-        } else if (currentEditor == runtimeEditor) {
+            // CHANGE 11c — MissionEditor Discard branch
+        } else if (missionEditor && currentEditor == missionEditor) {
+            missionEditor->clearUnsavedChanges();
+        } else if (runtimeEditor && currentEditor == runtimeEditor) {
             runtimeEditor->clearUnsavedChanges();
+        }else if (analysisEditor && currentEditor == analysisEditor) {
+            analysisEditor->clearUnsavedChanges();
         }
         updateWindowTitleForCurrentEditor();
         return true;
@@ -754,79 +964,224 @@ bool MainWindow::handleUnsavedChanges()
 
 MainWindow* MainWindow::instance()
 {
-    if (!MainWindow::s_instance) {
-    }
     return MainWindow::s_instance;
 }
 
+// CHANGE 12 — switchEditor: new "mission" branch added between "scenario" and "runtime"
 void MainWindow::switchEditor(const QString &editorKey)
 {
-
     if (!handleUnsavedChanges()) {
+        navigationPage->restorePreviousButton();
         return;
     }
-    if (editorKey == "database") {
 
+    if (editorKey == "database") {
+        showLoadingOverlay("Loading Database Editor...");
         mainMenuBar->setLibraryActionsVisible(false);
         stackedWidget->setCurrentWidget(databaseEditor);
+        QCoreApplication::processEvents();
         updateWindowTitleForCurrentEditor();
+        if (m_statusBar)
+            m_statusBar->setFileName(databaseEditor->lastSavedFilePath, databaseEditor->hasUnsavedChanges);
         emit databaseEditor->Activated();
+        hideLoadingOverlay();
     }
+
     else if (editorKey == "scenario") {
+        showLoadingOverlay("Loading Scenario Editor...");
+        if (!scenarioEditor) {
+            m_loadingLabel->setText("Creating Scenario Editor...");
+            QCoreApplication::processEvents();
+            scenarioEditor = new ScenarioEditor(centralWidget());
+            stackedWidget->addWidget(scenarioEditor);
+            connect(scenarioEditor, &ScenarioEditor::unsavedChangesChanged,
+                    this, &MainWindow::onUnsavedChangesChanged);
+        }
 
         mainMenuBar->setLibraryActionsVisible(true);
 
-        // Load library data if needed
+        // PRIORITY 1: Database Editor se library load karo
         if (!databaseEditor->lastSavedFilePath.isEmpty()) {
+            m_loadingLabel->setText("Loading Database...");
+            QCoreApplication::processEvents();
+
             QFile file(databaseEditor->lastSavedFilePath);
             if (file.open(QIODevice::ReadOnly)) {
                 QByteArray data = file.readAll();
                 file.close();
+
                 QJsonParseError err;
                 QJsonDocument doc = QJsonDocument::fromJson(data, &err);
                 if (err.error == QJsonParseError::NoError && doc.isObject()) {
                     QJsonObject obj = doc.object();
                     if (obj.contains("hierarchy")) {
-                        QJsonObject hierarchyData = obj["hierarchy"].toObject();
-                        scenarioEditor->library->fromJson(hierarchyData);
+                        m_loadingLabel->setText("Loading Database...");
+                        QCoreApplication::processEvents();
+                        scenarioEditor->library->fromJson(obj["hierarchy"].toObject());
                         if (scenarioEditor->libTreeView) {
-                            scenarioEditor->libTreeView->setLibraryFileName(databaseEditor->lastSavedFilePath);
-                        }
-                    }
-                }
-            }
-        } else {
-            QString resourcePath = TDFManager::instance()->getAircraftDbPath();
-            QFile jsonFile(resourcePath);
-            if (jsonFile.open(QIODevice::ReadOnly)) {
-                QByteArray data = jsonFile.readAll();
-                jsonFile.close();
-                QJsonParseError parseError;
-                QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-                if (parseError.error == QJsonParseError::NoError && doc.isObject()) {
-                    QJsonObject obj = doc.object();
-                    if (obj.contains("hierarchy")) {
-                        QJsonObject hierarchyObj = obj["hierarchy"].toObject();
-                        scenarioEditor->library->fromJson(hierarchyObj);
-                        if (scenarioEditor->libTreeView) {
-                            scenarioEditor->libTreeView->setLibraryFileName("Aircraft.db");
+                            scenarioEditor->libTreeView->setLibraryFileName(
+                                QFileInfo(databaseEditor->lastSavedFilePath).fileName());
+                            scenarioEditor->libTreeView->getTreeWidget()->update();
+                            scenarioEditor->libTreeView->getTreeWidget()->collapseAll();
                         }
                     }
                 }
             }
         }
+        // PRIORITY 2: Application Settings mein database path se load karo
+        else if (ApplicationDialog::getGlobalDatabaseEnabled() &&
+                 !ApplicationDialog::getGlobalDatabasePath().isEmpty() &&
+                 ApplicationDialog::getGlobalDatabasePath() != "No path set") {
 
+            m_loadingLabel->setText("Loading Database...");
+            QCoreApplication::processEvents();
+
+            QString dbPath = ApplicationDialog::getGlobalDatabasePath();
+            QFile file(dbPath);
+            if (file.open(QIODevice::ReadOnly)) {
+                QByteArray data = file.readAll();
+                file.close();
+
+                QJsonParseError err;
+                QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+                if (err.error == QJsonParseError::NoError && doc.isObject()) {
+                    QJsonObject obj = doc.object();
+                    if (obj.contains("hierarchy")) {
+                        m_loadingLabel->setText("Loading Database...");
+                        QCoreApplication::processEvents();
+                        scenarioEditor->library->fromJson(obj["hierarchy"].toObject());
+                        if (scenarioEditor->libTreeView) {
+                            scenarioEditor->libTreeView->setLibraryFileName(QFileInfo(dbPath).fileName());
+                            scenarioEditor->libTreeView->getTreeWidget()->update();
+                            scenarioEditor->libTreeView->getTreeWidget()->collapseAll();
+                        }
+                    }
+                }
+            }
+        }
+        // PRIORITY 3: Default Aircraft.db load karo
+        else if (ApplicationDialog::getGlobalDatabaseEnabled()) {
+            m_loadingLabel->setText("Loading Database...");
+            QCoreApplication::processEvents();
+
+            QString aircraftDbPath = TDFManager::instance()->getAircraftDbPath();
+            QFile jsonFile(aircraftDbPath);
+
+            if (jsonFile.open(QIODevice::ReadOnly)) {
+                QByteArray data = jsonFile.readAll();
+                jsonFile.close();
+
+                QJsonParseError parseError;
+                QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
+                if (parseError.error == QJsonParseError::NoError && doc.isObject()) {
+                    QJsonObject obj = doc.object();
+                    if (obj.contains("hierarchy")) {
+                        m_loadingLabel->setText("Loading Database...");
+                        QCoreApplication::processEvents();
+                        scenarioEditor->library->fromJson(obj["hierarchy"].toObject());
+                        if (scenarioEditor->libTreeView) {
+                            scenarioEditor->libTreeView->setLibraryFileName("Aircraft.db (Default)");
+                            scenarioEditor->libTreeView->getTreeWidget()->update();
+                            scenarioEditor->libTreeView->getTreeWidget()->collapseAll();
+                        }
+                    }
+                }
+            }
+        }
+        // PRIORITY 4: Empty library
+        else {
+            m_loadingLabel->setText("Initializing Empty Library...");
+            QCoreApplication::processEvents();
+            scenarioEditor->library->fromJson(QJsonObject());
+            if (scenarioEditor->libTreeView) {
+                scenarioEditor->libTreeView->setLibraryFileName("");
+                scenarioEditor->libTreeView->getTreeWidget()->update();
+            }
+        }
+
+        m_loadingLabel->setText("Updating Tree View...");
+        QCoreApplication::processEvents();
         if (scenarioEditor->libTreeView) {
             scenarioEditor->libTreeView->getTreeWidget()->update();
             scenarioEditor->libTreeView->getTreeWidget()->collapseAll();
         }
+
+        m_loadingLabel->setText("Switching to Scenario Editor...");
+        QCoreApplication::processEvents();
+
         stackedWidget->setCurrentWidget(scenarioEditor);
         updateWindowTitleForCurrentEditor();
+        if (m_statusBar)
+            m_statusBar->setFileName(scenarioEditor->lastSavedFilePath, scenarioEditor->hasUnsavedChanges);
+
         emit scenarioEditor->Activated();
+        hideLoadingOverlay();
     }
+
+    else if (editorKey == "mission") {
+        showLoadingOverlay("Loading Mission Editor...");
+        if (!missionEditor) {
+            m_loadingLabel->setText("Creating Mission Editor...");
+            QCoreApplication::processEvents();
+            missionEditor = new MissionEditor(centralWidget());
+            stackedWidget->addWidget(missionEditor);
+            connect(missionEditor, &MissionEditor::unsavedChangesChanged,
+                    this, &MainWindow::onUnsavedChangesChanged);
+        }
+
+        mainMenuBar->setLibraryActionsVisible(false);
+
+        // Always sync hierarchy from ScenarioEditor into MissionEditor (read-only context)
+        if (scenarioEditor) {
+            m_loadingLabel->setText("Syncing Scenario Hierarchy to Mission Editor...");
+            QCoreApplication::processEvents();
+
+            QJsonObject sceneJson = scenarioEditor->hierarchy->toJson();
+            if (!sceneJson.isEmpty()) {
+                missionEditor->hierarchy->fromJson(sceneJson);
+                if (missionEditor->treeView && missionEditor->treeView->getTreeWidget()) {
+                    missionEditor->treeView->getTreeWidget()->update();
+                    missionEditor->treeView->getTreeWidget()->collapseAll();
+                }
+            }
+        }
+
+        // If a .ms file was previously saved/loaded, reload its doctrine data
+        if (!missionEditor->lastSavedFilePath.isEmpty()) {
+            m_loadingLabel->setText("Restoring Mission Doctrine Data...");
+            QCoreApplication::processEvents();
+            missionEditor->loadFromJsonFile(missionEditor->lastSavedFilePath);
+        }
+
+        m_loadingLabel->setText("Switching to Mission Editor...");
+        QCoreApplication::processEvents();
+
+        stackedWidget->setCurrentWidget(missionEditor);
+        updateWindowTitleForCurrentEditor();
+        if (m_statusBar)
+            m_statusBar->setFileName(missionEditor->lastSavedFilePath,
+                                     missionEditor->hasUnsavedChanges);
+
+        emit missionEditor->Activated();
+        hideLoadingOverlay();
+    }
+
     else if (editorKey == "runtime") {
+        showLoadingOverlay("Loading Runtime Editor...");
+        if (!runtimeEditor) {
+            m_loadingLabel->setText("Creating Runtime Editor...");
+            QCoreApplication::processEvents();
+            runtimeEditor = new RuntimeEditor(centralWidget());
+            stackedWidget->addWidget(runtimeEditor);
+            connect(runtimeEditor, &RuntimeEditor::unsavedChangesChanged,
+                    this, &MainWindow::onUnsavedChangesChanged);
+        }
+
         mainMenuBar->setLibraryActionsVisible(true);
         if (!databaseEditor->lastSavedFilePath.isEmpty()) {
+            m_loadingLabel->setText("Loading Database...");
+            QCoreApplication::processEvents();
+
             QFile file(databaseEditor->lastSavedFilePath);
             if (file.open(QIODevice::ReadOnly)) {
                 QByteArray data = file.readAll();
@@ -837,142 +1192,231 @@ void MainWindow::switchEditor(const QString &editorKey)
                 if (err.error == QJsonParseError::NoError && doc.isObject()) {
                     QJsonObject obj = doc.object();
                     if (obj.contains("hierarchy")) {
-                        QJsonObject hierarchyData = obj["hierarchy"].toObject();
-                        runtimeEditor->library->fromJson(hierarchyData);
+                        m_loadingLabel->setText("Loading Database...");
+                        QCoreApplication::processEvents();
+                        runtimeEditor->library->fromJson(obj["hierarchy"].toObject());
                         if (runtimeEditor->libTreeView) {
-                            runtimeEditor->libTreeView->setLibraryFileName(databaseEditor->lastSavedFilePath);
+                            runtimeEditor->libTreeView->setLibraryFileName(
+                                QFileInfo(databaseEditor->lastSavedFilePath).fileName());
+                            runtimeEditor->libTreeView->getTreeWidget()->update();
+                            runtimeEditor->libTreeView->getTreeWidget()->collapseAll();
                         }
                     }
                 }
             }
-        } else {
-            QString resourcePath = TDFManager::instance()->getAircraftDbPath();
-            QFile jsonFile(resourcePath);
+        }
+        else if (ApplicationDialog::getGlobalDatabaseEnabled() &&
+                 !ApplicationDialog::getGlobalDatabasePath().isEmpty() &&
+                 ApplicationDialog::getGlobalDatabasePath() != "No path set") {
+
+            m_loadingLabel->setText("Loading Database...");
+            QCoreApplication::processEvents();
+
+            QString dbPath = ApplicationDialog::getGlobalDatabasePath();
+            QFile file(dbPath);
+            if (file.open(QIODevice::ReadOnly)) {
+                QByteArray data = file.readAll();
+                file.close();
+
+                QJsonParseError err;
+                QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+                if (err.error == QJsonParseError::NoError && doc.isObject()) {
+                    QJsonObject obj = doc.object();
+                    if (obj.contains("hierarchy")) {
+                        m_loadingLabel->setText("Loading Database...");
+                        QCoreApplication::processEvents();
+                        runtimeEditor->library->fromJson(obj["hierarchy"].toObject());
+                        if (runtimeEditor->libTreeView) {
+                            runtimeEditor->libTreeView->setLibraryFileName(QFileInfo(dbPath).fileName());
+                            runtimeEditor->libTreeView->getTreeWidget()->update();
+                            runtimeEditor->libTreeView->getTreeWidget()->collapseAll();
+                        }
+                    }
+                }
+            }
+        }
+        // PRIORITY 3: Default Aircraft.db load karo
+        else if (ApplicationDialog::getGlobalDatabaseEnabled()) {
+            m_loadingLabel->setText("Loading Database...");
+            QCoreApplication::processEvents();
+
+            QString aircraftDbPath = TDFManager::instance()->getAircraftDbPath();
+            QFile jsonFile(aircraftDbPath);
+
             if (jsonFile.open(QIODevice::ReadOnly)) {
                 QByteArray data = jsonFile.readAll();
                 jsonFile.close();
+
                 QJsonParseError parseError;
                 QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
                 if (parseError.error == QJsonParseError::NoError && doc.isObject()) {
                     QJsonObject obj = doc.object();
                     if (obj.contains("hierarchy")) {
-                        QJsonObject hierarchyObj = obj["hierarchy"].toObject();
-                        runtimeEditor->library->fromJson(hierarchyObj);
+                        m_loadingLabel->setText("Loading Database...");
+                        QCoreApplication::processEvents();
+                        runtimeEditor->library->fromJson(obj["hierarchy"].toObject());
                         if (runtimeEditor->libTreeView) {
-                            runtimeEditor->libTreeView->setLibraryFileName("Aircraft.db");
+                            runtimeEditor->libTreeView->setLibraryFileName("Aircraft.db (Default)");
+                            runtimeEditor->libTreeView->getTreeWidget()->update();
+                            runtimeEditor->libTreeView->getTreeWidget()->collapseAll();
                         }
                     }
                 }
             }
         }
-        if (!scenarioEditor->lastSavedFilePath.isEmpty()) {
+        // PRIORITY 4: Empty library
+        else {
+            m_loadingLabel->setText("Initializing Empty Library...");
+            QCoreApplication::processEvents();
+            runtimeEditor->library->fromJson(QJsonObject());
+            if (runtimeEditor->libTreeView) {
+                runtimeEditor->libTreeView->setLibraryFileName("");
+                runtimeEditor->libTreeView->getTreeWidget()->update();
+            }
+        }
+
+        if (scenarioEditor && !scenarioEditor->lastSavedFilePath.isEmpty()) {
+            m_loadingLabel->setText("Loading Scenario Data...");
+            QCoreApplication::processEvents();
             runtimeEditor->loadFromJsonFile(scenarioEditor->lastSavedFilePath);
         }
 
+        m_loadingLabel->setText("Updating Tree View...");
+        QCoreApplication::processEvents();
         if (runtimeEditor->libTreeView) {
             runtimeEditor->libTreeView->getTreeWidget()->update();
             runtimeEditor->libTreeView->getTreeWidget()->collapseAll();
         }
+
+        m_loadingLabel->setText("Switching to Runtime Editor...");
+        QCoreApplication::processEvents();
+
         stackedWidget->setCurrentWidget(runtimeEditor);
         updateWindowTitleForCurrentEditor();
+        if (m_statusBar)
+            m_statusBar->setFileName(runtimeEditor->lastSavedFilePath, runtimeEditor->hasUnsavedChanges);
+
         emit runtimeEditor->Activated();
+        hideLoadingOverlay();
+    }
+    // ── Analysis ──────────────────────────────────────────────────────────
+    else if (editorKey == "analysis") {
+        showLoadingOverlay("Loading Analysis Editor...");
+        if (!analysisEditor) {
+            m_loadingLabel->setText("Creating Analysis Editor...");
+            QCoreApplication::processEvents();
+            analysisEditor = new AnalysisEditor(centralWidget());
+            stackedWidget->addWidget(analysisEditor);
+            connect(analysisEditor, &AnalysisEditor::unsavedChangesChanged,
+                    this, &MainWindow::onUnsavedChangesChanged);
+        }
+
+        mainMenuBar->setLibraryActionsVisible(false);
+
+        m_loadingLabel->setText("Switching to Analysis Editor...");
+        QCoreApplication::processEvents();
+
+        stackedWidget->setCurrentWidget(analysisEditor);
+        updateWindowTitleForCurrentEditor();
+        if (m_statusBar)
+            m_statusBar->setFileName(analysisEditor->lastSavedFilePath,
+                                     analysisEditor->hasUnsavedChanges);
+        emit analysisEditor->Activated();
+        hideLoadingOverlay();
     }
 }
 
+// CHANGE 13 — updateWindowTitleForCurrentEditor: MissionEditor block
 void MainWindow::updateWindowTitleForCurrentEditor()
 {
     QWidget *currentWidget = stackedWidget->currentWidget();
     QString editorName;
     QString filePath;
     bool hasUnsaved = false;
+
     if (currentWidget == databaseEditor) {
         editorName = "Database Editor";
         filePath = databaseEditor->lastSavedFilePath;
         hasUnsaved = databaseEditor->hasUnsavedChanges;
-    } else if (currentWidget == scenarioEditor) {
+    } else if (scenarioEditor && currentWidget == scenarioEditor) {
         editorName = "Scenario Editor";
         filePath = scenarioEditor->lastSavedFilePath;
         hasUnsaved = scenarioEditor->hasUnsavedChanges;
-    } else if (currentWidget == runtimeEditor) {
+        // CHANGE 13 — MissionEditor title block
+    } else if (missionEditor && currentWidget == missionEditor) {
+        editorName  = "Mission Editor";
+        filePath    = missionEditor->lastSavedFilePath;
+        hasUnsaved  = missionEditor->hasUnsavedChanges;
+    } else if (runtimeEditor && currentWidget == runtimeEditor) {
         editorName = "Runtime Editor";
         filePath = runtimeEditor->lastSavedFilePath;
         hasUnsaved = runtimeEditor->hasUnsavedChanges;
+    }else if (analysisEditor && currentWidget == analysisEditor) {
+        editorName = "Analysis Editor";
+        filePath   = analysisEditor->lastSavedFilePath;
+        hasUnsaved = analysisEditor->hasUnsavedChanges;
     }
+    updateWindowTitle(editorName, hasUnsaved);
 
-    updateWindowTitle(editorName, filePath, hasUnsaved);
+    if (m_statusBar) m_statusBar->setFileName(filePath, hasUnsaved);
 }
 
-void MainWindow::updateWindowTitle(const QString& editorName, const QString& filePath, bool hasUnsavedChanges)
+void MainWindow::updateWindowTitle(const QString& editorName, bool hasUnsavedChanges)
 {
     QString title = "Indigenous Scenario and Sensor Simulation Toolkit";
 
-    if (scenarioconfig && !scenarioconfig->software_version.isEmpty()) {
+    if (scenarioconfig && !scenarioconfig->software_version.isEmpty())
         title += QString(" (V_%1)").arg(scenarioconfig->software_version);
-    }
 
     title += " - " + editorName;
 
-    if (!filePath.isEmpty()) {
-        QFileInfo fileInfo(filePath);
-        title += " - " + fileInfo.fileName();
-    }
-
-    if (hasUnsavedChanges) {
-        title = "*" + title;
-    }
+    if (hasUnsavedChanges) title = "*" + title;
 
     setWindowTitle(title);
 }
 
 void MainWindow::onUnsavedChangesChanged(bool hasUnsaved)
 {
-    // Update title when unsaved changes status changes
     updateWindowTitleForCurrentEditor();
 }
 
+// CHANGE 14 — closeEvent: MissionEditor unsaved check
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     bool proceedWithClose = true;
 
-    // Check each editor individually
-    if (databaseEditor->hasUnsavedChanges) {
+    if (databaseEditor && databaseEditor->hasUnsavedChanges)
         proceedWithClose &= promptForSave(databaseEditor, "Database Editor");
-    }
-
-    if (scenarioEditor->hasUnsavedChanges) {
+    if (scenarioEditor && scenarioEditor->hasUnsavedChanges)
         proceedWithClose &= promptForSave(scenarioEditor, "Scenario Editor");
-    }
-
-    if (runtimeEditor->hasUnsavedChanges) {
+    // CHANGE 14 — MissionEditor close check
+    if (missionEditor && missionEditor->hasUnsavedChanges)
+        proceedWithClose &= promptForSave(missionEditor, "Mission Editor");
+    if (runtimeEditor && runtimeEditor->hasUnsavedChanges)
         proceedWithClose &= promptForSave(runtimeEditor, "Runtime Editor");
-    }
+    if (analysisEditor && analysisEditor->hasUnsavedChanges)
+        proceedWithClose &= promptForSave(analysisEditor, "Analysis Editor");
 
-    if (proceedWithClose) {
-        event->accept();
-    } else {
-        event->ignore();
-    }
+    proceedWithClose ? event->accept() : event->ignore();
 }
 
+// CHANGE 15 — promptForSave: MissionEditor support
 bool MainWindow::promptForSave(QMainWindow* editor, const QString& editorName)
 {
     DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(editor);
     ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(editor);
-    RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(editor);
+    MissionEditor*  msEditor = qobject_cast<MissionEditor*>(editor);   // CHANGE 15a
+    RuntimeEditor*  rtEditor = qobject_cast<RuntimeEditor*>(editor);
+    AnalysisEditor* anEditor = qobject_cast<AnalysisEditor*>(editor);
 
     bool hasUnsaved = false;
     QString filePath;
 
-    if (dbEditor) {
-        hasUnsaved = dbEditor->hasUnsavedChanges;
-        filePath = dbEditor->lastSavedFilePath;
-    } else if (scEditor) {
-        hasUnsaved = scEditor->hasUnsavedChanges;
-        filePath = scEditor->lastSavedFilePath;
-    } else if (rtEditor) {
-        hasUnsaved = rtEditor->hasUnsavedChanges;
-        filePath = rtEditor->lastSavedFilePath;
-    }
+    if      (dbEditor) { hasUnsaved = dbEditor->hasUnsavedChanges; filePath = dbEditor->lastSavedFilePath; }
+    else if (scEditor) { hasUnsaved = scEditor->hasUnsavedChanges; filePath = scEditor->lastSavedFilePath; }
+    // CHANGE 15b — MissionEditor hasUnsaved/filePath
+    else if (msEditor) { hasUnsaved = msEditor->hasUnsavedChanges; filePath = msEditor->lastSavedFilePath; }
+    else if (rtEditor) { hasUnsaved = rtEditor->hasUnsavedChanges; filePath = rtEditor->lastSavedFilePath; }
 
     if (!hasUnsaved) return true;
 
@@ -986,38 +1430,105 @@ bool MainWindow::promptForSave(QMainWindow* editor, const QString& editorName)
     QMessageBox::StandardButton reply = (QMessageBox::StandardButton)msgBox.exec();
 
     if (reply == QMessageBox::Save) {
-        if (!mainMenuBar) {
-            qWarning() << "Main menu bar not found";
-            return false;
-        }
+        if (!mainMenuBar) { qWarning() << "Main menu bar not found"; return false; }
 
         QAction *saveAction = filePath.isEmpty()
                                   ? mainMenuBar->getSaveAction()
                                   : mainMenuBar->getSameSaveAction();
         if (saveAction) {
             saveAction->trigger();
-
-            // Process events to ensure save completes
             QCoreApplication::processEvents();
             QCoreApplication::processEvents();
             QThread::msleep(100);
             QCoreApplication::processEvents();
 
-            if (dbEditor) {
-                return !dbEditor->hasUnsavedChanges;
-            } else if (scEditor) {
-                return !scEditor->hasUnsavedChanges;
-            } else if (rtEditor) {
-                return !rtEditor->hasUnsavedChanges;
-            }
+            if      (dbEditor) return !dbEditor->hasUnsavedChanges;
+            else if (scEditor) return !scEditor->hasUnsavedChanges;
+            // CHANGE 15c — MissionEditor save return
+            else if (msEditor) return !msEditor->hasUnsavedChanges;
+            else if (rtEditor) return !rtEditor->hasUnsavedChanges;
         }
         return false;
+
     } else if (reply == QMessageBox::Discard) {
-        if (dbEditor) dbEditor->clearUnsavedChanges();
+        if      (dbEditor) dbEditor->clearUnsavedChanges();
         else if (scEditor) scEditor->clearUnsavedChanges();
+        // CHANGE 15d — MissionEditor Discard
+        else if (msEditor) msEditor->clearUnsavedChanges();
         else if (rtEditor) rtEditor->clearUnsavedChanges();
         return true;
     } else {
         return false;
     }
+}
+
+void MainWindow::showLoadingOverlay(const QString& message)
+{
+    if (!m_loadingOverlay) {
+        m_loadingOverlay = new QWidget(this);
+        m_loadingOverlay->setStyleSheet(
+            "QWidget#loadingOverlay {"
+            "  background-color: rgba(15, 38, 54, 0.85);"
+            "}"
+            );
+        m_loadingOverlay->setObjectName("loadingOverlay");
+
+        QWidget* card = new QWidget(m_loadingOverlay);
+        card->setFixedSize(280, 110);
+        card->setStyleSheet(
+            "QWidget {"
+            "  background-color: #1A3A4F;"
+            "  border-radius: 10px;"
+            "  border: 1px solid #00BFFF;"
+            "}"
+            );
+
+        QVBoxLayout* cardLayout = new QVBoxLayout(card);
+        cardLayout->setContentsMargins(20, 18, 20, 18);
+        cardLayout->setSpacing(12);
+
+        m_loadingLabel = new QLabel(message, card);
+        m_loadingLabel->setAlignment(Qt::AlignCenter);
+        m_loadingLabel->setStyleSheet(
+            "QLabel {"
+            "  color: white;"
+            "  font-size: 14px;"
+            "  font-weight: bold;"
+            "  background: transparent;"
+            "  border: none;"
+            "}"
+            );
+        m_loadingBar = new QProgressBar(card);
+        m_loadingBar->setRange(0, 0);
+        m_loadingBar->setFixedHeight(6);
+        m_loadingBar->setTextVisible(false);
+        m_loadingBar->setStyleSheet(
+            "QProgressBar { background-color: #0F2636; border-radius: 3px; border: none; }"
+            "QProgressBar::chunk { background-color: #00BFFF; border-radius: 3px; }"
+            );
+        cardLayout->addWidget(m_loadingLabel);
+        cardLayout->addWidget(m_loadingBar);
+        card->setProperty("isCard", true);
+    } else {
+        if (m_loadingLabel) m_loadingLabel->setText(message);
+    }
+
+    m_loadingOverlay->setGeometry(0, 0, width(), height());
+    m_loadingOverlay->raise();
+    m_loadingOverlay->show();
+
+    for (QObject* child : m_loadingOverlay->children()) {
+        QWidget* w = qobject_cast<QWidget*>(child);
+        if (w && w->property("isCard").toBool()) {
+            w->move((m_loadingOverlay->width()  - w->width())  / 2,
+                    (m_loadingOverlay->height() - w->height()) / 2);
+            break;
+        }
+    }
+    QCoreApplication::processEvents();
+}
+
+void MainWindow::hideLoadingOverlay()
+{
+    if (m_loadingOverlay) m_loadingOverlay->hide();
 }
