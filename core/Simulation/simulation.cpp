@@ -109,6 +109,9 @@ void Simulation::frame() {
     if(!isPlay){
         deltaTime = 0.02f;
     }
+    if(deltaTime>0.05){
+        deltaTime = 0.05f;
+    }
     lastTime = currentTime;
     applyPendingNetworkUpdates();//by Aman to apply recived update via network
     calculatePhysics();
@@ -178,6 +181,11 @@ void Simulation::startf() {
         //         weapon->startFlightMonitor();
         //     }
         // }
+        if (comp.base && comp.base->type == Constants::EntityType::Weapon) {
+            Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
+                    if (weapon && weapon->isLaunched && !weapon->isDead)
+                        weapon->resumeFlightMonitor();
+        }
     }
 
 }
@@ -189,6 +197,14 @@ void Simulation::pause() {
 void Simulation::pausef() {
     updateTimer->stop();
     isPlay = false;
+
+    for (auto& [id, comp] : physicsComponent) {
+        if (comp.base && comp.base->type == Constants::EntityType::Weapon) {
+            Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
+                if (weapon && weapon->isLaunched && !weapon->isDead)
+                    weapon->pauseFlightMonitor();
+        }
+    }
 
     /* Shared Memory By Himanshu */
     Status = SimulationStateNS::PAUSE;
@@ -568,7 +584,7 @@ void Simulation::enqueueTransformUpdate(const TransformUpdate& msg)//by Aman
 */
 
 void Simulation::updateDynamics(float dt,PhysicsComponent *comp){
-    if(comp->dynamicModel->trajectory->Trajectories.size()<2) return;
+    if(comp->dynamicModel->trajectory->Trajectories.size()<2 || comp->platform->fuel<=0.5f) return;
     comp->aircraft->MaxAcceleration = comp->dynamicModel->Acceleration;
     comp->aircraft->MaxDecceleration = comp->dynamicModel->Decceleration;
     comp->aircraft->CeilingHeight = comp->dynamicModel->maxAltitude / 3.281f;
@@ -578,7 +594,8 @@ void Simulation::updateDynamics(float dt,PhysicsComponent *comp){
     comp->aircraft->DiveRate = comp->dynamicModel->diveRate/196.9f;
     // comp->aircraft->MaxPitch = comp->dynamicModel->maxPitch;
     comp->aircraft->PitchRate = comp->dynamicModel->turnRate;
-
+    comp->aircraft->WindDirection = comp->dynamicModel->windAngle;
+    comp->aircraft->WindIntensity = comp->dynamicModel->windSpeed;
     QVector3D position = comp->transform->translation();
     comp->aircraft->Position = Aircraft::vec3(position.x()* 1000.f,
                                               position.y()* 1000.f,
@@ -621,8 +638,11 @@ void Simulation::updateDynamics(float dt,PhysicsComponent *comp){
     // Aircraft::vec3 rot = comp->aircraft->EularAngles;
     rot.y = comp->aircraft->EularAngles.y;
     comp->transform->matrix->setRotation(QQuaternion::fromEulerAngles(QVector3D(rot.x,rot.y,rot.z)));
-    comp->dynamicModel->currentSpeed = comp->aircraft->speed * 3.6f;
+    comp->dynamicModel->currentSpeed =  comp->aircraft->Velocity.Magnitude()*3.6f;
     comp->dynamicModel->currentAltitude = comp->aircraft->Altitude/1000.0f;
+    if (comp->transform && comp->transform->geocord)
+        comp->transform->geocord->altitude =
+            static_cast<double>(comp->aircraft->Altitude) * 3.28084;
 
 }
 

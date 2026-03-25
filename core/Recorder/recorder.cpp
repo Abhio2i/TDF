@@ -24,10 +24,11 @@ Recorder::Recorder(Hierarchy* hierarchy, Simulation* simulation, QObject *parent
     m_recording = new Recording(m_hierarchy, m_simulation, this, this);  // parented to Recorder
     m_replay    = new Replay   (m_hierarchy, m_simulation, this, this);
     emit sendRecorder();
-
+    emit setSQLite();
     // For Default functtion Start
     loggerModeCheck(RECORDING);
     // For Default functtion Start
+
 }
 
 
@@ -116,6 +117,64 @@ void Recorder::setBookmarks(QList<QPair<QString, qint64> > &s_bookmarks)
     bookmarks = &s_bookmarks;
 }
 
+DB_Validity Recorder::sqliteIsValid()
+{
+    if(m_sqlite != nullptr){
+        emit alertViaStr("SQLite instance is note Created Yet!!");
+        return DB_Valid;
+    }
+    return DB_Invalid;
+}
+
+void Recorder::saveFile(QString path)
+{
+    savedFilePath = path;
+    fileToDB(savedFilePath,*isFileSaved);
+    str = "Convert File to '.db' Logger->Recorder->Sqlite ";
+    if(*isFileSaved){
+        str += "Succesful";
+    }else{
+        emit alertViaStr("SQLite DB is Not Saved");
+        str += "Failed";
+    }
+    debug(str,debugRecorder::D_DBOperation);
+}
+
+void Recorder::loadFile(QString path)
+{
+    loadedFilePath = path;
+    loadToDB(loadedFilePath,*isFileLoaded);
+    str = "Load File '.db' Logger->Recorder->Sqlite ";
+    if(*isFileLoaded){
+        str += "Succesful";
+    }else{
+        emit alertViaStr("SQLite DB is Not Loaded");
+        str += "Failed";
+    }
+    debug(str,debugRecorder::D_DBOperation);
+}
+
+/*------------    Custom Debugger Start    ------------*/
+
+void Recorder::debug(const QString &str, const debugRecorder &currentdebugType)
+{
+    if(dbgIsAllow(currentdebugType) && (currentdebugType == D_NULL)){
+        return;
+    }
+    if(dbgIsAllow(currentdebugType)){
+        qDebug()<<currentdebugType<<str;
+    }
+}
+
+bool Recorder::dbgIsAllow(const debugRecorder &currentdebugType)
+{
+    bool InsideList = ((currentdebugType & debugList) == currentdebugType);
+    // qDebug()<<debugType<<option<<result;
+    return InsideList;
+}
+
+/*------------     Custom Debugger End     ------------*/
+
 
 /* -------------------------------------------------------
  * Recording Implementation Information End
@@ -176,7 +235,8 @@ void Recording::start(Recorder &s_recorder)
     leftTimer  = 0;
     m_recorder->setLeftRightTimer(leftTimer , rightTimer);
     m_recorder->loggerInfo();
-    recordingStart();
+    recordingBefore();
+
 }
 
 void Recording::pause()
@@ -241,7 +301,29 @@ void Recording::insertRecord(const QJsonObject &data)
     recordedData = data;
 }
 
+void Recording::recordingBefore()
+{
+    str = "Before Recording is Called \n";
+    if(*m_recorder->isFileSaved){
+        emit m_recorder->alertViaStr("File is Saved");
+        str += "File is Exist";
+    }
+    // ButtonNOpsList bnol = ButtonNOpsList(
+    //     {std::pair{Recorder_Button ,Freeze  }},
+    //     {std::pair{Recording_Toggle,Unfreeze}},
+    //     {std::pair{Reocrding_Stop  ,Unfreeze}}
+    //     );
 
+    m_recorder->freezeButtonOperation(ButtonNOpsList(
+        {{std::pair{Recorder_Button ,Freeze  }},
+        {std::pair{Recording_Toggle ,Unfreeze}},
+        {std::pair{Reocrding_Stop   ,Unfreeze}}}));
+    // emit m_recorder->
+    // return;
+    // recordingStart();
+    debug(str,D_BeforeRecording);
+    recordingStart();
+}
 
 
 void Recording::recordingStart()
@@ -261,6 +343,7 @@ void Recording::recordingStart()
         recordingTimer->start(recordingPeriod);
     }
     entityAddedAllFromStart();
+    framePayLoad();
     connect(recordingTimer, &QTimer::timeout, this, [this]() {
         durationShared += recordingPeriod;
         ++frameIndex;
@@ -414,6 +497,8 @@ void Recording::changeInHierarchy()
 {
 
 }
+
+
 
 void Recording::saveFile()
 {
@@ -636,7 +721,10 @@ void Recording::entityRemovedInBetween(const QString &ID)
  *       };
  *       using EntitiesMeshRenderer2DCRUDList = std::vector<EntitiesMeshRenderer2DCRUD>;
  */
-void Recording::meshRenderer2DCRUD(const QString &ID, MeshRenderer2D* meshRenderer2D, Operation operation)
+void Recording::meshRenderer2DCRUD(
+    const QString &ID,
+    MeshRenderer2D* meshRenderer2D,
+    Operation operation)
 {
     if(!entitiesIDIndex.contains(ID)){
         str =  QString("Failed to Add ID: %1").arg(ID);
@@ -864,6 +952,7 @@ bool Replay::replayLoaded(const QString &filePath)
 }
 
 
+
 void Replay::createTimer()
 {
 
@@ -885,8 +974,33 @@ void Replay::start()
     m_recorder->setLeftRightTimer(leftTimer , rightTimer);
     qDebug()<<"Replay Mode is Set";
     m_recorder->loggerInfo();
+    replayBefore();
+    //replayStart();
+}
+
+void Replay::replayBefore()
+{
+    str = "Before Recording is Called \n";
+    if(*m_recorder->isFileLoaded){
+        emit m_recorder->alertViaStr("File is Loaded");
+        str += "File is Loaded";
+    }else{
+        emit m_recorder->alertViaStr("File is not Loaded");
+        str += "File is not Loaded";
+        return;
+    }
+    ButtonNOpsList bnol =
+           {{std::pair{Replay_Start         ,Freeze  }},
+            {std::pair{Replay_Toggle        ,Unfreeze}},
+            {std::pair{Replay_Jump_Forward  ,Unfreeze}},
+            {std::pair{Replay_Jump_Backward ,Unfreeze}},
+            {std::pair{Replay_Restart       ,Unfreeze}}};
+    m_recorder->freezeButtonOperation(bnol);
+
+    debug(str,D_BeforeReplay);
     replayStart();
 }
+
 
 void Replay::pause()
 {
@@ -943,6 +1057,7 @@ void Replay::replayStart()
     }
 
     emit getMaxFrameIndexNDuration(&maxFrameIndex,&maxDuration);
+    emit setMaxDuration(&maxDuration);
     str = QString("Maximum FrameIndex: %1"
                   "Maximum Duration: %2"
                   "").arg(QString::number(maxFrameIndex), QString::number(maxDuration));
@@ -950,7 +1065,7 @@ void Replay::replayStart()
     duration      = maxDuration;
     //QTimer::singleShot(durationLength, replayTimer, &QTimer::stop);
 
-    frameIndex = 0;
+    frameIndex = -1;
     cleanHierarchy();
     payload.entitiesDetailsList = {};
     entitiesIndexDetails = {};
@@ -1440,21 +1555,233 @@ void Replay::loadFrameEntitiesData()
     }
 }
 
+void Replay::jumpInBetween(qint64 clickedTimestamp)
+{
+    pause();
+
+    int clickedIndex = clickedTimestamp / replayPeriod;
+
+    if(clickedIndex >= 0 && clickedIndex <= maxFrameIndex){
+        durationShared = clickedIndex*100;
+        frameIndex = clickedIndex;
+        framePayLoadForJumpInBetween(clickedIndex);
+    }
+    str = QString("JumpInBetween: timestamp:%1 & frameIndex:%2")
+              .arg(clickedTimestamp,clickedIndex);
+    debug(str,D_LoadInBetween);
+    resume();
+}
+
+void Replay::framePayLoadForJumpInBetween(int frameIndex)
+{
+    payload.frameIndex = frameIndex;
+    payload.entitiesDetailsList = {};
+    payload.entitiesMeshRenderer2DList     = {};
+    payload.entitiesTrajectoryList     = {};
+    payload.entitiesTrajectoryCRUDList = {};
+    emit getPayLoadFromIndex(&payload, frameIndex);
+    str = QString("  Duration : %1  ").arg(durationShared);
+
+    if(!payload.entitiesDetailsList.empty()){
+        str += QString("[ Index Detail Inbetween Update Size: %1 ] ").arg(payload.entitiesDetailsList.size());
+        setEntitiesDetailsInBtw();
+    }
+    if(!payload.entitiesMeshRenderer2DList.empty()){
+        str += QString("[ Entities Mesh Renderer Inbetween Update Size: %1 ] ")
+        .arg(payload.entitiesMeshRenderer2DList.size());
+        setEntitiesMeshRenderer2DBtw();
+    }
+    if(!payload.entitiesTrajectoryList.empty()
+        || !payload.entitiesTrajectoryCRUDList.empty()){
+        str += QString("[ Entities Trajectory Update Size: %1 And CRUD Size: %2 ] ")
+                   .arg(payload.entitiesTrajectoryList.size(),
+                        payload.entitiesTrajectoryCRUDList.size());
+        setEntitiesTrajectoryBtw();
+    }
+    // if(profileCategoriesIndexDetails.empty() && !payload.profileCategoriesDetailsList.empty()){
+    //     setProfileCategoriesDetails();
+    //     str += QString("[ Profile Categories Details Update Size: %1 ] ")
+    //                .arg(payload.profileCategoriesDetailsList.size());
+    // }
+    // if(!payload.profileCategoriesCRUDList.empty()){
+    //     crudProfileCategoriesDetails();
+    //     str += QString("[ Profile Categories Details CRUD Size: %1 ] ").arg(payload.profileCategoriesCRUDList.size());
+    // }
+    // if(!payload.entitiesTrajectoryCRUDList.empty()){
+    //     str += QString("[ Entities Trajectory CRUD Size: %1 ] ")
+    //     .arg(payload.entitiesTrajectoryCRUDList.size());
+    // }
+
+    // if(entitiesIndexDetails.empty() && !payload.entitiesDetailsList.empty()){
+    //     setEntitiesIndexDetails();
+    //     str += QString("[ Index Detail Update Size: %1 ] ").arg(payload.entitiesDetailsList.size());
+    // }
+
+    // if(!payload.entitiesCreatedList.empty()){
+    //     createEntitiesCreateList();
+    //     str += QString("[ Entities Created Size: %1 ] ").arg(payload.entitiesCreatedList.size());
+    // }
+    // if(!payload.entitiesMeshRenderer2DList.empty()){
+    //     str += QString("[ Entities Mesh Renderer Update Size: %1 ] ")
+    //     .arg(payload.entitiesMeshRenderer2DList.size());
+    //     setEntitiesMeshRenderer2D();
+    // }
+    // if(!payload.entitiesMeshRenderer2DCRUDList.empty()){
+    //     str += QString("[ Entities Mesh Renderer CRUD Size: %1 ] ")
+    //     .arg(payload.entitiesMeshRenderer2DCRUDList.size());
+    //     crudEntitiesMeshRenderer2D();
+    // }
+
+    // if(!payload.entitiesTrajectoryList.empty()
+    //     || !payload.entitiesTrajectoryCRUDList.empty()){
+    //     setEntitiesTrajectory();
+    //     str += QString("[ Entities Trajectory Update Size: %1 And CRUD Size: %2 ] ")
+    //                .arg(payload.entitiesTrajectoryList.size(),
+    //                     payload.entitiesTrajectoryCRUDList.size());
+    // }
+    // if(!payload.entitiesUpdatedList.empty()){
+    //     updateEntitiesUpdatedList();
+    //     str += QString("[ Entities Updates Size: %1 ] ").arg(payload.entitiesUpdatedList.size());
+    // }
+    // if(!payload.entitiesDeletedList.empty()){
+    //     deleteEntitiesDeletedList();
+    //     str += QString("[ Entities Deleted Size: %1 ] ").arg(payload.entitiesDeletedList.size());
+    // }
+
+
+    debug(str,D_LoadInBetween);
+    payload.profileCategoriesCRUDList = {};
+    payload.entitiesCreatedList = {};
+    payload.entitiesUpdatedList = {};
+    payload.entitiesDeletedList = {};
+    payload.entitiesMeshRenderer2DList     = {};
+    payload.entitiesMeshRenderer2DCRUDList = {};
+    payload.entitiesTrajectoryList     = {};
+    payload.entitiesTrajectoryCRUDList = {};
+}
+
+void Replay::setEntitiesDetailsInBtw()
+{
+    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
+    //m_Platforms->clear();
+    std::vector<std::pair<std::string,std::string>> toDelete;
+    std::pair<std::string,std::string> PidNID;
+    for(auto p = m_Platforms->begin();
+        p != m_Platforms->end(); ++p){
+        PidNID.first  = p->second->parentID;
+        PidNID.second = p->second->ID;
+        toDelete.push_back(PidNID);
+    }
+    for(auto td = toDelete.begin();
+        td != toDelete.end(); ++td){
+        emit deleteEntities(td->first.c_str(),td->second.c_str(), true);
+    }
+
+    for(auto ed = payload.entitiesDetailsList.begin();
+         ed != payload.entitiesDetailsList.end();
+         ++ed)
+    {
+        emit createEntitiesCreate((*ed).parentID, (*ed).ID, (*ed).name, true);
+        Platform* platform = m_Platforms->at((*ed).ID.toStdString());
+        platform->addComponent("transform");
+        platform->addComponent("crossSection");
+        platform->addComponent("trajectory");
+        platform->addComponent("rigidbody");
+        platform->addComponent("dynamicModel");
+        platform->addComponent("bitmap");
+        platform->addComponent("collider");
+        platform->addComponent("sensors");
+        platform->addComponent("iffs");
+        platform->addComponent("radios");
+
+    }
+}
+
+void Replay::setEntitiesMeshRenderer2DBtw()
+{
+    str = "Mesh Between Operation";
+    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
+    for(auto emr = payload.entitiesMeshRenderer2DList.begin();
+         emr != payload.entitiesMeshRenderer2DList.end();
+         ++emr){
+        entitiesMeshRenderer2DIndex[emr->index] = *emr;
+    }
+    for(auto ed = payload.entitiesDetailsList.begin();
+        ed != payload.entitiesDetailsList.end();
+        ++ed){
+        EntitiesMeshRenderer2D emr = entitiesMeshRenderer2DIndex[ed->index];
+        if(m_Platforms->find(ed->ID.toStdString()) == m_Platforms->end()){
+            str += "Failed to Add Mesh For Index: "+QString::number(ed->index);
+            continue;
+        }
+        Platform *platform = m_Platforms->at(ed->ID.toStdString());
+        platform->meshRenderer2d->Sprite->clear();
+        platform->meshRenderer2d->Sprite->append(emr.Sprite.toStdString());
+    }
+    debug(str, D_MeshRenderer);
+}
+
+void Replay::setEntitiesTrajectoryBtw()
+{
+    str = QString("EntitiesTrajectory Btw ");
+    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
+
+    for(auto et = payload.entitiesTrajectoryList.begin();
+         et != payload.entitiesTrajectoryList.end();
+         ++et)
+    {
+        // For index of Trajectory
+        entitiesTrajectoryIndex[et->index] = *et;
+        // To Debug
+        str += QString(
+                   " [ Index: %1 and Size: %2 ] ,"
+                   ).arg(QString::number(et->index),
+                        QString::number(et->Trajectories.size()));
+        auto ed = entitiesIndexDetails.find(et->index);
+        if(ed == entitiesIndexDetails.end()){
+            continue;
+        }
+        auto platform = m_Platforms->find(ed->second.ID.toStdString());
+        if(platform == m_Platforms->end()){
+            continue;
+        }
+        for (Waypoints* wp : platform->second->trajectory->Trajectories) {
+            delete wp->position;
+            delete wp;
+        }
+        platform->second->trajectory->Trajectories.clear();
+        for(auto tw = et->Trajectories.begin();
+             tw != et->Trajectories.end();
+             ++tw){
+            Waypoints* newWaypoint = new Waypoints();
+            newWaypoint->position = new Vector(tw->vector_x, tw->vector_y, tw->vector_z);
+            newWaypoint->speed = tw->speed;
+            newWaypoint->formation = tw->formation;
+            newWaypoint->sensor = tw->sensor;
+            platform->second->trajectory->addTrajectory(newWaypoint);
+        }
+    }
+
+    debug(str,D_EntitiesTrajectory);
+}
+
+
+
 void Replay::toggle()
 {
-    // Case 1: Currently Playing -> PAUSE
-    if (replayTimer && replayTimer->isActive()) {
-        pause();
-    }
-    // Case 2: Currently Paused -> RESUME
-    else if (isPaused) {
-        resume();
-    }
-    // Case 3: Stopped (Timer is null) -> START
-    // This handles the case where it finished, you moved back, and clicked Toggle.
-    else {
-        start();
-    }
+    // // Case 1: Currently Playing -> PAUSE
+    // if (replayTimer && replayTimer->isActive()) {
+    //     pause();
+    // }
+    // // Case 2: Currently Paused -> RESUME
+    // else if (isPaused) {
+    //     resume();
+    // }
+    // // Case 3: Stopped (Timer is null) -> START
+    // // This handles the case where it finished, you moved back, and clicked Toggle.
+    // else {
+    //     start();
+    // }
 }
 
 void Replay::loadData()
@@ -1512,8 +1839,7 @@ void Replay::goToNextFrame()
     if(replayTimer && mode != replayModes::STOP){
         qDebug()<<jumpOps::FORWORD;
         if(durationLength > durationShared+jumpStep && frameIndex <= frameMap.size() - 50 ){
-            durationShared += jumpStep;
-            frameIndex += 50;
+            framePayLoadForJumpInBetween(frameIndex+50);
         }else{
             qDebug()<<"Not Allowed Duration Length: "<<durationLength<<" < "
                      <<durationShared+jumpStep;
@@ -1530,8 +1856,7 @@ void Replay::goToPreviousFrame()
     if(replayTimer && mode != replayModes::STOP){
         qDebug()<<jumpOps::BACKWORD;
         if(durationShared > jumpStep && frameIndex > 50){
-            durationShared -= jumpStep;
-            frameIndex -= 50;
+            framePayLoadForJumpInBetween(frameIndex-50);
         }else{
             //qDebug()<<"Not Allowed Duration: "<<durationShared<<" < "<<jumpStep;
         }

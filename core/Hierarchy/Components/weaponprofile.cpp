@@ -28,13 +28,6 @@ WeaponProfile::WeaponProfile(Hierarchy* h) : Component(h)
 // =============================================================================
 // addSubComponent
 // Exact same pattern as SensorProfile::addSubComponent:
-//   if(data1 == "Generic")   → new Radar(parent)
-//   if(data1 == "CSM")       → new CSM(parent)
-//   if(data1 == "ESM")       → new ESM(parent)
-// Here:
-//   if(data1 == "Missile")   → new Missile(parent)
-//   if(data1 == "Bomb")      → new Bomb(parent)
-//   ... etc.
 // =============================================================================
 void WeaponProfile::addSubComponent(std::string name,
                                     QString data1,
@@ -235,9 +228,6 @@ QJsonObject WeaponProfile::toJson() const
 // =============================================================================
 // fromJson  — reads "weaponTypeName" key to pick correct subclass
 // Exact same pattern as SensorProfile::fromJson reading "SensorType" key:
-//   if(type == "Radar")  → new Radar(parent)
-//   if(type == "CSM")    → new CSM(parent)
-//   if(type == "ESM")    → new ESM(parent)
 // =============================================================================
 void WeaponProfile::fromJson(const QJsonObject& obj)
 {

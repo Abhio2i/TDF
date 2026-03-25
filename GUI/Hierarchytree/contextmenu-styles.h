@@ -27,7 +27,7 @@ const QString ContextMenu = R"(
         padding: 4px 0;
     }
     QMenu::item {
-        padding: 6px 20px 6px 25px;
+        padding: 6px 20px 6px 8px;
         color: white;
         background-color: transparent;
         border: none;

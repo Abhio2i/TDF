@@ -1,0 +1,111 @@
+{
+    "missionName": "Operation Multi-Team",
+    "missionDate": "2025-03-18",
+    "teams": {
+        "BlueTeam": {
+            "color": "#2277dd",
+            "metrics": {
+                "successProbability": 82.5,
+                "friendlyLosses": 2,
+                "enemyLosses": 6,
+                "detectionEfficiency": 78.0,
+                "weaponEffectiveness": 70.0
+            },
+            "engagementTimeline": {
+                "timePoints": [0,5,7,9,11,13,16,18,21,24,26,30,36,40],
+                "detection":  [2,4,5,7,8,9,10,11,12,13,13,14,14,15],
+                "engagement": [1,3,4,6,7,8,9,10,10,11,12,12,13,13],
+                "damage":     [0,1,2,3,3,4,4,5,5,6,6,6,7,7]
+            },
+            "lossesVsEngagement": {
+                "categories": ["Low","Moderate","High"],
+                "friendlyLosses": [1,2,3],
+                "enemyLosses": [2,4,5]
+            }
+        },
+        "RedTeam": {
+            "color": "#dd2222",
+            "metrics": {
+                "successProbability": 65.0,
+                "friendlyLosses": 4,
+                "enemyLosses": 4,
+                "detectionEfficiency": 60.0,
+                "weaponEffectiveness": 55.0
+            },
+            "engagementTimeline": {
+                "timePoints": [0,5,7,9,11,13,16,18,21,24,26,30,36,40],
+                "detection":  [1,3,4,5,6,7,8,8,9,9,10,10,11,11],
+                "engagement": [1,2,3,4,5,6,6,7,7,8,8,9,9,10],
+                "damage":     [0,1,1,2,2,3,3,4,4,4,5,5,5,6]
+            },
+            "lossesVsEngagement": {
+                "categories": ["Low","Moderate","High"],
+                "friendlyLosses": [1,3,5],
+                "enemyLosses": [1,2,4]
+            }
+        },
+        "GreenTeam": {
+            "color": "#22aa44",
+            "metrics": {
+                "successProbability": 74.0,
+                "friendlyLosses": 3,
+                "enemyLosses": 5,
+                "detectionEfficiency": 68.0,
+                "weaponEffectiveness": 62.0
+            },
+            "engagementTimeline": {
+                "timePoints": [0,5,7,9,11,13,16,18,21,24,26,30,36,40],
+                "detection":  [2,3,4,6,7,8,9,9,10,10,11,11,12,12],
+                "engagement": [1,2,3,5,6,7,7,8,8,9,9,10,10,11],
+                "damage":     [0,1,1,2,3,3,4,4,5,5,5,6,6,6]
+            },
+            "lossesVsEngagement": {
+                "categories": ["Low","Moderate","High"],
+                "friendlyLosses": [1,2,4],
+                "enemyLosses": [1,3,5]
+            }
+        },
+        "YellowTeam": {
+            "color": "#ddaa00",
+            "metrics": {
+                "successProbability": 58.0,
+                "friendlyLosses": 5,
+                "enemyLosses": 3,
+                "detectionEfficiency": 52.0,
+                "weaponEffectiveness": 48.0
+            },
+            "engagementTimeline": {
+                "timePoints": [0,5,7,9,11,13,16,18,21,24,26,30,36,40],
+                "detection":  [1,2,3,4,5,6,6,7,7,8,8,9,9,10],
+                "engagement": [1,2,2,3,4,5,5,6,6,7,7,8,8,9],
+                "damage":     [0,1,1,2,2,2,3,3,4,4,4,5,5,5]
+            },
+            "lossesVsEngagement": {
+                "categories": ["Low","Moderate","High"],
+                "friendlyLosses": [2,3,6],
+                "enemyLosses": [1,2,3]
+            }
+        },
+        "PurpleTeam": {
+            "color": "#9922cc",
+            "metrics": {
+                "successProbability": 70.0,
+                "friendlyLosses": 3,
+                "enemyLosses": 5,
+                "detectionEfficiency": 65.0,
+                "weaponEffectiveness": 58.0
+            },
+            "engagementTimeline": {
+                "timePoints": [0,5,7,9,11,13,16,18,21,24,26,30,36,40],
+                "detection":  [1,3,4,5,6,7,8,9,9,10,10,11,11,12],
+                "engagement": [1,2,3,4,5,6,7,7,8,8,9,9,10,10],
+                "damage":     [0,1,1,2,2,3,3,3,4,4,5,5,5,6]
+            },
+            "lossesVsEngagement": {
+                "categories": ["Low","Moderate","High"],
+                "friendlyLosses": [1,2,4],
+                "enemyLosses": [2,3,5]
+            }
+        }
+    }
+}

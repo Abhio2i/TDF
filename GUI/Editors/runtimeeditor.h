@@ -79,6 +79,7 @@ public:
     static QJsonObject s_missionData;
     static QString     s_missionFilePath;
 
+
 public slots:
     void showProfileInfo();
     void showApplicationDialog();

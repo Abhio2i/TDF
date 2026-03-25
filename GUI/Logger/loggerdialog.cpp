@@ -187,7 +187,7 @@ void LoggerDialog::setupMenuBar()
     // QAction *helpAction = helpMenu->addAction(tr("Help"));
 
     connect(loadAction, &QAction::triggered, this, [this]() {
-        pauseResumeReplayButton->setEnabled(true);
+        // pauseResumeReplayButton->setEnabled(true);
         pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
         pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
 
@@ -208,9 +208,9 @@ void LoggerDialog::setupMenuBar()
         //loggerStatusLabel->setText(tr("Loaded"));
         loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
 
-        startReplayButton->setEnabled(true);
-        previousFrameButton->setEnabled(true);
-        nextFrameButton->setEnabled(true);
+        //startReplayButton->setEnabled(true);
+        //previousFrameButton->setEnabled(true);
+        //nextFrameButton->setEnabled(true);
 
         // qDebug() << "Loading record" << filePath;
     });
@@ -314,6 +314,7 @@ void LoggerDialog::setupUi()
 
     connect(bookmarkButton, &QToolButton::clicked, this, &LoggerDialog::showBookmarkDialog);
     setupConnections();
+
 }
 
 QWidget* LoggerDialog::createRecordingControls()
@@ -337,12 +338,15 @@ QWidget* LoggerDialog::createRecordingControls()
     pauseRecordingButton->setIconSize(QSize(24, 24));
     pauseRecordingButton->setEnabled(false);
 
+
     stopRecordingButton = new QToolButton(this);
     stopRecordingButton->setIcon(QIcon(":/icons/images/stop.png"));
     stopRecordingButton->setToolTip(tr("Stop Recording"));
     stopRecordingButton->setFixedSize(28, 28);
     stopRecordingButton->setIconSize(QSize(24, 24));
     stopRecordingButton->setEnabled(false);
+    //stopRecordingButton->hide();
+
 
     databaseButton = new QToolButton(this);
     databaseButton->setIcon(QIcon(":/icons/images/database.png"));
@@ -350,19 +354,12 @@ QWidget* LoggerDialog::createRecordingControls()
     databaseButton->setFixedSize(28, 28);
     databaseButton->setIconSize(QSize(24, 24));
     databaseButton->setEnabled(true);
-
-    debugButton = new QToolButton(this);
-    debugButton->setIcon(QIcon(":/icons/images/log-file.png"));
-    debugButton->setToolTip(tr("Connect to DataBase"));
-    debugButton->setFixedSize(28, 28);
-    debugButton->setIconSize(QSize(24, 24));
-    debugButton->setEnabled(true);
+    databaseButton->hide();
 
     controlLayout->addWidget(recordButton);
     controlLayout->addWidget(pauseRecordingButton);
     controlLayout->addWidget(stopRecordingButton);
-    controlLayout->addWidget(databaseButton);
-    controlLayout->addWidget(debugButton);
+    // controlLayout->addWidget(databaseButton);
     controlLayout->addStretch();
 
     return container;
@@ -438,6 +435,7 @@ void LoggerDialog::setupConnections()
         // timelineWidget->clearBookmarks();
         recordingDateLabel->setText(recordingStartTime.toString("yyyy-MM-dd hh:mm:ss"));
         loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
+        if(!saveFile()) return;
         emit recordingStart(*recorder);
         inspectRecorder();
         timelineWidget->setValues(
@@ -448,9 +446,9 @@ void LoggerDialog::setupConnections()
         recordButton->setToolTip(tr("Recording..."));
         recordButton->setObjectName("recordingActive");
         recordButton->setStyleSheet("");
-        recordButton->setEnabled(false);
-        pauseRecordingButton->setEnabled(true);
-        stopRecordingButton->setEnabled(true);
+        // recordButton->setEnabled(false);
+        // pauseRecordingButton->setEnabled(true);
+        // stopRecordingButton->setEnabled(true);
 
         isRecordingPaused = false;
         pauseRecordingButton->setIcon(QIcon(":/icons/images/pause.png"));
@@ -492,9 +490,11 @@ void LoggerDialog::setupConnections()
             recordButton->setToolTip(tr("Start Recording"));
             recordButton->setObjectName("");
             recordButton->setStyleSheet("");
-            recordButton->setEnabled(true);
-            pauseRecordingButton->setEnabled(false);
-            stopRecordingButton->setEnabled(false);
+
+            //recordButton->setEnabled(true);
+            //pauseRecordingButton->setEnabled(false);
+            //stopRecordingButton->setEnabled(false);
+
             //loggerStatusLabel->setText(tr("Stopped"));
             loggerStatusLabel->setStyleSheet("font-weight: normal; color: #666;");
             //timelineWidget->setRecordingDuration(0);
@@ -505,7 +505,9 @@ void LoggerDialog::setupConnections()
             pauseRecordingButton->setToolTip(tr("Pause Recording"));
         }
     });
-
+    connect(databaseButton, &QToolButton::clicked,this, [this]() {
+        emit getDBStatusOfRecording(*dbStatusOfRecording);
+    });
     connect(loadRecordingButton, &QToolButton::clicked, this, [this]() {
         if(!dbStatusPtr || dbStatusPtr == nullptr){
             QMessageBox::warning(this, tr("Warning"), tr("DataBase Pointer Not Defined!"));
@@ -523,33 +525,33 @@ void LoggerDialog::setupConnections()
             break;
         }
 
-        pauseResumeReplayButton->setEnabled(true);
+        //pauseResumeReplayButton->setEnabled(true);
         pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
         pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
         emit replayFileLoaded();
         emit pressPlayAgain();
-        startReplayButton->setEnabled(true);
-        previousFrameButton->setEnabled(true);
-        nextFrameButton->setEnabled(true);
+        //startReplayButton->setEnabled(true);
+        //previousFrameButton->setEnabled(true);
+        //nextFrameButton->setEnabled(true);
         // qDebug() << "Recording Replay Again:" << filePath;
     });
 
     connect(startReplayButton, &QToolButton::clicked, this, [this]() {
-        emit getDBStatus();
-        if(!dbStatusPtr || dbStatusPtr == nullptr){
-            QMessageBox::warning(this, tr("Warning"), tr("DataBase Pointer Not Defined!"));
-            return;
-        }
-        switch(*dbStatusPtr){
-        case SQLite::DISCONNECTED:
-            QMessageBox::warning(this, tr("Warning"), tr("DataBase is Disconnected!"));
-            return;
-            break;
-        case SQLite::CONNECTED:
-            qDebug()<<"DataBase is Connected";
-            //QMessageBox::warning(this, tr("Warning"), tr("DataBase is Connected"));
-            break;
-        }
+        // emit getDBStatus();
+        // if(!dbStatusPtr || dbStatusPtr == nullptr){
+        //     QMessageBox::warning(this, tr("Warning"), tr("DataBase Pointer Not Defined!"));
+        //     return;
+        // }
+        // switch(*dbStatusPtr){
+        // case SQLite::DISCONNECTED:
+        //     QMessageBox::warning(this, tr("Warning"), tr("DataBase is Disconnected!"));
+        //     return;
+        //     break;
+        // case SQLite::CONNECTED:
+        //     qDebug()<<"DataBase is Connected";
+        //     //QMessageBox::warning(this, tr("Warning"), tr("DataBase is Connected"));
+        //     break;
+        // }
         inspectRecorder();
         timelineWidget->setValues(
             loggerMode     ,
@@ -560,10 +562,10 @@ void LoggerDialog::setupConnections()
         //loggerStatusLabel->setText(tr("Replaying"));
         //Enableing buttton Start
         loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
-        startReplayButton->setEnabled(false);
-        pauseResumeReplayButton->setEnabled(true);
-        previousFrameButton->    setEnabled(true);
-        nextFrameButton->        setEnabled(true);
+        // startReplayButton->setEnabled(false);
+        // pauseResumeReplayButton->setEnabled(true);
+        // previousFrameButton->    setEnabled(true);
+        // nextFrameButton->        setEnabled(true);
         //Enableing buttton End
 
         pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
@@ -615,11 +617,18 @@ void LoggerDialog::setupConnections()
         // qDebug() << "Bookmark clicked: Note =" << note << ", Timestamp =" << timestampMs << "ms";
     });
 
-    connect(databaseButton, &QToolButton::clicked,this, [this]() {
-        emit dbInit();
+    connect(timelineWidget, &TimelineWidget::getMaxDuration,
+            this, [this](qint64 &maxDuration) {
+        emit getMaxDuration(maxDuration);
     });
+    connect(timelineWidget, &TimelineWidget::sendClickedTimestamp,
+    this, [this](qint64 clickedTimestamp) {
+        emit sendClickedTimestamp(clickedTimestamp);
+    });
+
     connect(databaseButtonReplay, &QToolButton::clicked,this, [this]() {
-        emit dbConnect();
+        findFile();
+        //emit dbConnect();
     });
 
     qDebug() << "Logger is setting up";
@@ -679,19 +688,19 @@ void LoggerDialog::recorderInfoReceive(Recorder::LoggerStatusModes r_loggerStatu
     recorderInfo_Update(loggerStatus);
     if(loggerStatus == Recorder::S_REPLAY_STOPPED){
         pauseResumeReplayButton->setIcon(QIcon(":/icons/images/resume.png"));
-        pauseResumeReplayButton->setEnabled(true);
-        startReplayButton->setEnabled(false);
+        //pauseResumeReplayButton->setEnabled(true);
+        //startReplayButton->setEnabled(false);
         //:/icons/images/play.png
         isReplayPaused = true;
     }
     if(loggerStatus == Recorder::S_REPLAYING){
         pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
-        pauseResumeReplayButton->setEnabled(true);
-        startReplayButton->setEnabled(false);
+        //pauseResumeReplayButton->setEnabled(true);
+        //startReplayButton->setEnabled(false);
     }
     if(loggerStatus == Recorder::S_REPLAY_LOADED){
-        startReplayButton->setEnabled(true);
-        pauseResumeReplayButton->setEnabled(false);
+        //startReplayButton->setEnabled(true);
+        //pauseResumeReplayButton->setEnabled(false);
     }
 }
 
@@ -959,6 +968,88 @@ void LoggerDialog::setC_Duration()
 
 }
 
+bool LoggerDialog::saveFile()
+{
+    QString fullPath = QFileDialog::getSaveFileName(this,
+        tr("Create New File"),
+        "",
+        tr("SQLite .db (*.db);;All Files (*)"));
+
+    if (fullPath.isEmpty()) return false; // User cancelled
+
+    // 2. Ensure the extension is correct if the user didn't type it
+    if (!fullPath.endsWith(".db")) {
+        fullPath += ".db";
+    }
+
+    // 3. Create the actual file on the disk
+    QFile file(fullPath);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&file);
+        out << "File content goes here.";
+        file.close();
+    }else{
+        return false;
+    }
+
+    // 4. Use QFileInfo to extract details
+    QFileInfo fileInfo(fullPath);
+
+    QString fileName = fileInfo.fileName();      // "my_document.txt"
+    QString baseName = fileInfo.baseName();      // "my_document" (no extension)
+    QString dirPath  = fileInfo.absolutePath();  // "/home/user/Documents"
+
+    qDebug() << "Full Path:" << fullPath;
+    qDebug() << "File Name:" << fileName;
+    qDebug() << "Directory:" << dirPath;
+    emit savedFilePath(fullPath);
+    return true;
+}
+
+void LoggerDialog::findFile()
+{
+    // 1. Open dialog filtered for .db files
+    QString fullPath = QFileDialog::getOpenFileName(
+        this,
+        tr("Open Database File"),
+        "",
+        tr("Database Files (*.db);;All Files (*)")
+        );
+
+    if (fullPath.isEmpty()) {
+        return; // User cancelled
+    }
+
+    // 2. Ensure it has the .db extension
+    if (!fullPath.endsWith(".db", Qt::CaseInsensitive)) {
+        fullPath += ".db";
+    }
+
+    // 3. Extract Name and Path
+    QFileInfo fileInfo(fullPath);
+    QString fileName = fileInfo.fileName();
+    QString dirPath  = fileInfo.absolutePath();
+
+    // qDebug() << "File:" << fileName;
+    // qDebug() << "Path:" << dirPath;
+
+    emit getFilePath(fullPath);
+}
+
+void LoggerDialog::alertViaStr(QString msg)
+{
+    QMessageBox msgBox;
+    msgBox.setText(msg);
+    msgBox.exec();
+}
+
+void LoggerDialog::alertViaEnum(Logger_Error err)
+{
+    QMessageBox msgBox;
+    msgBox.setText(errEnumToString[err]);
+    msgBox.exec();
+}
+
 
 
 
@@ -1121,6 +1212,52 @@ void LoggerDialog::setRecorder()
     }
 
 }
+
+void LoggerDialog::toggleButton(
+    Recorder::loggerModes mode,
+    toggleModes toggle)
+{
+    QToolButton* tempBtn = nullptr;
+    QString onButton;
+    switch(mode){
+    case Recorder::RECORDING:
+        tempBtn = pauseRecordingButton;
+        onButton = "Recorder";
+        break;
+    case Recorder::REPLAY:
+        tempBtn = pauseResumeReplayButton;
+        onButton = "Replay";
+        break;
+    }
+    switch(toggle){
+    case togglePlay:
+        tempBtn->setIcon(QIcon(":/icons/images/resume.png"));
+        tempBtn->setToolTip("Resume "+onButton);
+        break;
+    case togglePause:
+        tempBtn->setIcon(QIcon(":/icons/images/pause.png"));
+        tempBtn->setToolTip("Pause "+onButton);
+        break;
+    }
+}
+
+void LoggerDialog::freezeButtonOperation(
+    ButtonNOpsList buttonOperationList)
+{
+    for(auto i = buttonOperationList.begin();
+         i != buttonOperationList.end(); ++i){
+        switch(i->second){
+        case Freeze:
+           (*loggerButtonMap[i->first])->setEnabled(false);
+        break;
+        case Unfreeze:
+           (*loggerButtonMap[i->first])->setEnabled(true);
+        break;
+        }
+    }
+}
+
+
 
 // void LoggerDialog::receiveRecorder(Recorder &r_recoder)
 // {

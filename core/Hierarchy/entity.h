@@ -122,6 +122,10 @@ public:
     float Health = 100;
     float fuel = 100;
     bool isVictom = false;
+    bool engaged = false;
+    float detectionCount = 0;
+    float weaponcount = 0;
+    float hitcount = 0;
     std::unordered_map<std::string, std::shared_ptr<Parameter>> parameters;
     std::vector<Radio*> radioList;
     std::vector<Sensor*> sensorList;

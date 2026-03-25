@@ -132,6 +132,7 @@ AddItemDialog::AddItemDialog(DialogType type,
     maxPlaneSpeedSpinBox(nullptr),
     minTurnRadiusSpinBox(nullptr),
     maxTurnRadiusSpinBox(nullptr),
+    teamSelectComboBox(nullptr),
     entitySearchLineEdit(nullptr),
     profileFilterComboBox(nullptr),
     entityCompleter(nullptr),
@@ -883,6 +884,30 @@ void AddItemDialog::setupUI(DialogType type)
             numberLineEdit->setValidator(new QIntValidator(1, 10000, this));
             numberLayout->addWidget(numberLineEdit);
             mainLayout->addLayout(numberLayout);
+            if (shouldShowNumberField && !isForComponentAdd && !isForSensor) {
+                QHBoxLayout *teamLayout = new QHBoxLayout();
+
+                QLabel *teamLabel = new QLabel("Team:", this);
+                teamLabel->setStyleSheet("color: white;");
+                teamLayout->addWidget(teamLabel);
+
+                teamSelectComboBox = new QComboBox(this);
+                QStringList teams = {"None", "RedTeam", "BlueTeam", "GreenTeam",
+                                     "YellowTeam", "GreyTeam", "AlphaTeam",
+                                     "BetaTeam", "GammaTeam"};
+                teamSelectComboBox->addItems(teams);
+                teamSelectComboBox->setCurrentText("None");
+                teamSelectComboBox->setStyleSheet(
+                    "QComboBox { color: white; background-color: #1A3652; border: 1px solid #27446d; padding: 4px 8px; }"
+                    "QComboBox::drop-down { border: none; background: transparent; width: 20px; }"
+                    "QComboBox::down-arrow { image: url(:/icons/images/down.png); width: 12px; height: 12px; border: none; }"
+                    "QComboBox::down-arrow:on { image: url(:/icons/images/down.png); }"
+                    "QComboBox QAbstractItemView { background-color: #1A3652; color: white; selection-background-color: #27446d; }");
+
+                teamLayout->addWidget(teamSelectComboBox);
+                teamLayout->addStretch();
+                mainLayout->addLayout(teamLayout);
+            }
         }
     }
 
@@ -1515,4 +1540,9 @@ bool AddItemDialog::validateInputs()
     }
 
     return true;
+}
+QString AddItemDialog::getSelectedTeam() const {
+    if (teamSelectComboBox && teamSelectComboBox->currentText() != "None")
+        return teamSelectComboBox->currentText();
+    return "";
 }

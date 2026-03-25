@@ -41,45 +41,48 @@ void Folder::setProfileType(Constants::EntityType Type){
     type = Type;
 }
 
-Folder* Folder::addFolder(std::string folderName, std::string iD){
-    // if(Folders.count(folderName)){
-
-    //     Console::error(
-    //         "RunTimeError::" + std::string(__FILE__) + "," +
-    //         std::to_string(__LINE__) + " Folder already exists With Same Name"
-    //         );
-    //     return nullptr;
-    // }
-
+Folder* Folder::addFolder(std::string folderName, std::string iD) {
+    // 1. Parent Hierarchy check (Critical for safety)
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    if (!parent || !parent->Folders) {
+        Console::error("RunTimeError::" + std::string(__FILE__) + ":" + std::to_string(__LINE__) +
+                       " - Hierarchy parent or parent->Folders is null!");
+        return nullptr;
+    }
+
+    // 2. Memory Allocation
     emit parent->status("add");
-    Folder *folder = new Folder(parent);
+    Folder* folder = new Folder(parent);
     folder->Name = folderName;
-    folder->parentID = ID;
-    folder->setProfileType(type);
-    if(!iD.empty()){
+    folder->parentID = this->ID; // Use current folder's ID as parent
+    folder->setProfileType(this->type); // Inherit type from current folder
+
+    // 3. ID Assignment (ID empty ho toh Folder constructor wala use hoga)
+    if (!iD.empty()) {
         folder->ID = iD;
     }
-    Folders.insert({folder->ID, folder});
 
-    // Automatically update hierarchy's Folders
+    // 4. Double Insertion (Syncing current folder and global hierarchy)
+    // Current folder's local map
+    this->Folders.insert({folder->ID, folder});
 
-    if (parent && parent->Folders) {
-        parent->Folders->insert({folder->ID, folder});
-        emit parent->folderAddedPointer(QString::fromStdString(folder->parentID),folder);
-        emit parent->folderAdded(QString::fromStdString(folder->parentID), QString::fromStdString(folder->ID),QString::fromStdString(folderName));
-        parent->dictionry[folder->parentID].push_back(folder->ID);
+    // Global Hierarchy map
+    parent->Folders->insert({folder->ID, folder});
 
-    } else {
-        Console::error(
-            "RunTimeError::" + std::string(__FILE__) + "," +
-            std::to_string(__LINE__) +
-            "Hierarchy parent or parent->Folders is null!");
-    }
+    // 5. Dictionary/Indexing update
+    // Yahan ensure karein ki parentID ki entry exist karti ho
+    parent->dictionry[folder->parentID].push_back(folder->ID);
+
+    // 6. Signals emit karna
+    QString qParentID = QString::fromStdString(folder->parentID);
+    QString qFolderID = QString::fromStdString(folder->ID);
+    QString qFolderName = QString::fromStdString(folderName);
+
+    emit parent->folderAddedPointer(qParentID, folder);
+    emit parent->folderAdded(qParentID, qFolderID, qFolderName);
 
     return folder;
 }
-
 
 void Folder::addFolderWithObject(Folder *folder){
     folder->parentID = ID;

@@ -23,12 +23,10 @@ MenuBar::MenuBar(QWidget *parent)
     fileMenu->setStyleSheet(MenuBarStyles::Menu);
 
     newFileAction = new QAction("New File", this);
-    // newFileAction->setShortcut(QKeySequence("Ctrl+N"));
     recentProjectAction = new QAction("Recent Project", this);
     recentProjectLibraryAction = new QAction("Recent Library", this);
     loadJsonAction = new QAction("Open File", this);
     loadXmlAction = new QAction("Open XML File", this);
-    // loadJsonAction->setShortcut(QKeySequence("Ctrl+O"));
     loadToLibraryAction = new QAction("Open File to Library", this);
     openRuntimeInstanceAction = new QAction("Open Runtime Instance", this);
     openMissionFileAction = new QAction("Open Mission File", this);
@@ -49,31 +47,17 @@ MenuBar::MenuBar(QWidget *parent)
     fileMenu->addAction(sameSaveAction);
     fileMenu->addAction(saveJsonAction);
     fileMenu->addSeparator();
-    // fileMenu->addAction(runAction);
     fileMenu->addAction(exitAction);
 
-    // Create edit menu (commented out in original)
-    // editMenu = addMenu("Edit");
-    // editMenu->setStyleSheet(MenuBarStyles::Menu);
-
     undoAction = new QAction("Undo", this);
-    // undoAction->setShortcut(QKeySequence("Ctrl+Z"));
     redoAction = new QAction("Redo", this);
-    // redoAction->setShortcut(QKeySequence("Ctrl+Y"));
     selectAllAction = new QAction("Select All", this);
-    // selectAllAction->setShortcut(QKeySequence("Ctrl+A"));
     deselectAllAction = new QAction("Deselect All", this);
-    // deselectAllAction->setShortcut(QKeySequence("Ctrl+Shift+A"));
     cutAction = new QAction("Cut", this);
-    // cutAction->setShortcut(QKeySequence("Ctrl+X"));
     copyAction = new QAction("Copy", this);
-    // copyAction->setShortcut(QKeySequence("Ctrl+C"));
     pasteAction = new QAction("Paste", this);
-    // pasteAction->setShortcut(QKeySequence("Ctrl+V"));
     duplicateAction = new QAction("Duplicate", this);
-    // duplicateAction->setShortcut(QKeySequence("Ctrl+D"));
     renameAction = new QAction("Rename", this);
-    // renameAction->setShortcut(QKeySequence("F2"));
     deleteAction = new QAction("Delete", this);
 
     // Create feedback menu
@@ -83,10 +67,10 @@ MenuBar::MenuBar(QWidget *parent)
     feedbackMenu->addAction(feedbackAction);
 
     profileAction = addAction("Performance");
-    profileAction->setMenuRole(QAction::NoRole);  // Ensure it's in the menu bar
+    profileAction->setMenuRole(QAction::NoRole);
 
     applicationAction = addAction("Settings");
-    applicationAction->setMenuRole(QAction::NoRole);  // Ensure it's in the menu bar
+    applicationAction->setMenuRole(QAction::NoRole);
 
     // Connect actions to signals
     connect(loadXmlAction, &QAction::triggered, this, &MenuBar::loadXmlTriggered);
@@ -101,7 +85,6 @@ MenuBar::MenuBar(QWidget *parent)
     connect(openMissionFileAction, &QAction::triggered, this, &MenuBar::openMissionFileTriggered);
     connect(sameSaveAction, &QAction::triggered, this, &MenuBar::sameSaveTriggered);
     connect(saveJsonAction, &QAction::triggered, this, &MenuBar::saveTriggered);
-    // connect(runAction, &QAction::triggered, this, &MenuBar::runTriggered);
     connect(exitAction, &QAction::triggered, this, &MenuBar::exitTriggered);
     connect(undoAction, &QAction::triggered, this, &MenuBar::undoTriggered);
     connect(redoAction, &QAction::triggered, this, &MenuBar::redoTriggered);
@@ -118,146 +101,30 @@ MenuBar::MenuBar(QWidget *parent)
 }
 
 // %%% Getter Methods %%%
-/* Get file menu */
-QMenu* MenuBar::getFileMenu()
-{
-    return fileMenu;
-}
-
-// /* Get edit menu */
-// QMenu* MenuBar::getEditMenu()
-// {
-//     return editMenu;
-// }
-
-/* Get view menu */
-QMenu* MenuBar::getViewMenu()
-{
-    return viewMenu;
-}
-
-/* Get load action */
-QAction* MenuBar::getLoadAction()
-{
-    return loadJsonAction;
-}
-
-/* Get load to library action */
-QAction* MenuBar::getLoadToLibraryAction()
-{
-    return loadToLibraryAction;
-}
-
-/* Get save action */
-QAction* MenuBar::getSameSaveAction()
-{
-    return sameSaveAction;
-}
-
-/* Get save as action */
-QAction* MenuBar::getSaveAction()
-{
-    return saveJsonAction;
-}
-
-/* Get feedback action */
-QAction* MenuBar::getFeedbackAction()
-{
-    return feedbackAction;
-}
-
-/* Get new file action */
-QAction* MenuBar::getNewFileAction()
-{
-    return newFileAction;
-}
-
-/* Get recent project action */
-QAction* MenuBar::getRecentProjectAction()
-{
-    return recentProjectAction;
-}
-
-QAction* MenuBar::getrecentProjectLibraryAction()
-{
-    return recentProjectLibraryAction;
-}
-
-/* Get exit action */
-QAction* MenuBar::getExitAction()
-{
-    return exitAction;
-}
-
-/* Get undo action */
-QAction* MenuBar::getUndoAction()
-{
-    return undoAction;
-}
-
-/* Get redo action */
-QAction* MenuBar::getRedoAction()
-{
-    return redoAction;
-}
-
-/* Get select all action */
-QAction* MenuBar::getSelectAllAction()
-{
-    return selectAllAction;
-}
-
-/* Get deselect all action */
-QAction* MenuBar::getDeselectAllAction()
-{
-    return deselectAllAction;
-}
-
-/* Get cut action */
-QAction* MenuBar::getCutAction()
-{
-    return cutAction;
-}
-
-/* Get copy action */
-QAction* MenuBar::getCopyAction()
-{
-    return copyAction;
-}
-
-/* Get paste action */
-QAction* MenuBar::getPasteAction()
-{
-    return pasteAction;
-}
-
-/* Get duplicate action */
-QAction* MenuBar::getDuplicateAction()
-{
-    return duplicateAction;
-}
-
-/* Get rename action */
-QAction* MenuBar::getRenameAction()
-{
-    return renameAction;
-}
-
-/* Get delete action */
-QAction* MenuBar::getDeleteAction()
-{
-    return deleteAction;
-}
-
-QAction* MenuBar::getLoadXmlAction()
-{
-    return loadXmlAction;
-}
-
-QAction* MenuBar::getOpenRuntimeInstanceAction()
-{
-    return openRuntimeInstanceAction;
-}
+QMenu* MenuBar::getFileMenu()        { return fileMenu; }
+QMenu* MenuBar::getViewMenu()        { return viewMenu; }
+QAction* MenuBar::getLoadAction()    { return loadJsonAction; }
+QAction* MenuBar::getLoadToLibraryAction() { return loadToLibraryAction; }
+QAction* MenuBar::getSameSaveAction(){ return sameSaveAction; }
+QAction* MenuBar::getSaveAction()    { return saveJsonAction; }
+QAction* MenuBar::getFeedbackAction(){ return feedbackAction; }
+QAction* MenuBar::getNewFileAction() { return newFileAction; }
+QAction* MenuBar::getRecentProjectAction()  { return recentProjectAction; }
+QAction* MenuBar::getrecentProjectLibraryAction() { return recentProjectLibraryAction; }
+QAction* MenuBar::getExitAction()    { return exitAction; }
+QAction* MenuBar::getUndoAction()    { return undoAction; }
+QAction* MenuBar::getRedoAction()    { return redoAction; }
+QAction* MenuBar::getSelectAllAction()   { return selectAllAction; }
+QAction* MenuBar::getDeselectAllAction() { return deselectAllAction; }
+QAction* MenuBar::getCutAction()     { return cutAction; }
+QAction* MenuBar::getCopyAction()    { return copyAction; }
+QAction* MenuBar::getPasteAction()   { return pasteAction; }
+QAction* MenuBar::getDuplicateAction(){ return duplicateAction; }
+QAction* MenuBar::getRenameAction()  { return renameAction; }
+QAction* MenuBar::getDeleteAction()  { return deleteAction; }
+QAction* MenuBar::getLoadXmlAction() { return loadXmlAction; }
+QAction* MenuBar::getOpenRuntimeInstanceAction() { return openRuntimeInstanceAction; }
+QAction* MenuBar::getOpenMissionFileAction()     { return openMissionFileAction; }
 
 // %%% Set Library Actions Visibility %%%
 /* Show or hide library-related actions */
@@ -267,7 +134,51 @@ void MenuBar::setLibraryActionsVisible(bool visible)
     loadToLibraryAction->setVisible(visible);
     openRuntimeInstanceAction->setVisible(visible);
 }
-QAction* MenuBar::getOpenMissionFileAction()
+
+// %%% Update File Menu Per Editor %%%
+/* Show/hide File menu items based on the active editor.
+   IMPORTANT: always call this BEFORE setLibraryActionsVisible()
+   so that library-visibility is applied last and wins. */
+void MenuBar::updateFileMenuForEditor(const QString& editorKey)
 {
-    return openMissionFileAction;
+    // ── Step 1: reset everything to visible ──
+    newFileAction->setVisible(true);
+    recentProjectAction->setVisible(true);
+    recentProjectLibraryAction->setVisible(true);
+    loadJsonAction->setVisible(true);
+    loadXmlAction->setVisible(true);
+    loadToLibraryAction->setVisible(true);
+    openRuntimeInstanceAction->setVisible(true);
+    openMissionFileAction->setVisible(true);
+    sameSaveAction->setVisible(true);
+    saveJsonAction->setVisible(true);
+    exitAction->setVisible(true);
+
+    // ── Step 2: hide what is not needed per editor ──
+    if (editorKey == "database" || editorKey == "scenario")
+    {
+        // Only hide Open Mission File
+        openMissionFileAction->setVisible(false);
+    }
+    else if (editorKey == "mission")
+    {
+        // Hide: New File | Open XML File | Open Mission File
+        newFileAction->setVisible(false);
+        loadXmlAction->setVisible(false);
+        openMissionFileAction->setVisible(false);
+    }
+    else if (editorKey == "analysis")
+    {
+        // Hide everything except Exit
+        newFileAction->setVisible(false);
+        recentProjectAction->setVisible(false);
+        recentProjectLibraryAction->setVisible(false);
+        loadJsonAction->setVisible(false);
+        loadXmlAction->setVisible(false);
+        loadToLibraryAction->setVisible(false);
+        openRuntimeInstanceAction->setVisible(false);
+        openMissionFileAction->setVisible(false);
+        sameSaveAction->setVisible(false);
+        saveJsonAction->setVisible(false);
+    }
 }

@@ -2,6 +2,7 @@
 #include "core/Hierarchy/EntityProfiles/radio.h"
 #include "core/Hierarchy/EntityProfiles/sensor.h"
 #include "core/Hierarchy/EntityProfiles/iff.h"
+#include "core/Hierarchy/EntityProfiles/weapons/bomb.h"  // for launchBombs()
 #include "qelapsedtimer.h"
 #include "qjsonarray.h"
 #include "core/Hierarchy/Utils/entityutils.h"
@@ -211,7 +212,42 @@ void Platform::Start(){
 
 
 void Platform::reset(){
+    m_bombsReleased = false;   // allow bombs to drop again on next flight
     //taskgroup->reset();
+}
+
+// =============================================================================
+// Platform::launchBombs()
+// Iterates the WeaponProfile and calls Bomb::launch() on every unlaunched Bomb.
+// Called automatically by update() when altitude first crosses DROP_ALTITUDE_M.
+// Safe to call manually (e.g. from a script) — isLaunched guard prevents re-launch.
+// =============================================================================
+void Platform::launchBombs()
+{
+    if (!weapons || !weapons->weapons || weapons->weapons->empty()) {
+        Console::log("Platform::launchBombs() — no weapons on: " + Name);
+        return;
+    }
+    if (!transform || !transform->geocord) {
+        Console::error("Platform::launchBombs() — no transform: " + Name);
+        return;
+    }
+
+    int total = 0, launched = 0;
+    for (auto& [id, weapon] : *weapons->weapons) {
+        if (!weapon) continue;
+        Bomb* bomb = dynamic_cast<Bomb*>(weapon);
+        if (!bomb) continue;
+        total++;
+        if (bomb->isLaunched) continue;
+        bomb->parentEntity = this;
+        bomb->launch();
+        launched++;
+    }
+
+    Console::log("Platform::launchBombs() — " + Name + " released " +
+                 std::to_string(launched) + "/" + std::to_string(total) + " bombs" +
+                 " at alt=" + std::to_string(static_cast<int>(transform->geocord->altitude)) + "m");
 }
 
 void Platform::start(){
@@ -223,8 +259,23 @@ void Platform::pause(){
 }
 
 void Platform::update(){
+    float fuelconsumption = 0.02*(dynamicModel->currentSpeed/3000.0f);
+    fuel -= fuelconsumption;
+    fuel = fuel<0?0:fuel;
     if(Health <= 0){
         Active = false;
+        engaged = false;
+        detectionCount = 0;
+    }
+    // ── 300 ft bomb auto-release ──────────────────────────────────────────────
+    // When the aircraft first climbs above DROP_ALTITUDE_M (300 ft = 91.44 m),
+    // release all bombs in the WeaponProfile exactly once per flight.
+    // m_bombsReleased prevents re-triggering on every subsequent update() call.
+    if (!m_bombsReleased && transform && transform->geocord &&
+        transform->geocord->altitude >= static_cast<double>(DROP_ALTITUDE_FT))
+    {
+        launchBombs();
+        m_bombsReleased = true;   // bombs released — don't check again this flight
     }
     //qDebug()<<"update";
     int csmTime = 0;
@@ -306,7 +357,7 @@ void Platform::update(){
     }
     // Note: add WeaponTime to Frame struct in profiler.h to enable weapon timing
     if(team == Team::RedTeam||team == Team::BlueTeam){
-            Decision();
+        Decision();
     }
 
 
@@ -352,26 +403,21 @@ void Platform::Decision(){
             }
         }
     }
+    detectionCount = enemyCount;
+     weaponcount = weapons->weapons->size();
     // --- STEP 1: Retreat Logic (Same as before) ---
     bool shouldRetreat = false;
     if (retreat != Retreat::NEVER_RETREAT) {
         if (retreat == Retreat::RETREAT_IF_DAMAGE_EXCEEDS_THRESHOLD && Health < healthThreshold) shouldRetreat = true;
         else if (retreat == Retreat::RETREAT_IF_FUEL_LOW && fuel < fuelthreshold) shouldRetreat = true;
         else if (retreat == Retreat::RETREAT_IF_OUTNUMBERED && enemyCount > 3) shouldRetreat = true;
+        else if (retreat == Retreat::RETREAT_IF_AMMO_DEPLETED && weaponcount <= 0) shouldRetreat = true;
         else if (retreat == Retreat::TACTICAL_WITHDRAWAL && isVictom) shouldRetreat = true;
     }
-    bool noweapons = false;
-    if(weapons && weapons->weapons->size()>0){
-        int i = 0;
-        for (auto const& pair : *weapons->weapons) {
-            Weapon* w = pair.second;
-            if (w  && !w->isLaunched) {
-                i++;
-            }
-        }
-        noweapons = i==0;
-    }
-    if (shouldRetreat || noweapons) {
+
+
+
+    if (shouldRetreat) {
         dynamicModel->followTarget = false;
         trajectory->goHome();
         return;
@@ -399,7 +445,7 @@ void Platform::Decision(){
         break;
 
     case Engagement::ASSIGNED_TARGET_ONLY:
-        primaryTarget = closestTarget;
+        // primaryTarget = closestTarget;
         break;
 
     case Engagement::GROUP_ENGAGEMENT:
@@ -414,14 +460,16 @@ void Platform::Decision(){
     if(primaryTarget && dynamicModel->followEntity!=primaryTarget){
         dynamicModel->followEntity = primaryTarget;
         dynamicModel->followTarget = true;
+        engaged = true;
     }
-    if(primaryTarget==nullptr){
+    if(primaryTarget==nullptr || !primaryTarget->Active){
         dynamicModel->followTarget = false;
+        engaged = false;
     }
 
     // --- STEP 3: Engagement & ROI Check ---
     bool canFire = false;
-    float distToTarget = lowestRange/1000.0f;
+    float distToTarget = lowestRange/1.0f;
 
     // ROI Check logic using the specific primaryTarget distance
     switch (roi) {
@@ -440,12 +488,12 @@ void Platform::Decision(){
         break;
 
     case ROI::COMMAND_AUTHORIZATION_REQUIRED:
-        canFire = true;
+        canFire = false;
         break;
     }
 
     // --- STEP 4: Weapon Release ---
-    if (canFire && primaryTarget && !primaryTarget->isVictom) {
+    if (primaryTarget!=nullptr && primaryTarget->Active && canFire && primaryTarget && !primaryTarget->isVictom ) {
         if (weaponrelease == WeaponRelease::AUTOMATIC || weaponrelease == WeaponRelease::WEAPON_FREE) {
             ////ExecuteFireSequence(primaryTarget); // Target ko shoot karo
             if (weapons) {
@@ -468,6 +516,61 @@ void Platform::Decision(){
         }
     }
 }
+
+
+void Platform::fireMissile(){
+    if(roi != ROI::COMMAND_AUTHORIZATION_REQUIRED) return;
+    float lowestRange = 11000000000;
+    float healthchck = 1000;
+    Platform* closestTarget = nullptr;
+    Platform* lowestHealthTarget = nullptr;
+    int enemyCount = 0;
+    for (auto const& pair :*sensors->sensors) {
+        Sensor* s = pair.second;
+        if(!s||!s->Active)continue;
+        for (int i = 0; i < s->targets.size(); ++i) {
+            if(s->targets.at(i).entity->team != team){
+                if(s->targets.at(i).radius<lowestRange ){
+                    lowestRange = s->targets.at(i).radius;
+                    qDebug()<<lowestRange;
+                    closestTarget = s->targets.at(i).entity;
+                }
+                if(s->targets.at(i).entity->Health<healthchck ){
+                    healthchck = s->targets.at(i).entity->Health;
+                    lowestHealthTarget = s->targets.at(i).entity;
+                }
+                enemyCount++;
+            }
+        }
+        for (int i = 0; i < s->ewtargets.size(); ++i) {
+            if(s->ewtargets.at(i).entity->team != team){
+                if(s->ewtargets.at(i).radius<lowestRange ){
+                    lowestRange = s->ewtargets.at(i).radius;
+                    qDebug()<<lowestRange;
+                    closestTarget = s->ewtargets.at(i).entity;
+                }
+                if(s->ewtargets.at(i).entity->Health<healthchck ){
+                    healthchck = s->ewtargets.at(i).entity->Health;
+                    lowestHealthTarget = s->ewtargets.at(i).entity;
+                }
+                enemyCount++;
+            }
+        }
+    }
+
+    if (weapons && closestTarget!=nullptr && closestTarget->Active) {
+        for (auto const& pair : *weapons->weapons) {
+            Weapon* w = pair.second;
+            if (w  && !w->isLaunched) {
+                w->setTarget(closestTarget->transform,3000);
+                w->missileStart();
+                weapons->weapons->erase(pair.first);
+                break;
+            }
+        }
+    }
+}
+
 
 void Platform::spawn() {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
@@ -518,6 +621,7 @@ QJsonObject Platform::toJson() const {
     obj["parent_id"] = QString::fromStdString(parentID);
     obj["active"] = Active;
     obj["health"] = toParm(Health,"%");
+    obj["fuel"] = toParm(fuel,"%");
     obj["Mission"] = false;
     QJsonObject TeamObj;
     TeamObj["type"] = "option";
@@ -783,6 +887,7 @@ void Platform::fromJson(const QJsonObject& obj) {
             it.key() != "radios" &&
             it.key() != "sensors" &&
             it.key() != "health" &&
+            it.key() != "fuel" &&
             it.key() != "iffs" &&
             it.key() != "weapons" &&
             it.key() != "Mission" &&

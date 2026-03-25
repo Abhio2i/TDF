@@ -25,10 +25,12 @@ void Specialzone::Update(float delta){
             float distance = transform->matrix->translation().distanceToPoint(entity->transform->matrix->translation())*1000;
             // qDebug()<<distance;
             float alt = entity->dynamicModel->currentAltitude * 1;//KMtoFT;
-            if(distance < collider->CollideRadius && alt > MinAltitude && alt < MaxAltitude){
+            if(distance < collider->CollideRadius && alt > (MinAltitude-100) && alt < MaxAltitude){
                 entity->dynamicModel->windAngle = direction;
                 entity->dynamicModel->windDierction = getDynamicWind(direction,  time);
                 entity->dynamicModel->windSpeed = Speed;//getDynamicSpeed(Speed,  time);
+            }else{
+                entity->dynamicModel->windSpeed = 0;
             }
         }
     }

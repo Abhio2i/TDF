@@ -16,7 +16,7 @@
 #include <QMessageBox>
 #include "GUI/Editors/databaseeditor.h"
 #include "GUI/Editors/scenarioeditor.h"
-#include "GUI/Editors/missioneditor.h"          // %%% NEW %%%
+#include "GUI/Editors/missioneditor.h"
 #include "GUI/Editors/runtimeeditor.h"
 #include "GUI/Menubars/menubar.h"
 #include "GUI/Navigation/navigationpage.h"
@@ -37,48 +37,38 @@ class MainWindow : public QMainWindow
 public:
     // %%% Static Configuration %%%
     static ScenarioConfig* scenarioconfig;
-
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-
     // %%% Accessor Methods %%%
     QMainWindow* getCurrentEditor() const;
     static MainWindow* instance();
-
     // %%% Editor instances %%%
     DatabaseEditor *databaseEditor = nullptr;
     ScenarioEditor *scenarioEditor = nullptr;
-    MissionEditor  *missionEditor  = nullptr;   // %%% NEW %%%
+    MissionEditor  *missionEditor  = nullptr;
     RuntimeEditor  *runtimeEditor  = nullptr;
     QStackedWidget *stackedWidget  = nullptr;
     AnalysisEditor *analysisEditor  = nullptr;
-
     Hierarchy* getDatabaseHierarchy() const {
         return databaseEditor ? databaseEditor->hierarchy : nullptr;
     }
-
     void showLoadingOverlay(const QString& message = "Loading...");
     void hideLoadingOverlay();
-
 protected:
     void closeEvent(QCloseEvent *event) override;
-
 private slots:
     void switchEditor(const QString &editorKey);
     void onUnsavedChangesChanged(bool hasUnsaved);
     bool promptForSave(QMainWindow* editor, const QString& editorName);
-
 private:
     void setupUI();
     void setupMenuBarConnections();
     bool handleUnsavedChanges();
     void updateWindowTitleForCurrentEditor();
     void updateWindowTitle(const QString& editorName, bool hasUnsavedChanges);
-
     NavigationPage *navigationPage = nullptr;
     static MainWindow* s_instance;
     MenuBar *mainMenuBar = nullptr;
-
     // %%% TDF helpers %%%
     QString ensureTDFSubfolder(const QString& subfolderName);
     void loadFileWithTDFSupport(QMainWindow* editor,
@@ -88,7 +78,6 @@ private:
     void saveFileWithTDFSupport(QMainWindow* editor);
     void saveToSameFileWithTDFSupport(QMainWindow* editor);
     void createScenarioInstanceCopy(const QString& runtimeFilePath, const QJsonObject& data);
-
     QWidget*      m_loadingOverlay = nullptr;
     QLabel*       m_loadingLabel   = nullptr;
     QProgressBar* m_loadingBar     = nullptr;

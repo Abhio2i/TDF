@@ -1,8 +1,14 @@
+
 #include "customresizableoverlaydock.h"
 #include <QCursor>
 #include <QPainter>
 #include <QPen>
 #include <QApplication>
+#include <QToolButton>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QStyle>
+
 CustomResizableOverlayDock::CustomResizableOverlayDock(const QString &title, QWidget *parent)
     : QDockWidget(title, parent)
 {
@@ -13,9 +19,35 @@ CustomResizableOverlayDock::CustomResizableOverlayDock(const QString &title, QWi
                   "QDockWidget::title { background-color: #333; color: white; }");
 
     setMouseTracking(true);
-    qApp->installEventFilter(this);
+    setAttribute(Qt::WA_Hover, true);
+
+    // REMOVED: qApp->installEventFilter(this)
+    // Sirf apne aap pe lagao — global nahi
+    installEventFilter(this);
+
+    setupTitleBar(title);
 }
 
+// ─── setWidget override ───────────────────────────────────────────────────────
+// Content widget (body area) pe mouseTracking + eventFilter lagao
+// Bina iske body area pe mouse events filter tak pohonchte hi nahi
+void CustomResizableOverlayDock::setWidget(QWidget *widget)
+{
+    QDockWidget::setWidget(widget);
+    if (!widget) return;
+
+    widget->setMouseTracking(true);
+    widget->setAttribute(Qt::WA_Hover, true);
+    widget->installEventFilter(this);
+
+    for (QWidget *child : widget->findChildren<QWidget*>()) {
+        child->setMouseTracking(true);
+        child->setAttribute(Qt::WA_Hover, true);
+        child->installEventFilter(this);
+    }
+}
+
+// ─── Mouse Press ─────────────────────────────────────────────────────────────
 void CustomResizableOverlayDock::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
@@ -24,6 +56,7 @@ void CustomResizableOverlayDock::mousePressEvent(QMouseEvent *event)
             resizing = true;
             dragPosition = event->globalPos() - frameGeometry().topLeft();
             event->accept();
+            return; // QDockWidget::mousePressEvent mat bulao — cursor kharab karta hai
         } else {
             dragPosition = event->globalPos() - frameGeometry().topLeft();
             event->accept();
@@ -31,36 +64,32 @@ void CustomResizableOverlayDock::mousePressEvent(QMouseEvent *event)
     }
     QDockWidget::mousePressEvent(event);
 }
+
+// ─── Mouse Move ──────────────────────────────────────────────────────────────
 void CustomResizableOverlayDock::mouseMoveEvent(QMouseEvent *event)
 {
     if (resizing) {
         QRect rect = geometry();
-        QPoint globalPos = event->globalPos();
-        QPoint posInParent = parentWidget() ? parentWidget()->mapFromGlobal(globalPos) : globalPos;
+        QPoint globalPos  = event->globalPos();
+        QPoint posInParent = parentWidget()
+                                 ? parentWidget()->mapFromGlobal(globalPos)
+                                 : globalPos;
+
         if (resizeEdge.testFlag(Qt::TopEdge)) {
             int oldBottom = rect.bottom();
-            int newTop = posInParent.y();
-            int newHeight = oldBottom - newTop;
-
-            if (newHeight > minimumHeight()) {
+            int newTop    = posInParent.y();
+            if ((oldBottom - newTop) > minimumHeight())
                 rect.setTop(newTop);
-            }
-        }
-
-        else if (resizeEdge.testFlag(Qt::BottomEdge)) {
+        } else if (resizeEdge.testFlag(Qt::BottomEdge)) {
             rect.setBottom(posInParent.y());
         }
 
-
         if (resizeEdge.testFlag(Qt::LeftEdge)) {
             int oldRight = rect.right();
-            int newLeft = posInParent.x();
-            if ((oldRight - newLeft) > minimumWidth()) {
+            int newLeft  = posInParent.x();
+            if ((oldRight - newLeft) > minimumWidth())
                 rect.setLeft(newLeft);
-            }
-        }
-
-        else if (resizeEdge.testFlag(Qt::RightEdge)) {
+        } else if (resizeEdge.testFlag(Qt::RightEdge)) {
             rect.setRight(posInParent.x());
         }
 
@@ -72,64 +101,100 @@ void CustomResizableOverlayDock::mouseMoveEvent(QMouseEvent *event)
         event->accept();
     }
     else {
-        updateCursor(event->pos());
-        QDockWidget::mouseMoveEvent(event);
+        QPoint localPos = mapFromGlobal(event->globalPos());
+        updateCursor(localPos);
+        event->accept();
     }
 }
+
+// ─── Mouse Release ───────────────────────────────────────────────────────────
 void CustomResizableOverlayDock::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        resizing = false;
+        resizing   = false;
         resizeEdge = Qt::Edges();
-        updateCursor(event->pos());
+
+        QPoint localPos = mapFromGlobal(QCursor::pos());
+        updateCursor(localPos);
     }
     QDockWidget::mouseReleaseEvent(event);
 }
 
+// ─── Edge Detection ──────────────────────────────────────────────────────────
 Qt::Edges CustomResizableOverlayDock::getResizeEdge(const QPoint &pos) const
 {
     Qt::Edges edges;
     QRect r = rect();
 
-    if (pos.x() <= resizeMargin)                    edges |= Qt::LeftEdge;
-    if (pos.x() >= r.width() - resizeMargin - 1)    edges |= Qt::RightEdge;
-    if (pos.y() <= resizeMargin)                    edges |= Qt::TopEdge;
-    if (pos.y() >= r.height() - resizeMargin - 1)   edges |= Qt::BottomEdge;
+    if (pos.x() <= resizeMargin)                  edges |= Qt::LeftEdge;
+    if (pos.x() >= r.width()  - resizeMargin - 1) edges |= Qt::RightEdge;
+    if (pos.y() <= resizeMargin)                  edges |= Qt::TopEdge;
+    if (pos.y() >= r.height() - resizeMargin - 1) edges |= Qt::BottomEdge;
 
     return edges;
 }
 
+// ─── Cursor Update ───────────────────────────────────────────────────────────
 void CustomResizableOverlayDock::updateCursor(const QPoint &pos)
 {
     Qt::Edges edge = getResizeEdge(pos);
+    Qt::CursorShape shape = Qt::ArrowCursor;
+
     if (edge.testFlag(Qt::LeftEdge) || edge.testFlag(Qt::RightEdge))
-        setCursor(Qt::SizeHorCursor);
-    else if (edge.testFlag(Qt::BottomEdge) || edge.testFlag(Qt::TopEdge))
-        setCursor(Qt::SizeVerCursor);
-    else {
-        setCursor(Qt::ArrowCursor);
+        shape = Qt::SizeHorCursor;
+    else if (edge.testFlag(Qt::TopEdge) || edge.testFlag(Qt::BottomEdge))
+        shape = Qt::SizeVerCursor;
+
+    this->setCursor(shape);
+
+    if (QWidget *tb = titleBarWidget()) {
+        tb->setCursor(shape);
+        for (QWidget *child : tb->findChildren<QWidget*>())
+            child->setCursor(shape);
+    }
+
+    if (QWidget *w = widget()) {
+        w->setCursor(shape);
+        for (QWidget *child : w->findChildren<QWidget*>())
+            child->setCursor(shape);
     }
 }
+
+// ─── Event Filter ────────────────────────────────────────────────────────────
+bool CustomResizableOverlayDock::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() == QEvent::MouseMove || event->type() == QEvent::HoverMove) {
+        QPoint localPos = this->mapFromGlobal(QCursor::pos());
+
+        if (this->rect().contains(localPos)) {
+            updateCursor(localPos);
+            if (resizing) return true;
+        } else {
+            if (!resizing) this->setCursor(Qt::ArrowCursor);
+        }
+    }
+    return QObject::eventFilter(watched, event);
+}
+
+// ─── Move / Resize Events ────────────────────────────────────────────────────
 void CustomResizableOverlayDock::moveEvent(QMoveEvent *event)
 {
-    QPoint oldPos = event->oldPos();
-    QPoint newPos = event->pos();
-    emit moved(oldPos, newPos);
+    emit moved(event->oldPos(), event->pos());
     QDockWidget::moveEvent(event);
 }
 
 void CustomResizableOverlayDock::resizeEvent(QResizeEvent *event)
 {
-    QSize oldSize = event->oldSize();
-    QSize newSize = event->size();
-    emit resized(oldSize, newSize);
+    emit resized(event->oldSize(), event->size());
     QDockWidget::resizeEvent(event);
 }
 
+// ─── Paint ───────────────────────────────────────────────────────────────────
 void CustomResizableOverlayDock::paintEvent(QPaintEvent *event)
 {
     QDockWidget::paintEvent(event);
     QPainter painter(this);
+
     if (handlePos == Left) {
         painter.drawLine(2, 10, 2, height() - 10);
         painter.drawPoint(5, height() - 5);
@@ -142,17 +207,108 @@ void CustomResizableOverlayDock::paintEvent(QPaintEvent *event)
         painter.drawPoint(width() - 5, height() - 9);
     }
 }
-bool CustomResizableOverlayDock::eventFilter(QObject *watched, QEvent *event)
+
+// ─── Title Bar Setup ─────────────────────────────────────────────────────────
+void CustomResizableOverlayDock::setupTitleBar(const QString &title)
 {
-    if (event->type() == QEvent::MouseMove) {
-        QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
-        QPoint localPos = mapFromGlobal(mouseEvent->globalPos());
-        if (rect().contains(localPos)) {
-            updateCursor(localPos);
-        } else {
-            setCursor(Qt::ArrowCursor);
-        }
+    QWidget *titleBar = new QWidget(this);
+    titleBar->setObjectName("customTitleBar");
+    titleBar->setStyleSheet("background-color: #1A3A4F;");
+
+    QHBoxLayout *layout = new QHBoxLayout(titleBar);
+    layout->setContentsMargins(8, 2, 4, 2);
+    layout->setSpacing(4);
+
+    QLabel *titleLabel = new QLabel(title, titleBar);
+    titleLabel->setObjectName("dockTitleLabel");
+    titleLabel->setStyleSheet(
+        "color: white; font-weight: bold; font-size: 12px; background: transparent;");
+    layout->addWidget(titleLabel);
+    layout->addStretch();
+
+    m_lockButton = new QToolButton(titleBar);
+    m_lockButton->setText("🔓");
+    m_lockButton->setToolTip("Lock sensor view to current entity");
+    m_lockButton->setCheckable(true);
+    m_lockButton->setChecked(false);
+    m_lockButton->setFixedSize(22, 22);
+    m_lockButton->setVisible(false);
+    m_lockButton->setStyleSheet(
+        "QToolButton { background: transparent; border: none; color: #aaaaaa;"
+        "              font-size: 13px; padding: 0px; }"
+        "QToolButton:hover { background: rgba(255,255,255,0.1);"
+        "                    border-radius: 3px; color: #00BFFF; }"
+        "QToolButton:checked { color: #00BFFF;"
+        "                      background: rgba(0,191,255,0.15);"
+        "                      border-radius: 3px; }");
+    connect(m_lockButton, &QToolButton::clicked,
+            this, &CustomResizableOverlayDock::onLockButtonClicked);
+    layout->addWidget(m_lockButton);
+
+    QToolButton *closeButton = new QToolButton(titleBar);
+    closeButton->setText("✕");
+    closeButton->setFixedSize(22, 22);
+    closeButton->setStyleSheet(
+        "QToolButton { background: transparent; border: none; color: #aaaaaa;"
+        "              font-size: 13px; padding: 0px; }"
+        "QToolButton:hover { background: #c0392b; border-radius: 3px; color: white; }");
+    connect(closeButton, &QToolButton::clicked, this, &QDockWidget::close);
+    layout->addWidget(closeButton);
+
+    titleBar->setLayout(layout);
+    setTitleBarWidget(titleBar);
+
+    // Titlebar + saare children pe mouseTracking + eventFilter
+    titleBar->setMouseTracking(true);
+    titleBar->setAttribute(Qt::WA_Hover, true);
+    titleBar->installEventFilter(this);
+
+    for (QWidget *child : titleBar->findChildren<QWidget*>()) {
+        child->setMouseTracking(true);
+        child->setAttribute(Qt::WA_Hover, true);
+        child->installEventFilter(this);
     }
-    return QDockWidget::eventFilter(watched, event);
 }
 
+// ─── setWindowTitle ──────────────────────────────────────────────────────────
+void CustomResizableOverlayDock::setWindowTitle(const QString &title)
+{
+    QDockWidget::setWindowTitle(title);
+    if (QWidget *tb = titleBarWidget()) {
+        if (QLabel *label = tb->findChild<QLabel*>("dockTitleLabel"))
+            label->setText(title);
+    }
+}
+
+// ─── Lock Button ─────────────────────────────────────────────────────────────
+void CustomResizableOverlayDock::enableLockButton()
+{
+    if (m_lockButton) m_lockButton->setVisible(true);
+}
+
+void CustomResizableOverlayDock::onLockButtonClicked()
+{
+    m_locked = m_lockButton->isChecked();
+    QWidget *tb = titleBarWidget();
+    if (m_locked) {
+        m_lockButton->setText("🔒");
+        m_lockButton->setToolTip("Sensor view locked — click to unlock");
+        if (tb) tb->setStyleSheet("background-color: #5a1a1a;");
+    } else {
+        m_lockButton->setText("🔓");
+        m_lockButton->setToolTip("Lock sensor view to current entity");
+        if (tb) tb->setStyleSheet("background-color: #1A3A4F;");
+    }
+    emit lockToggled(m_locked);
+}
+
+void CustomResizableOverlayDock::setLocked(bool locked)
+{
+    if (m_locked == locked) return;
+    m_locked = locked;
+    if (m_lockButton) {
+        m_lockButton->setChecked(locked);
+        m_lockButton->setText(locked ? "🔒" : "🔓");
+    }
+    emit lockToggled(m_locked);
+}

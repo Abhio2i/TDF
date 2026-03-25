@@ -67,38 +67,59 @@ RuntimeToolBar::RuntimeToolBar(QWidget *parent) : QToolBar(parent)
 }
 
 // Initialize toolbar state
+// void RuntimeToolBar::Init(){
+//     elapsedSeconds = 0;
+//     currentState = STOPPED;
+//     blinkState = false;
+//     updateTimeDisplay();
+//     updateStatusDisplay();
+// }
 void RuntimeToolBar::Init(){
     elapsedSeconds = 0;
     currentState = STOPPED;
     blinkState = false;
+    // Reset toggle button back to play icon
+    startAction->setIcon(QIcon(withWhiteBg(":/icons/images/play.png")));
+    startAction->setText(tr("Start"));
+    startAction->setChecked(false);
+    highlightAction(nullptr);
     updateTimeDisplay();
     updateStatusDisplay();
 }
-
 // Create all toolbar actions and their connections
 void RuntimeToolBar::createActions()
 {
     this->setIconSize(ICON_SIZE);
 
-    // Start Action (Play button)
+
+    // Start/Pause Toggle Action — single button that flips between play and pause
     startAction = new QAction(QIcon(withWhiteBg(":/icons/images/play.png")), tr("Start"), this);
     startAction->setCheckable(true);
     startAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_P));
     connect(startAction, &QAction::triggered, this, [this](bool) {
-        highlightAction(startAction);
-        setSimulationState(RUNNING);
-        emit startTriggered();
+        if (currentState != RUNNING) {
+            // Currently stopped/paused → go RUNNING, show pause icon
+            startAction->setIcon(QIcon(withWhiteBg(":/icons/images/pause.png")));
+            startAction->setText(tr("Pause"));
+            startAction->setChecked(true);
+            highlightAction(startAction);
+            setSimulationState(RUNNING);
+            emit startTriggered();
+        } else {
+            // Currently running → go PAUSED, show play icon
+            startAction->setIcon(QIcon(withWhiteBg(":/icons/images/play.png")));
+            startAction->setText(tr("Start"));
+            startAction->setChecked(false);
+            highlightAction(nullptr);
+            setSimulationState(PAUSED);
+            emit pauseTriggered();
+        }
     });
 
-    // Pause Action (Pause button)
+    // Pause Action — kept for signal compatibility, NOT added to toolbar
     pauseAction = new QAction(QIcon(withWhiteBg(":/icons/images/pause.png")), tr("Pause"), this);
     pauseAction->setCheckable(true);
-    connect(pauseAction, &QAction::triggered, this, [=]() {
-        highlightAction(pauseAction);
-        setSimulationState(PAUSED);
-        emit pauseTriggered();
-    });
-
+    pauseAction->setVisible(false);
     // Stop Action (Stop button)
     stopAction = new QAction(QIcon(withWhiteBg(":/icons/images/stop.png")), tr("Stop"), this);
     stopAction->setCheckable(true);
@@ -124,6 +145,7 @@ void RuntimeToolBar::createActions()
         // Restore snapshot and notify
         emit resetTriggered();
     });
+
     // Next Step Action (Step button)
     nextStepAction = new QAction(QIcon(withWhiteBg(":/icons/images/step.png")), tr("Next Step"), this);
     nextStepAction->setCheckable(false);
@@ -314,7 +336,7 @@ void RuntimeToolBar::setupToolBar()
     }
 
     addAction(startAction);
-    addAction(pauseAction);
+    // addAction(pauseAction);
     // addAction(stopAction);
     addAction(resetAction);
     addAction(nextStepAction);
@@ -329,7 +351,7 @@ void RuntimeToolBar::setupToolBar()
 // Highlight the currently active action
 void RuntimeToolBar::highlightAction(QAction *activeAction)
 {
-    QList<QAction*> actions = { startAction, pauseAction, stopAction, loggerAction, radarToggleAction};
+    QList<QAction*> actions = { startAction, stopAction, loggerAction, radarToggleAction};
     for (QAction *action : actions) {
         QWidget *btn = widgetForAction(action);
         if (!btn) continue;

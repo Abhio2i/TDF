@@ -30,11 +30,14 @@
 #include <QFormLayout>
 #include <QTabWidget>
 #include <QStackedWidget>
+#include <QMouseEvent>
 #include "core/Recorder/recorder.h"
+//#include "core/Recorder/payload.h"
 #include <QDebug>
 
 #include "core/SQLite/sqlite.h"
 
+class QMouseEvent;  // forward declared in QWidget
 
 class TimelineWidget : public QWidget
 {
@@ -49,6 +52,8 @@ private:
     qint64** leftTimerDblPtr   = nullptr;
     qint64** rightTimerDblPtr  = nullptr;
     qint64  zeroTimer   = 0;
+public:
+    qint64*  maxDurationPtr = nullptr;
 public:
     void setValues(
         Recorder::loggerModes &s_loggerMode,
@@ -254,12 +259,50 @@ public:
     }
 
     bool isRecordingPaused() const { return recordingPaused; }
+
+    void mousePressEvent(QMouseEvent *event) override
+    {
+        if(*loggerMode != Recorder::REPLAY){
+            return;
+        }
+        if (!maxDurationPtr || !(*maxDurationPtr > 0)) {
+            return;
+        }
+        qint64 clickedTimestamp = getTimestampFromPosition(event->pos().x());
+
+        //qDebug() << "Clicked Time:" << formatTime(clickedTimestamp);
+        emit sendClickedTimestamp(clickedTimestamp);
+        // // Update your replay position
+        // if (leftTimer) {
+        //     *leftTimer = clickedTimestamp;
+        // }
+        //update(); // repaint
+        //qDebug() << "Clicked Timestamp:" << clickedTimestamp;
+    }
+    qint64 getTimestampFromPosition(int x)
+    {
+        int margin = 10;
+        int width = this->width() - 2 * margin;
+
+        // Clamp x within timeline bounds
+        if (x < margin) x = margin;
+        if (x > margin + width) x = margin + width;
+
+        double ratio = double(x - margin) / double(width);
+
+        qint64 timestamp = ratio * (*maxDurationPtr);
+
+        return timestamp;
+    }
+
 signals:
     void bookmarkButtonClicked(const QString &note, qint64 timestampMs);
     void bookmarkClicked(const QString &note, qint64 timestampMs);
+    void getMaxDuration(qint64 &maxDuration);
+    void sendClickedTimestamp(qint64 clickedTimestamp);
 
 protected:
-    void paintEvent(QPaintEvent *event) override {
+    void paintEventInRecording(){
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing);
         painter.fillRect(rect(), Qt::white);
@@ -318,8 +361,11 @@ protected:
             painter.drawText(margin + 10, margin + timelineY - 15, tr("No active recording"));
             return;
         }
-        qint64 intervalMs;
+        qint64 intervalMs = 0;
         QString intervalUnit;
+        if(loggerMode == nullptr){
+            return;
+        }
 
         if (**durationDblPtr <= 60000) {
             // Under 1 minute: show 10-second intervals
@@ -365,6 +411,213 @@ protected:
 
             painter.drawText(x - 20, margin + timelineY + 20, labelText);
         }
+    }
+    void paintEventInReplay(){
+        QPainter painter(this);
+        if(maxDurationPtr == nullptr){
+            return;
+        }
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.fillRect(rect(), Qt::white);
+
+        int margin = 10;
+        int width = this->width() - 2 * margin;
+        int height = this->height() - 2 * margin;
+        int timelineY = height / 2;
+
+        painter.setPen(QPen(Qt::black, 2));
+        painter.drawLine(margin, margin + timelineY, margin + width, margin + timelineY);
+        if (maxDurationPtr && *maxDurationPtr && *maxDurationPtr > 0 ) {
+            // Draw time labels at both ends
+            QString leftTime = formatTime(*leftTimer);
+            QString rightTime= formatTime(*maxDurationPtr);
+            painter.setPen(Qt::black);
+            QFont f = painter.font();
+            f.setBold(true);
+            painter.setFont(f);
+
+            painter.drawText(margin, margin + timelineY - 15, leftTime);
+            painter.drawText(margin + width - 80, margin + timelineY - 15, rightTime);
+        }
+        if (!maxDurationPtr) {
+            painter.setPen(QPen(Qt::gray, 1));
+            painter.drawText(margin + 10, margin + timelineY - 15, tr("No active recording"));
+            return;
+        }
+        qint64 intervalMs = 0;
+        QString intervalUnit;
+
+        if (*maxDurationPtr <= 60000) {
+            // Under 1 minute: show 10-second intervals
+            intervalMs = 10000; // 10 seconds
+            intervalUnit = "s";
+        } else if (*maxDurationPtr <= 600000) {
+            // 1-10 minutes: show 1-minute intervals
+            intervalMs = 60000; // 1 minute
+            intervalUnit = "m";
+        } else if (*maxDurationPtr <= 3600000) {
+            // 10-60 minutes: show 5-minute intervals
+            intervalMs = 300000; // 5 minutes
+            intervalUnit = "m";
+        } else {
+            // Over 1 hour: show 10-minute intervals
+            intervalMs = 600000; // 10 minutes
+            intervalUnit = "m";
+        }
+
+        int numIntervals = *maxDurationPtr / intervalMs + 1;
+
+        for (int i = 0; i <= numIntervals && maxDurationPtr && *maxDurationPtr; ++i) {
+            int x = margin + (i * width * intervalMs) / *maxDurationPtr;
+            painter.setPen(QPen(Qt::black, 1));
+            painter.drawLine(x, margin + timelineY - 5, x, margin + timelineY + 5);
+
+            // Format the label based on the interval
+            QString labelText;
+            if (intervalMs == 10000) {
+                // For 10-second intervals, show seconds
+                labelText = QString("%1%2").arg(i * 10).arg(intervalUnit);
+            } else if (intervalMs == 60000) {
+                // For 1-minute intervals, show minutes
+                labelText = QString("%1%2").arg(i).arg(intervalUnit);
+            } else if (intervalMs == 300000) {
+                // For 5-minute intervals, show minutes
+                labelText = QString("%1%2").arg(i * 5).arg(intervalUnit);
+            } else if (intervalMs == 600000) {
+                // For 10-minute intervals, show minutes
+                labelText = QString("%1%2").arg(i * 10).arg(intervalUnit);
+            }
+
+            painter.drawText(x - 20, margin + timelineY + 20, labelText);
+        }
+        // Draw current replay position line
+        if (leftTimer && maxDurationPtr) {
+            int x = margin + (*leftTimer * width) / *maxDurationPtr;
+            painter.setPen(QPen(Qt::blue, 2));
+            painter.drawLine(x, margin, x, margin + height);
+        }
+    }
+
+    void paintEvent(QPaintEvent *event) override {
+
+        // QPainter painter(this);
+        // painter.setRenderHint(QPainter::Antialiasing);
+        // painter.fillRect(rect(), Qt::white);
+
+        // int margin = 10;
+        // int width = this->width() - 2 * margin;
+        // int height = this->height() - 2 * margin;
+        // int timelineY = height / 2;
+
+        // painter.setPen(QPen(Qt::black, 2));
+        // painter.drawLine(margin, margin + timelineY, margin + width, margin + timelineY);
+        // if (durationDblPtr && *durationDblPtr && **durationDblPtr > 0 ) {
+        //     // Draw time labels at both ends
+        //     QString leftTime = formatTime(*leftTimer);
+        //     QString rightTime= formatTime(*rightTimer);
+
+        //     // if (replayMode) {
+        //     //     leftTime = formatTime(currentReplayTimeMs);
+        //     // } else {
+        //     //     leftTime = "00:00:00";
+        //     // }
+
+        //     // rightTime = formatTime(recordingDurationMs);
+
+        //     painter.setPen(Qt::black);
+        //     QFont f = painter.font();
+        //     f.setBold(true);
+        //     painter.setFont(f);
+
+        //     painter.drawText(margin, margin + timelineY - 15, leftTime);
+        //     painter.drawText(margin + width - 80, margin + timelineY - 15, rightTime);
+        // }
+        // // if (recordingDurationMs > 0 ) {
+        // //     // Draw time labels at both ends
+        // //     QString leftTime;
+        // //     QString rightTime;
+
+        // //     if (replayMode) {
+        // //         leftTime = formatTime(currentReplayTimeMs);
+        // //     } else {
+        // //         leftTime = "00:00:00";
+        // //     }
+
+        // //     rightTime = formatTime(recordingDurationMs);
+
+        // //     painter.setPen(Qt::black);
+        // //     QFont f = painter.font();
+        // //     f.setBold(true);
+        // //     painter.setFont(f);
+
+        // //     painter.drawText(margin, margin + timelineY - 15, leftTime);
+        // //     painter.drawText(margin + width - 80, margin + timelineY - 15, rightTime);
+        // // }
+        // if (!durationDblPtr) {
+        //     painter.setPen(QPen(Qt::gray, 1));
+        //     painter.drawText(margin + 10, margin + timelineY - 15, tr("No active recording"));
+        //     return;
+        // }
+        // qint64 intervalMs = 0;
+        // QString intervalUnit;
+        if(loggerMode == nullptr){
+            return;
+        }
+        switch(*loggerMode){
+            case Recorder::RECORDING:
+                paintEventInRecording();
+            break;
+            case Recorder::REPLAY:
+                paintEventInReplay();
+            break;
+        }
+        // if (**durationDblPtr <= 60000) {
+        //     // Under 1 minute: show 10-second intervals
+        //     intervalMs = 10000; // 10 seconds
+        //     intervalUnit = "s";
+        // } else if (**durationDblPtr <= 600000) {
+        //     // 1-10 minutes: show 1-minute intervals
+        //     intervalMs = 60000; // 1 minute
+        //     intervalUnit = "m";
+        // } else if (**durationDblPtr <= 3600000) {
+        //     // 10-60 minutes: show 5-minute intervals
+        //     intervalMs = 300000; // 5 minutes
+        //     intervalUnit = "m";
+        // } else {
+        //     // Over 1 hour: show 10-minute intervals
+        //     intervalMs = 600000; // 10 minutes
+        //     intervalUnit = "m";
+        // }
+
+        // int numIntervals = **durationDblPtr / intervalMs + 1;
+
+        // // for (int i = 0; i <= numIntervals && !(recordingPaused && modeisRecording); ++i) {
+        // for (int i = 0; i <= numIntervals && durationDblPtr && *durationDblPtr && **durationDblPtr; ++i) {
+        //     int x = margin + (i * width * intervalMs) / **durationDblPtr;
+        //     painter.setPen(QPen(Qt::black, 1));
+        //     painter.drawLine(x, margin + timelineY - 5, x, margin + timelineY + 5);
+
+        //     // Format the label based on the interval
+        //     QString labelText;
+        //     if (intervalMs == 10000) {
+        //         // For 10-second intervals, show seconds
+        //         labelText = QString("%1%2").arg(i * 10).arg(intervalUnit);
+        //     } else if (intervalMs == 60000) {
+        //         // For 1-minute intervals, show minutes
+        //         labelText = QString("%1%2").arg(i).arg(intervalUnit);
+        //     } else if (intervalMs == 300000) {
+        //         // For 5-minute intervals, show minutes
+        //         labelText = QString("%1%2").arg(i * 5).arg(intervalUnit);
+        //     } else if (intervalMs == 600000) {
+        //         // For 10-minute intervals, show minutes
+        //         labelText = QString("%1%2").arg(i * 10).arg(intervalUnit);
+        //     }
+
+        //     painter.drawText(x - 20, margin + timelineY + 20, labelText);
+        // }
+
+        // Not Use yet Above is used
+
         // if (recordingDurationMs <= 0) {
         //     painter.setPen(QPen(Qt::gray, 1));
         //     painter.drawText(margin + 10, margin + timelineY - 15, tr("No active recording"));
@@ -611,7 +864,6 @@ private:
     QToolButton *stopRecordingButton;
     QToolButton *databaseButton;
     QToolButton *databaseButtonReplay;
-    QToolButton *debugButton;
 
     // Replay Mode Controls
     QToolButton *startReplayButton;
@@ -638,6 +890,13 @@ private:
     qint64** leftTimerDblPtr  = nullptr;
     qint64*  rightTimer       = nullptr;
     qint64** rightTimerDblPtr = nullptr;
+    // qint64   maxDuration      = 0;
+    // qint64*  maxDurationPtr   = &maxDuration;
+
+    // qint64** maxDurationDblPtr = &maxDurationPtr;
+    // qint64** maxDurationDblPtr = new qint64*(new qint64(0));
+
+
     QList<QPair<QString, qint64>>*  bookmarks = nullptr;
     QList<QPair<QString, qint64>>** bookmarkDblPtr = nullptr;
     void inspectRecorder();
@@ -668,6 +927,25 @@ public:
     void setPauseTimeMs(qint64 newPausedTimeMs){
         pausedTimeMs = newPausedTimeMs;
     }
+    //==================  Toggle Button Button ====================
+public slots:
+    void toggleButton(Recorder::loggerModes mode, toggleModes toggle);
+    //================ Freeze and Unfreeze Button =================
+public slots:
+    void freezeButtonOperation(
+        ButtonNOpsList buttonOperationList);
+    //QToolButton *buttonList[button] = {};
+private:
+    std::unordered_map<LoggerButton,QToolButton **>
+    loggerButtonMap = std::unordered_map<LoggerButton,QToolButton **>(
+        {{Recorder_Button  ,&recordButton},
+         {Recording_Toggle ,&pauseRecordingButton},
+         {Reocrding_Stop   ,&stopRecordingButton},
+         {Replay_Start         ,&startReplayButton},
+         {Replay_Toggle        ,&pauseResumeReplayButton},
+         {Replay_Jump_Forward  ,&nextFrameButton},
+         {Replay_Jump_Backward ,&previousFrameButton},
+         {Replay_Restart       ,&loadRecordingButton}});
 
     //================= SQLite DataBase Connection =================
 public:
@@ -676,13 +954,40 @@ public:
     //  Start
 public:
     SQLite::Options      mode;
-    SQLite::DBStatuses*  dbStatusPtr = nullptr;
+    SQLite::DBStatuses*  dbStatusPtr         = nullptr;
+    SQLite::DBStatuses*  dbStatusOfRecording = nullptr;
 signals:
     void dbInit();
+    void getDBStatusOfRecording(SQLite::DBStatuses &dbStatusOfRecording);
     void dbConnect();
     void getDBStatus();
-public slots:
 
+    //================== File Start =================
+private:
+    bool saveFile();
+    void findFile();
+signals:
+    void savedFilePath(QString path);
+    void getFilePath(QString path);
+    //==================  File End  =================
+
+    //==========  Timeline Widget Start =============
+signals:
+    void getMaxDuration(qint64 &maxDuration);
+    void sendClickedTimestamp(qint64 clickedTimestamp);
+    //===========  Timeline Widget End ==============
+
+    //================= Alert Start =================
+public slots:
+    void alertViaStr(QString msg);
+    void alertViaEnum(Logger_Error err);
+private:
+    QString errEnumToString[Err_Undefine_Error] = {
+        "Database is Not Avalable",
+        "Database File Is Not Exist"
+        "Undefined Error in Logger"
+    };
+    //================= Alert End   =================
     //  End
 };
 

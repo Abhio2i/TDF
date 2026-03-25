@@ -163,6 +163,7 @@ Runtime::Runtime() {
 
     connect(simulation, &Simulation::Update, this, [=]() {
         recording->getSimulationUpdate();
+        hierarchy->Anlaysis();
     });
     connect(simulation, &Simulation::HierarchyUpdate,this,[=](){
         if(recording->mode == recording->recordingModes::START){
@@ -171,6 +172,18 @@ Runtime::Runtime() {
             recording->changeInHierarchyInPause = true;
         }
     });
+
+    connect(recorder,&Recorder::setSQLite,this,[=](){
+        recorder->m_sqlite = sqlite->getSQLite();
+    });
+    connect(recorder,&Recorder::fileToDB, this,[=](QString path, bool &isFileSaved){
+        sqlite->dbInit(path,isFileSaved);
+    });
+    connect(recorder,&Recorder::loadToDB, this,[=](QString path, bool &isFileLoaded){
+        sqlite->dbConnect(path,isFileLoaded);
+    });
+
+
     connect(replay,&Replay::updateScene,scenerenderer,&SceneRenderer::Render);
     connect(replay,&Replay::createProfileCategories,hierarchy,&Hierarchy::addProfileCategaoryWithObject);
     connect(replay,&Replay::deleteProfileCategories,hierarchy,&Hierarchy::removeProfileCategaory);
@@ -191,9 +204,9 @@ Runtime::~Runtime() {
     std::cout << "Runtime delete";
     Console::log("Runtime delete");
     delete sharedWrapper;
-    delete recorder;
     delete recording;
     delete replay;
+    delete recorder;
     // delete missionExcuter;
     // delete sharedmemory; //Shared Memory By Himanshu
     // Clean up Shared Memory Thread New
@@ -202,7 +215,6 @@ Runtime::~Runtime() {
         sharedMemoryThread->wait();
     }
     // sharedmemory is deleted by deleteLater connection New
-    delete console;
     delete networkManager;
     delete scenerenderer;
     delete simulation;
@@ -215,6 +227,7 @@ Runtime::~Runtime() {
     }
     // SQLite by Himanshu
     delete sqlite;
+    delete console;
 }
 
 void Runtime::handleStart() {

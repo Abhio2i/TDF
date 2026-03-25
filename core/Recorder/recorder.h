@@ -16,6 +16,8 @@
 #include <cmath>
 #include "payload.h"
 #include <core/Hierarchy/profilecategaory.h>
+#include <core/SQLite/sqlite.h>
+
 
 
 // Forward declarations to avoid circular includes
@@ -23,7 +25,6 @@ class Hierarchy;
 class Simulation;
 class Recording;
 class Replay;
-
 class Recorder : public QObject
 {
     Q_OBJECT
@@ -158,6 +159,88 @@ public:
     void setBookmarks(QList<QPair<QString, qint64>> &s_bookmarks);
 
     //TimeLine Wideget End
+
+
+    /*                 SQLite Start                 */
+
+public:
+    SQLite *m_sqlite = nullptr;
+
+signals:
+    void setSQLite();
+    void initSQLite(QString path);
+public:
+    DB_Validity sqliteIsValid();
+
+    /*      To Saved & Load DB File Start        */
+
+    // To Save
+public:
+    void    saveFile(QString path);
+        QString savedFilePath  = NULL;
+        bool *isFileSaved = new bool(false);
+    signals:
+        void fileToDB(QString path, bool &isFileSaved);
+
+    // To Load
+public:
+    void    loadFile(QString path);
+        QString loadedFilePath = NULL;
+        bool *isFileLoaded = new bool(false);
+    signals:
+        void loadToDB(QString path, bool &isFileLoaded);
+
+    /*      To Saved & Load DB File End         */
+
+
+
+    // Saved File End
+
+    /*                  SQLite End                  */
+
+    /*      Freeze and Unfreeze Button Start        */
+signals:
+    void freezeButtonOperation(
+    ButtonNOpsList buttonOperationList);
+    /*       Freeze and Unfreeze Button End         */
+
+    /*               Global Alert Start             */
+signals:
+    void alertViaStr(QString msg);
+    void alertViaEnum(Logger_Error err);
+    /*               Global Alert End               */
+
+
+    /*------------    Custom Debugger Start    ------------*/
+private:
+    /*   General purpose sting For Passing   */
+    QString str;
+
+    /*  Custom enum for Selective Debugging  */
+public:
+    typedef enum {
+        D_NULL              = 0b1000000000000000000000000000000,
+        D_JustPrint         = 0b0100000000000000000000000000000,
+        D_DBOperation       = 0b0010000000000000000000000000000,
+    }debugRecorder;
+    Q_ENUM(debugRecorder)
+
+private:
+    /*   To Print Above String   */
+    void debug(const QString &str,const debugRecorder &currentdebugType = D_JustPrint);
+    /*   Variable which hold the value for
+     *   Custom Debugging    */
+    /*  ===> " USE ME " for debugging   <===*/
+    int debugList = D_JustPrint
+                    | D_DBOperation
+        ;
+
+    /*   To find the the debugOptions inside
+     *   debugType or not "Helping Function" */
+    bool dbgIsAllow(const debugRecorder &currentdebugType);
+
+    /*------------     Custom Debugger End     ------------*/
+
 };
 
 /* -------------------------------------------------------
@@ -272,11 +355,18 @@ public:
     //QJsonObject metaData; //Add later
 
 
+
 public slots:
     //void getSimulationUpdate();
     /*------------ New Type of recording End   ------------*/
-
+public:
+    qint64 var  = 0xffffffffffffffff;
+    qint64 var1 = 0xffffffffffffffff;
+    SQLite::DBStatuses dbStatusRef = SQLite::DBStatuses::CONNECTED;
+signals:
+    //void getDBStatus(SQLite::DBStatuses *dbStatusRef);
 private:
+    void recordingBefore();
     void recordingStart();
     void recordingStop();
     void recordingPauseResume();
@@ -408,7 +498,8 @@ public:
         D_UpdatesInBTW      = 0b0000000000010000000000000000000,
         D_ProfileCategories = 0b0000000000001000000000000000000,
         D_TrajectoryCRUD    = 0b0000000000000100000000000000000,
-        D_MeshRenderer2D    = 0b0000000000000010000000000000000
+        D_MeshRenderer2D    = 0b0000000000000010000000000000000,
+        D_BeforeRecording   = 0b0000000000000001000000000000000,
     }debugOptions;
     Q_ENUM(debugOptions)
 
@@ -431,7 +522,8 @@ private:
                     // | D_UpdatesInBTW
                     // | D_ProfileCategories
                     // | D_TrajectoryCRUD
-                    | D_MeshRenderer2D
+                    | D_BeforeRecording
+                    //| D_MeshRenderer2D
         ;
 
     /*   To find the the debugOptions inside
@@ -503,6 +595,7 @@ public:
 
     void update() ;
     bool replayLoaded(const QString &filePath);
+    void replayBefore();
     void replayStart();
     void connectReplayTimer();
 signals:
@@ -585,7 +678,9 @@ public:
     PayLoad payload;
     void framePayLoad();
 signals:
+    void setMaxDuration(qint64* maxDuration);
     void getPayLoad(PayLoad* payload);
+    void getPayLoadFromIndex(PayLoad* payload,int frameIndex);
     void getMaxFrameIndexNDuration(
         int*    maxFrameIndex,
         qint64* maxDuration);
@@ -643,6 +738,17 @@ signals:
     void getFrame(int s_frameIndex);
     void render(float deltatime);
 
+    /*------------    Jump In Between Start    ------------*/
+public:
+    void jumpInBetween(qint64 clickedTimestamp);
+    void framePayLoadForJumpInBetween(int frameIndex);
+    void setEntitiesDetailsInBtw();
+    void setEntitiesMeshRenderer2DBtw();
+    void setEntitiesTrajectoryBtw();
+signals:
+    //void framePayLoadForJumpInBetween();
+    /*------------     Jump In Between End     ------------*/
+
     /*------------    Custom Debugger Start    ------------*/
 private:
     /*   General purpose sting For Passing   */
@@ -662,7 +768,9 @@ public:
         D_PayLoad_Inspect               = 0b000000001000000000000,
         D_CleanHierarchy                = 0b000000000100000000000,
         D_MeshRenderer                  = 0b000000000010000000000,
-        D_EntitiesTrajectory            = 0b000000000001000000000
+        D_EntitiesTrajectory            = 0b000000000001000000000,
+        D_BeforeReplay                  = 0b000000000000100000000,
+        D_LoadInBetween                 = 0b000000000000010000000
     }debugReplay;
     Q_ENUM(debugReplay)
 
@@ -678,7 +786,9 @@ private:
                     // |D_ProfileCategoriesIndexDetails
                     // |D_CleanHierarchy
                     // | D_MeshRenderer
-                    | D_EntitiesTrajectory
+                    // | D_PayLoad_Inspect
+                    // | D_EntitiesTrajectory
+                    | D_LoadInBetween
         ;
     //| D_Timer
     //| D_EntitiesCreateList

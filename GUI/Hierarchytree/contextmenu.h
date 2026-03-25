@@ -88,7 +88,15 @@ signals:
     /* Request to paste multiple items from clipboard */
     void pasteItemsRequested(QVariantMap targetData, QList<QVariantMap> itemsToPaste);
     /* Request to rename existing item */
+    void addIFFToEntityRequested(QVariantMap entityData);
+    void addRadioToEntityRequested(QVariantMap entityData);
     void renameItemRequested(QVariantMap data);
+    void setEntityActiveRequested(QString entityID, bool active);
+    void addWeaponToEntityRequested(QVariantMap entityData);
+    void addSensorToEntityRequested(QVariantMap entityData);
+    void addTeamToEntityRequested(QVariantMap entityData, QString team);
+    void setCategoryToEntityRequested(QVariantMap data, QString category);
+
 
 private:
     // %%% Menu Setup Methods %%%

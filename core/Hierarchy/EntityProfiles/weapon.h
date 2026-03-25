@@ -1,10 +1,10 @@
+
 /* ========================================================================= */
 /* File: weapon.h                                                            */
 /* Purpose: Base class for all weapon types.                                 */
 /*          Follows the same pattern as sensor.h / Sensor base class.        */
 /*          Subclasses (Missile, Bomb, Torpedo, Artillery, Rocket,           */
 /*          Flare, Chaff) live in WeaponTypes/ and override launch() and     */
-/*          toJson() / fromJson() exactly like ESM/CSM override scan().      */
 /* ========================================================================= */
 
 #ifndef WEAPON_H
@@ -203,6 +203,8 @@ public:
 
     void startFlightMonitor();
     void stopFlightMonitor();
+    void pauseFlightMonitor();   // pauses timer without resetting state
+    void resumeFlightMonitor();  // restarts timer from where it left off
 
     // ── Virtual flight hooks (empty stubs here, Missile overrides all 5) ──────
     virtual void      missileStart();

@@ -581,8 +581,8 @@ void RadarDisplay::drawAirRings(QPainter& p, int cx, int cy)
     int   panelH = height() - MODEBAR_H - MARGIN;
     float step   = (displayRange <= 30)  ? 5.0f
                  : (displayRange <= 100) ? 10.0f : 20.0f;
-    int   nRings = static_cast<int>(displayRange / step);
-
+    // int   nRings = static_cast<int>(displayRange / step);
+    int   nRings = static_cast<int>(std::ceil(displayRange / step));
     p.setFont(QFont("Courier", 7));
 
     for (int i = 1; i <= nRings; ++i) {
@@ -712,7 +712,8 @@ void RadarDisplay::drawSurfaceRings(QPainter& p, int cx, int cy, int radius)
 
     float step   = (displayRange <= 30)  ? 5.0f
                  : (displayRange <= 100) ? 10.0f : 20.0f;
-    int   nRings = static_cast<int>(displayRange / step);
+    // int   nRings = static_cast<int>(displayRange / step);
+    int   nRings = static_cast<int>(std::ceil(static_cast<double>(displayRange) / step));
 
     p.setFont(QFont("Courier", 7));
 

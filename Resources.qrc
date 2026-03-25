@@ -87,6 +87,13 @@
         <file>images/database (2).png</file>
         <file>images/reset.png</file>
         <file>images/help.png</file>
+        <file>images/delete.png</file>
+        <file>images/seteam.png</file>
+        <file>images/set.png</file>
+        <file>images/enable .png</file>
+        <file>images/enable.png</file>
+        <file>images/rename.png</file>
+        <file>images/disable.png</file>
     </qresource>
     <qresource prefix="/texture">
         <file>images/Texture/bball.png</file>
@@ -113,6 +120,7 @@
         <file>images/Texture/Helicopters-removebg-preview.png</file>
         <file>images/Texture/blast.png</file>
         <file>images/Texture/missile.png</file>
+        <file>images/Texture/bomb.png</file>
     </qresource>
     <qresource prefix="/model/airplane">
         <file>Model/Airplane/11803_Airplane_body_diff.jpg</file>

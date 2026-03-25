@@ -1,4 +1,3 @@
-
 #ifndef PLATFORM_H
 #define PLATFORM_H
 
@@ -50,15 +49,15 @@ public:
         DEFENSIVE_HOLD
     };
     const std::string MissionTypeNames[10] = { "PATROL",
-                                      "SURVEILLANCE",
-                                      "INTERCEPTION",
-                                      "STRIKE",
-                                      "ESCORT",
-                                      "AREA_DENIAL",
-                                      "SEARCH_AND_RESCUE",
-                                      "BLOCKADE",
-                                      "RECONNAISSANCE",
-                                      "DEFENSIVE_HOLD"};
+                                              "SURVEILLANCE",
+                                              "INTERCEPTION",
+                                              "STRIKE",
+                                              "ESCORT",
+                                              "AREA_DENIAL",
+                                              "SEARCH_AND_RESCUE",
+                                              "BLOCKADE",
+                                              "RECONNAISSANCE",
+                                              "DEFENSIVE_HOLD"};
     enum ROI{
         HOLD_FIRE,
         RETURN_FIRE_ONLY,
@@ -85,12 +84,12 @@ public:
         SEQUENTIAL_ENGAGEMENT
     };
     const std::string EngagementNames[7] = { "NEAREST_TARGET",
-                                     "HIGHEST_THREAT",
-                                     "LOWEST_HEALTH_TARGET",
-                                     "ASSIGNED_TARGET_ONLY",
-                                     "HIGH_VALUE_TARGET",
-                                     "GROUP_ENGAGEMENT",
-                                     "SEQUENTIAL_ENGAGEMENT"};
+                                            "HIGHEST_THREAT",
+                                            "LOWEST_HEALTH_TARGET",
+                                            "ASSIGNED_TARGET_ONLY",
+                                            "HIGH_VALUE_TARGET",
+                                            "GROUP_ENGAGEMENT",
+                                            "SEQUENTIAL_ENGAGEMENT"};
     enum Retreat{
         NEVER_RETREAT,
         RETREAT_IF_OUTNUMBERED,
@@ -101,12 +100,12 @@ public:
         TACTICAL_WITHDRAWAL
     };
     const std::string RetreatNames[7] = { "NEVER_RETREAT",
-                                            "RETREAT_IF_OUTNUMBERED",
-                                            "RETREAT_IF_DAMAGE_EXCEEDS_THRESHOLD",
-                                            "RETREAT_IF_FUEL_LOW",
-                                            "RETREAT_IF_AMMO_DEPLETED",
-                                            "RETREAT_IF_COMMAND_ORDERED",
-                                            "TACTICAL_WITHDRAWAL"};
+                                         "RETREAT_IF_OUTNUMBERED",
+                                         "RETREAT_IF_DAMAGE_EXCEEDS_THRESHOLD",
+                                         "RETREAT_IF_FUEL_LOW",
+                                         "RETREAT_IF_AMMO_DEPLETED",
+                                         "RETREAT_IF_COMMAND_ORDERED",
+                                         "TACTICAL_WITHDRAWAL"};
     enum Detection{
         PASSIVE_SENSORS_ONLY,
         ACTIVE_RADAR_ALLOWED,
@@ -130,16 +129,16 @@ public:
         WEAPON_HOLD
     };
     const std::string WeaponReleaseNames[6] = { "AUTOMATIC",
-                                           "SEMI_AUTOMATIC",
-                                           "COMMAND_APPROVAL_REQUIRED",
-                                           "WEAPON_FREE",
-                                           "WEAPON_TIGHT",
-                                           "WEAPON_HOLD"};
+                                               "SEMI_AUTOMATIC",
+                                               "COMMAND_APPROVAL_REQUIRED",
+                                               "WEAPON_FREE",
+                                               "WEAPON_TIGHT",
+                                               "WEAPON_HOLD"};
     MissionType mtype = MissionType::PATROL;
     ROI roi = ROI::DEFENSIVE_ONLY;
-    Engagement engagement = Engagement::NEAREST_TARGET;
+    Engagement engagement = Engagement::ASSIGNED_TARGET_ONLY;
     Retreat retreat = Retreat::NEVER_RETREAT;
-    Detection detection = Detection::PASSIVE_SENSORS_ONLY;
+    Detection detection = Detection::FULL_SENSOR_USAGE;
     WeaponRelease weaponrelease = WeaponRelease::WEAPON_HOLD;
     float healthThreshold = 20;
     float fuelthreshold = 20;
@@ -175,6 +174,14 @@ public:
     void update();
     void Decision();
     void spawn() override;
+
+    // ── Bomb altitude trigger ─────────────────────────────────────────────────
+    // Called from update() when aircraft first crosses DROP_ALTITUDE_M (300 ft).
+    // Iterates WeaponProfile, calls Bomb::launch() on every unlaunched Bomb.
+    void launchBombs();
+    void fireMissile();
+
+    bool m_bombsReleased = false;  // guard: launchBombs() fires only once per flight
     std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;
     void removeComponent(std::string name) override;

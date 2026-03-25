@@ -1,17 +1,40 @@
 #include "radio.h"
 #include <core/Hierarchy/hierarchy.h> // Include full Hierarchy definition
 #include <core/Debug/console.h>
+#include "core/Hierarchy/EntityProfiles/Radio/include/radio/propagation_model_config.h"
+#include "core/Hierarchy/EntityProfiles/Radio/include/radio/radio_interface.h"
 #include "core/Hierarchy/Utils/entityutils.h"
+#include "core/Simulation/simulation.h"
 #include <core/GlobalRegistry.h>
 #include <cmath>
 #include <QtMath>
 #include <QDebug>
-
+#include <istream>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
+
+
 const float RAD2DEG = 180.0f / M_PI;
+radio::PropagationModel* Radio::model = nullptr;
+std::vector<std::byte> bytesFromText(const std::string& text) {
+    std::vector<std::byte> data;
+    data.reserve(text.size());
+    for (char ch : text) {
+        data.push_back(static_cast<std::byte>(ch));
+    }
+    return data;
+}
+
+std::string textFromBytes(const std::vector<std::byte>& data) {
+    std::string text;
+    text.reserve(data.size());
+    for (std::byte b : data) {
+        text.push_back(static_cast<char>(b));
+    }
+    return text;
+}
 
 Radio::Radio(Hierarchy* h) : Entity(h) {
     type = Constants::EntityType::Radio;
@@ -21,7 +44,132 @@ Radio::Radio(Hierarchy* h) : Entity(h) {
     par->type = Constants::ParameterType::FLOAT;
     par->value = 0.0f;
     parameters["radio_param"] = par;
+
+    model_cfg.enable_fspl = true;
+    model_cfg.enable_log_distance = false;
+    model_cfg.enable_two_ray = false;
+    model_cfg.enable_shadowing = true;
+    model_cfg.shadowing_sigma_db = 1.5;
+    model_cfg.enable_fading = true;
+    model_cfg.fading_sigma_db = 1.0;
+    model_cfg.enable_polarization_loss = true;
+    model_cfg.polarization_mismatch_loss_db = 3.0;
+    model_cfg.enable_los_horizon = false;
+    model_cfg.enable_comms_mode_losses = true;
+    model_cfg.enable_noise_floor = true;
+    model_cfg.enable_snr_threshold = true;
+    model_cfg.enable_sensitivity = true;
+    model_cfg.enable_squelch = true;
+    model_cfg.enable_interference = false;
+    model_cfg.enable_range_limit = false;
+    model_cfg.enable_network_gate_in_scan = true;
+    model_cfg.enable_scan_beam = true;
+    model_cfg.enable_scan_timing = false;
+    model_cfg.enable_doppler = true;
+
+    // Environmental toggles + values
+    model_cfg.enable_environmental_attenuation = true;
+    model_cfg.temperature_c = 20.0;
+    model_cfg.pressure_hpa = 1005.0;
+    model_cfg.humidity_percent = 60.0;
+    model_cfg.gas_attenuation_db_per_km_at_1ghz = 0.005;
+    model_cfg.gas_attenuation_freq_exponent = 1.0;
+    model_cfg.humidity_attenuation_factor_per_percent = 0.002;
+    model_cfg.rain_rate_mm_per_hr = 10.0;
+    model_cfg.rain_attenuation_db_per_km_per_mmhr = 0.004;
+    model_cfg.use_itu_rain_model = true;
+    model_cfg.rain_coverage = 0.4;
+    model_cfg.rain_rate_sigma_frac = 0.15;
+    model_cfg.wind_speed_mps = 8.0;
+    model_cfg.wind_attenuation_db_per_km_per_mps = 0.0005;
+    model_cfg.enable_sea_attenuation = true;
+    model_cfg.sea_attenuation_db_per_km = 0.003;
+
+    if(model == nullptr){
+       model = radio::createPropagationModelRaw(model_cfg);
+    }
+
+        lib_radio = radio::createRadiolibRaw();
+
+        radio::RadioConfig cfg;
+        cfg.id = "";
+        cfg.parent_platform_name = "PLATFORM_1";
+        cfg.mode = radio::RadioMode::TRANSCEIVER;
+        cfg.comms_mode = radio::CommsMode::LINE_OF_SIGHT;
+        cfg.min_freq_hz = 118.5e6;//
+        cfg.max_freq_hz = 138.5e6;//
+        cfg.frequency_hz = 128.5e6;//
+        cfg.bandwidth_hz = 25e3;//
+        cfg.tx_power_dbm = 40.0;//m
+        cfg.antenna.gain_dbi = 2.0;//m
+        cfg.receiver.sensitivity_dbm = -101.0;//m
+        cfg.receiver.noise_figure_db = 5.0;//m
+        cfg.receiver.squelch_threshold_db = 3.0;//m
+        cfg.network_id = 1;
+
+        radio::Position pos;
+        pos.x = 0.0;
+        pos.y = 0.0;
+        pos.altitude = 1000.0;
+
+        radio::attachRadioToModel(lib_radio, model, cfg, pos);
+        lib_radio->setPowerOn(true);
+
+        // std::cout << "Radiolib entity created: "
+        //           << lib_radio->getConfiguration().id << "\n";
+
+        // radio::destroyRadiolib(lib_radio);
+        // radio::destroyPropagationModel(model);
+
+        // Identity
+        cfg.is_naval = false;//m
+        cfg.rx_bandwidth_hz = 25e3;//m
+        cfg.channel = 1;//m
+      //  cfg.max_range_m = 100000;//
+
+        // TX / waveform
+        //cfg.tx_power_dbm = tx_power_dbm;
+        cfg.power_degradation_db = 1.0;//
+        cfg.tx_duty_cycle = 0.90;//m
+        cfg.modulation_scheme = radio::ModulationScheme::BPSK;
+        cfg.required_snr_override = false;//m
+        cfg.spread_spectrum = radio::SpreadSpectrum::NONE;
+        cfg.processing_gain_db = 0.0;//m
+
+        // Encryption
+        cfg.encryption_type = radio::EncryptionType::AES;
+        cfg.encryption_key = bytesFromText("0123456789ABCDEF");
+        cfg.encryption_iv = bytesFromText("ABCDEF0123456789");
+
+        // Antenna / motion
+        cfg.antenna.beamwidth_deg = 360.0;//m
+        cfg.antenna.polarization = radio::Polarization::VERTICAL;
+        cfg.antenna.scan_type = radio::ScanType::FIXED;
+        cfg.heading_deg = 360;//m
+        cfg.velocity_mps = 1;//m
+        lib_radio->setReceiveCallbackWithMeta(
+            [this](const std::vector<std::byte>& data, const radio::ReceiveReport& report) {
+                msgTimeStamp = Simulation::simulationTime;
+                msg = textFromBytes(data);
+                // std::cout << "\n[RX_1 callback]"
+                //           << " sender=" << report.sender_id
+                //           << " msg=" << textFromBytes(data)
+                //           << " rx_power_dbm=" << report.rx_power_dbm
+                //           << " noise_floor_dbm=" << report.noise_floor_dbm
+                //           << " snr_db=" << report.snr_db
+                //           << " path_loss_db=" << report.path_loss_db
+                //           << "\n";
+            });
+
+
+
 }
+
+
+void Radio::sendMsg(std::string msg){
+    lib_radio->transmit(bytesFromText(msg));
+}
+
 
 void Radio::spawn() {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
@@ -50,6 +198,8 @@ void Radio::updateComponent(QString name, const QJsonObject& /*obj*/) {
 }
 
 QJsonObject Radio::toJson() const {
+    radio::RadioConfig cfg = lib_radio->getConfiguration();
+    if(parentEntity)cfg.id = parentEntity->ID;
     QJsonObject obj;
     obj["name"] = QString::fromStdString(Name);
     obj["branch"] = QString::fromStdString("Entity");
@@ -69,45 +219,99 @@ QJsonObject Radio::toJson() const {
     parObj["value"] = paramMap;
     obj["parameters"] = parObj;
 
+    QJsonObject RadioTypeObj;
+    RadioTypeObj["type"] = "option";
+    QJsonArray RadioTypeptionsArray;
+    for (const std::string& opt : RadioTypeNames)
+        RadioTypeptionsArray.append(QString::fromStdString(opt));
+    RadioTypeObj["options"] = RadioTypeptionsArray;
+    RadioTypeObj["value"] = QString::fromStdString(RadioTypeNames[static_cast<int>(cfg.mode)]);
+    obj["RadioType"] = RadioTypeObj;
+
+    QJsonObject comms_modeObj;
+    comms_modeObj["type"] = "option";
+    QJsonArray comms_modeptionsArray;
+    for (const std::string& opt : CommsModeTypeNames)
+        comms_modeptionsArray.append(QString::fromStdString(opt));
+    comms_modeObj["options"] = comms_modeptionsArray;
+    comms_modeObj["value"] = QString::fromStdString(CommsModeTypeNames[static_cast<int>(cfg.comms_mode)]);
+    obj["comms_mode"] = comms_modeObj;
+
+    QJsonObject modulation_schemeObj;
+    modulation_schemeObj["type"] = "option";
+    QJsonArray modulation_schemeptionsArray;
+    for (const std::string& opt : ModulationSchemeTypeNames)
+        modulation_schemeptionsArray.append(QString::fromStdString(opt));
+    modulation_schemeObj["options"] = modulation_schemeptionsArray;
+    modulation_schemeObj["value"] = QString::fromStdString(ModulationSchemeTypeNames[static_cast<int>(cfg.modulation_scheme)]);
+    obj["modulation_scheme"] = modulation_schemeObj;
+
+    QJsonObject spread_spectrumObj;
+    spread_spectrumObj["type"] = "option";
+    QJsonArray spread_spectrumptionsArray;
+    for (const std::string& opt : SpreadSpectrumTypeNames)
+        spread_spectrumptionsArray.append(QString::fromStdString(opt));
+    spread_spectrumObj["options"] = spread_spectrumptionsArray;
+    spread_spectrumObj["value"] = QString::fromStdString(SpreadSpectrumTypeNames[static_cast<int>(cfg.spread_spectrum)]);
+    obj["spread_spectrum"] = spread_spectrumObj;
+
+    QJsonObject polarizationObj;
+    polarizationObj["type"] = "option";
+    QJsonArray polarizationptionsArray;
+    for (const std::string& opt : PolarizationTypeNames)
+        polarizationptionsArray.append(QString::fromStdString(opt));
+    polarizationObj["options"] = polarizationptionsArray;
+    polarizationObj["value"] = QString::fromStdString(PolarizationTypeNames[static_cast<int>(cfg.antenna.polarization)]);
+    obj["polarization"] = polarizationObj;
+
+    QJsonObject scan_typeObj;
+    scan_typeObj["type"] = "option";
+    QJsonArray scan_typeptionsArray;
+    for (const std::string& opt : ScanTypeNames)
+        scan_typeptionsArray.append(QString::fromStdString(opt));
+    scan_typeObj["options"] = scan_typeptionsArray;
+    scan_typeObj["value"] = QString::fromStdString(ScanTypeNames[static_cast<int>(cfg.antenna.scan_type)]);
+    obj["scan_type"] = scan_typeObj;
+
     QJsonObject Transmitter;
     Transmitter["type"] = "Section";
-    Transmitter["minFrequency"] = toParm(minFrequency,"Mhz", 0,    30000);
-    Transmitter["maxFrequency"] = toParm(maxFrequency,"Mhz", 0,    30000);
-    Transmitter["Range"] = toParm(Range,"");
-    Transmitter["powerDegradation"] = toParm(powerDegradation,"");
+    Transmitter["minFrequency"] = toParm(cfg.min_freq_hz/1000000,"Mhz", 0,    30000);
+    Transmitter["maxFrequency"] = toParm(cfg.max_freq_hz/1000000,"Mhz", 0,    30000);
+    Transmitter["Frequency"] = toParm(cfg.frequency_hz/1000000,"Mhz", 0,    30000);
+    // Transmitter["Range"] = toParm(cfg.max_range_m/1000,"km");
+    Transmitter["powerDegradation"] = toParm(cfg.power_degradation_db,"db");
+    Transmitter["tx_power_dbm"] = toParm(cfg.tx_power_dbm,"dbm");
+    // Transmitter["tx_duty_cycle"] = toParm(cfg.tx_duty_cycle,"");
+    Transmitter["is_naval"] = cfg.is_naval;
     obj["Transmitter"] = Transmitter;
 
-    QJsonObject Envolope;
-    Envolope["type"] = "Section";
-    Envolope["minAzimuth"] = toParm(minAzimuth,"deg", -180, 0);
-    Envolope["maxAzimuth"] = toParm(maxAzimuth,"deg", 0, 180);
-    Envolope["minElevation"] = toParm(minElevation,"deg", -90, 0);
-    Envolope["maxElevation"] = toParm(maxElevation,"deg", 0, 90);
-    obj["Envolope"] = Envolope;
+    QJsonObject Receiver;
+    Receiver["type"] = "Section";
+    Receiver["rx_bandwidth_hz"] = toParm(cfg.rx_bandwidth_hz/1000.0f,"Khz", 0, 30000);
+    Receiver["sensitivity_dbm"] = toParm(cfg.receiver.sensitivity_dbm,"");
+    Receiver["noise_figure_db"] = toParm(cfg.receiver.noise_figure_db,"");
+    Receiver["squelch_threshold_db"] = toParm(cfg.receiver.squelch_threshold_db,"");
+    Receiver["channel"] = toParm(cfg.channel,"");
+    obj["Receiver"] = Receiver;
 
-    QJsonObject Modulation;
-    Modulation["type"] = "Section";
-    Modulation["spreadSpecturm"] = toParm(spreadSpecturm,"");
-    Modulation["majorModulation"] = toParm(majorModulation,"");
-    Modulation["detail"] = toParm(detail,"");
-    Modulation["detailModulation"] = toParm(detailModulation,"");
-    obj["Modulation"] = Modulation;
+    // QJsonObject Modulation;
+    // Modulation["type"] = "Section";
+    // // Modulation["spread_spectrum"] = toParm(spreadSpecturm,"");//option
+    // Modulation["required_snr_override"] = cfg.required_snr_override;
+    // Modulation["processing_gain_db"] = toParm(cfg.processing_gain_db,"db");
+    // obj["Modulation"] = Modulation;
 
-    QJsonObject Pulse;
-    Pulse["type"] = "Section";
-    Pulse["pulseWidth"] = toParm(pulseWidth,"Mhz",0,500);
-    obj["Pulse"] = Pulse;
+    // QJsonObject Pulse;
+    // Pulse["type"] = "Section";
+    // Pulse["pulseWidth"] = toParm(cfg.bandwidth_hz/1000.0f,"khz",0,50);
+    // obj["Pulse"] = Pulse;
 
     QJsonObject Antenna;
     Antenna["type"] = "Section";
-    Antenna["AntennaGain"] = toParm(AntennaGain,"");
-    Antenna["AntennaBandwidth"] = toParm(AntennaBandwidth,"");
-    Antenna["beamWidth"] = toParm(beamWidth,"");
-    Antenna["scanType"] = toParm(scanType,"");
-    Antenna["scanTime1"] = toParm(scanTime1,"");
-    Antenna["scanTime2"] = toParm(scanTime2,"");
-    Antenna["peakSideLobLevel"] = toParm(peakSideLobLevel,"");
-    Antenna["avgSideLobLevel"] = toParm(avgSideLobLevel,"");
+    Antenna["gain_dbi"] = toParm(cfg.antenna.gain_dbi,"dbi");
+    Antenna["beamwidth_deg"] = toParm(cfg.antenna.beamwidth_deg,"deg");
+    Antenna["heading_deg"] = toParm(cfg.heading_deg,"deg");
+    // Antenna["velocity_mps"] = toParm(cfg.velocity_mps,"mps");
     obj["Antenna"] = Antenna;
 
 
@@ -116,6 +320,8 @@ QJsonObject Radio::toJson() const {
 }
 
 void Radio::fromJson(const QJsonObject& obj) {
+    radio::RadioConfig cfg = lib_radio->getConfiguration();
+    if(parentEntity)cfg.id = parentEntity->ID;
     if (obj.contains("active"))
         Active = obj["active"].toBool();
     if (obj.contains("name"))
@@ -125,66 +331,133 @@ void Radio::fromJson(const QJsonObject& obj) {
     if (obj.contains("parent_id"))
         parentID = obj["parent_id"].toString().toStdString();
 
+    if (obj.contains("RadioType") && obj["RadioType"].isObject()) {
+        QJsonObject RadioTypeObj = obj["RadioType"].toObject();
+        if (RadioTypeObj.contains("value")){
+            for (int i = 0; i < 3; i++) {
+                if (RadioTypeNames[i] == RadioTypeObj["value"].toString().toStdString()) {
+                    cfg.mode = (radio::RadioMode)i;
+                }
+            }
+        }
+    }
+
+    if (obj.contains("comms_mode") && obj["comms_mode"].isObject()) {
+        QJsonObject comms_modeObj = obj["comms_mode"].toObject();
+        if (comms_modeObj.contains("value")){
+            for (int i = 0; i < 4; i++) {
+                if (CommsModeTypeNames[i] == comms_modeObj["value"].toString().toStdString()) {
+                    cfg.comms_mode = (radio::CommsMode)i;
+                }
+            }
+        }
+    }
+
+    if (obj.contains("modulation_scheme") && obj["modulation_scheme"].isObject()) {
+        QJsonObject modulation_schemeObj = obj["modulation_scheme"].toObject();
+        if (modulation_schemeObj.contains("value")){
+            for (int i = 0; i < 5; i++) {
+                if (ModulationSchemeTypeNames[i] == modulation_schemeObj["value"].toString().toStdString()) {
+                    cfg.modulation_scheme = (radio::ModulationScheme)i;
+                }
+            }
+        }
+    }
+
+    if (obj.contains("spread_spectrum") && obj["spread_spectrum"].isObject()) {
+        QJsonObject spread_spectrumObj = obj["spread_spectrum"].toObject();
+        if (spread_spectrumObj.contains("value")){
+            for (int i = 0; i < 3; i++) {
+                if (SpreadSpectrumTypeNames[i] == spread_spectrumObj["value"].toString().toStdString()) {
+                    cfg.spread_spectrum = (radio::SpreadSpectrum)i;
+                }
+            }
+        }
+    }
+
+    if (obj.contains("polarization") && obj["polarization"].isObject()) {
+        QJsonObject polarizationObj = obj["polarization"].toObject();
+        if (polarizationObj.contains("value")){
+            for (int i = 0; i < 4; i++) {
+                if (PolarizationTypeNames[i] == polarizationObj["value"].toString().toStdString()) {
+                    cfg.antenna.polarization = (radio::Polarization)i;
+                }
+            }
+        }
+    }
+
+    if (obj.contains("scan_type") && obj["scan_type"].isObject()) {
+        QJsonObject scan_typeObj = obj["scan_type"].toObject();
+        if (scan_typeObj.contains("value")){
+            for (int i = 0; i < 3; i++) {
+                if (ScanTypeNames[i] == scan_typeObj["value"].toString().toStdString()) {
+                    cfg.antenna.scan_type = (radio::ScanType)i;
+                }
+            }
+        }
+    }
+
     if (obj.contains("Transmitter") && obj["Transmitter"].isObject()) {
         QJsonObject Transmitter = obj["Transmitter"].toObject();
         if (Transmitter.contains("minFrequency"))
-            minFrequency = valueFromParm(Transmitter["minFrequency"].toObject());
+            cfg.min_freq_hz = valueFromParm(Transmitter["minFrequency"].toObject())*1000000.0f;
         if (Transmitter.contains("maxFrequency"))
-            maxFrequency = valueFromParm(Transmitter["maxFrequency"].toObject());
-        if (Transmitter.contains("Range"))
-            Range = valueFromParm(Transmitter["Range"].toObject());
+            cfg.max_freq_hz = valueFromParm(Transmitter["maxFrequency"].toObject())*1000000.0f;
+        if (Transmitter.contains("Frequency"))
+            cfg.frequency_hz = valueFromParm(Transmitter["Frequency"].toObject())*1000000.0f;
+        // if (Transmitter.contains("Range")){
+        //     cfg.max_range_m = valueFromParm(Transmitter["Range"].toObject())*1000.0f;
+        //     Range = cfg.max_range_m/1000;
+        // }
         if (Transmitter.contains("powerDegradation"))
-            powerDegradation = valueFromParm(Transmitter["powerDegradation"].toObject());
+            cfg.power_degradation_db = valueFromParm(Transmitter["powerDegradation"].toObject());
+        if (Transmitter.contains("tx_power_dbm"))
+            cfg.tx_power_dbm = valueFromParm(Transmitter["tx_power_dbm"].toObject());
+        // if (Transmitter.contains("tx_duty_cycle"))
+        //     cfg.tx_duty_cycle = valueFromParm(Transmitter["tx_duty_cycle"].toObject());
+        if (Transmitter.contains("is_naval"))
+            cfg.is_naval = Transmitter["is_naval"].toBool();
     }
 
-    if (obj.contains("Envolope") && obj["Envolope"].isObject()) {
-        QJsonObject Envolope = obj["Envolope"].toObject();
-        if (Envolope.contains("minAzimuth"))
-            minAzimuth = valueFromParm(Envolope["minAzimuth"].toObject());
-        if (Envolope.contains("maxAzimuth"))
-            maxAzimuth = valueFromParm(Envolope["maxAzimuth"].toObject());
-        if (Envolope.contains("minElevation"))
-            minElevation = valueFromParm(Envolope["minElevation"].toObject());
-        if (Envolope.contains("maxElevation"))
-            maxElevation = valueFromParm(Envolope["maxElevation"].toObject());
+    if (obj.contains("Receiver") && obj["Receiver"].isObject()) {
+        QJsonObject Receiver = obj["Receiver"].toObject();
+        if (Receiver.contains("rx_bandwidth_hz"))
+            cfg.rx_bandwidth_hz = valueFromParm(Receiver["rx_bandwidth_hz"].toObject())*1000.0f;
+        if (Receiver.contains("sensitivity_dbm"))
+            cfg.receiver.sensitivity_dbm = valueFromParm(Receiver["sensitivity_dbm"].toObject());
+        if (Receiver.contains("noise_figure_db"))
+            cfg.receiver.noise_figure_db = valueFromParm(Receiver["noise_figure_db"].toObject());
+        if (Receiver.contains("squelch_threshold_db"))
+            cfg.receiver.squelch_threshold_db = valueFromParm(Receiver["squelch_threshold_db"].toObject());
+        if (Receiver.contains("channel"))
+            cfg.channel = valueFromParm(Receiver["channel"].toObject());
     }
 
-    if (obj.contains("Modulation") && obj["Modulation"].isObject()) {
-        QJsonObject Modulation = obj["Modulation"].toObject();
-        if (Modulation.contains("minAzimuth"))
-            spreadSpecturm = valueFromParm(Modulation["minAzimuth"].toObject());
-        if (Modulation.contains("maxAzimuth"))
-            majorModulation = valueFromParm(Modulation["maxAzimuth"].toObject());
-        if (Modulation.contains("minElevation"))
-            detail = valueFromParm(Modulation["minElevation"].toObject());
-        if (Modulation.contains("maxElevation"))
-            detailModulation = valueFromParm(Modulation["maxElevation"].toObject());
-    }
+    // if (obj.contains("Modulation") && obj["Modulation"].isObject()) {
+    //     QJsonObject Modulation = obj["Modulation"].toObject();
+    //     if (Modulation.contains("required_snr_override"))
+    //         cfg.required_snr_override = Modulation["required_snr_override"].toBool();
+    //     if (Modulation.contains("processing_gain_db"))
+    //         cfg.processing_gain_db = valueFromParm(Modulation["processing_gain_db"].toObject());
+    // }
 
-    if (obj.contains("Pulse") && obj["Pulse"].isObject()) {
-        QJsonObject Pulse = obj["Pulse"].toObject();
-        if (Pulse.contains("pulseWidth"))
-            pulseWidth = valueFromParm(Pulse["pulseWidth"].toObject());
-    }
+    // if (obj.contains("Pulse") && obj["Pulse"].isObject()) {
+    //     QJsonObject Pulse = obj["Pulse"].toObject();
+    //     if (Pulse.contains("pulseWidth"))
+    //         cfg.bandwidth_hz = valueFromParm(Pulse["pulseWidth"].toObject())*1000.0f;
+    // }
 
     if (obj.contains("Antenna") && obj["Antenna"].isObject()) {
         QJsonObject Antenna = obj["Antenna"].toObject();
-        if (Antenna.contains("AntennaGain"))
-            AntennaGain = valueFromParm(Antenna["AntennaGain"].toObject());
-        if (Antenna.contains("AntennaBandwidth"))
-            AntennaBandwidth = valueFromParm(Antenna["AntennaBandwidth"].toObject());
-        if (Antenna.contains("beamWidth"))
-            beamWidth = valueFromParm(Antenna["beamWidth"].toObject());
-        if (Antenna.contains("scanType"))
-            scanType = valueFromParm(Antenna["scanType"].toObject());
-        if (Antenna.contains("scanTime1"))
-            scanTime1 = valueFromParm(Antenna["scanTime1"].toObject());
-        if (Antenna.contains("scanTime2"))
-            scanTime2 = valueFromParm(Antenna["scanTime2"].toObject());
-        if (Antenna.contains("peakSideLobLevel"))
-            peakSideLobLevel = valueFromParm(Antenna["peakSideLobLevel"].toObject());
-        if (Antenna.contains("avgSideLobLevel"))
-            avgSideLobLevel = valueFromParm(Antenna["avgSideLobLevel"].toObject());
+        if (Antenna.contains("gain_dbi"))
+            cfg.antenna.gain_dbi = valueFromParm(Antenna["gain_dbi"].toObject());
+        if (Antenna.contains("beamwidth_deg"))
+            cfg.antenna.beamwidth_deg = valueFromParm(Antenna["beamwidth_deg"].toObject());
+        if (Antenna.contains("heading_deg"))
+            cfg.heading_deg = valueFromParm(Antenna["heading_deg"].toObject());
+        // if (Antenna.contains("velocity_mps"))
+        //     cfg.velocity_mps = valueFromParm(Antenna["velocity_mps"].toObject());
+
     }
 
     // Deserialize parameters
@@ -200,77 +473,73 @@ void Radio::fromJson(const QJsonObject& obj) {
             }
         }
     }
-
+    lib_radio->configure(cfg);
 }
 
 
 
 void Radio::scan(){
+    if((Simulation::simulationTime-msgTimeStamp) >= 2.50f){
+        msg = "";
+    }
+
     if(!Active)return;
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
     if(!parentEntity) return;
     Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
+    float head = 0.f;
     if(!source) return;
-    // C# foreach (Transform tr in targets) -> C++ range-based for loop
-    for (auto& [key, entity] : *root->Radios)
-    {
-        if(!entity || !entity->parentEntity) continue;
-        auto it = root->Platforms->find(entity->parentEntity->ID);
-        if (it != root->Platforms->end()) {
-            Platform* platform = it->second;
-            // Aapka aage ka logic yahan aaye
-            // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
-            if(platform->ID == parentEntity->ID || !platform || !platform->transform) continue;
-            QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
-            //float distance = localPos.length();
-            float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
-            bool connect = false;
-            for(int f = minFrequency;f<=maxFrequency;f++){
-                if(f<=entity->maxFrequency && f>=entity->minFrequency){
-                    connect = true;
-                    break;
-                }
-            }
+    radio::RadioConfig cfg = lib_radio->getConfiguration();
+    if(cfg.id == ""||true){
+        cfg.id = parentEntity->ID;
+        lib_radio->setPowerOn(parentEntity->Active);
+        cfg.heading_deg = source->getHeading();
+        head = cfg.heading_deg;
 
-            // horizontal angle (Y axis) : x vs z
-            float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
-            //qDebug()<<localPos<<","<<yAngle;
-            if (entity->Active&&metredis<Range&&connect) // .position() is assumed
-            {
-                //qDebug()<< "detect";
-                if (detects.count(platform) == 0)
-                {
-                    detects.insert(platform);
-                    RadioTarget target;
-                    target.entity = platform;
-                    target.angle = yAngle;
-                    target.radius = metredis;
-                    targets.append(target);
-                }else{
-                    for (int i = 0; i < targets.size(); ++i) {
-                        if (targets.at(i).entity == platform) {
-                            targets[i].angle = yAngle;
-                            targets[i].radius = metredis;
-                            break;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                if (detects.count(platform) > 0)
-                {
-                    for (int i = 0; i < targets.size(); ++i) {
-                        if (targets.at(i).entity == platform) {
-                            targets.removeAt(i);
-                            break;
-                        }
-                    }
-                    detects.erase(platform);
-                }
-            }
-        }
+        lib_radio->configure(cfg);
     }
+    radio::Position pos;
+    pos.x = source->translation().z()*1000.f;
+    pos.y = source->translation().x()*1000.f;
+    pos.altitude = source->translation().y()*1000.f;
+    model->updateRadioPosition(lib_radio, pos);
+
+    std::vector<radio::ScanHit> hits = lib_radio->radiolibscan();
+
+    // std::cout << "Scan hit count: " << hits.size() << "\n";
+    targets.clear();
+    for (std::size_t i = 0; i < hits.size(); ++i) {
+        const radio::ScanHit& hit = hits[i];
+        RadioTarget target;
+        try {
+            if ((*root->Platforms)[hit.id]) {
+                target.entity = (*root->Platforms)[hit.id];
+            }else{
+                target.entity = nullptr;
+            }
+        } catch (const std::exception& e) {
+            // Yahan error handle karein
+            qDebug() << "Error accessing platform:" << e.what();
+        }
+        target.angle = -((hit.azimuth_deg+head)+180.f);
+        target.radius = hit.distance_m/1000.f;
+        targets.append(target);
+
+        // std::cout << "Hit[" << i << "] "
+        //           << "id=" << hit.id
+        //           << " platform=" << hit.target_platform_name
+        //           << " distance_m=" << hit.distance_m
+        //           << " azimuth_deg=" << hit.azimuth_deg
+        //           << " rx_power_dbm=" << hit.rx_power_dbm
+        //           << " noise_floor_dbm=" << hit.noise_floor_dbm
+        //           << " snr_db=" << hit.snr_db
+        //           << " path_loss_db=" << hit.path_loss_db
+        //           << "\n";
+    }
+
+
+
+
 }
 int Radio::getRadioTargetCount() const
 {

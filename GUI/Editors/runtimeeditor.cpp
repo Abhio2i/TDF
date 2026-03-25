@@ -485,17 +485,20 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                     QString entityName = QString::fromStdString(entity->Name);
                     QString displayName = capitalizeFirstLetter(entityName);
                     if (displayDock) displayDock->setWindowTitle("Sensors - " + displayName);
-
-                    for (Inspector* insp : inspectors) {
-                        insp->init(entityId, displayName + "_self",
-                                   (*hierarchy->Entities)[entityId.toStdString()]->toJson());
+                    if (!inspectorDock->isLocked()) {
+                        for (Inspector* insp : inspectors) {
+                            insp->init(entityId, displayName + "_self",
+                                       (*hierarchy->Entities)[entityId.toStdString()]->toJson());
+                        }
                     }
-                    if (radarDisplayUI) radarDisplayUI->selectEntity(entity);
-                    if (iffDisplayUI)   iffDisplayUI->selectEntity(entity);
-                    if (radioDisplayUI) radioDisplayUI->selectEntity(entity);
-                    if (csmDisplayUI)   csmDisplayUI->selectEntity(entity);
-                    if (esmDisplayUI)   esmDisplayUI->selectEntity(entity);
-
+                    if (!displayDock || !displayDock->isLocked()) {
+                        if (displayDock) displayDock->setWindowTitle("Sensors - " + displayName);
+                        if (radarDisplayUI) radarDisplayUI->selectEntity(entity);
+                        if (iffDisplayUI)   iffDisplayUI->selectEntity(entity);
+                        if (radioDisplayUI) radioDisplayUI->selectEntity(entity);
+                        if (csmDisplayUI)   csmDisplayUI->selectEntity(entity);
+                        if (esmDisplayUI)   esmDisplayUI->selectEntity(entity);
+                    }
                 });
     }
     connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
@@ -583,22 +586,20 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 inspector->init(ID, displayName + "_self", (*hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
             } else if (type == "entity") {
                 inspector->init(data["ID"].toString(), displayName + "_self", (*hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
-                if (displayDock) displayDock->setWindowTitle("Sensors - " + displayName);
 
-                if (radarDisplayUI) {
-                    radarDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                }
-                if (iffDisplayUI) {
-                    iffDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                }
-                if (radioDisplayUI) {
-                    radioDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                }
-                if (csmDisplayUI) {
-                    csmDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                }
-                if (esmDisplayUI) {
-                    esmDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                if (!displayDock || !displayDock->isLocked()) {
+                    if (displayDock) displayDock->setWindowTitle("Sensors - " + displayName);
+
+                    if (radarDisplayUI)
+                        radarDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                    if (iffDisplayUI)
+                        iffDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                    if (radioDisplayUI)
+                        radioDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                    if (csmDisplayUI)
+                        csmDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                    if (esmDisplayUI)
+                        esmDisplayUI->selectEntity((*hierarchy->Entities)[data["ID"].toString().toStdString()]);
                 }
             } else {
                 inspector->init(ID, displayName, QJsonObject());
@@ -991,13 +992,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     //            runtime->sqlite->insertFrame(s_duration);
     //        }
     //    });
-    connect(runtime->recording, &Recording::sendPayLoad,
-            this, [=](PayLoad m_payLoad) {
 
-                if (runtime && runtime->sqlite) {
-                    runtime->sqlite->receivePayLoad(m_payLoad);
-                }
-            });
 
     connect(runtime->replay, &Replay::getMaxFrameIndexNDuration,
             this, [=](int* maxFrameIndex, qint64* maxDuration){
@@ -1077,6 +1072,100 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
 
                 }
             });
+    /**********************************************************
+ *                   Logger Start                         *
+ **********************************************************/
+
+    /*                       Alert !!                         */
+    connect(runtime->recorder,&Recorder::alertViaStr,
+            loggerDialog,&LoggerDialog::alertViaStr);
+
+    /*                    SQLite Connection                   */
+    connect(loggerDialog, &LoggerDialog::getDBStatusOfRecording, this,
+            [=](SQLite::DBStatuses &dbStatusOfRecording) {
+                if (runtime && runtime->recording) {
+                    loggerDialog->dbStatusPtr = &runtime->sqlite->dbStatus;
+                }
+            });
+    /*              Send SQLite DB File Path                  */
+    connect(loggerDialog, &LoggerDialog::getFilePath, this,
+            [=](QString path) {
+                if (runtime && runtime->recorder) {
+                    runtime->recorder->loadFile(path);
+                }
+            });
+    connect(loggerDialog, &LoggerDialog::savedFilePath, this,
+            [=](QString path) {
+                if (runtime && runtime->recorder) {
+                    runtime->recorder->saveFile(path);
+                }
+            });
+    /*            Freeze and Defreeze the Button             */
+    connect(runtime->recorder,&Recorder::freezeButtonOperation,
+            loggerDialog,&LoggerDialog::freezeButtonOperation);
+    /**********************************************************
+ *                   Logger End                           *
+ **********************************************************/
+
+    /**********************************************************
+ *              Timeline Widget Start                     *
+ **********************************************************/
+    connect(runtime->replay, &Replay::setMaxDuration,
+            this, [=](qint64* maxDuration) {
+                if (loggerDialog) {
+                    loggerDialog->getTimelineWidget()->
+                        maxDurationPtr = maxDuration;
+                }
+            });
+    connect(loggerDialog, &LoggerDialog::sendClickedTimestamp, this,
+            [=](qint64 clickedTimestamp) {
+                if (runtime && runtime->replay) {
+                    runtime->replay->
+                        jumpInBetween(clickedTimestamp);
+                }
+            });
+    /**********************************************************
+*                Timeline Widget End                      *
+ **********************************************************/
+
+    /**********************************************************
+ *       Recording Send  to SQLite PayLoad Start          *
+ **********************************************************/
+
+    /*                     SQLite Instance                    */
+    // connect(runtime->recorder, &Recorder::getSQLite,
+    //         this, [=](SQLite *m_sqlite) {
+    //             if (runtime && runtime->sqlite) {
+    //                 runtime->sqlite->setSQLite(m_sqlite);
+    //             }
+    //         });
+
+    /*                         PayLoad                        */
+    connect(runtime->recording, &Recording::sendPayLoad,
+            this, [=](PayLoad m_payLoad) {
+
+                if (runtime && runtime->sqlite) {
+                    runtime->sqlite->receivePayLoad(m_payLoad);
+                }
+            });
+    connect(runtime->replay, &Replay::getPayLoadFromIndex,
+            this, [=](PayLoad* payload,int frameIndex) {
+                if (runtime && runtime->sqlite) {
+                    runtime->sqlite->setPayLoadFromIndex(*payload,frameIndex);
+                }
+            });
+
+    /*                  Tranform                              */
+    // connect(hierarchy->Components->at(), &Recording::sendPayLoad,
+    //         this, [=](PayLoad m_payLoad) {
+
+    //             if (runtime && runtime->sqlite) {
+    //                 runtime->sqlite->receivePayLoad(m_payLoad);
+    //             }
+    // });
+    /**********************************************************
+ *       Recording Send  to SQLite PayLoad End            *
+ **********************************************************/
 
     //createEntitiesCreate(QString parentId,QString ID,QString EntityName,bool Profile);
     //    connect(runtime->replay, &Replay::createEntitiesCreate,
@@ -1144,7 +1233,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             tacticalDisplay->canvas->centerOnEntity(entityId, false);
         }
     });
-     //=================================================================================================
+    //=================================================================================================
 
 }
 void RuntimeEditor::setupEnhancedDockWidgets()
@@ -1215,6 +1304,7 @@ void RuntimeEditor::setupEnhancedDockWidgets()
     if (hierarchy) inspector->setHierarchy(hierarchy);
     inspector->setStyleSheet("background-color: #0F2636; color: white;");
     setupOverlay(inspectorDock, inspector, "Inspector", false);
+    inspectorDock->enableLockButton();
 
     libTreeView = new HierarchyTree(this);
     libTreeView->islib = true;
@@ -1231,6 +1321,10 @@ void RuntimeEditor::setupEnhancedDockWidgets()
     displayTabs->setStyleSheet("QTabWidget::pane { background-color: #0F2636; }"
                                "QTabBar::tab { background-color: #1A3A4F; color: white; padding: 8px; }"
                                "QTabBar::tab:selected { background-color: #00BFFF; }");
+    displayDock->handlePos = CustomResizableOverlayDock::Left;
+
+    // ADD THIS LINE — lock button sirf Sensors dock mein show hoga
+    displayDock->enableLockButton();
 
     // Create sensor displays
     radarDisplayUI = new RadarDisplay(displayTabs);
@@ -1384,8 +1478,8 @@ void RuntimeEditor::setupEnhancedDockWidgets()
         inspectorDock->hide();
         libraryDock->hide();
         textScriptDock->hide();
-        displayDock->hide();
-        loggerDock->hide();
+        // displayDock->hide();
+        // loggerDock->hide();
 
         CustomResizableOverlayDock* target = nullptr;
         if (viewName == "Inspector") {
@@ -1529,7 +1623,7 @@ void RuntimeEditor::toggleRadarDisplay() {
         // Hide other right-side panels (but save inspector state)
         libraryDock->hide();
         textScriptDock->hide();
-        loggerDock->hide();
+        // loggerDock->hide();
 
         QRect sGeo = sidebarDock->geometry();
 
@@ -1579,7 +1673,7 @@ void RuntimeEditor::toggleLoggerDisplay(bool checked)
         inspectorDock->hide();
         libraryDock->hide();
         textScriptDock->hide();
-        displayDock->hide();
+        // displayDock->hide();
 
         // Use manual positioning (same as in sidebar view selection)
         QRect sGeo = sidebarDock->geometry();
@@ -1614,6 +1708,7 @@ void RuntimeEditor::setupToolBars()
     addToolBar(Qt::TopToolBarArea, runtimeToolBar);
     networkToolBar = new NetworkToolbar(this);
     addToolBar(Qt::TopToolBarArea, networkToolBar);
+    networkToolBar->hide();
 
     designToolBar->setMovable(true);
     runtimeToolBar->setMovable(true);
@@ -1718,8 +1813,7 @@ void RuntimeEditor::setupToolBarConnections()
             });
     connect(designToolBar, &DesignToolBar::coordinateSystemChanged,
             tacticalDisplay->mapWidget, &GISlib::setCoordinateSystem);
-
-        //===========================================
+    //===========================================
 }
 
 void RuntimeEditor::onItemSelected(QVariantMap data)

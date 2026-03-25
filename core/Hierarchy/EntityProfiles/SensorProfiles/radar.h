@@ -13,7 +13,7 @@
 #ifndef RADAR_H
 #define RADAR_H
 
-#include "radarmodel.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/radarlib/radarmodel.h"
 #include "core/Hierarchy/EntityProfiles/sensor.h"
 
 #include <QElapsedTimer>

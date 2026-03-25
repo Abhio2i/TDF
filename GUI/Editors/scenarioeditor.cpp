@@ -178,10 +178,12 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
                     Entity* entity = it->second;
                     QString entityName = QString::fromStdString(entity->Name);
                     QString displayName = capitalizeFirstLetter(entityName);
+                    if (!inspectorDock->isLocked()) {
 
-                    for (Inspector* insp : inspectors) {
-                        insp->init(entityId, displayName + "_self",
-                                   (*hierarchy->Entities)[entityId.toStdString()]->toJson());
+                        for (Inspector* insp : inspectors) {
+                            insp->init(entityId, displayName + "_self",
+                                       (*hierarchy->Entities)[entityId.toStdString()]->toJson());
+                        }
                     }
                     if (!inspectorDock->isVisible()) {
                         if (libraryDock) libraryDock->hide();
@@ -444,6 +446,7 @@ void ScenarioEditor::setupEnhancedDockWidgets()
     inspector->setHierarchy(hierarchy);
     inspector->setStyleSheet("background-color: #0F2636; color: white;");
     setupOverlay(inspectorDock, inspector, "Inspector", false);
+    inspectorDock->enableLockButton();
 
     libTreeView = new HierarchyTree(this);
     libTreeView->islib = true;

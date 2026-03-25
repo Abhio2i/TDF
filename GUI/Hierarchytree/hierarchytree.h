@@ -16,10 +16,42 @@
 #include <QLineEdit>                              // For search bar
 #include <QHBoxLayout>                            // For horizontal layout
 #include "core/Hierarchy/entity.h"                // For entity data structure
+#include "qwidgetaction.h"
+#include <QLabel>
 
 // %%% Forward Declarations %%%
 class ContextMenu;
+// In hierarchytree.h, add this class before HierarchyTree class definition
+class CompactMenuAction : public QWidgetAction {
+public:
+    CompactMenuAction(const QIcon& icon, const QString& text, QObject* parent = nullptr)
+        : QWidgetAction(parent) {
+        QWidget* widget = new QWidget();
+        QHBoxLayout* layout = new QHBoxLayout(widget);
+        layout->setContentsMargins(2, 2, 2, 2);
+        layout->setSpacing(0);  // Zero spacing - NO SPACE between icon and text
 
+        // Icon label
+        QLabel* iconLabel = new QLabel();
+        if (!icon.isNull()) {
+            iconLabel->setPixmap(icon.pixmap(16, 16));
+        }
+        iconLabel->setFixedSize(16, 16);
+
+        // Text label
+        QLabel* textLabel = new QLabel(text);
+        textLabel->setStyleSheet("color: white; background: transparent;");
+        textLabel->setContentsMargins(0, 0, 0, 0);
+
+        layout->addWidget(iconLabel);
+        layout->addWidget(textLabel);
+        layout->addStretch();
+
+        widget->setLayout(layout);
+        widget->setStyleSheet("background: transparent;");
+        setDefaultWidget(widget);
+    }
+};
 // %%% Class Definition %%%
 /* Widget for hierarchy tree display */
 class HierarchyTree : public QWidget
@@ -115,8 +147,9 @@ signals:
     void addWeaponToEntitiesRequested(QList<QVariantMap> entities);
     void addSensorToEntitiesRequested(QList<QVariantMap> entities);
     void addTeamToEntitiesRequested(QList<QVariantMap> entities, QString team);
-
-
+    void addIFFToEntitiesRequested(QList<QVariantMap> entities);
+    void addRadioToEntitiesRequested(QList<QVariantMap> entities);
+    void setCategoryToEntitiesRequested(QList<QVariantMap> entities, QString category);
 protected:
     // %%% Event Handlers %%%
     // Show context menu

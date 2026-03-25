@@ -6,9 +6,29 @@
 #include <vector>
 #include <QtGlobal>
 
+enum ButtonFreezeOps {
+    Freeze   = true,
+    Unfreeze = false
+};
 
+enum toggleModes {
+    togglePlay,
+    togglePause
+};
 
+enum LoggerButton {
+    Recorder_Button ,
+    Recording_Toggle,
+    Reocrding_Stop  ,
+    Replay_Start        ,
+    Replay_Toggle       ,
+    Replay_Jump_Forward ,
+    Replay_Jump_Backward,
+    Replay_Restart      ,
+    Size_List           ,
+};
 
+using ButtonNOpsList = std::vector<std::pair<LoggerButton,ButtonFreezeOps>>;
 
 struct ProfileCategoriesDetails {
     int       index;
@@ -135,7 +155,19 @@ struct PayLoad {
     EntitiesTrajectoryCRUDList entitiesTrajectoryCRUDList;
 };
 
-// Frame
+// SQLite
+enum DB_Validity {
+     DB_Valid = true,
+     DB_Invalid = false
+};
+// SQLite
 
+// Error Message Enums Start
+enum Logger_Error {
+    Err_DB_UNAVAILABLE = 1,
+    Err_DB_FILE_NOT_EXIST,
+    Err_Undefine_Error,
+};
 
+// Error Message Enums End
 #endif // PAYLOAD_H

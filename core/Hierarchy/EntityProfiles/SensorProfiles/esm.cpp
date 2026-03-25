@@ -16,7 +16,7 @@ void ESM::scan(){
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
     for (auto& [key, entity] : *root->Sensors)
     {
-        if(!entity || !entity->parentEntity) continue;
+        if(!entity || !entity->parentEntity|| !entity->parentEntity->Active) continue;
         auto it = root->Platforms->find(entity->parentEntity->ID);
         if (it != root->Platforms->end()) {
             Platform* platform = it->second;

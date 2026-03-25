@@ -83,21 +83,19 @@ const QString Dialog = R"(
     QDialog QComboBox:!focus {
         color: white;
     }
-    QDialog QComboBox::drop-down {
-        border: none;
-        width: 24px;
-        background-color: #1A3652;
-        border-top-right-radius: 2px;
-        border-bottom-right-radius: 2px;
-    }
-    QDialog QComboBox::down-arrow {
-        border-left: 5px solid transparent;
-        border-right: 5px solid transparent;
-        border-top: 5px solid white;
-        width: 0;
-        height: 0;
-        margin-right: 4px;
-    }
+QDialog QComboBox::down-arrow {
+    image: url(:/icons/images/up.png);
+    width: 12px;
+    height: 12px;
+    border: none;
+}
+
+QDialog QComboBox::down-arrow {
+    image: url(:/icons/images/down.png);
+    width: 12px;
+    height: 12px;
+    border: none;
+}
     QDialog QComboBox QAbstractItemView {
         background-color: #1A3652;
         color: white;

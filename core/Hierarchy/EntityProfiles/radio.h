@@ -3,6 +3,7 @@
 #ifndef RADIO_H
 #define RADIO_H
 
+#include "core/Hierarchy/EntityProfiles/Radio/include/radio/radio_interface.h"
 #include "core/Hierarchy/EntityProfiles/platform.h"
 #include <core/Hierarchy/entity.h>
 #include <QObject>
@@ -23,9 +24,54 @@ public:
     enum class SpreadSpectrum { FHSS, DSSS, None };
     enum class MajorModulation { AM, FM, PSK, QAM };
     enum class EncryptionType { AES, DES, None };
+
+    const std::string RadioTypeNames[3] = { "RECEIVER_ONLY",
+                                            "TRANSMITTER_ONLY",
+                                            "TRANSCEIVER"};
+
+    const std::string CommsModeTypeNames[4] = { "LINE_OF_SIGHT",
+                                            "BEYOND_LINE_OF_SIGHT",
+                                            "SATCOM",
+                                            "TROPOSCATTER"};
+
+    const std::string SpreadSpectrumTypeNames[3] = {"NONE",
+                                                    "FHSS",
+                                                    "DSSS"};
+
+    const std::string ModulationClassTypeNames[4] = { "AM",
+                                                      "FM",
+                                                      "PSK",
+                                                      "QAM"};
+
+    const std::string ModulationSchemeTypeNames[5] = { "BPSK",
+                                                     "QPSK",
+                                                     "QAM16",
+                                                     "QAM64",
+                                                     "GMSK"};
+
+    const std::string EncryptionTypeNames[3] = {"NONE",
+                                                "AES",
+                                                "DES"};
+
+    const std::string PolarizationTypeNames[4] = { "VERTICAL",
+                                                    "HORIZONTAL",
+                                                    "CIRCULAR_LEFT",
+                                                    "CIRCULAR_RIGHT"};
+
+    const std::string DuplexModeTypeNames[3] = {"SIMPLEX",
+                                                "HALF_DUPLEX",
+                                                "FULL_DUPLEX"};
+
+    const std::string ScanTypeNames[3] = {"FIXED",
+                                        "SECTOR_SCAN",
+                                        "CONICAL_SCAN"};
+
     Entity* parentEntity = nullptr;
     RadioType radioType = RadioType::Transceiver;
 
+    radio::PropagationModelConfig model_cfg;
+    static radio::PropagationModel* model;
+    radio::Radiolib* lib_radio;
     //Radio Transmitter
     float minFrequency = 8;
     float maxFrequency = 12;
@@ -59,6 +105,8 @@ public:
 
     float Range=10.0f;
     float bandwidth;
+    float msgTimeStamp = 0;
+    std::string msg = "hello";
 
     struct RadioTarget {
         Platform* entity;
@@ -77,6 +125,7 @@ public:
     void updateComponent(QString name, const QJsonObject& obj) override;
     // ---- RadioTarget access for ScriptEngine ----
     int getRadioTargetCount() const;
+    void sendMsg(std::string msg);
 
     bool getRadioTarget(
         int index,

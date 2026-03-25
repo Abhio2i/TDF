@@ -3173,6 +3173,51 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
    // Call the new text handling function
    handleTextKeyPress(event);
 
+   if (event->key() == Qt::Key_F) {
+       // Restore original trajectory from the entity
+       if (!selectedEntityId.empty()) {
+           auto it = Meshes.find(selectedEntityId);
+           if (it != Meshes.end()) {
+               MeshEntry& entry = it->second;
+                if(entry.platform && entry.platform->Active){
+                    entry.platform->fireMissile();
+                }
+            }
+        }
+
+       return;
+   }
+
+   if (event->key() == Qt::Key_M) {
+       // Restore original trajectory from the entity
+       if (!selectedEntityId.empty()) {
+           auto it = Meshes.find(selectedEntityId);
+           if (it != Meshes.end()) {
+               MeshEntry& entry = it->second;
+                if(entry.platform && entry.platform->Active){
+                     Platform* entity = entry.platform;
+                    if(!entry.radioVisible) return;
+                    if (!entity) return;
+                    if (!entity->radios) return;
+                    // Function ke andar ye code likhein:
+                    bool ok;
+                    QString text = QInputDialog::getText(this, tr("Input Box Title"),
+                                                         tr("Apna naam likhein:"), QLineEdit::Normal,
+                                                         "Default Text", &ok);
+                    if (ok && !text.isEmpty()) {
+                        for (auto const& pair : *entity->radios->radios) {
+                            Radio* s = pair.second;
+                            s->sendMsg(text.toStdString());
+                        }
+                    }
+
+                }
+            }
+        }
+
+       return;
+   }
+
    if (event->key() == Qt::Key_Escape && currentMode == MeasureDistance) {
        setTransformMode(Translate);
        return;
@@ -4049,6 +4094,14 @@ void CanvasWidget::drawRadio(QPainter& painter, std::string id, MeshEntry entry)
 
        float centerX = point.x();
        float centerY = point.y();
+       QString  msg = QString::fromStdString(s->msg);
+       if(!msg.isEmpty()){
+        QFont font("Arial", 5, QFont::Bold);
+        painter.setFont(font);
+        painter.setPen(QColor(0, 0, 0, 255));
+        // Fixed screen coordinates ka upyog karein
+        painter.drawText(QPointF(centerX, centerY),msg);
+       }
 
        QPen pen(Qt::black, 1);
        QVector<qreal> dashes;
@@ -4057,8 +4110,14 @@ void CanvasWidget::drawRadio(QPainter& painter, std::string id, MeshEntry entry)
        painter.setPen(pen);
 
        for (int i = 0; i < s->targets.size(); ++i) {
-           QPointF points2 = gislib->geoToCanvas(s->targets[i].entity->transform->getLatitude(), s->targets[i].entity->transform->getLongitude());
-           painter.drawLine(centerX, centerY, points2.x(), points2.y());
+           try {
+           if(s->targets[i].entity && s->targets[i].entity->transform){
+                QPointF points2 = gislib->geoToCanvas(s->targets[i].entity->transform->getLatitude(), s->targets[i].entity->transform->getLongitude());
+                painter.drawLine(centerX, centerY, points2.x(), points2.y());
+           }
+           }catch(...){
+
+           }
        }
    }
 }

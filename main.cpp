@@ -7,7 +7,6 @@
 
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg);
-
 int main(int argc, char *argv[])
 {
     qRegisterMetaType<std::string>("std::string");
@@ -74,12 +73,9 @@ int main(int argc, char *argv[])
 
     // Global style apply karein
     a.setStyleSheet(globalDarkStyle);
-
     qInstallMessageHandler(customMessageHandler);
     TDFManager::instance()->initializeTDFStructure();
-
     MainWindow w;
     w.show();
-
     return a.exec();
 }

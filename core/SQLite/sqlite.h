@@ -13,12 +13,11 @@
 #include <QStandardPaths>
 #include <QCoreApplication>
 #include "core/Hierarchy/hierarchy.h"
-#include "core/Simulation/simulation.h"
-#include "core/Hierarchy/EntityProfiles/platform.h"
-#include "core/Recorder/recorder.h"
+#include "core/Recorder/payload.h"
+//#include "core/Recorder/recorder.h"
 
 class Hierarchy;
-class Simulation;
+
 
 // typedef struct{
 //     double longitude  ;
@@ -36,12 +35,15 @@ class SQLite : public QObject
 
 public:
     explicit SQLite(Hierarchy* hierarchy,
-                    Simulation* simulation,
                     QObject *parent = nullptr);
     ~SQLite();
 
     void dbInit();
+    void dbInit(QString path,bool &isFileSaved);
     void dbConnect();
+    void dbConnect(QString path, bool &isFileLoaded);
+    void setSQLite(SQLite &s_SQLite);
+    SQLite *getSQLite();
     void close();
 
     // Frame API (call this per simulation tick)
@@ -58,20 +60,19 @@ private:
 private:
     QSqlDatabase m_db;
     Hierarchy*   m_hierarchy;
-    Simulation*  m_simulation;
     // Write Operation Start
 public:
     void receivePayLoad(PayLoad m_payLoad);
     bool insertFrameMap(int frameIndex, qint64 timestamp);
 
-    bool insertProfileCategoriesDetails(
+    bool insertProfileCategoriesDetails(int frameIndex,
         ProfileCategoriesDetailsList m_profileCategoriesDetailsList);
     bool insertProfileCategoriesCRUD(int frameIndex,
-                                     ProfileCategoriesCRUDList m_profileCategoriesCRUDList);
+        ProfileCategoriesCRUDList m_profileCategoriesCRUDList);
 
 
 
-    bool insertEntitiesDetails(EntitiesDetailsList m_entitiesDetailsList);
+    bool insertEntitiesDetails(int frameIndex,EntitiesDetailsList m_entitiesDetailsList);
     bool insertEntitiesCreated(int frameIndex, EntitiesCreatedList m_entitiesCreatedList);
     bool insertEntitiesUpdated(int frameIndex, EntitiesUpdatedList m_entitiesUpdatedList);
     bool insertEntitiesDeleted(int frameIndex, EntitiesDeletedList m_entitiesDeletedList);
@@ -121,6 +122,18 @@ public:
     void setEntitiesTrajectoryCRUD(int &frameIndex,
                                    EntitiesTrajectoryCRUDList &entitiesTrajectoryCRUDList);
 
+
+    /*------------    Jump In Between Start    ------------*/
+
+    void setPayLoadFromIndex(PayLoad &payLoad,int frameIndex);
+    void setEntitiesDetailsListInBtw(int frameIndex,
+        EntitiesDetailsList &entitiesDetailsList);
+    void setEntitiesMeshRenderer2DInBtw(int frameIndex,
+        EntitiesMeshRenderer2DList &entitiesMeshRenderer2DList);
+    void setEntitiesTrajectoryBtw(int &frameIndex,
+        EntitiesTrajectoryList &entitiesTrajectoryList);
+
+    /*------------     Jump In Between End     ------------*/
 signals:
     void sendPayLoad(PayLoad m_payLoad);
     // Read Operation End
@@ -151,11 +164,14 @@ private:
     /*  Custom enum for Selective Debugging  */
 public:
     typedef enum {
-        D_NULL            = 0b100000000000,
-        D_JustPrint       = 0b010000000000,
-        D_GetPayLoad      = 0b001000000000,
-        D_SetPayLoad      = 0b000100000000,
-        D_Trajectory      = 0b000010000000
+        D_NULL            = 0b10000000000000,
+        D_JustPrint       = 0b01000000000000,
+        D_INIT            = 0b00100000000000,
+        D_Connect         = 0b00010000000000,
+        D_GetPayLoad      = 0b00001000000000,
+        D_SetPayLoad      = 0b00000100000000,
+        D_Trajectory      = 0b00000010000000,
+        D_LoadInBetween   = 0b00000001000000,
     }debugSQLite;
     Q_ENUM(debugSQLite)
 
@@ -166,9 +182,11 @@ private:
      *   Custom Debugging    */
     /*  ===> " USE ME " for debugging   <===*/
     int debugList = D_JustPrint
+        | D_INIT
         //| D_GetPayLoad
         //| D_Trajectory
         //| D_SetPayLoad
+        | D_LoadInBetween
         ;
     /*   To find the the debugOptions inside
      *   debugType or not "Helping Function" */

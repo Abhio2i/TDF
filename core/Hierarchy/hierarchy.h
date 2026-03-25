@@ -1,4 +1,3 @@
-
 #ifndef HIERARCHY_H
 #define HIERARCHY_H
 
@@ -24,6 +23,7 @@ public:
     bool isScenario = false;
     bool isRuntime = false;
     bool fixedProfiles = true;
+// private:
     std::unordered_map<std::string, ProfileCategaory*> ProfileCategories;
     std::unordered_map<std::string, std::list<std::string>> dictionry;
     std::unordered_map<std::string, Folder*> *Folders;
@@ -42,6 +42,21 @@ public:
     std::unordered_map<std::string, Mission*> *missionList;
     std::unordered_map<std::string, std::string*> EntityPaths;
     std::unordered_map<std::string, std::string*> FolderPaths;
+
+public:
+    std::unordered_map<float, float> redengagements;
+    float redlastengagments = 0;
+    std::unordered_map<float, float> reddetections;
+    float redlastdetections = 0;
+    std::unordered_map<float, float> reddamages;
+    float redlastdamages = 0;
+
+    std::unordered_map<float, float> blueengagements;
+    float bluelastengagments = 0;
+    std::unordered_map<float, float> bluedetections;
+    float bluelastdetections = 0;
+    std::unordered_map<float, float> bluedamages;
+    float bluelastdamages = 0;
 
     ProfileCategaory* addProfileCategaory(QString profileName);
     void addProfileCategaoryWithObject(ProfileCategaory *profile);
@@ -126,6 +141,8 @@ public:
 
 
     void renameSubComponent(QString ID, QString subComponentID, QString newName);
+    QJsonObject loadAnalysisJson();
+    void Anlaysis();
 
 
 signals:
@@ -170,6 +187,21 @@ signals:
 
     void meshRenderer2DisAdded(const QString &ID, MeshRenderer2D* meshRenderer2D);
     void trajectoryisAdded(const QString &ID, Trajectory* trajectory);
+
+    // ── Bomb lifecycle signals ────────────────────────────────────────────────
+    // Emitted by Bomb::launch() when a bomb is released from its parent aircraft.
+    //   bombID     : the Bomb entity's ID
+    //   aircraftID : the Platform entity that released it
+    //   lat/lon/alt: release position (WGS-84 geocoord)
+    void bombLaunched(const QString& bombID,
+                      const QString& aircraftID,
+                      double lat, double lon, double alt);
+
+    // Emitted by Bomb::missileEnd() when the bomb reaches its terminal state.
+    //   bombID     : the Bomb entity's ID
+    //   lat/lon/alt: detonation position
+    void bombDetonated(const QString& bombID,
+                       double lat, double lon, double alt);
 };
 
 #endif // HIERARCHY_H

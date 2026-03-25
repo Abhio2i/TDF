@@ -285,6 +285,10 @@ void Missile::missileEnd()
         m_targetplatform->isVictom = false;
     }
 
+    if(parentEntity){
+        parentEntity->hitcount+=1;
+    }
+
     if (m_canvas) {
         QTimer::singleShot(0, m_canvas, [this, blastLat, blastLon]() {
             if (!m_canvas) return;

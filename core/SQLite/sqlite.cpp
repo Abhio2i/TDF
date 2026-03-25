@@ -2,11 +2,9 @@
 #include "sqlite.h"
 
 SQLite::SQLite(Hierarchy* hierarchy,
-               Simulation* simulation,
                QObject *parent)
     : QObject(parent),
-    m_hierarchy(hierarchy),
-    m_simulation(simulation)
+    m_hierarchy(hierarchy)
 {
 
 }
@@ -97,7 +95,7 @@ void SQLite::applyPragmas()
 // }
 void SQLite::dbInit()
 {
-    qDebug() << "Database Init";
+    str = "Step1: Database Init \n";
 
     QString buildPath = QCoreApplication::applicationDirPath();
     QString dbPath = buildPath + "/simulation.db";
@@ -106,19 +104,40 @@ void SQLite::dbInit()
 
     if (QFile::exists(dbPath)) {
         QFile::remove(dbPath);
-        qDebug() << "Old DB removed";
+        str += "Step2: Old DB removed\n";
     }
 
     if (!open(dbPath))
         return;
-    qDebug()<<"DB Location"<<dbPath;
+    str += "Step3: DB Location"+dbPath;
+    debug(str,D_INIT);
     createTables();
-    //insertEntities();
 }
+
+void SQLite::dbInit(QString path,bool &isFileSaved)
+{
+    str = "Step1: Database Init \n";
+    close();
+
+    if (QFile::exists(path)) {
+        QFile::remove(path);
+        str += "Step2: Old DB removed\n";
+    }
+
+    if (!open(path)){
+        isFileSaved = false;
+        return;
+    }
+    str += "Step3: DB Location"+path;
+    debug(str,D_INIT);
+    createTables();
+    isFileSaved = true;
+}
+
 
 void SQLite::dbConnect()
 {
-    qDebug() << "Database Connect";
+    str = "Database Connect";
 
     QString buildPath = QCoreApplication::applicationDirPath();
     QString dbPath = buildPath + "/simulation.db";
@@ -126,12 +145,33 @@ void SQLite::dbConnect()
     close();
 
     if (QFile::exists(dbPath)) {
-        qDebug() << "DB Exist";
+        str += "DB Exist";
     }
-
+    debug(str,D_Connect);
     if (!open(dbPath))
         return;
 }
+
+void SQLite::dbConnect(QString path, bool &isFileLoaded)
+{
+    str = "Database Connect...";
+    close();
+    if (QFile::exists(path)) {
+        str += "DB Exist";
+        isFileLoaded = true;
+    }
+    debug(str,D_Connect);
+    if (!open(path)){
+        isFileLoaded = false;
+        return;
+    }
+}
+
+SQLite *SQLite::getSQLite()
+{
+    return this;
+}
+
 
 //
 // -------------------- SCHEMA --------------------
@@ -151,7 +191,9 @@ void SQLite::createTables()
         CREATE TABLE profileCategoriesDetails  (
             indexNo  INTEGER PRIMARY KEY,
             name     TEXT,
-            id       TEXT UNIQUE
+            id       TEXT UNIQUE,
+            creation    INTEGER,
+            deletion    INTEGER
         )
     )");
     /*
@@ -210,7 +252,9 @@ void SQLite::createTables()
             name     TEXT,
             id       TEXT UNIQUE,
             parentID TEXT,
-            profile  BOOLEAN
+            profile  BOOLEAN,
+            creation    INTEGER,
+            deletion    INTEGER
         )
     )");
     exec(R"(
@@ -265,6 +309,7 @@ void SQLite::createTables()
             Texture     TEXT,
             color       TEXT,
             color2      TEXT,
+            creation    INTEGER,
             FOREIGN KEY (indexNo)    REFERENCES entitiesDetails(indexNo),
             FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
         )
@@ -334,6 +379,8 @@ void SQLite::createTables()
             operation   INTEGER,
             indexNo     INTEGER,
             frameIndex  INTEGER,
+            creation    INTEGER,
+            deletion    INTEGER,
             FOREIGN KEY (indexNo)    REFERENCES entitiesDetails(indexNo),
             FOREIGN KEY (frameIndex) REFERENCES frameMap(frameIndex)
         )
@@ -371,7 +418,7 @@ void SQLite::receivePayLoad(PayLoad m_payLoad){
 
     m_str += "\n  Profile_Categories_Details: ";
     if((m_payLoad.profileCategoriesDetailsList.size() > 0) &&
-        (insertProfileCategoriesDetails(m_payLoad.profileCategoriesDetailsList))){
+        (insertProfileCategoriesDetails(m_payLoad.frameIndex,m_payLoad.profileCategoriesDetailsList))){
         m_str += p;
     }else{
         m_str += f;
@@ -388,7 +435,8 @@ void SQLite::receivePayLoad(PayLoad m_payLoad){
     }
 
     m_str += "\n  Insert_Entities_Details: ";
-    if((m_payLoad.entitiesDetailsList.size() > 0) && (insertEntitiesDetails(m_payLoad.entitiesDetailsList))){
+    if((m_payLoad.entitiesDetailsList.size() > 0) && (insertEntitiesDetails(
+            m_payLoad.frameIndex, m_payLoad.entitiesDetailsList))){
         m_str += p;
     }else{
         m_str += f;
@@ -487,19 +535,20 @@ bool SQLite::insertFrameMap(int frameIndex, qint64 timestamp)
 *                   id       TEXT UNIQUE
 *               )
 */
-bool SQLite::insertProfileCategoriesDetails(
+bool SQLite::insertProfileCategoriesDetails(int frameIndex,
     ProfileCategoriesDetailsList m_profileCategoriesDetailsList)
 {
     QSqlQuery query(database());
     query.prepare(R"(
         INSERT INTO profileCategoriesDetails
-        (indexNo, name, id)
-        VALUES (:indexNo, :name, :id)
+        (indexNo, name, id, creation)
+        VALUES (:indexNo, :name, :id, :creation)
        )");
     for(auto i : m_profileCategoriesDetailsList){
         query.bindValue(":indexNo"  ,i.index);
         query.bindValue(":name"     ,i.name);
         query.bindValue(":id"       ,i.ID);
+        query.bindValue(":creation", frameIndex);
         if (!query.exec()) {
             qCritical() << "Insertion Insert Profile Categories Details failed:"
                         << query.lastError().text();
@@ -542,19 +591,20 @@ bool SQLite::insertProfileCategoriesCRUD(int frameIndex,
     return true;
 }
 
-bool SQLite::insertEntitiesDetails(EntitiesDetailsList m_entitiesDetailsList)
+bool SQLite::insertEntitiesDetails(int frameIndex,EntitiesDetailsList m_entitiesDetailsList)
 {
     QSqlQuery query(database());
     query.prepare(R"(
         INSERT INTO entitiesDetails
-        (indexNo, name, id, parentID, profile)
-        VALUES (:indexNo, :name, :id, :parentID, :profile)
+        (indexNo, name, id, parentID, profile, creation)
+        VALUES (:indexNo, :name, :id, :parentID, :profile, :creation)
        )");
     for(EntitiesDetails i : m_entitiesDetailsList){
         query.bindValue(":indexNo"  ,i.index);
         query.bindValue(":name"     ,i.name);
         query.bindValue(":id"       ,i.ID);
         query.bindValue(":parentID" ,i.parentID);
+        query.bindValue(":creation" ,frameIndex);
         query.bindValue(":profile" ,true);
 
         if (!query.exec()) {
@@ -659,6 +709,23 @@ bool SQLite::insertEntitiesDeleted(int frameIndex, EntitiesDeletedList m_entitie
             return false;
         } else {
             qDebug() << "Insertion Insert Entities Deletion successful!";
+        }
+    }
+
+    // New Method to insert deletion time
+    query.prepare(R"(
+        UPDATE entitiesDetails
+        SET deletion = :deletion
+        WHERE indexNo = :indexNo
+        )");
+    for(auto i : m_entitiesDeletedList){
+        query.bindValue(":deletion"    ,frameIndex);
+        query.bindValue(":indexNo"     ,i.index);
+        if (!query.exec()) {
+            qCritical() << "Insertion Insert Entities Details Deletion failed:" << query.lastError().text();
+            return false;
+        } else {
+            qDebug() << "Insertion Insert Entities Details Deletion successful!";
         }
     }
     return true;
@@ -936,6 +1003,216 @@ void SQLite::setPayLoad(PayLoad &payLoad)
     debug(str,D_SetPayLoad);
 }
 
+void SQLite::setPayLoadFromIndex(PayLoad &payLoad, int frameIndex)
+{
+    str = QString(
+              "Received PayLoad => \n"
+              "\t FrameIndex: %1 \n").arg(QString::number(payLoad.frameIndex));
+
+    setTimeStamp(payLoad.frameIndex, payLoad.timestamp);
+    str += QString(
+               "\t TimeStamp: %1 \n").arg(QString::number(payLoad.timestamp));
+    if(payLoad.entitiesDetailsList.empty()){
+        setEntitiesDetailsListInBtw(frameIndex,payLoad.entitiesDetailsList);
+        str += QString(
+                   "\t Entities Details List Inbetween Size: %1 \n")
+                   .arg(QString::number(payLoad.entitiesDetailsList.size()));
+    }
+    if(payLoad.entitiesMeshRenderer2DList.empty()){
+        setEntitiesMeshRenderer2DInBtw(payLoad.frameIndex,    payLoad.entitiesMeshRenderer2DList);
+        str += QString(
+                   "\t Entities Mesh Renderer List in Between Size: %1 \n")
+                   .arg(QString::number(payLoad.entitiesMeshRenderer2DList.size()));
+    }
+    if(payLoad.entitiesTrajectoryCRUDList.empty()){
+        setEntitiesTrajectoryBtw(payLoad.frameIndex, payLoad.entitiesTrajectoryList);
+        str += QString(
+                   "\t Entities Trajectory List Size: %1 \n")
+                   .arg(QString::number(payLoad.entitiesTrajectoryList.size()));
+    }
+    // if(payLoad.entitiesCreatedList.empty()){
+    //     setEntitiesCreatedList(payLoad.frameIndex, payLoad.entitiesCreatedList);
+    //     str += QString(
+    //                "\t Entities Created List Size: %1 \n")
+    //                .arg(QString::number(payLoad.entitiesCreatedList.size()));
+    // }
+    // if(payLoad.entitiesUpdatedList.empty()){
+    //     setEntitiesUpdatedList(payLoad.frameIndex, payLoad.entitiesUpdatedList);
+    //     str += QString(
+    //                "\t Entities Updated List Size: %1 \n")
+    //                .arg(QString::number(payLoad.entitiesUpdatedList.size()));
+    // }
+    // if(payLoad.entitiesDeletedList.empty()){
+    //     setEntitiesDeletedList(payLoad.frameIndex, payLoad.entitiesDeletedList);
+    //     str += QString(
+    //                "\t Entities Deleted List Size: %1 \n")
+    //                .arg(QString::number(payLoad.entitiesDeletedList.size()));
+    // }
+    // if(payLoad.entitiesTrajectoryList.empty()){
+    //     setProfileCategoriesDetails(payLoad.profileCategoriesDetailsList);
+    //     str += QString(
+    //                "\t Entities Trajectory List Size: %1 \n")
+    //                .arg(QString::number(payLoad.entitiesTrajectoryList.size()));
+    // }
+    // if(payLoad.entitiesMeshRenderer2DList.empty()){
+    //     setEntitiesMeshRenderer2D(payLoad.frameIndex,    payLoad.entitiesMeshRenderer2DList);
+    //     str += QString(
+    //                "\t Entities Mesh Renderer List Size: %1 \n")
+    //                .arg(QString::number(payLoad.entitiesMeshRenderer2DList.size()));
+    // }
+    // if(payLoad.entitiesMeshRenderer2DCRUDList.empty()){
+    //     setEntitiesMeshRenderer2DCRUD(payLoad.frameIndex, payLoad.entitiesMeshRenderer2DCRUDList);
+    //     str += QString(
+    //                "\t Entities Mesh Renderer CRUD List Size: %1 \n")
+    //                .arg(QString::number(payLoad.entitiesMeshRenderer2DCRUDList.size()));
+    // }
+    // if(payLoad.entitiesTrajectoryList.empty()){
+    //     setEntitiesTrajectory(payLoad.frameIndex, payLoad.entitiesTrajectoryList);
+    //     str += QString(
+    //                "\t Entities Trajectory List Size: %1 \n")
+    //                .arg(QString::number(payLoad.entitiesTrajectoryList.size()));
+    // }
+
+    debug(str,D_SetPayLoad);
+}
+
+void SQLite::setEntitiesDetailsListInBtw(
+    int frameIndex, EntitiesDetailsList &entitiesDetailsList)
+{
+    QSqlQuery query(database());
+
+    query.prepare(R"(
+        SELECT indexNo, name, id, parentID, profile
+        FROM entitiesDetails
+        WHERE creation <= :frameIndex
+          AND (deletion IS NULL OR deletion >= :frameIndex);
+    )");
+    query.bindValue(":frameIndex" ,frameIndex);
+
+    if (!query.exec()) {
+        qCritical() << query.lastError().text();
+        return;
+    }
+
+    while (query.next()) {
+        EntitiesDetails entitiesDetails;
+
+        entitiesDetails.index    = query.value(0).toInt();
+        entitiesDetails.name     = query.value(1).toString();
+        entitiesDetails.ID       = query.value(2).toString();   // id column
+        entitiesDetails.parentID = query.value(3).toString();
+        // profile = query.value(4).toBool(); // if needed later
+
+        entitiesDetailsList.push_back(entitiesDetails);
+    }
+}
+
+void SQLite::setEntitiesMeshRenderer2DInBtw(
+    int frameIndex,
+    EntitiesMeshRenderer2DList &entitiesMeshRenderer2DList)
+{
+    QSqlQuery query(database());
+
+    query.prepare(R"(
+    SELECT t.indexNo, t.Active, t.Sprite, t.Texture, t.color, t.color2
+    FROM entitiesMeshRenderer2D t
+    JOIN (
+        SELECT indexNo, MAX(frameIndex) AS maxFrame
+        FROM entitiesMeshRenderer2D
+        WHERE frameIndex <= :frameIndex
+        GROUP BY indexNo
+    ) sub
+    ON t.indexNo = sub.indexNo
+    AND t.frameIndex = sub.maxFrame;
+    )");
+    query.bindValue(":frameIndex"  ,frameIndex);
+
+    if (!query.exec()) {
+        qCritical() << query.lastError().text();
+        return;
+    }
+
+    while (query.next()) {
+        EntitiesMeshRenderer2D emr;
+        emr.index    = query.value(0).toInt();
+        emr.Active   = query.value(1).toBool();
+        emr.Sprite   = query.value(2).toString();
+        emr.Texture  = query.value(3).toString();
+        emr.color    = query.value(4).toString();
+        emr.color2   = query.value(5).toString();
+        // emr.name     = query.value(1).toString();
+        // emr.ID       = query.value(2).toString();   // id column
+        entitiesMeshRenderer2DList.push_back(emr);
+    }
+}
+
+void SQLite::setEntitiesTrajectoryBtw(int &frameIndex,
+    EntitiesTrajectoryList &entitiesTrajectoryList)
+{
+    QSqlQuery query(database());
+    query.prepare(R"(
+        WITH latest AS (
+            SELECT e.indexNo, MAX(t.frameIndex) AS frameIndex
+            FROM entitiesDetails e
+            JOIN entitiesTrajectoryCRUD t
+                ON e.indexNo = t.indexNo
+            WHERE e.creation <= :frameIndex
+              AND (e.deletion IS NULL OR e.deletion >= :frameIndex)
+              AND t.operation = 8
+              AND t.frameIndex <= :frameIndex
+            GROUP BY e.indexNo
+        )
+
+        SELECT DISTINCT
+               w.indexNo,
+               w.waypoint_index,
+               w.geo_latitude, w.geo_longitude, w.geo_altitude, w.geo_Heading,
+               w.vector_x, w.vector_y, w.vector_z,
+               w.speed, w.sensor, w.formation
+        FROM trajectoryWaypoint w
+        JOIN latest l
+          ON w.indexNo = l.indexNo
+         AND w.frameIndex = l.frameIndex
+        ORDER BY w.indexNo ASC, w.waypoint_index ASC;
+    )");
+
+    query.bindValue(":frameIndex"  ,frameIndex);
+    if (!query.exec()) {
+        qCritical() << query.lastError().text();
+        return;
+    }
+    EntitiesTrajectory et = EntitiesTrajectory();
+    //int prevIndex = -1;
+    std::unordered_map <int ,EntitiesTrajectory> entitiesTrajectoryIndex;
+    while (query.next()) {
+        TrajectoryWaypoint tw;
+        int index        =  query.value(0).toInt();
+        tw.index         =  query.value(1 ).toInt();
+        tw.geo_latitude  =  query.value(2 ).toDouble();   // id column
+        tw.geo_longitude =  query.value(3 ).toDouble();
+        tw.geo_altitude  =  query.value(4 ).toDouble();
+        tw.geo_Heading   =  query.value(5 ).toDouble();
+        tw.vector_x      =  query.value(6 ).toFloat();
+        tw.vector_y      =  query.value(7 ).toFloat();
+        tw.vector_z      =  query.value(8 ).toFloat();
+        tw.speed         =  query.value(9 ).toDouble();
+        tw.sensor        =  query.value(10).toBool();
+        tw.formation     =  query.value(11).toBool();
+        entitiesTrajectoryIndex[index].Trajectories.push_back(tw);
+    }
+
+    for(auto eti = entitiesTrajectoryIndex.begin();
+         eti != entitiesTrajectoryIndex.end();
+         ++eti){
+        EntitiesTrajectory et;
+        et       = (*eti).second;
+        et.index = (*eti).first;
+        entitiesTrajectoryList.push_back(et);
+    }
+}
+
+
+
 
 PayLoad SQLite::createPayLoad()
 {
@@ -1057,8 +1334,8 @@ void SQLite::setProfileCategoriesCRUD(int &frameIndex,
         profile  BOOLEAN
     )
 */
-void SQLite::setEntitiesDetailsList(EntitiesDetailsList &entitiesDetailsList)
-
+void SQLite::setEntitiesDetailsList(
+    EntitiesDetailsList &entitiesDetailsList)
 {
     QSqlQuery query(database());
 

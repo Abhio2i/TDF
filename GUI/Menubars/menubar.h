@@ -82,6 +82,7 @@ public:
 
     //====8feb====
     void setLibraryActionsVisible(bool visible);
+    void updateFileMenuForEditor(const QString& editorKey);
     QAction* getOpenMissionFileAction();
 
 
