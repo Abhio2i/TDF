@@ -2,7 +2,6 @@
 #define PROFILER_H
 #include <QObject>
 #include <core/Debug/frame.h>
-
 class Profiler: public QObject
 {
     Q_OBJECT

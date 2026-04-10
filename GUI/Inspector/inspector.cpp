@@ -38,6 +38,8 @@
 #include "inspector-styles.h"
 #include <QToolTip>
 #include <QCursor>
+#include "tests/inspectortest/inspectortest.h"
+#include "GUI/mainwindow.h"
 
 static bool safeAddWidget(QLayout* layout, QWidget* widget, const QString& context = "") {
     if (!layout) {
@@ -96,6 +98,7 @@ Inspector::Inspector(QWidget *parent)
 {
     setStyleSheet(InspectorStyles::InspectorWidget);
     setupUI();
+     runUnitTestsOnce();
 }
 
 // %%% Lock State Management %%%
@@ -108,6 +111,8 @@ void Inspector::setLocked(bool locked)
     } else {
         titleLabel->setText(titleLabel->text().remove(" (Locked)"));
     }
+
+
 }
 
 // %%% UI Setup %%%
@@ -216,7 +221,9 @@ void Inspector::copyCurrentComponent()
     if (!hierarchy || Name.isEmpty() || ConnectedID.isEmpty()) {
         return;
     }
+#ifndef GUI_UNIT_TEST
     copiedComponentData = hierarchy->getComponentData(ConnectedID, Name);
+#endif
     if (copiedComponentData.isEmpty()) {
         return;
     }
@@ -233,7 +240,9 @@ void Inspector::pasteToCurrentComponent()
         QJsonObject deltaWithId = copiedComponentData;
         deltaWithId["_id"] = mainID;
         emit valueChanged(ConnectedID, Name, deltaWithId);
+#ifndef GUI_UNIT_TEST
         init(ConnectedID, Name, hierarchy->getComponentData(ConnectedID, Name));
+#endif
     }
 }
 
@@ -1027,7 +1036,11 @@ bool Inspector::eventFilter(QObject *watched, QEvent *event)
                         posObj["type"] = "vector";
 
                         if (customData["type"].toString() == "entity" && hierarchy) {
+#ifndef GUI_UNIT_TEST
                             QJsonObject transformData = hierarchy->getComponentData(customData["ID"].toString(), "transform");
+#else
+                            QJsonObject transformData;
+#endif
                             posObj = transformData.contains("position") ? transformData["position"].toObject() : QJsonObject{{"x", 0.0}, {"y", 0.0}, {"z", 0.0}};
                         } else if (json.contains("position")) {
                             posObj = json["position"].toObject();
@@ -1168,7 +1181,11 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
          Name == QString("meshRenderer2d") || Name == QString("collider")) &&
         object.isEmpty() && hierarchy) {
         QString dataType = Name;
+#ifndef GUI_UNIT_TEST
         object = hierarchy->getComponentData(ID, dataType);
+#else
+        object = QJsonObject{};
+#endif
     }
     // Calculate row count
     int rowCount = 0;
@@ -1233,7 +1250,11 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
 // Add addSimpleRow
 int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value)
 {
+#ifndef GUI_UNIT_TEST
     bool developerMode = ApplicationDialog::getGlobalDeveloperMode();
+#else
+    bool developerMode = false;
+#endif
     if (!developerMode && (key.toLower() == "id" || key.toLower() == "type" ||
                            key.toLower() == "parent_id")) {
         QTableWidgetItem *keyItem = new QTableWidgetItem(capitalizeFirstLetter(key));
@@ -1685,7 +1706,11 @@ void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
             titleLabel->setText("Trajectories");
         }
 
+#ifndef GUI_UNIT_TEST
         QJsonObject trajData = hierarchy ? hierarchy->getComponentData(entityId, "trajectory") : QJsonObject();
+#else
+        QJsonObject trajData;
+#endif
         init(entityId, "Trajectories", trajData);
 
         trajRow = -1;
@@ -1729,7 +1754,11 @@ void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
     }
 
     if (waypoints.isEmpty() && hierarchy) {
+#ifndef GUI_UNIT_TEST
         QJsonObject trajData = hierarchy->getComponentData(ConnectedID, "trajectory");
+#else
+        QJsonObject trajData;
+#endif
         if (!trajData.isEmpty() && trajData.contains("trajectories")) {
             QJsonArray array = trajData["trajectories"].toArray();
             for (int i = 0; i < array.size(); i++) {
@@ -2814,7 +2843,11 @@ void Inspector::handleMultiComponentContainer(QString ID, QString name, QJsonObj
     tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
 
+#ifndef GUI_UNIT_TEST
     bool developerMode = ApplicationDialog::getGlobalDeveloperMode();
+#else
+    bool developerMode = false;
+#endif
     int row = 0;
     tableWidget->setRowCount(1);
 
@@ -3404,7 +3437,11 @@ void Inspector::refreshForDeveloperMode()
     if (!hierarchy || ConnectedID.isEmpty() || Name.isEmpty()) {
         return;
     }
+#ifndef GUI_UNIT_TEST
     QJsonObject currentData = hierarchy->getComponentData(ConnectedID, Name);
+#else
+    QJsonObject currentData;
+#endif
     init(ConnectedID, Name, currentData);
 }
 
@@ -3439,4 +3476,44 @@ void Inspector::resetState()
 void Inspector::storeInitialData(const QJsonObject& data)
 {
     m_initialComponentData = data;
+}
+bool Inspector::isLocked() const
+{
+    return m_locked;
+}
+void Inspector::runUnitTestsOnce()
+{
+    static bool testsRun = false;
+    if (testsRun) return;
+
+    // Delay test execution until event loop starts (ensures console is ready)
+    QTimer::singleShot(0, []() {
+        if (testsRun) return;
+        testsRun = true;
+
+        Console* console = nullptr;
+        MainWindow* mw = MainWindow::instance();
+        if (mw) {
+            // Try to get console from any editor that is already initialized
+            if (mw->databaseEditor && mw->databaseEditor->console) {
+                console = mw->databaseEditor->console;
+            } else if (mw->scenarioEditor && mw->scenarioEditor->console) {
+                console = mw->scenarioEditor->console;
+            } else if (mw->runtimeEditor && mw->runtimeEditor->console) {
+                console = mw->runtimeEditor->console;
+            }
+        }
+
+        if (!console) {
+            qDebug() << "Inspector: console not available, cannot run tests";
+            return;
+        }
+
+
+
+        // Create a temporary inspector for testing
+        Inspector* testInspector = new Inspector(nullptr);
+        runInspectorTests(testInspector, console);
+        testInspector->deleteLater();
+    });
 }

@@ -8,6 +8,9 @@
 #include <QIcon>
 #include <QSize>
 #include <QToolButton>
+#include "tests/navigationpagetest/navigationpage_test.h"
+#include "GUI/mainwindow.h"
+
 
 // %%% Constructor %%%
 NavigationPage::NavigationPage(QWidget *parent)
@@ -29,6 +32,7 @@ NavigationPage::NavigationPage(QWidget *parent)
 
     setFixedHeight(50);
     setActiveButton(databaseBtn);
+    runUnitTestsOnce();
 }
 
 /* Create a navigation button with icon and label */
@@ -116,4 +120,26 @@ void NavigationPage::setActiveButton(QToolButton* button)
 void NavigationPage::restorePreviousButton()
 {
     if (previousButton) setActiveButton(previousButton);
+}
+void NavigationPage::runUnitTestsOnce()
+{
+    static bool testsRun = false;
+    if (testsRun) return;
+
+    // Delay test execution to ensure UI and console are fully ready
+    QTimer::singleShot(500, this, [this]() {
+        if (testsRun) return;
+        testsRun = true;
+
+        Console* console = nullptr;
+        MainWindow* mw = MainWindow::instance();
+        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+            console = mw->databaseEditor->console;
+        }
+
+
+
+
+        runNavigationPageTests(this, console);
+    });
 }

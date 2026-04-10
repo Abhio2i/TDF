@@ -1,68 +1,4 @@
-// /* ========================================================================= */
-// /* File: tacticalrules.h                                                   */
-// /* Purpose: Defines the Tactical Rules panel widget                          */
-// /* ========================================================================= */
 
-// #ifndef TACTICALRULES_H
-// #define TACTICALRULES_H
-
-// #include <QWidget>
-// #include <QLineEdit>
-// #include <QComboBox>
-// #include <QPushButton>
-// #include <QLabel>
-// #include <QGridLayout>
-// #include <QVBoxLayout>
-// #include <QHBoxLayout>
-// #include <QJsonObject>
-// #include <QFrame>
-// #include <QDoubleSpinBox>
-
-// // %%% Class Definition %%%
-// /* Widget for editing tactical rules parameters */
-// class TacticalRules : public QWidget
-// {
-//     Q_OBJECT
-
-// public:
-//     explicit TacticalRules(QWidget *parent = nullptr);
-//     ~TacticalRules() = default;
-
-//     // Load data from JSON
-//     void loadFromJson(const QJsonObject &data);
-//     // Export current values to JSON
-//     QJsonObject toJson() const;
-//     // Reset all fields to defaults
-//     void resetState();
-
-// signals:
-//     void valueChanged(const QJsonObject &data);
-//     void applyRequested(const QJsonObject &data);
-
-// private slots:
-//     void onApplyChanges();
-//     void onResetRules();
-//     void onAnyValueChanged();
-
-// private:
-//     void setupUI();
-//     void applyStyles();
-//     void populateDropdowns();
-
-//     // %%% Input Fields %%%
-//     QDoubleSpinBox *maxEngagementRange;
-//     QComboBox      *weaponReleaseAuthority;
-//     QComboBox      *sensorActivationRule;
-//     QComboBox      *formationType;
-//     QDoubleSpinBox *supportRequestThreshold; // percentage
-//     QDoubleSpinBox *fuelSafetyMargin;        // percentage
-
-//     // %%% Buttons %%%
-//     QPushButton *applyChangesBtn;
-//     QPushButton *resetRulesBtn;
-// };
-
-// #endif // TACTICALRULES_H
 #pragma once
 
 #include <QWidget>
@@ -91,6 +27,8 @@ public:
     // Multi-team JSON (both teams)
     QJsonObject  toJsonBothTeams() const;
     void         loadBothTeamsFromJson(const QJsonObject &data);
+        int getRulesCount() const;
+        static void runUnitTestsOnce();
 
 public slots:
     // Called by DoctrineParameters::forceTypeChanged

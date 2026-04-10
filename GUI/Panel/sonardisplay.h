@@ -39,6 +39,14 @@ public:
     // Beam width — set from sonar config
     void setBeamWidth(float degrees) { m_beamWidth = degrees; update(); }
 
+    void setPingInterval(float seconds)          // ← ADD
+    {
+        m_pingIntervalMs = (qint64)(seconds * 1000.0f);
+        update();
+    }
+
+    Entity* getSelectedEntity() const { return entity; }
+
 protected:
     void paintEvent(QPaintEvent *event)  override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -53,6 +61,8 @@ private:
     int    sweepAngle = 0;
     float  m_heading  = 0.0f;    // ship heading
     float  m_beamWidth = 360.0f; // sonar beam width
+
+    qint64 m_pingIntervalMs = 10000;
 
     QTimer sweepTimer;
     // Button rects — set in paintEvent

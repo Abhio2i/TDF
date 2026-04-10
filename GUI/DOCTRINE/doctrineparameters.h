@@ -1,77 +1,4 @@
 
-// /* ========================================================================= */
-// /* File: doctrineparameters.h                                              */
-// /* Purpose: Defines the Doctrine Parameters panel widget                     */
-// /* ========================================================================= */
-
-// #ifndef DOCTRINEPARAMETERS_H
-// #define DOCTRINEPARAMETERS_H
-
-// #include <QWidget>
-// #include <QLineEdit>
-// #include <QComboBox>
-// #include <QPushButton>
-// #include <QLabel>
-// #include <QGridLayout>
-// #include <QVBoxLayout>
-// #include <QHBoxLayout>
-// #include <QJsonObject>
-// #include <QFrame>
-// #include <QRadioButton>
-// #include <QButtonGroup>
-
-// // %%% Class Definition %%%
-// /* Widget for editing doctrine/mission parameters */
-// class DoctrineParameters : public QWidget
-// {
-//     Q_OBJECT
-
-// public:
-//     explicit DoctrineParameters(QWidget *parent = nullptr);
-//     ~DoctrineParameters() = default;
-
-//     // Load data from JSON
-//     void loadFromJson(const QJsonObject &data);
-//     // Export current values to JSON
-//     QJsonObject toJson() const;
-//     // Reset all fields to defaults
-//     void resetState();
-
-// signals:
-//     void valueChanged(const QJsonObject &data);
-
-// private slots:
-//     void onClearZones();
-//     void onAnyValueChanged();
-//     void onForceTypeChanged(int id);
-
-// private:
-//     void setupUI();
-//     void applyStyles();
-//     void populateDropdowns();
-//     void updateForceStyle(int id);  // Update radio button visuals on selection
-
-//     // %%% Force Type Selection %%%
-//     QRadioButton *radioBlue;        // Blue force radio button
-//     QRadioButton *radioRed;         // Red force radio button
-//     QButtonGroup *forceGroup;       // Exclusive button group
-
-//     // %%% Input Fields %%%
-//     QLineEdit   *doctrineName;
-//     QComboBox   *missionType;
-//     QLineEdit   *missionObjective;
-//     QComboBox   *rulesOfEngagement;
-//     QComboBox   *engagementPolicy;
-//     QComboBox   *retreatPolicy;
-//     QComboBox   *detectionPolicy;
-//     QPushButton *clearZonesBtn;
-
-//     // %%% Force IDs %%%
-//     static constexpr int FORCE_BLUE = 0;
-//     static constexpr int FORCE_RED  = 1;
-// };
-
-// #endif // DOCTRINEPARAMETERS_H
 #pragma once
 
 #include <QWidget>
@@ -100,6 +27,8 @@ public:
     QJsonObject  toJson() const;
     void         resetState();
     int          currentForce() const { return m_currentForce; }
+      QString getForceType() const;
+static void runUnitTestsOnce();
 
 signals:
     void valueChanged(QJsonObject data);

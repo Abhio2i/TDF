@@ -157,9 +157,11 @@ TrackFile* RadarTracker::findBestTrackMatch(
         // ---- Fast pre-filter: range gate ----
         // Unfold the detection range using this track's prediction, then
         // reject if the residual exceeds RANGE_GATE.
-        double candRange = resolveRangeAmbiguity(
-            det.range, track.predictedRange, maxUnambiguousRange);
-
+        //double candRange = resolveRangeAmbiguity(
+           // det.range, track.predictedRange, maxUnambiguousRange);
+        double candRange = det.isAmbiguous
+                               ? resolveRangeAmbiguity(det.range, track.predictedRange, maxUnambiguousRange)
+                               : det.range;
         if (std::abs(candRange - track.predictedRange) > RANGE_GATE) continue;
 
         // ---- Mahalanobis distance gate (χ², 3-DOF, 99 %) ----
@@ -227,9 +229,11 @@ void RadarTracker::performKalmanUpdate(
     const RadarConfig& cfg)
 {
     // Unfold the detection range using this track's predicted range
-    double bestRange = resolveRangeAmbiguity(
-        det.range, track.predictedRange, maxUnambiguousRange);
-
+    //double bestRange = resolveRangeAmbiguity(
+       // det.range, track.predictedRange, maxUnambiguousRange);
+    double bestRange = det.isAmbiguous
+                           ? resolveRangeAmbiguity(det.range, track.predictedRange, maxUnambiguousRange)
+                           : det.range;
     // Convert detection to Cartesian measurement z = [zx, zy, zz]
     double azRad = det.azimuth   * M_PI / 180.0;
     double elRad = det.elevation * M_PI / 180.0;

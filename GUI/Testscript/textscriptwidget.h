@@ -31,6 +31,7 @@ public:
     // Set active button state
     void setActiveButton(const QString &state);
 
+
 signals:
     // Signal play button click
     void playClicked(const QString &filePath);
@@ -46,6 +47,7 @@ class TextScriptWidget : public QWidget {
 public:
     // Initialize script widget
     explicit TextScriptWidget(QWidget *parent = nullptr);
+     static void runUnitTestsOnce();
 
 signals:
     // Signal to run script code

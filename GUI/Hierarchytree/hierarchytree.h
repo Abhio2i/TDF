@@ -111,6 +111,9 @@ public:
     QMap<QString, QTreeWidgetItem*> Items;
     void updateEntityActiveState(const QString& entityID, bool active);
     void setEntityActiveState(const QString& entityId, bool active);
+    QTreeWidget *tree;
+    QLineEdit *searchBar;
+    QComboBox *profileFilterCombo;
 
 signals:
     void copyItemsRequested(QList<QVariantMap> data);
@@ -150,6 +153,7 @@ signals:
     void addIFFToEntitiesRequested(QList<QVariantMap> entities);
     void addRadioToEntitiesRequested(QList<QVariantMap> entities);
     void setCategoryToEntitiesRequested(QList<QVariantMap> entities, QString category);
+
 protected:
     // %%% Event Handlers %%%
     // Show context menu
@@ -176,11 +180,11 @@ private slots:
 private:
     // %%% UI Components %%%
     // Main tree widget
-    QTreeWidget *tree;
+    // QTreeWidget *tree;
     // Search bar for filtering entities
-    QLineEdit *searchBar;
+    // QLineEdit *searchBar;
     // Dropdown for profile filtering
-    QComboBox *profileFilterCombo;
+    // QComboBox *profileFilterCombo;
     // Context menu
     ContextMenu *contextMenu;
     // %%% Layouts %%%

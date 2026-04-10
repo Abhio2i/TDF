@@ -45,7 +45,7 @@ public:
     // Sensor attributes
     enum class Type { Active, Passive };
     enum class Mode { Search, Track, TrackWhileScan, FireControl };
-    enum class SubType { Generic, CSM, ESM,Sonar };
+    enum class SubType { Generic, CSM, ESM,EO,Sonar,AIS, ADSB , AESA };
     enum class DetectionCapabilities { All, MovingOnly };
     Q_ENUM(DetectionCapabilities);
     struct Detection {
@@ -141,6 +141,7 @@ public:
         if (str == "CSM") return SubType::CSM;
         if (str == "ESM") return SubType::ESM;
         if (str == "Sonar") return SubType::Sonar;
+        if (str == "AESA") return SubType::AESA;
         return SubType::Generic;
     }
     QString detectionCapabilitiesToString(DetectionCapabilities t) const;

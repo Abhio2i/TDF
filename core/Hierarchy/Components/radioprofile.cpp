@@ -12,7 +12,7 @@ void RadioProfile::addSubComponent(std::string name, QString data1, QString data
     Radio* radio = new Radio(parent);
     if(!data2.isEmpty()){
         std::string id = radio->ID;
-        QJsonObject obj = (*parent->Radios)[data2.toStdString()]->toJson();
+        QJsonObject obj = parent->Radios[data2.toStdString()]->toJson();
         radio->fromJson(obj);
         radio->ID = id;
         radio->parentID = parentID;
@@ -20,7 +20,7 @@ void RadioProfile::addSubComponent(std::string name, QString data1, QString data
     radio->parentEntity = parentEntity;
     radio->Name = name;
     radios->insert({radio->ID,radio});
-    parent->Radios->insert({radio->ID,radio});
+    parent->Radios.insert({radio->ID,radio});
     emit parent->subComponentAdded(QString::fromStdString(ID),QString::fromStdString(radio->ID),QString::fromStdString(name));
 
 }
@@ -32,7 +32,7 @@ void RadioProfile::removeSubComponent(std::string ID){
         Radio *radio = it->second;
         emit parent->subComponentRemoved(QString::fromStdString(this->ID),QString::fromStdString(ID),QString::fromStdString(radio->Name));
         radios->erase(radio->ID);
-        parent->Radios->erase(radio->ID);
+        parent->Radios.erase(radio->ID);
         delete radio;
     }
 }
@@ -95,7 +95,7 @@ void RadioProfile::fromJson(const QJsonObject& obj) {
             radio->fromJson(radioObj);
             if (!is) {
                 radios->insert({radio->ID,radio});
-                parent->Radios->insert({radio->ID,radio});
+                parent->Radios.insert({radio->ID,radio});
                 emit parent->subComponentAdded(QString::fromStdString(ID),QString::fromStdString(radio->ID),QString::fromStdString(radio->Name));
 
             }

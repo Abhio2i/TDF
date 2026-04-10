@@ -57,8 +57,8 @@ Folder* ProfileCategaory::addFolder(std::string folderName, std::string iD){
     Folders.insert({folder->ID, folder});
 
     // Automatically update hierarchy's Folders
-    if (parent && parent->Folders) {
-        parent->Folders->insert({folder->ID, folder});
+    if (parent ) {
+        parent->Folders.insert({folder->ID, folder});
         emit parent->folderAddedPointer(QString::fromStdString(folder->parentID),folder);
         emit parent->folderAdded(QString::fromStdString(folder->parentID), QString::fromStdString(folder->ID),QString::fromStdString(folderName));
         parent->dictionry[folder->parentID].push_back(folder->ID);
@@ -80,8 +80,8 @@ void ProfileCategaory::addFolderWithObject(Folder *folder){
     // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->status("add");
-    if (parent && parent->Folders) {
-        parent->Folders->insert({folder->ID, folder});
+    if (parent ) {
+        parent->Folders.insert({folder->ID, folder});
         emit parent->folderAddedPointer(QString::fromStdString(folder->parentID),folder);
         emit parent->folderAdded(QString::fromStdString(folder->parentID), QString::fromStdString(folder->ID),QString::fromStdString(folder->Name));
         parent->dictionry[folder->parentID].push_back(folder->ID);
@@ -103,8 +103,8 @@ void ProfileCategaory::removeFolder(std::string folderID){
     // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->status("remove");
-    if (parent && parent->Folders) {
-        parent->Folders->erase(folderID);
+    if (parent ) {
+        parent->Folders.erase(folderID);
         emit parent->folderRemoved(QString::fromStdString(folderID));
     } else {
         Console::error(
@@ -150,30 +150,30 @@ Entity* ProfileCategaory::addEntity(std::string entityName, std::string iD){
     }
     Entities.insert({entity->ID, entity});
     // Automatically update hierarchy's Folders
-    if (parent && parent->Entities) {
-        parent->Entities->insert({entity->ID, entity});
+    if (parent ) {
+        parent->Entities.insert({entity->ID, entity});
         if(type == Constants::EntityType::Radio){
-            parent->Radios->insert({entity->ID, dynamic_cast<Radio*>(entity)});
+            parent->Radios.insert({entity->ID, dynamic_cast<Radio*>(entity)});
         }else
             if(type == Constants::EntityType::Sensor){
-                parent->Sensors->insert({entity->ID, dynamic_cast<Sensor*>(entity)});
+                parent->Sensors.insert({entity->ID, dynamic_cast<Sensor*>(entity)});
             }else
                 if(type == Constants::EntityType::FixedPoint){
-                    parent->FixedPointes->insert({entity->ID, dynamic_cast<FixedPoints*>(entity)});
+                    parent->FixedPointes.insert({entity->ID, dynamic_cast<FixedPoints*>(entity)});
                 }else
                     if(type == Constants::EntityType::Formation){
-                        parent->Formations->insert({entity->ID, dynamic_cast<Formation*>(entity)});
+                        parent->Formations.insert({entity->ID, dynamic_cast<Formation*>(entity)});
                     }else
                         if(type == Constants::EntityType::SpecialZone){
-                            parent->Specialzones->insert({entity->ID, dynamic_cast<Specialzone*>(entity)});
+                            parent->Specialzones.insert({entity->ID, dynamic_cast<Specialzone*>(entity)});
                         }else
                             if(type == Constants::EntityType::IFF){
-                                parent->Iffs->insert({entity->ID, dynamic_cast<IFF*>(entity)});
+                                parent->Iffs.insert({entity->ID, dynamic_cast<IFF*>(entity)});
                             }else
                                 if(type == Constants::EntityType::Weapon){
-                                    parent->Weapons->insert({entity->ID, dynamic_cast<Weapon*>(entity)});
+                                    parent->Weapons.insert({entity->ID, dynamic_cast<Weapon*>(entity)});
                                 }else{
-                                    parent->Platforms->insert({entity->ID, dynamic_cast<Platform*>(entity)});
+                                    parent->Platforms.insert({entity->ID, dynamic_cast<Platform*>(entity)});
                                 }
         entity->spawn();
 
@@ -225,30 +225,30 @@ void ProfileCategaory::addEntityWithObject(Entity *entity){
     // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->status("add");
-    if (parent && parent->Entities) {
-        parent->Entities->insert({entity->ID, entity});
+    if (parent ) {
+        parent->Entities.insert({entity->ID, entity});
         if(type == Constants::EntityType::Radio){
-            parent->Radios->insert({entity->ID, dynamic_cast<Radio*>(entity)});
+            parent->Radios.insert({entity->ID, dynamic_cast<Radio*>(entity)});
         }else
             if(type == Constants::EntityType::Sensor){
-                parent->Sensors->insert({entity->ID, dynamic_cast<Sensor*>(entity)});
+                parent->Sensors.insert({entity->ID, dynamic_cast<Sensor*>(entity)});
             }else
                 if(type == Constants::EntityType::FixedPoint){
-                    parent->FixedPointes->insert({entity->ID, dynamic_cast<FixedPoints*>(entity)});
+                    parent->FixedPointes.insert({entity->ID, dynamic_cast<FixedPoints*>(entity)});
                 }else
                     if(type == Constants::EntityType::Formation){
-                        parent->Formations->insert({entity->ID, dynamic_cast<Formation*>(entity)});
+                        parent->Formations.insert({entity->ID, dynamic_cast<Formation*>(entity)});
                     }else
                         if(type == Constants::EntityType::SpecialZone){
-                            parent->Specialzones->insert({entity->ID, dynamic_cast<Specialzone*>(entity)});
+                            parent->Specialzones.insert({entity->ID, dynamic_cast<Specialzone*>(entity)});
                         }else
                             if(type == Constants::EntityType::IFF){
-                                parent->Iffs->insert({entity->ID, dynamic_cast<IFF*>(entity)});
+                                parent->Iffs.insert({entity->ID, dynamic_cast<IFF*>(entity)});
                             }else
                                 if(type == Constants::EntityType::Weapon){
-                                    parent->Weapons->insert({entity->ID, dynamic_cast<Weapon*>(entity)});
+                                    parent->Weapons.insert({entity->ID, dynamic_cast<Weapon*>(entity)});
                                 }else{
-                                    parent->Platforms->insert({entity->ID, dynamic_cast<Platform*>(entity)});
+                                    parent->Platforms.insert({entity->ID, dynamic_cast<Platform*>(entity)});
                                 }
         entity->spawn();
 
@@ -293,30 +293,30 @@ void ProfileCategaory::removeEntity(std::string EntityID){
     // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->status("remove");
-    if (parent && parent->Entities) {
-        parent->Entities->erase(EntityID);
+    if (parent ) {
+        parent->Entities.erase(EntityID);
         if(type == Constants::EntityType::Radio){
-            parent->Radios->erase(EntityID);
+            parent->Radios.erase(EntityID);
         }else
             if(type == Constants::EntityType::Sensor){
-                parent->Sensors->erase(EntityID);
+                parent->Sensors.erase(EntityID);
             }else
                 if(type == Constants::EntityType::FixedPoint){
-                    parent->FixedPointes->erase(EntityID);
+                    parent->FixedPointes.erase(EntityID);
                 }else
                     if(type == Constants::EntityType::Formation){
-                        parent->Formations->erase(EntityID);
+                        parent->Formations.erase(EntityID);
                     }else
                         if(type == Constants::EntityType::SpecialZone){
-                            parent->Specialzones->erase(EntityID);
+                            parent->Specialzones.erase(EntityID);
                         }else
                             if(type == Constants::EntityType::IFF){
-                                parent->Iffs->erase(EntityID);
+                                parent->Iffs.erase(EntityID);
                             }else
                                 if(type == Constants::EntityType::Weapon){
-                                    parent->Weapons->erase(EntityID);
+                                    parent->Weapons.erase(EntityID);
                                 }else{
-                                    parent->Platforms->erase(EntityID);
+                                    parent->Platforms.erase(EntityID);
                                 }
         emit parent->entityRemoved(QString::fromStdString(EntityID));
         emit parent->entityRemovedfull(QString::fromStdString(ID),QString::fromStdString(EntityID),false);

@@ -20,9 +20,9 @@ Collider::Collider(Hierarchy* h):Component(h) {
 
 void Collider::Update(float deltaTime){
     if(parentEntity && parentEntity->type == Constants::EntityType::Platform && parentEntity->root){
-        Transform* source =(*parentEntity->root->Platforms)[parentEntity->ID]->transform;
+        Transform* source =parentEntity->root->Platforms[parentEntity->ID]->transform;
         if(!source)return;
-        for (auto& [key, entity] : *parentEntity->root->Platforms){
+        for (auto& [key, entity] : parentEntity->root->Platforms){
             if(!entity || !entity->Active || entity->isDestroy || key == parentEntity->ID || !entity->transform) continue;
             float distance = source->matrix->translation().distanceToPoint(entity->transform->matrix->translation())*1000;
             // qDebug()<<distance;

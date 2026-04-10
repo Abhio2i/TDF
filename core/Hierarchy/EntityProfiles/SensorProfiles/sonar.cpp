@@ -3,10 +3,12 @@
 #include "core/Hierarchy/EntityProfiles/platform.h"
 #include "core/Hierarchy/Components/transform.h"
 #include "core/Hierarchy/hierarchy.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h"
 
 Sonar::Sonar(Hierarchy* h) : Sensor(h) {
     subType = SubType::Sonar;
     azimuth = 360;
+    range   = 100;
     qDebug()<<"i am sonar";
 
     m_activeSonar.setSoundSpeed(m_soundSpeed);
@@ -16,24 +18,20 @@ Sonar::Sonar(Hierarchy* h) : Sensor(h) {
     m_activeSonar.setPingInterval(m_pingInterval);
     m_activeSonar.setFalseDetectionRate(0.0f);
 }
-void Sonar::scan(){
-    if(!Active)return;
-    // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
-    if(!parentEntity) return;
-    Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
-    if(!source) return;
+
+void Sonar::scan()
+{
+    if (!Active)       return;
+    if (!parentEntity) return;
+
+    Transform* source =
+        root->Platforms[parentEntity->ID]->transform;
+    if (!source) return;
 
     double lat     = source->getLatitude();
     double lon     = source->getLongitude();
     float  heading = source->getHeading();
 
-    // qDebug() << "Sonar scan — entity:"
-    //          << QString::fromStdString(parentEntity->Name)
-    //          << "lat:" << lat
-    //          << "lon:" << lon
-    //          << "heading:" << heading;
-
-    // ── Timer ──
     if (!m_timerStarted) {
         m_timer.start();
         m_timerStarted = true;
@@ -41,112 +39,222 @@ void Sonar::scan(){
 
     float simTime = m_timer.elapsed() / 1000.0f;
 
-    // ──  ActiveSonar config — Inspector values ──
-    m_activeSonar.setSoundSpeed(m_soundSpeed);
-    m_activeSonar.setMaxRange(range * 1000.0f);   // km → meters
-    m_activeSonar.setMaxDepth(m_maxDepth);
+    qDebug() << "SONAR scan() called simTime:" << simTime
+             << "canPing:" << m_activeSonar.canPing(simTime)
+             << "lastPingTime:" << m_activeSonar.getLastPingTime()
+             << "pingInterval:" << m_pingInterval
+             << "queueSize:" << m_echoQueue.size()
+             << "lastResults:" << m_lastResults.size();
+
+    // ── Position change detect karo ──
+    bool positionChanged = false;
+    if (std::abs(lat - m_lastLat) > 0.0001 ||
+        std::abs(lon - m_lastLon) > 0.0001)
+    {
+        positionChanged = true;
+        m_lastLat = lat;
+        m_lastLon = lon;
+
+        qDebug() << "Position changed — queue reset";
+    }
+
+    // ── Config ──
+    m_activeSonar.setEntityPosition(lat, lon);
+    m_activeSonar.setHeading(heading);
+    m_activeSonar.setMaxRange(range * 1000.0f);
     m_activeSonar.setBeamWidth(azimuth);
     m_activeSonar.setPingInterval(m_pingInterval);
-    m_activeSonar.setEntityPosition(lat, lon);    // real position
-    m_activeSonar.setHeading(heading);            // real heading
+    m_activeSonar.setSoundSpeed(m_soundSpeed);
+    m_activeSonar.setMaxDepth(m_maxDepth);
 
-    // ── Ping interval check ──
+    // ── Position change hone pe queue + results clear ──
+    if (positionChanged)
+    {
+        m_echoQueue.clear();
+        m_lastResults.clear();
+        this->targets.clear();
+
+        // Timer reset — fresh ping
+        m_timer.restart();
+        m_activeSonar.sendPing(-999.0f, 0.0f); // force next ping
+    }
+
+    // ── Step 1: Pending echoes process karo ──
+    processEchoQueue(simTime);
+
+    // ── Step 2: Ping interval check ──
     if (!m_activeSonar.canPing(simTime)) return;
 
-    m_activeSonar.sendPing(simTime, 0.0f); // last pingTime
+    // ── Step 3: New ping ──
+    m_lastResults.clear();
+    this->targets.clear();
+    // ← m_echoQueue.clear() HATA DIYA — echoes lose nahi hone chahiye
 
-    // ── Targets collect ──
+    m_activeSonar.sendPing(simTime, 0.0f);
+
+    qDebug() << "After sendPing — targets collecting...";
+
+    qDebug() << "Sonar PING sent at t=" << simTime
+             << "from" << QString::fromStdString(parentEntity->Name);
+
+    // ── Step 4: Targets collect ──
     std::vector<SonarTarget> sonarTargets =
         collectTargets(lat, lon);
 
-    if (sonarTargets.empty()) return;
+    qDebug() << "collectTargets returned:" << sonarTargets.size()
+             << "range:" << (range * 1000.0f)
+             << "maxDepth:" << m_maxDepth;
 
-    // ── Acoustic input — Inspector se ──
-    SonarInput input;
-    input.sourceLevel        = m_sourceLevel;
-    input.noiseLevel         = m_noiseLevel;
-    input.detectionThreshold = m_threshold;
-    input.absorption         = 0.0001f;
-    input.targetStrength     = 0.0f;
-
-    // ── Scan ──
-    m_lastResults = m_activeSonar.scan(sonarTargets, input);
-
-    // ── Base class targets update ──
-    this->targets.clear();
-
-    for (const auto& r : m_lastResults)
+    if (sonarTargets.empty())
     {
-        if (!r.detected) continue;
-
-        Target t;
-        t.radius = r.distance;
-        t.angle  = r.bearing;
-        t.lat    = 0.0f;
-        t.lon    = 0.0f;
-        this->targets.push_back(t);
+        qDebug() << "NO TARGETS — check entity positions";
+        return;
     }
 
-    if (!this->targets.isEmpty())
+    qDebug() << "Targets found:" << sonarTargets.size();
+
+    // ── Step 5: Echo queue me schedule karo ──
+    for (const auto& target : sonarTargets)
+    {
+        float distance = SonarModel::geoDistance(lat, lon,
+                                                 target.lat,
+                                                 target.lon);
+        float bearing  = SonarModel::computeBearing(lat, lon,
+                                                   target.lat,
+                                                   target.lon);
+
+        if (distance > range * 1000.0f) continue;
+        if (target.depth > m_maxDepth)  continue;
+
+        float travelTime  = (2.0f * distance) / m_soundSpeed;
+        float arrivalTime = simTime + travelTime;
+
+        PendingEcho echo;
+        echo.targetName     = target.name;
+        echo.arrivalTime    = arrivalTime;
+        echo.distance       = distance;
+        echo.bearing        = bearing;
+        echo.targetStrength = target.targetStrength;
+
+        m_echoQueue.push_back(echo);
+
+        qDebug() << "Echo scheduled:"
+                 << QString::fromStdString(target.name)
+                 << "dist:" << (int)distance << "m"
+                 << "travel:" << travelTime << "sec"
+                 << "arrival:" << arrivalTime << "sec";
+    }
+
+    // ← Sort by arrivalTime — paas wala pehle
+    m_echoQueue.sort([](const PendingEcho& a, const PendingEcho& b) {
+        return a.arrivalTime < b.arrivalTime;
+    });
+}
+
+void Sonar::processEchoQueue(float simTime)
+{
+    // ← Clear mat karo yahan — sirf new ping pe clear hoga
+    bool anyDetected = false;
+
+    auto it = m_echoQueue.begin();
+    while (it != m_echoQueue.end())
+    {
+        if (simTime < it->arrivalTime)
+        {
+            ++it;
+            continue;
+        }
+
+        SonarInput input;
+        input.sourceLevel        = m_sourceLevel;
+        input.noiseLevel         = m_noiseLevel;
+        input.detectionThreshold = m_threshold;
+        input.absorption         = 0.0001f;
+        input.targetStrength     = it->targetStrength;
+
+        float tl  = SonarModel::computeTransmissionLoss(
+            it->distance, input.absorption);
+        float snr = SonarModel::computeActiveSNR(
+            input.sourceLevel, tl,
+            it->targetStrength, input.noiseLevel);
+
+        DetectionResult result;
+        result.name     = it->targetName;
+        result.distance = it->distance;
+        result.bearing  = it->bearing;
+        result.category = it->category;
+
+        if (snr >= input.detectionThreshold)
+        {
+            result.detected     = true;
+            result.signalExcess = snr - input.detectionThreshold;
+            result.confidence   = SonarModel::computeConfidence(
+                result.signalExcess);
+            result.reason       = "DETECTED";
+
+            Target t;
+            t.radius = result.distance;
+            t.angle  = result.bearing;
+            this->targets.push_back(t);
+            anyDetected = true;
+
+            // ← lastResults me add karo — clear nahi
+            m_lastResults.push_back(result);
+
+            qDebug() << "ECHO RECEIVED:"
+                     << QString::fromStdString(it->targetName)
+                     << "t=" << simTime
+                     << "dist:" << (int)it->distance;
+        }
+        else
+        {
+            result.detected = false;
+            result.reason   = "WEAK SIGNAL";
+            m_lastResults.push_back(result);
+        }
+
+        it = m_echoQueue.erase(it);
+    }
+
+    if (anyDetected)
         emit enemyDetected();
-    else
-        emit enemyNotFound();
 }
 
 std::vector<SonarTarget> Sonar::collectTargets(
-    double lat, double lon) const
+    double selfLat, double selfLon) const
 {
     std::vector<SonarTarget> result;
+    if (!root ) return result;
 
-    if (!root || !root->Entities) return result;
-
-    for (auto& [id, entity] : *root->Entities)
+    for (auto& [id, entity] : root->Entities)
     {
-        if (!entity)                    continue;
-        if (id == parentEntity->ID)     continue;  // khud skip
+        if (!entity || id == parentEntity->ID) continue;
 
-        QJsonObject transformJson =
-            entity->getComponent("transform");
+        // ── Sirf Ship aur Submarine — baaki sab skip ──
+        if (entity->category != Entity::Category::Ship &&
+            entity->category != Entity::Category::Submarine)
+            continue;
+
+        QJsonObject transformJson = entity->getComponent("transform");
         if (transformJson.isEmpty()) continue;
 
         QJsonObject geocord = transformJson["geocord"].toObject();
-        if (geocord.isEmpty()) continue;
-
-        double lat      = geocord["latitude"].toDouble();
-        double lon      = geocord["longitude"].toDouble();
+        double tLat     = geocord["latitude"].toDouble();
+        double tLon     = geocord["longitude"].toDouble();
         double altitude = geocord["altitude"].toDouble();
 
-        if (lat == 0.0 && lon == 0.0) continue;
-
-        QJsonObject entityJson = entity->toJson();
-        QString     entityType = entityJson["Type"].toString();
-
-
-        // Aircraft skip — sonar underwater hai
-        if (entityType.contains("Aircraft",   Qt::CaseInsensitive) ||
-            entityType.contains("Helicopter", Qt::CaseInsensitive) ||
-            entityType.contains("UAV",        Qt::CaseInsensitive) ||
-            entityType.contains("Airplane",   Qt::CaseInsensitive))
-            continue;
+        if (tLat == 0.0 && tLon == 0.0) continue;
 
         SonarTarget t;
-        t.name           = entity->Name;
-        t.lat            = lat;
-        t.lon            = lon;
-        t.depth          = (altitude < 0) ? (float)(-altitude) : 0.0f;
-        t.targetStrength = 20.0f;
+        t.name  = entity->Name;
+        t.lat   = tLat;
+        t.lon   = tLon;
+        t.depth = (altitude < 0) ? (float)(-altitude) : 0.0f;
 
-        // Target strength by type
-        if (entityType.contains("Submarine", Qt::CaseInsensitive))
-            t.targetStrength = 25.0f;
-        if (entityType.contains("Ship",      Qt::CaseInsensitive) ||
-            entityType.contains("Destroyer", Qt::CaseInsensitive) ||
-            entityType.contains("Frigate",   Qt::CaseInsensitive))
-            t.targetStrength = 15.0f;
-
-        // qDebug() << "Entity:" << QString::fromStdString(entity->Name)
-        //          << "Type:" << entityType
-        //          << "depth:" << altitude;
+        // Target strength by category
+        t.targetStrength = (entity->category == Entity::Category::Submarine)
+                               ? 25.0f   // submarine — louder acoustically
+                               : 15.0f;  // ship — quieter
 
         result.push_back(t);
     }
@@ -224,7 +332,6 @@ void Sonar::fromJson(const QJsonObject& obj) {
                 m_noiseLevel   = valueFromParm(d["noiseLevel"].toObject());
             if (d.contains("threshold"))
                 m_threshold    = valueFromParm(d["threshold"].toObject());
-       }
+        }
     }
 }
-

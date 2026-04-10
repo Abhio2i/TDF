@@ -9,6 +9,7 @@ class Feedback : public QDialog
     Q_OBJECT
 public:
     explicit Feedback(QWidget *parent = nullptr);
+     static void runUnitTestsOnce();
 };
 
 #endif // PROJECTINFORMATION_H

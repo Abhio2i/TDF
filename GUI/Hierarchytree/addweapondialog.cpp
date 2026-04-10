@@ -10,62 +10,24 @@
 //  Helpers
 // ──────────────────────────────────────────────────────────────
 static const QString kDialogStyle = R"(
-QDialog {
-    background-color: #2b2b2b;
-    color: #f0f0f0;
+QComboBox QAbstractItemView {
+    background-color: #0F2636;
+    color: #ffffff;
+    selection-background-color: #1A3652;
+    selection-color: #ffffff;
+    border: 1px solid #27446d;
+    outline: none;
 }
-QLabel {
-    color: #f0f0f0;
-    font-weight: bold;
-}
-QLineEdit, QComboBox, QDoubleSpinBox, QSpinBox {
-    background-color: #3c3c3c;
-    color: #f0f0f0;
-    border: 1px solid #555555;
-    border-radius: 3px;
-    padding: 4px 6px;
+
+QComboBox QAbstractItemView::item {
+    padding: 4px 8px;
     min-height: 22px;
 }
-QComboBox::drop-down { border: none; }
-QComboBox::down-arrow { image: none; width: 12px; }
-QGroupBox {
-    color: #a0c8ff;
-    border: 1px solid #4a4a4a;
-    border-radius: 4px;
-    margin-top: 8px;
-    padding-top: 6px;
-    font-weight: bold;
+
+QComboBox QAbstractItemView::item:hover {
+    background-color: #1A3652;
+    color: #ffffff;
 }
-QGroupBox::title {
-    subcontrol-origin: margin;
-    left: 8px;
-    padding: 0 4px;
-}
-QCheckBox { color: #f0f0f0; }
-QCheckBox::indicator {
-    width: 14px; height: 14px;
-    border: 1px solid #666; border-radius: 2px;
-    background: #3c3c3c;
-}
-QCheckBox::indicator:checked { background: #3a7bd5; }
-QPushButton {
-    background-color: #404040;
-    color: #f0f0f0;
-    border: 1px solid #555555;
-    border-radius: 3px;
-    padding: 6px 18px;
-    font-weight: bold;
-    min-width: 80px;
-}
-QPushButton:hover   { background-color: #505050; }
-QPushButton:pressed { background-color: #606060; }
-QPushButton#okBtn {
-    background-color: #2a5fa5;
-    border-color: #3a7bd5;
-}
-QPushButton#okBtn:hover { background-color: #3a7bd5; }
-QScrollArea { border: none; background: transparent; }
-QWidget#scrollContents { background: transparent; }
 )";
 
 // colour for type badge labels
@@ -361,9 +323,9 @@ void AddWeaponDialog::populateWeaponEntities()
 void AddWeaponDialog::applyEntityConfig(const QString& entityId)
 {
     if (!m_dbHierarchy || entityId.isEmpty()) return;
-    if (!m_dbHierarchy->Weapons->count(entityId.toStdString())) return;
+    if (!m_dbHierarchy->Weapons.count(entityId.toStdString())) return;
 
-    Weapon* w = (*m_dbHierarchy->Weapons)[entityId.toStdString()];
+    Weapon* w = m_dbHierarchy->Weapons[entityId.toStdString()];
     if (!w) return;
 
     // Detect weapon type and switch panel

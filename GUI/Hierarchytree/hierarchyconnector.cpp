@@ -108,9 +108,9 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
             [=](QString parentID, QString ID, QString entityName) {
                 treeView->entityAdded(parentID, ID, entityName);
                 QTimer::singleShot(0, treeView, [=]() {
-                    if (!hierarchy->Entities) return;
-                    auto it = hierarchy->Entities->find(ID.toStdString());
-                    if (it != hierarchy->Entities->end()) {
+                    // if (!hierarchy->Entities) return;
+                    auto it = hierarchy->Entities.find(ID.toStdString());
+                    if (it != hierarchy->Entities.end()) {
                         if (!it->second->Active) {
                             treeView->setEntityActiveState(ID, false);
                         }
@@ -331,12 +331,12 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                             QMessageBox::warning(nullptr, "Validation Error", "Invalid weapon data provided");
                             return;
                         }
-                        if (!hierarchy || !hierarchy->Entities) {
-                            QMessageBox::critical(nullptr, "Error", "Hierarchy not available");
-                            return;
-                        }
-                        auto it = hierarchy->Entities->find(entityID.toStdString());
-                        if (it == hierarchy->Entities->end()) {
+                        // if (!hierarchy ) {
+                        //     QMessageBox::critical(nullptr, "Error", "Hierarchy not available");
+                        //     return;
+                        // }
+                        auto it = hierarchy->Entities.find(entityID.toStdString());
+                        if (it == hierarchy->Entities.end()) {
                             QMessageBox::warning(nullptr, "Error", "Parent entity not found");
                             return;
                         }
@@ -370,8 +370,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                         if (platform->weapons && platform->weapons->weapons) {
                             platform->weapons->weapons->insert({weapon->ID, weapon});
-                            hierarchy->Weapons->insert({weapon->ID, weapon});
-                            hierarchy->Entities->insert({weapon->ID, weapon});
+                            hierarchy->Weapons.insert({weapon->ID, weapon});
+                            hierarchy->Entities.insert({weapon->ID, weapon});
 
                             emit hierarchy->subComponentAdded(
                                 QString::fromStdString(platform->weapons->ID),
@@ -408,8 +408,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
     // ── Single entity context menu → bulk handlers ───────────────────────
     connect(treeView->getContextMenu(), &ContextMenu::setEntityActiveRequested,
             this, [=](QString entityID, bool active) {
-                if (!hierarchy->Entities) return;
-                if (hierarchy->Entities->find(entityID.toStdString()) == hierarchy->Entities->end()) return;
+                if (hierarchy->Entities.find(entityID.toStdString()) == hierarchy->Entities.end()) return;
                 QJsonObject delta;
                 delta["active"] = active;
                 hierarchy->UpdateComponent(entityID, "_self", delta);
@@ -481,8 +480,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                 for (const QVariantMap& itemData : itemsToPaste) {
                     QString sourceId = itemData["ID"].toString();
                     try {
-                        auto entityIt = copySource->Entities->find(sourceId.toStdString());
-                        if (entityIt != copySource->Entities->end()) {
+                        auto entityIt = copySource->Entities.find(sourceId.toStdString());
+                        if (entityIt != copySource->Entities.end()) {
                             QJsonObject entityJson = entityIt->second->toJson();
                             entityJson["id"]        = QString::fromStdString(Uuid::generateShortUniqueID());
                             entityJson["parent_id"] = targetId;
@@ -516,8 +515,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                 for (const QVariantMap& itemData : itemsToPaste) {
                     QString sourceId = itemData["ID"].toString();
                     try {
-                        auto entityIt = copySource->Entities->find(sourceId.toStdString());
-                        if (entityIt != copySource->Entities->end()) {
+                        auto entityIt = copySource->Entities.find(sourceId.toStdString());
+                        if (entityIt != copySource->Entities.end()) {
                             QJsonObject entityJson = entityIt->second->toJson();
                             entityJson["id"]        = QString::fromStdString(Uuid::generateShortUniqueID());
                             entityJson["parent_id"] = targetId;
@@ -543,8 +542,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
             this, [=](QList<QVariantMap> entities, bool active) {
                 for (const QVariantMap& data : entities) {
                     QString entityID = data["ID"].toString();
-                    if (!hierarchy->Entities) return;
-                    if (hierarchy->Entities->find(entityID.toStdString()) == hierarchy->Entities->end()) continue;
+                    if (hierarchy->Entities.find(entityID.toStdString()) == hierarchy->Entities.end()) continue;
                     QJsonObject delta;
                     delta["active"] = active;
                     hierarchy->UpdateComponent(entityID, "_self", delta);
@@ -567,8 +565,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                 QString typeName = "Missile";
                 if (!selectedId.isEmpty() && dbHierarchy) {
-                    auto dbIt = dbHierarchy->Weapons->find(selectedId.toStdString());
-                    if (dbIt != dbHierarchy->Weapons->end() && dbIt->second)
+                    auto dbIt = dbHierarchy->Weapons.find(selectedId.toStdString());
+                    if (dbIt != dbHierarchy->Weapons.end() && dbIt->second)
                         typeName = dbIt->second->weaponTypeName();
                 } else {
                     typeName = dlg.weaponTypeStr();
@@ -576,9 +574,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                 for (const QVariantMap& data : entities) {
                     QString entityID = data["ID"].toString();
-                    if (!hierarchy->Entities) continue;
-                    auto it = hierarchy->Entities->find(entityID.toStdString());
-                    if (it == hierarchy->Entities->end()) continue;
+                    auto it = hierarchy->Entities.find(entityID.toStdString());
+                    if (it == hierarchy->Entities.end()) continue;
 
                     Platform* platform = dynamic_cast<Platform*>(it->second);
                     if (!platform) continue;
@@ -598,8 +595,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                     if (!platform->weapons || !platform->weapons->weapons) { delete weapon; continue; }
 
                     if (!selectedId.isEmpty() && dbHierarchy) {
-                        auto dbIt = dbHierarchy->Weapons->find(selectedId.toStdString());
-                        if (dbIt != dbHierarchy->Weapons->end() && dbIt->second) {
+                        auto dbIt = dbHierarchy->Weapons.find(selectedId.toStdString());
+                        if (dbIt != dbHierarchy->Weapons.end() && dbIt->second) {
                             std::string savedId = weapon->ID, savedName = weapon->Name, savedParent = weapon->parentID;
                             weapon->fromJson(dbIt->second->toJson());
                             weapon->ID = savedId; weapon->Name = savedName; weapon->parentID = savedParent;
@@ -613,8 +610,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                     weapon->syncComponentsFromWeaponData();
                     platform->weapons->weapons->insert({weapon->ID, weapon});
-                    hierarchy->Weapons->insert({weapon->ID, weapon});
-                    hierarchy->Entities->insert({weapon->ID, weapon});
+                    hierarchy->Weapons.insert({weapon->ID, weapon});
+                    hierarchy->Entities.insert({weapon->ID, weapon});
 
                     emit hierarchy->subComponentAdded(
                         QString::fromStdString(platform->weapons->ID),
@@ -654,9 +651,9 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                 for (const QVariantMap& data : entities) {
                     QString entityID = data["ID"].toString();
-                    if (!hierarchy->Entities) continue;
-                    auto it = hierarchy->Entities->find(entityID.toStdString());
-                    if (it == hierarchy->Entities->end()) continue;
+                    // if (!hierarchy->Entities) continue;
+                    auto it = hierarchy->Entities.find(entityID.toStdString());
+                    if (it == hierarchy->Entities.end()) continue;
 
                     Platform* platform = dynamic_cast<Platform*>(it->second);
                     if (!platform || !platform->sensors) continue;
@@ -682,9 +679,9 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                 for (const QVariantMap& data : entities) {
                     QString entityID = data["ID"].toString();
-                    if (!hierarchy->Entities) continue;
-                    auto it = hierarchy->Entities->find(entityID.toStdString());
-                    if (it == hierarchy->Entities->end()) continue;
+                    // if (!hierarchy->Entities) continue;
+                    auto it = hierarchy->Entities.find(entityID.toStdString());
+                    if (it == hierarchy->Entities.end()) continue;
 
                     Platform* platform = dynamic_cast<Platform*>(it->second);
                     if (!platform || !platform->iffs) continue;
@@ -710,9 +707,9 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                 for (const QVariantMap& data : entities) {
                     QString entityID = data["ID"].toString();
-                    if (!hierarchy->Entities) continue;
-                    auto it = hierarchy->Entities->find(entityID.toStdString());
-                    if (it == hierarchy->Entities->end()) continue;
+                    // if (!hierarchy->Entities) continue;
+                    auto it = hierarchy->Entities.find(entityID.toStdString());
+                    if (it == hierarchy->Entities.end()) continue;
 
                     Platform* platform = dynamic_cast<Platform*>(it->second);
                     if (!platform || !platform->radios) continue;
@@ -727,9 +724,9 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
             [=](QList<QVariantMap> entities, QString team) {
                 for (const QVariantMap& data : entities) {
                     QString entityID = data["ID"].toString();
-                    if (!hierarchy->Entities) continue;
-                    auto it = hierarchy->Entities->find(entityID.toStdString());
-                    if (it == hierarchy->Entities->end()) continue;
+                    // if (!hierarchy->Entities) continue;
+                    auto it = hierarchy->Entities.find(entityID.toStdString());
+                    if (it == hierarchy->Entities.end()) continue;
 
                     QJsonObject entityJson = it->second->toJson();
                     QJsonObject teamObj;
@@ -763,9 +760,9 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
             [=](QList<QVariantMap> entities, QString category) {
                 for (const QVariantMap& data : entities) {
                     QString entityID = data["ID"].toString();
-                    if (!hierarchy->Entities) continue;
-                    auto it = hierarchy->Entities->find(entityID.toStdString());
-                    if (it == hierarchy->Entities->end()) continue;
+                    // if (!hierarchy->Entities) continue;
+                    auto it = hierarchy->Entities.find(entityID.toStdString());
+                    if (it == hierarchy->Entities.end()) continue;
 
                     QJsonObject entityJson = it->second->toJson();
                     QJsonObject categoryObj;
@@ -827,8 +824,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                 }
 
                 try {
-                    auto entityIt = copySource->Entities->find(copydata["ID"].toString().toStdString());
-                    if (entityIt == copySource->Entities->end()) return;
+                    auto entityIt = copySource->Entities.find(copydata["ID"].toString().toStdString());
+                    if (entityIt == copySource->Entities.end()) return;
                     QJsonObject entityJson = entityIt->second->toJson();
                     entityJson["id"] = QString::fromStdString(Uuid::generateShortUniqueID());
                     hierarchy->addEntityFromJson(targetId, entityJson, targetType == "profile");
@@ -850,11 +847,11 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                 try {
                     copySource = hierarchy;
-                    auto entityIt = copySource->Entities->find(sourceId.toStdString());
+                    auto entityIt = copySource->Entities.find(sourceId.toStdString());
                     if (islib && library) {
-                        entityIt = library->Entities->find(sourceId.toStdString());
-                        if (entityIt == library->Entities->end()) return;
-                    } else if (entityIt == copySource->Entities->end()) {
+                        entityIt = library->Entities.find(sourceId.toStdString());
+                        if (entityIt == library->Entities.end()) return;
+                    } else if (entityIt == copySource->Entities.end()) {
                         return;
                     }
 
@@ -868,15 +865,15 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                     if (!iscomp) {
                         type = isProfile
                                    ? copySource->ProfileCategories[targetId.toStdString()]->type
-                                   : (*copySource->Folders)[targetId.toStdString()]->type;
+                                   : (copySource->Folders)[targetId.toStdString()]->type;
                     }
 
                     if ((trname == "sensors" || type == Constants::EntityType::Platform) &&
                         sourcetype == Constants::EntityType::Sensor) {
                         QString senstype = "Generic";
-                        auto it = islib ? library->Sensors->find(sourceId.toStdString())
-                                        : copySource->Sensors->find(sourceId.toStdString());
-                        auto& map = islib ? *library->Sensors : *copySource->Sensors;
+                        auto it = islib ? library->Sensors.find(sourceId.toStdString())
+                                        : copySource->Sensors.find(sourceId.toStdString());
+                        auto& map = islib ? library->Sensors : copySource->Sensors;
                         auto sit = map.find(sourceId.toStdString());
                         if (sit != map.end() && sit->second)
                             senstype = sit->second->subTypeToString(sit->second->subType);
@@ -909,7 +906,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                     if (isProfile)
                         copySource->ProfileCategories[targetId.toStdString()]->addEntityWithObject(entity);
                     else
-                        (*copySource->Folders)[targetId.toStdString()]->addEntityWithObject(entity);
+                        copySource->Folders[targetId.toStdString()]->addEntityWithObject(entity);
 
                     entity->fromJson(entityJson);
                     QCoreApplication::processEvents();
@@ -1000,7 +997,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                 formation->parentID   = formationProfileId.toStdString();
                 formation->type       = Constants::EntityType::Formation;
                 hierarchy->ProfileCategories[formationProfileId.toStdString()]->addEntityWithObject(formation);
-                hierarchy->Entities->insert({formation->ID, formation});
+                hierarchy->Entities.insert({formation->ID, formation});
 
                 Constants::FormationType typeEnum = Constants::FormationType::V;
                 if      (formationType == "Line")             typeEnum = Constants::FormationType::Line;
@@ -1015,8 +1012,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                 formation->formationType = typeEnum;
                 formation->count         = alliesCount;
 
-                auto motherIt = hierarchy->Entities->find(mothershipId.toStdString());
-                if (motherIt != hierarchy->Entities->end()) {
+                auto motherIt = hierarchy->Entities.find(mothershipId.toStdString());
+                if (motherIt != hierarchy->Entities.end()) {
                     Entity* motherEntity = motherIt->second;
                     QJsonObject motherJson, entityRef;
                     entityRef["type"] = "reference";
@@ -1032,8 +1029,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                 int allyIndex = 0;
                 for (const auto& allyData : allies) {
                     QString allyId = allyData["ID"].toString();
-                    auto allyIt = hierarchy->Entities->find(allyId.toStdString());
-                    if (allyIt == hierarchy->Entities->end() || allyIndex >= alliesCount) continue;
+                    auto allyIt = hierarchy->Entities.find(allyId.toStdString());
+                    if (allyIt == hierarchy->Entities.end() || allyIndex >= alliesCount) continue;
 
                     Entity* allyEntity = allyIt->second;
                     std::string positionName = "ally_" + std::to_string(allyIndex);
@@ -1182,8 +1179,8 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
                     return;
                 }
                 try {
-                    auto entityIt = copySource->Entities->find(id.toStdString());
-                    if (entityIt == copySource->Entities->end()) {
+                    auto entityIt = copySource->Entities.find(id.toStdString());
+                    if (entityIt == copySource->Entities.end()) {
                         return;
                     }
                     QJsonObject entityJson = entityIt->second->toJson();

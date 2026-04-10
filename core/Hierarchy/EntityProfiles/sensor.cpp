@@ -210,8 +210,12 @@ QString Sensor::subTypeToString(SubType t) const {
     switch (t) {
     case SubType::CSM: return "CSM";
     case SubType::ESM: return "ESM";
+    case SubType::EO: return "EO";
     case SubType::Sonar: return "Sonar";
+    case SubType::AIS: return "AIS";
+    case SubType::ADSB: return "ADSB";
     case SubType::Generic: return "Generic";
+    case SubType::AESA : return "AESA";
     default: return "Generic";
     }
 }
@@ -220,7 +224,11 @@ Sensor::SubType Sensor::stringToSubType(const QString& str) const {
     QString lower = str.toLower();
     if (lower == "csm") return SubType::CSM;
     if (lower == "esm") return SubType::ESM;
+    if (lower == "eo") return SubType::EO;
     if (lower == "sonar") return SubType::Sonar;
+    if (lower == "ais") return SubType::AIS;
+    if (lower == "adsb") return SubType::ADSB;
+    if (lower == "aesa") return SubType::AESA;
     if (lower == "sensor" || lower == "generic") return SubType::Generic;
     return SubType::Generic;  // ✅ Default fallback
 }

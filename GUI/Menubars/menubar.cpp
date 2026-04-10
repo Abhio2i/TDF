@@ -182,3 +182,9 @@ void MenuBar::updateFileMenuForEditor(const QString& editorKey)
         saveJsonAction->setVisible(false);
     }
 }
+QAction* MenuBar::getProfileAction()
+{
+    return profileAction;
+}
+
+

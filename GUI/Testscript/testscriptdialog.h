@@ -52,6 +52,7 @@ public:
     explicit TestScriptDialog(QWidget *parent = nullptr, bool editMode = false, const QString &filePath = QString());
     // Clean up resources
     ~TestScriptDialog();
+    static void runUnitTestsOnce();
 
 signals:
     // Signal to run script

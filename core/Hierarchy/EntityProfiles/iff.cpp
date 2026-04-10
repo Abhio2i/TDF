@@ -323,14 +323,14 @@ void IFF::scan(){
     if(!Active)return;
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
     if(!parentEntity) return;
-    Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
+    Transform* source = (root->Platforms)[parentEntity->ID]->transform;
      if(!source) return;
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
-    for (auto& [key, entity] : *root->Iffs)
+    for (auto& [key, entity] : root->Iffs)
     {
         if(!entity || !entity->parentEntity) continue;
-        auto it = root->Platforms->find(entity->parentEntity->ID);
-        if (it != root->Platforms->end()) {
+        auto it = root->Platforms.find(entity->parentEntity->ID);
+        if (it != root->Platforms.end()) {
             Platform* platform = it->second;
             // Aapka aage ka logic yahan aaye
             // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
@@ -457,7 +457,7 @@ void IFF::interrogateTargets(Transform* source)
     }
 
     Platform* sourcePlatform = nullptr;
-    for (auto& [key, entity] : *parent->Platforms) {
+    for (auto& [key, entity] : parent->Platforms) {
         if (Platform* plat = entity) {
             for (IFF* iff : plat->iffList) {
                 if (iff == this) {
@@ -496,7 +496,7 @@ void IFF::interrogateTargets(Transform* source)
     // ======================================
     //   MAIN INTERROGATION LOOP
     // ======================================
-    for (auto& [key, entity] : *parent->Platforms) {
+    for (auto& [key, entity] : parent->Platforms) {
         Platform* platform = entity;
         if (!platform || platform == sourcePlatform || platform->iffList.empty()) continue;
         if (!platform->transform || !platform->transform->matrix) continue;

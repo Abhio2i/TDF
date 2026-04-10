@@ -41,8 +41,8 @@ void WeaponProfile::addSubComponent(std::string name,
     if (data1 == "Missile") {
         Missile* m = new Missile(parent);
         if (!data2.isEmpty()) {
-            auto it = parent->Weapons->find(data2.toStdString());
-            if (it != parent->Weapons->end() && it->second) {
+            auto it = parent->Weapons.find(data2.toStdString());
+            if (it != parent->Weapons.end() && it->second) {
                 std::string id = m->ID;
                 m->fromJson(it->second->toJson());
                 m->ID       = id;
@@ -53,8 +53,8 @@ void WeaponProfile::addSubComponent(std::string name,
     } else if (data1 == "Bomb") {
         Bomb* b = new Bomb(parent);
         if (!data2.isEmpty()) {
-            auto it = parent->Weapons->find(data2.toStdString());
-            if (it != parent->Weapons->end() && it->second) {
+            auto it = parent->Weapons.find(data2.toStdString());
+            if (it != parent->Weapons.end() && it->second) {
                 std::string id = b->ID;
                 b->fromJson(it->second->toJson());
                 b->ID       = id;
@@ -65,8 +65,8 @@ void WeaponProfile::addSubComponent(std::string name,
     } else if (data1 == "Torpedo") {
         Torpedo* t = new Torpedo(parent);
         if (!data2.isEmpty()) {
-            auto it = parent->Weapons->find(data2.toStdString());
-            if (it != parent->Weapons->end() && it->second) {
+            auto it = parent->Weapons.find(data2.toStdString());
+            if (it != parent->Weapons.end() && it->second) {
                 std::string id = t->ID;
                 t->fromJson(it->second->toJson());
                 t->ID       = id;
@@ -77,8 +77,8 @@ void WeaponProfile::addSubComponent(std::string name,
     } else if (data1 == "Artillery") {
         Artillery* a = new Artillery(parent);
         if (!data2.isEmpty()) {
-            auto it = parent->Weapons->find(data2.toStdString());
-            if (it != parent->Weapons->end() && it->second) {
+            auto it = parent->Weapons.find(data2.toStdString());
+            if (it != parent->Weapons.end() && it->second) {
                 std::string id = a->ID;
                 a->fromJson(it->second->toJson());
                 a->ID       = id;
@@ -89,8 +89,8 @@ void WeaponProfile::addSubComponent(std::string name,
     } else if (data1 == "Rocket") {
         Rocket* r = new Rocket(parent);
         if (!data2.isEmpty()) {
-            auto it = parent->Weapons->find(data2.toStdString());
-            if (it != parent->Weapons->end() && it->second) {
+            auto it = parent->Weapons.find(data2.toStdString());
+            if (it != parent->Weapons.end() && it->second) {
                 std::string id = r->ID;
                 r->fromJson(it->second->toJson());
                 r->ID       = id;
@@ -101,8 +101,8 @@ void WeaponProfile::addSubComponent(std::string name,
     } else if (data1 == "Flare") {
         Flare* f = new Flare(parent);
         if (!data2.isEmpty()) {
-            auto it = parent->Weapons->find(data2.toStdString());
-            if (it != parent->Weapons->end() && it->second) {
+            auto it = parent->Weapons.find(data2.toStdString());
+            if (it != parent->Weapons.end() && it->second) {
                 std::string id = f->ID;
                 f->fromJson(it->second->toJson());
                 f->ID       = id;
@@ -113,8 +113,8 @@ void WeaponProfile::addSubComponent(std::string name,
     } else if (data1 == "Chaff") {
         Chaff* c = new Chaff(parent);
         if (!data2.isEmpty()) {
-            auto it = parent->Weapons->find(data2.toStdString());
-            if (it != parent->Weapons->end() && it->second) {
+            auto it = parent->Weapons.find(data2.toStdString());
+            if (it != parent->Weapons.end() && it->second) {
                 std::string id = c->ID;
                 c->fromJson(it->second->toJson());
                 c->ID       = id;
@@ -132,14 +132,14 @@ void WeaponProfile::addSubComponent(std::string name,
     weapon->parentID     = parentID;
 
     weapons->insert({weapon->ID, weapon});
-    parent->Weapons->insert({weapon->ID, weapon});
+    parent->Weapons.insert({weapon->ID, weapon});
 
     emit parent->subComponentAdded(QString::fromStdString(ID),
                                    QString::fromStdString(weapon->ID),
                                    QString::fromStdString(name));
 
     // Register in Entities so Inspector's getComponentData() can find it
-    parent->Entities->insert({weapon->ID, weapon});
+    parent->Entities.insert({weapon->ID, weapon});
 
     // Emit componentAdded for all 7 auto-integrated components
     emitAutoComponentSignals(parent, weapon);
@@ -180,7 +180,7 @@ void WeaponProfile::removeSubComponent(std::string ID)
                                          QString::fromStdString(ID),
                                          QString::fromStdString(weapon->Name));
         weapons->erase(weapon->ID);
-        parent->Weapons->erase(weapon->ID);
+        parent->Weapons.erase(weapon->ID);
         delete weapon;
     }
 }
@@ -276,11 +276,11 @@ void WeaponProfile::fromJson(const QJsonObject& obj)
         if (!exists) {
             weapon->parentID = parentID;
             weapons->insert({weapon->ID, weapon});
-            parent->Weapons->insert({weapon->ID, weapon});
+            parent->Weapons.insert({weapon->ID, weapon});
             emit parent->subComponentAdded(QString::fromStdString(ID),
                                            QString::fromStdString(weapon->ID),
                                            QString::fromStdString(weapon->Name));
-            parent->Entities->insert({weapon->ID, weapon});
+            parent->Entities.insert({weapon->ID, weapon});
             emitAutoComponentSignals(parent, weapon);
         }
     }

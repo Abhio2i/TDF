@@ -94,6 +94,9 @@
         <file>images/enable.png</file>
         <file>images/rename.png</file>
         <file>images/disable.png</file>
+        <file>images/identification.png</file>
+        <file>images/bio-weapon.png</file>
+        <file>images/radio.png</file>
     </qresource>
     <qresource prefix="/texture">
         <file>images/Texture/bball.png</file>

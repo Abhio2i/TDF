@@ -10,6 +10,7 @@
 #include <chrono> // include dependency
 #include <cmath> // include dependency
 #include <cstdint> // include dependency
+#include <iostream> // include dependency
 #include <limits> // include dependency
 #include <random> // include dependency
 
@@ -21,6 +22,13 @@ constexpr double EARTH_RADIUS = 6371000.0; // meters
 constexpr double kPi = 3.14159265358979323846; // assign or declare
 constexpr double SPEED_OF_LIGHT = 299792458.0; // m/s
 
+struct PathLossBreakdown { // type definition
+    double total_loss_db = 0.0; // assign or declare
+    double rain_attenuation_db = 0.0; // assign or declare
+    double wind_attenuation_db_per_km = 0.0; // assign or declare
+    double los_horizon_distance_m = 0.0; // assign or declare
+}; // statement
+
 struct LinkBudget { // type definition
     double distance_m = 0.0; // assign or declare
     double path_loss_db = 0.0; // assign or declare
@@ -28,6 +36,11 @@ struct LinkBudget { // type definition
     double noise_floor_dbm = std::numeric_limits<double>::quiet_NaN(); // assign or declare
     double snr_db = std::numeric_limits<double>::infinity(); // assign or declare
     double doppler_hz = 0.0; // assign or declare
+    double rain_attenuation_db = 0.0; // assign or declare
+    double wind_attenuation_db_per_km = 0.0; // assign or declare
+    double los_horizon_distance_m = 0.0; // assign or declare
+    double polarization_loss_db = 0.0; // assign or declare
+    double required_snr_threshold_db = 0.0; // assign or declare
     bool network_match = false; // assign or declare
     bool frequency_match = false; // assign or declare
     bool range_ok = false; // assign or declare
@@ -305,26 +318,180 @@ FrequencyEval evaluate_frequency_capture(const RadioConfig& tx_config,
     return fe;
 }
 
-double default_required_snr_db(ModulationScheme scheme) { // function start
-    switch (scheme) { // switch on value
-    case ModulationScheme::BPSK: // case label
-        return 9.6; // return value
-    case ModulationScheme::QPSK: // case label
-        return 10.5; // return value
-    case ModulationScheme::QAM16: // case label
-        return 16.0; // return value
-    case ModulationScheme::QAM64: // case label
-        return 22.0; // return value
-    case ModulationScheme::GMSK: // case label
-        return 9.0; // return value
-    } // block end
-    return 10.0; // return value
-} // block end
+double default_required_snr_db(ModulationScheme modulation_scheme,
+                               double bandwidth_hz) {
+    switch (modulation_scheme) {
+    case ModulationScheme::AM:
+        return 14.0;
+    case ModulationScheme::FM:
+        return bandwidth_hz > 25e3 ? 13.5 : 11.5;
+    case ModulationScheme::BPSK:
+        return 9.6;
+    case ModulationScheme::QPSK:
+        return 10.5;
+    case ModulationScheme::PSK8:
+        return 14.0;
+    case ModulationScheme::QAM16:
+        return 16.0;
+    case ModulationScheme::QAM64:
+        return 22.0;
+    case ModulationScheme::FSK2:
+        return 11.0;
+    case ModulationScheme::FSK4:
+        return 13.0;
+    case ModulationScheme::GMSK:
+        return 9.0;
+    case ModulationScheme::OFDM_BPSK:
+        return 10.5;
+    case ModulationScheme::OFDM_QPSK:
+        return 12.0;
+    case ModulationScheme::OFDM_QAM16:
+        return 18.0;
+    case ModulationScheme::OFDM_QAM64:
+        return 24.0;
+    }
+    return 10.0;
+}
+
+double default_required_snr_db(ModulationClass /*modulation_class*/,
+                               ModulationScheme modulation_scheme,
+                               double bandwidth_hz) {
+    return default_required_snr_db(modulation_scheme, bandwidth_hz);
+}
 
 std::mt19937& rng() { // function start
     static thread_local std::mt19937 gen(42); // statement
     return gen; // return value
 } // block end
+
+double sanitize_to_zero_or_range(double value,
+                                 double min_value,
+                                 double max_value,
+                                 const char* field_name) {
+    if (std::isfinite(value) && value >= min_value && value <= max_value) {
+        return value;
+    }
+
+    double replacement = (0.0 >= min_value && 0.0 <= max_value)
+                             ? 0.0
+                             : std::clamp(value, min_value, max_value);
+    if (!std::isfinite(value)) {
+        replacement = (0.0 >= min_value && 0.0 <= max_value) ? 0.0 : min_value;
+    }
+
+    std::cerr << "[radio] Invalid propagation config '" << field_name
+              << "'=" << value
+              << " outside [" << min_value << ", " << max_value << "]"
+              << "; clamping to " << replacement << ".\n";
+    return replacement;
+}
+
+PropagationModelConfig sanitize_model_config(const PropagationModelConfig& input) {
+    PropagationModelConfig cfg = input;
+
+    cfg.temperature_c = sanitize_to_zero_or_range(cfg.temperature_c, -80.0, 60.0, "temperature_c");
+    cfg.pressure_hpa = sanitize_to_zero_or_range(cfg.pressure_hpa, 300.0, 1100.0, "pressure_hpa");
+    cfg.humidity_percent = sanitize_to_zero_or_range(cfg.humidity_percent, 0.0, 100.0, "humidity_percent");
+    cfg.gas_attenuation_db_per_km_at_1ghz = sanitize_to_zero_or_range(
+        cfg.gas_attenuation_db_per_km_at_1ghz, 0.0, 0.1, "gas_attenuation_db_per_km_at_1ghz");
+    cfg.gas_attenuation_freq_exponent = sanitize_to_zero_or_range(
+        cfg.gas_attenuation_freq_exponent, 0.0, 3.0, "gas_attenuation_freq_exponent");
+    cfg.humidity_attenuation_factor_per_percent = sanitize_to_zero_or_range(
+        cfg.humidity_attenuation_factor_per_percent, 0.0, 0.02, "humidity_attenuation_factor_per_percent");
+    cfg.rain_rate_mm_per_hr = sanitize_to_zero_or_range(
+        cfg.rain_rate_mm_per_hr, 0.0, 200.0, "rain_rate_mm_per_hr");
+    cfg.rain_attenuation_db_per_km_per_mmhr = sanitize_to_zero_or_range(
+        cfg.rain_attenuation_db_per_km_per_mmhr, 0.0, 0.1, "rain_attenuation_db_per_km_per_mmhr");
+    cfg.rain_coverage = sanitize_to_zero_or_range(cfg.rain_coverage, 0.0, 1.0, "rain_coverage");
+    cfg.rain_rate_sigma_frac = sanitize_to_zero_or_range(
+        cfg.rain_rate_sigma_frac, 0.0, 0.5, "rain_rate_sigma_frac");
+    cfg.wind_speed_mps = sanitize_to_zero_or_range(cfg.wind_speed_mps, 0.0, 80.0, "wind_speed_mps");
+    cfg.wind_attenuation_db_per_km_per_mps = sanitize_to_zero_or_range(
+        cfg.wind_attenuation_db_per_km_per_mps, 0.0, 0.01, "wind_attenuation_db_per_km_per_mps");
+    cfg.sea_attenuation_db_per_km = sanitize_to_zero_or_range(
+        cfg.sea_attenuation_db_per_km, 0.0, 0.05, "sea_attenuation_db_per_km");
+    cfg.interference_power_dbm = sanitize_to_zero_or_range(
+        cfg.interference_power_dbm, -200.0, 0.0, "interference_power_dbm");
+    cfg.shadowing_sigma_db = sanitize_to_zero_or_range(cfg.shadowing_sigma_db, 0.0, 12.0, "shadowing_sigma_db");
+    cfg.fading_sigma_db = sanitize_to_zero_or_range(cfg.fading_sigma_db, 0.0, 10.0, "fading_sigma_db");
+    cfg.los_blocked_loss_db = sanitize_to_zero_or_range(cfg.los_blocked_loss_db, 0.0, 300.0, "los_blocked_loss_db");
+
+    return cfg;
+}
+
+double blend_average(double a, double b) {
+    return 0.5 * (a + b);
+}
+
+PropagationModelConfig blend_propagation_configs(const PropagationModelConfig& a,
+                                                 const PropagationModelConfig& b) {
+    PropagationModelConfig out = a;
+
+    out.enable_fspl = a.enable_fspl || b.enable_fspl;
+    out.enable_log_distance = a.enable_log_distance || b.enable_log_distance;
+    out.enable_two_ray = a.enable_two_ray || b.enable_two_ray;
+    out.enable_shadowing = a.enable_shadowing || b.enable_shadowing;
+    out.enable_fading = a.enable_fading || b.enable_fading;
+    out.enable_fixed_path_loss_override = a.enable_fixed_path_loss_override || b.enable_fixed_path_loss_override;
+    out.enable_los_horizon = a.enable_los_horizon || b.enable_los_horizon;
+    out.enable_comms_mode_losses = a.enable_comms_mode_losses || b.enable_comms_mode_losses;
+    out.enable_noise_floor = a.enable_noise_floor || b.enable_noise_floor;
+    out.enable_snr_threshold = a.enable_snr_threshold || b.enable_snr_threshold;
+    out.enable_sensitivity = a.enable_sensitivity || b.enable_sensitivity;
+    out.enable_squelch = a.enable_squelch || b.enable_squelch;
+    out.enable_interference = a.enable_interference || b.enable_interference;
+    out.enable_range_limit = a.enable_range_limit || b.enable_range_limit;
+    out.enable_network_gate_in_scan = a.enable_network_gate_in_scan || b.enable_network_gate_in_scan;
+    out.enable_scan_beam = a.enable_scan_beam || b.enable_scan_beam;
+    out.enable_scan_timing = a.enable_scan_timing || b.enable_scan_timing;
+    out.enable_doppler = a.enable_doppler || b.enable_doppler;
+    out.enable_environmental_attenuation = a.enable_environmental_attenuation || b.enable_environmental_attenuation;
+    out.enable_sea_attenuation = a.enable_sea_attenuation || b.enable_sea_attenuation;
+    out.enable_polarization_loss = a.enable_polarization_loss || b.enable_polarization_loss;
+    out.use_itu_rain_model = a.use_itu_rain_model || b.use_itu_rain_model;
+
+    out.log_distance_ref_distance_m = blend_average(a.log_distance_ref_distance_m, b.log_distance_ref_distance_m);
+    out.log_distance_path_loss_exp = blend_average(a.log_distance_path_loss_exp, b.log_distance_path_loss_exp);
+    out.shadowing_sigma_db = blend_average(a.shadowing_sigma_db, b.shadowing_sigma_db);
+    out.fading_sigma_db = blend_average(a.fading_sigma_db, b.fading_sigma_db);
+    out.los_blocked_loss_db = blend_average(a.los_blocked_loss_db, b.los_blocked_loss_db);
+    out.bLOS_diffraction_db_per_m = blend_average(a.bLOS_diffraction_db_per_m, b.bLOS_diffraction_db_per_m);
+    out.satcom_extra_loss_db = blend_average(a.satcom_extra_loss_db, b.satcom_extra_loss_db);
+    out.troposcatter_log_loss_factor_db = blend_average(a.troposcatter_log_loss_factor_db, b.troposcatter_log_loss_factor_db);
+    out.polarization_mismatch_loss_db = blend_average(a.polarization_mismatch_loss_db, b.polarization_mismatch_loss_db);
+    out.temperature_c = blend_average(a.temperature_c, b.temperature_c);
+    out.pressure_hpa = blend_average(a.pressure_hpa, b.pressure_hpa);
+    out.humidity_percent = blend_average(a.humidity_percent, b.humidity_percent);
+    out.gas_attenuation_db_per_km_at_1ghz = blend_average(a.gas_attenuation_db_per_km_at_1ghz, b.gas_attenuation_db_per_km_at_1ghz);
+    out.gas_attenuation_freq_exponent = blend_average(a.gas_attenuation_freq_exponent, b.gas_attenuation_freq_exponent);
+    out.humidity_attenuation_factor_per_percent = blend_average(a.humidity_attenuation_factor_per_percent, b.humidity_attenuation_factor_per_percent);
+    out.rain_rate_mm_per_hr = blend_average(a.rain_rate_mm_per_hr, b.rain_rate_mm_per_hr);
+    out.rain_attenuation_db_per_km_per_mmhr = blend_average(a.rain_attenuation_db_per_km_per_mmhr, b.rain_attenuation_db_per_km_per_mmhr);
+    out.rain_coverage = blend_average(a.rain_coverage, b.rain_coverage);
+    out.rain_rate_sigma_frac = blend_average(a.rain_rate_sigma_frac, b.rain_rate_sigma_frac);
+    out.wind_speed_mps = blend_average(a.wind_speed_mps, b.wind_speed_mps);
+    out.wind_attenuation_db_per_km_per_mps = blend_average(a.wind_attenuation_db_per_km_per_mps, b.wind_attenuation_db_per_km_per_mps);
+    out.sea_attenuation_db_per_km = blend_average(a.sea_attenuation_db_per_km, b.sea_attenuation_db_per_km);
+    out.interference_power_dbm = blend_average(a.interference_power_dbm, b.interference_power_dbm);
+
+    return sanitize_model_config(out);
+}
+
+PropagationModelConfig resolve_propagation_config(const RadioConfig& tx_config,
+                                                  const RadioConfig& rx_config,
+                                                  const PropagationModelConfig& fallback) {
+    const bool tx_local = tx_config.use_local_propagation_config;
+    const bool rx_local = rx_config.use_local_propagation_config;
+    if (!tx_local && !rx_local) return fallback;
+
+    if (tx_local && rx_local) {
+        return blend_propagation_configs(sanitize_model_config(tx_config.propagation),
+                                         sanitize_model_config(rx_config.propagation));
+    }
+
+    return tx_local ? sanitize_model_config(tx_config.propagation)
+                    : sanitize_model_config(rx_config.propagation);
+}
 
 double sample_normal_db(double sigma_db) { // function start
     if (sigma_db <= 0.0) return 0.0; // condition check
@@ -337,11 +504,12 @@ double sample_normal_db(double sigma_db) { // function start
 // - Optional comms-mode losses (LOS/BLOS/SATCOM/TROPOSCATTER)
 // - Environmental attenuation (rain, humidity, gas, wind, sea)
 // - Optional shadowing/fading
-double compute_path_loss(const Position& a, const Position& b, // statement
-                         const RadioConfig& tx_config, // statement
-                         const RadioConfig& rx_config, // statement
-                         const PropagationModelConfig& config) { // statement
+PathLossBreakdown compute_path_loss(const Position& a, const Position& b, // statement
+                                    const RadioConfig& tx_config, // statement
+                                    const RadioConfig& rx_config, // statement
+                                    const PropagationModelConfig& config) { // statement
     (void)rx_config; // statement
+    PathLossBreakdown out; // statement
     double distance = std::max(distance_2d(a, b), 1.0); // assign or declare
     double freq_hz = tx_config.frequency_hz > 0.0 ? tx_config.frequency_hz : 1.0; // assign or declare
 
@@ -380,6 +548,7 @@ double compute_path_loss(const Position& a, const Position& b, // statement
             double horizon_a = std::sqrt(2.0 * EARTH_RADIUS * alt_a); // assign or declare
             double horizon_b = std::sqrt(2.0 * EARTH_RADIUS * alt_b); // assign or declare
             double max_los_dist = horizon_a + horizon_b; // assign or declare
+            out.los_horizon_distance_m = max_los_dist; // assign or declare
 
             if (distance > max_los_dist) { // condition check
                 switch (tx_config.comms_mode) { // switch on value
@@ -411,6 +580,9 @@ double compute_path_loss(const Position& a, const Position& b, // statement
         constexpr double g = 9.80665;       // m/s^2
         constexpr double R = 287.05;        // J/(kg*K)
         constexpr double T_MIN = 216.65;    // K (lower stratosphere clamp)
+        constexpr double P_REF = 101325.0;  // Pa
+        constexpr double T_REF = 288.15;    // K
+        constexpr double GAS_TEMP_EXP = 0.75;
 
         double distance_km = distance / 1000.0; // assign or declare
         double freq_ghz = std::max(freq_hz / 1e9, 0.1); // assign or declare
@@ -421,11 +593,13 @@ double compute_path_loss(const Position& a, const Position& b, // statement
         double h = std::max((a.altitude + b.altitude) * 0.5, 0.0); // assign or declare
         double T = std::max(T0 - L * h, T_MIN); // assign or declare
         double P = P0 * std::pow(T / T0, g / (R * L)); // assign or declare
-        double density_ratio = (P * T0) / (P0 * T); // assign or declare
+        double density_ratio = (P / T) / (P_REF / T_REF); // assign or declare
+        double temperature_response = std::pow(T_REF / T, GAS_TEMP_EXP); // assign or declare
 
         double gas_db_per_km = config.gas_attenuation_db_per_km_at_1ghz * // statement
                                std::pow(freq_ghz, config.gas_attenuation_freq_exponent) * // statement
                                density_ratio * // statement
+                               temperature_response * // statement
                                (1.0 + config.humidity_percent * // statement
                                           config.humidity_attenuation_factor_per_percent); // statement
 
@@ -451,9 +625,11 @@ double compute_path_loss(const Position& a, const Position& b, // statement
             } // block end
         } // block end
         rain_db_per_km *= rain_coverage; // assign or declare
+        double rain_loss_db = rain_db_per_km * distance_km; // assign or declare
 
         double wind_db_per_km = config.wind_speed_mps * // statement
                                 config.wind_attenuation_db_per_km_per_mps; // statement
+        double wind_loss_db = wind_db_per_km * distance_km; // assign or declare
 
         double sea_db_per_km = 0.0; // assign or declare
         if (config.enable_sea_attenuation && // condition check
@@ -463,6 +639,8 @@ double compute_path_loss(const Position& a, const Position& b, // statement
 
         double env_db_per_km = gas_db_per_km + rain_db_per_km + wind_db_per_km + sea_db_per_km; // assign or declare
         total_loss += env_db_per_km * distance_km; // assign or declare
+        out.rain_attenuation_db = rain_loss_db; // assign or declare
+        out.wind_attenuation_db_per_km = wind_db_per_km; // assign or declare
     } // block end
 
     if (config.enable_shadowing) { // condition check
@@ -472,7 +650,8 @@ double compute_path_loss(const Position& a, const Position& b, // statement
         total_loss += sample_normal_db(config.fading_sigma_db); // assign or declare
     } // block end
 
-    return total_loss; // return value
+    out.total_loss_db = total_loss; // assign or declare
+    return out; // return value
 } // block end
 
 // Evaluate a full link budget between sender and receiver.
@@ -509,7 +688,11 @@ LinkBudget evaluate_link(const Position& sender_pos, const Position& receiver_po
     lb.beam_ok = beam_allows(sender_pos, receiver_pos, tx_config, config, use_scan_timing) && // statement
                  beam_allows(receiver_pos, sender_pos, rx_config, config, use_scan_timing); // statement
 
-    lb.path_loss_db = compute_path_loss(sender_pos, receiver_pos, tx_config, rx_config, config); // assign or declare
+    PathLossBreakdown loss = compute_path_loss(sender_pos, receiver_pos, tx_config, rx_config, config); // assign or declare
+    lb.path_loss_db = loss.total_loss_db; // assign or declare
+    lb.rain_attenuation_db = loss.rain_attenuation_db; // assign or declare
+    lb.wind_attenuation_db_per_km = loss.wind_attenuation_db_per_km; // assign or declare
+    lb.los_horizon_distance_m = loss.los_horizon_distance_m; // assign or declare
     if (config.enable_fixed_path_loss_override && tx_config.fixed_path_loss_db > 0.0) { // condition check
         lb.path_loss_db = tx_config.fixed_path_loss_db; // assign or declare
     } // block end
@@ -519,6 +702,7 @@ LinkBudget evaluate_link(const Position& sender_pos, const Position& receiver_po
         tx_config.antenna.polarization != rx_config.antenna.polarization) { // statement
         pol_loss_db = config.polarization_mismatch_loss_db; // assign or declare
     } // block end
+    lb.polarization_loss_db = pol_loss_db; // assign or declare
 
     double tx_power_dbm = tx_config.tx_power_dbm - tx_config.power_degradation_db; // assign or declare
     if (tx_config.tx_duty_cycle > 0.0 && tx_config.tx_duty_cycle < 1.0) { // condition check
@@ -551,8 +735,10 @@ LinkBudget evaluate_link(const Position& sender_pos, const Position& receiver_po
 
     if (config.enable_noise_floor) {
         double bw = rx_bandwidth_hz(rx_config);
+        double receiver_temp_k = std::clamp(config.temperature_c + 273.15, 173.15, 373.15);
+        double thermal_offset_db = 10.0 * std::log10(receiver_temp_k / 290.0);
         lb.noise_floor_dbm =
-            -174.0 + 10.0 * std::log10(bw) + rx_config.receiver.noise_figure_db;
+            -174.0 + thermal_offset_db + 10.0 * std::log10(bw) + rx_config.receiver.noise_figure_db;
 
         // Soft detuning increases effective noise as frequency offset grows.
         lb.noise_floor_dbm += freq_eval.detune_noise_db;
@@ -571,10 +757,15 @@ LinkBudget evaluate_link(const Position& sender_pos, const Position& receiver_po
     }
 
 
+    double required_snr = tx_config.required_snr_override // statement
+                              ? tx_config.required_snr_db // statement
+                              : default_required_snr_db(tx_config.modulation_scheme,
+                                                        tx_config.bandwidth_hz > 0.0
+                                                            ? tx_config.bandwidth_hz
+                                                            : rx_bandwidth_hz(tx_config)); // statement
+    lb.required_snr_threshold_db = required_snr; // assign or declare
+
     if (config.enable_snr_threshold && config.enable_noise_floor) { // condition check
-        double required_snr = tx_config.required_snr_override // statement
-                                  ? tx_config.required_snr_db // statement
-                                  : default_required_snr_db(tx_config.modulation_scheme); // statement
         lb.snr_ok = lb.snr_db >= required_snr; // assign or declare
     } else { // statement
         lb.snr_ok = true; // assign or declare
@@ -609,7 +800,7 @@ void PropagationModelImpl::updateRadioPosition(Radiolib* radio, const Position& 
 // by codex: configure model behavior/features.
 void PropagationModelImpl::setConfig(const PropagationModelConfig& config) { // function start
     std::lock_guard<std::mutex> lock(mutex_); // statement
-    config_ = config; // assign or declare
+    config_ = sanitize_model_config(config); // assign or declare
 } // block end
 
 // by codex: read current model config.
@@ -637,7 +828,8 @@ void PropagationModelImpl::transmit(Radiolib* sender, const std::vector<std::byt
         RadioConfig rx_config = receiver->getConfiguration();
         if (rx_config.mode == RadioMode::TRANSMITTER_ONLY) continue;
 
-        LinkBudget lb = evaluate_link(sender_pos, entry.pos, tx_config, rx_config, config_, false);
+        PropagationModelConfig link_config = resolve_propagation_config(tx_config, rx_config, config_);
+        LinkBudget lb = evaluate_link(sender_pos, entry.pos, tx_config, rx_config, link_config, false);
         if (!lb.link_ok) {
             continue;
         }
@@ -655,6 +847,15 @@ void PropagationModelImpl::transmit(Radiolib* sender, const std::vector<std::byt
             report.noise_floor_dbm = lb.noise_floor_dbm;
             report.snr_db = lb.snr_db;
             report.frequency_hz = tx_config.frequency_hz + lb.doppler_hz;
+            report.rain_attenuation_db = lb.rain_attenuation_db;
+            report.wind_attenuation_db_per_km = lb.wind_attenuation_db_per_km;
+            report.los_horizon_distance_m = lb.los_horizon_distance_m;
+            report.polarization_loss_db = lb.polarization_loss_db;
+            report.required_snr_threshold_db = lb.required_snr_threshold_db;
+            report.frequency_match = lb.frequency_match;
+            report.range_ok = lb.range_ok;
+            report.sensitivity_ok = lb.sensitivity_ok;
+            report.squelch_ok = lb.squelch_ok;
             rx_impl->receive(data, report);
         }
     }
@@ -697,6 +898,11 @@ std::vector<ScanHit> PropagationModelImpl::radiolibscan(Radiolib* scanner) {
         hit.is_footprint = true;
         hit.heading_deg = normalize_deg(scanner_cfg.heading_deg);
         hit.beamwidth_deg = scanner_cfg.antenna.beamwidth_deg;
+        hit.rain_attenuation_db = 0.0;
+        hit.wind_attenuation_db_per_km = 0.0;
+        hit.los_horizon_distance_m = 0.0;
+        hit.polarization_loss_db = 0.0;
+        hit.required_snr_threshold_db = 0.0;
 
         results.push_back(hit);
         return results;
@@ -711,9 +917,10 @@ std::vector<ScanHit> PropagationModelImpl::radiolibscan(Radiolib* scanner) {
         RadioConfig candidate_tx_cfg = candidate_tx->getConfiguration();
         if (candidate_tx_cfg.mode == RadioMode::RECEIVER_ONLY) continue;
 
+        PropagationModelConfig link_config = resolve_propagation_config(candidate_tx_cfg, scanner_cfg, config_);
         LinkBudget lb = evaluate_link(entry.pos, scanner_pos,
                                       candidate_tx_cfg, scanner_cfg,
-                                      config_, config_.enable_scan_timing);
+                                      link_config, link_config.enable_scan_timing);
 
         if (!lb.frequency_match) continue;
         if (config_.enable_network_gate_in_scan && !lb.network_match) continue;
@@ -736,6 +943,11 @@ std::vector<ScanHit> PropagationModelImpl::radiolibscan(Radiolib* scanner) {
         hit.rx_power_dbm = lb.rx_power_dbm;
         hit.noise_floor_dbm = lb.noise_floor_dbm;
         hit.snr_db = lb.snr_db;
+        hit.rain_attenuation_db = lb.rain_attenuation_db;
+        hit.wind_attenuation_db_per_km = lb.wind_attenuation_db_per_km;
+        hit.los_horizon_distance_m = lb.los_horizon_distance_m;
+        hit.polarization_loss_db = lb.polarization_loss_db;
+        hit.required_snr_threshold_db = lb.required_snr_threshold_db;
 
         hit.network_match = lb.network_match;
         hit.frequency_match = lb.frequency_match;
@@ -758,14 +970,16 @@ std::vector<ScanHit> PropagationModelImpl::radiolibscan(Radiolib* scanner) {
 bool PropagationModelImpl::canCommunicate(const Position& sender_pos, const Position& receiver_pos, // statement
                                           const RadioConfig& tx_config, // statement
                                           const RadioConfig& rx_config) const { // statement
-    LinkBudget lb = evaluate_link(sender_pos, receiver_pos, tx_config, rx_config, config_, false); // assign or declare
+    PropagationModelConfig link_config = resolve_propagation_config(tx_config, rx_config, config_);
+    LinkBudget lb = evaluate_link(sender_pos, receiver_pos, tx_config, rx_config, link_config, false); // assign or declare
     return lb.link_ok; // return value
 } // block end
 
 double PropagationModelImpl::computePathLoss(const Position& a, const Position& b, // statement
                                              const RadioConfig& tx_config, // statement
                                              const RadioConfig& rx_config) const { // statement
-    return compute_path_loss(a, b, tx_config, rx_config, config_); // return value
+    PropagationModelConfig link_config = resolve_propagation_config(tx_config, rx_config, config_);
+    return compute_path_loss(a, b, tx_config, rx_config, link_config).total_loss_db; // return value
 } // block end
 
 // Factory

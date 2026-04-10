@@ -17,7 +17,11 @@
 #include <QMenu>                                  // For context menus
 #include <QListWidget>                            // For list displays
 #include <QJsonArray>                             // For JSON array handling
-#include "core/Hierarchy/hierarchy.h"             // For hierarchy data structure
+#ifndef GUI_UNIT_TEST
+#include "core/Hierarchy/hierarchy.h"
+#else
+class Hierarchy;
+#endif
 #include "qboxlayout.h"                           // For layout management
 
 // %%% Forward Declarations %%%
@@ -77,7 +81,7 @@ public:
     QString getMainID() const { return mainID; }
     QString getName() const { return Name; }
     QString getConnectedID() const { return ConnectedID; }
-
+    static void runUnitTestsOnce();
 public slots:
     // %%% Data Initialization %%%
     /* Initialize inspector with specific data */

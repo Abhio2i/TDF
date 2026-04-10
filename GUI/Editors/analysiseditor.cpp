@@ -190,7 +190,6 @@ void AnalysisEditor::parseAnalysisJson(const QJsonObject& root)
     int idx = 0;
     for (const QString& key : teams.keys()) {
         QJsonObject t = teams.value(key).toObject();
-
         TeamMetrics m;
         QJsonObject met = t.value("metrics").toObject();
         m.successProbability  = met.value("successProbability").toDouble(80);
@@ -228,7 +227,6 @@ void AnalysisEditor::parseAnalysisJson(const QJsonObject& root)
         ld.enemyLosses    = toDoubleList(lv.value("enemyLosses").toArray());
         for (const auto& c : lv.value("categories").toArray())
             ld.categories << c.toString();
-
         m_teamNames  << key;
         m_teamMetrics[key]   = m;
         m_teamTimelines[key] = tl;
@@ -240,10 +238,8 @@ void AnalysisEditor::parseAnalysisJson(const QJsonObject& root)
                                 : colorForTeam(key, idx);
         idx++;
     }
-
     if (!m_teamNames.isEmpty())
         m_selectedTeam = m_teamNames.first();
-
     rebuildAllCharts();
     QMessageBox::information(this, "File Loaded",
                              QString("Analysis loaded!\nMission: %1\nTeams found: %2")
@@ -312,6 +308,7 @@ void AnalysisEditor::parseScenarioJson(const QJsonObject& root)
         info << QString("%1: %2 assets").arg(t).arg(assetCount[t]);
     QMessageBox::information(this,"File Loaded",
                              "Scenario loaded!\n\n" + info.join("\n"));
+
 }
 
 /* =========================================================================
@@ -340,7 +337,6 @@ void AnalysisEditor::rebuildAllCharts()
     rebuildRow2Chart();
     rebuildSuccessChart();
     rebuildLossesChart();
-
     /* ── Sync loaded data into ReportsEditor ── */
     if (!m_reportsPage || m_teamNames.isEmpty()) return;
 
@@ -374,17 +370,14 @@ void AnalysisEditor::rebuildAllCharts()
         };
 
         etObj["detection"]  = listToObj(tl.timePoints, tl.detection);
-
         QList<double> engT = tl.engagementTimePoints.isEmpty()
                                  ? tl.timePoints : tl.engagementTimePoints;
         etObj["engagement"] = listToObj(engT, tl.engagement);
-
         QList<double> dmgT = tl.damageTimePoints.isEmpty()
                                  ? tl.timePoints : tl.damageTimePoints;
         etObj["damage"]     = listToObj(dmgT, tl.damage);
 
         t["engagementTimeline"] = etObj;
-
         /* lossesVsEngagement */
         const LossesData& ld = m_teamLosses[team];
         QJsonObject lvObj;
@@ -396,17 +389,10 @@ void AnalysisEditor::rebuildAllCharts()
         lvObj["friendlyLosses"] = fl;
         lvObj["enemyLosses"]    = el;
         t["lossesVsEngagement"] = lvObj;
-
         teamsObj[team] = t;
     }
-
     QJsonObject root;
     root["teams"] = teamsObj;
-    /* pass missionName / missionDate if you store them in AnalysisEditor,
-       otherwise ReportsEditor shows "Mission Summary" as fallback */
-    // root["missionName"] = m_missionName;  // add if you store this
-    // root["missionDate"] = m_missionDate;  // add if you store this
-
     m_reportsPage->loadFromJson(root);
 }
 
@@ -451,7 +437,6 @@ QWidget* AnalysisEditor::buildMissionMetricsPanel()
     m_metricsVL = new QVBoxLayout(box);
     m_metricsVL->setSpacing(2); m_metricsVL->setContentsMargins(6,12,6,4);
     m_metricsWidget = box;
-
     /* build initial default (2 teams placeholder) */
     rebuildMetricsPanel();
     return box;
@@ -498,16 +483,13 @@ void AnalysisEditor::rebuildMetricsPanel()
     table->verticalHeader()->setVisible(false);
     table->setShowGrid(false);
     table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
-
     /* compact row height */
     table->verticalHeader()->setDefaultSectionSize(38);
     table->verticalHeader()->setMinimumSectionSize(38);
-
     /* header labels */
     QStringList hdrLabels; hdrLabels << "Metric";
     for (const QString& t : teams) hdrLabels << t;
     table->setHorizontalHeaderLabels(hdrLabels);
-
     /* style */
     table->setStyleSheet(
         "QTableWidget{"
@@ -520,7 +502,6 @@ void AnalysisEditor::rebuildMetricsPanel()
         "QScrollBar:horizontal{background:#0d2030;height:5px;}"
         "QScrollBar::handle:horizontal{background:#2a6a9a;border-radius:2px;}"
         "QScrollBar::add-line:horizontal,QScrollBar::sub-line:horizontal{width:0;}");
-
     /* set team name header colors */
     for (int c = 0; c < teams.size(); ++c) {
         QColor col = m_teamNames.isEmpty()
@@ -531,7 +512,6 @@ void AnalysisEditor::rebuildMetricsPanel()
         hItem->setTextAlignment(Qt::AlignCenter);
         table->setHorizontalHeaderItem(c+1, hItem);
     }
-
     /* fill rows */
     for (int r = 0; r < rows; ++r) {
         /* col 0 — metric label */
@@ -539,7 +519,6 @@ void AnalysisEditor::rebuildMetricsPanel()
         lbl->setForeground(QColor("#cccccc"));
         lbl->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         table->setItem(r, 0, lbl);
-
         /* team value columns */
         for (int c = 0; c < teams.size(); ++c) {
             const QString& team = teams[c];
@@ -558,32 +537,26 @@ void AnalysisEditor::rebuildMetricsPanel()
             cell->setTextAlignment(Qt::AlignCenter);
             cell->setFont(QFont("Segoe UI", 11, QFont::Bold));
             table->setItem(r, c+1, cell);
-
             /* store for refresh */
             if (!m_teamNames.isEmpty()) {
                 /* use QLabel stored in metricLabels for compat — skip for table */
             }
         }
     }
-
     /* column widths */
     table->setColumnWidth(0, 90);
     for (int c = 1; c <= teams.size(); ++c)
         table->setColumnWidth(c, 75);
-
     /* expand to fill panel, scrollbar always at bottom of content */
     table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     table->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     table->horizontalHeader()->setStretchLastSection(false);
-
     m_metricsVL->addWidget(table, 1);
 }
-
 /* =========================================================================
    refreshAllMetricLabels
    ========================================================================= */
-
 void AnalysisEditor::refreshAllMetricLabels()
 {
     for (const QString& team : m_teamNames) {
@@ -610,7 +583,6 @@ QWidget* AnalysisEditor::buildProbabilityCalculatorPanel()
                 "color:white;font-size:13px;font-weight:bold;margin-top:8px;padding-top:10px;}"
                 "QGroupBox::title{subcontrol-origin:margin;left:10px;padding:0 6px;color:%3;}")
             .arg(PANEL_BG,BORDER_COL,ACCENT_COL));
-
     QString iS="QLineEdit,QComboBox{background:#0d2030;color:white;border:1px solid #2a4a6a;"
                  "border-radius:3px;padding:3px 6px;font-size:12px;}"
                  "QComboBox::drop-down{border:none;}"
@@ -635,7 +607,6 @@ QWidget* AnalysisEditor::buildProbabilityCalculatorPanel()
     m_enemyStrengthCombo=new QComboBox(); m_enemyStrengthCombo->addItems({"Low","Moderate","High","Very High"});
     m_enemyStrengthCombo->setCurrentText("High"); m_enemyStrengthCombo->setStyleSheet(iS); m_enemyStrengthCombo->setFixedHeight(26);
     fl->addRow(mkL("Enemy Strength:"),m_enemyStrengthCombo);
-
     m_warheadTypeCombo=new QComboBox(); m_warheadTypeCombo->addItems({"Anti-Ship Missile","Torpedo","Guided Bomb","Cruise Missile"});
     m_warheadTypeCombo->setStyleSheet(iS); m_warheadTypeCombo->setFixedHeight(26);
     fl->addRow(mkL("Warhead Type:"),m_warheadTypeCombo);
@@ -668,17 +639,14 @@ QChartView* AnalysisEditor::buildEngagementTimelineChart()
     QChart* chart=new QChart();
     chart->setTitle("Timeline of Engagements — All Teams");
     applyDarkChart(chart);
-
     /* no default data — empty chart until file loaded */
     chart->setTitle("Timeline of Engagements");
-
     QValueAxis* axX=new QValueAxis(); axX->setRange(0,40); axX->setTickCount(9);
     styleAx(axX,"Time (minutes)");
     QValueAxis* axY=new QValueAxis(); axY->setRange(0,15); axY->setTickCount(6); styleAx(axY);
     chart->addAxis(axX,Qt::AlignBottom); chart->addAxis(axY,Qt::AlignLeft);
     for(auto* s:chart->series()){s->attachAxis(axX);s->attachAxis(axY);}
     chart->legend()->setVisible(true); chart->legend()->setAlignment(Qt::AlignBottom);
-
     QChartView* v=new QChartView(chart); v->setRenderHint(QPainter::Antialiasing);
     v->setStyleSheet("background:transparent;border:2px solid #2a4a7a;border-radius:6px;");
     m_engagementChart1=v;
@@ -694,13 +662,11 @@ QWidget* AnalysisEditor::buildCombinedTimelineChart()
     container->setStyleSheet("background:transparent;");
     QVBoxLayout* vl = new QVBoxLayout(container);
     vl->setContentsMargins(0,0,0,0); vl->setSpacing(4);
-
     /* selector bar */
     m_combinedSelectorBar = new QWidget();
     m_combinedSelectorBar->setStyleSheet("background:transparent;");
     QHBoxLayout* hl = new QHBoxLayout(m_combinedSelectorBar);
     hl->setContentsMargins(4,2,4,2); hl->setSpacing(6);
-
     /* All button */
     m_combinedAllBtn = new QPushButton("All Teams");
     m_combinedAllBtn->setFixedHeight(24);
@@ -708,13 +674,10 @@ QWidget* AnalysisEditor::buildCombinedTimelineChart()
     connect(m_combinedAllBtn, &QPushButton::clicked, this, [=](){ switchCombinedFilter(""); });
     hl->addWidget(m_combinedAllBtn);
     hl->addStretch();
-
     vl->addWidget(m_combinedSelectorBar, 0);
-
     /* chart */
     QChartView* cv = buildEngagementTimelineChart();
     vl->addWidget(cv, 1);
-
     /* style All as active initially */
     switchCombinedFilter("");
     return container;
@@ -726,7 +689,6 @@ QWidget* AnalysisEditor::buildCombinedTimelineChart()
 void AnalysisEditor::rebuildCombinedSelectorBar()
 {
     if (!m_combinedSelectorBar) return;
-
     QLayout* old = m_combinedSelectorBar->layout();
     QLayoutItem* item;
     while ((item = old->takeAt(0))) {
@@ -735,17 +697,14 @@ void AnalysisEditor::rebuildCombinedSelectorBar()
     }
     m_combinedTeamButtons.clear();
     m_combinedAllBtn = nullptr;
-
     QHBoxLayout* hl = qobject_cast<QHBoxLayout*>(old);
     if (!hl) return;
-
     /* All button */
     m_combinedAllBtn = new QPushButton("All");
     m_combinedAllBtn->setFixedHeight(24);
     m_combinedAllBtn->setCursor(Qt::PointingHandCursor);
     connect(m_combinedAllBtn, &QPushButton::clicked, this, [=](){ switchCombinedFilter(""); });
     hl->addWidget(m_combinedAllBtn);
-
     /* one button per team */
     for (const QString& team : m_teamNames) {
         QColor col = m_teamColors.value(team, QColor("#aaaaaa"));
@@ -763,7 +722,6 @@ void AnalysisEditor::rebuildCombinedSelectorBar()
         hl->addWidget(btn);
     }
     hl->addStretch();
-
     /* default: show all */
     switchCombinedFilter("");
 }
@@ -783,7 +741,6 @@ void AnalysisEditor::switchCombinedFilter(const QString& teamName)
         "QPushButton{background:#1a2a3a;color:#777;border:1px solid #2a4a6a;"
         "  border-radius:4px;font-size:11px;padding:2px 10px;}"
         "QPushButton:hover{color:white;}";
-
     if (m_combinedAllBtn)
         m_combinedAllBtn->setStyleSheet(teamName.isEmpty() ? allActive : allInactive);
 
@@ -805,7 +762,6 @@ void AnalysisEditor::switchCombinedFilter(const QString& teamName)
                       .arg(col.darker(160).name(), col.name())
             );
     }
-
     /* rebuild chart with filter */
     rebuildCombinedEngagementChart();
 }
@@ -824,21 +780,17 @@ void AnalysisEditor::rebuildCombinedEngagementChart()
 
     double maxY = 5, maxX = 40;
     int idx = 0;
-
     for (const QString& team : m_teamNames) {
         if (!teamsToShow.contains(team)) { idx++; continue; }
         TimelineData& tl = m_teamTimelines[team];
         if (tl.engagement.isEmpty()) { idx++; continue; }
-
         QColor col = m_teamColors.value(team, paletteColor(idx));
         QLineSeries* s = new QLineSeries();
         s->setName(team);
         s->setPen(QPen(col, 2));
-
         QList<double>& engTimes = tl.engagementTimePoints.isEmpty()
                                       ? tl.timePoints
                                       : tl.engagementTimePoints;
-
         int n = qMin(engTimes.size(), tl.engagement.size());
         for (int i = 0; i < n; ++i) {
             s->append(engTimes.at(i), tl.engagement.at(i));
@@ -921,13 +873,11 @@ QWidget* AnalysisEditor::buildSelectableTimelineChart()
         };
 
         updateStyle();
-
         connect(btn, &QPushButton::toggled, this, [=](bool checked) {
             m_seriesVisible[name] = checked;
             updateStyle();
             rebuildRow2Chart();
         });
-
         m_seriesButtons[name] = btn;
         return btn;
     };
@@ -1077,7 +1027,6 @@ void AnalysisEditor::rebuildRow2Chart()
             }
             chart->addSeries(s);
         }
-
         // Engagement
         if (m_seriesVisible.value("Engagement", true) && !tl.engagement.isEmpty()) {
             QList<double>& engTimes = tl.engagementTimePoints.isEmpty()
@@ -1123,7 +1072,6 @@ void AnalysisEditor::rebuildRow2Chart()
         QList<double> eV  = {2,3,4,5,6,6,7,7,8,8,9};
         QList<double> dmV = {1,2,2,3,3,4,4,5,5,5,6};
         maxX = 512;
-
         struct DummySeries {
             QString        name;
             QList<double>* vals;
@@ -1297,12 +1245,10 @@ void AnalysisEditor::rebuildLossesChart()
         bs->append(set); idx++;
     }
     chart->addSeries(bs);
-
     if(cats.isEmpty()){ cats.clear(); cats << "Low" << "Moderate" << "High"; }
     QBarCategoryAxis* axX=new QBarCategoryAxis();
     for(const QString& c:cats) axX->append(c);
     axX->setLabelsBrush(QBrush(QColor("#cccccc"))); axX->setLinePen(QPen(QColor("#2a4a6a"))); axX->setLabelsFont(QFont("Segoe UI",8));
-
     double yMax=static_cast<int>((maxVal+1)/2.0+1)*2+2;
     QValueAxis* axY=new QValueAxis(); axY->setRange(0,yMax); axY->setTickCount(5); styleAx(axY);
     chart->addAxis(axX,Qt::AlignBottom); chart->addAxis(axY,Qt::AlignLeft);

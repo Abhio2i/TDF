@@ -325,14 +325,14 @@ void ScriptEngine::renderscene(){
 // Get a single entity by ID from AngelScript
 Entity* ScriptEngine::getEntityById(const std::string &id)
 {
-    if (!hierarchy || !hierarchy->Entities) {
+    if (!hierarchy ) {
         qDebug() << "[ERROR] Hierarchy not initialized!";
         return nullptr;
     }
 
     // ✅ Master key access: use unordered_map directly
-    auto it = hierarchy->Entities->find(id);
-    if (it != hierarchy->Entities->end()) {
+    auto it = hierarchy->Entities.find(id);
+    if (it != hierarchy->Entities.end()) {
         Entity* ent = it->second;
         qDebug() << "[OK] getEntityById found Entity:" << QString::fromStdString(ent->Name)
                  << "for ID:" << QString::fromStdString(id);
@@ -346,7 +346,7 @@ Entity* ScriptEngine::getEntityById(const std::string &id)
 
 // Return all entities filtered by type
 CScriptArray* ScriptEngine::findEntitiesByType(int typeId) {
-    if (!hierarchy || !hierarchy->Entities) return nullptr;
+    if (!hierarchy ) return nullptr;
 
     // Create array<Entity@> type for AngelScript
     asITypeInfo* arrayEntityType = engine->GetTypeInfoByDecl("array<Entity@>");
@@ -358,7 +358,7 @@ CScriptArray* ScriptEngine::findEntitiesByType(int typeId) {
     std::ostringstream names;
     size_t count = 0;
 
-    for (auto& pair : *(hierarchy->Entities)) {
+    for (auto& pair : (hierarchy->Entities)) {
         Entity* ent = pair.second;
         if (ent && ent->type == typeId) {
             arr->InsertLast(&ent);
@@ -402,7 +402,7 @@ CScriptArray* ScriptEngine::findEntitiesByType(int typeId) {
 
 // Return all entity pointers
 CScriptArray* ScriptEngine::getAllEntities() {
-    if (!hierarchy || !hierarchy->Entities) return nullptr;
+    if (!hierarchy ) return nullptr;
 
     asITypeInfo* arrayEntityType = engine->GetTypeInfoByDecl("array<Entity@>");
     if (!arrayEntityType) return nullptr;
@@ -410,7 +410,7 @@ CScriptArray* ScriptEngine::getAllEntities() {
     CScriptArray* (*CreateArray)(asITypeInfo*, asUINT) = &CScriptArray::Create;
     CScriptArray* arr = CreateArray(arrayEntityType, 0);
 
-    for (auto& pair : *(hierarchy->Entities)) {
+    for (auto& pair : (hierarchy->Entities)) {
         Entity* ent = pair.second;
         arr->InsertLast(&ent);
     }
@@ -421,7 +421,7 @@ CScriptArray* ScriptEngine::getAllEntities() {
 
 // Return all IDs as strings
 CScriptArray* ScriptEngine::getAllEntityIds() {
-    if (!hierarchy || !hierarchy->Entities) return nullptr;
+    if (!hierarchy ) return nullptr;
 
     asITypeInfo* arrayStringType = engine->GetTypeInfoByDecl("array<string>");
     if (!arrayStringType) return nullptr;
@@ -429,7 +429,7 @@ CScriptArray* ScriptEngine::getAllEntityIds() {
     CScriptArray* (*CreateArray)(asITypeInfo*, asUINT) = &CScriptArray::Create;
     CScriptArray* arr = CreateArray(arrayStringType, 0);
 
-    for (auto& pair : *(hierarchy->Entities)) {
+    for (auto& pair : (hierarchy->Entities)) {
         std::string id = pair.first;
         arr->InsertLast(&id);
     }
@@ -459,7 +459,7 @@ void ScriptEngine::renameEntity(const std::string& id, const std::string& newNam
     ent->Name = newName; // Update name
 
     // Reflect change on UI using Hierarchy signals
-    if (hierarchy->Entities->find(id) != hierarchy->Entities->end()) {
+    if (hierarchy->Entities.find(id) != hierarchy->Entities.end()) {
         emit hierarchy->entityRenamed(QString::fromStdString(id), QString::fromStdString(newName));
     }
 
@@ -856,8 +856,8 @@ void ScriptEngine::generatePDFReport(const std::string &filePath)
 
     painter.setFont(QFont("Arial", 11));
 
-    int entityCount = (hierarchy && hierarchy->Entities)
-                          ? hierarchy->Entities->size()
+    int entityCount = (hierarchy )
+                          ? hierarchy->Entities.size()
                           : 0;
 
     drawLine("Total Simulation Entities: " + QString::number(entityCount));
@@ -870,7 +870,7 @@ void ScriptEngine::generatePDFReport(const std::string &filePath)
         drawLine("Simulation Entity Details");
 
         painter.setFont(QFont("Arial", 11));
-        for (auto &pair : *(hierarchy->Entities)) {
+        for (auto &pair : (hierarchy->Entities)) {
             Entity *ent = pair.second;
             if (!ent) continue;
 

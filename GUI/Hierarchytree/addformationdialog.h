@@ -30,6 +30,8 @@ public:
     QString getFormationType() const;
     QList<QVariantMap> getAllies() const;
     int getAlliesCount() const;
+    static void runUnitTestsOnce();
+
 
 private slots:
     void onMothershipChanged(int index);

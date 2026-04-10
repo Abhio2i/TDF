@@ -32,6 +32,7 @@ public:
     // %%% Static Display Method %%%
     /* Show profile information dialog (convenience method) */
     static void showProfileInfo(QWidget *parent = nullptr);
+    static void runUnitTestsOnce();
 
 protected:
     // %%% Event Handler %%%

@@ -7,6 +7,7 @@
 //               Written by Arti Rajpoot
 //============================================================================
 #include "mainwindow.h"
+#include "core/core_test.h"
 #include "mainwindow-styles.h"
 #include <QDockWidget>
 #include <QVBoxLayout>
@@ -24,6 +25,13 @@
 #include <QStyleFactory>
 #include <QDesktopServices>
 #include <GUI/statusbar.h>
+#include "tests/menubartest/gui_menubar_test.h"
+#include <QTimer>
+#include "tests/designtoolbartest/gui_designtoolbar_test.h"
+#include "tests/runtimetoolbartest/gui_runtimetoolbar_test.h"
+#include "tests/hierarchytreetest/gui_hierarchytree_test.h"
+
+
 
 ScenarioConfig* MainWindow::scenarioconfig = nullptr;
 MainWindow* MainWindow::s_instance = nullptr;
@@ -58,6 +66,21 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     resize(1900, 1000);
     setupUI();
     setAttribute(Qt::WA_DeleteOnClose);
+    Core_Test coreTest;
+    // After menu bar is created and UI is ready, run MenuBar tests
+    QTimer::singleShot(500, this, [this]() {
+        if (mainMenuBar && databaseEditor && databaseEditor->console) {
+            runMenuBarTests(mainMenuBar, databaseEditor->console);
+        } else {
+            qDebug() << "Cannot run MenuBar tests: console not available";
+        }
+    });
+    QTimer::singleShot(1000, this, [this]() {
+        if (databaseEditor && databaseEditor->treeView && databaseEditor->console) {
+            runHierarchyTreeTests(databaseEditor->treeView, databaseEditor->console);
+        }
+    });
+
 }
 
 // Destructor
@@ -1040,6 +1063,14 @@ void MainWindow::switchEditor(const QString &editorKey)
         if (m_statusBar)
             m_statusBar->setFileName(scenarioEditor->lastSavedFilePath, scenarioEditor->hasUnsavedChanges);
         emit scenarioEditor->Activated();
+        // Run DesignToolBar tests
+        if (scenarioEditor && scenarioEditor->designToolBar) {
+            QTimer::singleShot(300, this, [this]() {
+                if (scenarioEditor && scenarioEditor->designToolBar && scenarioEditor->console) {
+                    runDesignToolBarTests(scenarioEditor->designToolBar, scenarioEditor->console);
+                }
+            });
+        }
         hideLoadingOverlay();
     }
 
@@ -1083,6 +1114,8 @@ void MainWindow::switchEditor(const QString &editorKey)
             m_statusBar->setFileName(missionEditor->lastSavedFilePath,
                                      missionEditor->hasUnsavedChanges);
         emit missionEditor->Activated();
+        QTimer::singleShot(200, missionEditor, &MissionEditor::runGUITests);
+
         hideLoadingOverlay();
     }
 
@@ -1208,6 +1241,15 @@ void MainWindow::switchEditor(const QString &editorKey)
         if (m_statusBar)
             m_statusBar->setFileName(runtimeEditor->lastSavedFilePath, runtimeEditor->hasUnsavedChanges);
         emit runtimeEditor->Activated();
+
+        // Run RuntimeToolBar tests
+        if (runtimeEditor && runtimeEditor->runtimeToolBar) {
+            QTimer::singleShot(300, this, [this]() {
+                if (runtimeEditor && runtimeEditor->runtimeToolBar && runtimeEditor->console) {
+                    runRuntimeToolBarTests(runtimeEditor->runtimeToolBar, runtimeEditor->console);
+                }
+            });
+        }
         hideLoadingOverlay();
     }
 
@@ -1227,13 +1269,13 @@ void MainWindow::switchEditor(const QString &editorKey)
         m_loadingLabel->setText("Loading Analysis Data...");
         QCoreApplication::processEvents();
         if (runtimeEditor && runtimeEditor->hierarchy) {
-            if (runtimeEditor->hierarchy->Platforms) {
+
                 int i = 0;
-                for (const auto& [key, entity] : *runtimeEditor->hierarchy->Platforms) {
+                for (const auto& [key, entity] : runtimeEditor->hierarchy->Platforms) {
                     if (entity) { } else { }
                     i++;
                 }
-            }
+
             QJsonObject analysisJson = runtimeEditor->hierarchy->loadAnalysisJson();
             if (!analysisJson.isEmpty()) {
                 analysisEditor->loadFromHierarchyJson(analysisJson);

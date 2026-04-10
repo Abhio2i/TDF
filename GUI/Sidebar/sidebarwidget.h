@@ -24,6 +24,7 @@ public:
     // Set active button by view name
     void setActiveButton(const QString &viewName);
     void setSensorsButtonVisible(bool visible);
+    static void runUnitTestsOnce();
 
 signals:
     // Signal view selection

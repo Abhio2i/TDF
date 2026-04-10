@@ -594,166 +594,6 @@ void HierarchyTree::entityRenamed(QString ID, QString name)
 }
 
 ContextMenu *HierarchyTree::getContextMenu() const { return contextMenu; }
-
-// void HierarchyTree::showContextMenu(const QPoint &pos)
-// {
-//     if (islib) return;
-//     QList<QTreeWidgetItem*> selectedItems = tree->selectedItems();
-//     if (selectedItems.size() > 1) {
-//         QMenu contextMenu(this);
-//         contextMenu.setStyleSheet(R"(
-//     QMenu {
-//         background-color: #1A3652;
-//         color: white;
-//         border: 1px solid #27446d;
-//         border-radius: 2px;
-//         font-size: 12px;
-//         padding: 4px 0;
-//     }
-//     QMenu::item {
-//         padding: 6px 20px 6px 8px;
-//         color: white;
-//         background-color: transparent;
-//         border: none;
-//         margin: 1px 4px;
-//     }
-//     QMenu::item:selected {
-//         background-color: #0078D4;
-//         color: white;
-//         border-radius: 2px;
-//     }
-//     QMenu::icon {
-//         margin-left: 4px;
-//         margin-right: 4px;
-//     }
-//     QMenu::item:disabled {
-//         color: #666666;
-//     }
-//     QMenu::separator {
-//         height: 1px;
-//         background-color: #27446d;
-//         margin: 4px 0;
-//     }
-// )");
-//         QAction *copyAction        = contextMenu.addAction(QIcon(":/icons/images/copy.png"),    "Copy");
-//         QAction *deleteAction      = contextMenu.addAction(QIcon(":/icons/images/delete.png"),  "Delete");
-//         QAction *setActiveAction   = contextMenu.addAction(QIcon(":/icons/images/enable.png"),  "Set Active");
-//         QAction *setInactiveAction = contextMenu.addAction(QIcon(":/icons/images/disable.png"),"Set Inactive");
-
-//         // ── Submenu: Add ──────────────────────────────────────────────────
-//         QMenu *addCompMenu = contextMenu.addMenu(QIcon(":/icons/images/add.png"), "Add");
-//         addCompMenu->setStyleSheet(contextMenu.styleSheet());
-//         QAction *addWeaponAction = addCompMenu->addAction(QIcon(":/icons/images/add.png"), "Add Weapon");
-//         QAction *addSensorAction = addCompMenu->addAction(QIcon(":/icons/images/add.png"), "Add Sensor");
-//         QAction *addIFFAction    = addCompMenu->addAction(QIcon(":/icons/images/add.png"),    "Add IFF");
-//         QAction *addRadioAction  = addCompMenu->addAction(QIcon(":/icons/images/add.png"),  "Add Radio");
-
-//         // ── Submenu: Set Team ─────────────────────────────────────────────
-//         QMenu *setTeamSubMenu = contextMenu.addMenu(QIcon(":/icons/images/seteam.png"), "Set Team");
-//         setTeamSubMenu->setStyleSheet(contextMenu.styleSheet());
-//         const QStringList teamsList = {"RedTeam", "BlueTeam", "GreenTeam", "YellowTeam",
-//                                        "GreyTeam", "AlphaTeam", "BetaTeam", "GammaTeam"};
-//         for (const QString& team : teamsList) {
-//             QAction *teamAction = setTeamSubMenu->addAction(team);
-//             connect(teamAction, &QAction::triggered, this, [=]() {
-//                 emit addTeamToEntitiesRequested(getSelectedEntities(), team);
-//             });
-//         }
-
-//         // ── Submenu: Set Category ─────────────────────────────────────────
-//         QMenu *setCategorySubMenu = contextMenu.addMenu(QIcon(":/icons/images/set.png"), "Set Category");
-//         setCategorySubMenu->setStyleSheet(contextMenu.styleSheet());
-//         const QStringList categoriesList = {"Aircraft", "Helicopter", "Ship", "Submarine", "Tank"};
-//         for (const QString& category : categoriesList) {
-//             QAction *categoryAction = setCategorySubMenu->addAction(category);
-//             connect(categoryAction, &QAction::triggered, this, [=]() {
-//                 emit setCategoryToEntitiesRequested(getSelectedEntities(), category);
-//             });
-//         }
-
-//         // ── Formation check ───────────────────────────────────────────────
-//         QAction *addFormationAction = nullptr;
-//         bool allArePlatformEntities = true;
-//         QList<QVariantMap> selectedEntities;
-
-//         for (QTreeWidgetItem* item : selectedItems) {
-//             QVariantMap data = item->data(0, Qt::UserRole).toMap();
-//             if (data["type"].toString() == "entity") {
-//                 QString parentId = data["parentId"].toString();
-//                 if (Items.contains(parentId)) {
-//                     QVariantMap parentData = Items[parentId]->data(0, Qt::UserRole).toMap();
-//                     if (parentData["type"].type() == QVariant::Map) {
-//                         QVariantMap typeData = parentData["type"].toMap();
-//                         if (typeData.contains("type") && typeData["type"].toString() == "option"
-//                             && typeData.contains("value")
-//                             && typeData["value"].toString() == "Platform") {
-//                             selectedEntities.append(data);
-//                             continue;
-//                         }
-//                     }
-//                 }
-//             }
-//             allArePlatformEntities = false;
-//             break;
-//         }
-
-//         if (allArePlatformEntities && selectedEntities.size() >= 2) {
-//             addFormationAction = addCompMenu->addAction(
-//                 QIcon(":/icons/images/add.png"), "Add Formation");
-//         }
-
-//         // ── Connects ──────────────────────────────────────────────────────
-//         connect(copyAction, &QAction::triggered, this, [=]() {
-//             QList<QVariantMap> sel = getSelectedEntities();
-//             if (!sel.isEmpty()) {
-//                 copiedItems = sel;
-//                 if (this->contextMenu) this->contextMenu->m_copiedItems = sel;
-//                 emit copyItemsRequested(sel);
-//             }
-//         });
-//         connect(deleteAction, &QAction::triggered, this, [=]() {
-//             if (QMessageBox::question(this, "Confirm Delete",
-//                                       "Are you sure you want to delete the selected items?",
-//                                       QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
-//                 removeSelectedEntities();
-//             }
-//         });
-//         connect(setActiveAction,   &QAction::triggered, this, [=]() {
-//             emit setEntitiesActiveRequested(getSelectedEntities(), true);
-//         });
-//         connect(setInactiveAction, &QAction::triggered, this, [=]() {
-//             emit setEntitiesActiveRequested(getSelectedEntities(), false);
-//         });
-//         connect(addWeaponAction, &QAction::triggered, this, [=]() {
-//             emit addWeaponToEntitiesRequested(getSelectedEntities());
-//         });
-//         connect(addSensorAction, &QAction::triggered, this, [=]() {
-//             emit addSensorToEntitiesRequested(getSelectedEntities());
-//         });
-//         connect(addIFFAction, &QAction::triggered, this, [=]() {
-//             emit addIFFToEntitiesRequested(getSelectedEntities());
-//         });
-//         connect(addRadioAction, &QAction::triggered, this, [=]() {
-//             emit addRadioToEntitiesRequested(getSelectedEntities());
-//         });
-//         if (addFormationAction) {
-//             connect(addFormationAction, &QAction::triggered, this, [=]() {
-//                 emit addFormationRequested(selectedEntities);
-//             });
-//         }
-
-//         contextMenu.exec(tree->viewport()->mapToGlobal(pos));
-
-//     } else {
-//         QTreeWidgetItem *item = tree->itemAt(pos);
-//         if (item) {
-//             contextMenu->setupMenu(item);
-//             contextMenu->exec(tree->viewport()->mapToGlobal(pos));
-//         }
-//     }
-// }
-
-
 void HierarchyTree::showContextMenu(const QPoint &pos)
 {
     if (islib) return;
@@ -795,7 +635,7 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
     }
 )");
 
-        // ── Pehle check karo sab Platform entities hain ya nahi ──────────
+        // ── Check karo sab Platform entities hain ya nahi ──────────────────
         bool allArePlatformEntities = true;
         QList<QVariantMap> selectedEntities;
 
@@ -805,6 +645,8 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
                 QString parentId = data["parentId"].toString();
                 if (Items.contains(parentId)) {
                     QVariantMap parentData = Items[parentId]->data(0, Qt::UserRole).toMap();
+
+                    // Case 1: Direct profile parent
                     if (parentData["type"].type() == QVariant::Map) {
                         QVariantMap typeData = parentData["type"].toMap();
                         if (typeData.contains("type") && typeData["type"].toString() == "option"
@@ -814,17 +656,33 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
                             continue;
                         }
                     }
+                    // Case 2: Folder parent — grandparent profile check karo
+                    else if (parentData["type"].toString() == "folder") {
+                        QString grandParentId = parentData["parentId"].toString();
+                        if (Items.contains(grandParentId)) {
+                            QVariantMap gpData = Items[grandParentId]->data(0, Qt::UserRole).toMap();
+                            if (gpData["type"].type() == QVariant::Map) {
+                                QVariantMap gpTypeData = gpData["type"].toMap();
+                                if (gpTypeData.contains("type") && gpTypeData["type"].toString() == "option"
+                                    && gpTypeData.contains("value")
+                                    && gpTypeData["value"].toString() == "Platform") {
+                                    selectedEntities.append(data);
+                                    continue;
+                                }
+                            }
+                        }
+                    }
                 }
             }
             allArePlatformEntities = false;
             break;
         }
 
-        // ── Har case mein Copy aur Delete ────────────────────────────────
+        // ── Har case mein Copy aur Delete ─────────────────────────────────
         QAction *copyAction   = contextMenu.addAction(QIcon(":/icons/images/copy.png"),   "Copy");
         QAction *deleteAction = contextMenu.addAction(QIcon(":/icons/images/delete.png"), "Delete");
 
-        // ── Sirf Platform entities hain to extra options ──────────────────
+        // ── Sirf Platform entities hain to extra options ───────────────────
         QAction *setActiveAction    = nullptr;
         QAction *setInactiveAction  = nullptr;
         QMenu   *addCompMenu        = nullptr;
@@ -838,20 +696,19 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
             setActiveAction   = contextMenu.addAction(QIcon(":/icons/images/enable.png"),  "Set Active");
             setInactiveAction = contextMenu.addAction(QIcon(":/icons/images/disable.png"), "Set Inactive");
 
-            // ── Submenu: Add ──────────────────────────────────────────────
             addCompMenu = contextMenu.addMenu(QIcon(":/icons/images/add.png"), "Add");
             addCompMenu->setStyleSheet(contextMenu.styleSheet());
-            addWeaponAction = addCompMenu->addAction(QIcon(":/icons/images/add.png"), "Add Weapon");
-            addSensorAction = addCompMenu->addAction(QIcon(":/icons/images/add.png"), "Add Sensor");
-            addIFFAction    = addCompMenu->addAction(QIcon(":/icons/images/add.png"), "Add IFF");
-            addRadioAction  = addCompMenu->addAction(QIcon(":/icons/images/add.png"), "Add Radio");
+            addWeaponAction = addCompMenu->addAction(QIcon(":/icons/images/bio-weapon.png"),     "Add Weapon");
+            addSensorAction = addCompMenu->addAction(QIcon(":/icons/images/database (1).png"),   "Add Sensor");
+            addIFFAction    = addCompMenu->addAction(QIcon(":/icons/images/identification.png"), "Add IFF");
+            addRadioAction  = addCompMenu->addAction(QIcon(":/icons/images/radio.png"),          "Add Radio");
 
             if (selectedEntities.size() >= 2) {
                 addFormationAction = addCompMenu->addAction(
                     QIcon(":/icons/images/add.png"), "Add Formation");
             }
 
-            // ── Submenu: Set Team ─────────────────────────────────────────
+            // ── Submenu: Set Team ──────────────────────────────────────────
             QMenu *setTeamSubMenu = contextMenu.addMenu(QIcon(":/icons/images/seteam.png"), "Set Team");
             setTeamSubMenu->setStyleSheet(contextMenu.styleSheet());
             const QStringList teamsList = {"RedTeam", "BlueTeam", "GreenTeam", "YellowTeam",
@@ -863,7 +720,7 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
                 });
             }
 
-            // ── Submenu: Set Category ─────────────────────────────────────
+            // ── Submenu: Set Category ──────────────────────────────────────
             QMenu *setCategorySubMenu = contextMenu.addMenu(QIcon(":/icons/images/set.png"), "Set Category");
             setCategorySubMenu->setStyleSheet(contextMenu.styleSheet());
             const QStringList categoriesList = {"Aircraft", "Helicopter", "Ship", "Submarine", "Tank"};
@@ -928,6 +785,7 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
         }
     }
 }
+
 /* Handle context menu event */
 void HierarchyTree::contextMenuEvent(QContextMenuEvent *event)
 {

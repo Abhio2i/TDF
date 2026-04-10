@@ -279,6 +279,8 @@ void RuntimeToolBar::createActions()
     simulationStatusLabel->setMinimumWidth(80);
     simulationStatusLabel->setAlignment(Qt::AlignCenter);
     simulationStatusLabel->setToolTip("Simulation Status");
+    simulationStatusLabel->setVisible(false);
+
 
     speedLayout->addWidget(speedIcon);
     speedLayout->addWidget(speedSlider);
@@ -452,6 +454,7 @@ void RuntimeToolBar::onTimeLabelClicked()
     dialog->deleteLater();
 }
 
+
 void RuntimeToolBar::setSimulationState(SimulationState state)
 {
     currentState = state;
@@ -464,18 +467,33 @@ void RuntimeToolBar::setSimulationState(SimulationState state)
             timer->start(1000);
         }
         blinkTimer->start(500);
+        simulationStatusLabel->setVisible(true);
+        // Icon pause wala — simulation chal raha hai
+        startAction->setIcon(QIcon(withWhiteBg(":/icons/images/pause.png")));
+        startAction->setText(tr("Pause"));
+        startAction->setChecked(true);
     } else if (state == PAUSED) {
         timer->stop();
         blinkTimer->start(1000);
+        simulationStatusLabel->setVisible(true);
+        // Icon play wala — simulation ruka hua hai, click karo to resume
+        startAction->setIcon(QIcon(withWhiteBg(":/icons/images/play.png")));
+        startAction->setText(tr("Start"));
+        startAction->setChecked(false);
     } else { // STOPPED
         timer->stop();
         blinkTimer->stop();
         blinkState = false;
+        simulationStatusLabel->setVisible(false);
         updateStatusDisplay();
+        // Icon play wala — simulation band hai
+        startAction->setIcon(QIcon(withWhiteBg(":/icons/images/play.png")));
+        startAction->setText(tr("Start"));
+        startAction->setChecked(false);
+        highlightAction(nullptr);
     }
 }
 
-// Update status display
 void RuntimeToolBar::updateStatusDisplay()
 {
     QString text;
@@ -489,6 +507,7 @@ void RuntimeToolBar::updateStatusDisplay()
         } else {
             styleSheet = RuntimeToolbarStyles::StatusRunning;
         }
+        simulationStatusLabel->setVisible(true);
         break;
 
     case PAUSED:
@@ -498,18 +517,17 @@ void RuntimeToolBar::updateStatusDisplay()
         } else {
             styleSheet = RuntimeToolbarStyles::StatusPaused;
         }
+        simulationStatusLabel->setVisible(true);
         break;
 
     case STOPPED:
-        text = "STOPPED";
-        styleSheet = RuntimeToolbarStyles::StatusStopped;
-        break;
+        simulationStatusLabel->setVisible(false);
+        return;
     }
 
     simulationStatusLabel->setText(text);
     simulationStatusLabel->setStyleSheet(styleSheet);
 }
-
 
 void RuntimeToolBar::updateSimulationStatus()
 {

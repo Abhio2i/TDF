@@ -24,7 +24,6 @@ CustomResizableOverlayDock::CustomResizableOverlayDock(const QString &title, QWi
     // REMOVED: qApp->installEventFilter(this)
     // Sirf apne aap pe lagao — global nahi
     installEventFilter(this);
-
     setupTitleBar(title);
 }
 
@@ -244,7 +243,6 @@ void CustomResizableOverlayDock::setupTitleBar(const QString &title)
     connect(m_lockButton, &QToolButton::clicked,
             this, &CustomResizableOverlayDock::onLockButtonClicked);
     layout->addWidget(m_lockButton);
-
     QToolButton *closeButton = new QToolButton(titleBar);
     closeButton->setText("✕");
     closeButton->setFixedSize(22, 22);
@@ -312,3 +310,4 @@ void CustomResizableOverlayDock::setLocked(bool locked)
     }
     emit lockToggled(m_locked);
 }
+

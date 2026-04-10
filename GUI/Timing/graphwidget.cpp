@@ -11,6 +11,9 @@
 #include <QHeaderView>                           // For table header
 #include <QTime>                                 // For time formatting
 #include <core/Simulation/simulation.h>
+#include "tests/graphwidgettest/graphwidget_test.h"
+#include "GUI/mainwindow.h"
+#include <QTimer>
 
 // %%% Helper Functions %%%
 /* Convert seconds to HH:MM:SS format */
@@ -116,6 +119,8 @@ GraphWidget::GraphWidget(QWidget *parent): QWidget(parent) {
 
     // Initial update
     update();
+    runUnitTestsOnce();
+
 }
 
 // %%% Hierarchy Management %%%
@@ -128,7 +133,7 @@ void GraphWidget::setHierarchy(Hierarchy* hier){
 /* Update widget with new time delta */
 void GraphWidget::refresh(float delta){
     if(h){
-        entity = h->Platforms->size();          // Update entity count
+        entity = h->Platforms.size();          // Update entity count
         t += delta;            // Accumulate time
         t = Simulation::simulationTime;
         time = Simulation::simulationTime;                               // Set current time
@@ -146,7 +151,7 @@ void GraphWidget::updateTable(){
     tableWidget->setRowCount(0);
 
     int entityNum = 0;                          // Entity counter
-    for (auto& [key, platform] : *h->Platforms) {
+    for (auto& [key, platform] : h->Platforms) {
         if (!platform || !platform->dynamicModel) continue;
 
         // Get entity timing information
@@ -250,7 +255,7 @@ void GraphWidget::drawGraph(QWidget* canvas) {
 
 /* Draw entity timeline data */
 void GraphWidget::drawData(QPainter &p, int startX, int bottomY, int canvasWidth, int canvasHeight) {
-    if (!h || h->Platforms->size() <= 0) return; // Check for valid data
+    if (!h || h->Platforms.size() <= 0) return; // Check for valid data
 
     // Calculate available space
     int availableWidth = (canvasWidth - 100);
@@ -261,7 +266,7 @@ void GraphWidget::drawData(QPainter &p, int startX, int bottomY, int canvasWidth
     double ySpacing = (availableHeight / (double)entity) * (zoom / 100.0);
 
     int entityNum = 0;                          // Entity counter
-    for (auto& [key, platform] : *h->Platforms) {
+    for (auto& [key, platform] : h->Platforms) {
         if (!platform || !platform->dynamicModel) continue;
 
         // Get entity timing
@@ -442,4 +447,27 @@ void GraphWidget::drawYTick(QPainter &p, int startY, int endY, int x, int canvas
             }
         }
     }
+}
+void GraphWidget::runUnitTestsOnce()
+{
+    static bool testsRun = false;
+    if (testsRun) return;
+    testsRun = true;
+
+    QTimer::singleShot(0, []() {
+        Console* console = nullptr;
+        MainWindow* mw = MainWindow::instance();
+        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+            console = mw->databaseEditor->console;
+        }
+        if (!console) {
+            qDebug() << "GraphWidget: console not available, cannot run tests";
+            return;
+        }
+
+        // Create a temporary GraphWidget (no parent, won't show)
+        GraphWidget* testWidget = new GraphWidget(nullptr);
+        runGraphWidgetTests(testWidget, console);
+        testWidget->deleteLater();
+    });
 }

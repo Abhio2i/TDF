@@ -56,15 +56,12 @@ void EntityInfoDialog::setupUI()
     scrollLayout = new QVBoxLayout(scrollWidget);
     scrollLayout->setSpacing(3);
     scrollLayout->setContentsMargins(2, 2, 2, 2);
-
     createAttributeSection();
     createPositionSection();
     createSpeedAltTableSection();
     createEquipmentSection();
     createOptionsSection();
-
     scrollArea->setWidget(scrollWidget);
-
     closeButton = new QPushButton("Close");
     closeButton->setStyleSheet(EntityInfoDialogStyles::CloseButton);
 
@@ -74,36 +71,25 @@ void EntityInfoDialog::setupUI()
 
     connect(closeButton, &QPushButton::clicked, this, &EntityInfoDialog::onCloseClicked);
 }
-
-// ========================================================================= //
-// UI Section Creation Methods
-// ========================================================================= //
-
 void EntityInfoDialog::createAttributeSection()
 {
-    attributeTable = new QTableWidget(5, 2);
+    attributeTable = new QTableWidget(7, 2);  // 6 → 7
     attributeTable->setHorizontalHeaderLabels(QStringList() << "Attribute" << "Value");
     attributeTable->setStyleSheet(EntityInfoDialogStyles::TableWidget);
     attributeTable->verticalHeader()->setVisible(false);
     attributeTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    attributeTable->setFixedHeight(200);
-
-    QStringList attributes = {"Type", "Name", "DIS name", "Damages", "Carrier"};
-    for(int i = 0; i < 5; ++i) {
+    attributeTable->setFixedHeight(280);  // 240 → 280
+    QStringList attributes = {"Type", "Name", "DIS name", "Damages", "Carrier", "Fuel", "Weapons"};  // "Weapons" add hua
+    for(int i = 0; i < 7; ++i) {  // 6 → 7
         attributeTable->setItem(i, 0, new QTableWidgetItem(attributes[i]));
-        // Style for first column (attributes)
         attributeTable->item(i, 0)->setForeground(Qt::white);
         attributeTable->setItem(i, 1, new QTableWidgetItem("-"));
-        // Style for second column (values)
         attributeTable->item(i, 1)->setForeground(Qt::white);
     }
-
     attributeTable->horizontalHeader()->setStretchLastSection(true);
     attributeTable->setColumnWidth(0, 150);
-
     scrollLayout->addWidget(attributeTable);
 }
-
 void EntityInfoDialog::createPositionSection()
 {
     positionLabel = new QLabel("Position: -");
@@ -118,12 +104,10 @@ void EntityInfoDialog::createSpeedAltTableSection()
     speedAltTable->setHorizontalHeaderLabels(QStringList() << "Attribute" << "Current" << "Requested");
     speedAltTable->setStyleSheet(EntityInfoDialogStyles::TableWidget);
     speedAltTable->verticalHeader()->setVisible(false);
-
     speedAltTable->setEditTriggers(QAbstractItemView::CurrentChanged |
                                    QAbstractItemView::DoubleClicked |
                                    QAbstractItemView::EditKeyPressed |
                                    QAbstractItemView::SelectedClicked);
-
     // Set column properties
     speedAltTable->setItem(0, 0, new QTableWidgetItem("Speed"));
     speedAltTable->item(0, 0)->setForeground(Qt::white);
@@ -177,31 +161,26 @@ void EntityInfoDialog::createEquipmentSection()
 {
     QGridLayout *equipmentLayout = new QGridLayout();
     equipmentLayout->setSpacing(3);
-
     sensorsButton = new QPushButton("Sensors");
     radiosButton = new QPushButton("Radios");
     iffButton = new QPushButton("IFF");
     weaponsButton = new QPushButton("Weapons");
     formationButton = new QPushButton("Formation");
-
     QList<QPushButton*> buttons = {sensorsButton, radiosButton, iffButton, weaponsButton, formationButton};
     for(auto button : buttons) {
         button->setStyleSheet(EntityInfoDialogStyles::PushButton);
         button->setMinimumHeight(35);
     }
-
     equipmentLayout->addWidget(sensorsButton, 0, 0);
     equipmentLayout->addWidget(radiosButton, 0, 1);
     equipmentLayout->addWidget(iffButton, 1, 0);
     equipmentLayout->addWidget(formationButton, 1, 1);
     equipmentLayout->addWidget(weaponsButton, 2, 0);
-
     connect(weaponsButton, &QPushButton::clicked, this, &EntityInfoDialog::onWeaponsClicked);
     connect(sensorsButton, &QPushButton::clicked, this, &EntityInfoDialog::onSensorsClicked);
     connect(formationButton, &QPushButton::clicked, this, &EntityInfoDialog::onFormationClicked);
     connect(radiosButton, &QPushButton::clicked, this, &EntityInfoDialog::onRadiosClicked);
     connect(iffButton, &QPushButton::clicked, this, &EntityInfoDialog::onIFFClicked);
-
     QWidget *equipmentWidget = new QWidget();
     equipmentWidget->setStyleSheet(EntityInfoDialogStyles::EquipmentWidget);
     equipmentWidget->setLayout(equipmentLayout);
@@ -212,10 +191,8 @@ void EntityInfoDialog::createOptionsSection()
 {
     QVBoxLayout *optionsLayout = new QVBoxLayout();
     optionsLayout->setSpacing(2);
-
     QHBoxLayout *firstLineLayout = new QHBoxLayout();
     firstLineLayout->setSpacing(10);
-
     followTrajectoryCheckBox = new QCheckBox("Follow Trajectory");
     showDetectionCheckBox = new QCheckBox("Show Detection");
 
@@ -248,7 +225,6 @@ void EntityInfoDialog::createOptionsSection()
                     entryInfo->dynamicModel->currentSpeed = 0;
                 }
             }
-
             if (entryInfo->trajectory) {
                 entryInfo->trajectory->Active = checked;
                 entryInfo->trajectory->FollowPath = checked;
@@ -257,7 +233,6 @@ void EntityInfoDialog::createOptionsSection()
             emit update();
         }
     });
-
     connect(showDetectionCheckBox, &QCheckBox::clicked, this, [=](bool checked) {
         if(!currentEntityId.isEmpty() && entryInfo && entryInfo->entity) {
             entryInfo->detection = checked;
@@ -265,7 +240,6 @@ void EntityInfoDialog::createOptionsSection()
             emit update();
         }
     });
-
     QWidget *optionsWidget = new QWidget();
     optionsWidget->setStyleSheet(EntityInfoDialogStyles::OptionsWidget);
     optionsWidget->setLayout(optionsLayout);
@@ -283,37 +257,31 @@ void EntityInfoDialog::setEntityInfo(const QString& entityId, const QString& ent
         hide();
         return;
     }
-
     if (!info->entity) {
         clearInfo();
         hide();
         return;
     }
-
     if (!info->entity->Active) {
         clearInfo();
         hide();
         return;
     }
-
     currentEntityId = entityId;
     currentEntityName = entityName;
     entryInfo = info;
-
     // Set title
     if (!currentEntityName.isEmpty()) {
         titleLabel->setText("Name: " + currentEntityName);
     } else {
         titleLabel->setText("Name: " + entityId);
     }
-
     // Update trajectory checkbox
     if (entryInfo->trajectory) {
         followTrajectoryCheckBox->setChecked(entryInfo->trajectory->FollowPath);
     } else {
         followTrajectoryCheckBox->setChecked(false);
     }
-
     // Set detection checkbox state
     if (entryInfo->entity) {
         entryInfo->detection = showDetectionCheckBox->isChecked();
@@ -351,8 +319,8 @@ void EntityInfoDialog::updateEntityInfo()
     if(entryInfo->entity) {
         switch(entryInfo->entity->type) {
         case Constants::EntityType::Platform: typeStr = "Platform"; break;
-        case Constants::EntityType::Sensor: typeStr = "Sensor"; break;
-        case Constants::EntityType::Weapon: typeStr = "Weapon"; break;
+        case Constants::EntityType::Sensor:   typeStr = "Sensor";   break;
+        case Constants::EntityType::Weapon:   typeStr = "Weapon";   break;
         default: typeStr = "Unknown"; break;
         }
     }
@@ -367,23 +335,57 @@ void EntityInfoDialog::updateEntityInfo()
         }
 
         attributeTable->item(2, 1)->setText("-");
-        attributeTable->item(3, 1)->setText("0 %");
-        attributeTable->item(4, 1)->setText("Not Embarked");
-    }
+        float damages = 100.0f - qBound(0.0f, entryInfo->entity->Health, 100.0f);
+        attributeTable->item(3, 1)->setText(QString("%1 %").arg(damages, 0, 'f', 1));
 
+        QColor damageColor = (damages < 20.0f) ? QColor("#27ae60") :
+                                 (damages < 50.0f) ? QColor("#e67e22") :
+                                 QColor("#e74c3c");
+        attributeTable->item(3, 1)->setForeground(damageColor);
+        // attributeTable->item(3, 1)->setText("0 %");
+        attributeTable->item(4, 1)->setText("Not Embarked");
+        // ── Fuel row (index 5) ──────────────────────────────────────────
+        Platform* plt = entryInfo->platform ?
+                            dynamic_cast<Platform*>(entryInfo->platform) : nullptr;
+        if (plt) {
+            float fuelPct = qBound(0.0f, plt->fuel, 100.0f);
+            int filled    = qBound(0, (int)(fuelPct / 10.0f), 10);
+            QString bar   = QString("▓").repeated(filled) +
+                          QString("░").repeated(10 - filled);
+            attributeTable->item(5, 1)->setText(
+                QString("%1 %   %2").arg(fuelPct, 0, 'f', 1).arg(bar));
+            QColor fuelColor = (fuelPct > 50.0f) ? QColor("#27ae60") :
+                                   (fuelPct > 20.0f) ? QColor("#e67e22") :
+                                   QColor("#e74c3c");
+            attributeTable->item(5, 1)->setForeground(fuelColor);
+            // ── Weapons row (index 6) ────────────────────────────────────
+            int weaponCount = 0;
+            if (plt->weapons && plt->weapons->weapons) {
+                weaponCount = static_cast<int>(plt->weapons->weapons->size());
+            }
+            attributeTable->item(6, 1)->setText(QString::number(weaponCount));
+            QColor weaponColor = (weaponCount > 5)  ? QColor("#27ae60") :
+                                     (weaponCount > 0)  ? QColor("#e67e22") :
+                                     QColor("#e74c3c");
+            attributeTable->item(6, 1)->setForeground(weaponColor);
+        } else {
+            attributeTable->item(5, 1)->setText("-");
+            attributeTable->item(5, 1)->setForeground(Qt::white);
+            attributeTable->item(6, 1)->setText("-");
+            attributeTable->item(6, 1)->setForeground(Qt::white);
+        }
+        // ────────────────────────────────────────────────────────────────
+    }
     // Get position data
     float lat = 0.0f, lon = 0.0f, x = 0.0f, z = 0.0f;
-
     if(entryInfo->coreTransform) {
         lat = entryInfo->coreTransform->getLatitude();
         lon = entryInfo->coreTransform->getLongitude();
     }
-
     if(entryInfo->transform) {
         x = entryInfo->transform->translation().x();
         z = entryInfo->transform->translation().z();
     }
-
     // Get altitude
     float y = 0.0f;
     if (entryInfo->trajectory && !entryInfo->trajectory->Trajectories.empty()) {
@@ -395,48 +397,37 @@ void EntityInfoDialog::updateEntityInfo()
             if (wp->position) y = wp->position->y;
         }
     }
-
     // Update position display
     QString currentPos = QString("Lat: %1, Long: %2, X: %3, Z: %4")
                              .arg(lat, 0, 'f', 6)
                              .arg(lon, 0, 'f', 6)
-                             .arg(x, 0, 'f', 2)
-                             .arg(z, 0, 'f', 2);
-
+                             .arg(x,   0, 'f', 2)
+                             .arg(z,   0, 'f', 2);
     positionLabel->setText("Position: " + currentPos);
-
     DynamicModel* dynModel = entryInfo->dynamicModel ? entryInfo->dynamicModel :
                                  (entryInfo->platform && entryInfo->platform->dynamicModel) ?
                                  entryInfo->platform->dynamicModel : nullptr;
-
     // Update speed/altitude table
     if (speedAltTable && dynModel) {
-        // For CURRENT values: check if we should use mothership's values
-        float currentSpeed = dynModel->currentSpeed;
+        float currentSpeed    = dynModel->currentSpeed;
         float currentAltitude = dynModel->currentAltitude * KMtoFT;
-
-        // If this is an ally following a mothership, use mothership's current values
         if (dynModel->follow && dynModel->followEntity) {
             Platform* mothership = dynamic_cast<Platform*>(dynModel->followEntity);
             if (mothership && mothership->dynamicModel) {
-                currentSpeed = mothership->dynamicModel->currentSpeed;
+                currentSpeed    = mothership->dynamicModel->currentSpeed;
                 currentAltitude = mothership->dynamicModel->currentAltitude * KMtoFT;
             }
         }
-
-        // Set the values
-        speedAltTable->item(0, 1)->setText(QString("%1 km/h").arg(currentSpeed, 0, 'f', 2));
+        speedAltTable->item(0, 1)->setText(QString("%1 km/h").arg(currentSpeed,    0, 'f', 2));
         speedAltTable->item(0, 2)->setText(QString("%1 km/h").arg(dynModel->moveSpeed, 0, 'f', 2));
-        speedAltTable->item(1, 1)->setText(QString("%1 ft").arg(currentAltitude, 0, 'f', 2));
-        speedAltTable->item(1, 2)->setText(QString("%1 ft").arg(dynModel->Altitude, 0, 'f', 2));
+        speedAltTable->item(1, 1)->setText(QString("%1 ft").arg(currentAltitude,   0, 'f', 2));
+        speedAltTable->item(1, 2)->setText(QString("%1 ft").arg(dynModel->Altitude,    0, 'f', 2));
     } else if (speedAltTable) {
-        // No dynamic model
         speedAltTable->item(0, 1)->setText("0.0 km/h");
         speedAltTable->item(0, 2)->setText("0.0 km/h");
         speedAltTable->item(1, 1)->setText("0.0 ft");
         speedAltTable->item(1, 2)->setText("0.0 ft");
     }
-
     // Update checkboxes
     if (followTrajectoryCheckBox) {
         followTrajectoryCheckBox->setChecked(entryInfo->trajectory ?
@@ -444,14 +435,16 @@ void EntityInfoDialog::updateEntityInfo()
     }
 }
 
+
 void EntityInfoDialog::clearInfo()
 {
     titleLabel->setText("Entity Information");
     currentEntityId.clear();
 
     if (attributeTable) {
-        for(int i = 0; i < 5; ++i) {
+        for(int i = 0; i < 7; ++i) {  // 6 → 7
             attributeTable->item(i, 1)->setText("-");
+            attributeTable->item(i, 1)->setForeground(Qt::white);
         }
     }
 
@@ -465,14 +458,12 @@ void EntityInfoDialog::clearInfo()
     }
 
     QList<QCheckBox*> checkboxes = {followTrajectoryCheckBox, showConnectionCheckBox};
-
     for(auto checkbox : checkboxes) {
         if(checkbox) checkbox->setChecked(false);
     }
 
     if(showDetectionCheckBox) showDetectionCheckBox->setChecked(true);
 }
-
 // ========================================================================= //
 // Button Click Handlers
 // ========================================================================= //
@@ -482,14 +473,162 @@ void EntityInfoDialog::onCloseClicked()
     hide();
 }
 
+
 void EntityInfoDialog::onWeaponsClicked()
 {
-    QMessageBox::information(this, "Weapons",
-                             QString("Weapons for entity %1:\n%2")
-                                 .arg(currentEntityId)
-                                 .arg("No weapons data available"));
-}
+    if (!currentEntityId.isEmpty() && entryInfo && entryInfo->platform) {
+        Platform* plt = dynamic_cast<Platform*>(entryInfo->platform);
+        if (!plt) {
+            QMessageBox::information(this, "Weapons", "No platform data available.");
+            return;
+        }
 
+        QDialog *weaponsDialog = new QDialog(this);
+        weaponsDialog->setWindowTitle("Weapons - " + currentEntityName);
+        weaponsDialog->setMinimumSize(600, 400);
+        weaponsDialog->setMaximumSize(700, 500);
+        weaponsDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
+
+        QVBoxLayout *layout = new QVBoxLayout(weaponsDialog);
+        layout->setSpacing(8);
+        layout->setContentsMargins(10, 10, 10, 10);
+
+        QLabel *titleLabel = new QLabel("Weapon Systems");
+        titleLabel->setStyleSheet("font-size: 14px; color: white; font-weight: bold;");
+        layout->addWidget(titleLabel);
+
+        QTableWidget *weaponsTable = new QTableWidget();
+        weaponsTable->setColumnCount(7);
+        weaponsTable->setHorizontalHeaderLabels(
+            QStringList() << "Name" << "Type" << "Max Range" << "Max Speed"
+                          << "Blast Radius" << "Status" << "Launched");
+        weaponsTable->verticalHeader()->setVisible(false);
+        weaponsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        weaponsTable->setStyleSheet(EntityInfoDialogStyles::SubDialogTable);
+        weaponsTable->horizontalHeader()->setStretchLastSection(true);
+        weaponsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+        // Fill data + live update
+        auto fillTable = [=]() {
+            if (!plt->weapons || !plt->weapons->weapons) return;
+            weaponsTable->setRowCount(0);
+            int row = 0;
+            for (const auto& [id, weapon] : *plt->weapons->weapons) {
+                if (!weapon) continue;
+                weaponsTable->insertRow(row);
+
+                // Name
+                auto* nameItem = new QTableWidgetItem(QString::fromStdString(weapon->Name));
+                nameItem->setForeground(Qt::white);
+                weaponsTable->setItem(row, 0, nameItem);
+
+                // Type
+                auto* typeItem = new QTableWidgetItem(weapon->weaponTypeName());
+                typeItem->setForeground(QColor("#00BFFF"));
+                weaponsTable->setItem(row, 1, typeItem);
+
+                // Max Range
+                auto* rangeItem = new QTableWidgetItem(
+                    QString("%1 km").arg(weapon->maxRange / 1000.0f, 0, 'f', 1));
+                rangeItem->setForeground(Qt::white);
+                weaponsTable->setItem(row, 2, rangeItem);
+
+                // Max Speed
+                auto* speedItem = new QTableWidgetItem(
+                    QString("%1 km/h").arg(weapon->maxVelocity * 3.6f, 0, 'f', 0));
+                speedItem->setForeground(Qt::white);
+                weaponsTable->setItem(row, 3, speedItem);
+
+                // Blast Radius
+                auto* blastItem = new QTableWidgetItem(
+                    QString("%1 m").arg(weapon->blastRadius, 0, 'f', 0));
+                blastItem->setForeground(Qt::white);
+                weaponsTable->setItem(row, 4, blastItem);
+
+                // Status (armed/safed)
+                QString statusStr = weapon->armed ? "Armed" :
+                                        weapon->safed ? "Safed" : "Inactive";
+                auto* statusItem = new QTableWidgetItem(statusStr);
+                statusItem->setForeground(weapon->armed  ? QColor("#e74c3c") :
+                                              weapon->safed  ? QColor("#27ae60") :
+                                              QColor("#e67e22"));
+                weaponsTable->setItem(row, 5, statusItem);
+
+                // Launched
+                QString launchedStr = weapon->isLaunched ? "Yes" : "No";
+                auto* launchedItem = new QTableWidgetItem(launchedStr);
+                launchedItem->setForeground(weapon->isLaunched ? QColor("#e74c3c") :
+                                                QColor("#27ae60"));
+                weaponsTable->setItem(row, 6, launchedItem);
+
+                row++;
+            }
+
+            if (row == 0) {
+                weaponsTable->setRowCount(1);
+                weaponsTable->setColumnCount(1);
+                weaponsTable->setHorizontalHeaderLabels(QStringList() << "Info");
+                auto* noItem = new QTableWidgetItem("No weapons available");
+                noItem->setForeground(Qt::white);
+                weaponsTable->setItem(0, 0, noItem);
+            }
+        };
+
+        fillTable();
+
+        weaponsTable->setColumnWidth(0, 100);
+        weaponsTable->setColumnWidth(1, 80);
+        weaponsTable->setColumnWidth(2, 80);
+        weaponsTable->setColumnWidth(3, 90);
+        weaponsTable->setColumnWidth(4, 90);
+        weaponsTable->setColumnWidth(5, 70);
+        layout->addWidget(weaponsTable);
+
+        // Live update timer
+        QTimer *updateTimer = new QTimer(weaponsDialog);
+        connect(updateTimer, &QTimer::timeout, [=]() {
+            fillTable();
+        });
+        updateTimer->start(500);
+
+        // Summary label
+        QLabel *summaryLabel = new QLabel();
+        summaryLabel->setStyleSheet("color: #B0B0B0; font-size: 11px;");
+        layout->addWidget(summaryLabel);
+
+        connect(updateTimer, &QTimer::timeout, [=]() {
+            if (!plt->weapons || !plt->weapons->weapons) return;
+            int total    = static_cast<int>(plt->weapons->weapons->size());
+            int launched = 0;
+            int armed    = 0;
+            for (const auto& [id, w] : *plt->weapons->weapons) {
+                if (w && w->isLaunched) launched++;
+                if (w && w->armed)      armed++;
+            }
+            summaryLabel->setText(
+                QString("Total: %1  |  Armed: %2  |  Launched: %3  |  Remaining: %4")
+                    .arg(total).arg(armed).arg(launched).arg(total - launched));
+        });
+
+        // Close button
+        QHBoxLayout *buttonLayout = new QHBoxLayout();
+        buttonLayout->addStretch();
+        QPushButton *closeButton = new QPushButton("Close");
+        closeButton->setStyleSheet(EntityInfoDialogStyles::SubDialogButton);
+        connect(closeButton, &QPushButton::clicked, [=]() {
+            updateTimer->stop();
+            weaponsDialog->close();
+        });
+        buttonLayout->addWidget(closeButton);
+        layout->addLayout(buttonLayout);
+
+        weaponsDialog->show();
+        weaponsDialog->setAttribute(Qt::WA_DeleteOnClose);
+
+    } else {
+        QMessageBox::information(this, "Weapons", "No entity selected.");
+    }
+}
 void EntityInfoDialog::onSensorsClicked()
 {
     if(!currentEntityId.isEmpty() && entryInfo && entryInfo->platform) {
@@ -667,7 +806,6 @@ void EntityInfoDialog::onIFFClicked()
         iffTable->verticalHeader()->setVisible(false);
         iffTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
         iffTable->setStyleSheet(EntityInfoDialogStyles::SubDialogTable);
-
         QTimer *iffUpdateTimer = new QTimer(iffDialog);
         connect(iffUpdateTimer, &QTimer::timeout, [=]() {
             if(entryInfo->platform && entryInfo->platform->iffs && entryInfo->platform->iffs->iffs) {
@@ -732,9 +870,9 @@ void EntityInfoDialog::onIFFClicked()
             iffUpdateTimer->stop();
             iffDialog->close();
         });
+
         buttonLayout->addWidget(closeButton);
         layout->addLayout(buttonLayout);
-
         iffDialog->show();
         iffDialog->setAttribute(Qt::WA_DeleteOnClose);
     } else {
@@ -816,10 +954,10 @@ Formation* EntityInfoDialog::findFormationForEntity(Entity* entity)
 
     // Get the parent hierarchy
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(entity);
-    if (!parent || !parent->Entities) return nullptr;
+    if (!parent ) return nullptr;
 
     // Search through all entities to find Formation entities
-    for (auto& pair : *parent->Entities) {
+    for (auto& pair : parent->Entities) {
         Formation* formation = dynamic_cast<Formation*>(pair.second);
         if (formation) {
             // Check if this entity is the mothership
@@ -914,17 +1052,14 @@ void EntityInfoDialog::displayFormationInfo(Formation* formation, Entity* curren
     formationTable->verticalHeader()->setVisible(false);
     formationTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     formationTable->setStyleSheet(EntityInfoDialogStyles::SubDialogTable);
-
     // Track row count
     int row = 0;
-
     // Add mothership first
     if (formation->mothership && formation->mothership->entity) {
         formationTable->insertRow(row);
         formationTable->setItem(row, 0, new QTableWidgetItem("Mothership"));
         formationTable->setItem(row, 1, new QTableWidgetItem(
                                             QString::fromStdString(formation->mothership->entity->Name)));
-
         QString offsetStr = "0, 0, 0";
         if (formation->mothership->Offset) {
             offsetStr = QString("%1, %2, %3")
@@ -946,7 +1081,6 @@ void EntityInfoDialog::displayFormationInfo(Formation* formation, Entity* curren
         }
         row++;
     }
-
     // Add allies
     if (formation->formationPositions && !formation->formationPositions->empty()) {
         // Sort by position name for consistent display
@@ -993,7 +1127,6 @@ void EntityInfoDialog::displayFormationInfo(Formation* formation, Entity* curren
             }
         }
     }
-
     // Adjust table size
     formationTable->setColumnWidth(0, 100);
     formationTable->setColumnWidth(1, 150);
@@ -1025,6 +1158,7 @@ void EntityInfoDialog::updateSensorsTable(QTableWidget* sensorsTable, Entity* pl
                 case Sensor::SubType::Generic: typeStr = "Radar"; break;
                 case Sensor::SubType::CSM: typeStr = "CSM"; break;
                 case Sensor::SubType::ESM: typeStr = "ESM"; break;
+                case Sensor::SubType::AESA: typeStr = "AESA"; break;
                 default: typeStr = "Other"; break;
                 }
                 sensorsTable->setItem(row, 1, new QTableWidgetItem(typeStr));

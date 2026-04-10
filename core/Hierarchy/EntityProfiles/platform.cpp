@@ -301,6 +301,33 @@ void Platform::update(){
             csmTime +=elapsedMs;
 
         }else
+        if(s->subType == Sensor::SubType::EO){
+            //qDebug() << "[Platform::update] calling csmScan";
+            QElapsedTimer timer;
+            timer.start();  // Start measuring
+            s->scan();
+            qint64 elapsedMs = timer.elapsed();
+            csmTime +=elapsedMs;
+
+        }else
+        if(s->subType == Sensor::SubType::AIS){
+            //qDebug() << "[Platform::update] calling csmScan";
+            QElapsedTimer timer;
+            timer.start();  // Start measuring
+            s->scan();
+            qint64 elapsedMs = timer.elapsed();
+            csmTime +=elapsedMs;
+
+        }else
+            if(s->subType == Sensor::SubType::ADSB){
+                //qDebug() << "[Platform::update] calling csmScan";
+                QElapsedTimer timer;
+                timer.start();  // Start measuring
+                s->scan();
+                qint64 elapsedMs = timer.elapsed();
+                csmTime +=elapsedMs;
+
+            }else
             if(s->subType == Sensor::SubType::ESM){
                 QElapsedTimer timer;
                 timer.start();  // Start measuring
@@ -623,6 +650,8 @@ QJsonObject Platform::toJson() const {
     obj["health"] = toParm(Health,"%");
     obj["fuel"] = toParm(fuel,"%");
     obj["Mission"] = false;
+    obj["illumination"] = toParm(illumination,"%",0,100);
+    obj["glintFactor"] = toParm(glintFactor,"%",0,100);
     QJsonObject TeamObj;
     TeamObj["type"] = "option";
     QJsonArray TeamoptionsArray;
@@ -722,6 +751,10 @@ void Platform::fromJson(const QJsonObject& obj) {
         parentID = obj["parent_id"].toString().toStdString();
     if (obj.contains("health"))
         Health = valueFromParm(obj["health"].toObject());
+    if (obj.contains("illumination"))
+        illumination = valueFromParm(obj["illumination"].toObject());
+    if (obj.contains("glintFactor"))
+        glintFactor = valueFromParm(obj["glintFactor"].toObject());
     if (obj.contains("Mission")){
         bool mission = obj["Mission"].toBool();
         if(mission){
@@ -812,8 +845,8 @@ void Platform::fromJson(const QJsonObject& obj) {
         if (!meshRenderer2d) addComponent("bitmap");
         meshRenderer2d->fromJson(obj["bitmap"].toObject());
         //Logger
-        for(auto it = m_hierarchy->Platforms->begin();
-             it != m_hierarchy->Platforms->end(); ++it){
+        for(auto it = m_hierarchy->Platforms.begin();
+             it != m_hierarchy->Platforms.end(); ++it){
             if(this == (*it).second){
                 //qDebug()<<"Mesh Platform Found!!";
                 emit m_hierarchy->meshRenderer2DisAdded((*it).first.c_str(),meshRenderer2d);
@@ -905,21 +938,21 @@ void Platform::addComponent(std::string name) {
         if (!transform){
             transform = new Transform();
             transform->parentEntity = this;
-            parent->Components->insert({transform->ID, transform});
+            parent->Components.insert({transform->ID, transform});
             emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(transform->ID),"transform");
         }
     } else if (name == "crossSection") {
         if (!crossSection){
             crossSection = new CrossSection();
             crossSection->parentEntity = this;
-            parent->Components->insert({crossSection->ID, crossSection});
+            parent->Components.insert({crossSection->ID, crossSection});
             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(crossSection->ID), "crossSection");
         }
     } else if (name == "trajectory") {
         if (!trajectory){
             trajectory = new Trajectory();
             trajectory->parentEntity = this;
-            parent->Components->insert({trajectory->ID, trajectory});
+            parent->Components.insert({trajectory->ID, trajectory});
             connect(taskgroup,&TaskGroup::goHome,trajectory,&Trajectory::goHome);
             connect(taskgroup,&TaskGroup::activateSensors,trajectory,&Trajectory::activateSensors);
             connect(taskgroup,&TaskGroup::deactivateSensors,trajectory,&Trajectory::deactivateSensors);
@@ -933,7 +966,7 @@ void Platform::addComponent(std::string name) {
                 addComponent("transform");
             rigidbody = new Rigidbody();
             rigidbody->parentEntity = this;
-            parent->Components->insert({rigidbody->ID, rigidbody});
+            parent->Components.insert({rigidbody->ID, rigidbody});
             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(rigidbody->ID), "rigidbody");
         }
 
@@ -944,7 +977,7 @@ void Platform::addComponent(std::string name) {
             sensors = new SensorProfile(parent);
             sensors->parentEntity = this;
             sensors->parentID = ID;
-            parent->Components->insert({sensors->ID, sensors});
+            parent->Components.insert({sensors->ID, sensors});
             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(sensors->ID), "sensors");
         }
 
@@ -955,7 +988,7 @@ void Platform::addComponent(std::string name) {
             iffs = new IFFProfile(parent);
             iffs->parentEntity = this;
             iffs->parentID = ID;
-            parent->Components->insert({iffs->ID, iffs});
+            parent->Components.insert({iffs->ID, iffs});
             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(iffs->ID), "iffs");
         }
 
@@ -966,7 +999,7 @@ void Platform::addComponent(std::string name) {
             radios = new RadioProfile(parent);
             radios->parentEntity = this;
             radios->parentID = ID;
-            parent->Components->insert({radios->ID, radios});
+            parent->Components.insert({radios->ID, radios});
             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(radios->ID), "radios");
         }
 
@@ -977,7 +1010,7 @@ void Platform::addComponent(std::string name) {
             weapons = new WeaponProfile(parent);
             weapons->parentEntity = this;
             weapons->parentID = ID;
-            parent->Components->insert({weapons->ID, weapons});
+            parent->Components.insert({weapons->ID, weapons});
             emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(weapons->ID), "weapons");
         }
     } else if (name == "dynamicModel") {
@@ -996,7 +1029,7 @@ void Platform::addComponent(std::string name) {
             dynamicModel->rigidbody = rigidbody;
             dynamicModel->trajectory = trajectory;
             dynamicModel->init();
-            parent->Components->insert({dynamicModel->ID, dynamicModel});
+            parent->Components.insert({dynamicModel->ID, dynamicModel});
             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(dynamicModel->ID), "dynamicModel");
             emit parent->entityPhysicsAdded(QString::fromStdString(parentID), this);
         }
@@ -1008,7 +1041,7 @@ void Platform::addComponent(std::string name) {
             collider = new Collider(parent);
             collider->parentEntity = this;
             collider->parentID = ID;
-            parent->Components->insert({collider->ID, collider});
+            parent->Components.insert({collider->ID, collider});
             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(collider->ID), "collider");
         }
 
@@ -1020,7 +1053,7 @@ void Platform::addComponent(std::string name) {
                 addComponent("collider");
             meshRenderer2d = new MeshRenderer2D();
             meshRenderer2d->parentEntity = this;
-            parent->Components->insert({meshRenderer2d->ID, meshRenderer2d});
+            parent->Components.insert({meshRenderer2d->ID, meshRenderer2d});
             emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(meshRenderer2d->ID),"bitmap");
             emit parent->entityMeshAdded(QString::fromStdString(parentID), this);
         }
@@ -1038,7 +1071,7 @@ void Platform::removeComponent(std::string name) {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (name == "transform") {
         if (!transform) return;
-        parent->Components->erase(transform->ID);
+        parent->Components.erase(transform->ID);
         delete transform;
         transform = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "transform");
@@ -1046,57 +1079,57 @@ void Platform::removeComponent(std::string name) {
         emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
     } else if (name == "crossSection") {
         if (!crossSection) return;
-        parent->Components->erase(crossSection->ID);
+        parent->Components.erase(crossSection->ID);
         delete crossSection;
         crossSection = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "crossSection");
     } else if (name == "trajectory") {
         if (!trajectory) return;
-        parent->Components->erase(trajectory->ID);
+        parent->Components.erase(trajectory->ID);
         delete trajectory;
         trajectory = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "trajectory");
     } else if (name == "sensors") {
         if (!sensors) return;
-        parent->Components->erase(sensors->ID);
+        parent->Components.erase(sensors->ID);
         delete sensors;
         sensors = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "sensors");
     } else if (name == "iffs") {
         if (!iffs) return;
-        parent->Components->erase(iffs->ID);
+        parent->Components.erase(iffs->ID);
         delete iffs;
         iffs = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "iffs");
     } else if (name == "radios") {
         if (!radios) return;
-        parent->Components->erase(radios->ID);
+        parent->Components.erase(radios->ID);
         delete radios;
         radios = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "radios");
     } else if (name == "weapons") {
         if (!weapons) return;
-        parent->Components->erase(weapons->ID);
+        parent->Components.erase(weapons->ID);
         delete weapons;
         weapons = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "weapons");
     } else if (name == "rigidbody") {
         if (!rigidbody) return;
-        parent->Components->erase(rigidbody->ID);
+        parent->Components.erase(rigidbody->ID);
         delete rigidbody;
         rigidbody = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "rigidbody");
         emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
     } else if (name == "dynamicModel") {
         if (!dynamicModel) return;
-        parent->Components->erase(dynamicModel->ID);
+        parent->Components.erase(dynamicModel->ID);
         delete dynamicModel;
         dynamicModel = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "dynamicModel");
         emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
     } else if (name == "collider") {
         if (!collider) return;
-        parent->Components->erase(collider->ID);
+        parent->Components.erase(collider->ID);
         delete collider;
         collider = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "collider");
@@ -1104,7 +1137,7 @@ void Platform::removeComponent(std::string name) {
         emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
     } else if (name == "bitmap") {
         if (!meshRenderer2d) return;
-        parent->Components->erase(meshRenderer2d->ID);
+        parent->Components.erase(meshRenderer2d->ID);
         delete meshRenderer2d;
         meshRenderer2d = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "bitmap");

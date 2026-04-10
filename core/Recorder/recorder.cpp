@@ -364,8 +364,8 @@ void Recording::entityAddedAllFromStart()
         profileCategoriesUpdate(profileCategories.first.c_str(),
                                 profileCategories.second->Name.c_str(),Operation::CREATE);
     }
-    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
-    for (const auto& platform : *m_Platforms) {
+    std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
+    for (const auto& platform : m_Platforms) {
         std::string name      = platform.second->Name.c_str();
         std::string parentID  = platform.second->parentID;
         std::string ID   = platform.first.c_str();
@@ -647,7 +647,7 @@ void Recording::profileCategoriesDeleted(QString ID)
  */
 void Recording::entityUpdatesInBetween()
 {
-    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
+    std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
     EntitiesUpdated m_entitiesUpdated;
     Platform* platform;
     int indexSize = entitiesIDIndex.size();
@@ -656,10 +656,10 @@ void Recording::entityUpdatesInBetween()
     for(auto i = entitiesIDIndex.begin(), end = entitiesIDIndex.end();
          i != end ; ++i){
         QString m_str = i.key();
-        if(m_Platforms->find(m_str.toStdString()) == m_Platforms->end()){
+        if(m_Platforms.find(m_str.toStdString()) == m_Platforms.end()){
             continue;
         }
-        platform = m_Platforms->at(m_str.toStdString());
+        platform = m_Platforms.at(m_str.toStdString());
         m_str += "Index :" + QString(i.value());
         if(platform){
             m_entitiesUpdated.index       = i.value();
@@ -964,7 +964,7 @@ void Replay::start()
     qDebug()<<mode;
 
     m_recorder = getRecorder();
-    m_Platforms = m_hierarchy->Platforms;
+    m_Platforms = &m_hierarchy->Platforms;
 
     m_recorder->loggerStatus = Recorder::S_REPLAYING;
     m_recorder->update(m_recorder->loggerStatus);
@@ -1230,7 +1230,7 @@ void Replay::crudEntitiesMeshRenderer2D()
 {
     // //For Mesh render
     str = "Mesh CRUD Operation";
-    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
+    std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
     for(auto etc = payload.entitiesMeshRenderer2DCRUDList.begin();
          etc != payload.entitiesMeshRenderer2DCRUDList.end();
          ++etc){
@@ -1241,7 +1241,7 @@ void Replay::crudEntitiesMeshRenderer2D()
         }
         EntitiesMeshRenderer2D emr = entitiesMeshRenderer2DIndex.at(etc->index);
         EntitiesDetails &ed = entitiesIndexDetails.at(etc->index);
-        Platform *platform = m_Platforms->at(ed.ID.toStdString());
+        Platform *platform = m_Platforms.at(ed.ID.toStdString());
         platform->meshRenderer2d->Sprite->clear();
         platform->meshRenderer2d->Sprite->append(emr.Sprite.toStdString());
     }
@@ -1264,7 +1264,7 @@ void Replay::setEntitiesTrajectory()
                         QString::number(et->Trajectories.size()));
     }
     str += QString("  }  \n   ");
-    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
+    std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
     str += QString("EntitiesCRUD { ");
     for(auto etc = payload.entitiesTrajectoryCRUDList.begin();
          etc != payload.entitiesTrajectoryCRUDList.end();
@@ -1281,7 +1281,7 @@ void Replay::setEntitiesTrajectory()
             continue;
         }
 
-        Platform* platform = m_Platforms->at(ed.ID.toStdString());
+        Platform* platform = m_Platforms.at(ed.ID.toStdString());
         EntitiesTrajectory et;
         try {
             et = entitiesTrajectoryIndex.at(etc->index);
@@ -1400,7 +1400,7 @@ void Replay::crudProfileCategoriesDetails()
 
 void Replay::createEntitiesCreateList()
 {
-    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
+    std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
     str = QString();
     for(auto ec = payload.entitiesCreatedList.begin();
          ec != payload.entitiesCreatedList.end();
@@ -1414,7 +1414,7 @@ void Replay::createEntitiesCreateList()
                        ).arg(ed.name,ed.ID);
 
             emit createEntitiesCreate(ed.parentID, ed.ID, ed.name, true);
-            Platform* platform = m_Platforms->at(ed.ID.toStdString());
+            Platform* platform = m_Platforms.at(ed.ID.toStdString());
             platform->addComponent("transform");
             platform->addComponent("crossSection");
             platform->addComponent("trajectory");
@@ -1465,7 +1465,7 @@ void Replay::createEntitiesCreateList()
  */
 void Replay::updateEntitiesUpdatedList()
 {
-    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
+    std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
     for(auto eu = payload.entitiesUpdatedList.begin();
          eu != payload.entitiesUpdatedList.end();
          ++eu)
@@ -1473,11 +1473,11 @@ void Replay::updateEntitiesUpdatedList()
         if(entitiesIndexDetails.find(eu->index) != entitiesIndexDetails.end()){
             EntitiesDetails &ed = entitiesIndexDetails.at(eu->index);
 
-            auto it = m_Platforms->find(ed.ID.toStdString());
-            if(it == m_Platforms->end() ){
+            auto it = m_Platforms.find(ed.ID.toStdString());
+            if(it == m_Platforms.end() ){
                 continue;
             }else{
-                Platform* platform = m_Platforms->at(ed.ID.toStdString());
+                Platform* platform = m_Platforms.at(ed.ID.toStdString());
                 platform->transform->setLongitude (eu->longitude);
                 platform->transform->setLatitude  (eu->latitude );
                 platform->transform->setAltitude  (eu->altitude );
@@ -1536,7 +1536,7 @@ void Replay::loadFrameEntitiesData()
         entity m_entity = i.second;
 
         if(m_Platforms->find(id) != m_Platforms->end()){
-            Platform* platform = (* m_hierarchy->Platforms)[id];
+            Platform* platform = ( m_hierarchy->Platforms)[id];
             platform->transform->setAltitude(m_entity.altitude);
             platform->transform->setLatitude(m_entity.latitude);
             platform->transform->setLongitude(m_entity.longitude);
@@ -1662,12 +1662,12 @@ void Replay::framePayLoadForJumpInBetween(int frameIndex)
 
 void Replay::setEntitiesDetailsInBtw()
 {
-    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
+    std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
     //m_Platforms->clear();
     std::vector<std::pair<std::string,std::string>> toDelete;
     std::pair<std::string,std::string> PidNID;
-    for(auto p = m_Platforms->begin();
-        p != m_Platforms->end(); ++p){
+    for(auto p = m_Platforms.begin();
+        p != m_Platforms.end(); ++p){
         PidNID.first  = p->second->parentID;
         PidNID.second = p->second->ID;
         toDelete.push_back(PidNID);
@@ -1682,7 +1682,7 @@ void Replay::setEntitiesDetailsInBtw()
          ++ed)
     {
         emit createEntitiesCreate((*ed).parentID, (*ed).ID, (*ed).name, true);
-        Platform* platform = m_Platforms->at((*ed).ID.toStdString());
+        Platform* platform = m_Platforms.at((*ed).ID.toStdString());
         platform->addComponent("transform");
         platform->addComponent("crossSection");
         platform->addComponent("trajectory");
@@ -1700,7 +1700,7 @@ void Replay::setEntitiesDetailsInBtw()
 void Replay::setEntitiesMeshRenderer2DBtw()
 {
     str = "Mesh Between Operation";
-    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
+    std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
     for(auto emr = payload.entitiesMeshRenderer2DList.begin();
          emr != payload.entitiesMeshRenderer2DList.end();
          ++emr){
@@ -1710,11 +1710,11 @@ void Replay::setEntitiesMeshRenderer2DBtw()
         ed != payload.entitiesDetailsList.end();
         ++ed){
         EntitiesMeshRenderer2D emr = entitiesMeshRenderer2DIndex[ed->index];
-        if(m_Platforms->find(ed->ID.toStdString()) == m_Platforms->end()){
+        if(m_Platforms.find(ed->ID.toStdString()) == m_Platforms.end()){
             str += "Failed to Add Mesh For Index: "+QString::number(ed->index);
             continue;
         }
-        Platform *platform = m_Platforms->at(ed->ID.toStdString());
+        Platform *platform = m_Platforms.at(ed->ID.toStdString());
         platform->meshRenderer2d->Sprite->clear();
         platform->meshRenderer2d->Sprite->append(emr.Sprite.toStdString());
     }
@@ -1724,7 +1724,7 @@ void Replay::setEntitiesMeshRenderer2DBtw()
 void Replay::setEntitiesTrajectoryBtw()
 {
     str = QString("EntitiesTrajectory Btw ");
-    std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
+    std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
 
     for(auto et = payload.entitiesTrajectoryList.begin();
          et != payload.entitiesTrajectoryList.end();
@@ -1741,8 +1741,8 @@ void Replay::setEntitiesTrajectoryBtw()
         if(ed == entitiesIndexDetails.end()){
             continue;
         }
-        auto platform = m_Platforms->find(ed->second.ID.toStdString());
-        if(platform == m_Platforms->end()){
+        auto platform = m_Platforms.find(ed->second.ID.toStdString());
+        if(platform == m_Platforms.end()){
             continue;
         }
         for (Waypoints* wp : platform->second->trajectory->Trajectories) {

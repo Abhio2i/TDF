@@ -7,6 +7,8 @@
 #include "propagation_model_impl.h" // for access to transmit
 #include <openssl/evp.h> // include dependency
 #include <algorithm> // include dependency
+#include <cmath> // include dependency
+#include <iostream> // include dependency
 #include <memory> // include dependency
 #include <utility> // include dependency
 
@@ -149,11 +151,53 @@ bool decode_payload(const std::vector<std::byte>& data, // statement
     return evp_transform(data, out, spec.cipher, key.data(), iv.data(), false); // return value
 } // block end
 
+double sanitize_positive_or_default(double value,
+                                    double min_value,
+                                    double max_value,
+                                    double replacement,
+                                    const char* field_name) {
+    if (std::isfinite(value) && value >= min_value && value <= max_value) {
+        return value;
+    }
+
+    std::cerr << "[radio] Invalid radio config '" << field_name
+              << "'=" << value
+              << " outside [" << min_value << ", " << max_value << "]"
+              << "; clamping to " << replacement << ".\n";
+    return replacement;
+}
+
+double sanitize_nonnegative_or_default(double value,
+                                       double max_value,
+                                       double replacement,
+                                       const char* field_name) {
+    if (std::isfinite(value) && value >= 0.0 && value <= max_value) {
+        return value;
+    }
+
+    std::cerr << "[radio] Invalid radio config '" << field_name
+              << "'=" << value
+              << " outside [0, " << max_value << "]"
+              << "; clamping to " << replacement << ".\n";
+    return replacement;
+}
+
+RadioConfig sanitize_radio_config(const RadioConfig& input) {
+    RadioConfig cfg = input;
+    cfg.bandwidth_hz = sanitize_positive_or_default(
+        cfg.bandwidth_hz, 1.0, 100e6, 1.0, "bandwidth_hz");
+    cfg.rx_bandwidth_hz = sanitize_nonnegative_or_default(
+        cfg.rx_bandwidth_hz, 100e6, 0.0, "rx_bandwidth_hz");
+    cfg.receiver.noise_figure_db = sanitize_nonnegative_or_default(
+        cfg.receiver.noise_figure_db, 50.0, 0.0, "receiver.noise_figure_db");
+    return cfg;
+}
+
 } // namespace
 
 void RadioImpl::configure(const RadioConfig& config) { // function start
     std::lock_guard<std::mutex> lock(mutex_); // statement
-    config_ = config; // assign or declare
+    config_ = sanitize_radio_config(config); // assign or declare
 } // block end
 
 RadioConfig RadioImpl::getConfiguration() const { // function start

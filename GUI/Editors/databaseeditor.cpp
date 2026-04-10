@@ -25,6 +25,9 @@
 #include <QScrollArea>
 #include "database-styles.h"
 #include "GUI/Inspector/inspector-styles.h"
+#include "tests/databaseeditortest/databaseeditor_test.h"
+#include "GUI/mainwindow.h"
+#include <QTimer>
 
 // %%% Utility Functions %%%
 /* Capitalize the first letter of a string */
@@ -86,7 +89,6 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
                     loadRecentProject(filePath);
                 }
             });
-
     // %%% Hierarchy Change Tracking %%%
     connect(hierarchy, &Hierarchy::profileAdded, this, &DatabaseEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::folderAdded, this, &DatabaseEditor::markUnsavedChanges);
@@ -129,6 +131,8 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
         connect(menuBar, &MenuBar::applicationTriggered, this, &DatabaseEditor::showApplicationDialog);
         connect(menuBar, &MenuBar::exitTriggered, qApp, &QApplication::quit);
     }
+    runUnitTestsOnce();
+
 }
 // %%% Enhanced Dock Setup %%%
 /* Setup dock widgets with full features for Linux compatibility */
@@ -180,7 +184,6 @@ void DatabaseEditor::setupEnhancedDockWidgets()
     setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks |
                    QMainWindow::GroupedDragging | QMainWindow::AnimatedDocks);
     setCentralWidget(nullptr);
-
     // %%% Dock Layout %%%
     splitDockWidget(hierarchyDock, inspectorDock, Qt::Horizontal);
     splitDockWidget(inspectorDock, consoleDock, Qt::Vertical);
@@ -320,13 +323,11 @@ void DatabaseEditor::addInspectorTab()
     } else {
         addDockWidget(Qt::RightDockWidgetArea, newInspectorDock);
     }
-
     // %%% Cleanup on Destroy %%%
     connect(newInspectorDock, &QDockWidget::destroyed, this, [=]() {
         inspectorDocks.removeOne(newInspectorDock);
         inspectors.removeOne(newInspector);
     });
-
     newInspectorDock->show();
     newInspectorDock->raise();
 }
@@ -336,7 +337,6 @@ void DatabaseEditor::addInspectorTab()
 void DatabaseEditor::showFeedbackWindow()
 {
     Feedback *feedbackWindow = new Feedback(this);
-
     feedbackWindow->show();
 }
 
@@ -400,6 +400,7 @@ void DatabaseEditor::loadRecentProject(const QString& filePath)
     // loadingDialog->move(geometry().center() - loadingDialog->rect().center());
     // loadingDialog->show();
     // QCoreApplication::processEvents();
+
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this, "Error", "Failed to open scenario file");
@@ -437,7 +438,6 @@ void DatabaseEditor::onRecentProjectTriggered()
 {
     RecentProjectsManager::instance()->showRecentProjectsMenu(this, RecentProjectsManager::DatabaseEditor);
 }
-
 // %%% Profile Info Dialog %%%
 /* Show profile information dialog */
 void DatabaseEditor::showProfileInfo()
@@ -497,6 +497,7 @@ void DatabaseEditor::loadFromJsonFile(const QString &filePath)
     // loadingDialog->deleteLater();
     updateStatusBar("Project loaded: " + QFileInfo(filePath).fileName());
 }
+
 // %%% Tree Item Selection Handler %%%
 /* Handle selection of items in hierarchy tree */
 void DatabaseEditor::onTreeItemSelected(QVariantMap data)
@@ -524,19 +525,20 @@ void DatabaseEditor::onTreeItemSelected(QVariantMap data)
     if (type == "entity") {
         QString entityId = data["ID"].toString();
         showAllEntityComponents(entityId, displayName);
-        auto entityIt = hierarchy->Entities->find(entityId.toStdString());
-        if (entityIt != hierarchy->Entities->end()) {
+        auto entityIt = hierarchy->Entities.find(entityId.toStdString());
+        if (entityIt != hierarchy->Entities.end()) {
             QJsonObject entityData = entityIt->second->toJson();
             inspector->init(entityId, displayName + "_self", entityData);
         }
     }
+
     // %%% Subcomponent Type Handling %%%
     else if (type == "subcomponent") {
         QString subCompId = data["ID"].toString();
         QString parentCompId = data["parentId"].toString();
         QJsonObject subComponentData;
-        auto compIt = hierarchy->Components->find(parentCompId.toStdString());
-        if (compIt != hierarchy->Components->end()) {
+        auto compIt = hierarchy->Components.find(parentCompId.toStdString());
+        if (compIt != hierarchy->Components.end()) {
             auto compPtr = compIt->second;
             if (compPtr) {
                 subComponentData = compPtr->getsubComponentData(subCompId.toStdString());
@@ -562,8 +564,8 @@ void DatabaseEditor::onTreeItemSelected(QVariantMap data)
     }
     // %%% Folder Type Handling %%%
     else if (type == "folder") {
-        auto folderIt = hierarchy->Folders->find(data["ID"].toString().toStdString());
-        if (folderIt != hierarchy->Folders->end()) {
+        auto folderIt = hierarchy->Folders.find(data["ID"].toString().toStdString());
+        if (folderIt != hierarchy->Folders.end()) {
             inspector->init(ID, displayName + "_self", folderIt->second->toJson());
         }
     }
@@ -603,6 +605,7 @@ void DatabaseEditor::cleanupExtraInspectors()
             }
             inspectorDock->setProperty("AllInspectors", QVariant());
         }
+
         // Reset main inspector state
         if (inspector) {
             inspector->resetState();
@@ -629,9 +632,10 @@ void DatabaseEditor::cleanupExtraInspectors()
 /* Show all components of an entity in a grid layout */
 void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QString& entityName)
 {
+
     QString entityType = "";
-    auto entityIt = hierarchy->Entities->find(entityId.toStdString());
-    if (entityIt != hierarchy->Entities->end()) {
+    auto entityIt = hierarchy->Entities.find(entityId.toStdString());
+    if (entityIt != hierarchy->Entities.end()) {
         QJsonObject entityData = entityIt->second->toJson();
         if (entityData.contains("type") && entityData["type"].isObject()) {
             QJsonObject typeObj = entityData["type"].toObject();
@@ -643,7 +647,7 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
 
     // Non-platform entities show simplified view
     if (entityType != "Platform") {
-        if (entityIt != hierarchy->Entities->end()) {
+        if (entityIt != hierarchy->Entities.end()) {
             QJsonObject entityData = entityIt->second->toJson();
             QJsonObject displayData;
             displayData["name"] = entityData["name"];
@@ -682,6 +686,7 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
         {"iffs", 400},
         {"parameters", 150}
     };
+
     QStringList hiddenComponents = {"collider", "transform", "trajectory", "rigidbody", "entity", "crossSection"};
     QStringList dynamicModelBitmapColumn = {"dynamicModel", "bitmap"};
     QStringList iffRadioColumnComponents = {"iffs", "radios"};
@@ -698,8 +703,8 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
 
         QJsonObject componentData;
         if (compType == "entity") {
-            auto entityIt = hierarchy->Entities->find(entityId.toStdString());
-            if (entityIt != hierarchy->Entities->end()) {
+            auto entityIt = hierarchy->Entities.find(entityId.toStdString());
+            if (entityIt != hierarchy->Entities.end()) {
                 componentData = entityIt->second->toJson();
                 availableComponents.append(qMakePair(compType, componentMinHeights[compType]));
             }
@@ -803,6 +808,7 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
         }
         currentColumn++;
     }
+
     // Group 2 column
     if (!group2ComponentsList.isEmpty()) {
         columnWidgets[currentColumn] = new QWidget();
@@ -837,10 +843,8 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
     for (const auto& comp : availableComponents) {
         QString compType = comp.first;
         if (hiddenComponents.contains(compType)) continue;
-
         int minHeight = componentMinHeights[compType];
         int columnIndex = componentColumnMap[compType];
-
         // Dynamic height calculation for certain components
         bool needsDynamicHeight = false;
         int actualHeight = minHeight;
@@ -856,14 +860,12 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
                 actualHeight = qMax(actualHeight, minHeight);
             }
         }
-
         // Get component data
         QJsonObject componentData;
         QString displayName = capitalizeFirstLetter(compType);
-
         if (compType == "entity") {
-            auto entityIt = hierarchy->Entities->find(entityId.toStdString());
-            if (entityIt != hierarchy->Entities->end()) {
+            auto entityIt = hierarchy->Entities.find(entityId.toStdString());
+            if (entityIt != hierarchy->Entities.end()) {
                 componentData = entityIt->second->toJson();
                 Inspector *entityInspector = new Inspector();
                 entityInspector->setHierarchy(hierarchy);
@@ -922,6 +924,7 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
         }
         columnLayouts[columnIndex]->insertWidget(columnLayouts[columnIndex]->count() - 1, compWidget);
     }
+
     // %%% Grid Layout Assembly %%%
     for (int col = 0; col < totalColumns; col++) {
         if (columnWidgets[col]) {
@@ -984,6 +987,7 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
     inspectorDock->setProperty("AllComponentsWidget", QVariant::fromValue(scrollArea));
     inspectorDock->setProperty("AllInspectors", QVariant::fromValue(allInspectors));
 }
+
 
 // %%% Component Inspector Creation %%%
 /* Create inspector widget for single component */
@@ -1052,4 +1056,30 @@ QWidget* DatabaseEditor::createComponentInspectorWithDynamicHeight(
     frameLayout->setSpacing(1);
     frameLayout->addWidget(inspector);
     return frame;
+}
+void DatabaseEditor::runUnitTestsOnce()
+{
+    static bool testsRun = false;
+    if (testsRun) return;
+    testsRun = true;
+
+    QTimer::singleShot(0, []() {
+        Console* console = nullptr;
+        MainWindow* mw = MainWindow::instance();
+        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+            console = mw->databaseEditor->console;
+        }
+        if (!console) {
+            qDebug() << "DatabaseEditor: console not available, cannot run tests";
+            return;
+        }
+
+        // Use the existing DatabaseEditor instance (the real one)
+        // because it's already created at startup.
+        if (mw && mw->databaseEditor) {
+            runDatabaseEditorTests(mw->databaseEditor, console);
+        } else {
+            qDebug() << "DatabaseEditor: instance not available";
+        }
+    });
 }

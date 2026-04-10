@@ -36,6 +36,10 @@
 #include <core/Config/scenarioconfig.h>
 #include "GUI/Tacticaldisplay/Gis/layerpanel.h"
 #include <GUI/Editors/customresizableoverlaydock.h>
+#include "tests/scenarioeditortest/scenarioeditor_test.h"
+#include "GUI/mainwindow.h"
+#include <QTimer>
+
 // %%% String Utility Function %%%
 /* Capitalize the first letter of a string */
 static QString capitalizeFirstLetter(const QString &str)
@@ -49,7 +53,6 @@ static QString capitalizeFirstLetter(const QString &str)
 ScenarioEditor::ScenarioEditor(QWidget *parent)
     : QMainWindow(parent)
 {
-
     m_scenarioConfig = new ScenarioConfig(this);
     setWindowTitle("Scenario Editor");
     resize(1100, 600);
@@ -81,7 +84,6 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
                     loadRecentProject(filePath);
                 }
             });
-
     connect(this, &ScenarioEditor::Activated,
             tacticalDisplay->canvas, &CanvasWidget::ReInit);
 
@@ -171,9 +173,9 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
                 treeView, &HierarchyTree::selectEntityById);
         connect(tacticalDisplay->canvas, &CanvasWidget::selectEntitybyCursor,
                 this, [=](const QString& entityId) {
-                    if (!hierarchy->Entities) return;
-                    auto it = hierarchy->Entities->find(entityId.toStdString());
-                    if (it == hierarchy->Entities->end()) return;
+                    // if (!hierarchy->Entities) return;
+                    auto it = hierarchy->Entities.find(entityId.toStdString());
+                    if (it == hierarchy->Entities.end()) return;
 
                     Entity* entity = it->second;
                     QString entityName = QString::fromStdString(entity->Name);
@@ -182,7 +184,7 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
 
                         for (Inspector* insp : inspectors) {
                             insp->init(entityId, displayName + "_self",
-                                       (*hierarchy->Entities)[entityId.toStdString()]->toJson());
+                                       (hierarchy->Entities)[entityId.toStdString()]->toJson());
                         }
                     }
                     if (!inspectorDock->isVisible()) {
@@ -210,10 +212,10 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
             QString entityID = data["ID"].toString();
 
             // Check if this entity is a Formation
-            if (hierarchy && hierarchy->Entities &&
-                hierarchy->Entities->find(entityID.toStdString()) != hierarchy->Entities->end()) {
+            if (hierarchy &&
+                hierarchy->Entities.find(entityID.toStdString()) != hierarchy->Entities.end()) {
 
-                Entity* entity = (*hierarchy->Entities)[entityID.toStdString()];
+                Entity* entity = (hierarchy->Entities)[entityID.toStdString()];
                 Formation* formation = dynamic_cast<Formation*>(entity);
 
                 if (formation) {
@@ -260,10 +262,11 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
         QString name = data["name"].toString();
         QString ID = data["parentId"].toString();
         QString displayName = capitalizeFirstLetter(name);
+if (!inspectorDock->isLocked()) {
 
         for (Inspector* inspector : inspectors) {
             if (type == "subcomponent") {
-                QJsonObject componentData = (*hierarchy->Components)[data["parentId"].toString()
+                QJsonObject componentData = (hierarchy->Components)[data["parentId"].toString()
                                                                          .toStdString()]->getsubComponentData(data["ID"].toString()
                                                                           .toStdString());
                 if (!componentData.isEmpty()) {
@@ -280,17 +283,17 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
                                                                    .toStdString()]->toJson());
             } else if (type == "folder") {
                 inspector->init(ID, displayName + "_self",
-                                (*hierarchy->Folders)[data["ID"].toString()
+                                (hierarchy->Folders)[data["ID"].toString()
                                                           .toStdString()]->toJson());
             } else if (type == "entity") {
                 inspector->init(data["ID"].toString(), displayName + "_self",
-                                (*hierarchy->Entities)[data["ID"].toString()
+                                (hierarchy->Entities)[data["ID"].toString()
                                                            .toStdString()]->toJson());
             } else {
                 inspector->init(ID, displayName, QJsonObject());
             }
         }
-
+}
         if (!inspectorDock->isVisible()) {
             // Hide other right panel docks
             if (libraryDock && libraryDock->isVisible()) {
@@ -299,16 +302,43 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
             if (textScriptDock && textScriptDock->isVisible()) {
                 textScriptDock->hide();
             }
-
             // Show inspector
             addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
             splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
             inspectorDock->show();
             inspectorDock->raise();
         }
+        // if (tacticalDisplay && type == "entity") {
+        //     tacticalDisplay->selectedMesh(data["ID"].toString());
+        // } else {
+        // }
+
         if (tacticalDisplay && type == "entity") {
             tacticalDisplay->selectedMesh(data["ID"].toString());
-        } else {
+        }
+        else if (tacticalDisplay && (type == "subcomponent" || type == "component")) {
+            // Parent entity ka ID dhundho
+            QString parentEntityId = data["parentId"].toString();
+
+            if (type == "subcomponent") {
+                if (hierarchy ) {
+                    auto it = hierarchy->Components.find(
+                        data["parentId"].toString().toStdString());
+                    if (it != hierarchy->Components.end()) {
+                        parentEntityId = QString::fromStdString(it->second->parentID);
+                    }
+                }
+            }
+
+            // Sirf canvas par entity highlight karo
+            // Tree mein selectEntityById BILKUL MAT BULAO
+            // Taaki focus sensor par hi rahe
+            if (hierarchy ) {
+                auto it = hierarchy->Entities.find(parentEntityId.toStdString());
+                if (it != hierarchy->Entities.end()) {
+                    tacticalDisplay->selectedMesh(parentEntityId);
+                }
+            }
         }
     });
 
@@ -325,6 +355,7 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
         } else {
             type = data["type"].toString();
         }
+
         // Only auto-center for entity selections (not folders, profiles, or components)
         if (type == "entity" && tacticalDisplay && tacticalDisplay->canvas) {
             QString entityId = data["ID"].toString();
@@ -381,6 +412,8 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     connect(hierarchy, &Hierarchy::profileRenamed, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::folderRenamed, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::entityRenamed, this, &ScenarioEditor::markUnsavedChanges);
+    runUnitTestsOnce();
+
 }
 void ScenarioEditor::setupEnhancedDockWidgets()
 {
@@ -642,6 +675,7 @@ void ScenarioEditor::resizeEvent(QResizeEvent *event)
     if (hierarchyDock) {
         hierarchyDock->setGeometry(leftX, topY, panelWidth, hierarchyHeight);
     }
+
 
     if (layerDock) {
         int hierarchyBottom = hierarchyDock ? hierarchyDock->y() + hierarchyDock->height() : topY + hierarchyHeight;
@@ -1311,4 +1345,30 @@ void ScenarioEditor::showPanelContextMenu(const QPoint &pos)
         sidebarDock->setVisible(!sidebarDock->isVisible());
         if (sidebarDock->isVisible()) sidebarDock->raise();
     }
+}
+void ScenarioEditor::runUnitTestsOnce()
+{
+    static bool testsRun = false;
+    if (testsRun) return;
+    testsRun = true;
+
+    QTimer::singleShot(0, []() {
+        Console* console = nullptr;
+        MainWindow* mw = MainWindow::instance();
+        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+            console = mw->databaseEditor->console;
+        }
+        if (!console) {
+            qDebug() << "ScenarioEditor: console not available, cannot run tests";
+            return;
+        }
+
+        // Use the existing ScenarioEditor instance (the real one)
+        // because it's created when switching to scenario editor.
+        if (mw && mw->scenarioEditor) {
+            runScenarioEditorTests(mw->scenarioEditor, console);
+        } else {
+            qDebug() << "ScenarioEditor: instance not available";
+        }
+    });
 }

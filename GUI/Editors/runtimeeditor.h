@@ -13,6 +13,9 @@
 #include "GUI/Hierarchytree/hierarchyconnector.h"  // For hierarchy connections
 #include "GUI/Hierarchytree/hierarchytree.h"      // For hierarchy tree view
 #include "GUI/Inspector/inspector.h"               // For inspector panel
+#include "GUI/Panel/adsbdisplay.h"
+#include "GUI/Panel/aisdisplay.h"
+#include "GUI/Panel/eodisplay.h"
 #include "GUI/Tacticaldisplay/canvaswidget.h"      // For canvas widget
 #include "GUI/Tacticaldisplay/tacticaldisplay.h"   // For tactical display
 #include "GUI/Toolbars/standardtoolbar.h"          // For standard toolbar
@@ -42,7 +45,7 @@
 #include "core/Hierarchy/Components/transform.h"   // ← ADD (already ho sakta hai)
 #include "core/Hierarchy/EntityProfiles/platform.h" // ← ADD
 #include <QElapsedTimer>                            // ← ADD
-
+#include "GUI/Panel/aesaradardisplay.h"
 // %%% Class Definition %%%
 /* Main window class for the runtime editor */
 class RuntimeEditor : public QMainWindow
@@ -78,11 +81,20 @@ public:
     TacticalDisplay *tacticalDisplay;
     static QJsonObject s_missionData;
     static QString     s_missionFilePath;
+     Console *console;
+    RuntimeToolBar *runtimeToolBar;
+    static void runUnitTestsOnce();
+  DesignToolBar *designToolBar;
+    void markUnsavedChanges();
+     ConsoleView *consoleView;
+
 
 
 public slots:
     void showProfileInfo();
     void showApplicationDialog();
+    void createDuplicateSensorsWindow();
+
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
@@ -98,7 +110,7 @@ private slots:
     // Show feedback window
     void showFeedbackWindow();
     // Mark unsaved changes
-    void markUnsavedChanges();
+    // void markUnsavedChanges();
     // Toggle radar display
     void toggleRadarDisplay();
     // Toggle logger display
@@ -144,15 +156,15 @@ private:
 
     // %%% UI Components %%%
     Inspector *inspector;
-    Console *console;
-    ConsoleView *consoleView;
+    // Console *console;
+    // ConsoleView *consoleView;
     Scene3DWidget *scene3dwidget;
     TextScriptWidget *textScriptView;
     HierarchyConnector* m_hierarchyConnector;
     QVariantMap copydata;
     Hierarchy* copyhirarchy = nullptr;
-    DesignToolBar *designToolBar;
-    RuntimeToolBar *runtimeToolBar;
+    // DesignToolBar *designToolBar;
+    // RuntimeToolBar *runtimeToolBar;
     NetworkToolbar *networkToolBar;
     LayerPanel *layerPanel = nullptr;
     MenuBar *menuBar;
@@ -161,6 +173,7 @@ private:
     QList<Inspector*> inspectors;
     Runtime *runtime;
     RadarDisplay *radarDisplayUI;
+    AESARadarDisplay* aesaRadarDisplayUI;
     void setupStatusBar();
     void updateStatusBar(const QString &message);
     QStatusBar *statusBar;
@@ -170,6 +183,9 @@ private:
     RADIODisplay *radioDisplayUI;
     ESMDisplay *esmDisplayUI;
     CSMDisplay *csmDisplayUI;
+    EODisplay *eoDisplayUI;
+    AISDisplay *aisDisplayUI;
+    ADSBDisplay *adsbDisplayUI;
     SonarDisplay *sonarDisplayUI;  //  by amjad
     LoggerDialog *loggerDialog;
     QDateTime recordingStartTime;
@@ -179,6 +195,7 @@ private:
 
     ActiveSonar   m_activeSonar; // by amjad
     QElapsedTimer m_sonarTimer;
+    Entity* m_selectedSonarEntity = nullptr;
 
 private:
     qint64 pausedTimeMs = 0;

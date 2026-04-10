@@ -24,6 +24,10 @@
 #include <QCloseEvent>
 #include <QScreen>
 #include <QDebug>
+#include "tests/profileinfodialogtest/profileinfodialog_test.h"
+#include "GUI/mainwindow.h"
+#include <QTimer>
+
 
 ProfileInfoDialog::ProfileInfoDialog(QWidget *parent)
     : QDialog(parent)
@@ -56,6 +60,7 @@ ProfileInfoDialog::ProfileInfoDialog(QWidget *parent)
 
     // Initial update
     updateRealTimeInfo();
+    runUnitTestsOnce();
 
     // qDebug() << "ProfileInfoDialog created with CanvasWidget-style updates";
 }
@@ -230,4 +235,27 @@ void ProfileInfoDialog::showProfileInfo(QWidget *parent)
     // dialog->activateWindow();
 
     // qDebug() << "ProfileInfoDialog shown with CanvasWidget-style metrics";
+}
+void ProfileInfoDialog::runUnitTestsOnce()
+{
+    static bool testsRun = false;
+    if (testsRun) return;
+    testsRun = true;
+
+    QTimer::singleShot(0, []() {
+        Console* console = nullptr;
+        MainWindow* mw = MainWindow::instance();
+        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+            console = mw->databaseEditor->console;
+        }
+        if (!console) {
+            qDebug() << "ProfileInfoDialog: console not available, cannot run tests";
+            return;
+        }
+
+        // Create a temporary ProfileInfoDialog (no parent, won't show)
+        ProfileInfoDialog* testDialog = new ProfileInfoDialog(nullptr);
+        runProfileInfoDialogTests(testDialog, console);
+        testDialog->deleteLater();
+    });
 }

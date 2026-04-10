@@ -20,7 +20,8 @@
 #include "core/Hierarchy/EntityProfiles/weapons/rocket.h"
 #include "core/Hierarchy/EntityProfiles/weapons/flare.h"
 #include "core/Hierarchy/EntityProfiles/weapons/chaff.h"
-
+#include "tests/hierarchytreetest/contextmenu_test.h"
+#include "GUI/mainwindow.h"
 // Creates the correct Weapon subclass from type name string.
 // Same pattern as SensorProfile: "CSM" -> new CSM(h), "ESM" -> new ESM(h)
 static Weapon* createWeapon(const QString& typeName, Hierarchy* h)
@@ -82,6 +83,7 @@ void ContextMenu::setupMenu(QTreeWidgetItem *item)
     } else if (type == "component") {
         setupComponentMenu(storedData);
     }
+    runUnitTestsOnce();
 }
 
 // %%% Sub-Component Menu %%%
@@ -231,16 +233,16 @@ void ContextMenu::setupProfileMenu(const QVariantMap &data)
             try {
                 QString typeName = "Missile";
                 if (dbHierarchy) {
-                    auto it = dbHierarchy->Weapons->find(selectedId.toStdString());
-                    if (it != dbHierarchy->Weapons->end() && it->second)
+                    auto it = dbHierarchy->Weapons.find(selectedId.toStdString());
+                    if (it != dbHierarchy->Weapons.end() && it->second)
                         typeName = it->second->weaponTypeName();
                 }
                 Weapon* weapon = createWeapon(typeName, correctHierarchy);
                 weapon->Name     = weaponName.toStdString();
                 weapon->parentID = ID.toStdString();
                 if (dbHierarchy) {
-                    auto it = dbHierarchy->Weapons->find(selectedId.toStdString());
-                    if (it != dbHierarchy->Weapons->end() && it->second) {
+                    auto it = dbHierarchy->Weapons.find(selectedId.toStdString());
+                    if (it != dbHierarchy->Weapons.end() && it->second) {
                         std::string savedId = weapon->ID, savedName = weapon->Name, savedParent = weapon->parentID;
                         weapon->fromJson(it->second->toJson());
                         weapon->ID = savedId; weapon->Name = savedName; weapon->parentID = savedParent;
@@ -411,104 +413,48 @@ void ContextMenu::setupFolderMenu(const QVariantMap &data)
     });
 }
 
-// void ContextMenu::setupEntityMenu(const QVariantMap &data)
-// {
-//     QString ID       = data["ID"].toString();
-//     QString parentID = data["parentId"].toString();
-//     QString name     = data["name"].toString();
-
-//     QAction *rename      = addAction(QIcon(":/icons/images/rename.png"),    "Rename");
-//     QAction *copy        = addAction(QIcon(":/icons/images/copy.png"),    "Copy");
-//     QAction *setActive   = addAction(QIcon(":/icons/images/enable.png"),  "Set Active");
-//     QAction *setInactive = addAction(QIcon(":/icons/images/disable.png"),"Set Inactive");
-
-//     // ── Submenu: Add ──────────────────────────────────────────────────────
-//     QMenu *addComponentMenu = addMenu(QIcon(":/icons/images/add.png"), "Add");
-//     addComponentMenu->setStyleSheet(styleSheet());
-//     QAction *addWeapon = addComponentMenu->addAction(QIcon(":/icons/images/add.png"),  "Add Weapon");
-//     QAction *addSensor = addComponentMenu->addAction(QIcon(":/icons/images/add.png"),  "Add Sensor");
-//     QAction *addIFF    = addComponentMenu->addAction(QIcon(":/icons/images/add.png"),     "Add IFF");
-//     QAction *addRadio  = addComponentMenu->addAction(QIcon(":/icons/images/add.png"),   "Add Radio");
-
-//     // ── Submenu: Set Team ─────────────────────────────────────────────────
-//     QMenu *setTeamMenu = addMenu(QIcon(":/icons/images/seteam.png"), "Set Team");
-//     setTeamMenu->setStyleSheet(styleSheet());
-//     const QStringList teams = {"RedTeam", "BlueTeam", "GreenTeam", "YellowTeam",
-//                                "GreyTeam", "AlphaTeam", "BetaTeam", "GammaTeam"};
-//     for (const QString& team : teams) {
-//         QAction *teamAction = setTeamMenu->addAction(team);
-//         connect(teamAction, &QAction::triggered, this, [=]() {
-//             emit addTeamToEntityRequested(data, team);
-//         });
-//     }
-//     // ── Submenu: Set Category ─────────────────────────────────────────────
-//     QMenu *setCategoryMenu = addMenu(QIcon(":/icons/images/set.png"), "Set Category");
-//     setCategoryMenu->setStyleSheet(styleSheet());
-//     const QStringList categories = {"Aircraft", "Helicopter", "Ship", "Submarine", "Tank"};
-//     for (const QString& category : categories) {
-//         QAction *categoryAction = setCategoryMenu->addAction(category);
-//         connect(categoryAction, &QAction::triggered, this, [=]() {
-//             emit setCategoryToEntityRequested(data, category);
-//         });
-//     }
-//     QAction *deleteEntity = addAction(QIcon(":/icons/images/delete.png"), "Delete Entity");
-
-//     // ── Delete ────────────────────────────────────────────────────────────
-//     connect(deleteEntity, &QAction::triggered, this, [=]() {
-//         QMessageBox msgBox(this);
-//         msgBox.setStyleSheet(ContextMenuStyles::MessageBox);
-//         msgBox.setWindowTitle("Delete Entity");
-//         msgBox.setText(QString("Are you sure you want to delete entity '%1'?").arg(name));
-//         msgBox.setIcon(QMessageBox::Question);
-//         msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-//         if (msgBox.exec() == QMessageBox::Yes) emit removeEntityRequested(parentID, ID, false);
-//     });
-//     connect(copy,        &QAction::triggered, this, [=]() { emit copyItemRequested(data); });
-//     connect(setActive,   &QAction::triggered, this, [=]() { emit setEntityActiveRequested(ID, true); });
-//     connect(setInactive, &QAction::triggered, this, [=]() { emit setEntityActiveRequested(ID, false); });
-//     connect(addWeapon,   &QAction::triggered, this, [=]() { emit addWeaponToEntityRequested(data); });
-//     connect(addSensor,   &QAction::triggered, this, [=]() { emit addSensorToEntityRequested(data); });
-//     connect(addIFF,      &QAction::triggered, this, [=]() { emit addIFFToEntityRequested(data); });
-//     connect(addRadio,    &QAction::triggered, this, [=]() { emit addRadioToEntityRequested(data); });
-
-//     connect(rename, &QAction::triggered, this, [=]() mutable {
-//         QInputDialog dialog(this);
-//         dialog.setStyleSheet(ContextMenuStyles::InputDialog);
-//         dialog.setWindowTitle("Rename");
-//         dialog.setLabelText("Enter New Name:");
-//         dialog.setTextValue(name);
-//         if (dialog.exec() == QDialog::Accepted) {
-//             QString newName = dialog.textValue();
-//             if (!newName.trimmed().isEmpty()) {
-//                 QVariantMap modifiedData = data;
-//                 modifiedData["name"] = newName;
-//                 emit renameItemRequested(modifiedData);
-//             }
-//         }
-//     });
-// }
 void ContextMenu::setupEntityMenu(const QVariantMap &data)
 {
     QString ID       = data["ID"].toString();
     QString parentID = data["parentId"].toString();
     QString name     = data["name"].toString();
 
-    // ── Parent profile ka type check karo ────────────────────────────────
+    // ── Parent profile ka type check karo (folder ke andar entity ke liye bhi) ──
     bool isPlatformEntity = false;
     QTreeWidget* treeWidget = nullptr;
     if (parentWidget()) {
         treeWidget = parentWidget()->findChild<QTreeWidget*>();
     }
     if (treeWidget) {
-        // parentID wala item dhundo
         QTreeWidgetItemIterator it(treeWidget);
         while (*it) {
             QVariantMap pData = (*it)->data(0, Qt::UserRole).toMap();
             if (pData["ID"].toString() == parentID) {
+                QString pType = pData["type"].toString();
+
+                // Case 1: Direct profile parent
                 if (pData["type"].type() == QVariant::Map) {
                     QVariantMap typeData = pData["type"].toMap();
                     if (typeData["value"].toString() == "Platform") {
                         isPlatformEntity = true;
+                    }
+                }
+                // Case 2: Folder parent — grandparent profile check karo
+                else if (pType == "folder") {
+                    QString grandParentID = pData["parentId"].toString();
+                    QTreeWidgetItemIterator git(treeWidget);
+                    while (*git) {
+                        QVariantMap gpData = (*git)->data(0, Qt::UserRole).toMap();
+                        if (gpData["ID"].toString() == grandParentID) {
+                            if (gpData["type"].type() == QVariant::Map) {
+                                QVariantMap gpTypeData = gpData["type"].toMap();
+                                if (gpTypeData["value"].toString() == "Platform") {
+                                    isPlatformEntity = true;
+                                }
+                            }
+                            break;
+                        }
+                        ++git;
                     }
                 }
                 break;
@@ -534,10 +480,10 @@ void ContextMenu::setupEntityMenu(const QVariantMap &data)
 
         addComponentMenu = addMenu(QIcon(":/icons/images/add.png"), "Add");
         addComponentMenu->setStyleSheet(styleSheet());
-        addWeapon = addComponentMenu->addAction(QIcon(":/icons/images/add.png"), "Add Weapon");
-        addSensor = addComponentMenu->addAction(QIcon(":/icons/images/add.png"), "Add Sensor");
-        addIFF    = addComponentMenu->addAction(QIcon(":/icons/images/add.png"), "Add IFF");
-        addRadio  = addComponentMenu->addAction(QIcon(":/icons/images/add.png"), "Add Radio");
+        addWeapon = addComponentMenu->addAction(QIcon(":/icons/images/bio-weapon.png"),      "Add Weapon");
+        addSensor = addComponentMenu->addAction(QIcon(":/icons/images/database (1).png"),    "Add Sensor");
+        addIFF    = addComponentMenu->addAction(QIcon(":/icons/images/identification.png"),  "Add IFF");
+        addRadio  = addComponentMenu->addAction(QIcon(":/icons/images/radio.png"),           "Add Radio");
 
         setTeamMenu = addMenu(QIcon(":/icons/images/seteam.png"), "Set Team");
         setTeamMenu->setStyleSheet(styleSheet());
@@ -630,8 +576,8 @@ void ContextMenu::setupComponentMenu(const QVariantMap &data)
             if (weaponName.isEmpty()) return;
             emit addComponentRequested(parentID, "weapons", weaponName,
                                        dlg.weaponTypeStr(), "");
-            if (correctHierarchy->Entities->count(parentID.toStdString())) {
-                Entity* ent = (*correctHierarchy->Entities)[parentID.toStdString()];
+            if (correctHierarchy->Entities.count(parentID.toStdString())) {
+                Entity* ent = (correctHierarchy->Entities)[parentID.toStdString()];
                 Platform* plf = dynamic_cast<Platform*>(ent);
                 if (plf && plf->weapons) {
                     for (auto& [wid, w] : *plf->weapons->weapons) {
@@ -682,4 +628,29 @@ void ContextMenu::setupComponentMenu(const QVariantMap &data)
             }
         });
     }
+}
+void ContextMenu::runUnitTestsOnce()
+{
+    static bool testsRun = false;
+    if (testsRun) return;
+    testsRun = true;
+
+    // Console access
+    Console* console = nullptr;
+    MainWindow* mw = MainWindow::instance();
+    if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+        console = mw->databaseEditor->console;
+    }
+    if (!console) {
+        qDebug() << "ContextMenu: console not available, cannot run tests";
+        return;
+    }
+
+    // Create a temporary context menu (no parent, so it doesn't interfere)
+    ContextMenu* testMenu = new ContextMenu(nullptr);
+
+    // Run tests on this temporary menu
+    runContextMenuTests(testMenu, console);
+
+    testMenu->deleteLater();
 }

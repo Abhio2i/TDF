@@ -54,6 +54,7 @@ public:
     }
     void showLoadingOverlay(const QString& message = "Loading...");
     void hideLoadingOverlay();
+        NavigationPage *navigationPage = nullptr;
 protected:
     void closeEvent(QCloseEvent *event) override;
 private slots:
@@ -66,7 +67,7 @@ private:
     bool handleUnsavedChanges();
     void updateWindowTitleForCurrentEditor();
     void updateWindowTitle(const QString& editorName, bool hasUnsavedChanges);
-    NavigationPage *navigationPage = nullptr;
+    // NavigationPage *navigationPage = nullptr;
     static MainWindow* s_instance;
     MenuBar *mainMenuBar = nullptr;
     // %%% TDF helpers %%%

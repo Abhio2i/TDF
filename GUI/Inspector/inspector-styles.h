@@ -106,6 +106,7 @@ const QString AddButton = R"(
         font-size: 12px;
         font-weight: 500;
     }
+
     QPushButton:hover {
         background-color: #27446d;
         border-color: #3A5A7A;
@@ -125,6 +126,7 @@ const QString RemoveButton = R"(
         padding: 3px 8px;
         font-size: 11px;
     }
+
     QPushButton:hover {
         background-color: #4A2A2A;
         border-color: #8A4A4A;

@@ -11,9 +11,13 @@ public:
     Collider *collider = nullptr;
     MeshRenderer2D *meshRenderer2d = nullptr;
     float direction = 90;
-    float MinAltitude = 1000;
+    float MinAltitude = 0;
     float MaxAltitude = 10000;
-    float Speed = 70;
+    float Speed = 70;//km/h
+    float Temprature = 30;//deg
+    float humidity = 30;//%
+    float rain = 0;//mm/h
+    float fog = 0;//%
 
     void Update(float delta);
 

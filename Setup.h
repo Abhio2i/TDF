@@ -21,13 +21,10 @@ public:
 private:
     TDFManager();
     static TDFManager* s_instance;
-
     QString m_tdfPath;
     QString m_dbFolderPath;
     QString m_cityDataFolderPath;
-
     bool m_initialized;
-
     // Helper methods
     void createFolderStructure();
     void copyResourceIfNeeded(const QString& resourcePath, const QString& destPath);

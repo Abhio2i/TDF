@@ -1002,8 +1002,8 @@ void Formation::updateComponent(QString name, const QJsonObject& obj) {
             if (entityObj.contains("id")) {
                 std::string id = entityObj["id"].toString().toStdString();
                 Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-                if (parent && parent->Entities->find(id) != parent->Entities->end()) {
-                    mothership->entity = (*parent->Entities)[id];
+                if (parent && parent->Entities.find(id) != parent->Entities.end()) {
+                    mothership->entity = (parent->Entities)[id];
                 }
             }
         }
@@ -1023,8 +1023,8 @@ void Formation::updateComponent(QString name, const QJsonObject& obj) {
         if (entityObj.contains("id")) {
             std::string id = entityObj["id"].toString().toStdString();
             Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-            if (parent && parent->Entities->find(id) != parent->Entities->end()) {
-                pos->entity = (*parent->Entities)[id];
+            if (parent && parent->Entities.find(id) != parent->Entities.end()) {
+                pos->entity = parent->Entities[id];
 
                 // Link the platform's dynamic model to the formation logic
                 Platform* platform = dynamic_cast<Platform*>(pos->entity);
@@ -1082,8 +1082,8 @@ void Formation::resolveEntityReference(FormationPosition* position, const QJsonO
         // Only resolve if it's not a dummy ID
         if (entityId != "dummy" && !entityId.empty()) {
             Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-            if (parent && parent->Entities->find(entityId) != parent->Entities->end()) {
-                position->entity = (*parent->Entities)[entityId];
+            if (parent && parent->Entities.find(entityId) != parent->Entities.end()) {
+                position->entity = parent->Entities[entityId];
 
                 // If this is a formation position (not mothership), setup follow behavior
                 if (position != mothership && mothership && mothership->entity) {

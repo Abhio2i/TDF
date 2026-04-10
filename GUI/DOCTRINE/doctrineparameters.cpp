@@ -1,328 +1,10 @@
-// /* ========================================================================= */
-// /* File: doctrineparameters.cpp                                            */
-// /* Purpose: Implements the Doctrine Parameters panel widget                  */
-// /* ========================================================================= */
 
-// #include "doctrineparameters.h"
-// #include "doctrine-styles.h"       // All CSS lives here
-
-// // %%% Constructor %%%
-// DoctrineParameters::DoctrineParameters(QWidget *parent)
-//     : QWidget(parent)
-// {
-//     setupUI();
-//     applyStyles();
-//     populateDropdowns();
-
-//     // %%% Default: Blue force selected %%%
-//     radioBlue->setChecked(true);
-//     updateForceStyle(FORCE_BLUE);
-// }
-
-// // %%% UI Setup %%%
-// void DoctrineParameters::setupUI()
-// {
-//     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-//     mainLayout->setContentsMargins(0, 0, 0, 0);
-//     mainLayout->setSpacing(0);
-
-//     // %%% Title Bar %%%
-//     QLabel *titleLabel = new QLabel("Doctrine Parameters", this);
-//     titleLabel->setObjectName("titleLabel");
-//     titleLabel->setFixedHeight(32);
-//     mainLayout->addWidget(titleLabel);
-
-//     // %%% Force Type Selection Bar (Blue / Red) %%%
-//     QFrame *forceBar = new QFrame(this);
-//     forceBar->setObjectName("forceBar");
-//     forceBar->setFixedHeight(46);
-
-//     QHBoxLayout *forceLayout = new QHBoxLayout(forceBar);
-//     forceLayout->setContentsMargins(12, 6, 12, 6);
-//     forceLayout->setSpacing(10);
-
-//     radioBlue = new QRadioButton("🔵  Blue", forceBar);
-//     radioBlue->setCursor(Qt::PointingHandCursor);
-
-//     radioRed = new QRadioButton("🔴  Red", forceBar);
-//     radioRed->setCursor(Qt::PointingHandCursor);
-
-//     forceGroup = new QButtonGroup(this);
-//     forceGroup->addButton(radioBlue, FORCE_BLUE);
-//     forceGroup->addButton(radioRed,  FORCE_RED);
-//     forceGroup->setExclusive(true);
-
-//     forceLayout->addWidget(radioBlue);
-//     forceLayout->addWidget(radioRed);
-//     forceLayout->addStretch();
-//     mainLayout->addWidget(forceBar);
-
-//     // %%% Divider %%%
-//     QFrame *divider = new QFrame(this);
-//     divider->setObjectName("divider");
-//     divider->setFrameShape(QFrame::HLine);
-//     mainLayout->addWidget(divider);
-
-//     // %%% Form Area %%%
-//     QWidget *formWidget = new QWidget(this);
-//     formWidget->setStyleSheet("background-color: #0F2636;");
-//     QGridLayout *grid = new QGridLayout(formWidget);
-//     grid->setContentsMargins(12, 12, 12, 12);
-//     grid->setHorizontalSpacing(10);
-//     grid->setVerticalSpacing(10);
-//     grid->setColumnStretch(1, 2);
-//     grid->setColumnStretch(3, 2);
-
-//     // %%% Row 0: Doctrine Name %%%
-//     QLabel *lblDoctrineName = new QLabel("Doctrine Name:", this);
-//     lblDoctrineName->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-//     doctrineName = new QLineEdit(this);
-//     doctrineName->setPlaceholderText("Enter doctrine name...");
-//     grid->addWidget(lblDoctrineName, 0, 0);
-//     grid->addWidget(doctrineName,    0, 1, 1, 3);
-
-//     // %%% Row 1: Mission Type %%%
-//     QLabel *lblMissionType = new QLabel("Mission Type:", this);
-//     lblMissionType->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-//     missionType = new QComboBox(this);
-//     grid->addWidget(lblMissionType, 1, 0);
-//     grid->addWidget(missionType,    1, 1, 1, 3);
-
-//     // %%% Row 2: Mission Objective %%%
-//     QLabel *lblObjective = new QLabel("Mission Objective:", this);
-//     lblObjective->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-//     missionObjective = new QLineEdit(this);
-//     missionObjective->setPlaceholderText("Describe the mission objective...");
-//     grid->addWidget(lblObjective,     2, 0);
-//     grid->addWidget(missionObjective, 2, 1, 1, 3);
-
-//     // %%% Row 3: Rules of Engagement + Detection Policy %%%
-//     QLabel *lblROE = new QLabel("Rules of Engagement:", this);
-//     lblROE->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-//     rulesOfEngagement = new QComboBox(this);
-
-//     QLabel *lblDetection = new QLabel("Detection Policy:", this);
-//     lblDetection->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-//     detectionPolicy = new QComboBox(this);
-
-//     grid->addWidget(lblROE,            3, 0);
-//     grid->addWidget(rulesOfEngagement, 3, 1);
-//     grid->addWidget(lblDetection,      3, 2);
-//     grid->addWidget(detectionPolicy,   3, 3);
-
-//     // %%% Row 4: Engagement Policy + Retreat Policy %%%
-//     QLabel *lblEngagement = new QLabel("Engagement Policy:", this);
-//     lblEngagement->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-//     engagementPolicy = new QComboBox(this);
-
-//     QLabel *lblRetreat = new QLabel("Retreat Policy:", this);
-//     lblRetreat->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-//     retreatPolicy = new QComboBox(this);
-
-//     grid->addWidget(lblEngagement,    4, 0);
-//     grid->addWidget(engagementPolicy, 4, 1);
-//     grid->addWidget(lblRetreat,       4, 2);
-//     grid->addWidget(retreatPolicy,    4, 3);
-
-//     // %%% Row 5: Clear Zones Button %%%
-//     clearZonesBtn = new QPushButton("↺  Clear Zones", this);
-//     clearZonesBtn->setObjectName("clearZonesBtn");
-//     clearZonesBtn->setFixedSize(130, 30);
-//     clearZonesBtn->setCursor(Qt::PointingHandCursor);
-
-//     QHBoxLayout *btnRow = new QHBoxLayout();
-//     btnRow->addStretch();
-//     btnRow->addWidget(clearZonesBtn);
-
-//     QWidget *btnWidget = new QWidget(this);
-//     btnWidget->setLayout(btnRow);
-//     btnWidget->setStyleSheet("background-color: transparent;");
-//     grid->addWidget(btnWidget, 5, 0, 1, 4);
-
-//     mainLayout->addWidget(formWidget);
-//     mainLayout->addStretch();
-
-//     // %%% Signal Connections %%%
-//     connect(clearZonesBtn,    &QPushButton::clicked,
-//             this, &DoctrineParameters::onClearZones);
-//     connect(doctrineName,     &QLineEdit::textChanged,
-//             this, &DoctrineParameters::onAnyValueChanged);
-//     connect(missionObjective, &QLineEdit::textChanged,
-//             this, &DoctrineParameters::onAnyValueChanged);
-//     connect(missionType,      QOverload<int>::of(&QComboBox::currentIndexChanged),
-//             this, &DoctrineParameters::onAnyValueChanged);
-//     connect(rulesOfEngagement,QOverload<int>::of(&QComboBox::currentIndexChanged),
-//             this, &DoctrineParameters::onAnyValueChanged);
-//     connect(engagementPolicy, QOverload<int>::of(&QComboBox::currentIndexChanged),
-//             this, &DoctrineParameters::onAnyValueChanged);
-//     connect(retreatPolicy,    QOverload<int>::of(&QComboBox::currentIndexChanged),
-//             this, &DoctrineParameters::onAnyValueChanged);
-//     connect(detectionPolicy,  QOverload<int>::of(&QComboBox::currentIndexChanged),
-//             this, &DoctrineParameters::onAnyValueChanged);
-//     connect(forceGroup, QOverload<int>::of(&QButtonGroup::idClicked),
-//             this, &DoctrineParameters::onForceTypeChanged);
-// }
-
-// // %%% Style Application %%%
-// /* Loads all CSS from doctrine-styles.h */
-// void DoctrineParameters::applyStyles()
-// {
-//     setStyleSheet(DoctrineStyles::PanelStyle);
-// }
-
-// // %%% Force Button Visuals %%%
-// /* Switches radio button stylesheet between active/inactive per selection */
-// void DoctrineParameters::updateForceStyle(int id)
-// {
-//     if (id == FORCE_BLUE) {
-//         radioBlue->setStyleSheet(DoctrineStyles::BlueActive);
-//         radioRed->setStyleSheet(DoctrineStyles::RedInactive);
-//     } else {
-//         radioRed->setStyleSheet(DoctrineStyles::RedActive);
-//         radioBlue->setStyleSheet(DoctrineStyles::BlueInactive);
-//     }
-// }
-
-// // %%% Dropdown Population %%%
-// void DoctrineParameters::populateDropdowns()
-// {
-//     missionType->addItems({
-//         "PATROL", "SURVEILLANCE", "INTERCEPTION", "STRIKE", "ESCORT",
-//         "AREA_DENIAL", "SEARCH_AND_RESCUE", "BLOCKADE",
-//         "RECONNAISSANCE", "DEFENSIVE_HOLD"
-//     });
-
-//     rulesOfEngagement->addItems({
-//         "HOLD_FIRE", "RETURN_FIRE_ONLY", "DEFENSIVE_ONLY",
-//         "FIRE_ON_DETECTION", "FIRE_ON_IDENTIFICATION",
-//         "FREE_FIRE", "COMMAND_AUTHORIZATION_REQUIRED"
-//     });
-
-//     engagementPolicy->addItems({
-//         "NEAREST_TARGET", "HIGHEST_THREAT", "LOWEST_HEALTH_TARGET",
-//         "ASSIGNED_TARGET_ONLY", "HIGH_VALUE_TARGET",
-//         "GROUP_ENGAGEMENT", "SEQUENTIAL_ENGAGEMENT"
-//     });
-
-//     retreatPolicy->addItems({
-//         "NEVER_RETREAT", "RETREAT_IF_OUTNUMBERED",
-//         "RETREAT_IF_DAMAGE_EXCEEDS_THRESHOLD", "RETREAT_IF_FUEL_LOW",
-//         "RETREAT_IF_AMMO_DEPLETED", "RETREAT_IF_COMMAND_ORDERED",
-//         "TACTICAL_WITHDRAWAL"
-//     });
-
-//     detectionPolicy->addItems({
-//         "PASSIVE_SENSORS_ONLY", "ACTIVE_RADAR_ALLOWED",
-//         "FULL_SENSOR_USAGE", "STEALTH_MODE",
-//         "EMCON_PASSIVE", "INTERMITTENT_RADAR"
-//     });
-// }
-
-// // %%% JSON Loading %%%
-// void DoctrineParameters::loadFromJson(const QJsonObject &data)
-// {
-//     blockSignals(true);
-
-//     if (data.contains("doctrineName"))
-//         doctrineName->setText(data["doctrineName"].toString());
-
-//     if (data.contains("missionType")) {
-//         int idx = missionType->findText(data["missionType"].toString());
-//         if (idx >= 0) missionType->setCurrentIndex(idx);
-//     }
-
-//     if (data.contains("missionObjective"))
-//         missionObjective->setText(data["missionObjective"].toString());
-
-//     if (data.contains("rulesOfEngagement")) {
-//         int idx = rulesOfEngagement->findText(data["rulesOfEngagement"].toString());
-//         if (idx >= 0) rulesOfEngagement->setCurrentIndex(idx);
-//     }
-
-//     if (data.contains("engagementPolicy")) {
-//         int idx = engagementPolicy->findText(data["engagementPolicy"].toString());
-//         if (idx >= 0) engagementPolicy->setCurrentIndex(idx);
-//     }
-
-//     if (data.contains("retreatPolicy")) {
-//         int idx = retreatPolicy->findText(data["retreatPolicy"].toString());
-//         if (idx >= 0) retreatPolicy->setCurrentIndex(idx);
-//     }
-
-//     if (data.contains("detectionPolicy")) {
-//         int idx = detectionPolicy->findText(data["detectionPolicy"].toString());
-//         if (idx >= 0) detectionPolicy->setCurrentIndex(idx);
-//     }
-
-//     if (data.contains("forceType")) {
-//         if (data["forceType"].toString() == "RED") {
-//             radioRed->setChecked(true);
-//             updateForceStyle(FORCE_RED);
-//         } else {
-//             radioBlue->setChecked(true);
-//             updateForceStyle(FORCE_BLUE);
-//         }
-//     }
-
-//     blockSignals(false);
-// }
-
-// // %%% JSON Export %%%
-// QJsonObject DoctrineParameters::toJson() const
-// {
-//     QJsonObject obj;
-//     obj["forceType"]         = radioRed->isChecked() ? QString("RED") : QString("BLUE");
-//     obj["doctrineName"]      = doctrineName->text();
-//     obj["missionType"]       = missionType->currentText();
-//     obj["missionObjective"]  = missionObjective->text();
-//     obj["rulesOfEngagement"] = rulesOfEngagement->currentText();
-//     obj["engagementPolicy"]  = engagementPolicy->currentText();
-//     obj["retreatPolicy"]     = retreatPolicy->currentText();
-//     obj["detectionPolicy"]   = detectionPolicy->currentText();
-//     return obj;
-// }
-
-// // %%% Reset %%%
-// void DoctrineParameters::resetState()
-// {
-//     blockSignals(true);
-//     radioBlue->setChecked(true);
-//     updateForceStyle(FORCE_BLUE);
-//     doctrineName->clear();
-//     missionObjective->clear();
-//     missionType->setCurrentIndex(0);
-//     rulesOfEngagement->setCurrentIndex(0);
-//     engagementPolicy->setCurrentIndex(0);
-//     retreatPolicy->setCurrentIndex(0);
-//     detectionPolicy->setCurrentIndex(0);
-//     blockSignals(false);
-// }
-
-// // %%% Slots %%%
-// void DoctrineParameters::onForceTypeChanged(int id)
-// {
-//     updateForceStyle(id);
-//     emit valueChanged(toJson());
-// }
-
-// void DoctrineParameters::onClearZones()
-// {
-//     resetState();
-//     emit valueChanged(toJson());
-// }
-
-// void DoctrineParameters::onAnyValueChanged()
-// {
-//     emit valueChanged(toJson());
-// }
-/* =========================================================================
-   File: doctrineparameters.cpp
-   Purpose: Doctrine Parameters panel — Blue / Red team tabs at the top,
-            each team has its own independent form data.
-   ========================================================================= */
 
 #include "doctrineparameters.h"
 #include "doctrine-styles.h"
+#include "tests/doctrineparameterstest/doctrineparameters_test.h"
+#include "GUI/mainwindow.h"
+#include <QTimer>
 
 // ── Constructor ─────────────────────────────────────────────────────────────
 DoctrineParameters::DoctrineParameters(QWidget *parent)
@@ -334,6 +16,7 @@ DoctrineParameters::DoctrineParameters(QWidget *parent)
 
     // Start on Blue tab
     switchToTeam(FORCE_BLUE);
+    runUnitTestsOnce();
 }
 
 // ── UI Setup ─────────────────────────────────────────────────────────────────
@@ -802,4 +485,31 @@ void DoctrineParameters::onClearZones()
 void DoctrineParameters::onAnyValueChanged()
 {
     emit valueChanged(toJson());
+}
+QString DoctrineParameters::getForceType() const
+{
+    return (m_currentForce == FORCE_BLUE) ? "Blue" : "Red";
+}
+void DoctrineParameters::runUnitTestsOnce()
+{
+    static bool testsRun = false;
+    if (testsRun) return;
+    testsRun = true;
+
+    QTimer::singleShot(0, []() {
+        Console* console = nullptr;
+        MainWindow* mw = MainWindow::instance();
+        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+            console = mw->databaseEditor->console;
+        }
+        if (!console) {
+            qDebug() << "DoctrineParameters: console not available, cannot run tests";
+            return;
+        }
+
+        // Create a temporary DoctrineParameters widget (no parent, won't show)
+        DoctrineParameters* testPanel = new DoctrineParameters(nullptr);
+        runDoctrineParametersTests(testPanel, console);
+        testPanel->deleteLater();
+    });
 }

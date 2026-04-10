@@ -114,6 +114,7 @@ public:
     int getRange() const { return getScRange(); }
     void populateEntityProfiles(const QString &profileTypeFilter = "");
     QString getSelectedTeam() const;
+    static void runUnitTestsOnce();
 private slots:
     // %%% Private Slots %%%
     /* Handle scenario checkbox state changes */

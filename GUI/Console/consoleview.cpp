@@ -14,6 +14,9 @@
 #include <QPalette>
 #include <QStyleOptionTab>
 #include <QStylePainter>
+#include "tests/consoleviewtest/consoleview_test.h"
+#include "GUI/mainwindow.h"
+#include <QTimer>
 
 //============================================================================
 // CLASS: ConsoleView
@@ -136,6 +139,8 @@ ConsoleView::ConsoleView(QWidget *parent) : QWidget(parent)
 
     // Set main layout for this widget
     setLayout(mainLayout);
+    runUnitTestsOnce();
+
 }
 
 //============================================================================
@@ -306,17 +311,38 @@ void ConsoleView::saveLog()
     if (fileName.isEmpty()) {
         return;
     }
-
     QFile file(fileName);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         return;
     }
-
     QTextStream out(&file);
     QTextEdit *currentConsole = qobject_cast<QTextEdit*>(tabWidget->currentWidget());
     if (currentConsole) {
         out << currentConsole->toPlainText();
     }
-
     file.close();
+}
+void ConsoleView::runUnitTestsOnce()
+{
+    static bool testsRun = false;
+    if (testsRun) return;
+    testsRun = true;
+
+    // Delay to ensure UI is ready
+    QTimer::singleShot(0, []() {
+        Console* console = nullptr;
+        MainWindow* mw = MainWindow::instance();
+        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+            console = mw->databaseEditor->console;
+        }
+        if (!console) {
+            qDebug() << "ConsoleView: console not available, cannot run tests";
+            return;
+        }
+
+        // Create a temporary ConsoleView for testing
+        ConsoleView* testConsole = new ConsoleView(nullptr);
+        runConsoleViewTests(testConsole, console);
+        testConsole->deleteLater();
+    });
 }

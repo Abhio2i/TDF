@@ -10,6 +10,9 @@
 #include <QPushButton>
 #include <QFont>
 #include <QFrame>
+#include "tests/feedbacktest/feedback_test.h"
+#include "GUI/mainwindow.h"
+#include <QTimer>
 
 Feedback::Feedback(QWidget *parent)
     : QDialog(parent)
@@ -68,7 +71,7 @@ Feedback::Feedback(QWidget *parent)
     versionTitleLabel->setStyleSheet(ProjectInformationStyles::TitleLabel);
     versionTitleLabel->setMinimumWidth(80);
 
-    QLabel *versionLabel = new QLabel("3.0.72");
+    QLabel *versionLabel = new QLabel("3.0.94");
     QFont versionFont;
     versionFont.setPointSize(11);
     versionFont.setBold(true);
@@ -87,4 +90,29 @@ Feedback::Feedback(QWidget *parent)
     connect(okButton, &QPushButton::clicked, this, &QDialog::accept);
 
     mainLayout->addWidget(okButton, 0, Qt::AlignCenter);
+    runUnitTestsOnce();
+
+}
+void Feedback::runUnitTestsOnce()
+{
+    static bool testsRun = false;
+    if (testsRun) return;
+    testsRun = true;
+
+    QTimer::singleShot(0, []() {
+        Console* console = nullptr;
+        MainWindow* mw = MainWindow::instance();
+        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+            console = mw->databaseEditor->console;
+        }
+        if (!console) {
+            qDebug() << "Feedback: console not available, cannot run tests";
+            return;
+        }
+
+        // Create a temporary Feedback dialog for testing (no parent, won't show)
+        Feedback* testDialog = new Feedback(nullptr);
+        runFeedbackTests(testDialog, console);
+        testDialog->deleteLater();
+    });
 }

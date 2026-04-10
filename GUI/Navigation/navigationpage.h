@@ -19,6 +19,7 @@ public:
     // Initialize navigation page
     explicit NavigationPage(QWidget *parent = nullptr);
     void restorePreviousButton();
+ void runUnitTestsOnce();
 
 signals:
     // Signal editor request

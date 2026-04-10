@@ -23,6 +23,8 @@
 #include <QFileDialog>
 #include <QDir>
 #include <Setup.h>
+#include "tests/applicationdialogtest/applicationdialog_test.h"
+#include <QTimer>
 
 // %%% Static Member Initialization %%%
 bool    ApplicationDialog::s_developerMode  = false;
@@ -214,6 +216,7 @@ ApplicationDialog::ApplicationDialog(QWidget *parent)
             reject();
         }
     });
+    runUnitTestsOnce();
 }
 
 ApplicationDialog::~ApplicationDialog()
@@ -820,3 +823,26 @@ int     ApplicationDialog::getSimulationFPS()const { return simulationFPSEdit ? 
 int     ApplicationDialog::getPhysicsFPS()   const { return physicsFPSEdit    ? physicsFPSEdit->text().toInt()    : 60; }
 QString ApplicationDialog::getImageSize()    const { return imageSizeEdit     ? imageSizeEdit->text()             : "100px"; }
 bool    ApplicationDialog::getDeveloperMode()const { return developerModeCheckBox ? developerModeCheckBox->isChecked() : false; }
+void ApplicationDialog::runUnitTestsOnce()
+{
+    static bool testsRun = false;
+    if (testsRun) return;
+    testsRun = true;
+
+    QTimer::singleShot(0, []() {
+        Console* console = nullptr;
+        MainWindow* mw = MainWindow::instance();
+        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+            console = mw->databaseEditor->console;
+        }
+        if (!console) {
+            qDebug() << "ApplicationDialog: console not available, cannot run tests";
+            return;
+        }
+
+        // Create a temporary ApplicationDialog (no parent, won't show)
+        ApplicationDialog* testDialog = new ApplicationDialog(nullptr);
+        runApplicationDialogTests(testDialog, console);
+        testDialog->deleteLater();
+    });
+}

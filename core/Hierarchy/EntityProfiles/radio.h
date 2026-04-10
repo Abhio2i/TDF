@@ -43,11 +43,17 @@ public:
                                                       "PSK",
                                                       "QAM"};
 
-    const std::string ModulationSchemeTypeNames[5] = { "BPSK",
-                                                     "QPSK",
-                                                     "QAM16",
-                                                     "QAM64",
-                                                     "GMSK"};
+    const std::string ModulationSchemeTypeNames[10] = { "AM",
+                                                      "FM",
+                                                      "BPSK",
+                                                      "QPSK",
+                                                      "PSK8",
+                                                      "QAM16",
+                                                      "QAM64",
+                                                      "FSK2",
+                                                      "FSK4",
+                                                      "GMSK",
+                                                      };
 
     const std::string EncryptionTypeNames[3] = {"NONE",
                                                 "AES",

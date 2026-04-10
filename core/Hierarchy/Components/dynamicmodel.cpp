@@ -116,9 +116,6 @@ void DynamicModel::FollowTrajectory() {
                 float initialTurnDelta = std::abs(normalizeAngle(leaderHeading - myHeading));
 
                 // Classify turn type at START and commit to it
-                // Check (small): < 45°
-                // Tactical (large): 45° - 170°
-                // Hook (reverse): > 170°
                 if (initialTurnDelta < 45.0f) {
                     currentTurnIsTactical = false;  // CHECK turn
                 } else if (initialTurnDelta > 170.0f) {
@@ -126,10 +123,6 @@ void DynamicModel::FollowTrajectory() {
                 } else {
                     currentTurnIsTactical = true;   // TACTICAL turn
                 }
-
-                //qDebug() << "TURN DETECTED:"
-                         // << "Delta=" << initialTurnDelta
-                         // << "Type=" << (currentTurnIsTactical ? "TACTICAL" : "CHECK/HOOK");
             }
 
             // Check if turn is complete
@@ -137,7 +130,6 @@ void DynamicModel::FollowTrajectory() {
                 float remainingTurn = std::abs(normalizeAngle(leaderHeading - myHeading));
                 if (remainingTurn < 3.0f) {  // Within 3° = turn complete
                     inActiveTurn = false;
-                    //qDebug() << "TURN COMPLETE";
                 }
             }
 
@@ -145,9 +137,8 @@ void DynamicModel::FollowTrajectory() {
             lastLeaderHeading = leaderHeading;
 
             // --- 3. APPLY COMMITTED TURN BEHAVIOR ---
-            // Use the turn type we committed to at the START
             bool useTacticalLogic = inActiveTurn ? currentTurnIsTactical : false;
-            float currentLookahead = useTacticalLogic ? 0.2f : 0.5f;  // REDUCED: 0.4→0.2, 1.5→0.5
+            float currentLookahead = useTacticalLogic ? 0.2f : 0.5f;
 
             // --- 4. PREDICTIVE GEOMETRY ---
             QVector3D mPos = mTransform->matrix->translation();
@@ -167,108 +158,87 @@ void DynamicModel::FollowTrajectory() {
 
             QVector3D worldOffset = predictedRot.rotatedVector(localOffset);
 
-            // --- 5. GET CURRENT POSITION (needed for calculations below) ---
+            // --- 5. GET CURRENT POSITION ---
             QVector3D currentPos = transform->matrix->translation();
             currentPos.setY(0);
 
             // --- 6. TURN RADIUS COMPENSATION ---
-            // Calculate which side of formation we're on relative to turn
             QVector3D leaderRight = mRot.rotatedVector(QVector3D(1, 0, 0));
             QVector3D offsetVector = currentPos - mPos;
             offsetVector.setY(0);
             float lateralPosition = QVector3D::dotProduct(offsetVector.normalized(), leaderRight);
 
-            // Determine turn direction from angular velocity
-            float turnDirection = mAngularVel.y();  // Positive = left turn, Negative = right turn
-
-            // Calculate speed modifier based on position and turn
+            float turnDirection = mAngularVel.y();
             float speedModifier = 1.0f;
             float altitudeModifier = 0.0f;
 
             if (inActiveTurn && std::abs(turnDirection) > 0.1f) {
-                // Formation radius (distance from leader)
                 float formationRadius = offsetVector.length();
-
-                // Leader's turn radius (estimate from angular velocity and speed)
                 float leaderSpeed = mVel.length();
                 float leaderTurnRadius = (leaderSpeed / (std::abs(mAngularVel.y()) * M_PI / 180.0f));
 
-                // Inside vs Outside determination:
-                // If turning left (turnDirection > 0) and on left side (lateralPosition < 0) = inside
-                // If turning right (turnDirection < 0) and on right side (lateralPosition > 0) = inside
                 bool isInsideWingman = (turnDirection * lateralPosition < 0);
 
                 if (isInsideWingman) {
-                    // INSIDE WINGMAN: Tighter radius, must slow down
                     float insideTurnRadius = std::max(1.0f, leaderTurnRadius - formationRadius);
                     speedModifier = insideTurnRadius / leaderTurnRadius;
-                    speedModifier = std::max(0.7f, speedModifier);  // Don't slow more than 30%
-
-                    // Slight altitude drop to avoid overrun
-                    altitudeModifier = -5.0f * std::abs(turnDirection);  // Drop 5m per deg/s turn rate
-
-                    //qDebug() << "INSIDE WING: Speed=" << (speedModifier * 100) << "% Alt=" << altitudeModifier;
+                    speedModifier = std::max(0.7f, speedModifier);
+                    altitudeModifier = -5.0f * std::abs(turnDirection);
                 } else {
-                    // OUTSIDE WINGMAN: Wider radius, must speed up
                     float outsideTurnRadius = leaderTurnRadius + formationRadius;
                     speedModifier = outsideTurnRadius / leaderTurnRadius;
-                    speedModifier = std::min(1.3f, speedModifier);  // Don't exceed 30% faster
-
-                    // Slight altitude climb to maintain energy
-                    altitudeModifier = 5.0f * std::abs(turnDirection);  // Climb 5m per deg/s turn rate
-
-                    //qDebug() << "OUTSIDE WING: Speed=" << (speedModifier * 100) << "% Alt=" << altitudeModifier;
+                    speedModifier = std::min(1.3f, speedModifier);
+                    altitudeModifier = 5.0f * std::abs(turnDirection);
                 }
             }
 
             // --- 7. TARGET POSITIONING ---
             QVector3D targetPos;
 
-            // SIMPLIFIED: Use minimal prediction to reduce formation offset issues
-            // Only predict slightly ahead during active turns
             if (inActiveTurn && useTacticalLogic) {
-                // TACTICAL TURN: Follow trail closely with minimal prediction
                 targetPos = mPos + (mVel * currentLookahead) + worldOffset;
             } else {
-                // NORMAL FLIGHT: Just use current position + offset (no prediction)
-                // This ensures allies stay close to actual mothership position
                 targetPos = mPos + worldOffset;
             }
 
             // --- 8. ARRIVAL BEHAVIOR WITH SPEED COMPENSATION ---
             QVector3D error = targetPos - currentPos;
             float distance = error.length();
-            float maxSpeedMS = (moveSpeed / 3.6f) * speedModifier;  // Apply turn compensation
 
-            // SPEED LIMITER: Limit ally speed to mothership speed + 300 km/h maximum
             float mothershipSpeedMS = mVel.length();
             float mothershipSpeedKmh = mothershipSpeedMS * 3.6f;
+            float maxSpeedMS;
 
-            // INITIAL CATCH-UP BOOST: If very far away (>5000m), allow much higher speed
-            if (distance > 5000.0f) {
-                // When extremely far, allow up to 3x mothership speed or full moveSpeed, whichever is higher
-                float boostSpeedMS = std::max(mothershipSpeedMS * 3.0f, moveSpeed / 3.6f);
-                maxSpeedMS = boostSpeedMS;
-                //qDebug() << "INITIAL CATCH-UP: Distance=" << distance << "m, Boost speed=" << (boostSpeedMS * 3.6f) << "km/h";
-            }
-            else {
-                // Normal formation: limit to mothership speed + 300 km/h
-                float maxAllowedSpeedKmh = mothershipSpeedKmh + 200.0f;
-                float maxAllowedSpeedMS = maxAllowedSpeedKmh / 3.6f;
-
-                if (maxSpeedMS > maxAllowedSpeedMS) {
-                    maxSpeedMS = maxAllowedSpeedMS;
-                }
+            if (distance > 2000.0f) {
+                // CATCH-UP MODE: Mothership speed ka 1.5x allow karo taaki formation ban sake
+                // moveSpeed ki bhi cap lagao taaki unrealistic na ho
+                // max() se ensure karo ki mothership se zyada speed mile
+                // min() se ensure karo ki apni max speed se aage na jaaye
+                float catchUpSpeed = std::min(mothershipSpeedMS * 1.5f, maxSpeed / 3.6f);
+                catchUpSpeed = std::max(catchUpSpeed, moveSpeed / 3.6f); // at least apni moveSpeed
+                maxSpeedMS = catchUpSpeed * speedModifier;
+            } else {
+                // FORMATION MODE: Sirf 300 km/h extra allow karo — smooth follow ke liye
+                float maxAllowedMS = (mothershipSpeedKmh + 300.0f) / 3.6f;
+                maxSpeedMS = std::min((moveSpeed / 3.6f) * speedModifier, maxAllowedMS);
             }
 
-            float slowingRadius = useTacticalLogic ? 800.0f : 600.0f;
+            // SLOWING RADIUS: Sirf last 800m pe slowdown hoga
+            // Pehle distance*40% tha — 10km door ho toh 4km se slow hona shuru — bahut zyada tha
+            // Ab fixed 800m — door se full speed, paas aake smooth brake
+            float slowingRadius = 800.0f;
+
             QVector3D desiredVel;
-
             if (distance > slowingRadius) {
+                // Full speed se aao jab tak 800m door ho
                 desiredVel = error.normalized() * maxSpeedMS;
             } else {
-                desiredVel = error.normalized() * maxSpeedMS * (distance / slowingRadius);
+                // Last 800m mein linear slowdown — smooth landing
+                // t*t (quadratic) hataya kyunki bahut slow ho jaata tha
+                float t = distance / slowingRadius;
+                desiredVel = error.normalized() * maxSpeedMS * t;
             }
+
             // Apply altitude compensation during turns
             if (inActiveTurn && std::abs(altitudeModifier) > 0.1f) {
                 QVector3D currentPosWithY = transform->matrix->translation();
@@ -280,6 +250,13 @@ void DynamicModel::FollowTrajectory() {
             // --- 9. PHYSICS & POSITION UPDATE ---
             QVector3D steering = (desiredVel - velocity) * dampingFactor;
             velocity += (steering / mass) * delta;
+
+            // FIX 3: Hard velocity clamp
+            // Pehle velocity accumulate hoti rehti thi — koi upper limit nahi tha
+            // Isse physics velocity badh jaati thi aur entity target se aage nikal jaati thi (overshoot)
+            if (velocity.length() > maxSpeedMS) {
+                velocity = velocity.normalized() * maxSpeedMS;
+            }
 
             // Update horizontal position
             QVector3D newPos = currentPos + velocity * delta;
@@ -491,6 +468,7 @@ void DynamicModel::FollowTrajectory() {
             if(trajectory->current <= 0){
                 endTime = time;
                 moveSpeed = 0;
+                Altitude = 0;
             }
             trajectory->current = trajectory->current <= 0 ? 0: trajectory->current;
         }else{
@@ -499,6 +477,7 @@ void DynamicModel::FollowTrajectory() {
             if(trajectory->current >= trajectory->Trajectories.size()){
                 endTime = time;
                 moveSpeed = 0;
+                Altitude = 0;
             }
             trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? 0: trajectory->current;
             if(tgtSpd > 0){
@@ -525,6 +504,14 @@ void DynamicModel::FollowTrajectory() {
         }
 
 
+    }
+
+    if(parentEntity && (parentEntity->category == Entity::Category::Ship ||
+                         parentEntity->category == Entity::Category::Submarine ||
+                         parentEntity->category == Entity::Category::Tank ))
+    {
+        Altitude = 0;
+        moveSpeed = moveSpeed > 60?60:moveSpeed;
     }
 
 }

@@ -29,6 +29,15 @@ public:
         RUNNING,
         PAUSED
     };
+
+
+    QAction* getResetAction() const { return resetAction; }
+    QAction* getNextStepAction() const { return nextStepAction; }
+    QAction* getTimingAction() const { return timingAction; }
+    QAction* getLoggerAction() const { return loggerAction; }
+    QAction* getRadarToggleAction() const { return radarToggleAction; }
+    QSlider* getSpeedSlider() const { return speedSlider; }
+    QLabel* getTimeLabel() const { return timeLabel; }
 signals:
     // Signal start action triggered
     void timingGraphClicked();

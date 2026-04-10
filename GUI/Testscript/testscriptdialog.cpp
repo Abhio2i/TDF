@@ -23,6 +23,9 @@
 #include <QScrollBar>                              // For scroll bar
 #include <QPalette>                                // For color palette
 #include <QAbstractTextDocumentLayout>             // For text document layout
+#include "tests/testscriptdialogtest/testscriptdialog_test.h"
+#include "GUI/mainwindow.h"
+#include <QTimer>
 
 // %%% Line Number Area %%%
 /* Initialize line number area for code editor */
@@ -297,6 +300,8 @@ TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString
     scriptNameCombo->update();
     updateLineNumberArea();
     Console::log("TestScriptDialog setup complete");
+    runUnitTestsOnce();
+
 }
 
 // %%% Destructor %%%
@@ -624,4 +629,27 @@ void TestScriptDialog::handleTextChanged()
     if (prefix.length() < 2 && previousChar != ".") {
         completer->popup()->hide();
     }
+}
+void TestScriptDialog::runUnitTestsOnce()
+{
+    static bool testsRun = false;
+    if (testsRun) return;
+    testsRun = true;
+
+    QTimer::singleShot(0, []() {
+        Console* console = nullptr;
+        MainWindow* mw = MainWindow::instance();
+        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+            console = mw->databaseEditor->console;
+        }
+        if (!console) {
+            qDebug() << "TestScriptDialog: console not available, cannot run tests";
+            return;
+        }
+
+        // Create a temporary TestScriptDialog (no parent, won't show)
+        TestScriptDialog* testDialog = new TestScriptDialog(nullptr);
+        runTestScriptDialogTests(testDialog, console);
+        testDialog->deleteLater();
+    });
 }

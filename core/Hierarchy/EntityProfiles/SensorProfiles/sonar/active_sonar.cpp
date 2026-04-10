@@ -46,15 +46,11 @@ void ActiveSonar::setEntityPosition(double lat, double lon)
 
 bool ActiveSonar::sendPing(float currentTime, float targetDepth)
 {
-    m_echoReceived = false;
-    m_computedDist = 0.0f;
-
-    // Depth check — ping beam ki reach se bahar
-    if (targetDepth > m_maxDepth)
+    if (targetDepth > m_maxDepth)  // 0 > 500 = false ✅
         return false;
 
-    m_pingTime = currentTime;
-    m_lastPingTime = currentTime;
+    m_pingTime     = currentTime;
+    m_lastPingTime = currentTime;  // ← ye update hota hai
     return true;
 }
 

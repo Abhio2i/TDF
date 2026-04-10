@@ -610,6 +610,12 @@ void Simulation::updateDynamics(float dt,PhysicsComponent *comp){
     comp->aircraft->Forward.z = comp->transform->forward().z();
 
     Vector target = *comp->dynamicModel->trajectory->getTargetWaypoint()->position;
+    if(comp->dynamicModel->parentEntity && (comp->dynamicModel->parentEntity->category == Entity::Category::Ship ||
+                                             comp->dynamicModel->parentEntity->category == Entity::Category::Submarine ||
+                                             comp->dynamicModel->parentEntity->category == Entity::Category::Tank ))
+    {
+        target.y = 0;
+    }
     //float tgtSpd = comp.dynamicModel->trajectory->getTargetWaypoint()->speed;
     FlatXYZ targt = geoToFlatXYZ(target.x,target.z,target.y);
     if(comp->dynamicModel->followTarget){

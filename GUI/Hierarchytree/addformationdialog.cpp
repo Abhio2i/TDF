@@ -2,6 +2,12 @@
 #include "addformationdialog.h"
 #include <QMessageBox>
 #include <QHBoxLayout>
+#include "tests/hierarchytreetest/addformationdialog_test.h"
+#include "GUI/mainwindow.h"
+#include "addformationdialog.h"
+#include <QMessageBox>
+#include <QHBoxLayout>
+
 
 AddFormationDialog::AddFormationDialog(const QList<QVariantMap>& selectedEntities,
                                        QWidget *parent)
@@ -11,13 +17,13 @@ AddFormationDialog::AddFormationDialog(const QList<QVariantMap>& selectedEntitie
     setWindowTitle("Create Formation");
     setModal(true);
     setMinimumSize(500, 400);
-
     setupUI();
-
     // Calculate and display allies count
     int alliesCount = selectedEntities.size() - 1;
     m_labelAlliesCount->setText(QString::number(alliesCount));
     updateAlliesList();
+    runUnitTestsOnce();
+
 }
 
 AddFormationDialog::~AddFormationDialog()
@@ -128,18 +134,14 @@ void AddFormationDialog::updateAlliesList()
     m_listWidgetAllies->clear();
 
     QString mothershipId = m_comboBoxMothership->currentData().toString();
-
     for (int i = 0; i < m_selectedEntities.size(); ++i) {
         QString id = m_selectedEntities[i]["ID"].toString();
-
         if (id != mothershipId) {
             m_allies.append(m_selectedEntities[i]);
-
             QString name = m_selectedEntities[i]["name"].toString();
             m_listWidgetAllies->addItem(name + " (" + id + ")");
         }
     }
-
     // Update allies count display
     m_labelAlliesCount->setText(QString::number(m_allies.size()));
 }
@@ -151,12 +153,42 @@ void AddFormationDialog::accept()
                              "Formation name cannot be empty.");
         return;
     }
-
     if (getAlliesCount() < 1) {
         QMessageBox::warning(this, "Invalid Formation",
                              "A formation needs at least 1 ally.");
         return;
     }
-
     QDialog::accept();
+}
+void AddFormationDialog::runUnitTestsOnce()
+{
+    static bool testsRun = false;
+    if (testsRun) return;
+    testsRun = true;
+
+    // Get console from MainWindow
+    Console* console = nullptr;
+    MainWindow* mw = MainWindow::instance();
+    if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+        console = mw->databaseEditor->console;
+    }
+    if (!console) {
+        qDebug() << "AddFormationDialog: console not available, cannot run tests";
+        return;
+    }
+
+    // Create dummy selected entities for testing
+    QList<QVariantMap> dummyEntities;
+    for (int i = 0; i < 3; ++i) {
+        QVariantMap entity;
+        entity["ID"] = QString("entity_%1").arg(i);
+        entity["name"] = QString("TestEntity_%1").arg(i);
+        entity["type"] = "entity";
+        dummyEntities.append(entity);
+    }
+
+    // Create a temporary dialog for testing
+    AddFormationDialog* testDialog = new AddFormationDialog(dummyEntities, nullptr);
+    runAddFormationDialogTests(testDialog, console);
+    testDialog->deleteLater();
 }

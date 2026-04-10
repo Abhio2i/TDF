@@ -25,7 +25,11 @@ SonarDisplay::SonarDisplay(QWidget *parent)
 }
 
 void SonarDisplay::setHierarchy(Hierarchy* h) { hierarchy = h; }
-void SonarDisplay::selectEntity(Entity* e)    { entity = e; }
+void SonarDisplay::selectEntity(Entity* e)    {
+    entity = e;
+    contacts.clear();
+    update();
+}
 void SonarDisplay::RemoveEntity(QString)      {}
 void SonarDisplay::updateRadar()              { update(); }
 
@@ -83,7 +87,10 @@ void SonarDisplay::drawSonarRing(QPainter &p, QPoint center, int radius)
             dottedPen.setStyle(Qt::DotLine);
             p.setPen(dottedPen);
         }
-
+        // qDebug() << "[DRAW]"
+        //          << QString::fromStdString(c.name)
+        //          << "range:" << c.range
+        //          << "angle:" << c.angle;
         p.setBrush(Qt::NoBrush);
         p.drawEllipse(center, r, r);
 
@@ -232,49 +239,153 @@ void SonarDisplay::drawCenterDot(QPainter &p, QPoint center)
     p.drawEllipse(center, 4, 4);
 }
 
+// void SonarDisplay::drawContacts(QPainter &p, QPoint center, int radius)
+// {
+//     qint64 now = QDateTime::currentMSecsSinceEpoch();
+
+//     for (auto &c : contacts)
+//     {
+//         //double theta   = qDegreesToRadians(c.angle - 90);
+//         double angle = c.angle;
+
+//         // 🔥 detect radians automatically
+//         if (angle < 6.5)  // radians (0 to ~2π)
+//         {
+//             angle = angle * 180.0 / M_PI;
+//         }
+
+//         double theta = qDegreesToRadians(angle - 90);
+//         double rangeKm = c.range / 1000.0;
+
+//         if (rangeKm > maxRange) continue;
+
+//         int r = (int)(radius * rangeKm / maxRange);
+//         int x = center.x() + r * cos(theta);
+//         int y = center.y() + r * sin(theta);
+
+//         qint64 age   = now - c.timestamp;
+//         int    alpha = qMax(0, (int)(255 - (age / 5000.0) * 255));
+
+//         // ── Color by type ──
+//         QColor glowColor, dotColor;
+//         if (c.type == "submarine")
+//         {
+//             glowColor = QColor(255, 0,   0,   alpha / 3);  // red glow
+//             dotColor  = QColor(255, 50,  50,  alpha);      // red dot
+//         }
+//         else
+//         {
+//             glowColor = QColor(255, 255, 0,   alpha / 3);  // yellow glow
+//             dotColor  = QColor(255, 220, 50,  alpha);      // yellow dot
+//         }
+
+//         // Outer glow
+//         p.setPen(Qt::NoPen);
+//         p.setBrush(glowColor);
+//         p.drawEllipse(QPoint(x, y), 9, 9);
+
+//         // Inner dot
+//         p.setBrush(dotColor);
+//         p.drawEllipse(QPoint(x, y), 5, 5);
+//     }
+// }
+
 void SonarDisplay::drawContacts(QPainter &p, QPoint center, int radius)
 {
     qint64 now = QDateTime::currentMSecsSinceEpoch();
 
     for (auto &c : contacts)
     {
-        double theta   = qDegreesToRadians(c.angle - 90);
-        double rangeKm = c.range / 1000.0;
+        // 🔹 Angle normalize (radians → degrees)
+        double angle = c.angle;
+        if (angle < 6.5)  // radians
+        {
+            angle = angle * 180.0 / M_PI;
+        }
 
+        double theta = qDegreesToRadians(angle - 90);
+
+        double rangeKm = c.range / 1000.0;
         if (rangeKm > maxRange) continue;
 
         int r = (int)(radius * rangeKm / maxRange);
+
         int x = center.x() + r * cos(theta);
         int y = center.y() + r * sin(theta);
 
         qint64 age   = now - c.timestamp;
-        int    alpha = qMax(0, (int)(255 - (age / 5000.0) * 255));
+        float  ageRatio   = (float)age / (float)m_pingIntervalMs;
+        int    alpha ;
 
-        // ── Color by type ──
+        if (ageRatio < 0.8f)
+            alpha = 255;                              // solid
+        else
+            alpha = qMax(50, (int)(255 * (1.0f - (ageRatio - 0.8f) / 0.2f)));  // last 20% fade
+
+        // 🔹 Color
         QColor glowColor, dotColor;
         if (c.type == "submarine")
         {
-            glowColor = QColor(255, 0,   0,   alpha / 3);  // red glow
-            dotColor  = QColor(255, 50,  50,  alpha);      // red dot
+            glowColor = QColor(255, 0, 0, alpha / 3);
+            dotColor  = QColor(255, 50, 50, alpha);
         }
         else
         {
-            glowColor = QColor(255, 255, 0,   alpha / 3);  // yellow glow
-            dotColor  = QColor(255, 220, 50,  alpha);      // yellow dot
+            glowColor = QColor(255, 255, 0, alpha / 3);
+            dotColor  = QColor(255, 220, 50, alpha);
         }
 
-        // Outer glow
+        // 🔹 Glow
         p.setPen(Qt::NoPen);
         p.setBrush(glowColor);
         p.drawEllipse(QPoint(x, y), 9, 9);
 
-        // Inner dot
+        // 🔹 Dot
         p.setBrush(dotColor);
         p.drawEllipse(QPoint(x, y), 5, 5);
     }
 }
 
 // ── NEW: Contact labels ──
+// void SonarDisplay::drawContactLabels(QPainter &p, QPoint center, int radius)
+// {
+//     qint64 now = QDateTime::currentMSecsSinceEpoch();
+
+//     QFont font;
+//     font.setPointSize(7);
+//     p.setFont(font);
+
+//     for (auto &c : contacts)
+//     {
+//         //double theta   = qDegreesToRadians(c.angle - 90);
+//         double angle = c.angle;
+
+//         if (angle < 6.5)
+//         {
+//             angle = angle * 180.0 / M_PI;
+//         }
+
+//         double theta = qDegreesToRadians(angle - 90);
+//         double rangeKm = c.range / 1000.0;
+//         if (rangeKm > maxRange) continue;
+
+//         int r = (int)(radius * rangeKm / maxRange);
+//         int x = center.x() + r * cos(theta);
+//         int y = center.y() + r * sin(theta);
+
+//         qint64 age   = now - c.timestamp;
+//         int    alpha = qMax(0, (int)(255 - (age / 5000.0) * 255));
+
+//         // Label — name + range
+//         QString label = QString("%1\n%2 km")
+//                             .arg(QString::fromStdString(c.name))
+//                             .arg((int)rangeKm);
+
+//         p.setPen(QColor(0, 255, 200, alpha));
+//         p.drawText(QRect(x + 10, y - 10, 80, 30), Qt::AlignLeft, label);
+//     }
+// }
+
 void SonarDisplay::drawContactLabels(QPainter &p, QPoint center, int radius)
 {
     qint64 now = QDateTime::currentMSecsSinceEpoch();
@@ -285,18 +396,25 @@ void SonarDisplay::drawContactLabels(QPainter &p, QPoint center, int radius)
 
     for (auto &c : contacts)
     {
-        double theta   = qDegreesToRadians(c.angle - 90);
+        double angle = c.angle;
+        if (angle < 6.5)
+        {
+            angle = angle * 180.0 / M_PI;
+        }
+
+        double theta = qDegreesToRadians(angle - 90);
+
         double rangeKm = c.range / 1000.0;
         if (rangeKm > maxRange) continue;
 
         int r = (int)(radius * rangeKm / maxRange);
+
         int x = center.x() + r * cos(theta);
-        int y = center.y() + r * sin(theta);
+        int y = center.y() + r * sin(theta);  // 🔥 FIX
 
         qint64 age   = now - c.timestamp;
         int    alpha = qMax(0, (int)(255 - (age / 5000.0) * 255));
 
-        // Label — name + range
         QString label = QString("%1\n%2 km")
                             .arg(QString::fromStdString(c.name))
                             .arg((int)rangeKm);
@@ -305,8 +423,6 @@ void SonarDisplay::drawContactLabels(QPainter &p, QPoint center, int radius)
         p.drawText(QRect(x + 10, y - 10, 80, 30), Qt::AlignLeft, label);
     }
 }
-
-
 void SonarDisplay::drawRangeButtons(QPainter &p)
 {
     // ── Position — top right corner ──
@@ -374,19 +490,30 @@ void SonarDisplay::mousePressEvent(QMouseEvent *event)
 
 void SonarDisplay::updateContacts(const std::vector<DetectionResult>& results)
 {
+
+    qDebug() << "[UI UPDATE CONTACTS] incoming:" << results.size();
+
     qint64 now = QDateTime::currentMSecsSinceEpoch();
 
-    // 5 sec purane contacts remove
+    // ── Contact tab remove karo jab 2x ping interval ho jaaye ──
+    // Real sonar: contact tab tak dikhta hai jab tak next ping nahi aati
+    qint64 contactTimeout = m_pingIntervalMs * 2;  // 2 pings ka time
+
     contacts.erase(
         std::remove_if(contacts.begin(), contacts.end(),
-                       [now](const SonarContact& c) {
-                           return (now - c.timestamp) > 5000;
+                       [now, contactTimeout](const SonarContact& c) {
+                           return (now - c.timestamp) > contactTimeout;
                        }),
         contacts.end());
 
     for (const auto& r : results)
     {
         if (!r.detected) continue;
+
+        // Debug
+        qDebug() << "Contact:" << QString::fromStdString(r.name)
+                 << "distance:" << r.distance
+                 << "bearing:" << r.bearing;
 
         bool found = false;
         for (auto& existing : contacts)
@@ -395,19 +522,19 @@ void SonarDisplay::updateContacts(const std::vector<DetectionResult>& results)
             {
                 existing.angle     = r.bearing;
                 existing.range     = r.distance;
-                existing.timestamp = now;
+                existing.timestamp = now;  // ← timestamp refresh
                 found = true;
                 break;
             }
         }
 
-        for (const auto& r : results)
-        {
-            qDebug() << "Contact:" << QString::fromStdString(r.name)
-            << "detected:" << r.detected
-            << "reason:"   << QString::fromStdString(r.reason)
-            << "distance:" << r.distance;
-        }
+        // for (const auto& r : results)
+        // {
+        //     if (!r.detected) continue;
+
+        //     qDebug() << "Contact:" << QString::fromStdString(r.name)
+        //              << "distance:" << r.distance;
+        // }
 
         if (!found)
         {
@@ -419,15 +546,28 @@ void SonarDisplay::updateContacts(const std::vector<DetectionResult>& results)
             c.timestamp = now;
 
             // Type set karo push se pehle
+            //         c.type = "surface";
+            //         if (r.name.find("Submarine") != std::string::npos ||
+            //             r.name.find("submarine") != std::string::npos ||
+            //             r.name.find("class")     != std::string::npos)
+            //             c.type = "submarine";
+
+            //         contacts.push_back(c);
+            //     }
+            // }
+
+            // 🔹 Type detection
             c.type = "surface";
             if (r.name.find("Submarine") != std::string::npos ||
-                r.name.find("submarine") != std::string::npos ||
-                r.name.find("class")     != std::string::npos)
+                r.name.find("submarine") != std::string::npos)
+            {
                 c.type = "submarine";
+            }
 
             contacts.push_back(c);
         }
     }
 
+    // 🔥 UI refresh
     update();
 }

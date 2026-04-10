@@ -1145,8 +1145,8 @@ void CanvasWidget::handleRightClick(QMouseEvent *event) {
                        w = w->parentWidget();
                    }
                    if (editor && editor->hierarchy) {
-                       auto it = editor->hierarchy->Entities->find(id);
-                       if (it != editor->hierarchy->Entities->end()) {
+                       auto it = editor->hierarchy->Entities.find(id);
+                       if (it != editor->hierarchy->Entities.end()) {
                            QString parentId = QString::fromStdString(it->second->parentID);
                            editor->hierarchy->removeEntity(parentId, QString::fromStdString(id), false);
                            Meshes.erase(id);
@@ -1165,8 +1165,8 @@ void CanvasWidget::handleRightClick(QMouseEvent *event) {
                    }
 
                    if (editor && editor->hierarchy) {
-                       auto it = editor->hierarchy->Entities->find(id);
-                       if (it != editor->hierarchy->Entities->end()) {
+                       auto it = editor->hierarchy->Entities.find(id);
+                       if (it != editor->hierarchy->Entities.end()) {
                            Entity* entity = it->second;
                            QString currentName = QString::fromStdString(entity->Name);
 
@@ -1275,8 +1275,8 @@ void CanvasWidget::handleRightClick(QMouseEvent *event) {
                    }
 
                    if (editor && editor->hierarchy) {
-                       auto it = editor->hierarchy->Entities->find(id);
-                       if (it != editor->hierarchy->Entities->end()) {
+                       auto it = editor->hierarchy->Entities.find(id);
+                       if (it != editor->hierarchy->Entities.end()) {
                            QString parentId = QString::fromStdString(it->second->parentID);
                            editor->hierarchy->removeEntity(parentId, QString::fromStdString(id), false);
                            Meshes.erase(id);
@@ -1295,8 +1295,8 @@ void CanvasWidget::handleRightClick(QMouseEvent *event) {
                    }
 
                    if (editor && editor->hierarchy) {
-                       auto it = editor->hierarchy->Entities->find(id);
-                       if (it != editor->hierarchy->Entities->end()) {
+                       auto it = editor->hierarchy->Entities.find(id);
+                       if (it != editor->hierarchy->Entities.end()) {
                            Entity* entity = it->second;
                            QString currentName = QString::fromStdString(entity->Name);
 

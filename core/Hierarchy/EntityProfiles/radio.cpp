@@ -1,4 +1,4 @@
-#include "radio.h"
+﻿#include "radio.h"
 #include <core/Hierarchy/hierarchy.h> // Include full Hierarchy definition
 #include <core/Debug/console.h>
 #include "core/Hierarchy/EntityProfiles/Radio/include/radio/propagation_model_config.h"
@@ -9,7 +9,7 @@
 #include <cmath>
 #include <QtMath>
 #include <QDebug>
-#include <istream>
+#include <iostream>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -48,13 +48,13 @@ Radio::Radio(Hierarchy* h) : Entity(h) {
     model_cfg.enable_fspl = true;
     model_cfg.enable_log_distance = false;
     model_cfg.enable_two_ray = false;
-    model_cfg.enable_shadowing = true;
+    model_cfg.enable_shadowing = false;
     model_cfg.shadowing_sigma_db = 1.5;
-    model_cfg.enable_fading = true;
+    model_cfg.enable_fading =false;
     model_cfg.fading_sigma_db = 1.0;
     model_cfg.enable_polarization_loss = true;
     model_cfg.polarization_mismatch_loss_db = 3.0;
-    model_cfg.enable_los_horizon = false;
+    model_cfg.enable_los_horizon = true;
     model_cfg.enable_comms_mode_losses = true;
     model_cfg.enable_noise_floor = true;
     model_cfg.enable_snr_threshold = true;
@@ -75,12 +75,12 @@ Radio::Radio(Hierarchy* h) : Entity(h) {
     model_cfg.gas_attenuation_db_per_km_at_1ghz = 0.005;
     model_cfg.gas_attenuation_freq_exponent = 1.0;
     model_cfg.humidity_attenuation_factor_per_percent = 0.002;
-    model_cfg.rain_rate_mm_per_hr = 10.0;
+    model_cfg.rain_rate_mm_per_hr = 2.5;
     model_cfg.rain_attenuation_db_per_km_per_mmhr = 0.004;
     model_cfg.use_itu_rain_model = true;
     model_cfg.rain_coverage = 0.4;
     model_cfg.rain_rate_sigma_frac = 0.15;
-    model_cfg.wind_speed_mps = 8.0;
+    model_cfg.wind_speed_mps = 25.0;
     model_cfg.wind_attenuation_db_per_km_per_mps = 0.0005;
     model_cfg.enable_sea_attenuation = true;
     model_cfg.sea_attenuation_db_per_km = 0.003;
@@ -95,6 +95,46 @@ Radio::Radio(Hierarchy* h) : Entity(h) {
         cfg.id = "";
         cfg.parent_platform_name = "PLATFORM_1";
         cfg.mode = radio::RadioMode::TRANSCEIVER;
+        cfg.use_local_propagation_config = true;
+        cfg.propagation.enable_fspl = true;
+        cfg.propagation.enable_log_distance = false;
+        cfg.propagation.enable_two_ray = false;
+        cfg.propagation.enable_shadowing = false;
+        cfg.propagation.shadowing_sigma_db = 1.5;
+        cfg.propagation.enable_fading = false;
+        cfg.propagation.fading_sigma_db = 1.0;
+        cfg.propagation.enable_polarization_loss = true;
+        cfg.propagation.polarization_mismatch_loss_db = 3.0;
+        cfg.propagation.enable_los_horizon = true;
+        cfg.propagation.enable_comms_mode_losses = true;
+        cfg.propagation.enable_noise_floor = true;
+        cfg.propagation.enable_snr_threshold = true;
+        cfg.propagation.enable_sensitivity = true;
+        cfg.propagation.enable_squelch = true;
+        cfg.propagation.enable_interference = false;
+        cfg.propagation.enable_range_limit = false;
+        cfg.propagation.enable_network_gate_in_scan = true;
+        cfg.propagation.enable_scan_beam = true;
+        cfg.propagation.enable_scan_timing = false;
+        cfg.propagation.enable_doppler = true;
+
+        // Environmental toggles + values
+        cfg.propagation.enable_environmental_attenuation = true;
+        cfg.propagation.temperature_c = 20.0;
+        cfg.propagation.pressure_hpa = 1005.0;
+        cfg.propagation.humidity_percent = 60.0;
+        cfg.propagation.gas_attenuation_db_per_km_at_1ghz = 0.005;
+        cfg.propagation.gas_attenuation_freq_exponent = 1.0;
+        cfg.propagation.humidity_attenuation_factor_per_percent = 0.002;
+        cfg.propagation.rain_rate_mm_per_hr = 2.5;
+        cfg.propagation.rain_attenuation_db_per_km_per_mmhr = 0.004;
+        cfg.propagation.use_itu_rain_model = true;
+        cfg.propagation.rain_coverage = 0.4;
+        cfg.propagation.rain_rate_sigma_frac = 0.15;
+        cfg.propagation.wind_speed_mps = 25.0;
+        cfg.propagation.wind_attenuation_db_per_km_per_mps = 0.0005;
+        cfg.propagation.enable_sea_attenuation = true;
+        cfg.propagation.sea_attenuation_db_per_km = 0.003;
         cfg.comms_mode = radio::CommsMode::LINE_OF_SIGHT;
         cfg.min_freq_hz = 118.5e6;//
         cfg.max_freq_hz = 138.5e6;//
@@ -151,17 +191,41 @@ Radio::Radio(Hierarchy* h) : Entity(h) {
             [this](const std::vector<std::byte>& data, const radio::ReceiveReport& report) {
                 msgTimeStamp = Simulation::simulationTime;
                 msg = textFromBytes(data);
-                // std::cout << "\n[RX_1 callback]"
-                //           << " sender=" << report.sender_id
-                //           << " msg=" << textFromBytes(data)
-                //           << " rx_power_dbm=" << report.rx_power_dbm
-                //           << " noise_floor_dbm=" << report.noise_floor_dbm
-                //           << " snr_db=" << report.snr_db
-                //           << " path_loss_db=" << report.path_loss_db
-                //           << "\n";
+
+                qDebug().noquote()
+                    << QString(
+                           "\n[RX_1 callback]\n"
+                           " sender: %1\n"
+                           " msg: %2\n"
+                           " rx_power_dbm: %3\n"
+                           " noise_floor_dbm: %4\n"
+                           " snr_db: %5\n"
+                           " path_loss_db: %6\n"
+                           " rain_attenuation_db: %7\n"
+                           " wind_attenuation_db_per_km: %8\n"
+                           " frequency_match: %9\n"
+                           " los_horizon_distance_m: %10\n"
+                           " polarization_loss_db: %11\n"
+                           " range_ok: %12\n"
+                           " required_snr_threshold_db: %13\n"
+                           " sensitivity_ok: %14\n"
+                           " squelch_ok: %15")
+                           .arg(QString::fromStdString(report.sender_id))
+                           .arg(QString::fromStdString(textFromBytes(data)))
+                           .arg(report.rx_power_dbm)
+                           .arg(report.noise_floor_dbm)
+                           .arg(report.snr_db)
+                           .arg(report.path_loss_db)
+                           .arg(report.rain_attenuation_db)
+                           .arg(report.wind_attenuation_db_per_km)
+                           .arg(report.frequency_match ? "true" : "false")
+                           .arg(report.los_horizon_distance_m)
+                           .arg(report.polarization_loss_db)
+                           .arg(report.range_ok ? "true" : "false")
+                           .arg(report.required_snr_threshold_db)
+                           .arg(report.sensitivity_ok ? "true" : "false")
+                           .arg(report.squelch_ok ? "true" : "false");
             });
-
-
 
 }
 
@@ -246,14 +310,14 @@ QJsonObject Radio::toJson() const {
     modulation_schemeObj["value"] = QString::fromStdString(ModulationSchemeTypeNames[static_cast<int>(cfg.modulation_scheme)]);
     obj["modulation_scheme"] = modulation_schemeObj;
 
-    QJsonObject spread_spectrumObj;
-    spread_spectrumObj["type"] = "option";
-    QJsonArray spread_spectrumptionsArray;
-    for (const std::string& opt : SpreadSpectrumTypeNames)
-        spread_spectrumptionsArray.append(QString::fromStdString(opt));
-    spread_spectrumObj["options"] = spread_spectrumptionsArray;
-    spread_spectrumObj["value"] = QString::fromStdString(SpreadSpectrumTypeNames[static_cast<int>(cfg.spread_spectrum)]);
-    obj["spread_spectrum"] = spread_spectrumObj;
+    // QJsonObject spread_spectrumObj;
+    // spread_spectrumObj["type"] = "option";
+    // QJsonArray spread_spectrumptionsArray;
+    // for (const std::string& opt : SpreadSpectrumTypeNames)
+    //     spread_spectrumptionsArray.append(QString::fromStdString(opt));
+    // spread_spectrumObj["options"] = spread_spectrumptionsArray;
+    // spread_spectrumObj["value"] = QString::fromStdString(SpreadSpectrumTypeNames[static_cast<int>(cfg.spread_spectrum)]);
+    // obj["spread_spectrum"] = spread_spectrumObj;
 
     QJsonObject polarizationObj;
     polarizationObj["type"] = "option";
@@ -314,6 +378,22 @@ QJsonObject Radio::toJson() const {
     // Antenna["velocity_mps"] = toParm(cfg.velocity_mps,"mps");
     obj["Antenna"] = Antenna;
 
+    QJsonObject Env;
+    Env["type"] = "Section";
+    Env["temperature_c"] = toParm(cfg.propagation.temperature_c,"cel");
+    Env["pressure_hpa"] = toParm(cfg.propagation.pressure_hpa,"hpa");
+    Env["humidity_percent"] = toParm(cfg.propagation.humidity_percent,"%");
+    //Env["gas_attenuation_db_per_km_at_1ghz"] = toParm(cfg.propagation.gas_attenuation_db_per_km_at_1ghz,"db/km");
+   // Env["gas_attenuation_freq_exponent"] = toParm(cfg.propagation.gas_attenuation_freq_exponent,"");
+   // Env["humidity_attenuation_factor_per_percent"] = toParm(cfg.propagation.humidity_attenuation_factor_per_percent,"%");
+    Env["rain_rate_mm_per_hr"] = toParm(cfg.propagation.rain_rate_mm_per_hr,"mm/h");
+  //  Env["rain_attenuation_db_per_km_per_mmhr"] = toParm(cfg.propagation.rain_attenuation_db_per_km_per_mmhr,"db/km/h");
+    Env["rain_coverage"] = toParm(cfg.propagation.rain_coverage,"%");
+   // Env["rain_rate_sigma_frac"] = toParm(cfg.propagation.rain_rate_sigma_frac,"mm/h");
+    Env["wind_speed_mps"] = toParm(cfg.propagation.wind_speed_mps,"m/s");
+   // Env["wind_attenuation_db_per_km_per_mps"] = toParm(cfg.propagation.wind_attenuation_db_per_km_per_mps,"db/km");
+   // Env["sea_attenuation_db_per_km"] = toParm(cfg.propagation.sea_attenuation_db_per_km,"db/km");
+    obj["Environmental"] = Env;
 
 
     return obj;
@@ -356,7 +436,7 @@ void Radio::fromJson(const QJsonObject& obj) {
     if (obj.contains("modulation_scheme") && obj["modulation_scheme"].isObject()) {
         QJsonObject modulation_schemeObj = obj["modulation_scheme"].toObject();
         if (modulation_schemeObj.contains("value")){
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 10; i++) {
                 if (ModulationSchemeTypeNames[i] == modulation_schemeObj["value"].toString().toStdString()) {
                     cfg.modulation_scheme = (radio::ModulationScheme)i;
                 }
@@ -364,16 +444,16 @@ void Radio::fromJson(const QJsonObject& obj) {
         }
     }
 
-    if (obj.contains("spread_spectrum") && obj["spread_spectrum"].isObject()) {
-        QJsonObject spread_spectrumObj = obj["spread_spectrum"].toObject();
-        if (spread_spectrumObj.contains("value")){
-            for (int i = 0; i < 3; i++) {
-                if (SpreadSpectrumTypeNames[i] == spread_spectrumObj["value"].toString().toStdString()) {
-                    cfg.spread_spectrum = (radio::SpreadSpectrum)i;
-                }
-            }
-        }
-    }
+    // if (obj.contains("spread_spectrum") && obj["spread_spectrum"].isObject()) {
+    //     QJsonObject spread_spectrumObj = obj["spread_spectrum"].toObject();
+    //     if (spread_spectrumObj.contains("value")){
+    //         for (int i = 0; i < 3; i++) {
+    //             if (SpreadSpectrumTypeNames[i] == spread_spectrumObj["value"].toString().toStdString()) {
+    //                 cfg.spread_spectrum = (radio::SpreadSpectrum)i;
+    //             }
+    //         }
+    //     }
+    // }
 
     if (obj.contains("polarization") && obj["polarization"].isObject()) {
         QJsonObject polarizationObj = obj["polarization"].toObject();
@@ -460,6 +540,38 @@ void Radio::fromJson(const QJsonObject& obj) {
 
     }
 
+    if (obj.contains("Environmental") && obj["Environmental"].isObject()) {
+        QJsonObject Env = obj["Environmental"].toObject();
+        if (Env.contains("temperature_c"))
+            cfg.propagation.temperature_c = valueFromParm(Env["temperature_c"].toObject());
+        if (Env.contains("pressure_hpa"))
+            cfg.propagation.pressure_hpa = valueFromParm(Env["pressure_hpa"].toObject());
+        if (Env.contains("humidity_percent"))
+            cfg.propagation.humidity_percent = valueFromParm(Env["humidity_percent"].toObject());
+       // if (Env.contains("gas_attenuation_db_per_km_at_1ghz"))
+           // cfg.propagation.gas_attenuation_db_per_km_at_1ghz = valueFromParm(Env["gas_attenuation_db_per_km_at_1ghz"].toObject());
+        //if (Env.contains("gas_attenuation_freq_exponent"))
+        //    cfg.propagation.gas_attenuation_freq_exponent = valueFromParm(Env["gas_attenuation_freq_exponent"].toObject());
+        //if (Env.contains("humidity_attenuation_factor_per_percent"))
+          //  cfg.propagation.humidity_attenuation_factor_per_percent = valueFromParm(Env["humidity_attenuation_factor_per_percent"].toObject());
+        if (Env.contains("rain_rate_mm_per_hr"))
+            cfg.propagation.rain_rate_mm_per_hr = valueFromParm(Env["rain_rate_mm_per_hr"].toObject());
+        //if (Env.contains("rain_attenuation_db_per_km_per_mmhr"))
+          //  cfg.propagation.rain_attenuation_db_per_km_per_mmhr = valueFromParm(Env["rain_attenuation_db_per_km_per_mmhr"].toObject());
+        if (Env.contains("rain_coverage"))
+            cfg.propagation.rain_coverage = valueFromParm(Env["rain_coverage"].toObject());
+        //if (Env.contains("rain_rate_sigma_frac"))
+          //  cfg.propagation.rain_rate_sigma_frac = valueFromParm(Env["rain_rate_sigma_frac"].toObject());
+        if (Env.contains("wind_speed_mps"))
+            cfg.propagation.wind_speed_mps = valueFromParm(Env["wind_speed_mps"].toObject());
+        //if (Env.contains("wind_attenuation_db_per_km_per_mps"))
+          //  cfg.propagation.wind_attenuation_db_per_km_per_mps = valueFromParm(Env["wind_attenuation_db_per_km_per_mps"].toObject());
+        //if (Env.contains("sea_attenuation_db_per_km"))
+          //  cfg.propagation.sea_attenuation_db_per_km = valueFromParm(Env["sea_attenuation_db_per_km"].toObject());
+
+
+    }
+
     // Deserialize parameters
     if (obj.contains("parameters")) {
         QJsonObject parObj = obj["parameters"].toObject();
@@ -486,7 +598,7 @@ void Radio::scan(){
     if(!Active)return;
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
     if(!parentEntity) return;
-    Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
+    Transform* source = (root->Platforms)[parentEntity->ID]->transform;
     float head = 0.f;
     if(!source) return;
     radio::RadioConfig cfg = lib_radio->getConfiguration();
@@ -512,8 +624,8 @@ void Radio::scan(){
         const radio::ScanHit& hit = hits[i];
         RadioTarget target;
         try {
-            if ((*root->Platforms)[hit.id]) {
-                target.entity = (*root->Platforms)[hit.id];
+            if ((root->Platforms)[hit.id]) {
+                target.entity = (root->Platforms)[hit.id];
             }else{
                 target.entity = nullptr;
             }

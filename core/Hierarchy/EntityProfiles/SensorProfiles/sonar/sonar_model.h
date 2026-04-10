@@ -35,6 +35,7 @@ struct DetectionResult
     float confidence;           // 0.0 - 1.0
     std::string name;
     std::string reason;
+    std::string category;
 };
 
 class SonarModel

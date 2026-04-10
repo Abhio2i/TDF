@@ -278,8 +278,8 @@ void NetworkManager::onMessaageRecevied(QString message) {
                                                     QVector3D rot(0,(float)positionArray.at(3).toDouble(),0);
 
                                                     auto entityMap = hierarchy->Entities;
-                                                    if (entityMap->count(entityID.toStdString())) {
-                                                        Entity* entity = entityMap->at(entityID.toStdString());
+                                                    if (entityMap.count(entityID.toStdString())) {
+                                                        Entity* entity = entityMap.at(entityID.toStdString());
                                                         Platform* platform = dynamic_cast<Platform*>(entity);
                                                         if (platform) {
                                                             if (platform->transform) {
@@ -476,7 +476,7 @@ void NetworkManager::UpdateClient() {
 
     DIS::DataStream batchStream(DIS::BIG);
 
-    for (auto& [key, entity] : *hierarchy->Entities) {
+    for (auto& [key, entity] : hierarchy->Entities) {
         Platform* platform = dynamic_cast<Platform*>(entity);
         if (!platform || !platform->transform) continue;
 

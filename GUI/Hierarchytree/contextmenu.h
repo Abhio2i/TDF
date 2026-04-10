@@ -42,6 +42,7 @@ public:
 
     // %%% Multi-Select Support %%%
     QList<QVariantMap> m_copiedItems;
+    static void runUnitTestsOnce();
 
 signals:
     // %%% Folder Operations Signals %%%

@@ -23,7 +23,6 @@ class QMainWindow;
 class HierarchyConnector : public QObject
 {
     Q_OBJECT
-
 public:
     // Get singleton instance
     static HierarchyConnector* instance();
@@ -60,6 +59,7 @@ public:
 public slots:
     void loadToLibrary(QMainWindow* parent);
 private:
+
     // Initialize connector
     explicit HierarchyConnector(QObject* parent = nullptr);
     // Singleton instance
@@ -76,7 +76,6 @@ private:
     HierarchyTree* libTreeView = nullptr;
     // Hierarchy tree view widget
     HierarchyTree* treeView;
-
 };
 
 #endif // HIERARCHYCONNECTOR_H

@@ -119,6 +119,8 @@ public:
     Category category = Entity::Category::Aircraft;
     Country country = Entity::Country::INDIA;
     Team team = Entity::Team::GreyTeam;
+    double illumination = 1.0;  // day/night factor
+    double glintFactor  = 1.0;  // reflection boost
     float Health = 100;
     float fuel = 100;
     bool isVictom = false;

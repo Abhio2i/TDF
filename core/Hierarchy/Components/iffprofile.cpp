@@ -12,7 +12,7 @@ void IFFProfile::addSubComponent(std::string name, QString data1, QString data2,
     IFF* iff = new IFF(parent);
     if(!data2.isEmpty()){
         std::string id = iff->ID;
-        QJsonObject obj = (*parent->Iffs)[data2.toStdString()]->toJson();
+        QJsonObject obj = parent->Iffs[data2.toStdString()]->toJson();
         iff->fromJson(obj);
         iff->ID = id;
         iff->parentID = parentID;
@@ -20,7 +20,7 @@ void IFFProfile::addSubComponent(std::string name, QString data1, QString data2,
     iff->parentEntity = parentEntity;
     iff->Name = name;
     iffs->insert({iff->ID,iff});
-    parent->Iffs->insert({iff->ID,iff});
+    parent->Iffs.insert({iff->ID,iff});
     emit parent->subComponentAdded(QString::fromStdString(ID),QString::fromStdString(iff->ID),QString::fromStdString(name));
 
 }
@@ -32,7 +32,7 @@ void IFFProfile::removeSubComponent(std::string ID){
         IFF *iff = it->second;
         emit parent->subComponentRemoved(QString::fromStdString(this->ID),QString::fromStdString(ID),QString::fromStdString(iff->Name));
         iffs->erase(iff->ID);
-        parent->Iffs->erase(iff->ID);
+        parent->Iffs.erase(iff->ID);
         delete iff;
     }
 }
@@ -96,7 +96,7 @@ void IFFProfile::fromJson(const QJsonObject& obj) {
             iff->fromJson(iffObj);
             if (!is) {
                 iffs->insert({iff->ID,iff});
-                parent->Iffs->insert({iff->ID,iff});
+                parent->Iffs.insert({iff->ID,iff});
                 emit parent->subComponentAdded(QString::fromStdString(ID),QString::fromStdString(iff->ID),QString::fromStdString(iff->Name));
 
             }

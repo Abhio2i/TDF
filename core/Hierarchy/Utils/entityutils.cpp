@@ -8,10 +8,14 @@
 QJsonObject toParm(float value,QString unit,float min ,float max , QString description ){
     QJsonObject parm;
     parm["type"] = "unitParam";
-    parm["value"] = value;
-    parm["unit"] = unit;
     parm["min"] = min;
     parm["max"] = max;
+    parm["value"] = value;
+    parm["unit"] = unit;
+    if((min-max)!=0){
+        parm["value"] = value<min?min:(value>max?max:value);
+    }
+
     parm["description"] = description;
 
     return parm;

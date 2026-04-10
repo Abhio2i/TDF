@@ -3,6 +3,7 @@
 // These are consumed by RadioImpl (src/radiolib.cpp) and by the propagation model
 // math in src/propagation_model.cpp. Middleware typically fills these from UI.
 #include "radio_types.h"
+#include "propagation_model_config.h"
 #include <string>
 #include <cstdint>
 #include <cstddef>
@@ -97,6 +98,11 @@ struct RadioConfig {
 
     // Receiver (only used if mode != TRANSMITTER_ONLY)
     ReceiverConfig receiver;
+
+    // Optional per-radio propagation override. When disabled, the shared
+    // PropagationModel's config is used as the fallback/default.
+    bool use_local_propagation_config = false;
+    PropagationModelConfig propagation;
 
     // Optional override for testing (if >0, overrides calculated path loss)
     double fixed_path_loss_db = 0.0;

@@ -85,6 +85,8 @@ public:
     void updateFileMenuForEditor(const QString& editorKey);
     QAction* getOpenMissionFileAction();
 
+    void runMenuBarTests();
+
 
 signals:
     // Signal feedback action triggered

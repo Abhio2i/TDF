@@ -59,9 +59,15 @@ public:
     // Tactical display widget
     TacticalDisplay *tacticalDisplay;
     Hierarchy* hierarchy;
+     Console *console;
+     DesignToolBar *designToolBar;
+     static void runUnitTestsOnce();
+         ConsoleView *consoleView;
+
 public slots:
     void showProfileInfo();
     void showApplicationDialog();
+     void markUnsavedChanges();
 protected:
     void resizeEvent(QResizeEvent *event) override;
     void showEvent(QShowEvent *event) override;
@@ -75,7 +81,7 @@ private slots:
     // Show feedback window
     void showFeedbackWindow();
     // Mark unsaved changes
-    void markUnsavedChanges();
+    // void markUnsavedChanges();
     // Handle dock visibility changes
     void onDockVisibilityChanged(bool visible);
     // Reset layout to initial state
@@ -104,7 +110,7 @@ private:
     // Inspector panel widget
     Inspector *inspector;
     // Console for debugging
-    Console *console;
+    // Console *console;
     // Hierarchy data structure
     // Hierarchy* hierarchy;
     // Store copied data
@@ -113,7 +119,7 @@ private:
     Hierarchy* copyhirarchy = nullptr;
     LayerPanel *layerPanel = nullptr;
     CustomResizableOverlayDock *layerDock = nullptr;
-    ConsoleView *consoleView;
+    // ConsoleView *consoleView;
     // Text script view widget
     TextScriptWidget *textScriptView;
     // %%% UI Setup Methods %%%
@@ -128,7 +134,7 @@ private:
     void setupToolBarConnections();
     // %%% Toolbar Components %%%
     // Design toolbar
-    DesignToolBar *designToolBar;
+    // DesignToolBar *designToolBar;
     QList<QDockWidget*> inspectorDocks;
     // Count inspector instances
     int inspectorCount = 0;

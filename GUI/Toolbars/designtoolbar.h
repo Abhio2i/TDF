@@ -25,6 +25,7 @@ public:
     // Initialize menu
     explicit StayOpenMenu(QWidget* parent = nullptr) : QMenu(parent) {}
 
+
 protected:
     // Handle mouse release events
     void mouseReleaseEvent(QMouseEvent* e) override {
@@ -77,6 +78,7 @@ public:
     // GeoJSON layers action
     QAction *geoJsonLayersAction;
     QAction *coordinateSystemAction;
+QAction *layerSelectAction;
 
     // %%% Data Structures %%%
     /* Structure for map layer data */
@@ -208,7 +210,7 @@ private:
     // Snapping toggle action
     QAction *snappingToggleAction;
     // Layer selection action
-    QAction *layerSelectAction;
+    // QAction *layerSelectAction;
     // Measure distance action
     QAction *measureDistanceAction;
     // Database action (commented)

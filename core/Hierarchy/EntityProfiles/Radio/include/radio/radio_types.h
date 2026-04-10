@@ -48,11 +48,20 @@ enum class ModulationClass {
 
 // Specific modulation schemes (extend as needed)
 enum class ModulationScheme {
+    AM,
+    FM,
     BPSK,
     QPSK,
+    PSK8,
     QAM16,
     QAM64,
-    GMSK
+    FSK2,
+    FSK4,
+    GMSK,
+    OFDM_BPSK,
+    OFDM_QPSK,
+    OFDM_QAM16,
+    OFDM_QAM64
 };
 
 // Encryption type
@@ -102,6 +111,11 @@ struct ScanHit {
     double rx_power_dbm = 0.0;
     double noise_floor_dbm = 0.0;
     double snr_db = 0.0;
+    double rain_attenuation_db = 0.0;
+    double wind_attenuation_db_per_km = 0.0;
+    double los_horizon_distance_m = 0.0;
+    double polarization_loss_db = 0.0;
+    double required_snr_threshold_db = 0.0;
 
     bool network_match = false;
     bool frequency_match = false;
@@ -131,6 +145,15 @@ struct ReceiveReport {
     double noise_floor_dbm = 0.0;
     double snr_db = 0.0;
     double frequency_hz = 0.0;
+    double rain_attenuation_db = 0.0;
+    double wind_attenuation_db_per_km = 0.0;
+    double los_horizon_distance_m = 0.0;
+    double polarization_loss_db = 0.0;
+    double required_snr_threshold_db = 0.0;
+    bool frequency_match = false;
+    bool range_ok = false;
+    bool sensitivity_ok = false;
+    bool squelch_ok = false;
 };
 
 } // namespace radio

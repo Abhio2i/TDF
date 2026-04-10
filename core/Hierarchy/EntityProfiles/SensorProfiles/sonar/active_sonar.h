@@ -15,7 +15,7 @@ public:
     void setHeading(float degrees);
     void setPingInterval(float seconds);
     void setFalseDetectionRate(float rate);   //  0.0-1.0
-    void setNoiseVariance(float variance);    //
+    void setNoiseVariance(float variance);
 
     // Entity position (ship jis pe sonar lga hai)
     void setEntityPosition(double lat, double lon);

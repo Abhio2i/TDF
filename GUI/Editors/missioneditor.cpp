@@ -21,6 +21,7 @@
 #include <GUI/Menubars/profileinfodialog.h>
 #include <GUI/Editors/recentprojectsmanager.h>
 #include <GUI/Settings/applicationdialog.h>
+#include <tests/missioneditortest/gui_mission_test.h>
 #include <QProgressDialog>
 #include <QScrollArea>
 
@@ -524,4 +525,35 @@ void MissionEditor::onTreeItemSelected(QVariantMap data)
             doctrineDock->show();
         }
     }
+}
+void MissionEditor::runGUITests()
+{
+      qDebug() << "=== runGUITests called ===";
+    if (!console) {
+        console = scenario->console;
+    }
+    static bool testsRun = false;
+    if (testsRun) return;
+    testsRun = true;
+
+    runMissionEditorTests(this, console);
+}
+bool MissionEditor::isHierarchyDockVisible() const {
+    return hierarchyDock && hierarchyDock->isVisible();
+}
+
+bool MissionEditor::isDoctrineDockVisible() const {
+    return doctrineDock && doctrineDock->isVisible();
+}
+
+bool MissionEditor::isTacticalDockVisible() const {
+    return tacticalDock && tacticalDock->isVisible();
+}
+
+bool MissionEditor::isAssumptionsDockVisible() const {
+    return assumptionsDock && assumptionsDock->isVisible();
+}
+
+bool MissionEditor::isAreaDefinitionDockVisible() const {
+    return areaDefinitionDock && areaDefinitionDock->isVisible();
 }

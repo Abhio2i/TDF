@@ -13,14 +13,14 @@ void CSM::scan(){
     if(!Active)return;
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
     if(!parentEntity) return;
-    Transform* source = (*root->Platforms)[parentEntity->ID]->transform;
+    Transform* source = root->Platforms[parentEntity->ID]->transform;
     if(!source) return;
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
-    for (auto& [key, entity] : *root->Radios)
+    for (auto& [key, entity] : root->Radios)
     {
         if(!entity || !entity->parentEntity || !entity->parentEntity->Active) continue;
-        auto it = root->Platforms->find(entity->parentEntity->ID);
-        if (it != root->Platforms->end()) {
+        auto it = root->Platforms.find(entity->parentEntity->ID);
+        if (it != root->Platforms.end()) {
             Platform* platform = it->second;
             // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
             if(platform->ID == parentEntity->ID || !platform || !platform->transform) continue;

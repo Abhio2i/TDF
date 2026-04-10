@@ -8,6 +8,9 @@
 #include "sidebar-styles.h"                        // Include separate CSS file
 #include <QHBoxLayout>
 #include <QVariant>
+#include "tests/sidebarwidgettest/sidebarwidget_test.h"
+#include "GUI/mainwindow.h"
+#include <QTimer>
 
 // %%% Constructor %%%
 /* Initialize sidebar widget with buttons */
@@ -49,6 +52,8 @@ SidebarWidget::SidebarWidget(QWidget *parent)
 
     // Set fixed height
     setFixedHeight(28);
+    runUnitTestsOnce();
+
 }
 
 // %%% Button Creation %%%
@@ -89,4 +94,27 @@ void SidebarWidget::setSensorsButtonVisible(bool visible)
     if (sensorsButton) {
         sensorsButton->setVisible(visible);
     }
+}
+void SidebarWidget::runUnitTestsOnce()
+{
+    static bool testsRun = false;
+    if (testsRun) return;
+    testsRun = true;
+
+    QTimer::singleShot(0, []() {
+        Console* console = nullptr;
+        MainWindow* mw = MainWindow::instance();
+        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+            console = mw->databaseEditor->console;
+        }
+        if (!console) {
+            qDebug() << "SidebarWidget: console not available, cannot run tests";
+            return;
+        }
+
+        // Create a temporary SidebarWidget (no parent, won't show)
+        SidebarWidget* testWidget = new SidebarWidget(nullptr);
+        runSidebarWidgetTests(testWidget, console);
+        testWidget->deleteLater();
+    });
 }
