@@ -2,6 +2,7 @@
 /* ========================================================================= */
 /* File: imagetemplate.h                                                    */
 /* Purpose: Defines widget for managing image templates                      */
+/* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
 #ifndef IMAGETEMPLATE_H

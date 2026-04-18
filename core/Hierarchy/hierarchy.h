@@ -86,7 +86,7 @@ public:
     Folder* addFolder(QString parentId, QString FolderName, bool Profile);
     void addFolderViaNetwork(QString parentId,QString ID,QString FolderName,bool Profile);
     void renameFolder(QString Id, QString name);
-    void removeFolder(QString parentId, QString ID, bool Profile);
+    void removeFolder(QString parentId, QString ID);
     void removeFolderViaNetwork(QString ID);
 
 signals:
@@ -97,13 +97,14 @@ signals:
 
 //////////Entity///////////
 public:
-    Entity* addEntity(QString parentId, QString EntityName, bool Profile);
+    Entity* addEntity(QString parentId, QString EntityName, bool Profile,QString data1 = "");
     void addEntityViaNetwork(QString parentId,QString ID,QString EntityName,bool Profile);
     void addEntityViaLogger(QString parentId,QString ID,QString EntityName,bool Profile);
     Entity* addEntityFromJson(QString parentId, QJsonObject obj, bool Profile);
-    void removeEntity(QString parentId, QString ID, bool Profile);
     Entity* getEntityById(QString ID);
     void renameEntity(QString Id, QString name);
+    void removeEntity(QString parentId, QString ID);
+
 
 signals:
     void entityAddedPointer(QString parentID, Entity* entity);
@@ -125,9 +126,9 @@ signals:
 //////////Components///////////
 public:
     void addComponent(QString Id, QString ComponentName);
-    void removeComponent(QString entityId, QString componentName);
     QJsonObject getComponentData(QString ID, QString componentName);
     void UpdateComponent(QString ID, QString name, QJsonObject delta);
+    void removeComponent(QString entityId, QString componentName);
 
 signals:
     void componentAdded(QString parentID,QString ID, QString componentName);
@@ -135,11 +136,9 @@ signals:
 
 //////////SubComponents///////////
 public:
-    void addSubComponent(QString Id, ComponentType type, QString subComponentName, QString data1 = "", QString data2 = "", QString data3 = "");
-    void removeSubComponent(QString ID, QString subComponentID, QString subComponentName);
-    QJsonObject getSubComponentData(QString ID, QString subComponentName);
-    void updateSubComponent(QString ID, QString name, QJsonObject delta);
+    void addSubComponent(QString Id, ComponentType type, QString subComponentName, QString data1 = "", QString data2 = "", QJsonObject data3 = QJsonObject());
     void renameSubComponent(QString ID, QString subComponentID, QString newName);
+    void removeSubComponent(QString ID, QString subComponentID);
 
 signals:
     void subComponentAdded(QString parentID,QString ID, QString subComponentName);

@@ -2,6 +2,7 @@
 /* File: mainwindow-styles.h                                                */
 /* Purpose: Dark theme styles for MainWindow and its components             */
 /* Background: #0F2636, Border: #27446d, Text: White, Accent: #0078D4       */
+/* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
 #ifndef MAINWINDOW_STYLES_H
@@ -32,7 +33,6 @@ const QString TopBarWidget = R"(
     }
 )";
 
-/* Menu Bar - already defined in menubar-styles.h, but keeping for completeness */
 const QString MenuBar = R"(
     QMenuBar {
         background-color: transparent;
@@ -61,7 +61,6 @@ const QString StackedWidget = R"(
     }
 )";
 
-/* Navigation Page - assuming it's a custom widget */
 const QString NavigationPage = R"(
     QWidget {
         background-color: transparent;
@@ -75,7 +74,6 @@ const QString CentralWidget = R"(
     }
 )";
 
-/* QMessageBox (for unsaved changes dialog) */
 const QString MessageBox = R"(
     QMessageBox {
         background-color: #0F2636;

@@ -1,4 +1,8 @@
-
+/* ========================================================================= */
+/* File: AddFormationDialog.h                                                */
+/* Purpose: Dialog for adding a formation with selected entities             */
+/* Written by   : Waris ali                                            */
+/* ========================================================================= */
 #ifndef ADDFORMATIONDIALOG_H
 #define ADDFORMATIONDIALOG_H
 
@@ -30,7 +34,7 @@ public:
     QString getFormationType() const;
     QList<QVariantMap> getAllies() const;
     int getAlliesCount() const;
-    static void runUnitTestsOnce();
+    // static void runUnitTestsOnce();
 
 
 private slots:

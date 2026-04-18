@@ -1,9 +1,38 @@
 #ifndef FEEDBACK_TEST_H
 #define FEEDBACK_TEST_H
 
-class Feedback;
-class Console;
+#include <QObject>
 
-void runFeedbackTests(Feedback* dialog, Console* console);
+class Feedback;
+
+class TestFeedbackDialog : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void init();
+    void cleanup();
+
+    // Dialog properties
+    void testWindowTitle();
+    void testIsModal();
+    void testSize();
+    void testExists();
+
+    // UI elements
+    void testNameLabel();
+
+    void testVersionLabel();
+    void testOkButtonExists();
+    void testOkButtonProperties();
+    void testSeparatorExists();
+
+    // Layout and styling
+    void testOkButtonAlignment();
+    void testHasStyleSheet();
+
+private:
+    Feedback* dialog = nullptr;
+};
 
 #endif

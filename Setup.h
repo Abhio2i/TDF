@@ -1,3 +1,9 @@
+/* ========================================================================= */
+/* File: Setup.h                                                             */
+/* Purpose: Manages TDF folder structure and resource paths for aircraft     */
+/*          and city data                                                    */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #ifndef SETUP_H
 #define SETUP_H
 

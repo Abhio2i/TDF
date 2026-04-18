@@ -29,6 +29,7 @@
 #include "qheaderview.h"
 
 
+
 HierarchyTree::HierarchyTree(QWidget *parent)
     : QWidget(parent)
 {
@@ -985,7 +986,6 @@ void HierarchyTree::selectMultipleEntitiesInTree(const QList<QString>& entityIds
     }
     // Re-enable signals
     tree->blockSignals(false);
-    // Manually trigger itemsSelected signal with all selected data
     QList<QVariantMap> selectedDataList;
     for (const QString& entityId : entityIds) {
         if (Items.contains(entityId)) {

@@ -5,7 +5,7 @@
 /* ========================================================================= */
 
 #include "doctrineareadefinition.h"
-#include "doctrine-styles.h"       // Reuse existing CSS
+#include "doctrine-styles.h"
 
 // %%% Constructor %%%
 DoctrineAreaDefinition::DoctrineAreaDefinition(QWidget *parent)

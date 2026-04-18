@@ -13,7 +13,7 @@ class ScenarioConfig : public QObject
 public:
     ScenarioConfig(QObject *parent = nullptr);
     ~ScenarioConfig();
-    static inline QString software_version = "3.0.94";
+    static inline QString software_version = "4.0.21";
     static inline QString file_Version = "";
     void toJson();
     void fromJson();

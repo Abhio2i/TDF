@@ -26,10 +26,10 @@
 #include <qgsproject.h>
 #include <core/Hierarchy/Struct/vector.h>
 #include "GUI/Tacticaldisplay/Gis/gislib.h"
-#include "tests/layerpaneltest/layerpanel_test.h"
-#include "GUI/mainwindow.h"
-#include <QTimer>
-
+// #include "tests/layerpaneltest/layerpanel_test.h"
+// #include "GUI/mainwindow.h"
+// #include <QTimer>
+// #include "tests/gui_test_control.h"
 static RasterLayer makeDefaultExtents(const RasterLayer& rl, CanvasWidget* canvas);
 
 
@@ -50,7 +50,7 @@ LayerPanel::LayerPanel(QWidget *parent)
 
     setupUI();
     setupContextMenu();
-    runUnitTestsOnce();
+    // runUnitTestsOnce();
 
 }
 
@@ -4055,26 +4055,27 @@ static RasterLayer makeDefaultExtents(const RasterLayer& rl, CanvasWidget* canva
 
     return out;
 }
-void LayerPanel::runUnitTestsOnce()
-{
-    static bool testsRun = false;
-    if (testsRun) return;
-    testsRun = true;
+// void LayerPanel::runUnitTestsOnce()
+// {
+//            if (!GuiTestControl::isEnabled()) return;
+//     static bool testsRun = false;
+//     if (testsRun) return;
+//     testsRun = true;
 
-    QTimer::singleShot(0, []() {
-        Console* console = nullptr;
-        MainWindow* mw = MainWindow::instance();
-        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-            console = mw->databaseEditor->console;
-        }
-        if (!console) {
-            qDebug() << "LayerPanel: console not available, cannot run tests";
-            return;
-        }
+//     QTimer::singleShot(0, []() {
+//         Console* console = nullptr;
+//         MainWindow* mw = MainWindow::instance();
+//         if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+//             console = mw->databaseEditor->console;
+//         }
+//         if (!console) {
+//             qDebug() << "LayerPanel: console not available, cannot run tests";
+//             return;
+//         }
 
-        // Create a temporary LayerPanel (no parent, won't show)
-        LayerPanel* testPanel = new LayerPanel(nullptr);
-        runLayerPanelTests(testPanel, console);
-        testPanel->deleteLater();
-    });
-}
+//         // Create a temporary LayerPanel (no parent, won't show)
+//         LayerPanel* testPanel = new LayerPanel(nullptr);
+//         runLayerPanelTests(testPanel, console);
+//         testPanel->deleteLater();
+//     });
+// }

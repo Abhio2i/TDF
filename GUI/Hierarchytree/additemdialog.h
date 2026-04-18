@@ -16,7 +16,6 @@
 #include <QStringListModel>
 #include <QCompleter>
 #include <QStringListModel>
-// Forward declarations to reduce header dependencies
 class QLineEdit;
 class QComboBox;
 class QCheckBox;
@@ -48,7 +47,7 @@ public:
         ComponentSensorMode,
         ComponentIFFMode,
         ComponentRadioMode,
-        ComponentWeaponMode   // ← NEW: Radio jaisa weapon search dialog
+        ComponentWeaponMode
     };
 
     QVariantMap getEntityComponents() const;
@@ -114,7 +113,9 @@ public:
     int getRange() const { return getScRange(); }
     void populateEntityProfiles(const QString &profileTypeFilter = "");
     QString getSelectedTeam() const;
-    static void runUnitTestsOnce();
+    QString getNewComponentType() const;
+
+
 private slots:
     // %%% Private Slots %%%
     /* Handle scenario checkbox state changes */
@@ -197,6 +198,7 @@ private:
                                     DialogMode dialogMode,
                                     const QString& editorContext);
    QComboBox *teamSelectComboBox = nullptr;
+       QComboBox* m_newTypeCombo;
 
 };
 

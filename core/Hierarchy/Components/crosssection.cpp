@@ -37,7 +37,7 @@ void fromSection(CrossSection::data& d, const QJsonObject& section) {
         d.modulationValue = valueFromParms(section["modulationValue"].toObject());
 }
 
-void CrossSection::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+void CrossSection::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
 
 }
 

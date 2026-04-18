@@ -20,6 +20,8 @@
 #include <QLineEdit>                               // For input fields
 #include <QFont>                                   // For font settings
 
+#include <QTimer>
+#include <QDebug>
 // %%% Constructor %%%
 /* Initialize measure distance dialog */
 MeasureDistanceDialog::MeasureDistanceDialog(QWidget *parent)
@@ -358,3 +360,4 @@ QString MeasureDistanceDialog::getCurrentUnitString() const
 {
     return getUnitString(currentUnit);
 }
+

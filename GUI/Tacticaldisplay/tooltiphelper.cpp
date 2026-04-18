@@ -1,9 +1,16 @@
-
+/* ========================================================================= */
+/* File: tooltiphelper.cpp                                                   */
+/* Purpose: Implements helper functions for generating and displaying       */
+/*          entity tooltips with configurable fields                         */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #include "tooltiphelper.h"
 #include <QVector3D>
 #include <cmath>
 #include <core/Hierarchy/EntityProfiles/platform.h>
 #include <core/Hierarchy/Components/dynamicmodel.h>
+#include "tests/tooltiphelpertest/tooltiphelper_test.h"
+
 
 // Tooltip labels mapping
 const QMap<QString, QString> TooltipHelper::tooltipLabels = {
@@ -66,10 +73,8 @@ QString TooltipHelper::generateEntityTooltip(const MeshEntry& entry,
             data["Trajectory ETA"] = formatTime(completionTime);
         }
     }
-    // Add name
-    data["Name"] = name;
 
-    // Format and return tooltip with active fields filter
+    data["Name"] = name;
     return formatTooltipHTML(name, data, activeFields);
 }
 
@@ -265,11 +270,11 @@ double TooltipHelper::calculateCompletionTime(const MeshEntry& entry)
         return -1.0;
     }
 
-    // ✅ CURRENT POSITION (entity's actual runtime position)
+    //  CURRENT POSITION (entity's actual runtime position)
     QPointF currentPos(entry.coreTransform->getLongitude(),
                        entry.coreTransform->getLatitude());
 
-    // ✅ FIND NEAREST UPCOMING WAYPOINT
+    // FIND NEAREST UPCOMING WAYPOINT
     int nearestWaypointIndex = findNearestUpcomingWaypoint(entry, currentPos);
 
     if (nearestWaypointIndex < 0) {
@@ -278,7 +283,7 @@ double TooltipHelper::calculateCompletionTime(const MeshEntry& entry)
 
     double totalTime = 0.0;
 
-    // ✅ STEP 1: Current position to NEXT waypoint
+    //  STEP 1: Current position to NEXT waypoint
     Waypoints* nextWp = entry.trajectory->Trajectories[nearestWaypointIndex];
     QPointF nextWpPos(nextWp->position->z, nextWp->position->x);
 
@@ -286,7 +291,7 @@ double TooltipHelper::calculateCompletionTime(const MeshEntry& entry)
     double timeToNext = (distanceToNext / currentSpeed) * 3600.0; // seconds
     totalTime += timeToNext;
 
-    // ✅ STEP 2: Remaining waypoints
+    //  STEP 2: Remaining waypoints
     for (size_t i = nearestWaypointIndex; i < entry.trajectory->Trajectories.size() - 1; ++i) {
         Waypoints* wp1 = entry.trajectory->Trajectories[i];
         Waypoints* wp2 = entry.trajectory->Trajectories[i + 1];
@@ -307,7 +312,7 @@ double TooltipHelper::calculateCompletionTime(const MeshEntry& entry)
 
 double TooltipHelper::calculateHaversineDistance(const QPointF& pos1, const QPointF& pos2)
 {
-    const double R = 6371.0; // Earth radius in km
+    const double R = 6371.0;
 
     double lat1 = pos1.y() * M_PI / 180.0;
     double lon1 = pos1.x() * M_PI / 180.0;

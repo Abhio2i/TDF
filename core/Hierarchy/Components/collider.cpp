@@ -62,7 +62,7 @@ QStringList colliderTypeOptions() {
     return list;
 }
 
-void Collider::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+void Collider::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
 
 }
 

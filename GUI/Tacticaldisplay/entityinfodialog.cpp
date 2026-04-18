@@ -2,10 +2,11 @@
 /* ========================================================================= */
 /* File: entityinfodialog.cpp                                               */
 /* Purpose: Implementation of entity information dialog                      */
+// Written by: Arti Rajpoot
 /* ========================================================================= */
 
 #include "entityinfodialog.h"
-#include "entityinfodialog-styles.h"  // Include separate CSS file
+#include "entityinfodialog-styles.h"
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QTimer>
@@ -27,6 +28,8 @@ EntityInfoDialog::EntityInfoDialog(QWidget *parent)
     : QDialog(parent)
 {
     setupUI();
+    // runUnitTestsOnce();
+
 }
 
 void EntityInfoDialog::setupUI()
@@ -909,16 +912,13 @@ void EntityInfoDialog::onFormationClicked()
             // Check if this entity IS a Formation entity itself
             Formation* thisFormation = dynamic_cast<Formation*>(entryInfo->platform);
             if (thisFormation) {
-                // This is a Formation entity
                 displayFormationInfo(thisFormation, entryInfo->platform, layout);
-
-                // Add note that this is the Formation entity itself
                 QLabel *noteLabel = new QLabel("Note: This is the Formation entity that manages the formation.");
                 noteLabel->setProperty("class", "note");
                 noteLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.note { color: #F1C40F; background-color: #1A3652; padding: 8px; border: 1px solid #F1C40F; border-radius: 3px; font-size: 11px; }");
                 layout->addWidget(noteLabel);
             } else {
-                // Entity is not part of any formation
+
                 QLabel *noFormationLabel = new QLabel(
                     "This entity is not part of any formation.\n\n");
                 noFormationLabel->setAlignment(Qt::AlignCenter);
@@ -1252,3 +1252,4 @@ void EntityInfoDialog::onSpeedAltCellChanged(int row, int column)
                                   row == 1 ? value : -1);
     }
 }
+

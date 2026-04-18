@@ -5,9 +5,6 @@
 // Written by   : Arti Rajpoot
 /* ========================================================================= */
 
-
-
-
 #ifndef MissionEditor_H
 #define MissionEditor_H
 
@@ -47,7 +44,7 @@ public:
     TacticalRules               *tacticalPanel = nullptr;
     DoctrineAssumptionsNotes    *assumptionsPanel = nullptr;
     DoctrineAreaDefinition      *areaDefinitionPanel = nullptr;
-        void runGUITests();
+        // void runGUITests();
 
     // GUI Test helper methods
     bool isHierarchyDockVisible() const;
@@ -89,11 +86,6 @@ private:
 
     // %%% UI Components %%%
     ConsoleView                 *consoleView   = nullptr;
-    // DoctrineParameters          *doctrinePanel = nullptr;
-    // TacticalRules               *tacticalPanel = nullptr;
-    // DoctrineAssumptionsNotes    *assumptionsPanel = nullptr;
-    // DoctrineAreaDefinition      *areaDefinitionPanel = nullptr;
-
     // %%% Dock Widgets %%%
     QDockWidget *hierarchyDock = nullptr;
     QDockWidget *navigationDock = nullptr;

@@ -92,7 +92,7 @@ void EO_IR::preprocessing()
 {
     CustomEntity user = m_payload.user;
     ppel = new PreProcessEntityList();
-    m_platform = &m_hierarchy->Platforms;
+    m_platform = m_hierarchy->Platforms;
     // Iterate entities
     for(auto entity = m_payload.entityList.begin();
          entity != m_payload.entityList.end(); ++entity){
@@ -111,54 +111,6 @@ void EO_IR::preprocessing()
     eo_payload.preProcessEntityList = *ppel;
     //eo = new EO(eo_payload);
 }
-
-
-// void EO_IR::preprocessing()
-// {
-//     CustomEntity user = m_payload.user;
-//     ppel = new PreProcessEntityList();
-//     // Iterate entities
-//     for(auto entity = m_payload.entityList.begin();
-//          entity != m_payload.entityList.end(); ++entity){
-//         PreProcessEntity ppe;
-//         ppe.frontalSurfaceArea = entity->second.frontalSurfaceArea;
-//         ppe.distanceBtwUser = distanceBtw
-//             (user.coordinate,entity->second.coordinate);
-//         ppe.angleBtwUser    = calculateAngle
-//             (user.heading, user.pitch,
-//              user.coordinate,entity->second.coordinate);
-//         ppel->insert({entity->first, ppe});
-//     }
-//     eo_payload.surrounding  = m_payload.surrounding;
-//     eo_payload.eoParameters = m_payload.eoParameters;
-//     eo_payload.entityList   = m_payload.entityList;
-//     eo_payload.preProcessEntityList = *ppel;
-//     eo = new EO(eo_payload);
-//     // for(auto entity = m_payload.entityList.begin();
-//     //     entity != m_payload.entityList.end(); ++entity){
-//     //     PreProcessEntity ppe;
-//     //     ppe.frontalSurfaceArea = entity->second.frontalSurfaceArea;
-//     //     ppe.distanceBtwUser = distanceBtw
-//     //         (user.coordinate,entity->second.coordinate);
-//     //     ppe.angleBtwUser    = calculateAngle
-//     //         (user.heading, user.pitch,
-//     //         user.coordinate,entity->second.coordinate);
-//     //     ppel->insert({entity->first, ppe});
-//     // }
-//     // eo_payload.surrounding  = m_payload.surrounding;
-//     // eo_payload.eoParameters = m_payload.eoParameters;
-//     // eo_payload.entityList   = m_payload.entityList;
-//     // eo_payload.preProcessEntityList = *ppel;
-//     // eo = new EO(eo_payload);
-// }
-
-
-// Function to calculate Euclidean distance between two 3D points
-// double EO_IR::distanceBtw(Coordinate p1, Coordinate p2) {
-//     return sqrt(pow(p2.latitude  - p1.latitude , 2) +
-//                 pow(p2.longitude - p1.longitude, 2) +
-//                 pow(p2.altitude  - p1.altitude , 2));
-// }
 
 #define EARTH_RADIUS 6371000.0 // meters
 
@@ -288,7 +240,7 @@ double EO_IR::calculateAngle(double headingDeg,
     double angle = atan2(cross.magnitude(), dot);
 
     // Sign using Up axis (Z)
-    double sign = (cross.z >= 0) ? 1.0 : -1.0;
+    double sign = (cross.z >= 0) ? -1.0 : 1.0;
 
     return sign * angle * 180.0 / M_PI;
 }
@@ -328,46 +280,40 @@ double EO_IR::calculateAngle(
     double angle = atan2(cross.magnitude(), dot);
 
     // Sign using Up axis (Z)
-    double sign = (cross.z >= 0) ? 1.0 : -1.0;
+    double sign = (cross.z >= 0) ? -1.0 : 1.0;
 
     return sign * angle * 180.0 / M_PI;
 }
-// double EO_IR::calculateAngle(
-//     double headingDeg, double pitchDeg,
-//     double p1latitude, double p1longitude,
-//     double p1altitude, double p2latitude,
-//     double p2longitude, double p2altitude)
-// {
-//     Axis A_pos = toVector(p1latitude, p1longitude, p1altitude);
-//     Axis B_pos = toVector(p2latitude, p2longitude, p2altitude);
 
-//     // Convert AB → ENU frame
-//     Axis AB = ecefToENU(A_pos, B_pos, p1latitude, p1longitude);
+double EO_IR::relativeAngle(
+    double sensorAngle, double targetAngle)
+{
+    double diff = targetAngle - sensorAngle;
+    if(diff > 180){
+        return diff -360;
+    }else if(diff < -180){
+        return diff + 360;
+    }else{
+        return diff;
+    }
+}
 
-//     // Direction from heading/pitch (ENU frame)
-//     double heading = headingDeg * M_PI / 180.0;
-//     double pitch   = pitchDeg   * M_PI / 180.0;
-
-//     Axis dirA = {
-//         cos(pitch) * sin(heading), // East
-//         cos(pitch) * cos(heading), // North
-//         sin(pitch)                 // Up
-//     };
-
-//     double magDir = dirA.magnitude();
-//     double magAB  = AB.magnitude();
-
-//     if (magDir == 0 || magAB == 0) return -1;
-
-//     double dot = dirA.x * AB.x + dirA.y * AB.y + dirA.z * AB.z;
-
-//     double cosTheta = dot / (magDir * magAB);
-//     cosTheta = std::max(-1.0, std::min(1.0, cosTheta));
-//     // std::cout << "AB (ENU): " << AB.x << ", " << AB.y << ", " << AB.z << std::endl;
-//     // std::cout << "dirA: " << dirA.x << ", " << dirA.y << ", " << dirA.z << std::endl;
-//     // std::cout << "cosTheta: " << std::acos(cosTheta) * 180.0 / M_PI<< std::endl;
-//     return std::acos(cosTheta) * 180.0 / M_PI;
-// }
+double EO_IR::viewAngle(double sensorAngle, double targetAngle)
+{
+    if(sensorAngle > 0){
+        if(targetAngle > 0){
+            return (-180 + sensorAngle -(targetAngle-180));
+        }else {
+            return (-180 + sensorAngle - targetAngle);
+        }
+    }else{
+        if(targetAngle > 0){
+            return 180 + (sensorAngle - targetAngle);
+        }else {
+            return -180 + (sensorAngle + targetAngle);
+        }
+    }
+}
 
 Axis EO_IR::toVector(double lat, double lon, double alt) {
     double R = 6371000.0; // Earth radius in meters
@@ -399,119 +345,3 @@ Axis EO_IR::ecefToENU(const Axis& ref, const Axis& target, double latDeg, double
 
     return enu;
 }
-
-// double EO_IR::calculateAngle(double headingDeg,
-//                              double pitchDeg,
-//                              Coordinate entityA,
-//                              Coordinate entityB)
-// {
-//     // Step 1: Convert A position to Cartesian
-//     Axis A_pos = toVector(entityA.latitude, entityA.longitude, entityA.altitude);
-
-//     // Step 2: Convert B position to Cartesian
-//     Axis B_pos = toVector(entityB.latitude, entityB.longitude, entityB.altitude);
-
-//     // Step 3: दिशा vector from A → B
-//     Axis AB = {
-//         B_pos.x - A_pos.x,
-//         B_pos.y - A_pos.y,
-//         B_pos.z - A_pos.z
-//     };
-
-//     // Step 4: Convert heading + pitch → direction vector
-//     double heading = headingDeg * M_PI / 180.0;
-//     double pitch   = pitchDeg   * M_PI / 180.0;
-
-//     Axis dirA = {
-//         cos(pitch) * sin(heading), // East
-//         cos(pitch) * cos(heading), // North
-//         sin(pitch)                 // Up
-//     };
-
-//     // Step 5: Magnitudes
-//     double magDir = dirA.magnitude();
-//     double magAB  = AB.magnitude();
-
-//     if (magDir == 0 || magAB == 0)
-//         return -1;
-
-//     // Step 6: Dot product
-//     double dot = dirA.x * AB.x + dirA.y * AB.y + dirA.z * AB.z;
-
-//     double cosTheta = dot / (magDir * magAB);
-
-//     // Clamp
-//     cosTheta = std::max(-1.0, std::min(1.0, cosTheta));
-
-//     return std::acos(cosTheta) * 180.0 / M_PI;
-// }
-
-// Axis EO_IR::directionFromHeadingPitch(double headingDeg, double pitchDeg) {
-//     double heading = headingDeg * M_PI / 180.0;
-//     double pitch   = pitchDeg   * M_PI / 180.0;
-
-//     Axis dir;
-
-//     dir.x = cos(pitch) * cos(heading);
-//     dir.y = cos(pitch) * sin(heading);
-//     dir.z = sin(pitch);
-
-//     return dir;
-// }
-
-
-// double EO_IR::calculateAngle(Axis p1, Coordinate p2) {
-//     // A = given ray (already a vector)
-//     Axis A = p1;
-
-//     // B = ray from origin to coordinate p2
-//     Axis B = toVector(p2.latitude, p2.longitude, p2.altitude);
-
-//     double magA = A.magnitude();
-//     double magB = B.magnitude();
-
-//     if (magA == 0 || magB == 0) {
-//         return -1; // invalid case
-//     }
-
-//     // Dot product
-//     double dot = A.x * B.x + A.y * B.y + A.z * B.z;
-
-//     // cos(theta)
-//     double cosTheta = dot / (magA * magB);
-
-//     // Clamp for numerical stability
-//     cosTheta = std::max(-1.0, std::min(1.0, cosTheta));
-
-//     // Angle in degrees
-//     return std::acos(cosTheta) * 180.0 / M_PI;
-// }
-
-// double EO_IR::calculateAngle(Coordinate p1, Coordinate p2) {
-//     Axis A = toVector(p1.latitude, p1.longitude, p1.altitude);
-//     Axis B = toVector(p2.latitude, p2.longitude, p2.altitude);
-
-
-//     // Vector pointing from A to B
-//     Axis AB = { B.x - A.x, B.y - A.y, B.z - A.z };
-
-//     // Local Normal at A (vector from Earth center to A, normalized)
-//     double magA = A.magnitude();
-//     Axis normalA = { A.x / magA, A.y / magA, A.z / magA };
-
-//     // Dot product between AB and normalA
-//     double dot = AB.x * normalA.x + AB.y * normalA.y + AB.z * normalA.z;
-
-//     // Angle = acos( (AB . n) / (|AB| * |n|) )
-//     // Since |n| = 1, it is just dot / |AB|
-//     double cosTheta = dot / AB.magnitude();
-
-//     // Clamp for precision safety
-//     cosTheta = std::max(-1.0, std::min(1.0, cosTheta));
-
-//     return std::acos(cosTheta) * 180.0 / M_PI;
-// }
-
-
-
-

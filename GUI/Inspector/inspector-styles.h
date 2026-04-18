@@ -1,4 +1,8 @@
-// inspector-styles.h
+/* ========================================================================= */
+/* File: inspector-styles.h                                                  */
+/* Purpose: Provides dark theme styles for inspector UI components           */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #ifndef INSPECTOR_STYLES_H
 #define INSPECTOR_STYLES_H
 

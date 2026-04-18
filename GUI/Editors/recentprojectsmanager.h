@@ -46,6 +46,7 @@ public:
     /* Display recent projects menu in parent widget for specific editor type */
     void showRecentProjectsMenu(QWidget *parent, EditorType editorType);
 void showRecentLibraryMenu(QWidget *parent);
+     // static void runUnitTestsOnce();
 signals:
     // %%% Signals %%%
     /* Emitted when a project is selected from recent projects menu */

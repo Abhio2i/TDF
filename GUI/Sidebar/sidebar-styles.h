@@ -2,6 +2,7 @@
 /* File: sidebar-styles.h                                                   */
 /* Purpose: Dark theme styles for SidebarWidget                             */
 /* Background: #0F2636, Text: White, Accent: #0078D4                        */
+/* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
 #ifndef SIDEBAR_STYLES_H

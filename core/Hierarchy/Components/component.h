@@ -35,7 +35,7 @@ public:
     virtual ComponentType Typo() const { return ComponentType::Unknown; }
 
     // 🔧 Add these two pure virtual functions
-    virtual void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QString data3 = "") = 0;
+    virtual void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QJsonObject data3 = QJsonObject()) = 0;
     virtual void removeSubComponent(std::string ID) = 0;
     virtual QJsonObject getsubComponentData(std::string ID) const = 0;
     virtual void updateSubComponent(std::string ID, const QJsonObject& obj) = 0;

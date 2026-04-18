@@ -35,7 +35,7 @@ public:
     void addSubComponent(std::string name,
                          QString data1 = "",
                          QString data2 = "",
-                         QString data3 = "") override;
+                         QJsonObject data3 = QJsonObject()) override;
 
     void removeSubComponent(std::string ID)                             override;
     QJsonObject getsubComponentData(std::string ID)              const  override;

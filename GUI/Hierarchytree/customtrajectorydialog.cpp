@@ -1,3 +1,8 @@
+/* ========================================================================= */
+/* File: customtrajectorydialog.cpp                                          */
+/* Purpose: Implements dialog for configuring custom trajectory parameters  */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #include "customtrajectorydialog.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -139,15 +144,7 @@ void CustomTrajectoryDialog::setupUI()
     minSpeedLayout->addStretch();
     speedLayout->addLayout(minSpeedLayout);
 
-    // QHBoxLayout *SpeedLayout = new QHBoxLayout();
-    // SpeedLayout->addWidget(new QLabel("Speed:", this));
-    // SpeedSpinBox = new QDoubleSpinBox(this);
-    // SpeedSpinBox->setRange(0, 5000);
-    // SpeedSpinBox->setValue(100);
-    // SpeedSpinBox->setSuffix(" km/h");
-    // SpeedLayout->addWidget(SpeedSpinBox);
-    // SpeedLayout->addStretch();
-    // speedLayout->addLayout(SpeedLayout);
+
 
     QHBoxLayout *maxSpeedLayout = new QHBoxLayout();
     maxSpeedLayout->addWidget(new QLabel("end Speed:", this));
@@ -194,15 +191,7 @@ void CustomTrajectoryDialog::setupUI()
     minaltitudeValueLayout->addStretch();
     altitudeLayout->addLayout(minaltitudeValueLayout);
 
-    // QHBoxLayout *altitudeValueLayout = new QHBoxLayout();
-    // altitudeValueLayout->addWidget(new QLabel("Altitude:", this));
-    // altitudeSpinBox = new QDoubleSpinBox(this);
-    // altitudeSpinBox->setRange(0, 50000);
-    // altitudeSpinBox->setValue(1000);
-    // altitudeSpinBox->setSuffix(" ft");
-    // altitudeValueLayout->addWidget(altitudeSpinBox);
-    // altitudeValueLayout->addStretch();
-    // altitudeLayout->addLayout(altitudeValueLayout);
+
 
     QHBoxLayout *maxaltitudeValueLayout = new QHBoxLayout();
     maxaltitudeValueLayout->addWidget(new QLabel("End Altitude:", this));
@@ -227,19 +216,7 @@ void CustomTrajectoryDialog::setupUI()
     mainLayout->addWidget(altitudeGroupBox);
 
 
-    // curveGroupBox = new QGroupBox("Curve Configuration", this);
-    // QVBoxLayout *curveLayout = new QVBoxLayout();
 
-    // QHBoxLayout *curveTypeLayout = new QHBoxLayout();
-    // curveTypeLayout->addWidget(new QLabel("Curve Type:", this));
-    // curveComboBox = new QComboBox(this);
-    // curveComboBox->addItems({"Incline", "Flat", "Decline", "Convex", "Concave"});
-    // curveTypeLayout->addWidget(curveComboBox);
-    // curveTypeLayout->addStretch();
-    // curveLayout->addLayout(curveTypeLayout);
-
-    // curveGroupBox->setLayout(curveLayout);
-    // mainLayout->addWidget(curveGroupBox);
 
 
     QDialogButtonBox *buttonBox = new QDialogButtonBox(
@@ -264,14 +241,10 @@ void CustomTrajectoryDialog::onShapeChanged(int index)
 
     bool showOval = (shape == "Oval");
     ovalGroupBox->setVisible(showOval);
-    // minSpeedSpinBox->parentWidget()->setVisible(true);
-    // maxSpeedSpinBox->parentWidget()->setVisible(true);
-    // SpeedSpinBox->parentWidget()->setVisible(false);
+
 
     if (shape == "Line") {
-        // minSpeedSpinBox->parentWidget()->setVisible(false);
-        // maxSpeedSpinBox->parentWidget()->setVisible(false);
-        // SpeedSpinBox->parentWidget()->setVisible(true);
+
         lineGroupBox->setTitle("Line Parameters");
     } else if (shape == "Zigzag") {
         lineGroupBox->setTitle("Zigzag Parameters");

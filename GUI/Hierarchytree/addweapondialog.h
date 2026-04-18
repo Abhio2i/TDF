@@ -31,8 +31,7 @@ class AddWeaponDialog : public QDialog
     Q_OBJECT
 
 public:
-    // isDatabaseEditor=true  → no Search Entity section (database editor)
-    // isDatabaseEditor=false → Search Entity shown on top (scenario/runtime)
+
     explicit AddWeaponDialog(QWidget* parent = nullptr,
                              Hierarchy* dbHierarchy = nullptr,
                              bool isDatabaseEditor = true);

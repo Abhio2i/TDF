@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: customparameterdialog.h                                            */
 /* Purpose: Defines dialog for adding custom parameters                      */
+/* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
 #ifndef CUSTOMPARAMETERDIALOG_H

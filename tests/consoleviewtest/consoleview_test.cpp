@@ -1,166 +1,183 @@
 #include "consoleview_test.h"
 #include "GUI/Console/consoleview.h"
-#include "core/Debug/console.h"
+#include <QTest>
 #include <QTabWidget>
 #include <QTextEdit>
 #include <QPushButton>
-#include <QVBoxLayout>
-#include <QDebug>
+#include <QDockWidget>
 #include <QRegularExpression>
 
-#define CV_TEST(condition, msg) \
-do { \
-        if (condition) { \
-            console->log(std::string("[PASS] ") + msg); \
-    } else { \
-            console->error(std::string("[FAIL] ") + msg); \
-            testFailed = true; \
-    } \
-} while(0)
-
-    void runConsoleViewTests(ConsoleView* consoleView, Console* console)
+void TestConsoleView::init()
 {
-    if (!consoleView || !console) {
-        if (console) console->error("ConsoleView or Console is null, cannot run tests");
-        return;
-    }
+    consoleView = new ConsoleView();
+}
 
-    bool testFailed = false;
+void TestConsoleView::cleanup()
+{
+    delete consoleView;
+    consoleView = nullptr;
+}
 
-    console->log(std::string("\n========================================="));
-    console->log(std::string("       CONSOLE VIEW UNIT TESTS           "));
-    console->log(std::string("=========================================\n"));
+// ------------------------------------------------------------------
+// UI structure tests
+// ------------------------------------------------------------------
+void TestConsoleView::testHasLayout()
+{
+    QVERIFY(consoleView->layout() != nullptr);
+}
 
-    // ----- Test 1: Basic widget properties -----
-    CV_TEST(consoleView->isVisible(), "ConsoleView is visible");
-    CV_TEST(consoleView->layout() != nullptr, "ConsoleView has a layout");
-
-    // ----- Test 2: Tab widget exists and has correct tabs -----
+void TestConsoleView::testTabWidgetExists()
+{
     QTabWidget* tabWidget = consoleView->findChild<QTabWidget*>();
-    CV_TEST(tabWidget != nullptr, "Tab widget exists");
-    if (tabWidget) {
-        int tabCount = tabWidget->count();
-        CV_TEST(tabCount == 5, "Tab widget has 5 tabs (Console, Error, Debug, Warning, Log)");
-        QStringList expectedTabs = {"Console", "Error", "Debug", "Warning", "Log"};
-        for (int i = 0; i < expectedTabs.size(); ++i) {
-            CV_TEST(tabWidget->tabText(i) == expectedTabs[i],
-                    QString("Tab %1 has correct label '%2'").arg(i).arg(expectedTabs[i]).toStdString().c_str());
-        }
+    QVERIFY(tabWidget != nullptr);
+    QCOMPARE(tabWidget->count(), 5);
+}
+
+void TestConsoleView::testTabLabels()
+{
+    QTabWidget* tabWidget = consoleView->findChild<QTabWidget*>();
+    QVERIFY(tabWidget != nullptr);
+    QStringList expected = {"Console", "Error", "Debug", "Warning", "Log"};
+    for (int i = 0; i < expected.size(); ++i) {
+        QCOMPARE(tabWidget->tabText(i), expected[i]);
     }
+}
 
-    // ----- Test 3: Each console text edit exists -----
+void TestConsoleView::testTextEditsExist()
+{
     QList<QTextEdit*> textEdits = consoleView->findChildren<QTextEdit*>();
-    CV_TEST(textEdits.size() == 5, "All 5 console text edits exist");
+    QCOMPARE(textEdits.size(), 5);
+}
 
-    // ----- Test 4: Buttons exist -----
-    QPushButton* clearButton = consoleView->findChild<QPushButton*>("", Qt::FindDirectChildrenOnly);
-    // Find by text
+void TestConsoleView::testButtonsExist()
+{
+    QPushButton* clearButton = nullptr;
     QPushButton* saveButton = nullptr;
     for (QPushButton* btn : consoleView->findChildren<QPushButton*>()) {
-        if (btn->text() == "Save Log") saveButton = btn;
         if (btn->text() == "Clear") clearButton = btn;
+        if (btn->text() == "Save Log") saveButton = btn;
     }
-    CV_TEST(clearButton != nullptr, "Clear button exists");
-    CV_TEST(saveButton != nullptr, "Save Log button exists");
+    QVERIFY(clearButton != nullptr);
+    QVERIFY(saveButton != nullptr);
+}
 
-    // ----- Test 5: Append text to general console -----
+// ------------------------------------------------------------------
+// Functional tests
+// ------------------------------------------------------------------
+void TestConsoleView::testAppendText()
+{
     QString testMsg = "Unit test message";
     consoleView->appendText(testMsg);
-    QTextEdit* generalConsole = nullptr;
-    for (QTextEdit* te : textEdits) {
-        if (tabWidget && tabWidget->indexOf(te) == 0) { // first tab is general
-            generalConsole = te;
-            break;
-        }
-    }
-    if (generalConsole) {
-        QString content = generalConsole->toPlainText();
-        CV_TEST(content.contains(testMsg), "appendText() adds message to general console");
-    }
 
-    // ----- Test 6: Append error to error console -----
+    QTabWidget* tabWidget = consoleView->findChild<QTabWidget*>();
+    QVERIFY(tabWidget != nullptr);
+    QTextEdit* generalConsole = qobject_cast<QTextEdit*>(tabWidget->widget(0));
+    QVERIFY(generalConsole != nullptr);
+    QVERIFY(generalConsole->toPlainText().contains(testMsg));
+}
+
+void TestConsoleView::testAppendError()
+{
+    QString testMsg = "Error test";
     consoleView->appendError(testMsg);
-    QTextEdit* errorConsole = nullptr;
-    for (QTextEdit* te : textEdits) {
-        if (tabWidget && tabWidget->indexOf(te) == 1) {
-            errorConsole = te;
-            break;
-        }
-    }
-    if (errorConsole) {
-        CV_TEST(errorConsole->toPlainText().contains(testMsg), "appendError() adds message to error console");
-    }
 
-    // ----- Test 7: Append debug to debug console -----
+    QTabWidget* tabWidget = consoleView->findChild<QTabWidget*>();
+    QVERIFY(tabWidget != nullptr);
+    QTextEdit* errorConsole = qobject_cast<QTextEdit*>(tabWidget->widget(1));
+    QVERIFY(errorConsole != nullptr);
+    QVERIFY(errorConsole->toPlainText().contains(testMsg));
+}
+
+void TestConsoleView::testAppendDebug()
+{
+    QString testMsg = "Debug test";
     consoleView->appendDebug(testMsg);
-    QTextEdit* debugConsole = nullptr;
-    for (QTextEdit* te : textEdits) {
-        if (tabWidget && tabWidget->indexOf(te) == 2) {
-            debugConsole = te;
-            break;
-        }
-    }
-    if (debugConsole) {
-        CV_TEST(debugConsole->toPlainText().contains(testMsg), "appendDebug() adds message to debug console");
-    }
 
-    // ----- Test 8: Append warning to warning console -----
+    QTabWidget* tabWidget = consoleView->findChild<QTabWidget*>();
+    QVERIFY(tabWidget != nullptr);
+    QTextEdit* debugConsole = qobject_cast<QTextEdit*>(tabWidget->widget(2));
+    QVERIFY(debugConsole != nullptr);
+    QVERIFY(debugConsole->toPlainText().contains(testMsg));
+}
+
+void TestConsoleView::testAppendWarning()
+{
+    QString testMsg = "Warning test";
     consoleView->appendWarning(testMsg);
-    QTextEdit* warningConsole = nullptr;
-    for (QTextEdit* te : textEdits) {
-        if (tabWidget && tabWidget->indexOf(te) == 3) {
-            warningConsole = te;
-            break;
-        }
-    }
-    if (warningConsole) {
-        CV_TEST(warningConsole->toPlainText().contains(testMsg), "appendWarning() adds message to warning console");
-    }
 
-    // ----- Test 9: Append log to log console -----
+    QTabWidget* tabWidget = consoleView->findChild<QTabWidget*>();
+    QVERIFY(tabWidget != nullptr);
+    QTextEdit* warningConsole = qobject_cast<QTextEdit*>(tabWidget->widget(3));
+    QVERIFY(warningConsole != nullptr);
+    QVERIFY(warningConsole->toPlainText().contains(testMsg));
+}
+
+void TestConsoleView::testAppendLog()
+{
+    QString testMsg = "Log test";
     consoleView->appendLog(testMsg);
-    QTextEdit* logConsole = nullptr;
-    for (QTextEdit* te : textEdits) {
-        if (tabWidget && tabWidget->indexOf(te) == 4) {
-            logConsole = te;
+
+    QTabWidget* tabWidget = consoleView->findChild<QTabWidget*>();
+    QVERIFY(tabWidget != nullptr);
+    QTextEdit* logConsole = qobject_cast<QTextEdit*>(tabWidget->widget(4));
+    QVERIFY(logConsole != nullptr);
+    QVERIFY(logConsole->toPlainText().contains(testMsg));
+}
+
+void TestConsoleView::testTimestampInMessages()
+{
+    // Clear first
+    QTabWidget* tabWidget = consoleView->findChild<QTabWidget*>();
+    QVERIFY(tabWidget != nullptr);
+    QTextEdit* generalConsole = qobject_cast<QTextEdit*>(tabWidget->widget(0));
+    QVERIFY(generalConsole != nullptr);
+    generalConsole->clear();
+
+    QString testMsg = "Timestamp test";
+    consoleView->appendText(testMsg);
+    QString content = generalConsole->toPlainText();
+    QRegularExpression regex(R"(\[\d{2}:\d{2}:\d{2}\])");
+    QVERIFY(content.contains(regex));
+}
+
+void TestConsoleView::testClearButton()
+{
+    QTabWidget* tabWidget = consoleView->findChild<QTabWidget*>();
+    QVERIFY(tabWidget != nullptr);
+    QTextEdit* generalConsole = qobject_cast<QTextEdit*>(tabWidget->widget(0));
+    QVERIFY(generalConsole != nullptr);
+
+    generalConsole->setPlainText("Some text to clear");
+    QPushButton* clearButton = nullptr;
+    for (QPushButton* btn : consoleView->findChildren<QPushButton*>()) {
+        if (btn->text() == "Clear") {
+            clearButton = btn;
             break;
         }
     }
-    if (logConsole) {
-        CV_TEST(logConsole->toPlainText().contains(testMsg), "appendLog() adds message to log console");
-    }
+    QVERIFY(clearButton != nullptr);
+    clearButton->click();
+    QVERIFY(generalConsole->toPlainText().isEmpty());
+}
 
-    // ----- Test 10: Clear button clears the current console -----
-    if (generalConsole && clearButton) {
-        generalConsole->setPlainText("Some text to clear");
-        clearButton->click();
-        CV_TEST(generalConsole->toPlainText().isEmpty(), "Clear button clears current console");
+void TestConsoleView::testSaveButtonEnabled()
+{
+    QPushButton* saveButton = nullptr;
+    for (QPushButton* btn : consoleView->findChildren<QPushButton*>()) {
+        if (btn->text() == "Save Log") {
+            saveButton = btn;
+            break;
+        }
     }
+    QVERIFY(saveButton != nullptr);
+    QVERIFY(saveButton->isEnabled());
+}
 
-    // ----- Test 11: Timestamp appears in appended messages -----
-    if (generalConsole) {
-        QString content = generalConsole->toPlainText();
-        // Timestamp format: [hh:mm:ss]
-        QRegularExpression regex(R"(\[\d{2}:\d{2}:\d{2}\])");
-        CV_TEST(content.contains(regex), "Appended messages include timestamp");
-    }
-
-    // ----- Test 12: Save button exists and is enabled (we cannot test file dialog without mocking) -----
-    if (saveButton) {
-        CV_TEST(saveButton->isEnabled(), "Save Log button is enabled");
-    }
-
-    // ----- Test 13: Console dock setter (just check it doesn't crash) -----
+void TestConsoleView::testSetConsoleDock()
+{
     QDockWidget* dummyDock = new QDockWidget();
+    // Should not crash
     consoleView->setConsoleDock(dummyDock);
-    CV_TEST(true, "setConsoleDock() does not crash");
     delete dummyDock;
-
-    // Final summary
-    console->log(std::string("========================================="));
-    if (testFailed)
-        console->error(std::string("CONSOLE VIEW TESTS: Some tests FAILED."));
-    else
-        console->log(std::string("CONSOLE VIEW TESTS: ALL PASSED."));
-    console->log(std::string("=========================================\n"));
+    QVERIFY(true);
 }

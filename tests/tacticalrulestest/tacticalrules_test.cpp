@@ -1,103 +1,96 @@
 #include "tacticalrules_test.h"
 #include "GUI/DOCTRINE/tacticalrules.h"
-#include "core/Debug/console.h"
+#include <QTest>
 #include <QDoubleSpinBox>
 #include <QComboBox>
 #include <QPushButton>
 #include <QJsonObject>
-#include <QDebug>
 
-#define TR_TEST(condition, msg) \
-do { \
-        if (condition) { \
-            console->log(std::string("[PASS] ") + msg); \
-    } else { \
-            console->error(std::string("[FAIL] ") + msg); \
-            testFailed = true; \
-    } \
-} while(0)
-
-    void runTacticalRulesTests(TacticalRules* panel, Console* console)
+void TestTacticalRules::init()
 {
-    if (!panel || !console) {
-        if (console) console->error("TacticalRules or Console is null, cannot run tests");
-        return;
-    }
+    panel = new TacticalRules(nullptr);
+    // Ensure the UI is built
+    QTest::qWait(50);
+}
 
-    bool testFailed = false;
+void TestTacticalRules::cleanup()
+{
+    delete panel;
+    panel = nullptr;
+}
 
-    console->log(std::string("\n========================================="));
-    console->log(std::string("       TACTICAL RULES UNIT TESTS         "));
-    console->log(std::string("=========================================\n"));
 
-    // ----- Test 1: UI elements exist -----
+
+void TestTacticalRules::testDefaultValues()
+{
+    QJsonObject json = panel->toJson();
+    QCOMPARE(json["maxEngagementRange"].toDouble(), 30.0);
+    QCOMPARE(json["supportRequestThreshold"].toDouble(), 50.0);
+    QCOMPARE(json["fuelSafetyMargin"].toDouble(), 20.0);
+    QCOMPARE(json["weaponReleaseAuthority"].toString(), QString("AUTOMATIC"));
+    QCOMPARE(json["sensorActivationRule"].toString(), QString("PASSIVE_SENSORS_ONLY"));
+    QCOMPARE(json["formationType"].toString(), QString("LINE_ABREAST"));
+}
+
+void TestTacticalRules::testResetRules()
+{
     QDoubleSpinBox* rangeSpin = panel->findChild<QDoubleSpinBox*>();
     QComboBox* weaponCombo = panel->findChild<QComboBox*>("", Qt::FindDirectChildrenOnly);
-    QPushButton* applyBtn = nullptr;
     QPushButton* resetBtn = nullptr;
     for (QPushButton* btn : panel->findChildren<QPushButton*>()) {
-        if (btn->text() == "Apply Changes") applyBtn = btn;
         if (btn->text() == "Reset Rules") resetBtn = btn;
     }
-    TR_TEST(rangeSpin != nullptr, "Max Engagement Range spinbox exists");
-    TR_TEST(weaponCombo != nullptr, "Weapon Release Authority combo exists");
-    TR_TEST(applyBtn != nullptr, "Apply Changes button exists");
-    TR_TEST(resetBtn != nullptr, "Reset Rules button exists");
+    QVERIFY(resetBtn != nullptr);
 
-    // ----- Test 2: Default values are correct -----
-    TR_TEST(panel->toJson()["maxEngagementRange"].toDouble() == 30.0,
-            "Default maxEngagementRange is 30.0");
-    TR_TEST(panel->toJson()["supportRequestThreshold"].toDouble() == 50.0,
-            "Default supportRequestThreshold is 50.0");
-    TR_TEST(panel->toJson()["fuelSafetyMargin"].toDouble() == 20.0,
-            "Default fuelSafetyMargin is 20.0");
-    TR_TEST(panel->toJson()["weaponReleaseAuthority"].toString() == "AUTOMATIC",
-            "Default weaponReleaseAuthority is 'AUTOMATIC'");
-    TR_TEST(panel->toJson()["sensorActivationRule"].toString() == "PASSIVE_SENSORS_ONLY",
-            "Default sensorActivationRule is 'PASSIVE_SENSORS_ONLY'");
-    TR_TEST(panel->toJson()["formationType"].toString() == "LINE_ABREAST",
-            "Default formationType is 'LINE_ABREAST'");
-
-    // ----- Test 3: Reset rules works -----
-    // Change some values
     if (rangeSpin) rangeSpin->setValue(100.0);
     if (weaponCombo) weaponCombo->setCurrentIndex(2);
-    // Click reset
-    if (resetBtn) resetBtn->click();
-    // Verify they reverted
-    TR_TEST(panel->toJson()["maxEngagementRange"].toDouble() == 30.0,
-            "Reset button restores default maxEngagementRange");
-    TR_TEST(panel->toJson()["weaponReleaseAuthority"].toString() == "AUTOMATIC",
-            "Reset button restores default weaponReleaseAuthority");
+    resetBtn->click();
+    QJsonObject json = panel->toJson();
+    QCOMPARE(json["maxEngagementRange"].toDouble(), 30.0);
+    QCOMPARE(json["weaponReleaseAuthority"].toString(), QString("AUTOMATIC"));
+}
 
-    // ----- Test 4: Apply button emits signal (we can't easily test, but check it exists) -----
-    TR_TEST(applyBtn != nullptr, "Apply button exists (signal emission tested indirectly)");
+void TestTacticalRules::testApplyButtonExists()
+{
+    QPushButton* applyBtn = nullptr;
+    for (QPushButton* btn : panel->findChildren<QPushButton*>()) {
+        if (btn->text() == "Apply Changes") applyBtn = btn;
+    }
+    QVERIFY(applyBtn != nullptr);
+}
 
-    // ----- Test 5: Team switching (setForceType) works -----
-    // Store current (Blue) data
+void TestTacticalRules::testTeamSwitching()
+{
+    // Store Blue data
     QJsonObject blueData = panel->toJson();
-    // Switch to Red team
-    panel->setForceType(1);  // RED
-    // Red should have default values initially (since no data saved)
-    TR_TEST(panel->toJson()["maxEngagementRange"].toDouble() == 30.0,
-            "Switching to Red loads default values (no cached data)");
+    // Switch to Red (assuming setForceType(1) = Red)
+    panel->setForceType(1);
+    QJsonObject redDefault = panel->toJson();
+    QCOMPARE(redDefault["maxEngagementRange"].toDouble(), 30.0);
+
     // Modify Red values
+    QDoubleSpinBox* rangeSpin = panel->findChild<QDoubleSpinBox*>();
+    QComboBox* weaponCombo = panel->findChild<QComboBox*>("", Qt::FindDirectChildrenOnly);
     if (rangeSpin) rangeSpin->setValue(200.0);
     if (weaponCombo) weaponCombo->setCurrentIndex(3);
     QJsonObject redModified = panel->toJson();
+
     // Switch back to Blue
-    panel->setForceType(0);  // BLUE
-    TR_TEST(panel->toJson()["maxEngagementRange"].toDouble() == blueData["maxEngagementRange"].toDouble(),
-            "Switching back to Blue restores previous Blue values");
+    panel->setForceType(0);
+    QJsonObject blueRestored = panel->toJson();
+    QCOMPARE(blueRestored["maxEngagementRange"].toDouble(), blueData["maxEngagementRange"].toDouble());
+
     // Switch to Red again
     panel->setForceType(1);
-    TR_TEST(panel->toJson()["maxEngagementRange"].toDouble() == redModified["maxEngagementRange"].toDouble(),
-            "Switching back to Red restores previously modified Red values");
+    QJsonObject redRestored = panel->toJson();
+    QCOMPARE(redRestored["maxEngagementRange"].toDouble(), redModified["maxEngagementRange"].toDouble());
 
-    // Reset to Blue for remaining tests
+    // Restore to Blue for remaining tests
     panel->setForceType(0);
+}
 
-    // ----- Test 6: JSON serialization (single team) -----
+void TestTacticalRules::testJsonSerializationSingleTeam()
+{
     QJsonObject testObj;
     testObj["maxEngagementRange"] = 75.0;
     testObj["weaponReleaseAuthority"] = "WEAPON_FREE";
@@ -105,75 +98,68 @@ do { \
     testObj["formationType"] = "WEDGE";
     testObj["supportRequestThreshold"] = 80.0;
     testObj["fuelSafetyMargin"] = 35.0;
+
     panel->loadFromJson(testObj);
     QJsonObject loaded = panel->toJson();
-    TR_TEST(loaded["maxEngagementRange"].toDouble() == 75.0,
-            "loadFromJson() loads maxEngagementRange correctly");
-    TR_TEST(loaded["weaponReleaseAuthority"].toString() == "WEAPON_FREE",
-            "loadFromJson() loads weaponReleaseAuthority correctly");
-    TR_TEST(loaded["sensorActivationRule"].toString() == "ACTIVE_RADAR_ALLOWED",
-            "loadFromJson() loads sensorActivationRule correctly");
-    TR_TEST(loaded["formationType"].toString() == "WEDGE",
-            "loadFromJson() loads formationType correctly");
-    TR_TEST(loaded["supportRequestThreshold"].toDouble() == 80.0,
-            "loadFromJson() loads supportRequestThreshold correctly");
-    TR_TEST(loaded["fuelSafetyMargin"].toDouble() == 35.0,
-            "loadFromJson() loads fuelSafetyMargin correctly");
+    QCOMPARE(loaded["maxEngagementRange"].toDouble(), 75.0);
+    QCOMPARE(loaded["weaponReleaseAuthority"].toString(), QString("WEAPON_FREE"));
+    QCOMPARE(loaded["sensorActivationRule"].toString(), QString("ACTIVE_RADAR_ALLOWED"));
+    QCOMPARE(loaded["formationType"].toString(), QString("WEDGE"));
+    QCOMPARE(loaded["supportRequestThreshold"].toDouble(), 80.0);
+    QCOMPARE(loaded["fuelSafetyMargin"].toDouble(), 35.0);
+}
 
-    // ----- Test 7: JSON both teams serialization -----
-    // Reset both teams
+void TestTacticalRules::testJsonSerializationBothTeams()
+{
+    // Reset and load Blue
     panel->resetState();
     panel->setForceType(0);
-    panel->loadFromJson(testObj);  // load into Blue
-    panel->setForceType(1);
-    QJsonObject redTest;
-    redTest["maxEngagementRange"] = 120.0;
-    panel->loadFromJson(redTest); // load into Red
-    QJsonObject both = panel->toJsonBothTeams();
-    TR_TEST(both.contains("blue") && both.contains("red"),
-            "toJsonBothTeams() contains 'blue' and 'red' keys");
-    TR_TEST(both["blue"].toObject()["maxEngagementRange"].toDouble() == 75.0,
-            "toJsonBothTeams() preserves Blue team data");
-    TR_TEST(both["red"].toObject()["maxEngagementRange"].toDouble() == 120.0,
-            "toJsonBothTeams() preserves Red team data");
+    QJsonObject blueData;
+    blueData["maxEngagementRange"] = 75.0;
+    panel->loadFromJson(blueData);
 
-    // ----- Test 8: loadBothTeamsFromJson works -----
+    // Load Red
+    panel->setForceType(1);
+    QJsonObject redData;
+    redData["maxEngagementRange"] = 120.0;
+    panel->loadFromJson(redData);
+
+    QJsonObject both = panel->toJsonBothTeams();
+    QVERIFY(both.contains("blue") && both.contains("red"));
+    QCOMPARE(both["blue"].toObject()["maxEngagementRange"].toDouble(), 75.0);
+    QCOMPARE(both["red"].toObject()["maxEngagementRange"].toDouble(), 120.0);
+
+    // Test loadBothTeamsFromJson
     QJsonObject newBoth;
-    newBoth["blue"] = testObj;
-    newBoth["red"] = redTest;
+    newBoth["blue"] = blueData;
+    newBoth["red"] = redData;
     panel->loadBothTeamsFromJson(newBoth);
     panel->setForceType(0);
-    TR_TEST(panel->toJson()["maxEngagementRange"].toDouble() == 75.0,
-            "loadBothTeamsFromJson() loads Blue correctly");
+    QCOMPARE(panel->toJson()["maxEngagementRange"].toDouble(), 75.0);
     panel->setForceType(1);
-    TR_TEST(panel->toJson()["maxEngagementRange"].toDouble() == 120.0,
-            "loadBothTeamsFromJson() loads Red correctly");
+    QCOMPARE(panel->toJson()["maxEngagementRange"].toDouble(), 120.0);
+}
 
-    // ----- Test 9: Legacy single-format loading (both teams call) -----
-    panel->loadBothTeamsFromJson(testObj);
+void TestTacticalRules::testLegacyFormatLoading()
+{
+    QJsonObject legacy;
+    legacy["maxEngagementRange"] = 75.0;
+    panel->loadBothTeamsFromJson(legacy);
     panel->setForceType(0);
-    TR_TEST(panel->toJson()["maxEngagementRange"].toDouble() == 75.0,
-            "loadBothTeamsFromJson() handles legacy format (loads into Blue)");
+    QCOMPARE(panel->toJson()["maxEngagementRange"].toDouble(), 75.0);
     panel->setForceType(1);
-    TR_TEST(panel->toJson()["maxEngagementRange"].toDouble() == 30.0,
-            "Legacy format leaves Red unchanged (default)");
+    QCOMPARE(panel->toJson()["maxEngagementRange"].toDouble(), 30.0);
+}
 
-    // ----- Test 10: Signals exist -----
+void TestTacticalRules::testSignalsExist()
+{
     const QMetaObject* mo = panel->metaObject();
-    bool hasValueChanged = (mo->indexOfSignal("valueChanged(QJsonObject)") != -1);
-    bool hasApplyRequested = (mo->indexOfSignal("applyRequested(QJsonObject)") != -1);
-    TR_TEST(hasValueChanged, "valueChanged signal exists");
-    TR_TEST(hasApplyRequested, "applyRequested signal exists");
+    QVERIFY(mo->indexOfSignal("valueChanged(QJsonObject)") != -1);
+    QVERIFY(mo->indexOfSignal("applyRequested(QJsonObject)") != -1);
+}
 
-    // ----- Test 11: getRulesCount() returns integer (placeholder) -----
+void TestTacticalRules::testGetRulesCount()
+{
     int count = panel->getRulesCount();
-    TR_TEST(count >= 0, "getRulesCount() returns non-negative integer");
-
-    // Final summary
-    console->log(std::string("========================================="));
-    if (testFailed)
-        console->error(std::string("TACTICAL RULES TESTS: Some tests FAILED."));
-    else
-        console->log(std::string("TACTICAL RULES TESTS: ALL PASSED."));
-    console->log(std::string("=========================================\n"));
+    QVERIFY(count >= 0);
 }

@@ -63,30 +63,24 @@ void ADSBDisplay::mouseMoveEvent(QMouseEvent *event)
     int outerDiameter = qMin(w - padding*2, h - padding*2);
     int outerRadius = outerDiameter / 2;
     QPoint center(w / 2, h / 2);
-
     // Check if mouse is near any target
     int closestIndex = -1;
     double minDistance = 20.0; // Pixel threshold for hover detection
-
     int i=0;
     for (const Target &t : sensor->ewtargets) {
-
         // Calculate target position on screen
         double per = t.radius / range;
         if (per < 0.0) per = 0.0;
         if (per > 1.0) per = 1.0;
-
         double r = per * outerRadius;
         double angleDeg = t.angle;
         double theta = qDegreesToRadians(angleDeg - 90.0);
         int tx = center.x() + int(r * cos(theta));
         int ty = center.y() + int(r * sin(theta));
-
         // Calculate distance from mouse to target
         double dx = lastMousePos.x() - tx;
         double dy = lastMousePos.y() - ty;
         double distance = sqrt(dx*dx + dy*dy);
-
         if (distance < minDistance) {
             minDistance = distance;
             closestIndex = i;
@@ -98,7 +92,6 @@ void ADSBDisplay::mouseMoveEvent(QMouseEvent *event)
         hoveredTargetIndex = closestIndex;
         update(); // Repaint to show/hide labels
     }
-
     QWidget::mouseMoveEvent(event);
 }
 
@@ -124,12 +117,9 @@ void ADSBDisplay::selectEntity(Entity* entit)
         update();
         return;
     }
-
     id = QString::fromStdString(platform->ID);
     // Set entity ID and pointer
-
     entity = platform;
-
     sensor = nullptr;
     for (auto const& pair :  *entity->sensors->sensors) {
         Sensor* s = pair.second;
@@ -139,7 +129,6 @@ void ADSBDisplay::selectEntity(Entity* entit)
             break;
         }
     }
-
     // Reset hover state when entity changes
     hoveredTargetIndex = -1;
     update();

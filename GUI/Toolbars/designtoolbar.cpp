@@ -2,14 +2,13 @@
 //============================================================================
 // DesignToolBar
 // Written by: Arti Rajpoot
-//
 // Purpose:
 // - Provides the main design toolbar for GIS and tactical display
 // - Manages view modes, shape tools, layers, grids, trajectories, and imports
 // - Acts as a central UI control hub emitting signals to the canvas and GIS logic
 //============================================================================
 #include "GUI/Toolbars/designtoolbar.h"
-#include "designtoolbar-styles.h"  // Include separate CSS file
+#include "designtoolbar-styles.h"
 #include "GUI/Tacticaldisplay/Gis/custommapdialog.h"
 #include "GUI/Tacticaldisplay/Gis/layerinformationdialog.h"
 #include "GUI/Tacticaldisplay/canvaswidget.h"
@@ -35,6 +34,7 @@
 #include <QHBoxLayout>
 #include <qgsvectorlayer.h>
 #include <qgsproject.h>
+// #include "tests/gui_test_control.h"
 
 // Icon size constant for toolbar buttons (smaller - 16x16)
 const QSize ICON_SIZE(20, 20);
@@ -333,7 +333,7 @@ void DesignToolBar::createActions() {
     QAction* colliderAction = new QAction("Collider", this);
     QAction* meshAction = new QAction("Mesh", this);
     QAction* outlineAction = new QAction("Outline", this);
-    QAction* informationAction = new QAction("Information", this);
+    // QAction* informationAction = new QAction("Information", this);
     QAction* fpsAction = new QAction("FPS", this);
     QAction* imageAction = new QAction("Entities", this);
     QAction* sensorsAction = new QAction("Sensors", this);
@@ -348,8 +348,8 @@ void DesignToolBar::createActions() {
     meshAction->setChecked(true);
     outlineAction->setCheckable(true);
     outlineAction->setChecked(true);
-    informationAction->setCheckable(true);
-    informationAction->setChecked(false);
+    // informationAction->setCheckable(true);
+    // informationAction->setChecked(false);
     fpsAction->setCheckable(true);
     fpsAction->setChecked(true);
     imageAction->setCheckable(true);
@@ -364,7 +364,7 @@ void DesignToolBar::createActions() {
     layerMenu->addAction(colliderAction);
     layerMenu->addAction(meshAction);
     layerMenu->addAction(outlineAction);
-    layerMenu->addAction(informationAction);
+    // layerMenu->addAction(informationAction);
     layerMenu->addAction(fpsAction);
     layerMenu->addAction(imageAction);
     layerMenu->addSeparator();
@@ -391,9 +391,9 @@ void DesignToolBar::createActions() {
     connect(outlineAction, &QAction::triggered, this, [=](bool checked) {
         emit layerOptionToggled("Outline", checked);
     });
-    connect(informationAction, &QAction::triggered, this, [=](bool checked) {
-        emit layerOptionToggled("Information", checked);
-    });
+    // connect(informationAction, &QAction::triggered, this, [=](bool checked) {
+    //     emit layerOptionToggled("Information", checked);
+    // });
     connect(fpsAction, &QAction::triggered, this, [=](bool checked) {
         emit layerOptionToggled("FPS", checked);
     });

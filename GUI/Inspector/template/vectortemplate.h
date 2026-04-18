@@ -1,9 +1,8 @@
 
-
-
 /* ========================================================================= */
 /* File: vectortemplate.h                                                   */
 /* Purpose: Defines widget for managing vector templates                     */
+/* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
 #ifndef VECTORTEMPLATE_H

@@ -2,6 +2,7 @@
 /* ========================================================================= */
 /* File: geocordstemplate.h                                                 */
 /* Purpose: Defines widget for managing geocoordinates templates             */
+/* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
 #ifndef GEOCORDSTEMPLATE_H

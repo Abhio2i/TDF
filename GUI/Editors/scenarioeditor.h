@@ -61,13 +61,22 @@ public:
     Hierarchy* hierarchy;
      Console *console;
      DesignToolBar *designToolBar;
-     static void runUnitTestsOnce();
+     // static void runUnitTestsOnce();
          ConsoleView *consoleView;
+  LayerPanel *layerPanel = nullptr;
+     CustomResizableOverlayDock *hierarchyDock;
+     CustomResizableOverlayDock *tacticalDisplayDock;
+     CustomResizableOverlayDock *consoleDock;
+     CustomResizableOverlayDock *inspectorDock;
+     CustomResizableOverlayDock *libraryDock;
+     CustomResizableOverlayDock *sidebarDock;
+     CustomResizableOverlayDock *textScriptDock;
+         CustomResizableOverlayDock *layerDock = nullptr;
 
 public slots:
     void showProfileInfo();
     void showApplicationDialog();
-     void markUnsavedChanges();
+    void markUnsavedChanges();
 protected:
     void resizeEvent(QResizeEvent *event) override;
     void showEvent(QShowEvent *event) override;
@@ -81,15 +90,12 @@ private slots:
     // Show feedback window
     void showFeedbackWindow();
     // Mark unsaved changes
-    // void markUnsavedChanges();
     // Handle dock visibility changes
     void onDockVisibilityChanged(bool visible);
     // Reset layout to initial state
     void resetLayout();
     void onRecentProjectTriggered();
     void loadRecentProject(const QString& filePath);
-    // void onRecentLibraryTriggered();
-    // void clearRecentProjects();
 
 signals:
     // Signal unsaved changes state
@@ -98,27 +104,22 @@ signals:
 private:
     // %%% Core Components %%%
 
-    CustomResizableOverlayDock *hierarchyDock;
-    CustomResizableOverlayDock *tacticalDisplayDock;
-    CustomResizableOverlayDock *consoleDock;
-    CustomResizableOverlayDock *inspectorDock;
-    CustomResizableOverlayDock *libraryDock;
-    CustomResizableOverlayDock *sidebarDock;
-    CustomResizableOverlayDock *textScriptDock;
+    // CustomResizableOverlayDock *hierarchyDock;
+    // CustomResizableOverlayDock *tacticalDisplayDock;
+    // CustomResizableOverlayDock *consoleDock;
+    // CustomResizableOverlayDock *inspectorDock;
+    // CustomResizableOverlayDock *libraryDock;
+    // CustomResizableOverlayDock *sidebarDock;
+    // CustomResizableOverlayDock *textScriptDock;
     // Script engine instance
     ScriptEngine* scriptengine = nullptr;
     // Inspector panel widget
     Inspector *inspector;
-    // Console for debugging
-    // Console *console;
-    // Hierarchy data structure
-    // Hierarchy* hierarchy;
-    // Store copied data
     QVariantMap copydata;
     // Store copied hierarchy
     Hierarchy* copyhirarchy = nullptr;
-    LayerPanel *layerPanel = nullptr;
-    CustomResizableOverlayDock *layerDock = nullptr;
+    // LayerPanel *layerPanel = nullptr;
+    // CustomResizableOverlayDock *layerDock = nullptr;
     // ConsoleView *consoleView;
     // Text script view widget
     TextScriptWidget *textScriptView;
@@ -141,7 +142,6 @@ private:
     // List of inspectors
     QList<Inspector*> inspectors;
     // Update status bar message
-    // void updateStatusBar(const QString &message);
     // Status bar widget
     QStatusBar *statusBar;
     Simulation *simulation;

@@ -5,7 +5,7 @@
 /* ========================================================================= */
 
 #include "doctrineassumptionsnotes.h"
-#include "doctrine-styles.h"       // Reuse existing CSS
+#include "doctrine-styles.h"
 
 // %%% Constructor %%%
 DoctrineAssumptionsNotes::DoctrineAssumptionsNotes(QWidget *parent)

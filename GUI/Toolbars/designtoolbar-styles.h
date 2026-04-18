@@ -3,6 +3,7 @@
 /* Purpose: Dark theme styles for DesignToolBar - UNIFORM SPACING           */
 /* Background: #0F2636, Border: #27446d, Text: White, Accent: #0078D4       */
 /* Icon size: 16x16 - COMPACT ACTIVE STATE                                  */
+/* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
 #ifndef DESIGNTOOLBAR_STYLES_H
@@ -68,7 +69,7 @@ const QString ToolbarButton = R"(
     }
 )";
 
-/* Highlighted Button (active action) - COMPACT VERSION */
+
 const QString ToolbarButtonHighlighted = R"(
     QToolButton {
         background-color: #27446d;
@@ -83,7 +84,7 @@ const QString ToolbarButtonHighlighted = R"(
     }
 )";
 
-/* Menu Button with Popup - SAME SIZE AS REGULAR BUTTONS */
+
 const QString Menu = R"(
     QToolButton {
         background-color: transparent;

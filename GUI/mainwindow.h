@@ -54,7 +54,9 @@ public:
     }
     void showLoadingOverlay(const QString& message = "Loading...");
     void hideLoadingOverlay();
-        NavigationPage *navigationPage = nullptr;
+    NavigationPage *navigationPage = nullptr;
+    StatusBar *m_statusBar = nullptr;
+      QString ensureTDFSubfolder(const QString& subfolderName);
 protected:
     void closeEvent(QCloseEvent *event) override;
 private slots:
@@ -71,7 +73,7 @@ private:
     static MainWindow* s_instance;
     MenuBar *mainMenuBar = nullptr;
     // %%% TDF helpers %%%
-    QString ensureTDFSubfolder(const QString& subfolderName);
+    // QString ensureTDFSubfolder(const QString& subfolderName);
     void loadFileWithTDFSupport(QMainWindow* editor,
                                 RecentProjectsManager::EditorType editorType,
                                 const QString& extension,
@@ -83,7 +85,7 @@ private:
     QLabel*       m_loadingLabel   = nullptr;
     QProgressBar* m_loadingBar     = nullptr;
     void onDatabaseSettingsChanged(bool enabled, const QString& path);
-    StatusBar *m_statusBar = nullptr;
+
 };
 
 #endif // MAINWINDOW_H

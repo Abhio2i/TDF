@@ -3,7 +3,7 @@
 Mission::Mission():Component(nullptr) {}
 
 
-void Mission::addSubComponent(std::string name, QString data1, QString data2 , QString data3){
+void Mission::addSubComponent(std::string name, QString data1, QString data2 , QJsonObject data3){
 
 }
 

@@ -117,6 +117,30 @@ void FixedPoints::addComponent(std::string name) {
 
 void FixedPoints::removeComponent(std::string name) {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    if (name == "transform") {
+        if (!transform) return;
+        parent->Components.erase(transform->ID);
+        delete transform;
+        transform = nullptr;
+        emit parent->componentRemoved(QString::fromStdString(ID), "transform");
+        emit parent->entityMeshRemoved(QString::fromStdString(parentID));
+        emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+    } else if (name == "collider") {
+        if (!collider) return;
+        parent->Components.erase(collider->ID);
+        delete collider;
+        collider = nullptr;
+        emit parent->componentRemoved(QString::fromStdString(ID), "collider");
+        emit parent->entityMeshRemoved(QString::fromStdString(parentID));
+        emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+    } else if (name == "bitmap") {
+        if (!meshRenderer2d) return;
+        parent->Components.erase(meshRenderer2d->ID);
+        delete meshRenderer2d;
+        meshRenderer2d = nullptr;
+        emit parent->componentRemoved(QString::fromStdString(ID), "bitmap");
+        emit parent->entityMeshRemoved(QString::fromStdString(parentID));
+    }
 }
 
 QJsonObject FixedPoints::getComponent(std::string name) {

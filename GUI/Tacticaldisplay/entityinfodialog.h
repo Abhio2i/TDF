@@ -35,14 +35,11 @@ public:
     // %%% Constructor %%%
     /* Initialize entity information dialog */
     explicit EntityInfoDialog(QWidget *parent = nullptr);
-
-    // %%% Entity Management Methods %%%
-    /* Set entity information for display */
-    // void setEntityInfo(const QString& entityId, MeshEntry *info);
     void setEntityInfo(const QString& entityId, const QString& entityName, MeshEntry* info);
     void updateEntityInfo();
     /* Clear all displayed information */
     void clearInfo();
+    // static void runUnitTestsOnce();
 
 signals:
     // %%% Update Signal %%%

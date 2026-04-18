@@ -7,7 +7,7 @@
 /* ========================================================================= */
 
 #include "additemdialog.h"
-#include "additemdialog-styles.h"  // Include separate CSS file
+#include "additemdialog-styles.h"
 #include "GUI/Hierarchytree/customtrajectorydialog.h"
 #include "core/Hierarchy/hierarchy.h"
 #include "core/Hierarchy/EntityProfiles/radio.h"
@@ -45,8 +45,7 @@
 #include <QString>
 #include "Setup.h"
 #include <QMessageBox>
-#include "tests/hierarchytreetest/additemdialog_test.h"
-#include "GUI/mainwindow.h"
+
 
 
 QMap<QString, QPointF> indianCities = {
@@ -180,7 +179,6 @@ AddItemDialog::AddItemDialog(DialogType type,
     }
     m_profileContext = determineProfileContext(specificType, dialogMode, editorContext);
     setupUI(type);
-    runUnitTestsOnce();
 }
 
 // %%% Helper Methods %%%
@@ -568,15 +566,22 @@ void AddItemDialog::setupUI(DialogType type)
     bool isComponentWeaponAdd = (m_dialogMode == ComponentWeaponMode) || (specificType == "weapons");
     bool isForComponentAdd = isComponentSensorAdd || isComponentIFFAdd || isComponentRadioAdd || isComponentWeaponAdd;
     bool isForSensor = isProfileSensorAdd || isComponentSensorAdd;
+
     bool shouldShowEntitySelection = false;
+    // Original case: adding entity from library
     if (!isDatabaseEditor && type == EntityType && !isForComponentAdd &&
         (specificType.isEmpty() || specificType == "Platform" ||
-         specificType == "Entity" || specificType == "SpecialZone" ||
-         specificType == "FixedPoints" || specificType == "Radio" ||
-         specificType == "Sensor" || specificType == "Weapon" ||
-         specificType == "IFF" || specificType == "Formation")) {
+         specificType == "SpecialZone" || specificType == "FixedPoints" ||
+         specificType == "Radio" || specificType == "Sensor" ||
+         specificType == "Weapon" || specificType == "IFF" ||
+         specificType == "Formation")) {
         shouldShowEntitySelection = true;
     }
+    // NEW: Also show entity selection for component addition (Sensor, IFF, Radio, Weapon)
+    if (!isDatabaseEditor && isForComponentAdd) {
+        shouldShowEntitySelection = true;
+    }
+
     if (shouldShowEntitySelection && m_hierarchy) {
         QHBoxLayout *entitySelectLayout = new QHBoxLayout();
         QVBoxLayout *searchLayout = new QVBoxLayout();
@@ -607,7 +612,6 @@ void AddItemDialog::setupUI(DialogType type)
             if (entityCompleter) {
                 QString currentFilter = profileFilterComboBox ?
                                             profileFilterComboBox->currentText() : "";
-
                 if (currentFilter == "All Profiles") {
                     populateEntityProfiles("");
                 } else {
@@ -616,6 +620,7 @@ void AddItemDialog::setupUI(DialogType type)
                 entityCompleter->complete();
             }
         });
+
         QStringListModel *completerModel = new QStringListModel(this);
         entityCompleter->setModel(completerModel);
         entitySearchLineEdit->setCompleter(entityCompleter);
@@ -623,6 +628,7 @@ void AddItemDialog::setupUI(DialogType type)
         entitySelectLayout->addLayout(searchLayout);
         mainLayout->addLayout(entitySelectLayout);
         populateEntityProfiles("");
+
         connect(entityCompleter, QOverload<const QString &>::of(&QCompleter::activated),
                 this, [=](const QString &text) {
                     if (entityMap.contains(text)) {
@@ -640,13 +646,25 @@ void AddItemDialog::setupUI(DialogType type)
                             }
                             populateComponentsFromEntity(selectedEntityId, profileName);
 
+                            // NEW: For sensor components, set the sensor type combo box from the selected entity
+                            if (isForSensor && sensorTypeComboBox) {
+                                Hierarchy* lib = m_hierarchy;
+                                if (lib) {
+                                    auto it = lib->Sensors.find(selectedEntityId.toStdString());
+                                    if (it != lib->Sensors.end() && it->second) {
+                                        Sensor* sens = it->second;
+                                        QString subTypeStr = sens->subTypeToString(sens->subType);
+                                        int idx = sensorTypeComboBox->findText(subTypeStr);
+                                        if (idx >= 0) sensorTypeComboBox->setCurrentIndex(idx);
+                                    }
+                                }
+                            }
                         }
                     }
                 });
 
         auto showCompleterPopup = [=]() {
             if (entityCompleter && entitySearchLineEdit->text().isEmpty()) {
-
                 entitySearchLineEdit->clear();
                 selectedEntityId.clear();
                 QString currentFilter = profileFilterComboBox ?
@@ -949,7 +967,7 @@ void AddItemDialog::setupUI(DialogType type)
                            specificType == "IFF" ||
                            specificType == "Radio" ||
                            specificType == "Sensor" ||
-                           (specificType == "Weapon" && isDatabaseEditor) || // scenario mein Weapon = bigger dialog
+                           (specificType == "Weapon" && isDatabaseEditor) ||
                            specificType == "FixedPoint" ||
                            isProfileSensorAdd ||
                            isComponentSensorAdd ||
@@ -990,7 +1008,7 @@ void AddItemDialog::setupUI(DialogType type)
             windowTitle = "Add Entity";
         }
         if (isComponentSensorAdd || isComponentIFFAdd || isComponentRadioAdd || isComponentWeaponAdd) {
-            setFixedSize(350, 220);
+            setFixedSize(350, 300);
         } else if (isProfileSensorAdd) {
             setFixedSize(350, 260);
         } else if (specificType == "Sensor") {
@@ -1028,7 +1046,6 @@ void AddItemDialog::setupUI(DialogType type)
             windowTitle = "Add Fixed Point";
             setFixedSize(500, 550);
         } else if (specificType == "Weapon") {
-            // Scenario/Runtime editor: Search Entity field + name field
             windowTitle = "Add Weapon";
             setFixedSize(450, 320);
         } else {
@@ -1122,12 +1139,16 @@ QString AddItemDialog::getSensorType() const {
 
 /* Get selected profile ID */
 QString AddItemDialog::getProfileId() const {
+    // If the user selected an entity from the search, use its ID as the profile ID
+    if (!selectedEntityId.isEmpty()) {
+        return selectedEntityId;
+    }
+    // Otherwise, if the profile combo box is visible and has a selection, use that
     if (profileComboBox && profileComboBox->currentIndex() > 0) {
         return profileComboBox->currentData().toString();
     }
     return "";
 }
-
 /* Get selected profile name */
 QString AddItemDialog::getProfileName() const {
     if (profileComboBox && profileComboBox->currentIndex() > 0) {
@@ -1392,10 +1413,8 @@ QString AddItemDialog::determineProfileContext(const QString& specificType,
 
 // %%% Validation Methods %%%
 
-/* Validate dialog inputs before accepting */
 bool AddItemDialog::validateInputs()
 {
-    // Check if we're in scenario/runtime editor and entity selection is required
     bool isDatabaseEditor = false;
     if (!m_editorContext.isEmpty()) {
         isDatabaseEditor = (m_editorContext == "database");
@@ -1403,31 +1422,37 @@ bool AddItemDialog::validateInputs()
         isDatabaseEditor = detectDatabaseEditorFromWindow();
     }
 
-    // Only validate entity selection in scenario/runtime editors
-    if (!isDatabaseEditor && entitySearchLineEdit) {
-        // Check if entity search field is visible and empty
-        bool isEntitySelectionRequired = entitySearchLineEdit->isVisible();
+    // Determine if this is a component addition dialog (Sensor, IFF, Radio, Weapon)
+    bool isComponentSensorAdd = (m_dialogMode == ComponentSensorMode) || (specificType == "sensors");
+    bool isComponentIFFAdd = (m_dialogMode == ComponentIFFMode) || (specificType == "iffs");
+    bool isComponentRadioAdd = (m_dialogMode == ComponentRadioMode) || (specificType == "radios");
+    bool isComponentWeaponAdd = (m_dialogMode == ComponentWeaponMode) || (specificType == "weapons");
+    bool isForComponentAdd = isComponentSensorAdd || isComponentIFFAdd || isComponentRadioAdd || isComponentWeaponAdd;
 
-        if (isEntitySelectionRequired) {
-            QString searchText = entitySearchLineEdit->text().trimmed();
+    // For component modes, entity selection is OPTIONAL
+    bool isEntitySelectionRequired = false;
+    if (!isDatabaseEditor && entitySearchLineEdit && !isForComponentAdd) {
+        // Original behavior: entity selection required for adding full entities from library
+        isEntitySelectionRequired = entitySearchLineEdit->isVisible();
+    }
 
-            // If search field is empty or no valid entity selected
-            if (searchText.isEmpty() || selectedEntityId.isEmpty()) {
-                QMessageBox msgBox(this);
-                msgBox.setStyleSheet(AddItemDialogStyles::MessageBox);
-                msgBox.setWindowTitle("Entity Selection Required");
-                msgBox.setText("Please select an entity from the Database before proceeding.\n\n"
-                               "Use the search field to find and select an entity.");
-                msgBox.setIcon(QMessageBox::Warning);
-                msgBox.exec();
-                // Set focus to entity search field
-                if (entitySearchLineEdit) {
-                    entitySearchLineEdit->setFocus();
-                }
-                return false;
+    if (isEntitySelectionRequired) {
+        QString searchText = entitySearchLineEdit->text().trimmed();
+        if (searchText.isEmpty() || selectedEntityId.isEmpty()) {
+            QMessageBox msgBox(this);
+            msgBox.setStyleSheet(AddItemDialogStyles::MessageBox);
+            msgBox.setWindowTitle("Entity Selection Required");
+            msgBox.setText("Please select an entity from the Database before proceeding.\n\n"
+                           "Use the search field to find and select an entity.");
+            msgBox.setIcon(QMessageBox::Warning);
+            msgBox.exec();
+            if (entitySearchLineEdit) {
+                entitySearchLineEdit->setFocus();
             }
+            return false;
         }
     }
+
     // Validate name field
     QString name = getName();
     if (name.isEmpty()) {
@@ -1442,10 +1467,11 @@ bool AddItemDialog::validateInputs()
         }
         return false;
     }
-    // Validate profile selection for component modes
+
+    // For component modes, if profileComboBox is visible (old style), validate it
+    // But currently profileComboBox is hidden for component modes, so this block may not run.
     if (profileComboBox && profileComboBox->isVisible()) {
         if (profileComboBox->currentIndex() == 0) {
-            // First item is placeholder
             QString componentType;
             if (m_dialogMode == ComponentSensorMode) componentType = "Sensor";
             else if (m_dialogMode == ComponentIFFMode) componentType = "IFF";
@@ -1457,51 +1483,15 @@ bool AddItemDialog::validateInputs()
             msgBox.setText(QString("Please select a %1 from the dropdown.").arg(componentType));
             msgBox.setIcon(QMessageBox::Warning);
             msgBox.exec();
-
             profileComboBox->setFocus();
             return false;
         }
     }
+
     return true;
 }
 QString AddItemDialog::getSelectedTeam() const {
     if (teamSelectComboBox && teamSelectComboBox->currentText() != "None")
         return teamSelectComboBox->currentText();
     return "";
-}
-void AddItemDialog::runUnitTestsOnce()
-{
-    static bool testsRun = false;
-    if (testsRun) return;
-    testsRun = true;
-
-    // Console access – MainWindow ke through ya hierarchy se
-    Console* console = nullptr;
-    MainWindow* mw = MainWindow::instance();
-    if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-        console = mw->databaseEditor->console;
-    }
-    if (!console) {
-        qDebug() << "Cannot run AddItemDialog tests: console not available";
-        return;
-    }
-
-    // Ek temporary dialog banayein tests ke liye
-    // Hierarchy access – databaseEditor se le sakte hain
-    Hierarchy* hierarchy = nullptr;
-    if (mw && mw->databaseEditor) {
-        hierarchy = mw->databaseEditor->hierarchy;
-    }
-    if (!hierarchy) {
-        qDebug() << "Cannot run AddItemDialog tests: hierarchy not available";
-        return;
-    }
-
-    AddItemDialog* testDialog = new AddItemDialog(AddItemDialog::EntityType,
-                                                  "Platform",
-                                                  AddItemDialog::NormalMode,
-                                                  hierarchy,
-                                                  mw);
-    runAddItemDialogTests(testDialog, console);
-    testDialog->deleteLater();
 }

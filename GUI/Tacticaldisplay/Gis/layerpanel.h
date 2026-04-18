@@ -60,7 +60,7 @@ public:
     explicit LayerPanel(QWidget *parent = nullptr);
     // Clean up resources
     ~LayerPanel();
-static void runUnitTestsOnce();
+// static void runUnitTestsOnce();
     // Get tree widget
     QTreeWidget* getTreeWidget() const { return layerTree; }
 

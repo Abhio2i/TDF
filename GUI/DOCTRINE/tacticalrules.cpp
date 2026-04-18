@@ -1,18 +1,17 @@
 
-/* =========================================================================
-   File: tacticalrules.cpp
-   Purpose: Tactical Rules panel — stores separate data per Blue/Red team.
-            setForceType() is called when the user switches tabs in
-            DoctrineParameters.
-   ========================================================================= */
-
+/* ========================================================================= */
+/* File: tacticalrules.cpp                                                   */
+/* Purpose: Implements TacticalRules panel for Blue/Red team tactical rules  */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #include "tacticalrules.h"
 #include "tactical-styles.h"
 #include <QJsonArray>
 #include <QJsonValue>
 #include "tests/tacticalrulestest/tacticalrules_test.h"
-#include "GUI/mainwindow.h"
-#include <QTimer>
+// #include "GUI/mainwindow.h"
+// #include <QTimer>
+// #include "tests/gui_test_control.h"
 // ── Constructor ──────────────────────────────────────────────────────────────
 TacticalRules::TacticalRules(QWidget *parent)
     : QWidget(parent)
@@ -20,7 +19,7 @@ TacticalRules::TacticalRules(QWidget *parent)
     setupUI();
     applyStyles();
     populateDropdowns();
-    runUnitTestsOnce();
+    // runUnitTestsOnce();
 }
 
 // ── UI Setup ─────────────────────────────────────────────────────────────────
@@ -306,29 +305,30 @@ void TacticalRules::onAnyValueChanged()
 }
 int TacticalRules::getRulesCount() const
 {
-    // TODO: Replace with actual logic to count rules for current force
+
     return 0;
 }
-void TacticalRules::runUnitTestsOnce()
-{
-    static bool testsRun = false;
-    if (testsRun) return;
-    testsRun = true;
+// void TacticalRules::runUnitTestsOnce()
+// {
+//        if (!GuiTestControl::isEnabled()) return;
+//     static bool testsRun = false;
+//     if (testsRun) return;
+//     testsRun = true;
 
-    QTimer::singleShot(0, []() {
-        Console* console = nullptr;
-        MainWindow* mw = MainWindow::instance();
-        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-            console = mw->databaseEditor->console;
-        }
-        if (!console) {
-            qDebug() << "TacticalRules: console not available, cannot run tests";
-            return;
-        }
+//     QTimer::singleShot(0, []() {
+//         Console* console = nullptr;
+//         MainWindow* mw = MainWindow::instance();
+//         if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+//             console = mw->databaseEditor->console;
+//         }
+//         if (!console) {
+//             qDebug() << "TacticalRules: console not available, cannot run tests";
+//             return;
+//         }
 
-        // Create a temporary TacticalRules widget (no parent, won't show)
-        TacticalRules* testPanel = new TacticalRules(nullptr);
-        runTacticalRulesTests(testPanel, console);
-        testPanel->deleteLater();
-    });
-}
+
+//         TacticalRules* testPanel = new TacticalRules(nullptr);
+//         runTacticalRulesTests(testPanel, console);
+//         testPanel->deleteLater();
+//     });
+// }

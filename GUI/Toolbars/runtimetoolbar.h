@@ -82,6 +82,7 @@ public:
     void storeSnapshot(const QJsonObject& hierarchySnapshot);
        QJsonObject m_initialSnapshot;
       QJsonObject getSnapshot() const { return m_initialSnapshot; }
+        bool eventFilter(QObject *obj, QEvent *event) override;
     // Next step action
 private slots:
     void timingActionTriggered() {
@@ -90,7 +91,7 @@ private slots:
     void onTimeLabelClicked();
      void updateSimulationStatus();
 protected:
-    bool eventFilter(QObject *obj, QEvent *event) override;
+    // bool eventFilter(QObject *obj, QEvent *event) override;
 private:
     // %%% UI Components %%%
     // Start action

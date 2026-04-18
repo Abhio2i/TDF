@@ -26,6 +26,7 @@
 #include <QScrollArea>
 
 
+
 // %%% Utility Functions %%%
 /* Capitalize the first letter of a string */
 static QString capitalizeFirstLetter(const QString &str)
@@ -229,11 +230,6 @@ void MissionEditor::setupEnhancedDockWidgets()
                    QMainWindow::AnimatedDocks);
     setCentralWidget(nullptr);
 
-    // %%% Dock Layout - Three Column Layout with Bottom Panels %%%
-    // Column 1: Hierarchy (full height)
-    // Column 2: Doctrine Parameters (top) + Doctrine Assumptions/Notes (bottom)
-    // Column 3: Tactical Rules (top) + Doctrine Area Definition (bottom)
-
     // First, split hierarchy and doctrine docks horizontally
     splitDockWidget(hierarchyDock, doctrineDock, Qt::Horizontal);
 
@@ -431,12 +427,6 @@ void MissionEditor::loadRecentProject(const QString& filePath)
     if (obj.contains("tactical") && tacticalPanel)
         tacticalPanel->loadBothTeamsFromJson(obj["tactical"].toObject());
 
-    // if (obj.contains("assumptions") && assumptionsPanel)
-    //     assumptionsPanel->loadFromJson(obj["assumptions"].toObject());
-
-    // if (obj.contains("areaDefinition") && areaDefinitionPanel)
-    //     areaDefinitionPanel->loadFromJson(obj["areaDefinition"].toObject());
-
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
     RecentProjectsManager::instance()->addToRecentProjects(
@@ -492,15 +482,6 @@ void MissionEditor::loadFromJsonFile(const QString &filePath)
         tacticalPanel->loadBothTeamsFromJson(obj["tactical"].toObject());  // handles both old/new format
 
 
-    // if (obj.contains("assumptions") && assumptionsPanel)
-    //     assumptionsPanel->loadFromJson(obj["assumptions"].toObject());
-
-    // if (obj.contains("areaDefinition") && areaDefinitionPanel)
-    //     areaDefinitionPanel->loadFromJson(obj["areaDefinition"].toObject());
-
-    // NOTE: Hierarchy is NOT loaded from .ms file.
-    // It is inherited from ScenarioEditor at switch time (in mainwindow.cpp).
-
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
 
@@ -526,18 +507,7 @@ void MissionEditor::onTreeItemSelected(QVariantMap data)
         }
     }
 }
-void MissionEditor::runGUITests()
-{
-      qDebug() << "=== runGUITests called ===";
-    if (!console) {
-        console = scenario->console;
-    }
-    static bool testsRun = false;
-    if (testsRun) return;
-    testsRun = true;
 
-    runMissionEditorTests(this, console);
-}
 bool MissionEditor::isHierarchyDockVisible() const {
     return hierarchyDock && hierarchyDock->isVisible();
 }

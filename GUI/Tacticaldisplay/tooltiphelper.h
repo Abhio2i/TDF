@@ -1,4 +1,8 @@
-
+/* ========================================================================= */
+/* File: TooltipHelper.h                                                     */
+/* Purpose: Provides helper functions for generating and displaying tooltips */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #ifndef TOOLTIPHELPER_H
 #define TOOLTIPHELPER_H
 
@@ -40,6 +44,7 @@ public:
 
     // Get all available tooltip fields
     static QStringList getAvailableFields();
+    // static void runUnitTestsOnce();
 
 private:
     static const QMap<QString, QString> tooltipLabels;

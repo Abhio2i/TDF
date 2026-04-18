@@ -1,3 +1,8 @@
+/* ========================================================================= */
+/* File: imagetemplate.cpp                                                   */
+/* Purpose: Implements image selection widget for inspector table cells      */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #include "imagetemplate.h"
 #include "iconsdialog.h"
 #include <QVBoxLayout>

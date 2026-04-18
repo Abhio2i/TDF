@@ -168,6 +168,7 @@ public:
     void centerOnEntity(const QString& entityId, bool adjustZoom = false);
     void centerOnEntityWithZoom(const QString& entityId, int zoomLevel);
     double calculateTrajectoryCompletionTime(const MeshEntry& entry) const;
+    // static void runUnitTestsOnce();
 
 public slots:
     void ReInit();
@@ -231,7 +232,10 @@ public:
 
     void setLayerPanel(LayerPanel* panel);
     LayerPanel* getLayerPanel() const { return m_layerPanel; }
-
+        bool isDrawingTrajectory = false;  // Currently drawing trajectory
+          bool showImage = true;
+              bool showFPS = true;     // Show FPS counter
+    bool showTrajectories = true;
 private:
     // Drawing methods for different canvas elements
     void drawGridLines(QPainter& painter);  // Draw grid lines
@@ -285,14 +289,14 @@ private:
     bool showMesh = true;    // Show mesh geometries
     bool showOutline = true; // Show selection outlines
     bool showInformation = false;  // Show information overlay
-    bool showFPS = true;     // Show FPS counter
+    // bool showFPS = true;     // Show FPS counter
     bool showSensors = true;     // Default sensors visible
     bool showRadio = true;       // Default radio visible
-    bool showImage = true;
+    // bool showImage = true;
     bool showTooltip = false;
-    bool showTrajectories = true;
+    // bool showTrajectories = true;
     // Mode and state flags
-    bool isDrawingTrajectory = false;  // Currently drawing trajectory
+    // bool isDrawingTrajectory = false;  // Currently drawing trajectory
     QString selectedBitmapType;  // Selected bitmap type for placement
     bool isPlacingBitmap = false;  // Currently placing bitmap
 

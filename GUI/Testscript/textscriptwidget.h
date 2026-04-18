@@ -47,7 +47,7 @@ class TextScriptWidget : public QWidget {
 public:
     // Initialize script widget
     explicit TextScriptWidget(QWidget *parent = nullptr);
-     static void runUnitTestsOnce();
+     // static void runUnitTestsOnce();
 
 signals:
     // Signal to run script code

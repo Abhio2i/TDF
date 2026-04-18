@@ -109,7 +109,7 @@ void test_ProfileCategaory() {
     /////////////////////////
 
     ProfileCategaory* nullProfile = new ProfileCategaory(nullptr);
-    ASSERT_NEQ(nullProfile, nullptr, "Profile should be not be null (pass nullptr hierarchy)");
+    ASSERT_NEQ(nullProfile, nullptr, "Profile should not be null (pass nullptr hierarchy)");
     delete nullProfile;
 
     ProfileCategaory* manualProfile = new ProfileCategaory(h);
@@ -153,7 +153,7 @@ void test_ProfileCategaory() {
     delete h;
 }
 
-void test_FolderCategaory() {
+void test_Folder() {
     std::cout << "\n--- Running Folder Tests ---" << std::endl;
     Hierarchy* h = new Hierarchy();
     ProfileCategaory* profile = h->addProfileCategaory("test_Profile1");
@@ -165,7 +165,7 @@ void test_FolderCategaory() {
         //correct values
         Folder* folder = h->addFolder(QString::fromStdString(profile->ID),"test_Folder1",true);
         // Check if Folder is not null
-        ASSERT_NEQ(folder, nullptr, "(Correct Values) addFolder Function should be created test_Profile1");
+        ASSERT_NEQ(folder, nullptr, "(Correct Values) addFolder Function should be created test_Folder1");
         //Null values
         Folder* folder2 = h->addFolder(nullptr,nullptr,true);
         // Check if Folder is not null
@@ -203,7 +203,7 @@ void test_FolderCategaory() {
         found = (it != h->Folders.end());
         ASSERT_FALSE(found, "(wrong Values) addFolderViaNetwork Function should be return nullptr");
 
-        //wrong values
+        //Folder to Folder create
         h->addFolderViaNetwork(QString::fromStdString(folder->ID),"fdID8","folder8",false);
         // Check if Folder is not null
         it = h->Folders.find("fdID8");
@@ -221,52 +221,440 @@ void test_FolderCategaory() {
         h->renameFolder(nullptr,"renameFolder2");
         // Check if Folder is not null
         it = h->Folders.find(folder->ID);
-        ASSERT_NEQ(it->second->Name,"renameFolder2", "(null Values) renameFolder Function should be not be rename");
+        ASSERT_NEQ(it->second->Name,"renameFolder2", "(null Values) renameFolder Function should not be rename");
+
+        //Wrong values
+        h->renameFolder("wrong","renameFolder3");
+        // Check if Folder is not null
+        it = h->Folders.find(folder->ID);
+        ASSERT_NEQ(it->second->Name,"renameFolder3", "(wrong Values) renameFolder Function should not be rename");
+
+        //Test removeFolder Function
+        //correct values
+        h->removeFolder(QString::fromStdString(folder->ID),"fdID8");
+        // Check if Folder is not null
+        it = h->Folders.find("fdID8");
+        found = (it != h->Folders.end());
+        ASSERT_FALSE(found, " removeFolder Function should be deleted folder8");
+
+        //null values
+        h->removeFolder(nullptr,"fdID5");
+        // Check if Folder is not null
+        it = h->Folders.find("fdID5");
+        found = (it != h->Folders.end());
+        ASSERT_TRUE(found, "(null Values) removeFolder Function should not be deleted folder5");
+
+        //wrong values
+        h->removeFolder("wrong","fdID5");
+        // Check if Folder is not null
+        it = h->Folders.find("fdID5");
+        found = (it != h->Folders.end());
+        ASSERT_TRUE(found, "(wrong Values) removeFolder Function should not be deleted folder5");
+
+        //Test removeFolderViaNetwork Function
+        //correct values
+        h->removeFolderViaNetwork("fdID5");
+        // Check if Folder is not null
+        it = h->Folders.find("fdID5");
+        found = (it != h->Folders.end());
+        ASSERT_FALSE(found, " removeFolderViaNetwork Function should be deleted folder5");
+
+        //null values
+        h->removeFolderViaNetwork(nullptr);
+        ASSERT_TRUE(true, "(null Values) removeFolderViaNetwork Function should not be deleted folder5");
+
+        //wrong values
+        h->removeFolderViaNetwork("wrong");
+        ASSERT_TRUE(true, "(wrong Values) removeFolderViaNetwork Function should not be deleted folder5");
+
+        h->removeFolder(QString::fromStdString(profile->ID),QString::fromStdString(folder->ID));
+        h->removeFolder(QString::fromStdString(folder->ID),QString::fromStdString(folder4->ID));
+        h->removeProfileCategaory(QString::fromStdString(profile->ID));
+        ASSERT_TRUE(false, "removeProfileCategaory Function clear folders and profile (Memory Leak Test)");
+    }
+
+    delete h;
+}
+
+
+void test_Entity() {
+    std::cout << "\n--- Running Entity Tests ---" << std::endl;
+    Hierarchy* h = new Hierarchy();
+    ProfileCategaory* profile = h->addProfileCategaory("test_Profile1");
+    // Check map existence and pointer match
+    auto it = h->ProfileCategories.find(profile->ID);
+    bool found = (it != h->ProfileCategories.end());
+    if(found){
+        Folder* folder = h->addFolder(QString::fromStdString(profile->ID),"test_Folder1",true);
+
+        //Test Add Entity Function
+        //correct values
+        Entity* entity = h->addEntity(QString::fromStdString(profile->ID),"test_entity1",true);
+        // Check if Entity is not null
+        ASSERT_NEQ(entity, nullptr, "(Correct Values) addEntity Function should be created test_entity1");
+        //Null values
+        Entity* entity2 = h->addEntity(nullptr,nullptr,true);
+        // Check if Entity is not null
+        ASSERT_EQ(entity2, nullptr, "(Null Values) addEntity Function should be return nullptr");
+
+        //Wrong values
+        Entity* entity3 = h->addEntity("wrong","entity3",true);
+        // Check if Entity is not null
+        ASSERT_EQ(entity3, nullptr, "(wrong Values) addEntity Function should be return nullptr");
+
+        //Entity to Folder create
+        Entity* entity4 = h->addEntity(QString::fromStdString(folder->ID),"entity4",false);
+        // Check if Entity is not null
+        ASSERT_NEQ(entity4, nullptr, "addEntity Function should be created entity4 in test_Folder1");
+
+
+        //Test addEntityViaNetwork  Function
+        //correct values
+        h->addEntityViaNetwork(QString::fromStdString(profile->ID),"enID5","entity5",true);
+        // Check if Entity is not null
+        auto it = h->Entities.find("enID5");
+        bool found = (it != h->Entities.end());
+        ASSERT_TRUE(found, "(Correct Values) addEntityViaNetwork Function should be created entity5");
+
+        //Null values
+        h->addEntityViaNetwork(nullptr,"enID6",nullptr,true);
+        // Check if Entity is not null
+        it = h->Entities.find("fdID6");
+        found = (it != h->Entities.end());
+        ASSERT_FALSE(found, "(Null Values) addEntityViaNetwork Function should be return nullptr");
+
+        //wrong values
+        h->addEntityViaNetwork("wrong","enID7","entity7",true);
+        // Check if Entity is not null
+        it = h->Entities.find("enID7");
+        found = (it != h->Entities.end());
+        ASSERT_FALSE(found, "(wrong Values) addEntityViaNetwork Function should be return nullptr");
+
+        //Folder to Entity create
+        h->addEntityViaNetwork(QString::fromStdString(folder->ID),"enID8","entity8",false);
+        // Check if Entity is not null
+        it = h->Entities.find("enID8");
+        found = (it != h->Entities.end());
+        ASSERT_TRUE(found, " addEntityViaNetwork Function should be created entity8 in test_Folder1");
+
+        //Test addEntityFromJson  Function
+        //correct value
+        Entity* entityobj = new Platform(h);
+        QJsonObject obj = entityobj->toJson();
+        Entity* entity9 = h->addEntityFromJson(QString::fromStdString(profile->ID),obj,true);
+        // Check if Entity is not null
+        ASSERT_NEQ(entity9, nullptr, "(Correct Values) addEntityFromJson Function should be created entity9");
+
+        //Null values
+        Entity* entity10 = h->addEntityFromJson(nullptr,obj,true);
+        // Check if Entity is not null
+        ASSERT_EQ(entity10, nullptr, "(Null Values) addEntityFromJson Function should be return nullptr");
+
+        //wrong values
+        Entity* entity11 = h->addEntityFromJson("wrong",obj,true);
+        // Check if Entity is not null
+        ASSERT_EQ(entity11, nullptr, "(wrong Values) addEntityFromJson Function should be return nullptr");
+
+        //Folder to Entity create
+        Entity* entity12 = h->addEntityFromJson(QString::fromStdString(folder->ID),obj,false);
+        // Check if Entity is not null
+        ASSERT_NEQ(entity12, nullptr, " addEntityFromJson Function should be created entity12 in test_Folder1");
+
+        //Test renameEntity Function
+        //correct values
+        h->renameEntity(QString::fromStdString(entity->ID),"renameEntity1");
+        // Check if Folder is not null
+        it = h->Entities.find(entity->ID);
+        ASSERT_EQ(it->second->Name,"renameEntity1", "(Correct Values) renameEntity Function should be rename");
+
+        //null values
+        h->renameEntity(nullptr,"renameEntity2");
+        // Check if Folder is not null
+        it = h->Entities.find(entity->ID);
+        ASSERT_NEQ(it->second->Name,"renameEntity2", "(null Values) renameEntity Function should not be rename");
+
+        //Wrong values
+        h->renameEntity("wrong","renameEntity3");
+        // Check if Folder is not null
+        it = h->Entities.find(entity->ID);
+        ASSERT_NEQ(it->second->Name,"renameEntity3", "(wrong Values) renameEntity Function should not be rename");
+
+
+        Entity* entity13 = h->getEntityById(QString::fromStdString(entity->ID));
+        // Check if Entity is not null
+        ASSERT_NEQ(entity13, nullptr, "(Correct Values) getEntityById Function should be created entity13");
+
+        //Null values
+        Entity* entity14 = h->getEntityById(nullptr);
+        // Check if Entity is not null
+        ASSERT_EQ(entity14, nullptr, "(Null Values) getEntityById Function should be return nullptr");
+
+        //wrong values
+        Entity* entity15 = h->getEntityById("wrong");
+        // Check if Entity is not null
+        ASSERT_EQ(entity15, nullptr, "(wrong Values) getEntityById Function should be return nullptr");
+
+
+        //Test removeEntity Function
+        //correct values
+        h->removeEntity(QString::fromStdString(folder->ID),"enID8");
+        // Check if Entity is not null
+        it = h->Entities.find("enID8");
+        found = (it != h->Entities.end());
+        ASSERT_FALSE(found, " removeEntity Function should be deleted entity8");
+
+        //null values
+        h->removeEntity(nullptr,"enID5");
+        // Check if Entity is not null
+        it = h->Entities.find("enID5");
+        found = (it != h->Entities.end());
+        ASSERT_TRUE(found, "(null Values) removeEntity Function should not be deleted entity5");
+
+        //wrong values
+        h->removeEntity("wrong","enID5");
+        // Check if Entity is not null
+        it = h->Entities.find("enID5");
+        found = (it != h->Entities.end());
+        ASSERT_TRUE(found, "(wrong Values) removeEntity Function should not be deleted entity5");
+
+        h->removeProfileCategaory(QString::fromStdString(profile->ID));
+        ASSERT_TRUE(false, "removeProfileCategaory Function clear folders and profile (Memory Leak Test)");
 
 
     }
 
-
-
-
-    // /////////////////////////
-    // ProfileCategaory* manualProfile = new ProfileCategaory(h);
-    // manualProfile->ID = "ManualID";
-    // manualProfile->Name = "ManualName";
-
-    // h->addProfileCategaoryWithObject(manualProfile);
-
-    // // Check if it exists in the map
-    // ASSERT_EQ(h->getProfileById("ManualID"), manualProfile, "Manual profile should be added correctly");
-
-    // ////////////////////////////
-    // ProfileCategaory* p1 = h->addProfileCategaory("UniqueName");
-    // std::string generatedId = p1->ID;
-
-    // // Test getProfileById
-    // ASSERT_EQ(h->getProfileById(QString::fromStdString(generatedId)), p1, "Should find profile by ID");
-    // ASSERT_EQ(h->getProfileById("NonExistentID"), nullptr, "Should return null for invalid ID");
-
-    // // Test getProfileByName
-    // ASSERT_EQ(h->getProfileByName("UniqueName"), p1, "Should find profile by Name");
-    // ASSERT_EQ(h->getProfileByName("WrongName"), nullptr, "Should return null for invalid Name");
-
-
-    // // removeProfileCategaory
-    // h->removeProfileCategaory(QString::fromStdString(profile->ID));
-    // h->removeProfileCategaory(QString::fromStdString(manualProfile->ID));
-    // h->removeProfileCategaory(QString::fromStdString(generatedId));
-
-    // // Ab confirm karein ki delete ho gaya hai
-    // ASSERT_EQ(h->getProfileById(QString::fromStdString(profile->ID)), nullptr, "test_Profile1 should be null after removal");
-    // ASSERT_EQ(h->getProfileById(QString::fromStdString(manualProfile->ID)), nullptr, " ManualName Profile should be null after removal");
-    // ASSERT_EQ(h->getProfileById(QString::fromStdString(generatedId)), nullptr, "UniqueName Profile should be null after removal");
-
-    // // Safety check: Make sure size of map decreased
-    // ASSERT_EQ(h->ProfileCategories.size(), 0, "Map should be empty after removing the only element");
-
     delete h;
 }
+
+void test_Component() {
+    std::cout << "\n--- Running Component Tests ---" << std::endl;
+    Hierarchy* h = new Hierarchy();
+    ProfileCategaory* profile = h->addProfileCategaory("test_Profile1");
+    // Check map existence and pointer match
+    auto it = h->ProfileCategories.find(profile->ID);
+    bool found = (it != h->ProfileCategories.end());
+    if(found){
+        //Test Add Entity Function
+        //correct values
+        Platform* entity = new Platform(h);
+        profile->addEntityWithObject(entity);
+        // Check if Entity is not null
+
+        //Test addComponent Function
+        //correct values
+        h->addComponent(QString::fromStdString(entity->ID),"transform");
+        // Check if Component is not null
+        ASSERT_NEQ(entity->transform,nullptr, "(Correct Values) addComponent Function should be added transform");
+
+        //null values
+        h->addComponent(nullptr,"crossSection");
+        // Check if Folder is not null
+        ASSERT_EQ(entity->crossSection,nullptr, "(null Values) addComponent Function should not be added crossSection");
+
+        //Wrong values
+        h->addComponent("wrong","trajectory");
+        // Check if Folder is not null
+        ASSERT_EQ(entity->trajectory,nullptr, "(wrong Values) addComponent Function should  not be added trajectory");
+
+
+        //Test getComponentData Function
+        //correct values
+        QJsonObject obj1 = h->getComponentData(QString::fromStdString(entity->ID),"transform");
+        // Check if QJsonObject is not null
+        ASSERT_FALSE(obj1.isEmpty(), "(Correct Values) getComponentData Function should be return transform Json Data");
+
+        //null values
+        QJsonObject obj2 = h->getComponentData(nullptr,"crossSection");
+        // Check if QJsonObject is not null
+        ASSERT_TRUE(obj2.isEmpty(), "(null Values) getComponentData Function should be return empty");
+
+        //Wrong values
+        QJsonObject obj3 = h->getComponentData("wrong","trajectory");
+        // Check if QJsonObject is not null
+        ASSERT_TRUE(obj3.isEmpty(), "(wrong Values) getComponentData Function should not be return empty");
+
+
+        //Test UpdateComponent Function
+        //correct values
+        QJsonObject delta;
+        delta["active"] = false;
+        h->UpdateComponent(QString::fromStdString(entity->ID),"transform",delta);
+        ASSERT_FALSE(entity->transform->Active, "(Correct Values) UpdateComponent Function should be update transform Json Data");
+
+        //null values
+        delta["active"] = true;
+        h->UpdateComponent(nullptr,"transform",delta);
+        ASSERT_FALSE(entity->transform->Active, "(null Values) UpdateComponent Function should not be update transform Json Data");
+
+        //Wrong values
+        delta["active"] = true;
+        h->UpdateComponent("wrong","transform",delta);
+        ASSERT_FALSE(entity->transform->Active, "(wrong Values) UpdateComponent Function should not be update transform Json Data");
+
+        //Test removeComponent Function
+        //correct values
+        h->removeComponent(QString::fromStdString(entity->ID),"transform");
+        ASSERT_EQ(entity->transform,nullptr, "(Correct Values) removeComponent Function should be removed component");
+
+        //null values
+        try{
+            h->removeComponent(nullptr,"transform");
+            ASSERT_FALSE(true, "(null Values) removeComponent Function not crashed ");
+        }catch(...){
+            ASSERT_FALSE(true, "(null Values) removeComponent Function crashed");
+        }
+
+        //Wrong values
+        try{
+            h->removeComponent("wrong","transform");
+            ASSERT_TRUE(true, "(Wrong Values) removeComponent Function not crashed ");
+        }catch(...){
+            ASSERT_FALSE(true, "(Wrong Values) removeComponent Function crashed");
+        }
+
+        h->removeProfileCategaory(QString::fromStdString(profile->ID));
+        ASSERT_TRUE(false, "removeProfileCategaory Function clear folders and profile (Memory Leak Test)");
+
+
+    }
+    delete h;
+}
+
+
+void test_SubComponent() {
+    std::cout << "\n--- Running SubComponent Tests ---" << std::endl;
+    Hierarchy* h = new Hierarchy();
+    ProfileCategaory* profile = h->addProfileCategaory("test_Profile1");
+    // Check map existence and pointer match
+    auto it = h->ProfileCategories.find(profile->ID);
+    bool found = (it != h->ProfileCategories.end());
+    if(found){
+        //Test Add Entity Function
+        Platform* entity = new Platform(h);
+        profile->addEntityWithObject(entity);
+        // Check if Entity is not null
+
+        //Test addComponent Function
+        h->addComponent(QString::fromStdString(entity->ID),"sensors");
+
+        //Test addSubComponent Function
+        //correct values
+        h->addSubComponent(QString::fromStdString(entity->sensors->ID),ComponentType::SensorProfile,"radar","Generic");
+        Sensor *sensor = nullptr;
+        for (auto& it : *entity->sensors->sensors) {
+            if(it.second->Name == "radar"){
+                sensor = it.second;
+                break;
+            }
+        }
+        // Check if Component is not null
+        ASSERT_NEQ(sensor,nullptr, "(Correct Values) addSubComponent Function should be added Radar");
+
+        //null values
+        try{
+            h->addSubComponent(nullptr,ComponentType::SensorProfile,"radar");
+            ASSERT_TRUE(true, "(null Values) addSubComponent Function not crashed ");
+        }catch(...){
+            ASSERT_FALSE(true, "(null Values) addSubComponent Function crashed");
+        }
+
+        //Wrong values
+        try{
+            h->addSubComponent("wrong",ComponentType::SensorProfile,"radar");
+            ASSERT_TRUE(true, "(wrong Values) addSubComponent Function not crashed ");
+        }catch(...){
+            ASSERT_FALSE(true, "(wrong Values) addSubComponent Function crashed");
+        }
+
+        //Test renameSubComponent Function
+        //correct values
+        h->renameSubComponent(QString::fromStdString(entity->sensors->ID),QString::fromStdString(sensor->ID),"aesaradar");
+        ASSERT_EQ(sensor->Name,"aesaradar", "(Correct Values) renameSubComponent Function should be rename sensor");
+
+        //null values
+        h->renameSubComponent(nullptr,QString::fromStdString(sensor->ID),"aesaradar2");
+        ASSERT_NEQ(sensor->Name,"aesaradar2", "(null Values) renameSubComponent Function should not be rename sensor ");
+
+        //Wrong values
+        h->renameSubComponent("wrong",QString::fromStdString(sensor->ID),"aesaradar2");
+        ASSERT_NEQ(sensor->Name,"aesaradar2", "(wrong Values) renameSubComponent Function should not be rename sensor ");
+
+
+        //Test removeSubComponent Function
+        //correct values
+        h->removeSubComponent(QString::fromStdString(entity->sensors->ID),QString::fromStdString(sensor->ID));
+        // Check if Component is not null
+        bool found = false;
+        for (auto& it : *entity->sensors->sensors) {
+            if(it.second->Name == "radar"){
+                found = true;
+                break;
+            }
+        }
+        ASSERT_FALSE(found, "(Correct Values) removeSubComponent Function should be removed Radar");
+
+        //null values
+        try{
+            h->removeSubComponent(nullptr,nullptr);
+            ASSERT_TRUE(true, "(null Values) removeSubComponent Function not crashed ");
+        }catch(...){
+            ASSERT_FALSE(true, "(null Values) removeSubComponent Function crashed");
+        }
+
+        //Wrong values
+        try{
+            h->removeSubComponent("wrong","wrong");
+            ASSERT_TRUE(true, "(wrong Values) removeSubComponent Function not crashed ");
+        }catch(...){
+            ASSERT_FALSE(true, "(wrong Values) removeSubComponent Function crashed");
+        }
+
+        h->removeProfileCategaory(QString::fromStdString(profile->ID));
+        ASSERT_TRUE(false, "removeProfileCategaory Function clear folders and profile (Memory Leak Test)");
+
+
+
+    }
+    delete h;
+}
+
+void test_OthersFunction() {
+    std::cout << "\n--- Running OthersFunction Tests ---" << std::endl;
+    Hierarchy* h = new Hierarchy();
+    ProfileCategaory* profile = h->addProfileCategaory("test_Profile1");
+    // Check map existence and pointer match
+    auto it = h->ProfileCategories.find(profile->ID);
+    bool found = (it != h->ProfileCategories.end());
+    if(found){
+        //Test toJson Function
+        Platform* entity = new Platform(h);
+        profile->addEntityWithObject(entity);
+        QJsonObject obj = h->toJson();
+        ASSERT_FALSE(obj.empty(), " toJson Function should be return Jsonobject ");
+
+        //Test fromJson Function
+        try{
+            h->fromJson(obj);
+            ASSERT_TRUE(true, "(Correct Values) fromJson Function worked successfully ");
+        }catch(...){
+            ASSERT_FALSE(true, "(Correct Values) fromJson Function failed ");
+        }
+
+        //Wrong values
+        try{
+            h->fromJson(QJsonObject());
+            ASSERT_TRUE(true, "(wrong Values) fromJson Function not crashed ");
+        }catch(...){
+            ASSERT_FALSE(true, "(wrong Values) fromJson Function crashed");
+        }
+        h->removeProfileCategaory(QString::fromStdString(profile->ID));
+        ASSERT_TRUE(false, "removeProfileCategaory Function clear folders and profile (Memory Leak Test)");
+
+
+    }
+    delete h;
+}
+
 void hierarchy_test(){
 
     std::cout << "=========================================" << std::endl;
@@ -275,7 +663,11 @@ void hierarchy_test(){
 
     test_initialization();
     test_ProfileCategaory();
-    test_FolderCategaory();
+    test_Folder();
+    test_Entity();
+    test_Component();
+    test_SubComponent();
+    test_OthersFunction();
 
     std::cout << "\n=========================================" << std::endl;
     std::cout << "TEST SUMMARY:" << std::endl;

@@ -2,6 +2,7 @@
 /* ========================================================================= */
 /* File: optiontemplate.h                                                   */
 /* Purpose: Defines widget for managing option templates                     */
+/* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
 #ifndef OPTIONTEMPLATE_H

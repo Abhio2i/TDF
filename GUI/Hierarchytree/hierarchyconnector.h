@@ -70,8 +70,6 @@ private:
     Hierarchy* copySource = nullptr;
     // Main hierarchy instance
     Hierarchy* hierarchy = nullptr;
-    // Library hierarchy instance
-    // Hierarchy* library = nullptr;
     // Library tree view widget
     HierarchyTree* libTreeView = nullptr;
     // Hierarchy tree view widget

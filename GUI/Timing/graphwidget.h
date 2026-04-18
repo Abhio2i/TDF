@@ -56,7 +56,7 @@ public:
     // %%% Utility Functions %%%
     /* Format seconds to HH:MM:SS string */
     static QString formatTime(double seconds);
-    static void runUnitTestsOnce();
+    // static void runUnitTestsOnce();
 
 public slots:
     // %%% Update Slot %%%

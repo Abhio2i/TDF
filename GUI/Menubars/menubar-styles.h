@@ -2,6 +2,7 @@
 /* File: menubar-styles.h                                                   */
 /* Purpose: Dark theme styles for MenuBar                                   */
 /* Background: #0F2636, Text: White, Hover: #1A3652, Accent: #0078D4        */
+/* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
 #ifndef MENUBAR_STYLES_H

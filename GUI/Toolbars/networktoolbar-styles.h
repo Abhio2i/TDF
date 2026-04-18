@@ -3,6 +3,7 @@
 /* Purpose: Dark theme styles for NetworkToolbar                            */
 /* Background: #0F2636, Border: #27446d, Text: White, Accent: #0078D4       */
 /* Icon size: 16x16 (smaller)                                               */
+/* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
 #ifndef NETWORKTOOLBAR_STYLES_H

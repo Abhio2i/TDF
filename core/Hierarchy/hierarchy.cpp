@@ -164,7 +164,7 @@ void Hierarchy::addFolderViaNetwork(QString parentId, QString ID, QString Folder
     }
 }
 
-void Hierarchy::removeFolder(QString parentId, QString ID, bool Profile)
+void Hierarchy::removeFolder(QString parentId, QString ID)
 {
     if(parentId.isEmpty() || ID.isEmpty()){
         return;
@@ -186,7 +186,7 @@ void Hierarchy::removeFolder(QString parentId, QString ID, bool Profile)
 }
 
 void Hierarchy::removeFolderViaNetwork(QString ID){
-    if(ID.isEmpty()){
+    if(ID.isEmpty() || !Folders.count(ID.toStdString())){
         return;
     }
     emit status("remove");
@@ -211,20 +211,23 @@ void Hierarchy::renameFolder(QString Id, QString name)
     }
 }
 
-Entity* Hierarchy::addEntity(QString parentId, QString EntityName, bool Profile)
+Entity* Hierarchy::addEntity(QString parentId, QString EntityName, bool Profile, QString data1)
 {
+    if(parentId.isEmpty() || EntityName.isEmpty()){
+        return nullptr;
+    }
     emit status("add");
     std::string pId = parentId.toStdString();
     std::string EName = EntityName.toStdString();
     if (Profile) {
         auto it = ProfileCategories.find(pId);
         if (it != ProfileCategories.end()) {
-            return it->second->addEntity(EName);
+            return it->second->addEntity(EName,"",data1);
         }
     } else {
         auto it = Folders.find(pId);
         if (it != Folders.end()) {
-            return it->second->addEntity(EName);
+            return it->second->addEntity(EName,"",data1);
         }
     }
     return nullptr;
@@ -232,6 +235,9 @@ Entity* Hierarchy::addEntity(QString parentId, QString EntityName, bool Profile)
 
 void Hierarchy::addEntityViaNetwork(QString parentId, QString ID, QString EntityName, bool Profile)
 {
+    if(parentId.isEmpty() || ID.isEmpty() || EntityName.isEmpty()){
+        return;
+    }
     emit status("add");
     std::string pId = parentId.toStdString();
     std::string Id = ID.toStdString();
@@ -251,6 +257,9 @@ void Hierarchy::addEntityViaNetwork(QString parentId, QString ID, QString Entity
 
 void Hierarchy::addEntityViaLogger(QString parentId, QString ID, QString EntityName, bool Profile)
 {
+    if(parentId.isEmpty() || ID.isEmpty() || EntityName.isEmpty()){
+        return;
+    }
     emit status("add");
     std::string pId = parentId.toStdString();
     std::string Id = ID.toStdString();
@@ -270,6 +279,9 @@ void Hierarchy::addEntityViaLogger(QString parentId, QString ID, QString EntityN
 
 Entity* Hierarchy::addEntityFromJson(QString parentId, QJsonObject obj, bool Profile)
 {
+    if(parentId.isEmpty() || obj.isEmpty()){
+        return nullptr;
+    }
     emit status("add");
     QString EntityName = obj["name"].toString();
     Entity* entity = nullptr;
@@ -301,8 +313,11 @@ Entity* Hierarchy::addEntityFromJson(QString parentId, QJsonObject obj, bool Pro
     return nullptr;
 }
 
-void Hierarchy::removeEntity(QString parentId, QString ID, bool Profile)
+void Hierarchy::removeEntity(QString parentId, QString ID)
 {
+    if(parentId.isEmpty() || ID.isEmpty()){
+        return;
+    }
     emit status("remove");
     std::string pId = parentId.toStdString();
     std::string Id = ID.toStdString();
@@ -320,6 +335,9 @@ void Hierarchy::removeEntity(QString parentId, QString ID, bool Profile)
 
 void Hierarchy::renameEntity(QString Id, QString name)
 {
+    if(Id.isEmpty() || name.isEmpty()){
+        return;
+    }
     auto it = Entities.find(Id.toStdString());
     if (it != Entities.end()) {
         emit status("rename");
@@ -329,6 +347,9 @@ void Hierarchy::renameEntity(QString Id, QString name)
 }
 
 Entity* Hierarchy::getEntityById(QString ID){
+    if(ID.isEmpty()){
+        return nullptr;
+    }
     auto it = Entities.find(ID.toStdString());
     if (it != Entities.end()) {
         return it->second;
@@ -339,6 +360,9 @@ Entity* Hierarchy::getEntityById(QString ID){
 
 void Hierarchy::addComponent(QString ID, QString componentName)
 {
+    if(ID.isEmpty() || componentName.isEmpty()){
+        return;
+    }
     auto it = Entities.find(ID.toStdString());
     if (it != Entities.end()) {
         emit status("add");
@@ -351,6 +375,9 @@ void Hierarchy::addComponent(QString ID, QString componentName)
 
 QJsonObject Hierarchy::getComponentData(QString ID, QString componentName)
 {
+    if(ID.isEmpty() || componentName.isEmpty()){
+        return QJsonObject();;
+    }
     auto it = Entities.find(ID.toStdString());
     if (it != Entities.end()) {
         return it->second->getComponent(componentName.toStdString());
@@ -360,6 +387,9 @@ QJsonObject Hierarchy::getComponentData(QString ID, QString componentName)
 
 void Hierarchy::UpdateComponent(QString ID, QString componentName, QJsonObject delta)
 {
+    if(ID.isEmpty() || componentName.isEmpty() || delta.isEmpty()){
+        return;
+    }
     if(componentName.contains("_sub")){
         if(Components.find(ID.toStdString()) != Components.end()){
             Component* component = (Components)[ID.toStdString()];
@@ -434,6 +464,9 @@ void Hierarchy::UpdateComponent(QString ID, QString componentName, QJsonObject d
 
 void Hierarchy::removeComponent(QString entityId, QString componentName)
 {
+    if(entityId.isEmpty() || componentName.isEmpty()){
+        return ;
+    }
     auto it = Entities.find(entityId.toStdString());
     if (it != Entities.end()) {
         emit status("remove");
@@ -443,11 +476,15 @@ void Hierarchy::removeComponent(QString entityId, QString componentName)
     }
 }
 
-void Hierarchy::addSubComponent(QString ID, ComponentType type, QString subComponentName, QString data1 , QString data2, QString data3){
+void Hierarchy::addSubComponent(QString ID, ComponentType type, QString subComponentName, QString data1 , QString data2, QJsonObject data3){
+    if(ID.isEmpty() || subComponentName.isEmpty()){
+        return ;
+    }
+
     auto it = Components.find(ID.toStdString());
     if (it != Components.end()) {
         emit status("add");
-        it->second->addSubComponent(subComponentName.toStdString(),data1,data2);
+        it->second->addSubComponent(subComponentName.toStdString(),data1,data2,data3);
         //emit componentAdded(ID, componentName);
         //getCurrentJsonData(); // Emit updated JSON
         //Console::log("Hierarchy::addSubComponent emitted getJsonData for " + ID.toStdString() + ", component: " + subComponentName.toStdString());
@@ -456,6 +493,9 @@ void Hierarchy::addSubComponent(QString ID, ComponentType type, QString subCompo
 
 void Hierarchy::renameSubComponent(QString ID, QString subComponentID, QString newName)
 {
+    if(ID.isEmpty() || subComponentID.isEmpty() || newName.isEmpty()){
+        return ;
+    }
     auto it = Components.find(ID.toStdString());
     if (it != Components.end()) {
         emit status("rename");
@@ -464,7 +504,10 @@ void Hierarchy::renameSubComponent(QString ID, QString subComponentID, QString n
     }
 }
 
-void Hierarchy::removeSubComponent(QString ID, QString subComponentID, QString subComponentName){
+void Hierarchy::removeSubComponent(QString ID, QString subComponentID){
+    if(ID.isEmpty() || subComponentID.isEmpty()){
+        return ;
+    }
     auto it = Components.find(ID.toStdString());
     if (it != Components.end()) {
         emit status("remove");

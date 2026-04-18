@@ -981,7 +981,7 @@ void Platform::addComponent(std::string name) {
             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(sensors->ID), "sensors");
         }
 
-    }else if (name == "iffs") {
+    } else if (name == "iffs") {
         if (!iffs) {
             if (!transform)
                 addComponent("transform");
@@ -992,7 +992,7 @@ void Platform::addComponent(std::string name) {
             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(iffs->ID), "iffs");
         }
 
-    }else if (name == "radios") {
+    } else if (name == "radios") {
         if (!radios) {
             if (!transform)
                 addComponent("transform");
@@ -1058,13 +1058,7 @@ void Platform::addComponent(std::string name) {
             emit parent->entityMeshAdded(QString::fromStdString(parentID), this);
         }
 
-    }/*else if (name == "radios") {
-        emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString("transform->ID"), "radios");
-    }else if (name == "sensors") {
-        emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString("transform->ID"), "sensors");
-    }else if (name == "iff") {
-        emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString("transform->ID"), "iff");
-    }*/
+    }
 }
 
 void Platform::removeComponent(std::string name) {

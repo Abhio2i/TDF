@@ -38,8 +38,6 @@
 #include "inspector-styles.h"
 #include <QToolTip>
 #include <QCursor>
-#include "tests/inspectortest/inspectortest.h"
-#include "GUI/mainwindow.h"
 
 static bool safeAddWidget(QLayout* layout, QWidget* widget, const QString& context = "") {
     if (!layout) {
@@ -98,7 +96,7 @@ Inspector::Inspector(QWidget *parent)
 {
     setStyleSheet(InspectorStyles::InspectorWidget);
     setupUI();
-     runUnitTestsOnce();
+     // runUnitTestsOnce();
 }
 
 // %%% Lock State Management %%%
@@ -179,25 +177,15 @@ QMenu* Inspector::createContextMenu()
     QAction *copyAction = menu->addAction("Copy Component");
     QAction *pasteAction = menu->addAction("Paste Component");
     pasteAction->setEnabled(!copiedComponentData.isEmpty());
-
     // ── Reset action ──────────────────────────────────────────────────────
-
     QAction *resetAction = menu->addAction("Reset Component");
     resetAction->setEnabled(!m_initialComponentData.isEmpty());
     resetAction->setToolTip("Restore component to its initial loaded values");
-    // ─────────────────────────────────────────────────────────────────────
-
-    // QAction *lockAction = menu->addAction("Lock");
-    // QAction *unlockAction = menu->addAction("Unlock");
-    // QAction *addTabAction = menu->addAction("Add Tab");
-
+    // ────────────────────────────────────────────────────────────────────
     QAction *closeAction = menu->addAction("Close");
-
     connect(copyAction, &QAction::triggered, this, &Inspector::copyCurrentComponent);
     connect(pasteAction, &QAction::triggered, this, &Inspector::pasteToCurrentComponent);
-    // connect(addTabAction, &QAction::triggered, this, &Inspector::handleAddTab);
     connect(closeAction, &QAction::triggered, this, [](){});
-
     // ── Reset connection ──────────────────────────────────────────────────
     connect(resetAction, &QAction::triggered, this, [this]() {
         if (m_initialComponentData.isEmpty() || ConnectedID.isEmpty() || Name.isEmpty()) {
@@ -258,8 +246,6 @@ void Inspector::setupUI()
     if (!container) {
         return;
     }
-
-    // Apply border to container with proper margins to show title bar inside
     container->setStyleSheet(R"(
         QWidget {
             background-color: #0F2636;
@@ -294,7 +280,7 @@ void Inspector::setupUI()
     tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     // Set column 0 to ~30% width (fixed pixel, will look correct at normal inspector widths)
     tableWidget->setStyleSheet(InspectorStyles::TableWidget);
-    // Remove the vertical column separator line drawn by Qt between columns
+
     tableWidget->horizontalHeader()->setDefaultSectionSize(0);
     tableWidget->setAlternatingRowColors(true);
     tableWidget->setShowGrid(false);
@@ -1795,59 +1781,6 @@ static QString capitalizeFirstLetter(const QString &str)
     return str[0].toUpper() + str.mid(1);
 }
 
-// =========================================================================
-// FIX: setupUnitParameterCell
-// Value edit expands to fill column 1; unit label appears RIGHT after value,
-// NOT pushed to the far end. addStretch() is at the end only.
-// =========================================================================
-// void Inspector::setupUnitParameterCell(int row, const QString &fullKey, const QJsonObject &paramObj)
-// {
-//     QWidget *unitWidget = new QWidget();
-//     if (!unitWidget) return;
-//     unitWidget->setFixedHeight(30);
-
-//     QHBoxLayout *layout = new QHBoxLayout(unitWidget);
-//     layout->setContentsMargins(0, 0, 0, 0);
-//     layout->setSpacing(0);
-//     layout->setAlignment(Qt::AlignVCenter);
-
-//     WheelableLineEdit *valueEdit = new WheelableLineEdit();
-//     valueEdit->setText(formatNumberForUI(paramObj["value"].toDouble()));
-//     QDoubleValidator *validator = new QDoubleValidator(valueEdit);
-//     validator->setNotation(QDoubleValidator::StandardNotation);
-//     validator->setDecimals(4);
-//     valueEdit->setValidator(validator);
-//     valueEdit->setFixedHeight(30);
-//     valueEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-
-//     QString unit = paramObj["unit"].toString();
-//     QLabel *unitLabel = new QLabel(unit);
-//     unitLabel->setStyleSheet(InspectorStyles::UnitParamLabel);
-//     unitLabel->setFixedHeight(30);
-//     unitLabel->setFixedWidth(qMax(35, unitLabel->fontMetrics().horizontalAdvance(unit) + 12));
-//     unitLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-
-//     layout->addWidget(valueEdit);
-//     layout->addWidget(unitLabel);
-
-//     tableWidget->setRowHeight(row, 30);
-//     tableWidget->setCellWidget(row, 1, unitWidget);
-
-//     connect(valueEdit, &QLineEdit::editingFinished, this, [=]() {
-//         QJsonObject delta;
-//         QJsonObject updatedParam = paramObj;
-//         updatedParam["value"] = valueEdit->text().toDouble();
-
-//         if (fullKey.contains(".")) {
-//             QStringList parts = fullKey.split(".");
-//             delta[parts[0]] = QJsonObject{{parts[1], updatedParam}};
-//         } else {
-//             delta[fullKey] = updatedParam;
-//         }
-//         delta["_id"] = mainID;
-//         emit valueChanged(ConnectedID, Name, delta);
-//     });
-// }
 
 
 void Inspector::setupUnitParameterCell(int row, const QString &fullKey, const QJsonObject &paramObj)
@@ -1896,12 +1829,7 @@ void Inspector::setupUnitParameterCell(int row, const QString &fullKey, const QJ
     // Save the original stylesheet BEFORE any error styling
     const QString originalStyle = valueEdit->styleSheet();
 
-    // QString unit = paramObj["unit"].toString();
-    // QLabel *unitLabel = new QLabel(unit);
-    // unitLabel->setStyleSheet(InspectorStyles::UnitParamLabel);
-    // unitLabel->setFixedHeight(30);
-    // unitLabel->setFixedWidth(qMax(35, unitLabel->fontMetrics().horizontalAdvance(unit) + 12));
-    // unitLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
 
     QString unit = paramObj["unit"].toString();
     QLabel *unitLabel = new QLabel(unit);
@@ -2308,516 +2236,6 @@ int Inspector::addMultiComponentContainerRow(int row, const QString &key, const 
 
 
 
-// =========================================================================
-// REPLACE handleMultiComponentContainer in inspector.cpp with this version
-// =========================================================================
-
-// void Inspector::handleMultiComponentContainer(QString ID, QString name, QJsonObject object)
-// {
-//     ConnectedID = ID;
-//     Name = name.toLower();
-//     mainID = object.contains("id") ? object["id"].toString() : ID + "_" + name;
-
-//     if (titleLabel) {
-//         titleLabel->setText(name);
-//     }
-//     tableWidget->clearContents();
-//     tableWidget->blockSignals(true);
-//     rowToKeyPath.clear();
-//     sectionInfo.clear();
-//     sectionRows.clear();
-
-//     QJsonObject containerObj;
-//     QString containerKey = name.toLower();
-//     if (object.contains(containerKey)) {
-//         containerObj = object[containerKey].toObject();
-//     }
-
-//     tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-//     tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
-
-//     bool developerMode = ApplicationDialog::getGlobalDeveloperMode();
-//     int row = 0;
-//     tableWidget->setRowCount(1);
-
-//     if (object.contains("active")) {
-//         rowToKeyPath[row] = "active";
-//         QTableWidgetItem *activeKeyItem = new QTableWidgetItem("Active");
-//         if (activeKeyItem) {
-//             activeKeyItem->setFlags(Qt::ItemIsEnabled);
-//             activeKeyItem->setBackground(QColor("#1A3652"));
-//             activeKeyItem->setForeground(Qt::white);
-//             tableWidget->setItem(row, 0, activeKeyItem);
-//         }
-//         setupBooleanCell(row, "active", object["active"].toBool());
-//         row++;
-//     }
-
-//     tableWidget->setRowCount(row + 1);
-//     QTableWidgetItem *keyItem = new QTableWidgetItem(capitalizeFirstLetter(containerKey));
-//     if (keyItem) {
-//         keyItem->setFlags(Qt::ItemIsEnabled);
-//         keyItem->setBackground(QColor("#1A3652"));
-//         keyItem->setForeground(Qt::white);
-//         tableWidget->setItem(row, 0, keyItem);
-//     }
-//     rowToKeyPath[row] = containerKey;
-
-//     // ── Outer container widget ────────────────────────────────────────────
-//     QWidget *containerWidget = new QWidget();
-//     containerWidget->setStyleSheet(InspectorStyles::ContainerWidget);
-//     QVBoxLayout *containerLayout = new QVBoxLayout(containerWidget);
-//     containerLayout->setContentsMargins(0, 0, 0, 0);
-//     containerLayout->setSpacing(5);
-
-//     int subCount = containerObj.keys().size();
-
-//     QPushButton *dropdownButton = new QPushButton(
-//         "▲ " + QString::number(subCount) + " " + capitalizeFirstLetter(containerKey));
-//     dropdownButton->setStyleSheet(InspectorStyles::ContainerDropdownButton);
-//     dropdownButton->setFixedHeight(30);
-
-//     QScrollArea *scrollArea = new QScrollArea();
-//     scrollArea->setStyleSheet(InspectorStyles::ScrollArea);
-//     scrollArea->setWidgetResizable(true);
-//     scrollArea->setFrameShape(QFrame::NoFrame);
-//     scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-//     scrollArea->setVisible(true);
-
-//     QWidget *subcomponentsWidget = new QWidget();
-//     subcomponentsWidget->setStyleSheet("background-color: #0F2636;");
-//     QVBoxLayout *subcomponentsLayout = new QVBoxLayout(subcomponentsWidget);
-//     subcomponentsLayout->setContentsMargins(10, 10, 10, 10);
-//     subcomponentsLayout->setSpacing(15);
-
-//     int totalSubcomponentsHeight = 0;
-//     int renderedSubCount = 0;
-
-
-//     static const QSet<QString> SKIP_KEYS = {
-//         "id", "name", "branch", "parent_id", "type", "parameters",
-//         "active", "on", "Active", "SensorType", "radioType"
-//     };
-//     auto buildSectionWidget = [&](const QString &sectionName,
-//                                   const QJsonObject &sectionObj,
-//                                   const QString &subKey,
-//                                   const QJsonObject &subObjRef)
-//         -> QWidget*
-//     {
-//         // Collapsible wrapper
-//         QWidget *wrapper = new QWidget();
-//         wrapper->setStyleSheet("background: transparent;");
-//         QVBoxLayout *wl = new QVBoxLayout(wrapper);
-//         wl->setContentsMargins(0, 4, 0, 0);
-//         wl->setSpacing(0);
-
-//         // Section header button
-//         QString headerStyle = R"(
-//             QPushButton {
-//                 text-align: left;
-//                 padding: 4px 8px;
-//                 background-color: #162F47;
-//                 border: none;
-//                 border-left: 3px solid #0078D4;
-//                 color: #E0E0E0;
-//                 font-weight: 600;
-//                 font-size: 11px;
-//                 border-radius: 0px;
-//             }
-//             QPushButton:hover { background-color: #1A3652; }
-//         )";
-
-//         QPushButton *hdrBtn = new QPushButton("▼  " + capitalizeFirstLetter(sectionName));
-//         hdrBtn->setStyleSheet(headerStyle);
-//         hdrBtn->setFixedHeight(26);
-
-//         // Content area (expanded by default)
-//         QWidget *content = new QWidget();
-//         content->setStyleSheet("background: transparent;");
-//         QVBoxLayout *cl = new QVBoxLayout(content);
-//         cl->setContentsMargins(10, 4, 4, 4);
-//         cl->setSpacing(4);
-//         content->setVisible(true);
-
-//         // ── Populate section rows ─────────────────────────────────────────
-//         for (const QString &paramKey : sectionObj.keys()) {
-//             if (paramKey == "type") continue;
-
-//             QJsonValue pval = sectionObj[paramKey];
-
-//             // Build a nice display label (insert spaces before capitals)
-//             QString displayKey = paramKey;
-//             for (int i = 1; i < displayKey.length(); i++) {
-//                 if (displayKey[i].isUpper() && !displayKey[i-1].isSpace()) {
-//                     displayKey.insert(i, " ");
-//                     i++;
-//                 }
-//             }
-
-//             QWidget *rowW = new QWidget();
-//             rowW->setStyleSheet("background: transparent;");
-//             QHBoxLayout *rl = new QHBoxLayout(rowW);
-//             rl->setContentsMargins(0, 0, 0, 0);
-//             rl->setSpacing(8);
-
-//             QLabel *lbl = new QLabel(capitalizeFirstLetter(displayKey) + ":");
-//             lbl->setStyleSheet("color:#B0B0B0; font-size:11px; min-width:130px; background:transparent;");
-//             lbl->setFixedWidth(130);
-//             rl->addWidget(lbl);
-
-//             if (pval.isObject()) {
-//                 QJsonObject po = pval.toObject();
-//                 QString ptype = po["type"].toString();
-
-//                 if (ptype == "unitParam") {
-//                     // ── unitParam ─────────────────────────────────────────
-//                     QWidget *uw = new QWidget();
-//                     uw->setStyleSheet("background:transparent;");
-//                     QHBoxLayout *ul = new QHBoxLayout(uw);
-//                     ul->setContentsMargins(0,0,0,0); ul->setSpacing(4);
-
-//                     WheelableLineEdit *ve = new WheelableLineEdit();
-//                     ve->setText(formatNumberForUI(po["value"].toDouble()));
-//                     ve->setFixedWidth(90);
-//                     QDoubleValidator *dv = new QDoubleValidator(ve);
-//                     dv->setNotation(QDoubleValidator::StandardNotation);
-//                     dv->setDecimals(4);
-//                     ve->setValidator(dv);
-
-//                     QLabel *unitLbl = new QLabel(po["unit"].toString());
-//                     unitLbl->setStyleSheet("color:#B0B0B0; font-size:11px; background:transparent;");
-
-//                     ul->addWidget(ve); ul->addWidget(unitLbl); ul->addStretch();
-//                     rl->addWidget(uw);
-
-//                     // Capture by value (sectionObj / subKey at this point in loop)
-//                     QString captSectionName = sectionName;
-//                     QString captParamKey    = paramKey;
-//                     QString captSubKey      = subKey;
-//                     QJsonObject captSubObj  = subObjRef;
-//                     QJsonObject captSectionObj = sectionObj;
-//                     QJsonObject captPo = po;
-
-//                     connect(ve, &QLineEdit::editingFinished, this, [=]() {
-//                         QJsonObject delta;
-//                         delta["_id"] = mainID;
-//                         QJsonObject updSection = captSectionObj;
-//                         QJsonObject updParam   = captPo;
-//                         updParam["value"]      = ve->text().toDouble();
-//                         updSection[captParamKey] = updParam;
-//                         QJsonObject updSub    = captSubObj;
-//                         updSub[captSectionName] = updSection;
-//                         delta[containerKey]   = QJsonObject{{captSubKey, updSub}};
-//                         emit valueChanged(ConnectedID, Name, delta);
-//                     });
-
-//                 } else if (ptype == "option") {
-//                     // ── option ────────────────────────────────────────────
-//                     QComboBox *cb = new QComboBox();
-//                     cb->setStyleSheet(InspectorStyles::OptionComboBox);
-//                     QJsonArray opts = po["options"].toArray();
-//                     for (const QJsonValue &o : opts) cb->addItem(o.toString());
-//                     cb->setCurrentText(po["value"].toString());
-//                     rl->addWidget(cb);
-
-//                     QString captSectionName   = sectionName;
-//                     QString captParamKey      = paramKey;
-//                     QString captSubKey        = subKey;
-//                     QJsonObject captSubObj    = subObjRef;
-//                     QJsonObject captSectionObj = sectionObj;
-//                     QJsonObject captPo        = po;
-
-//                     connect(cb, &QComboBox::currentTextChanged, this, [=](const QString &text) {
-//                         QJsonObject delta;
-//                         delta["_id"] = mainID;
-//                         QJsonObject updSection = captSectionObj;
-//                         QJsonObject updOpt     = captPo;
-//                         updOpt["value"]        = text;
-//                         updSection[captParamKey] = updOpt;
-//                         QJsonObject updSub    = captSubObj;
-//                         updSub[captSectionName] = updSection;
-//                         delta[containerKey]   = QJsonObject{{captSubKey, updSub}};
-//                         emit valueChanged(ConnectedID, Name, delta);
-//                     });
-
-//                 } else {
-//                     QLabel *vl = new QLabel(QString(QJsonDocument(po).toJson(QJsonDocument::Compact)));
-//                     vl->setStyleSheet("color:#E0E0E0; font-size:11px; background:transparent;");
-//                     rl->addWidget(vl);
-//                 }
-
-//             } else if (pval.isBool()) {
-//                 // ── bool ──────────────────────────────────────────────────
-//                 QCheckBox *cb = new QCheckBox();
-//                 cb->setChecked(pval.toBool());
-//                 cb->setStyleSheet(InspectorStyles::SensorCheckBox);
-//                 rl->addWidget(cb);
-
-//                 QString captSectionName   = sectionName;
-//                 QString captParamKey      = paramKey;
-//                 QString captSubKey        = subKey;
-//                 QJsonObject captSubObj    = subObjRef;
-//                 QJsonObject captSectionObj = sectionObj;
-
-//                 connect(cb, &QCheckBox::toggled, this, [=](bool checked) {
-//                     QJsonObject delta;
-//                     delta["_id"] = mainID;
-//                     QJsonObject updSection = captSectionObj;
-//                     updSection[captParamKey] = checked;
-//                     QJsonObject updSub = captSubObj;
-//                     updSub[captSectionName] = updSection;
-//                     delta[containerKey] = QJsonObject{{captSubKey, updSub}};
-//                     emit valueChanged(ConnectedID, Name, delta);
-//                 });
-
-//             } else if (pval.isDouble()) {
-//                 // ── plain number ──────────────────────────────────────────
-//                 WheelableLineEdit *ne = new WheelableLineEdit();
-//                 ne->setText(formatNumberForUI(pval.toDouble()));
-//                 ne->setFixedWidth(90);
-//                 rl->addWidget(ne);
-
-//                 QString captSectionName   = sectionName;
-//                 QString captParamKey      = paramKey;
-//                 QString captSubKey        = subKey;
-//                 QJsonObject captSubObj    = subObjRef;
-//                 QJsonObject captSectionObj = sectionObj;
-
-//                 connect(ne, &QLineEdit::editingFinished, this, [=]() {
-//                     QJsonObject delta;
-//                     delta["_id"] = mainID;
-//                     QJsonObject updSection = captSectionObj;
-//                     updSection[captParamKey] = ne->text().toDouble();
-//                     QJsonObject updSub = captSubObj;
-//                     updSub[captSectionName] = updSection;
-//                     delta[containerKey] = QJsonObject{{captSubKey, updSub}};
-//                     emit valueChanged(ConnectedID, Name, delta);
-//                 });
-
-//             } else if (pval.isString()) {
-//                 // ── string ────────────────────────────────────────────────
-//                 QLineEdit *se = new QLineEdit(pval.toString());
-//                 se->setStyleSheet(InspectorStyles::LineEdit);
-//                 se->setFixedWidth(150);
-//                 rl->addWidget(se);
-
-//                 QString captSectionName   = sectionName;
-//                 QString captParamKey      = paramKey;
-//                 QString captSubKey        = subKey;
-//                 QJsonObject captSubObj    = subObjRef;
-//                 QJsonObject captSectionObj = sectionObj;
-
-//                 connect(se, &QLineEdit::editingFinished, this, [=]() {
-//                     QJsonObject delta;
-//                     delta["_id"] = mainID;
-//                     QJsonObject updSection = captSectionObj;
-//                     updSection[captParamKey] = se->text();
-//                     QJsonObject updSub = captSubObj;
-//                     updSub[captSectionName] = updSection;
-//                     delta[containerKey] = QJsonObject{{captSubKey, updSub}};
-//                     emit valueChanged(ConnectedID, Name, delta);
-//                 });
-//             }
-
-//             rl->addStretch();
-//             cl->addWidget(rowW);
-//         }
-
-//         wl->addWidget(hdrBtn);
-//         wl->addWidget(content);
-
-//         // Toggle collapse / expand
-//         connect(hdrBtn, &QPushButton::clicked, this, [hdrBtn, content]() {
-//             bool vis = !content->isVisible();
-//             content->setVisible(vis);
-//             QString txt = hdrBtn->text().mid(4); // strip "▼  " or "▶  "
-//             hdrBtn->setText(vis ? "▼  " + txt : "▶  " + txt);
-//         });
-
-//         return wrapper;
-//     };
-
-//     // ── Iterate over sub-components ───────────────────────────────────────
-//     for (const QString &subKey : containerObj.keys()) {
-//         QJsonObject subObj = containerObj[subKey].toObject();
-
-//         QString subComponentId = subObj.contains("id") ? subObj["id"].toString() : subKey;
-//         QString subName = subObj.contains("name") ? subObj["name"].toString()
-//                         : (subObj.contains("Name") ? subObj["Name"].toString()
-//                                                    : capitalizeFirstLetter(subKey));
-
-//         // ── GroupBox per sub-component ────────────────────────────────────
-//         QGroupBox *subGroupBox = new QGroupBox(subName);
-//         subGroupBox->setProperty("subcomponentId", subComponentId);
-//         subGroupBox->setStyleSheet(InspectorStyles::SubcomponentGroupBox);
-//         QVBoxLayout *subLayout = new QVBoxLayout(subGroupBox);
-//         subLayout->setContentsMargins(15, 20, 15, 15);
-//         subLayout->setSpacing(8);
-
-//         int itemCount = 0;
-
-//         // ── Developer-mode: show ID ───────────────────────────────────────
-//         if (subObj.contains("id") && developerMode) {
-//             QWidget *idW = new QWidget(); idW->setStyleSheet("background:transparent;");
-//             QHBoxLayout *il = new QHBoxLayout(idW); il->setContentsMargins(0,0,0,0);
-//             QLabel *il2 = new QLabel("ID:"); il2->setStyleSheet(InspectorStyles::SensorIdLabel); il2->setFixedWidth(130);
-//             QLineEdit *ie = new QLineEdit(subObj["id"].toString());
-//             ie->setStyleSheet(InspectorStyles::ReadOnlyLineEdit); ie->setReadOnly(true); ie->setFixedWidth(200);
-//             il->addWidget(il2); il->addWidget(ie); il->addStretch();
-//             subLayout->addWidget(idW);
-//             itemCount++;
-//         }
-
-//         // ── active ───────────────────────────────────────────────────────
-//         if (subObj.contains("active")) {
-//             QWidget *aw = new QWidget(); aw->setStyleSheet("background:transparent;");
-//             QHBoxLayout *al = new QHBoxLayout(aw); al->setContentsMargins(0,0,0,0);
-//             QLabel *al2 = new QLabel("Active:"); al2->setStyleSheet(InspectorStyles::SensorIdLabel); al2->setFixedWidth(130);
-//             QCheckBox *ac = new QCheckBox(); ac->setChecked(subObj["active"].toBool());
-//             ac->setStyleSheet(InspectorStyles::SensorCheckBox);
-//             connect(ac, &QCheckBox::toggled, this, [=](bool checked) {
-//                 QJsonObject delta; delta["_id"] = mainID;
-//                 QJsonObject updSub = subObj; updSub["active"] = checked;
-//                 delta[containerKey] = QJsonObject{{subKey, updSub}};
-//                 emit valueChanged(ConnectedID, Name, delta);
-//             });
-//             al->addWidget(al2); al->addWidget(ac); al->addStretch();
-//             subLayout->addWidget(aw);
-//             itemCount++;
-//         }
-
-//         // ── on (ESM / CSM) ───────────────────────────────────────────────
-//         if (subObj.contains("on")) {
-//             QWidget *ow = new QWidget(); ow->setStyleSheet("background:transparent;");
-//             QHBoxLayout *ol = new QHBoxLayout(ow); ol->setContentsMargins(0,0,0,0);
-//             QLabel *ol2 = new QLabel("On:"); ol2->setStyleSheet(InspectorStyles::SensorIdLabel); ol2->setFixedWidth(130);
-//             QCheckBox *oc = new QCheckBox(); oc->setChecked(subObj["on"].toBool());
-//             oc->setStyleSheet(InspectorStyles::SensorCheckBox);
-//             connect(oc, &QCheckBox::toggled, this, [=](bool checked) {
-//                 QJsonObject delta; delta["_id"] = mainID;
-//                 QJsonObject updSub = subObj; updSub["on"] = checked;
-//                 delta[containerKey] = QJsonObject{{subKey, updSub}};
-//                 emit valueChanged(ConnectedID, Name, delta);
-//             });
-//             ol->addWidget(ol2); ol->addWidget(oc); ol->addStretch();
-//             subLayout->addWidget(ow);
-//             itemCount++;
-//         }
-
-//         // ── Active (capital A, sensors) ───────────────────────────────────
-//         if (subObj.contains("Active") && !subObj.contains("active")) {
-//             QWidget *aw = new QWidget(); aw->setStyleSheet("background:transparent;");
-//             QHBoxLayout *al = new QHBoxLayout(aw); al->setContentsMargins(0,0,0,0);
-//             QLabel *al2 = new QLabel("Active:"); al2->setStyleSheet(InspectorStyles::SensorIdLabel); al2->setFixedWidth(130);
-//             QCheckBox *ac = new QCheckBox(); ac->setChecked(subObj["Active"].toBool());
-//             ac->setStyleSheet(InspectorStyles::SensorCheckBox);
-//             connect(ac, &QCheckBox::toggled, this, [=](bool checked) {
-//                 QJsonObject delta; delta["_id"] = mainID;
-//                 QJsonObject updSub = subObj; updSub["Active"] = checked;
-//                 delta[containerKey] = QJsonObject{{subKey, updSub}};
-//                 emit valueChanged(ConnectedID, Name, delta);
-//             });
-//             al->addWidget(al2); al->addWidget(ac); al->addStretch();
-//             subLayout->addWidget(aw);
-//             itemCount++;
-//         }
-
-//         // ── SensorType / radioType labels ─────────────────────────────────
-//         auto addTypeLabel = [&](const QString &jsonKey, const QString &displayName) {
-//             if (!subObj.contains(jsonKey)) return;
-//             QWidget *tw = new QWidget(); tw->setStyleSheet("background:transparent;");
-//             QHBoxLayout *tl = new QHBoxLayout(tw); tl->setContentsMargins(0,0,0,0);
-//             QLabel *tl2 = new QLabel(displayName + ":"); tl2->setStyleSheet(InspectorStyles::SensorIdLabel); tl2->setFixedWidth(130);
-//             QLabel *tv = new QLabel(subObj[jsonKey].toString()); tv->setStyleSheet(InspectorStyles::SensorValueLabel);
-//             tl->addWidget(tl2); tl->addWidget(tv); tl->addStretch();
-//             subLayout->addWidget(tw);
-//             itemCount++;
-//         };
-//         addTypeLabel("SensorType", "Sensor Type");
-//         addTypeLabel("radioType",  "Radio Type");
-
-//         for (const QString &propKey : subObj.keys()) {
-//             if (SKIP_KEYS.contains(propKey)) continue;
-
-//             QJsonValue pval = subObj[propKey];
-//             if (!pval.isObject()) continue;
-
-//             QJsonObject pobj = pval.toObject();
-//             QString ptype = pobj["type"].toString();
-
-//             // Accept both "Section" and "section"
-//             if (ptype.compare("Section", Qt::CaseInsensitive) != 0) continue;
-
-//             QWidget *secW = buildSectionWidget(propKey, pobj, subKey, subObj);
-//             if (secW) {
-//                 subLayout->addWidget(secW);
-//                 itemCount++;
-//             }
-//         }
-
-//         subLayout->addStretch();
-//         subcomponentsLayout->addWidget(subGroupBox);
-//         renderedSubCount++;
-
-//         // Rough height estimate for scroll-area sizing
-//         int subH = 60 + (itemCount * 30) + 20;
-//         totalSubcomponentsHeight += subH;
-//     }
-
-//     if (renderedSubCount == 0) {
-//         QLabel *emptyLabel = new QLabel("No " + containerKey + " configured");
-//         emptyLabel->setAlignment(Qt::AlignCenter);
-//         emptyLabel->setStyleSheet(InspectorStyles::EmptyLabel);
-//         subcomponentsLayout->addWidget(emptyLabel);
-//         totalSubcomponentsHeight += 60;
-//     }
-
-//     subcomponentsLayout->addStretch();
-//     scrollArea->setWidget(subcomponentsWidget);
-
-//     const int SCROLL_THRESHOLD = 650;
-//     int requiredHeight = totalSubcomponentsHeight + 50;
-
-//     if (requiredHeight > SCROLL_THRESHOLD) {
-//         scrollArea->setMinimumHeight(SCROLL_THRESHOLD);
-//         scrollArea->setMaximumHeight(SCROLL_THRESHOLD);
-//     } else {
-//         scrollArea->setMinimumHeight(qMax(requiredHeight, 80));
-//         scrollArea->setMaximumHeight(qMax(requiredHeight, 80));
-//     }
-//     scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-
-//     connect(dropdownButton, &QPushButton::clicked, this, [=]() {
-//         bool isVisible = !scrollArea->isVisible();
-//         scrollArea->setVisible(isVisible);
-//         if (isVisible) {
-//             dropdownButton->setText("▲ " + QString::number(renderedSubCount)
-//                                     + " " + capitalizeFirstLetter(containerKey));
-//             int contentHeight = (requiredHeight < SCROLL_THRESHOLD)
-//                                     ? requiredHeight + 40
-//                                     : SCROLL_THRESHOLD + 40;
-//             tableWidget->setRowHeight(row, contentHeight);
-//         } else {
-//             dropdownButton->setText("▼ " + QString::number(renderedSubCount)
-//                                     + " " + capitalizeFirstLetter(containerKey));
-//             tableWidget->setRowHeight(row, 35);
-//         }
-//         tableWidget->viewport()->update();
-//         containerWidget->adjustSize();
-//     });
-
-//     containerLayout->addWidget(dropdownButton);
-//     containerLayout->addWidget(scrollArea);
-//     tableWidget->setCellWidget(row, 1, containerWidget);
-//     tableWidget->setRowHeight(row, 35);
-//     tableWidget->blockSignals(false);
-//     tableWidget->resizeRowsToContents();
-
-//     if (tableWidget->rowCount() > 0) {
-//         tableWidget->scrollToTop();
-//     }
-//     tableWidget->viewport()->update();
-// }
 
 void Inspector::handleMultiComponentContainer(QString ID, QString name, QJsonObject object)
 {
@@ -3218,12 +2636,7 @@ void Inspector::handleMultiComponentContainer(QString ID, QString name, QJsonObj
         wl->addWidget(hdrBtn);
         wl->addWidget(content);
 
-        // connect(hdrBtn, &QPushButton::clicked, this, [hdrBtn, content]() {
-        //     bool vis = !content->isVisible();
-        //     content->setVisible(vis);
-        //     QString txt = hdrBtn->text().mid(4);
-        //     hdrBtn->setText(vis ? "▼  " + txt : "▶  " + txt);
-        // });
+
         connect(hdrBtn, &QPushButton::clicked, this, [hdrBtn, content, sectionName]() {
             bool vis = !content->isVisible();
             content->setVisible(vis);
@@ -3359,17 +2772,7 @@ void Inspector::handleMultiComponentContainer(QString ID, QString name, QJsonObj
     subcomponentsLayout->addStretch();
     scrollArea->setWidget(subcomponentsWidget);
 
-    // const int SCROLL_THRESHOLD = 650;
-    // int requiredHeight = totalSubcomponentsHeight + 50;
 
-    // if (requiredHeight > SCROLL_THRESHOLD) {
-    //     scrollArea->setMinimumHeight(SCROLL_THRESHOLD);
-    //     scrollArea->setMaximumHeight(SCROLL_THRESHOLD);
-    // } else {
-    //     scrollArea->setMinimumHeight(qMax(requiredHeight, 80));
-    //     scrollArea->setMaximumHeight(qMax(requiredHeight, 80));
-    // }
-    // scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     const int SCROLL_THRESHOLD = 1800;
     // int requiredHeight = totalSubcomponentsHeight + 80;
     int requiredHeight = totalSubcomponentsHeight + 150;
@@ -3383,24 +2786,7 @@ void Inspector::handleMultiComponentContainer(QString ID, QString name, QJsonObj
         scrollArea->setMaximumHeight(qMax(requiredHeight, 100));
     }
     scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    // connect(dropdownButton, &QPushButton::clicked, this, [=]() {
-    //     bool isVisible = !scrollArea->isVisible();
-    //     scrollArea->setVisible(isVisible);
-    //     if (isVisible) {
-    //         dropdownButton->setText("▲ " + QString::number(renderedSubCount)
-    //                                 + " " + capitalizeFirstLetter(containerKey));
-    //         int contentHeight = (requiredHeight < SCROLL_THRESHOLD)
-    //                                 ? requiredHeight + 40
-    //                                 : SCROLL_THRESHOLD + 40;
-    //         tableWidget->setRowHeight(row, contentHeight);
-    //     } else {
-    //         dropdownButton->setText("▼ " + QString::number(renderedSubCount)
-    //                                 + " " + capitalizeFirstLetter(containerKey));
-    //         tableWidget->setRowHeight(row, 35);
-    //     }
-    //     tableWidget->viewport()->update();
-    //     containerWidget->adjustSize();
-    // });
+
     connect(dropdownButton, &QPushButton::clicked, this, [=]() {
         bool isVisible = !scrollArea->isVisible();
         scrollArea->setVisible(isVisible);
@@ -3481,39 +2867,4 @@ bool Inspector::isLocked() const
 {
     return m_locked;
 }
-void Inspector::runUnitTestsOnce()
-{
-    static bool testsRun = false;
-    if (testsRun) return;
 
-    // Delay test execution until event loop starts (ensures console is ready)
-    QTimer::singleShot(0, []() {
-        if (testsRun) return;
-        testsRun = true;
-
-        Console* console = nullptr;
-        MainWindow* mw = MainWindow::instance();
-        if (mw) {
-            // Try to get console from any editor that is already initialized
-            if (mw->databaseEditor && mw->databaseEditor->console) {
-                console = mw->databaseEditor->console;
-            } else if (mw->scenarioEditor && mw->scenarioEditor->console) {
-                console = mw->scenarioEditor->console;
-            } else if (mw->runtimeEditor && mw->runtimeEditor->console) {
-                console = mw->runtimeEditor->console;
-            }
-        }
-
-        if (!console) {
-            qDebug() << "Inspector: console not available, cannot run tests";
-            return;
-        }
-
-
-
-        // Create a temporary inspector for testing
-        Inspector* testInspector = new Inspector(nullptr);
-        runInspectorTests(testInspector, console);
-        testInspector->deleteLater();
-    });
-}

@@ -1,9 +1,31 @@
 #ifndef PROFILEINFODIALOG_TEST_H
 #define PROFILEINFODIALOG_TEST_H
 
-class ProfileInfoDialog;
-class Console;
+#include <QObject>
 
-void runProfileInfoDialogTests(ProfileInfoDialog* dialog, Console* console);
+class ProfileInfoDialog;
+
+class TestProfileInfoDialog : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void init();
+    void cleanup();
+
+    void testDialogProperties();
+    void testTitleLabel();
+    void testTextEdit();
+    void testButtonsExist();
+
+    void testCloseButtonExists();
+    void testRefreshTimer();
+    void testStaticShowMethod();
+    void testDialogFlags();
+    void testStatusLabel();
+
+private:
+    ProfileInfoDialog* dialog = nullptr;
+};
 
 #endif

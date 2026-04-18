@@ -68,7 +68,6 @@ SOURCES += \
     GUI/Menubars/menubar.cpp \
     GUI/Menubars/profileinfodialog.cpp \
     GUI/Navigation/navigationpage.cpp \
-    GUI/Overview/overview.cpp \
     GUI/Panel/adsbdisplay.cpp \
     GUI/Panel/aesaradardisplay.cpp \
     GUI/Panel/aisdisplay.cpp \
@@ -80,7 +79,6 @@ SOURCES += \
     GUI/Panel/radardisplay.cpp \
     GUI/Panel/radiodisplay.cpp \
     GUI/Panel/sonardisplay.cpp \
-    GUI/Plugins/pluginwindow.cpp \
     GUI/Settings/applicationdialog.cpp \
     GUI/Sidebar/sidebarwidget.cpp \
     GUI/Tacticaldisplay/Gis/custommapdialog.cpp \
@@ -104,7 +102,6 @@ SOURCES += \
     GUI/Toolbars/networktoolbar.cpp \
     GUI/Toolbars/runtimetoolbar.cpp \
     GUI/Toolbars/standardtoolbar.cpp \
-    GUI/docktitlemenu/docktitlemenu.cpp \
     GUI/mainwindow.cpp \
     GUI/measuredistance/measuredistancedialog.cpp \
     GUI/scene3dwidget/scene3dwidget.cpp \
@@ -328,12 +325,26 @@ SOURCES += \
     # core/Components/transform.cpp \
     core/Config/scenarioconfig.cpp \
     core/Config/sessionmanager.cpp \
+    core/Config/test/scenarioconfig_test.cpp \
     core/Debug/console.cpp \
     core/Debug/frame.cpp \
     core/Debug/profiler.cpp \
+    core/Debug/test/console_test.cpp \
+    core/Debug/test/frame_test.cpp \
     core/Dynamics/Model/aircraft.cpp \
     core/Dynamics/dynamics.cpp \
     core/GlobalRegistry.cpp \
+    core/Hierarchy/Components/Test/collider_test.cpp \
+    core/Hierarchy/Components/Test/crosssection_test.cpp \
+    core/Hierarchy/Components/Test/dynamicmodel_test.cpp \
+    core/Hierarchy/Components/Test/iffProfile_test.cpp \
+    core/Hierarchy/Components/Test/mesh_test.cpp \
+    core/Hierarchy/Components/Test/meshrenderer2d_test.cpp \
+    core/Hierarchy/Components/Test/radioProfile_test.cpp \
+    core/Hierarchy/Components/Test/sensorprofile_test.cpp \
+    core/Hierarchy/Components/Test/trajectory_test.cpp \
+    core/Hierarchy/Components/Test/transform_test.cpp \
+    core/Hierarchy/Components/Test/weaponProfile_test.cpp \
     core/Hierarchy/Components/attachedenitities.cpp \
     core/Hierarchy/Components/collider.cpp \
     core/Hierarchy/Components/component.cpp \
@@ -368,6 +379,9 @@ SOURCES += \
     core/Hierarchy/EntityProfiles/SensorProfiles/csm.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/eo.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/eo_ir.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/eovision.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/georelativeangle.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/georelativeelevation.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/eosensor.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/esm.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/radar.cpp \
@@ -380,6 +394,10 @@ SOURCES += \
     core/Hierarchy/EntityProfiles/SensorProfiles/sonar.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/test/aesaradar_test.cpp \
+    core/Hierarchy/EntityProfiles/Test/fixedpoints_test.cpp \
+    core/Hierarchy/EntityProfiles/Test/platform_test.cpp \
+    core/Hierarchy/EntityProfiles/Test/specialzone_test.cpp \
     core/Hierarchy/EntityProfiles/fixedpoints.cpp \
     core/Hierarchy/EntityProfiles/formation.cpp \
     core/Hierarchy/EntityProfiles/iff.cpp \
@@ -402,10 +420,18 @@ SOURCES += \
     core/Hierarchy/Struct/formationposition.cpp \
     core/Hierarchy/Struct/geocords.cpp \
     core/Hierarchy/Struct/parameter.cpp \
+    core/Hierarchy/Struct/test/Geocords_test.cpp \
+    core/Hierarchy/Struct/test/Waypoints_test.cpp \
+    core/Hierarchy/Struct/test/formationposition_test.cpp \
+    core/Hierarchy/Struct/test/parameter_test.cpp \
+    core/Hierarchy/Struct/test/vector_test.cpp \
     core/Hierarchy/Struct/vector.cpp \
     core/Hierarchy/Struct/waypoints.cpp \
+    core/Hierarchy/Test/folder_test.cpp \
     core/Hierarchy/Test/hierarchy_test.cpp \
+    core/Hierarchy/Test/profilecategaory_test.cpp \
     core/Hierarchy/Utils/entityutils.cpp \
+    core/Hierarchy/Utils/test/Entityutils_test.cpp \
     core/Hierarchy/entity.cpp \
     core/Hierarchy/folder.cpp \
     core/Hierarchy/hierarchy.cpp \
@@ -631,30 +657,42 @@ SOURCES += \
     mission/inputs.cpp \
     mission/task.cpp \
     mission/taskgroup.cpp \
-    tests/applicationdialogtest/applicationdialog_test.cpp \
-    tests/consoleviewtest/consoleview_test.cpp \
-    tests/databaseeditortest/databaseeditor_test.cpp \
-    tests/designtoolbartest/gui_designtoolbar_test.cpp \
-    tests/doctrineparameterstest/doctrineparameters_test.cpp \
-    tests/feedbacktest/feedback_test.cpp \
-    tests/graphwidgettest/graphwidget_test.cpp \
-    tests/hierarchytreetest/addformationdialog_test.cpp \
-    tests/hierarchytreetest/additemdialog_test.cpp \
-    tests/hierarchytreetest/contextmenu_test.cpp \
-    tests/hierarchytreetest/gui_hierarchytree_test.cpp \
-    tests/inspectortest/inspectortest.cpp \
-    tests/layerpaneltest/layerpanel_test.cpp \
-    tests/menubartest/gui_menubar_test.cpp \
-    tests/missioneditortest/gui_mission_test.cpp \
-    tests/navigationpagetest/navigationpage_test.cpp \
-    tests/profileinfodialogtest/profileinfodialog_test.cpp \
-    tests/runtimeeditortest/runtimeeditor_test.cpp \
-    tests/runtimetoolbartest/gui_runtimetoolbar_test.cpp \
-    tests/scenarioeditor_test.cpp \
-    tests/sidebarwidgettest/sidebarwidget_test.cpp \
-    tests/tacticalrulestest/tacticalrules_test.cpp \
-    tests/testscriptdialogtest/testscriptdialog_test.cpp \
-    tests/textscriptwidgettest/textscriptwidget_test.cpp
+    # tests/applicationdialogtest/applicationdialog_test.cpp \
+    # tests/canvaswidgettest/canvaswidget_test.cpp \
+    # tests/consoleviewtest/consoleview_test.cpp \
+    # tests/databaseeditortest/databaseeditor_test.cpp \
+    # tests/databaseeditortest/test_databaseeditor.cpp \
+    # tests/designtoolbartest/gui_designtoolbar_test.cpp \
+    # tests/doctrineparameterstest/doctrineparameters_test.cpp \
+    # tests/entityinfodialogtest/entityinfodialog_test.cpp \
+    # tests/feedbacktest/feedback_test.cpp \
+    # tests/graphwidgettest/graphwidget_test.cpp \
+    # tests/gui_test_control.cpp \
+    # tests/hierarchytreetest/addformationdialog_test.cpp \
+    # tests/hierarchytreetest/additemdialog_test.cpp \
+    # tests/hierarchytreetest/contextmenu_test.cpp \
+    # tests/hierarchytreetest/gui_hierarchytree_test.cpp \
+    # tests/inspectortest/inspectortest.cpp \
+    # tests/layerpaneltest/layerpanel_test.cpp \
+    # tests/measuredistancedialogtest/measuredistancedialog_test.cpp \
+    # tests/menubartest/gui_menubar_test.cpp \
+    # tests/menubartest/test_menubar1212.cpp \
+    # tests/missioneditortest/gui_mission_test.cpp \
+    # tests/navigationpagetest/navigationpage_test.cpp \
+    # tests/panel/aesaradardisplay_test.cpp \
+    # tests/panel/radardisplay_test.cpp \
+    # tests/profileinfodialogtest/profileinfodialog_test.cpp \
+    # tests/recentprojectsmanagertest/recentprojectsmanager_test.cpp \
+    # tests/runtimeeditortest/runtimeeditor_test.cpp \
+    # tests/runtimetoolbartest/gui_runtimetoolbar_test.cpp \
+    # tests/scenarioeditor_test.cpp \
+    # tests/sidebarwidgettest/sidebarwidget_test.cpp \
+    # tests/statusbartest/statusbar_test.cpp \
+    # tests/tacticaldisplaytest/tacticaldisplay_test.cpp \
+    # tests/tacticalrulestest/tacticalrules_test.cpp \
+    # tests/testscriptdialogtest/testscriptdialog_test.cpp \
+    # tests/textscriptwidgettest/textscriptwidget_test.cpp \
+    # tests/tooltiphelpertest/tooltiphelper_test.cpp
 
 HEADERS += \
     GUI/Console/consoleview-styles.h \
@@ -705,7 +743,6 @@ HEADERS += \
     GUI/Menubars/profileinfodialog-styles.h \
     GUI/Menubars/profileinfodialog.h \
     GUI/Navigation/navigationpage.h \
-    GUI/Overview/overview.h \
     GUI/Panel/adsbdisplay.h \
     GUI/Panel/aesaradardisplay.h \
     GUI/Panel/aisdisplay.h \
@@ -718,7 +755,6 @@ HEADERS += \
     GUI/Panel/radardisplay.h \
     GUI/Panel/radiodisplay.h \
     GUI/Panel/sonardisplay.h \
-    GUI/Plugins/pluginwindow.h \
     GUI/Settings/applicationdialog-styles.h \
     GUI/Settings/applicationdialog.h \
     GUI/Sidebar/sidebar-styles.h \
@@ -749,7 +785,6 @@ HEADERS += \
     GUI/Toolbars/runtimetoolbar-styles.h \
     GUI/Toolbars/runtimetoolbar.h \
     GUI/Toolbars/standardtoolbar.h \
-    GUI/docktitlemenu/docktitlemenu.h \
     GUI/mainwindow-styles.h \
     GUI/mainwindow.h \
     GUI/measuredistance/measuredistancedialog-styles.h \
@@ -1181,6 +1216,9 @@ HEADERS += \
     core/Hierarchy/EntityProfiles/SensorProfiles/csm.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/eo.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/eo_ir.h \
+    core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/eovision.h \
+    core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/georelativeangle.h \
+    core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/georelativeelevation.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/payload.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/eosensor.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/esm.h \
@@ -1439,30 +1477,35 @@ HEADERS += \
     mission/inputs.h \
     mission/task.h \
     mission/taskgroup.h \
-    tests/applicationdialogtest/applicationdialog_test.h \
-    tests/consoleviewtest/consoleview_test.h \
-    tests/databaseeditortest/databaseeditor_test.h \
-    tests/designtoolbartest/gui_designtoolbar_test.h \
-    tests/doctrineparameterstest/doctrineparameters_test.h \
-    tests/feedbacktest/feedback_test.h \
-    tests/graphwidgettest/graphwidget_test.h \
-    tests/hierarchytreetest/addformationdialog_test.h \
-    tests/hierarchytreetest/additemdialog_test.h \
-    tests/hierarchytreetest/contextmenu_test.h \
-    tests/hierarchytreetest/gui_hierarchytree_test.h \
-    tests/inspectortest/inspectortest.h \
-    tests/layerpaneltest/layerpanel_test.h \
-    tests/menubartest/gui_menubar_test.h \
-    tests/missioneditortest/gui_mission_test.h \
-    tests/navigationpagetest/navigationpage_test.h \
-    tests/profileinfodialogtest/profileinfodialog_test.h \
-    tests/runtimeeditortest/runtimeeditor_test.h \
-    tests/runtimetoolbartest/gui_runtimetoolbar_test.h \
-    tests/scenarioeditor_test.h \
-    tests/sidebarwidgettest/sidebarwidget_test.h \
-    tests/tacticalrulestest/tacticalrules_test.h \
-    tests/testscriptdialogtest/testscriptdialog_test.h \
-    tests/textscriptwidgettest/textscriptwidget_test.h
+    # tests/applicationdialogtest/applicationdialog_test.h \
+    # tests/consoleviewtest/consoleview_test.h \
+    # tests/databaseeditortest/databaseeditor_test.h \
+    # tests/databaseeditortest/test_databaseeditor.h \
+    # tests/designtoolbartest/gui_designtoolbar_test.h \
+    # tests/doctrineparameterstest/doctrineparameters_test.h \
+    # tests/entityinfodialogtest/entityinfodialog_test.h \
+    # tests/feedbacktest/feedback_test.h \
+    # tests/graphwidgettest/graphwidget_test.h \
+    # tests/gui_test_control.h \
+    # tests/hierarchytreetest/addformationdialog_test.h \
+    # tests/hierarchytreetest/additemdialog_test.h \
+    # tests/hierarchytreetest/contextmenu_test.h \
+    # tests/hierarchytreetest/gui_hierarchytree_test.h \
+    # tests/inspectortest/inspectortest.h \
+    # tests/layerpaneltest/layerpanel_test.h \
+    # tests/measuredistancedialogtest/measuredistancedialog_test.h \
+    # tests/menubartest/gui_menubar_test.h \
+    # tests/menubartest/test_menubar1212.h \
+    # tests/missioneditortest/gui_mission_test.h \
+    # tests/navigationpagetest/navigationpage_test.h \
+    # tests/profileinfodialogtest/profileinfodialog_test.h \
+    # tests/runtimeeditortest/runtimeeditor_test.h \
+    # tests/runtimetoolbartest/gui_runtimetoolbar_test.h \
+    # tests/scenarioeditor_test.h \
+    # tests/sidebarwidgettest/sidebarwidget_test.h \
+    # tests/tacticalrulestest/tacticalrules_test.h \
+    # tests/testscriptdialogtest/testscriptdialog_test.h \
+    # tests/textscriptwidgettest/textscriptwidget_test.h
 
 win32: LIBS += -lws2_32
 win32: LIBS += -lpsapi

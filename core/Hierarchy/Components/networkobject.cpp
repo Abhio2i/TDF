@@ -2,7 +2,7 @@
 
 NetworkObject::NetworkObject():Component(nullptr) {}
 
-void NetworkObject::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+void NetworkObject::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
 
 }
 

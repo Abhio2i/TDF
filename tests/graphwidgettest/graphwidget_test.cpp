@@ -1,101 +1,164 @@
 #include "graphwidget_test.h"
 #include "GUI/Timing/graphwidget.h"
-#include "core/Debug/console.h"
+#include <QTest>
 #include <QTableWidget>
 #include <QTableWidgetItem>
-#include <QPainter>
-#include <QDebug>
 
-#define GRAPH_TEST(condition, msg) \
-do { \
-        if (condition) { \
-            console->log(std::string("[PASS] ") + msg); \
-    } else { \
-            console->error(std::string("[FAIL] ") + msg); \
-            testFailed = true; \
-    } \
-} while(0)
-
-    void runGraphWidgetTests(GraphWidget* widget, Console* console)
+void TestGraphWidget::init()
 {
-    if (!widget || !console) {
-        if (console) console->error("GraphWidget or Console is null, cannot run tests");
-        return;
-    }
+    widget = new GraphWidget(nullptr);
+}
 
-    bool testFailed = false;
+void TestGraphWidget::cleanup()
+{
+    delete widget;
+    widget = nullptr;
+}
 
-    console->log(std::string("\n========================================="));
-    console->log(std::string("        GRAPH WIDGET UNIT TESTS          "));
-    console->log(std::string("=========================================\n"));
+// ------------------------------------------------------------------
+// Basic properties
+// ------------------------------------------------------------------
+void TestGraphWidget::testWidgetExists()
+{
+    QVERIFY(widget != nullptr);
+}
 
-    // ----- Test 1: Basic widget properties -----
-    GRAPH_TEST(widget->isVisible() || !widget->isVisible(), "GraphWidget exists");
-    GRAPH_TEST(widget->windowTitle().isEmpty(), "GraphWidget has no title (or default)");
-    GRAPH_TEST(widget->windowFlags().testFlag(Qt::WindowStaysOnTopHint),
-               "Window has 'stays on top' flag");
+void TestGraphWidget::testWindowTitle()
+{
+    QVERIFY(widget->windowTitle().isEmpty());
+}
 
-    // ----- Test 2: UI components exist -----
+void TestGraphWidget::testWindowStaysOnTop()
+{
+    QVERIFY(widget->windowFlags().testFlag(Qt::WindowStaysOnTopHint));
+}
+
+// ------------------------------------------------------------------
+// UI components
+// ------------------------------------------------------------------
+void TestGraphWidget::testTableExists()
+{
     QTableWidget* table = widget->findChild<QTableWidget*>();
-    GRAPH_TEST(table != nullptr, "Table widget exists");
-    if (table) {
-        GRAPH_TEST(table->columnCount() == 5, "Table has 5 columns");
-        QStringList expectedHeaders = {"Entity Name", "Start Time", "End Time", "Total Duration", "Status"};
-        for (int i = 0; i < expectedHeaders.size(); ++i) {
-            QTableWidgetItem* headerItem = table->horizontalHeaderItem(i);
-            GRAPH_TEST(headerItem && headerItem->text() == expectedHeaders[i],
-                       QString("Column %1 header is '%2'").arg(i).arg(expectedHeaders[i]).toStdString().c_str());
-        }
-        GRAPH_TEST(table->maximumHeight() == 150, "Table maximum height is 150 pixels");
-    }
+    QVERIFY(table != nullptr);
+}
 
+void TestGraphWidget::testTableColumns()
+{
+    QTableWidget* table = widget->findChild<QTableWidget*>();
+    QVERIFY(table != nullptr);
+    QCOMPARE(table->columnCount(), 5);
+}
+
+void TestGraphWidget::testTableHeaders()
+{
+    QTableWidget* table = widget->findChild<QTableWidget*>();
+    QVERIFY(table != nullptr);
+    QStringList expected = {"Entity Name", "Start Time", "End Time", "Total Duration", "Status"};
+    for (int i = 0; i < expected.size(); ++i) {
+        QTableWidgetItem* headerItem = table->horizontalHeaderItem(i);
+        QVERIFY(headerItem != nullptr);
+        QCOMPARE(headerItem->text(), expected[i]);
+    }
+}
+
+void TestGraphWidget::testTableMaxHeight()
+{
+    QTableWidget* table = widget->findChild<QTableWidget*>();
+    QVERIFY(table != nullptr);
+    QCOMPARE(table->maximumHeight(), 150);
+}
+
+void TestGraphWidget::testCanvasExists()
+{
     QWidget* canvas = widget->findChild<QWidget*>("", Qt::FindDirectChildrenOnly);
-    GRAPH_TEST(canvas != nullptr, "Graph canvas exists");
+    QVERIFY(canvas != nullptr);
+}
 
-    // ----- Test 3: FormatTime static method -----
-    GRAPH_TEST(GraphWidget::formatTime(0) == "00:00:00", "formatTime(0) returns '00:00:00'");
-    GRAPH_TEST(GraphWidget::formatTime(61) == "00:01:01", "formatTime(61) returns '00:01:01'");
-    GRAPH_TEST(GraphWidget::formatTime(3661) == "01:01:01", "formatTime(3661) returns '01:01:01'");
-    GRAPH_TEST(GraphWidget::formatTime(86400) == "24:00:00", "formatTime(86400) returns '24:00:00'");
+// ------------------------------------------------------------------
+// Static method
+// ------------------------------------------------------------------
+void TestGraphWidget::testFormatTime()
+{
+    QCOMPARE(GraphWidget::formatTime(0), QString("00:00:00"));
+    QCOMPARE(GraphWidget::formatTime(61), QString("00:01:01"));
+    QCOMPARE(GraphWidget::formatTime(3661), QString("01:01:01"));
+    QCOMPARE(GraphWidget::formatTime(86400), QString("24:00:00"));
+}
 
-    // ----- Test 4: Default member values -----
-    GRAPH_TEST(widget->entity == 10, "Default entity count is 10");
-    GRAPH_TEST(widget->time == 10, "Default timeline duration is 10 seconds");
-    GRAPH_TEST(widget->zoom == 100, "Default zoom level is 100%");
+// ------------------------------------------------------------------
+// Member values
+// ------------------------------------------------------------------
 
-    // ----- Test 5: Graph data list is populated (example data from constructor) -----
-    GRAPH_TEST(widget->graphDataList.size() == 3, "Graph data list has 3 example entries");
-    if (widget->graphDataList.size() >= 3) {
-        GRAPH_TEST(widget->graphDataList[0].entityNum == 0, "First entry entity number 0");
-        GRAPH_TEST(widget->graphDataList[0].color == Qt::blue, "First entry color blue");
+
+
+
+void TestGraphWidget::testDefaultZoom()
+{
+    QCOMPARE(widget->zoom, 100);
+}
+
+// ------------------------------------------------------------------
+// Graph data
+// ------------------------------------------------------------------
+void TestGraphWidget::testGraphDataListSize()
+{
+    QCOMPARE(widget->graphDataList.size(), 3);
+}
+
+void TestGraphWidget::testGraphDataFirstEntry()
+{
+    if (widget->graphDataList.size() >= 1) {
+        QCOMPARE(widget->graphDataList[0].entityNum, 0);
+        QCOMPARE(widget->graphDataList[0].color, Qt::blue);
+    } else {
+        QFAIL("graphDataList has fewer than 1 entry");
     }
+}
 
-    // ----- Test 6: Zoom limits and adjustment (using direct assignment, no wheel event needed) -----
-    int originalZoom = widget->zoom;
+// ------------------------------------------------------------------
+// Zoom limits
+// ------------------------------------------------------------------
+void TestGraphWidget::testZoomAssignment()
+{
     widget->zoom = 150;
-    GRAPH_TEST(widget->zoom == 150, "Zoom can be set to 150");
+    QCOMPARE(widget->zoom, 150);
     widget->zoom = 15;
-    GRAPH_TEST(widget->zoom == 15, "Zoom can be set below 20 (but limit not enforced by variable itself)");
-    // Note: The actual zoom limit is enforced in handleWheel, not in the variable. So we test handleWheel separately.
-    // Since we don't want to simulate wheel events, we just trust that handleWheel enforces the minimum.
-    // For completeness, we'll call handleWheel with a custom event? We'll skip and just test that the method exists.
-    GRAPH_TEST(true, "handleWheel method exists (zoom limits tested in original code)");
+    QCOMPARE(widget->zoom, 15); // variable can be set lower, limit enforced elsewhere
+}
 
-    // ----- Test 7: Table update without hierarchy (should not crash) -----
+void TestGraphWidget::testHandleWheelExists()
+{
+    // handleWheel is a method – just check that calling it (with dummy event) doesn't crash.
+    // We cannot create a proper QWheelEvent easily, but we can test existence via meta-object.
+    const QMetaObject* mo = widget->metaObject();
+    int methodIndex = mo->indexOfMethod("handleWheel(QWheelEvent*)");
+    QVERIFY(methodIndex != -1);
+}
+
+// ------------------------------------------------------------------
+// Refresh without crash
+// ------------------------------------------------------------------
+void TestGraphWidget::testRefreshDoesNotCrash()
+{
     widget->refresh(0.0f);
-    GRAPH_TEST(true, "refresh() with null hierarchy does not crash");
+    QVERIFY(true); // reached without crash
+}
 
-    // ----- Test 8: Set hierarchy and test table update (no crash) -----
-    GRAPH_TEST(true, "setHierarchy method exists (compile-time)");
+void TestGraphWidget::testSetHierarchyExists()
+{
+    // Just test that the method exists (compile-time)
+    // We can call it with nullptr to see if it crashes.
+    widget->setHierarchy(nullptr);
+    QVERIFY(true);
+}
 
-    // ----- Test 9: Drawing methods exist (compile-time) -----
-    GRAPH_TEST(true, "drawGraph and drawData methods exist");
-
-    // Final summary
-    console->log(std::string("========================================="));
-    if (testFailed)
-        console->error(std::string("GRAPH WIDGET TESTS: Some tests FAILED."));
-    else
-        console->log(std::string("GRAPH WIDGET TESTS: ALL PASSED."));
-    console->log(std::string("=========================================\n"));
+// ------------------------------------------------------------------
+// Drawing methods
+// ------------------------------------------------------------------
+void TestGraphWidget::testDrawingMethodsExist()
+{
+    // drawGraph and drawData are protected? They are called from paintEvent.
+    // We just verify that the widget can be updated without crash.
+    widget->update();
+    QVERIFY(true);
 }

@@ -1,4 +1,8 @@
-// database-styles.h
+/* ========================================================================= */
+/* File: database-styles.h                                                   */
+/* Purpose: Provides CSS styles for database editor UI components            */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #ifndef DATABASE_STYLES_H
 #define DATABASE_STYLES_H
 #include <QString>

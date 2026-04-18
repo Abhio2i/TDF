@@ -1,3 +1,8 @@
+/* ========================================================================= */
+/* File: CustomTrajectoryDialog.h                                            */
+/* Purpose: Dialog for configuring custom trajectory parameters              */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #ifndef CUSTOMTRAJECTORYDIALOG_H
 #define CUSTOMTRAJECTORYDIALOG_H
 

@@ -8,6 +8,7 @@
 #include <QMessageBox>
 #include <QHBoxLayout>
 
+// #include "tests/gui_test_control.h"
 
 AddFormationDialog::AddFormationDialog(const QList<QVariantMap>& selectedEntities,
                                        QWidget *parent)
@@ -22,7 +23,6 @@ AddFormationDialog::AddFormationDialog(const QList<QVariantMap>& selectedEntitie
     int alliesCount = selectedEntities.size() - 1;
     m_labelAlliesCount->setText(QString::number(alliesCount));
     updateAlliesList();
-    runUnitTestsOnce();
 
 }
 
@@ -160,35 +160,4 @@ void AddFormationDialog::accept()
     }
     QDialog::accept();
 }
-void AddFormationDialog::runUnitTestsOnce()
-{
-    static bool testsRun = false;
-    if (testsRun) return;
-    testsRun = true;
 
-    // Get console from MainWindow
-    Console* console = nullptr;
-    MainWindow* mw = MainWindow::instance();
-    if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-        console = mw->databaseEditor->console;
-    }
-    if (!console) {
-        qDebug() << "AddFormationDialog: console not available, cannot run tests";
-        return;
-    }
-
-    // Create dummy selected entities for testing
-    QList<QVariantMap> dummyEntities;
-    for (int i = 0; i < 3; ++i) {
-        QVariantMap entity;
-        entity["ID"] = QString("entity_%1").arg(i);
-        entity["name"] = QString("TestEntity_%1").arg(i);
-        entity["type"] = "entity";
-        dummyEntities.append(entity);
-    }
-
-    // Create a temporary dialog for testing
-    AddFormationDialog* testDialog = new AddFormationDialog(dummyEntities, nullptr);
-    runAddFormationDialogTests(testDialog, console);
-    testDialog->deleteLater();
-}

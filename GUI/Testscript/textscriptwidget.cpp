@@ -18,9 +18,7 @@
 #include <QTextStream>                             // For file text streaming
 #include <QCoreApplication>                        // For application paths
 #include "core/Debug/console.h"                    // For console logging
-#include "tests/textscriptwidgettest/textscriptwidget_test.h"
-#include "GUI/mainwindow.h"
-#include <QTimer>
+
 
 // %%% TextScriptItemWidget Constructor %%%
 /* Initialize item widget for a script file */
@@ -161,7 +159,6 @@ TextScriptWidget::TextScriptWidget(QWidget *parent)
     QString projectDir = QCoreApplication::applicationDirPath() + "/../..";
     QString testScriptPath = QDir(projectDir).absoluteFilePath("Testscript");
     loadScriptFiles(testScriptPath);
-    runUnitTestsOnce();
 
 }
 // %%% Script File Management %%%
@@ -222,7 +219,7 @@ void TextScriptWidget::updateStatusIcon(QListWidgetItem *item, const QString &st
         item->setIcon(QIcon(iconPath));
         item->setToolTip("Status: Error");
     } else {
-        item->setIcon(QIcon());  // Clear icon
+        item->setIcon(QIcon());
         item->setToolTip("Status: Not run");
     }
 
@@ -374,26 +371,4 @@ void TextScriptWidget::handleEditAction()
     });
     window->show();
 }
-void TextScriptWidget::runUnitTestsOnce()
-{
-    static bool testsRun = false;
-    if (testsRun) return;
-    testsRun = true;
 
-    QTimer::singleShot(0, []() {
-        Console* console = nullptr;
-        MainWindow* mw = MainWindow::instance();
-        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-            console = mw->databaseEditor->console;
-        }
-        if (!console) {
-            qDebug() << "TextScriptWidget: console not available, cannot run tests";
-            return;
-        }
-
-        // Create a temporary TextScriptWidget (no parent, won't show)
-        TextScriptWidget* testWidget = new TextScriptWidget(nullptr);
-        runTextScriptWidgetTests(testWidget, console);
-        testWidget->deleteLater();
-    });
-}

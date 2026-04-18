@@ -1,3 +1,10 @@
+
+/* ========================================================================= */
+/* File: Setup.cpp                                                           */
+/* Purpose: Implements TDFManager for managing folder structure and resource */
+/*          paths for aircraft and city data                                 */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #include "Setup.h"
 #include <QDebug>
 #include <QStandardPaths>
@@ -75,23 +82,16 @@ void TDFManager::createFolderStructure()
 
 void TDFManager::copyResourceIfNeeded(const QString& resourcePath, const QString& destPath)
 {
-    // Check if file already exists in destination
     if (fileExists(destPath)) {
 
         return;
     }
-
-    // Copy from resource to destination
     QFile resourceFile(resourcePath);
     if (!resourceFile.exists()) {
         qWarning() << "Resource file not found:" << resourcePath;
         return;
     }
-
     if (resourceFile.copy(destPath)) {
-
-
-        // Set file permissions to read/write
         QFile::setPermissions(destPath, QFile::ReadOwner | QFile::WriteOwner |
                                             QFile::ReadGroup | QFile::ReadOther);
     } else {
@@ -109,25 +109,18 @@ bool TDFManager::fileExists(const QString& path)
 QString TDFManager::getAircraftDbPath()
 {
     QString tdfPath = m_dbFolderPath + "/Aircraft.db";
-
-    // If file exists in TDF, return that path
     if (fileExists(tdfPath)) {
         return tdfPath;
     }
-
-    // Otherwise return resource path
     return ":/DB/DB/Aircraft.db";
 }
 
 QString TDFManager::getCityJsonPath()
 {
     QString tdfPath = m_cityDataFolderPath + "/city.json";
-
-    // If file exists in TDF, return that path
     if (fileExists(tdfPath)) {
         return tdfPath;
     }
-    // Otherwise return resource path
     return ":/jsonData/DB/jsonData/city.json";
 }
 

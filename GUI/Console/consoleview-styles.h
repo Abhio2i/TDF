@@ -2,6 +2,7 @@
 /* File: consoleview-styles.h                                               */
 /* Purpose: Dark theme styles for ConsoleView - COMPLETE TAB BAR FIX        */
 /* Background: #0F2636, Border: #27446d, Text: White, Accent: #0078D4       */
+// Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef CONSOLEVIEW_STYLES_H

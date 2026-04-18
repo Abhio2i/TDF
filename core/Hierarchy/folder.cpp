@@ -1,6 +1,14 @@
 #include "folder.h"
 #include <core/Debug/console.h>
 #include "core/GlobalRegistry.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/adsbsensor.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/aesaradar.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/aissensor.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/csm.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/eosensor.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/esm.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/radar.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h"
 #include "core/Hierarchy/EntityProfiles/iff.h"
 #include "core/Hierarchy/EntityProfiles/fixedpoints.h"
 #include "core/Hierarchy/EntityProfiles/platform.h"
@@ -42,6 +50,9 @@ void Folder::setProfileType(Constants::EntityType Type){
 }
 
 Folder* Folder::addFolder(std::string folderName, std::string iD) {
+    if(folderName.empty()){
+        return nullptr;
+    }
     // 1. Parent Hierarchy check (Critical for safety)
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (!parent ) {
@@ -85,6 +96,9 @@ Folder* Folder::addFolder(std::string folderName, std::string iD) {
 }
 
 void Folder::addFolderWithObject(Folder *folder){
+    if(folder == nullptr){
+        return;
+    }
     folder->parentID = ID;
     Folders.insert({folder->ID, folder});
 
@@ -108,8 +122,11 @@ void Folder::addFolderWithObject(Folder *folder){
 
 
 void Folder::removeFolder(std::string folderID){
-
+    if(folderID.empty()){
+        return;
+    }
     delete Folders[folderID];
+    Folders[folderID] = nullptr;
     Folders.erase(folderID);
     // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
@@ -125,15 +142,10 @@ void Folder::removeFolder(std::string folderID){
     }
 }
 
-Entity* Folder::addEntity(std::string entityName, std::string iD){
-    // if(Entities.count(entityName)){
-
-    //     Console::error(
-    //         "RunTimeError::" + std::string(__FILE__) + "," +
-    //         std::to_string(__LINE__) + " Folder already exists With Same Name"
-    //         );
-    //     return nullptr;
-    // }
+Entity* Folder::addEntity(std::string entityName, std::string iD,QString data1){
+    if(entityName.empty()){
+        return nullptr;
+    }
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
         emit parent->status("add");
     Entity *entity;
@@ -141,7 +153,32 @@ Entity* Folder::addEntity(std::string entityName, std::string iD){
         entity = new Radio(parent);
     }else
     if(type == Constants::EntityType::Sensor){
-        entity = new Sensor(parent);
+        if(data1 == "Generic"){
+            entity = new Radar(parent);
+        }else
+            if(data1 == "CSM"){
+                entity = new CSM(parent);
+            }else
+                if(data1 == "ESM"){
+                    entity = new ESM(parent);
+                }else
+                    if(data1 == "EO"){
+                        entity = new EOSensor(parent);
+                    }else
+                        if(data1 == "Sonar"){
+                            entity = new Sonar(parent);
+                        }else
+                            if(data1 == "AIS"){
+                                entity = new AISSensor(parent);
+                            }else
+                                if(data1 == "ADSB"){
+                                    entity = new ADSBSensor(parent);
+                                }else
+                                    if(data1 == "AESA"){
+                                        entity = new AESARadar(parent);
+                                    }else{
+                                        entity = new Sensor(parent);
+                                    }
     }else
     if(type == Constants::EntityType::FixedPoint){
         entity = new FixedPoints(parent);
@@ -210,6 +247,9 @@ Entity* Folder::addEntity(std::string entityName, std::string iD){
 }
 
 void Folder::addEntityWithObject(Entity *entity){
+    if(entity == nullptr){
+        return;
+    }
     entity->parentID = ID;
     Entities.insert({entity->ID, entity});
 
@@ -266,6 +306,9 @@ void Folder::addEntityWithObject(Entity *entity){
 
 void Folder::removeEntity(std::string EntityID){
 
+    if(EntityID.empty()){
+        return;
+    }
     delete Entities[EntityID];
     Entities.erase(EntityID);
     // Automatically update hierarchy's Folders
@@ -384,7 +427,33 @@ void Folder::fromJson(const QJsonObject& obj)
                 entity = new Radio(parent);
             }else
             if(type == Constants::EntityType::Sensor){
-                entity = new Sensor(parent);
+                QString data1 = entityObj["SensorType"].toString();
+                if(data1 == "Generic"){
+                    entity = new Radar(parent);
+                }else
+                    if(data1 == "CSM"){
+                        entity = new CSM(parent);
+                    }else
+                        if(data1 == "ESM"){
+                            entity = new ESM(parent);
+                        }else
+                            if(data1 == "EO"){
+                                entity = new EOSensor(parent);
+                            }else
+                                if(data1 == "Sonar"){
+                                    entity = new Sonar(parent);
+                                }else
+                                    if(data1 == "AIS"){
+                                        entity = new AISSensor(parent);
+                                    }else
+                                        if(data1 == "ADSB"){
+                                            entity = new ADSBSensor(parent);
+                                        }else
+                                            if(data1 == "AESA"){
+                                                entity = new AESARadar(parent);
+                                            }else{
+                                                entity = new Sensor(parent);
+                                            }
             }else
             if(type == Constants::EntityType::FixedPoint){
                 entity = new FixedPoints(parent);

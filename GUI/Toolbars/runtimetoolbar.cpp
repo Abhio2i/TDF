@@ -4,10 +4,11 @@
 // Description : Implementation of RuntimeToolBar class for simulation control toolbar.
 //               Provides controls for start/pause/stop, speed adjustment, timing graph,
 //               logger, and radar display toggle functionality.
+// Written by: Arti Rajpoot
 //============================================================================
 
 #include "runtimetoolbar.h"
-#include "runtimetoolbar-styles.h"  // Include separate CSS file
+#include "runtimetoolbar-styles.h"
 #include <QIcon>
 #include <QPainter>
 #include <QPixmap>
@@ -66,14 +67,7 @@ RuntimeToolBar::RuntimeToolBar(QWidget *parent) : QToolBar(parent)
 
 }
 
-// Initialize toolbar state
-// void RuntimeToolBar::Init(){
-//     elapsedSeconds = 0;
-//     currentState = STOPPED;
-//     blinkState = false;
-//     updateTimeDisplay();
-//     updateStatusDisplay();
-// }
+
 void RuntimeToolBar::Init(){
     elapsedSeconds = 0;
     currentState = STOPPED;
@@ -338,9 +332,7 @@ void RuntimeToolBar::setupToolBar()
     }
 
     addAction(startAction);
-    // addAction(pauseAction);
-    // addAction(stopAction);
-    addAction(resetAction);
+      addAction(resetAction);
     addAction(nextStepAction);
     addAction(timingAction);
     addAction(loggerAction);
@@ -448,9 +440,7 @@ void RuntimeToolBar::onTimeLabelClicked()
         elapsedSeconds = totalSeconds;
         updateTimeDisplay();
         emit timeChanged(totalSeconds);
-
     }
-
     dialog->deleteLater();
 }
 
@@ -476,7 +466,6 @@ void RuntimeToolBar::setSimulationState(SimulationState state)
         timer->stop();
         blinkTimer->start(1000);
         simulationStatusLabel->setVisible(true);
-        // Icon play wala — simulation ruka hua hai, click karo to resume
         startAction->setIcon(QIcon(withWhiteBg(":/icons/images/play.png")));
         startAction->setText(tr("Start"));
         startAction->setChecked(false);
@@ -486,7 +475,6 @@ void RuntimeToolBar::setSimulationState(SimulationState state)
         blinkState = false;
         simulationStatusLabel->setVisible(false);
         updateStatusDisplay();
-        // Icon play wala — simulation band hai
         startAction->setIcon(QIcon(withWhiteBg(":/icons/images/play.png")));
         startAction->setText(tr("Start"));
         startAction->setChecked(false);

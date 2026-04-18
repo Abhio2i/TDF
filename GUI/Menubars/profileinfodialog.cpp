@@ -7,7 +7,7 @@
 //============================================================================
 
 #include "profileinfodialog.h"
-#include "profileinfodialog-styles.h"  // Include separate CSS file
+#include "profileinfodialog-styles.h"
 #include "core/Debug/profiler.h"
 #include <QApplication>
 #include <QClipboard>
@@ -24,9 +24,6 @@
 #include <QCloseEvent>
 #include <QScreen>
 #include <QDebug>
-#include "tests/profileinfodialogtest/profileinfodialog_test.h"
-#include "GUI/mainwindow.h"
-#include <QTimer>
 
 
 ProfileInfoDialog::ProfileInfoDialog(QWidget *parent)
@@ -60,9 +57,6 @@ ProfileInfoDialog::ProfileInfoDialog(QWidget *parent)
 
     // Initial update
     updateRealTimeInfo();
-    runUnitTestsOnce();
-
-    // qDebug() << "ProfileInfoDialog created with CanvasWidget-style updates";
 }
 
 ProfileInfoDialog::~ProfileInfoDialog()
@@ -161,8 +155,8 @@ void ProfileInfoDialog::updateRealTimeInfo()
 
         for (const auto& metric : metrics) {
             QString text = QString("%1 %2ms")
-                               .arg(metric.label, -8)  // Left align with width 8
-                               .arg(metric.timeValue, 4);  // Right align with width 4
+                               .arg(metric.label, -8)
+                               .arg(metric.timeValue, 4);
             stream << text << "\n";
         }
     } else {
@@ -231,31 +225,5 @@ void ProfileInfoDialog::showProfileInfo(QWidget *parent)
     }
 
     dialog->show();
-    // dialog->raise();
-    // dialog->activateWindow();
-
-    // qDebug() << "ProfileInfoDialog shown with CanvasWidget-style metrics";
 }
-void ProfileInfoDialog::runUnitTestsOnce()
-{
-    static bool testsRun = false;
-    if (testsRun) return;
-    testsRun = true;
 
-    QTimer::singleShot(0, []() {
-        Console* console = nullptr;
-        MainWindow* mw = MainWindow::instance();
-        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-            console = mw->databaseEditor->console;
-        }
-        if (!console) {
-            qDebug() << "ProfileInfoDialog: console not available, cannot run tests";
-            return;
-        }
-
-        // Create a temporary ProfileInfoDialog (no parent, won't show)
-        ProfileInfoDialog* testDialog = new ProfileInfoDialog(nullptr);
-        runProfileInfoDialogTests(testDialog, console);
-        testDialog->deleteLater();
-    });
-}

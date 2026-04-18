@@ -32,7 +32,7 @@ public:
     double getCurrentConversionFactor() const;
     // Get current unit string
     QString getCurrentUnitString() const;
-
+// static void runUnitTestsOnce();
 signals:
     // Signal measurement type change
     void measurementTypeChanged(bool isEllipsoidal);

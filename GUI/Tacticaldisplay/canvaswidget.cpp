@@ -108,6 +108,7 @@ CanvasWidget::CanvasWidget(QWidget *parent) : QWidget(parent) ,pointPen(Qt::cyan
    connect(gislib, &GISlib::painted, this, &CanvasWidget::paintEvent);
    fpsUpdateTimer->start(100);
    Refresh();
+
 }
 
 // getter return shape feature
@@ -1148,7 +1149,7 @@ void CanvasWidget::handleRightClick(QMouseEvent *event) {
                        auto it = editor->hierarchy->Entities.find(id);
                        if (it != editor->hierarchy->Entities.end()) {
                            QString parentId = QString::fromStdString(it->second->parentID);
-                           editor->hierarchy->removeEntity(parentId, QString::fromStdString(id), false);
+                           editor->hierarchy->removeEntity(parentId, QString::fromStdString(id));
                            Meshes.erase(id);
                            Refresh();
                        }
@@ -1278,7 +1279,7 @@ void CanvasWidget::handleRightClick(QMouseEvent *event) {
                        auto it = editor->hierarchy->Entities.find(id);
                        if (it != editor->hierarchy->Entities.end()) {
                            QString parentId = QString::fromStdString(it->second->parentID);
-                           editor->hierarchy->removeEntity(parentId, QString::fromStdString(id), false);
+                           editor->hierarchy->removeEntity(parentId, QString::fromStdString(id));
                            Meshes.erase(id);
                            Refresh();
                        }
@@ -6955,3 +6956,4 @@ double CanvasWidget::calculateTrajectoryCompletionTime(const MeshEntry& entry) c
 
    return totalTime;
 }
+

@@ -25,6 +25,7 @@ public:
     void setHierarchy(Hierarchy* h) { hierarchy = h; }
     QSize sizeHint() const override;
     QSize minimumSize() const;
+     int range = 10; // meters
     void setRange(float value) { range = value; }
     int heightForWidth(int width) const override;
     void selectEntity(Entity* entity);
@@ -43,7 +44,7 @@ protected:
 
 private:
     // %%% Display Properties %%%
-    int range = 10; // meters
+    // int range = 10; // meters
     const double ASPECT_RATIO = 16.0/9.0;
     int padding = 18;
     int ringCount = 3;

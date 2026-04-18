@@ -1,11 +1,14 @@
-
+/* ========================================================================= */
+/* File: main.cpp                                                            */
+/* Purpose: Application entry point - initializes QApplication, applies dark */
+/*          theme, installs message handler, and shows main window           */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #include "GUI/mainwindow.h"
 #include <QApplication>
 #include "core/Debug/console.h"
 #include <string>
 #include "Setup.h"
-
-
 void customMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg);
 int main(int argc, char *argv[])
 {
@@ -29,6 +32,7 @@ int main(int argc, char *argv[])
             padding: 5px 15px;
             color: white;
         }
+
         QPushButton:hover {
             background-color: #27446d;
         }
@@ -70,8 +74,6 @@ int main(int argc, char *argv[])
             background-color: #0A1A26;
         }
     )";
-
-    // Global style apply karein
     a.setStyleSheet(globalDarkStyle);
     qInstallMessageHandler(customMessageHandler);
     TDFManager::instance()->initializeTDFStructure();

@@ -60,7 +60,7 @@ public:
     void makeFormation();
     void deformation();
     QJsonObject customParameters; // Added to store custom parameters
-    void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QString data3 = "") override;
+    void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QJsonObject data3 = QJsonObject()) override;
     void removeSubComponent(std::string ID) override;
     QJsonObject getsubComponentData(std::string ID) const override;
     void updateSubComponent(std::string ID, const QJsonObject& obj) override;

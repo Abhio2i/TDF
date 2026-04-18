@@ -14,14 +14,13 @@ SensorProfile::SensorProfile(Hierarchy* h):Component(h) {
     sensors =  new std::unordered_map<std::string, Sensor*>();
 }
 
-void SensorProfile::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+void SensorProfile::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if(data1 == "Generic"){
         Radar* radar = new Radar(parent);
         if(!data2.isEmpty()){
             std::string id = radar->ID;
-            QJsonObject obj = (parent->Sensors)[data2.toStdString()]->toJson();
-            radar->fromJson(obj);
+            radar->fromJson(data3);
             radar->ID = id;
             radar->parentID = parentID;
         }
@@ -35,8 +34,7 @@ void SensorProfile::addSubComponent(std::string name, QString data1, QString dat
         CSM* csm = new CSM(parent);
         if(!data2.isEmpty()){
             std::string id = csm->ID;
-            QJsonObject obj = (parent->Sensors)[data2.toStdString()]->toJson();
-            csm->fromJson(obj);
+            csm->fromJson(data3);
             csm->ID = id;
             csm->parentID = parentID;
         }
@@ -50,8 +48,7 @@ void SensorProfile::addSubComponent(std::string name, QString data1, QString dat
         ESM* esm = new ESM(parent);
         if(!data2.isEmpty()){
             std::string id = esm->ID;
-            QJsonObject obj = (parent->Sensors)[data2.toStdString()]->toJson();
-            esm->fromJson(obj);
+            esm->fromJson(data3);
             esm->ID = id;
             esm->parentID = parentID;
         }
@@ -132,6 +129,7 @@ void SensorProfile::removeSubComponent(std::string ID){
         sensors->erase(sensor->ID);
         parent->Sensors.erase(sensor->ID);
         delete sensor;
+        sensor = nullptr;
     }
 }
 

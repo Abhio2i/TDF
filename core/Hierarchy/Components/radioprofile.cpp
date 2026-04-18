@@ -7,13 +7,12 @@ RadioProfile::RadioProfile(Hierarchy* h):Component(h) {
     radios =  new std::unordered_map<std::string, Radio*>();
 }
 
-void RadioProfile::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+void RadioProfile::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     Radio* radio = new Radio(parent);
     if(!data2.isEmpty()){
         std::string id = radio->ID;
-        QJsonObject obj = parent->Radios[data2.toStdString()]->toJson();
-        radio->fromJson(obj);
+        radio->fromJson(data3);
         radio->ID = id;
         radio->parentID = parentID;
     }

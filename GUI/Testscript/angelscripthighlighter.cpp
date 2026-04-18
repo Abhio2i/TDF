@@ -4,7 +4,7 @@
 //               Written by Arti Rajpoot
 /* ========================================================================= */
 
-#include "angelscripthighlighter.h"                // For AngelScript highlighter class
+#include "angelscripthighlighter.h"
 
 // %%% Constructor %%%
 /* Initialize syntax highlighter for AngelScript */

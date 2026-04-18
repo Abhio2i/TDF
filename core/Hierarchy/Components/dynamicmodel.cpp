@@ -551,7 +551,7 @@ QStringList surfaceTypeOptions() {
 
 
 
-void DynamicModel::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+void DynamicModel::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
 
 }
 

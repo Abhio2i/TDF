@@ -37,6 +37,7 @@ public:
     QSize sizeHint() const override;
     // Get minimum size
     QSize minimumSize() const;
+     int range = 100;
     // Set radar range
     void setRange(float value) { range = value; }
     // Get height for width
@@ -63,7 +64,7 @@ protected:
 private:
     // %%% Display Properties %%%
     // Radar range
-    int range = 100;
+    // int range = 100;
     // Aspect ratio for display
     const double ASPECT_RATIO = 16.0/9.0;
     // Padding for display

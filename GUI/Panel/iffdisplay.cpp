@@ -100,7 +100,6 @@ void IFFDisplay::mouseMoveEvent(QMouseEvent *event)
     if (hoveredTargetIndex != closestIndex) {
         hoveredTargetIndex = closestIndex;
         update();
-       // qDebug() << "Hovered target index:" << hoveredTargetIndex; // Debug
     }
 
     QWidget::mouseMoveEvent(event);
@@ -137,12 +136,8 @@ void IFFDisplay::selectEntity(Entity* entit)
             break;
         }
     }
-
     if (!iff) {
-       // qDebug() << "❌ No IFF found for platform:" << QString::fromStdString(entity->Name);
     }
-
-
     hoveredTargetIndex = -1;
     update();
 }

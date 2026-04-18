@@ -13,6 +13,16 @@ EO::~EO()
 {
     //std::cout<<"\tElectro Optic Module is Deinilisalized"<<std::endl;
 }
+double EO::getSetThreshold(double distance,double area)
+{
+    if (distance <= 0.0 || area <= 0.0){
+        detectionThreshold = 0;
+        return detectionThreshold;
+    }
+    maxRange = distance;
+    detectionThreshold = area / (distance * distance);
+    return detectionThreshold;
+}
 
 void EO::detectList(EO_PayLoad eo_payload){
     setSensor(eo_payload.eoParameters.sensor);
@@ -34,6 +44,11 @@ void EO::detectList(EO_PayLoad eo_payload){
 
 double EO::getMaxRange(double maxArea)
 {
+    // double radius   = 10000.0,
+    // double atmCoeff = 0.00001,
+    // double rainRate = 0.0,
+    // double fog      = 10000.0,
+    // double humidity = 0.5
     if (maxArea <= 0.0) return 0.0;
     double range = sqrt(maxArea/detectionThreshold);
     return range;
@@ -69,15 +84,15 @@ double EO::computeSignal(double area,
     double thetaRad = angleDeg * M_PI / 180.0;
     signal *= std::max(0.0, cos(thetaRad));
 
-    // Combined attenuation
-    double k_total = k_atm + k_rain + k_fog + k_humidity;
+    // // Combined attenuation
+    // double k_total = k_atm + k_rain + k_fog + k_humidity;
 
-    double Tatm = exp(-k_total * distance);
+    // double Tatm = exp(-k_total * distance);
 
-    signal *= sensorGain;
-    signal *= Tatm;
-    signal *= illumination;
-    signal *= glintFactor;
+    // signal *= sensorGain;
+    // signal *= Tatm;
+    // signal *= illumination;
+    // signal *= glintFactor;
 
     return signal;
 }
@@ -119,7 +134,7 @@ bool EO::isDetected(double area,
                     double illumination,
                     double glintFactor ) const {
 
-    // if (distance > maxRange) return false;
+    if (distance > maxRange) return false;
     if (angleDeg > fov / 2.0) return false;
     double signal = computeSignal(
         area, distance, angleDeg,
@@ -128,3 +143,4 @@ bool EO::isDetected(double area,
     bool result   = signal >= detectionThreshold;
     return result;
 }
+

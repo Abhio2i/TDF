@@ -2,6 +2,7 @@
 /* File: profileinfodialog-styles.h                                         */
 /* Purpose: Dark theme styles for ProfileInfoDialog                         */
 /* Background: #0F2636, Border: #27446d, Text: White, Accent: #0078D4       */
+/* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
 #ifndef PROFILEINFODIALOG_STYLES_H

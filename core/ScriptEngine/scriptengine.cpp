@@ -518,8 +518,7 @@ void ScriptEngine::removeEntity(const std::string& parentId, const std::string& 
 
     // Call Hierarchy's removeEntity using parentId (folder ID)
     hierarchy->removeEntity(QString::fromStdString(parentId),
-                            QString::fromStdString(entityID),
-                            false); // Profile flag false for entity removal
+                            QString::fromStdString(entityID)); // Profile flag false for entity removal
 
     qDebug() << "[OK] removeEntity: Entity"
              << QString::fromStdString(entityID)
@@ -552,8 +551,7 @@ void ScriptEngine::removeFolder(const std::string& parentId, const std::string& 
 
     // Call Hierarchy's removeFolder directly
     hierarchy->removeFolder(QString::fromStdString(parentId),
-                            QString::fromStdString(folderID),
-                            false); // Profile flag false for removal
+                            QString::fromStdString(folderID)); // Profile flag false for removal
 
     qDebug() << "[OK] removeFolder: Folder"
              << QString::fromStdString(folderID)
@@ -1022,14 +1020,14 @@ void ScriptEngine::addSubComponent(
     ) {
     if (!hierarchy) return;
 
-    hierarchy->addSubComponent(
-        QString::fromStdString(entityId),
-        type,
-        QString::fromStdString(name),
-        QString::fromStdString(data1),
-        QString::fromStdString(data2),
-        QString::fromStdString(data3)
-        );
+    // hierarchy->addSubComponent(
+    //     QString::fromStdString(entityId),
+    //     type,
+    //     QString::fromStdString(name),
+    //     QString::fromStdString(data1),
+    //     QString::fromStdString(data2),
+    //     QString::fromStdString(data3)
+    //     );
 }
 
 void ScriptEngine::addSensorSubComponent(
@@ -1189,7 +1187,7 @@ void ScriptEngine::addRadioSubComponent(
         qSubName,
         "",  // data1 - empty for radio
         "",  // data2 - empty (or template ID if copying from existing)
-        ""   // data3 - empty
+        QJsonObject()  // data3 - empty
         );
 
     qDebug() << "Added radio subcomponent:" << qSubName
@@ -1225,7 +1223,7 @@ void ScriptEngine::addIFFSubComponent(
         qSubName,
         "",  // data1 - empty for IFF
         "",  // data2 - empty (or template ID if copying from existing)
-        ""   // data3 - empty
+        QJsonObject()   // data3 - empty
         );
 
     qDebug() << "Added IFF subcomponent:" << qSubName

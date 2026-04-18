@@ -1,4 +1,10 @@
-
+/* ========================================================================= */
+/* File: customresizableoverlaydock.h                                        */
+/* Purpose: Custom QDockWidget with resize handles, lock functionality,      */
+/*          and overlay capability. Supports moving, resizing, and locking   */
+/*          the dock position/size.                                          */
+/* Written by: Arti Rajpoot                                                  */
+/* ========================================================================= */
 #ifndef CUSTOMRESIZABLEOVERLAYDOCK_H
 #define CUSTOMRESIZABLEOVERLAYDOCK_H
 

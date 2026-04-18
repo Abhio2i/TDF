@@ -21,6 +21,12 @@ void RadarAntenna_AESA::pointBeam(double az_deg, double el_deg,
                                    const RadarConfig& cfg,
                                    float spoilFactor)
 {
+    if (!std::isfinite(az_deg)) az_deg = 0.0;
+    if (!std::isfinite(el_deg)) el_deg = 0.0;
+    // ADD — normalise to -180..+180 before reachability check
+    while (az_deg >  180.0) az_deg -= 360.0;
+    while (az_deg < -180.0) az_deg += 360.0;
+
     if (!isReachable(az_deg, el_deg, cfg))
     {
         double maxAng = static_cast<double>(cfg.maxSteeringAngle_deg);
@@ -59,6 +65,12 @@ double RadarAntenna_AESA::computeArrayGain(double steeringAngle_deg,
                                            float spoilFactor) const
 {
     int    active = std::max(0, cfg.numElements - cfg.failedModules);
+
+    // ADD — dead array has zero gain, full stop
+    if (active <= 0) return 0.0;
+
+    //double ratio = static_cast<double>(active) / cfg.numElements;
+
     double ratio  = (cfg.numElements > 0)
                        ? static_cast<double>(active) / cfg.numElements : 1.0;
 
@@ -102,3 +114,4 @@ double RadarAntenna_AESA::computeArrayGain(double steeringAngle_deg,
 // }
 
 }
+

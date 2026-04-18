@@ -75,7 +75,7 @@ public:
      * Used to manage visibility and tab switching when docked.
      */
     void setConsoleDock(QDockWidget *dock);
-    static void runUnitTestsOnce();
+    // static void runUnitTestsOnce();
 
 
 private slots:

@@ -110,6 +110,17 @@ void EODisplay::leaveEvent(QEvent *event)
     QWidget::leaveEvent(event);
 }
 
+EODisplay::Angles EODisplay::vectorToAngles(
+    const double &x,
+    const double &y,
+    const double &z)
+{
+    Angles a;
+    a.yaw   = std::atan2(y, x) * 180.0 / M_PI;
+    a.pitch = std::atan2(z, std::sqrt(x*x + y*y)) * 180.0 / M_PI;
+    return a;
+}
+
 /* Select entity for display */
 void EODisplay::selectEntity(Entity* entit)
 {
@@ -190,77 +201,54 @@ void EODisplay::paintEvent(QPaintEvent * /*event*/)
     QPoint center(w / 2, h / 2);
 
     drawRadarRing(p, center, outerRadius);
-    drawConcentricCircles(p, center, outerRadius);
-    drawTicksAndLabels(p, center, outerRadius);
+    //drawConcentricCircles(p, center, outerRadius);
+    //drawTicksAndLabels(p, center, outerRadius);
+    drawHorizon(p,center);
     drawCenterMark(p, center);
-    drawTopMarker(p, center, outerRadius);
+    drawVanishingPoint(p,center);
+    //drawTopMarker(p, center, outerRadius);
     if(!sensor)return;
-    if ( !sensor->ewtargets.isEmpty()) {
-        int i=0;
-        for (const Target &t : sensor->ewtargets) {
-            // const Target &t = targets[i];
+    str = QString("EO Entity: ");
 
-            // FIX: Manual bound check
-            double per = t.radius / range;
-            if (per < 0.0) per = 0.0;
-            if (per > 1.0) per = 1.0;
+    if(!sensor->eoEntities.isEmpty()){
+        str += QString("%1").arg(
+            QString::number(sensor->eoEntities.size()));
+        auto arr = sensor->eoEntities;
 
-            double r = per * outerRadius;
-            double angleDeg = t.angle - 90;
-            double theta = qDegreesToRadians(angleDeg);
-            int tx = center.x() + int(r * cos(theta));
-            int ty = center.y() + int(r * sin(theta));
 
-            // Draw dotted line from center to target
-            p.setPen(QPen(radarGreen, 1, Qt::DotLine));
-            p.drawLine(center, QPoint(tx, ty));
 
-            // Draw target dot - blue normally, red if hovered
-            if (i == hoveredTargetIndex) {
-                p.setBrush(Qt::red);
-            } else {
-                p.setBrush(Qt::blue);
-            }
-            p.setPen(Qt::NoPen);
-            p.drawEllipse(QPointF(tx, ty), 4, 4);
+        for(auto entity = sensor->eoEntities.begin();
+            entity != sensor->eoEntities.end(); ++entity){
 
-            // Draw labels ONLY if this target is hovered
-            if (i == hoveredTargetIndex) {
-                p.setPen(QPen(Qt::yellow, 1));
-                QFont font = p.font();
-                font.setPointSize(8);
-                p.setFont(font);
-
-                Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
-                QString targetName = targetPlatform ? QString::fromStdString(targetPlatform->Name) : "Unknown";
-
-                // Show angle, distance, and name for hovered target
-                QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
-                QString distText = QString("D:%1km").arg(t.radius, 0, 'f', 1);
-                QString nameText = QString("N:%1").arg(targetName);
-
-                // Draw text at target position (offset slightly)
-                p.drawText(tx + 6, ty - 6, angleText);
-                p.drawText(tx + 6, ty + 12, distText);
-                p.drawText(tx + 6, ty + 30, nameText);
-            }
-            i++;
+            double vec2const = 100;
+            double posx = center.x() +entity->vec2.x*vec2const*outerRadius;
+            double posy = center.y() -entity->vec2.y*vec2const*outerRadius;
+            str += QString("[Name:%1 Size:%2, Screen:(x:%3,y:%4)], View:(x:%5,y:%6,z:%7), "
+                           "Heading: %8, Pitch:%9").arg(
+                entity->name.c_str(),
+                QString::number(entity->size),
+                QString::number(posx/*entity->vec2.x*/),
+                QString::number(posy/*entity->vec2.y*/),
+                QString::number(entity->vec3.x),
+                QString::number(entity->vec3.y),
+                QString::number(entity->vec3.z),
+                QString::number(entity->relativeHeading),
+                QString::number(entity->relativePitch)
+                           );
+            //Angles angle = vectorToAngles(entity->vec3.x,entity->vec3.y,entity->vec3.z);
+            int heading = entity->relativeHeading;
+            int pitch   = entity->relativePitch;
+            QPoint position(posx,posy);
+            drawEntity(p,position,100000*entity->size,heading,pitch);
         }
-    } else if (entity && sensor) {
-        // No targets message
-        p.setPen(Qt::white);
-        QFont font = p.font();
-        font.setPointSize(10);
-        p.setFont(font);
-        QRect textRect = p.fontMetrics().boundingRect("No CSM Targets Detected");
-        p.drawText(center.x() - textRect.width()/2, center.y(), "No CSM Targets Detected");
+    }else{
+        str += "NA";
     }
+    debug(str,D_INIT);
 
     qint64 elapsedMs = timer.elapsed();
     Profiler::currentFrame->csmdisplay = elapsedMs;
 }
-
-// %%% Drawing Methods %%%
 /* Draw display background */
 void EODisplay::drawBackground(QPainter &p)
 {
@@ -275,6 +263,130 @@ void EODisplay::drawBackground(QPainter &p)
     p.drawRect(inner);
     p.restore();
 }
+// %%% Drawing Methods %%%
+/* Draw Vanishing point */
+void EODisplay::drawVanishingPoint(QPainter &p, const QPoint &center)
+{
+    p.save();
+    p.setPen(QPen(QColor(255, 105, 180)));
+    int cross = qMax(15, width()/40);
+    p.drawLine(center.x() - cross, center.y(), center.x() + cross, center.y());
+    p.drawLine(center.x(), center.y() - cross, center.x(), center.y() + cross);
+    // QRect sq(center.x() - 5, center.y() - 5, 10, 10);
+    // p.setBrush(QColor(255, 245, 238));
+    // p.drawRect(sq);
+    p.restore();
+}
+
+void EODisplay::drawEntity(QPainter &p, const QPoint &position, double size, int heading =0,int pitch = 0)
+{
+    // //p.save();
+    // p.setPen(QPen(QColor(255, 105, 180)));
+    // p.setBrush(Qt::NoBrush);
+
+
+    // loadMultiDirectionalImages(p ,heading, pitch);
+    // QRect rect;
+    // // Draw rectangle
+    // if(imgAng == ImageAngles::Top || imgAng == ImageAngles::Bottom){
+    //     rect = QRect(position.x() - size/2, position.y() - size/2, size, size*2);
+    // }else{
+    //     rect = QRect(position.x() - size/2, position.y() - size/2, size*2, size);
+    // }
+    // //p.drawRect(rect);
+
+    // // Set text properties
+    // // p.setPen(Qt::black);
+    // // QFont font = p.font();
+    // // font.setPixelSize(size/(1.02));  // better fit inside box
+    // // p.setFont(font);
+
+    // // Draw centered text inside rectangle
+    // // QString anglesHeadingNPitch = QString::number(heading) +" "+QString::number(pitch);
+    // // QString anglesHeadingNPitch = QString(QChar(static_cast<char>(imgAng)));
+    // // p.drawText(rect, Qt::AlignCenter, anglesHeadingNPitch);
+    // QPixmap pixmap(angleImagesPath[static_cast<int>(imgAng)].first);
+    // if (pixmap.isNull()){
+    //     str += "Image not loaded!";
+    //     return;
+    // }
+    // //p.drawImage(rect, angleImagesPath);
+    // p.drawPixmap(rect, pixmap);
+    p.setPen(QPen(QColor(255, 105, 180)));
+    p.setBrush(Qt::NoBrush);
+
+    loadMultiDirectionalImages(p ,heading, pitch);
+
+    QRect rect(position.x() - size/2, position.y() - size/2, size*2, size*2.05);
+    // if(imgAng == ImageAngles::Top || imgAng == ImageAngles::Bottom){
+    //     rect = QRect(position.x() - size/2, position.y() - size/2, size, size*2);
+    // }else{
+    //     rect = QRect(position.x() - size/2, position.y() - size/2, size*2, size);
+    // }
+
+    QPixmap pixmap(angleImagesPath[static_cast<int>(imgAng)].first);
+    if (pixmap.isNull()){
+        str += "Image not loaded!";
+        return;
+    }
+
+    QPoint center = rect.center();
+
+    QPixmap scaled = pixmap.scaled(rect.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    int x = center.x() - scaled.width() / 2;
+    int y = center.y() - scaled.height() / 2;
+
+    p.drawPixmap(x, y, scaled);
+}
+
+void EODisplay::drawHorizon(QPainter &p, const QPoint &center)
+{
+    p.save();
+    p.setPen(radarGreen);
+    p.drawLine(padding, height()/2, width()-padding, height()/2);
+    p.drawLine(width()/2, padding, width()/2, height() - padding);
+    // int cross = qMax(15, width()/40);
+    // p.drawLine(center.x() - cross, center.y(), center.x() + cross, center.y());
+    // p.drawLine(center.x(), center.y() - cross, center.x(), center.y() + cross);
+    // QRect sq(center.x() - 5, center.y() - 5, 10, 10);
+    // p.setBrush(QColor(255, 245, 238));
+    // p.drawRect(sq);
+    p.restore();
+}
+
+void EODisplay::loadMultiDirectionalImages(QPainter &p, int heading, int pitch)
+{
+    if(heading < 45 && heading > -45){
+        imgAng = ImageAngles::Back;
+    }else if(heading > 45 && heading < 135){
+        imgAng = ImageAngles::Right;
+    }else if((heading > 135 && heading < 180) || (heading < -135 && heading > -180)){
+        imgAng = ImageAngles::Front;
+    }else if(heading < -45 && heading > -135){
+        imgAng = ImageAngles::Left;
+    }
+    if(pitch < -45){
+        imgAng = ImageAngles::Bottom;
+    }else if(pitch > 45){
+        imgAng = ImageAngles::Top;
+    }
+
+}
+/* Draw center cross mark */
+void EODisplay::drawCenterMark(QPainter &p, const QPoint &center)
+{
+    p.save();
+    p.setPen(QPen(Qt::yellow, 2));
+    int cross = qMax(6, width()/80);
+    p.drawLine(center.x() - cross, center.y(), center.x() + cross, center.y());
+    p.drawLine(center.x(), center.y() - cross, center.x(), center.y() + cross);
+    QRect sq(center.x() - 5, center.y() - 5, 10, 10);
+    p.setBrush(Qt::yellow);
+    p.drawRect(sq);
+    p.restore();
+}
+
 
 /* Draw outer radar ring */
 void EODisplay::drawRadarRing(QPainter &p, const QPoint &center, int outerRadius)
@@ -341,19 +453,7 @@ void EODisplay::drawTicksAndLabels(QPainter &p, const QPoint &center, int outerR
     p.restore();
 }
 
-/* Draw center cross mark */
-void EODisplay::drawCenterMark(QPainter &p, const QPoint &center)
-{
-    p.save();
-    p.setPen(QPen(radarGreen, 2));
-    int cross = qMax(6, width()/80);
-    p.drawLine(center.x() - cross, center.y(), center.x() + cross, center.y());
-    p.drawLine(center.x(), center.y() - cross, center.x(), center.y() + cross);
-    QRect sq(center.x() - 5, center.y() - 5, 10, 10);
-    p.setBrush(radarGreen);
-    p.drawRect(sq);
-    p.restore();
-}
+
 
 /* Draw top marker triangle and label */
 void EODisplay::drawTopMarker(QPainter &p, const QPoint &center, int outerRadius)
@@ -417,4 +517,20 @@ void EODisplay::drawTargetAndPath(QPainter &painter)
             painter.drawText(targetX - 20, targetY + 5, QString("%1").arg(radius));
         }
     }
+}
+
+void EODisplay::debug(const QString &str, const debugEODisplay &currentdebugType)
+{
+    if(dbgIsAllow(currentdebugType) && (currentdebugType == D_NULL)){
+        return;
+    }
+    if(dbgIsAllow(currentdebugType)){
+        qDebug()<<currentdebugType<<str;
+    }
+}
+
+bool EODisplay::dbgIsAllow(const debugEODisplay &currentdebugType)
+{
+    bool InsideList = ((currentdebugType & debugList) == currentdebugType);
+    return InsideList;
 }

@@ -1,6 +1,14 @@
 #include "profilecategaory.h"
 #include <core/Debug/console.h>
 #include "core/GlobalRegistry.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/adsbsensor.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/aesaradar.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/aissensor.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/csm.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/eosensor.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/esm.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/radar.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h"
 #include "core/Hierarchy/EntityProfiles/fixedpoints.h"
 #include "core/Hierarchy/EntityProfiles/formation.h"
 #include "core/Hierarchy/EntityProfiles/iff.h"
@@ -45,6 +53,9 @@ void ProfileCategaory::setProfileType(Constants::EntityType Type){
 
 
 Folder* ProfileCategaory::addFolder(std::string folderName, std::string iD){
+    if(folderName.empty()){
+        return nullptr;
+    }
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->status("add");
     Folder *folder = new Folder(parent);
@@ -74,6 +85,9 @@ Folder* ProfileCategaory::addFolder(std::string folderName, std::string iD){
 }
 
 void ProfileCategaory::addFolderWithObject(Folder *folder){
+    if(folder == nullptr){
+        return;
+    }
     folder->parentID = ID;
     Folders.insert({folder->ID, folder});
 
@@ -97,9 +111,13 @@ void ProfileCategaory::addFolderWithObject(Folder *folder){
 
 
 void ProfileCategaory::removeFolder(std::string folderID){
-
+    if(folderID.empty()){
+        return;
+    }
     delete Folders[folderID];
+    Folders[folderID] = nullptr;
     Folders.erase(folderID);
+
     // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->status("remove");
@@ -114,8 +132,10 @@ void ProfileCategaory::removeFolder(std::string folderID){
     }
 }
 
-Entity* ProfileCategaory::addEntity(std::string entityName, std::string iD){
-
+Entity* ProfileCategaory::addEntity(std::string entityName, std::string iD, QString data1){
+    if(entityName.empty()){
+        return nullptr;
+    }
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->status("add");
     Entity *entity;
@@ -123,7 +143,32 @@ Entity* ProfileCategaory::addEntity(std::string entityName, std::string iD){
         entity = new Radio(parent);
     }else
         if(type == Constants::EntityType::Sensor){
-            entity = new Sensor(parent);
+            if(data1 == "Generic"){
+                entity = new Radar(parent);
+            }else
+            if(data1 == "CSM"){
+                entity = new CSM(parent);
+            }else
+            if(data1 == "ESM"){
+                entity = new ESM(parent);
+            }else
+            if(data1 == "EO"){
+                entity = new EOSensor(parent);
+            }else
+            if(data1 == "Sonar"){
+                entity = new Sonar(parent);
+            }else
+            if(data1 == "AIS"){
+                entity = new AISSensor(parent);
+            }else
+            if(data1 == "ADSB"){
+                entity = new ADSBSensor(parent);
+            }else
+            if(data1 == "AESA"){
+                entity = new AESARadar(parent);
+            }else{
+                entity = new Sensor(parent);
+            }
         }else
             if(type == Constants::EntityType::FixedPoint){
                 entity = new FixedPoints(parent);
@@ -219,6 +264,9 @@ Entity* ProfileCategaory::addEntity(std::string entityName, std::string iD){
 }
 
 void ProfileCategaory::addEntityWithObject(Entity *entity){
+    if(entity == nullptr){
+        return;
+    }
     entity->parentID = ID;
     Entities.insert({entity->ID, entity});
 
@@ -287,7 +335,9 @@ void ProfileCategaory::addEntityWithObject(Entity *entity){
 }
 
 void ProfileCategaory::removeEntity(std::string EntityID){
-
+    if(EntityID.empty()){
+        return;
+    }
     delete Entities[EntityID];
     Entities.erase(EntityID);
     // Automatically update hierarchy's Folders
@@ -409,7 +459,33 @@ void ProfileCategaory::fromJson(const QJsonObject& obj)
                 entity = new Radio(parent);
             }else
                 if(type == Constants::EntityType::Sensor){
-                    entity = new Sensor(parent);
+                QString data1 = entityJson["SensorType"].toString();
+                    if(data1 == "Generic"){
+                        entity = new Radar(parent);
+                    }else
+                    if(data1 == "CSM"){
+                        entity = new CSM(parent);
+                    }else
+                    if(data1 == "ESM"){
+                        entity = new ESM(parent);
+                    }else
+                    if(data1 == "EO"){
+                        entity = new EOSensor(parent);
+                    }else
+                    if(data1 == "Sonar"){
+                        entity = new Sonar(parent);
+                    }else
+                    if(data1 == "AIS"){
+                        entity = new AISSensor(parent);
+                    }else
+                    if(data1 == "ADSB"){
+                        entity = new ADSBSensor(parent);
+                    }else
+                    if(data1 == "AESA"){
+                        entity = new AESARadar(parent);
+                    }else{
+                        entity = new Sensor(parent);
+                    }
                 }else
                     if(type == Constants::EntityType::FixedPoint){
                         entity = new FixedPoints(parent);

@@ -38,9 +38,6 @@
 #include <QProgressDialog>                      // For progress indication
 #include <GUI/Editors/customresizableoverlaydock.h>
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h"
-#include "tests/runtimeeditortest/runtimeeditor_test.h"
-#include "GUI/mainwindow.h"
-#include <QTimer>
 
 QJsonObject RuntimeEditor::s_missionData;
 QString     RuntimeEditor::s_missionFilePath;
@@ -66,8 +63,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     setWindowTitle("Runtime Editor");
     resize(1100, 600);
     setupEnhancedDockWidgets();
-    // setupMenuBar();
-    // connect(menuBar, &MenuBar::exitTriggered, qApp, &QApplication::quit);
     setupToolBars();
     runtime = new Runtime();
     hierarchy = runtime->hierarchy;
@@ -78,7 +73,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     NetworkManager *networkManager = runtime->networkManager;
     library = runtime->Library;
     lastSavedFilePath = "";
-
     runtime->scriptengine->setHierarchy(hierarchy, treeView, renderer);
     HierarchyConnector::instance()->setHierarchy(hierarchy);
     HierarchyConnector::instance()->setLibrary(library);
@@ -181,7 +175,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         );
     displayTabs->setCornerWidget(dupBtn, Qt::TopRightCorner);
     connect(dupBtn, &QPushButton::clicked, this, &RuntimeEditor::createDuplicateSensorsWindow);
-    // Connect simulation updates to displays
     connect(simulation, &Simulation::Update, radarDisplayUI, &RadarDisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, radarDisplayUI, &RadarDisplay::RemoveEntity);
     connect(simulation, &Simulation::Update, csmDisplayUI, &CSMDisplay::updateRadar);
@@ -194,10 +187,8 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(hierarchy, &Hierarchy::entityRemoved, adsbDisplayUI, &ADSBDisplay::RemoveEntity);
     connect(simulation, &Simulation::Update, esmDisplayUI, &ESMDisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, esmDisplayUI, &ESMDisplay::RemoveEntity);
-    // IFFDisplay connections
     connect(simulation, &Simulation::Update, iffDisplayUI, &IFFDisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, iffDisplayUI, &IFFDisplay::RemoveEntity);
-    // RADIO DISPLAY CONNECTIONS
     connect(simulation, &Simulation::Update, radioDisplayUI, &RADIODisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, radioDisplayUI, &RADIODisplay::RemoveEntity);
     //by Aman
@@ -210,27 +201,20 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(simulation, &Simulation::Update, sonarDisplayUI, &SonarDisplay::updateRadar);  // add by amjad
     // ── Sonar scan loop ──
     connect(simulation, &Simulation::Update, this, [=]() {
-
         if (!sonarDisplayUI || !hierarchy) return;
-        // if (!hierarchy->Sensors) return;
-
         Entity* selectedEntity = sonarDisplayUI->getSelectedEntity();
-
         if (!selectedEntity) return;
         for (auto& [id, sensor] : hierarchy->Sensors)
         {
             Sonar* sonar = dynamic_cast<Sonar*>(sensor);
-
             if (!sonar) continue;
             if (sonar->parentEntity != selectedEntity) continue;
-
             sonar->scan();
             sonarDisplayUI->setPingInterval(sonar->getPingInterval());
             sonarDisplayUI->updateContacts(sonar->getLastResults());
         }
     });
     connect(hierarchy, &Hierarchy::entityRemoved, sonarDisplayUI, &SonarDisplay::RemoveEntity);     // add by amjad
-
     connect(displayDock, &QDockWidget::visibilityChanged, this, [=](bool visible) {
         if (!visible) {
             if (runtimeToolBar) {
@@ -282,7 +266,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             }
         }
     });
-
     connect(simulation, &Simulation::Update, this, [=]() {
         if (iffDisplayUI && iffDisplayUI->entity && iffDisplayUI->iff) {
             iffDisplayUI->iff->interrogateTargets(iffDisplayUI->entity->transform);
@@ -320,7 +303,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
     connect(inspector, &Inspector::valueChanged, this, [=]{ renderer->Render(0.01f); markUnsavedChanges(); });
     if (runtimeToolBar && tacticalDisplay && tacticalDisplay->canvas && simulation) {
-        // Wire canvas to simulation so weapon blast effects are rendered
         simulation->setCanvas(tacticalDisplay->canvas);
         connect(simulation, &Simulation::Render, runtimeToolBar, &RuntimeToolBar::onElapsedTime);
         connect(runtimeToolBar, &RuntimeToolBar::startTriggered, [=]() {
@@ -383,7 +365,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         });
         networkToolBar->setNetworkManager(networkManager);
     } else {
-
     }
     connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
             this, [=](const QString& filePath, RecentProjectsManager::EditorType type) {
@@ -425,16 +406,17 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     if (tacticalDisplay && tacticalDisplay->canvas) {
         connect(tacticalDisplay->canvas, &CanvasWidget::selectEntitybyCursor,
                 treeView, &HierarchyTree::selectEntityById);
-
         connect(tacticalDisplay->canvas, &CanvasWidget::selectEntitybyCursor,
                 this, [=](const QString& entityId) {
-                    // if (!hierarchy->Entities) return;
+                    m_lastSelectedEntityId = entityId;
                     auto it = hierarchy->Entities.find(entityId.toStdString());
                     if (it == hierarchy->Entities.end()) return;
-
                     Entity* entity = it->second;
                     QString entityName = QString::fromStdString(entity->Name);
                     QString displayName = capitalizeFirstLetter(entityName);
+                    // *** YEH ADD KARO ***
+                    QString category = entity->toJson()["Category"].toObject()["value"].toString();
+                    filterSensorTabsForEntity(entityId, category);
                     if (displayDock) displayDock->setWindowTitle("Sensors - " + displayName);
                     if (!inspectorDock->isLocked()) {
                         for (Inspector* insp : inspectors) {
@@ -448,12 +430,12 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                         if (iffDisplayUI)   iffDisplayUI->selectEntity(entity);
                         if (radioDisplayUI) radioDisplayUI->selectEntity(entity);
                         if (csmDisplayUI)   csmDisplayUI->selectEntity(entity);
-                        if (eoDisplayUI)   eoDisplayUI->selectEntity(entity);
+                        if (eoDisplayUI)    eoDisplayUI->selectEntity(entity);
                         if (aisDisplayUI)   aisDisplayUI->selectEntity(entity);
-                        if (adsbDisplayUI)   adsbDisplayUI->selectEntity(entity);
+                        if (adsbDisplayUI)  adsbDisplayUI->selectEntity(entity);
                         if (esmDisplayUI)   esmDisplayUI->selectEntity(entity);
-                        if(aesaRadarDisplayUI) aesaRadarDisplayUI->selectEntity(entity);
-                        if(sonarDisplayUI) sonarDisplayUI->selectEntity(entity);
+                        if (aesaRadarDisplayUI) aesaRadarDisplayUI->selectEntity(entity);
+                        if (sonarDisplayUI) sonarDisplayUI->selectEntity(entity);
                     }
                 });
     }
@@ -477,10 +459,8 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             // Check if this entity is a Formation
             if (hierarchy&&
                 hierarchy->Entities.find(entityID.toStdString()) != hierarchy->Entities.end()) {
-
                 Entity* entity = (hierarchy->Entities)[entityID.toStdString()];
                 Formation* formation = dynamic_cast<Formation*>(entity);
-
                 if (formation) {
                     QList<QString> formationEntityIds;
                     formationEntityIds.append(entityID);
@@ -492,7 +472,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                             formationEntityIds.append(mothershipId);
                         }
                     }
-
                     // Add all allies
                     if (formation->formationPositions) {
                         for (const auto& pair : *formation->formationPositions) {
@@ -505,19 +484,14 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                             }
                         }
                     }
-
                     Console::log("Formation selected with " +
                                  std::to_string(formationEntityIds.size()) + " entities");
-
-                    // Use HierarchyTree's method to select all
                     treeView->selectMultipleEntitiesInTree(formationEntityIds);
-
-                    // Also select in tactical display
                     if (tacticalDisplay && tacticalDisplay->canvas) {
                         tacticalDisplay->canvas->selectMultipleEntities(formationEntityIds);
                     }
 
-                    return; // Don't proceed with single selection
+                    return;
                 }
             }
         }
@@ -543,9 +517,14 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 } else if (type == "folder") {
                     inspector->init(ID, displayName + "_self", (hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
                 } else if (type == "entity") {
+                    m_lastSelectedEntityId = data["ID"].toString();
+
                     inspector->init(data["ID"].toString(), displayName + "_self", (hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
 
                     if (!displayDock || !displayDock->isLocked()) {
+                        QJsonObject entityJson = (hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson();
+                        QString category = entityJson["Category"].toObject()["value"].toString();
+                        filterSensorTabsForEntity(data["ID"].toString(), category);
                         if (displayDock) displayDock->setWindowTitle("Sensors - " + displayName);
 
                         if (radarDisplayUI)
@@ -574,40 +553,19 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 }
             }
         }
-        if (!inspectorDock->isVisible()) {
-            // Hide other right panel docks (but NOT sensors)
-            if (libraryDock && libraryDock->isVisible()) {
-                libraryDock->hide();
-            }
-            if (textScriptDock && textScriptDock->isVisible()) {
-                textScriptDock->hide();
-            }
-            if (loggerDock && loggerDock->isVisible()) {
-                loggerDock->hide();
-            }
+        bool anyDockVisible = (displayDock && displayDock->isVisible()) ||
+                              (libraryDock && libraryDock->isVisible()) ||
+                              (textScriptDock && textScriptDock->isVisible()) ||
+                              (loggerDock && loggerDock->isVisible());
 
+        if (!inspectorDock->isVisible() && !anyDockVisible) {
+            // Koi dock nahi khula — Inspector dikhao
             QRect sGeo = sidebarDock->geometry();
-            if (displayDock && displayDock->isVisible()) {
-                QRect displayGeo = displayDock->geometry();
-                inspectorDock->setGeometry(displayGeo);
-                inspectorDock->show();
-            } else {
-                inspectorDock->setGeometry(sGeo.x(), sGeo.y() + sGeo.height() + 5,
-                                           sGeo.width(), height() - sGeo.y() - sGeo.height() - 150);
-                inspectorDock->show();
-                inspectorDock->raise();
-            }
-        } else {
-            if (displayDock && displayDock->isVisible()) {
-                displayDock->raise();
-            } else {
-                inspectorDock->raise();
-            }
+            inspectorDock->setGeometry(sGeo.x(), sGeo.y() + sGeo.height() + 5,
+                                       sGeo.width(), height() - sGeo.y() - sGeo.height() - 150);
+            inspectorDock->show();
+            inspectorDock->raise();
         }
-        // if (tacticalDisplay && type == "entity") {
-        //     tacticalDisplay->selectedMesh(data["ID"].toString());
-        // } else {
-        // }
 
         if (tacticalDisplay && type == "entity") {
             tacticalDisplay->selectedMesh(data["ID"].toString());
@@ -626,9 +584,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 }
             }
 
-            // Sirf canvas par entity highlight karo
-            // Tree mein selectEntityById BILKUL MAT BULAO
-            // Taaki focus sensor par hi rahe
+
             if (hierarchy ) {
                 auto it = hierarchy->Entities.find(parentEntityId.toStdString());
                 if (it != hierarchy->Entities.end()) {
@@ -901,9 +857,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             runtime->recorder->getReplay(), &Replay::resume);
     connect(loggerDialog, &LoggerDialog::replayStop,
             runtime->recorder->getReplay(), &Replay::stop);
-
-    // connect(loggerDialog, &LoggerDialog::replayFileLoaded,
-    //         runtime->recorder->getReplay(), &Replay::fileLoaded);
     connect(loggerDialog, &LoggerDialog::loadRecording, this, [=](const QString &filePath) {
         if (runtime && runtime->recorder) {
             if (runtime->recorder->getReplay()->replayLoaded(filePath)) {
@@ -959,11 +912,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         }
     });
 
-    //    connect(runtime->recording, &Recording::mapFrame, this, [=](const qint64 &s_duration) {
-    //        if (runtime && runtime->sqlite) {
-    //            runtime->sqlite->insertFrame(s_duration);
-    //        }
-    //    });
+
 
 
     connect(runtime->replay, &Replay::getMaxFrameIndexNDuration,
@@ -998,12 +947,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             /* To Add Entity */
             runtime->recording->entityAddedInBetween( parentID, ID, entityName);
 
-            // /* To Add Mesh of Entity*/
-            // if(hierarchy->Platforms->at(ID.toStdString())->meshRenderer2d){
-            //     //runtime->recording->meshRenderer2DCRUD(ID,hierarchy->Platforms->at(ID.toStdString())->meshRenderer2d);
-            // }else{
-            //     qDebug()<<"Mesh not exist";
-            // }
+
         }
     });
     connect(hierarchy, &Hierarchy::meshRenderer2DisAdded, this, [this](const QString &ID, MeshRenderer2D* meshRenderer2D){
@@ -1075,13 +1019,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     /*            Freeze and Defreeze the Button             */
     connect(runtime->recorder,&Recorder::freezeButtonOperation,
             loggerDialog,&LoggerDialog::freezeButtonOperation);
-    /**********************************************************
- *                   Logger End                           *
- **********************************************************/
 
-    /**********************************************************
- *              Timeline Widget Start                     *
- **********************************************************/
     connect(runtime->replay, &Replay::setMaxDuration,
             this, [=](qint64* maxDuration) {
                 if (loggerDialog) {
@@ -1096,23 +1034,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                         jumpInBetween(clickedTimestamp);
                 }
             });
-    /**********************************************************
-*                Timeline Widget End                      *
- **********************************************************/
 
-    /**********************************************************
- *       Recording Send  to SQLite PayLoad Start          *
- **********************************************************/
-
-    /*                     SQLite Instance                    */
-    // connect(runtime->recorder, &Recorder::getSQLite,
-    //         this, [=](SQLite *m_sqlite) {
-    //             if (runtime && runtime->sqlite) {
-    //                 runtime->sqlite->setSQLite(m_sqlite);
-    //             }
-    //         });
-
-    /*                         PayLoad                        */
     connect(runtime->recording, &Recording::sendPayLoad,
             this, [=](PayLoad m_payLoad) {
 
@@ -1127,53 +1049,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 }
             });
 
-    /*                  Tranform                              */
-    // connect(hierarchy->Components->at(), &Recording::sendPayLoad,
-    //         this, [=](PayLoad m_payLoad) {
-
-    //             if (runtime && runtime->sqlite) {
-    //                 runtime->sqlite->receivePayLoad(m_payLoad);
-    //             }
-    // });
-    /**********************************************************
- *       Recording Send  to SQLite PayLoad End            *
- **********************************************************/
-
-    //createEntitiesCreate(QString parentId,QString ID,QString EntityName,bool Profile);
-    //    connect(runtime->replay, &Replay::createEntitiesCreate,
-    //            this, [=](QString parentId,QString ID,QString EntityName,bool Profile) {
-    //        if (hierarchy) {
-    //            hierarchy->addEntityViaLogger(parentId,ID,EntityName,Profile);
-    //        }
-    //    });
-    //    connect(runtime->recording, &Recording::entityCreated, this, [=](const QString &parentID,
-    //                                                                     const QString &id,
-    //                                                                     const QString &name,
-    //                                                                     const qint64  &created) {
-    //        if (runtime && runtime->sqlite) {
-    //            runtime->sqlite->insertEntity(parentID, id, name, created);
-    //        }
-    //    });
-    // connect(hierarchy, &Hierarchy::entityRemoved, this , [=](std::string id,
-    //                                                          qint64 deleted){
-    //     if (runtime && runtime->sqlite) {
-    //         runtime->sqlite->insertEntity(id, deleted);
-    //     }
-    // });
-
-
-
-    //    connect(runtime->replay, &Replay::getEntities, this, [=](){
-    //        if (runtime && runtime->sqlite) {
-    //            runtime->replay->entitiesMap = runtime->sqlite->getEntities();
-    //        }
-    //    });
-    //    connect(runtime->replay, &Replay::getFrame, this, [=](int s_frameIndex){
-    //        if (runtime && runtime->sqlite) {
-    //            runtime->replay->frame = runtime->sqlite->getFrameByFrameIndex(s_frameIndex);
-    //            //runtime->sqlite->showFrameByFrameIndex(s_frameIndex);
-    //        }
-    //    });
     connect(runtime->replay, &Replay::render, this, [=](float deltatime){
         if (tacticalDisplay && tacticalDisplay->canvas) {
             tacticalDisplay->canvas->Render(deltatime);
@@ -1206,7 +1081,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         }
     });
     //=================================================================================================
-    runUnitTestsOnce();
 
 }
 void RuntimeEditor::setupEnhancedDockWidgets()
@@ -1289,19 +1163,84 @@ void RuntimeEditor::setupEnhancedDockWidgets()
     setupOverlay(textScriptDock, textScriptView, "TestScript", false);
 
     // --- 4. Display (Sensors) Panel ---
+    // displayDock = new CustomResizableOverlayDock("Sensors", this);
+    // displayTabs = new QTabWidget(this);
+    // displayTabs->setStyleSheet("QTabWidget::pane { background-color: #0F2636; }"
+    //                            "QTabBar::tab { background-color: #1A3A4F; color: white; padding: 1px; }"
+    //                            "QTabBar::tab:selected { background-color: #00BFFF; }");
+
+
+    // displayDock->handlePos = CustomResizableOverlayDock::Left;
+
+    // // lock button sirf Sensors dock mein show hoga
+    // displayDock->enableLockButton();
+
+    // // Create sensor displays
+    // radarDisplayUI = new RadarDisplay(displayTabs);
+    // if (hierarchy) radarDisplayUI->setHierarchy(hierarchy);
+    // displayTabs->addTab(radarDisplayUI, "Radar");
+
+    // iffDisplayUI = new IFFDisplay(displayTabs);
+    // if (hierarchy) iffDisplayUI->setHierarchy(hierarchy);
+    // displayTabs->addTab(iffDisplayUI, "IFF");
+
+    // radioDisplayUI = new RADIODisplay(displayTabs);
+    // if (hierarchy) radioDisplayUI->setHierarchy(hierarchy);
+    // displayTabs->addTab(radioDisplayUI, "RADIO");
+
+    // esmDisplayUI = new ESMDisplay(displayTabs);
+    // if (hierarchy) esmDisplayUI->setHierarchy(hierarchy);
+    // displayTabs->addTab(esmDisplayUI, "ESM");
+
+    // csmDisplayUI = new CSMDisplay(displayTabs);
+    // if (hierarchy) csmDisplayUI->setHierarchy(hierarchy);
+    // displayTabs->addTab(csmDisplayUI, "CSM");
+
+    // eoDisplayUI = new EODisplay(displayTabs);
+    // if (hierarchy) eoDisplayUI->setHierarchy(hierarchy);
+    // displayTabs->addTab(eoDisplayUI, "EO");
+
+    // aisDisplayUI = new AISDisplay(displayTabs);
+    // if (hierarchy) aisDisplayUI->setHierarchy(hierarchy);
+    // displayTabs->addTab(aisDisplayUI, "AIS");
+
+    // adsbDisplayUI = new ADSBDisplay(displayTabs);
+    // if (hierarchy) adsbDisplayUI->setHierarchy(hierarchy);
+    // displayTabs->addTab(adsbDisplayUI, "ADSB");
+
+    // aesaRadarDisplayUI = new AESARadarDisplay(displayTabs);
+    // if(hierarchy) aesaRadarDisplayUI->setHierarchy(hierarchy);
+    // displayTabs->addTab(aesaRadarDisplayUI,"AESA");
+
+    // displayTabs->setCurrentIndex(0);
+    // displayDock->setWidget(displayTabs);
+    // displayDock->setFloating(true);
+    // displayDock->setParent(this);
+    // displayDock->setWindowFlags(Qt::SubWindow | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
+    // displayDock->setMinimumWidth(280);
+    // displayDock->setMinimumHeight(300);
+    // displayDock->handlePos = CustomResizableOverlayDock::Left;
+    // displayDock->setStyleSheet("CustomResizableOverlayDock { "
+    //                            "background-color: #0F2636; "
+    //                            "color: white; "
+    //                            "border-left: 4px solid #00BFFF; }"
+    //                            "CustomResizableOverlayDock::title { "
+    //                            "background-color: #1A3A4F; "
+    //                            "color: white; "
+    //                            "font-weight: bold; }");
+    // --- 4. Display (Sensors) Panel ---   [Yeh pura block replace karo]
     displayDock = new CustomResizableOverlayDock("Sensors", this);
-    displayTabs = new QTabWidget(this);
-    displayTabs->setStyleSheet("QTabWidget::pane { background-color: #0F2636; }"
-                               "QTabBar::tab { background-color: #1A3A4F; color: white; padding: 1px; }"
-                               "QTabBar::tab:selected { background-color: #00BFFF; }");
-
-
     displayDock->handlePos = CustomResizableOverlayDock::Left;
-
-    // ADD THIS LINE — lock button sirf Sensors dock mein show hoga
     displayDock->enableLockButton();
 
-    // Create sensor displays
+    // Important: displayTabs ka parent displayDock hona chahiye
+    displayTabs = new QTabWidget(displayDock);
+    displayTabs->setStyleSheet(
+        "QTabWidget::pane { background-color: #0F2636; }"
+        "QTabBar::tab { background-color: #1A3A4F; color: white; padding: 8px; }"
+        "QTabBar::tab:selected { background-color: #00BFFF; color: #0F2636; }");
+
+    // === Sensor Displays Create Karo (Sirf Ek Baar) ===
     radarDisplayUI = new RadarDisplay(displayTabs);
     if (hierarchy) radarDisplayUI->setHierarchy(hierarchy);
     displayTabs->addTab(radarDisplayUI, "Radar");
@@ -1335,26 +1274,39 @@ void RuntimeEditor::setupEnhancedDockWidgets()
     displayTabs->addTab(adsbDisplayUI, "ADSB");
 
     aesaRadarDisplayUI = new AESARadarDisplay(displayTabs);
-    if(hierarchy) aesaRadarDisplayUI->setHierarchy(hierarchy);
-    displayTabs->addTab(aesaRadarDisplayUI,"AESA");
+    if (hierarchy) aesaRadarDisplayUI->setHierarchy(hierarchy);
+    displayTabs->addTab(aesaRadarDisplayUI, "AESA");
+
+    sonarDisplayUI = new SonarDisplay(displayTabs);
+    if (hierarchy) sonarDisplayUI->setHierarchy(hierarchy);
+    displayTabs->addTab(sonarDisplayUI, "SONAR");
 
     displayTabs->setCurrentIndex(0);
+
+    // === + Button for Duplicate Window ===
+    QPushButton *dupBtn = new QPushButton("+");
+    dupBtn->setFixedSize(22, 22);
+    dupBtn->setToolTip("Open duplicate Sensors window");
+    dupBtn->setStyleSheet(
+        "QPushButton { background-color: #1A3A4F; color: #00BFFF; "
+        "border: 1px solid #00BFFF; border-radius: 3px; font-weight: bold; font-size: 14px; }"
+        "QPushButton:hover { background-color: #00BFFF; color: #0F2636; }");
+
+    displayTabs->setCornerWidget(dupBtn, Qt::TopRightCorner);
+    connect(dupBtn, &QPushButton::clicked, this, &RuntimeEditor::createDuplicateSensorsWindow);
+
+    // Dock setup
     displayDock->setWidget(displayTabs);
     displayDock->setFloating(true);
     displayDock->setParent(this);
     displayDock->setWindowFlags(Qt::SubWindow | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
     displayDock->setMinimumWidth(280);
     displayDock->setMinimumHeight(300);
-    displayDock->handlePos = CustomResizableOverlayDock::Left;
-    displayDock->setStyleSheet("CustomResizableOverlayDock { "
-                               "background-color: #0F2636; "
-                               "color: white; "
-                               "border-left: 4px solid #00BFFF; }"
-                               "CustomResizableOverlayDock::title { "
-                               "background-color: #1A3A4F; "
-                               "color: white; "
-                               "font-weight: bold; }");
-
+    displayDock->setStyleSheet(
+        "CustomResizableOverlayDock { background-color: #0F2636; color: white; "
+        "border-left: 4px solid #00BFFF; }"
+        "CustomResizableOverlayDock::title { background-color: #1A3A4F; color: white; "
+        "font-weight: bold; }");
     // --- 5. Logger Panel ---
     loggerDock = new CustomResizableOverlayDock("Logger", this);
     loggerDialog = new LoggerDialog(this);
@@ -1421,8 +1373,7 @@ void RuntimeEditor::setupEnhancedDockWidgets()
     int panelWidth = 300;
     int rightX = winW - panelWidth - 20;
     int leftX = 20;
-    int topY = 80;  // Start below toolbar
-
+    int topY = 80;
     // LEFT SIDE
     int hierarchyHeight = 400;
     hierarchyDock->setGeometry(leftX, topY, panelWidth, hierarchyHeight);
@@ -1464,12 +1415,44 @@ void RuntimeEditor::setupEnhancedDockWidgets()
     sidebarDock->raise();
     inspectorDock->raise();
 
-    // --- CONNECT SIDEBAR VIEW SELECTION ---
+    // // --- CONNECT SIDEBAR VIEW SELECTION ---
+    // connect(sidebar, &SidebarWidget::viewSelected, this, [this](const QString &viewName) {
+    //     inspectorDock->hide();
+    //     libraryDock->hide();
+    //     textScriptDock->hide();
+    //     // displayDock->hide();
+    //     // loggerDock->hide();
+
+    //     CustomResizableOverlayDock* target = nullptr;
+    //     if (viewName == "Inspector") {
+    //         target = inspectorDock;
+    //     } else if (viewName == "Library") {
+    //         target = libraryDock;
+    //     } else if (viewName == "TextScript") {
+    //         target = textScriptDock;
+    //     } else if (viewName == "Sensors") {
+    //         target = displayDock;
+    //     } else if (viewName == "Logger") {
+    //         target = loggerDock;
+    //     } else if (viewName == "Console") {
+    //         consoleDock->setVisible(!consoleDock->isVisible());
+    //         if (consoleDock->isVisible()) consoleDock->raise();
+    //         return;
+    //     }
+
+    //     if (target) {
+    //         QRect sGeo = sidebarDock->geometry();
+    //         target->setGeometry(sGeo.x(), sGeo.y() + sGeo.height() + 5,
+    //                             sGeo.width(), height() - sGeo.y() - sGeo.height() - 150);
+    //         target->show();
+    //         target->raise();
+    //     }
+    // });
     connect(sidebar, &SidebarWidget::viewSelected, this, [this](const QString &viewName) {
         inspectorDock->hide();
         libraryDock->hide();
         textScriptDock->hide();
-        // displayDock->hide();
+        // displayDock->hide();   // do not hide here – we'll show it conditionally
         // loggerDock->hide();
 
         CustomResizableOverlayDock* target = nullptr;
@@ -1480,6 +1463,14 @@ void RuntimeEditor::setupEnhancedDockWidgets()
         } else if (viewName == "TextScript") {
             target = textScriptDock;
         } else if (viewName == "Sensors") {
+            if (m_lastSelectedEntityId.isEmpty() ||
+                !hierarchy ||
+                !hierarchy->Entities.count(m_lastSelectedEntityId.toStdString())) {
+                while (displayTabs->count() > 0)
+                    displayTabs->removeTab(0);
+                if (displayDock)
+                    displayDock->setWindowTitle("Sensors");
+            }
             target = displayDock;
         } else if (viewName == "Logger") {
             target = loggerDock;
@@ -1497,7 +1488,6 @@ void RuntimeEditor::setupEnhancedDockWidgets()
             target->raise();
         }
     });
-
     // --- CONNECT MOVE/RESIZE SIGNALS ---
     connect(sidebarDock, &CustomResizableOverlayDock::moved, this, [this](QPoint oldPos, QPoint newPos) {
         QPoint delta = newPos - oldPos;
@@ -1541,6 +1531,7 @@ void RuntimeEditor::setupEnhancedDockWidgets()
     inspectorDocks.append(inspectorDock);
     inspectors.append(inspector);
 }
+
 void RuntimeEditor::resizeEvent(QResizeEvent *event)
 {
     QMainWindow::resizeEvent(event);
@@ -1601,7 +1592,7 @@ void RuntimeEditor::onDockVisibilityChanged(bool visible)
     QDockWidget* dock = qobject_cast<QDockWidget*>(sender());
     if (dock) {
         if (visible) {
-            dock->raise(); // Bring to front when shown
+            dock->raise();
         }
     }
 }
@@ -1609,23 +1600,28 @@ void RuntimeEditor::onDockVisibilityChanged(bool visible)
 
 void RuntimeEditor::toggleRadarDisplay() {
     if (!displayDock->isVisible()) {
-        // Hide other right-side panels (but save inspector state)
+
         libraryDock->hide();
         textScriptDock->hide();
-        // loggerDock->hide();
+        if (m_lastSelectedEntityId.isEmpty() ||
+            !hierarchy ||
+            !hierarchy->Entities.count(m_lastSelectedEntityId.toStdString())) {
+            // Koi entity select nahi — blank dikhao
+            while (displayTabs->count() > 0)
+                displayTabs->removeTab(0);
+            if (displayDock)
+                displayDock->setWindowTitle("Sensors");
+        }
 
         QRect sGeo = sidebarDock->geometry();
-
-        // Check if inspector is open
         if (inspectorDock->isVisible()) {
-            // If inspector is open, place sensors at SAME POSITION
             QRect inspectorGeo = inspectorDock->geometry();
             displayDock->setGeometry(inspectorGeo);
             displayDock->show();
-            displayDock->raise(); // Sensors on top
-            // inspector remains behind - don't hide it
+            displayDock->raise();
+
         } else {
-            // If no inspector, place below sidebar
+
             displayDock->setGeometry(sGeo.x(), sGeo.y() + sGeo.height() + 5,
                                      sGeo.width(), height() - sGeo.y() - sGeo.height() - 150);
             displayDock->show();
@@ -1638,7 +1634,6 @@ void RuntimeEditor::toggleRadarDisplay() {
         }
     } else {
         displayDock->hide();
-        // Agar sensors hide ho raha hai aur inspector open tha, to inspector ko raise karein
         if (inspectorDock->isVisible()) {
             inspectorDock->raise();
         }
@@ -1891,7 +1886,6 @@ void RuntimeEditor::loadFromJsonFile(const QString &filePath)
         // loadingDialog->deleteLater();
         return;
     }
-
     QByteArray data = file.readAll();
     file.close();
     QJsonParseError err;
@@ -2053,8 +2047,8 @@ RuntimeEditor::~RuntimeEditor()
 {
     std::cout << "RuntimeEditor delete";
     delete runtime;
-
 }
+
 void RuntimeEditor::updateStatusBar(const QString &message) {
     if (statusBar) {
         //statusBar->showMessage(message);
@@ -2063,7 +2057,6 @@ void RuntimeEditor::updateStatusBar(const QString &message) {
 void RuntimeEditor::loadRecentProject(const QString& filePath)
 {
     QProgressDialog* loadingDialog = new QProgressDialog(this);
-
     loadingDialog->setLabelText("Loading...");
     loadingDialog->setCancelButton(nullptr);
     loadingDialog->setRange(0, 0);
@@ -2096,19 +2089,15 @@ void RuntimeEditor::loadRecentProject(const QString& filePath)
             border: none;
         }
     )");
-
-
     loadingDialog->move(geometry().center() - loadingDialog->rect().center());
     loadingDialog->show();
     QCoreApplication::processEvents();
-
     if (!QFile::exists(filePath)) {
         QMessageBox::warning(this, "File Not Found",
                              "The runtime project file was not found");
         loadingDialog->deleteLater();
         return;
     }
-
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this, "Error", "Failed to open runtime file");
@@ -2156,11 +2145,9 @@ void RuntimeEditor::loadRecentProject(const QString& filePath)
     // Add to RuntimeEditor-specific recent projects
     RecentProjectsManager::instance()->addToRecentProjects(filePath,
                                                            RecentProjectsManager::RuntimeEditor);
-
     // Close loading dialog
     loadingDialog->close();
     loadingDialog->deleteLater();
-
     updateStatusBar("Runtime loaded: " + QFileInfo(filePath).fileName());
 
 }
@@ -2181,6 +2168,7 @@ void RuntimeEditor::showApplicationDialog()
     connect(&dialog,&ApplicationDialog::fpsState,simulation,&Simulation::setFps);
     connect(&dialog,&ApplicationDialog::canvasIconState,tacticalDisplay->canvas,&CanvasWidget::setImageScale);
     dialog.exec();
+
 }
 void RuntimeEditor::triggerSidebarView(const QString &viewName)
 {
@@ -2197,9 +2185,6 @@ void RuntimeEditor::triggerSidebarView(const QString &viewName)
     }
 
     QList<QAbstractButton*> buttons = buttonGroup->buttons();
-
-
-
     for (QAbstractButton *button : buttons) {
         QString btnViewName = button->property("viewName").toString();
         if (btnViewName == viewName) {
@@ -2317,7 +2302,6 @@ void RuntimeEditor::showPanelContextMenu(const QPoint &pos)
     showSidebar->setChecked(sidebarDock->isVisible());
 
     QAction *selected = contextMenu.exec(mapToGlobal(pos));
-
     if (selected == showHierarchy) {
         hierarchyDock->setVisible(!hierarchyDock->isVisible());
         if (hierarchyDock->isVisible()) hierarchyDock->raise();
@@ -2341,19 +2325,17 @@ void RuntimeEditor::showPanelContextMenu(const QPoint &pos)
         if (sidebarDock->isVisible()) sidebarDock->raise();
     }
 }
+
 void RuntimeEditor::createDuplicateSensorsWindow()
 {
     CustomResizableOverlayDock *dupDock = new CustomResizableOverlayDock("Sensors - Copy", this);
     dupDock->enableLockButton();
     dupDock->setFloating(true);
     dupDock->setParent(this);
-    // dupDock->setWindowFlags(Qt::SubWindow | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
     dupDock->setWindowFlags(Qt::Tool | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint | Qt::WindowMinMaxButtonsHint);
-
     dupDock->setMinimumWidth(280);
     dupDock->setMinimumHeight(300);
     dupDock->resize(300, height() - sidebarDock->geometry().y() - sidebarDock->height() - 150);
-
     dupDock->handlePos = CustomResizableOverlayDock::Left;
     dupDock->setStyleSheet(
         "CustomResizableOverlayDock { "
@@ -2369,64 +2351,59 @@ void RuntimeEditor::createDuplicateSensorsWindow()
         "QTabBar::tab { background-color: #1A3A4F; color: white; padding: 8px; }"
         "QTabBar::tab:selected { background-color: #00BFFF; color: #0F2636; }");
 
-    RadarDisplay *dupRadar = new RadarDisplay(dupTabs);
-    dupRadar->setHierarchy(hierarchy);
-    dupTabs->addTab(dupRadar, "Radar");
+    // ── Dup display widgets ──
+    RadarDisplay  *dupRadar = new RadarDisplay(dupTabs);  dupRadar->setHierarchy(hierarchy);
+    IFFDisplay    *dupIff   = new IFFDisplay(dupTabs);    dupIff->setHierarchy(hierarchy);
+    RADIODisplay  *dupRadio = new RADIODisplay(dupTabs);  dupRadio->setHierarchy(hierarchy);
+    ESMDisplay    *dupEsm   = new ESMDisplay(dupTabs);    dupEsm->setHierarchy(hierarchy);
+    CSMDisplay    *dupCsm   = new CSMDisplay(dupTabs);    dupCsm->setHierarchy(hierarchy);
+    EODisplay     *dupEo    = new EODisplay(dupTabs);     dupEo->setHierarchy(hierarchy);
+    AISDisplay    *dupAis   = new AISDisplay(dupTabs);    dupAis->setHierarchy(hierarchy);
+    ADSBDisplay   *dupAdsb  = new ADSBDisplay(dupTabs);   dupAdsb->setHierarchy(hierarchy);
+    AESARadarDisplay *dupAesa = new AESARadarDisplay(dupTabs); dupAesa->setHierarchy(hierarchy);
+    SonarDisplay  *dupSonar = new SonarDisplay(dupTabs);
 
-    IFFDisplay *dupIff = new IFFDisplay(dupTabs);
-    dupIff->setHierarchy(hierarchy);
-    dupTabs->addTab(dupIff, "IFF");
+    // ── Saare tabs pehle add karo  ──
+    dupTabs->addTab(dupRadar,  "Radar");
+    dupTabs->addTab(dupIff,    "IFF");
+    dupTabs->addTab(dupRadio,  "RADIO");
+    dupTabs->addTab(dupEsm,    "ESM");
+    dupTabs->addTab(dupCsm,    "CSM");
+    dupTabs->addTab(dupEo,     "EO");
+    dupTabs->addTab(dupAis,    "AIS");
+    dupTabs->addTab(dupAdsb,   "ADSB");
+    dupTabs->addTab(dupAesa,   "AESA");
+    dupTabs->addTab(dupSonar,  "SONAR");
 
-    RADIODisplay *dupRadio = new RADIODisplay(dupTabs);
-    dupRadio->setHierarchy(hierarchy);
-    dupTabs->addTab(dupRadio, "RADIO");
-
-    ESMDisplay *dupEsm = new ESMDisplay(dupTabs);
-    dupEsm->setHierarchy(hierarchy);
-    dupTabs->addTab(dupEsm, "ESM");
-
-    CSMDisplay *dupCsm = new CSMDisplay(dupTabs);
-    dupCsm->setHierarchy(hierarchy);
-    dupTabs->addTab(dupCsm, "CSM");
-
-    // ← AIS & ADSB bhi add karo (file 1 mein hain)
-    AISDisplay *dupAis = new AISDisplay(dupTabs);
-    dupAis->setHierarchy(hierarchy);
-    dupTabs->addTab(dupAis, "AIS");
-
-    ADSBDisplay *dupAdsb = new ADSBDisplay(dupTabs);
-    dupAdsb->setHierarchy(hierarchy);
-    dupTabs->addTab(dupAdsb, "ADSB");
-
-    SonarDisplay *dupSonar = new SonarDisplay(dupTabs);
-    dupTabs->addTab(dupSonar, "SONAR");
-
-    dupTabs->setCurrentIndex(displayTabs->currentIndex());
     dupDock->setWidget(dupTabs);
 
-    // Simulation update connections
+    // ── Simulation update connections ──
     connect(simulation, &Simulation::Update, dupRadar,  &RadarDisplay::updateRadar);
     connect(simulation, &Simulation::Update, dupIff,    &IFFDisplay::updateRadar);
     connect(simulation, &Simulation::Update, dupRadio,  &RADIODisplay::updateRadar);
     connect(simulation, &Simulation::Update, dupEsm,    &ESMDisplay::updateRadar);
     connect(simulation, &Simulation::Update, dupCsm,    &CSMDisplay::updateRadar);
+    connect(simulation, &Simulation::Update, dupEo,     &EODisplay::updateRadar);
     connect(simulation, &Simulation::Update, dupAis,    &AISDisplay::updateRadar);
     connect(simulation, &Simulation::Update, dupAdsb,   &ADSBDisplay::updateRadar);
+    connect(simulation, &Simulation::Update, dupAesa,   &AESARadarDisplay::updateRadar);
     connect(simulation, &Simulation::Update, dupSonar,  &SonarDisplay::updateRadar);
 
-    // Entity removed connections
+    // ── Entity removed connections ──
     connect(hierarchy, &Hierarchy::entityRemoved, dupRadar,  &RadarDisplay::RemoveEntity);
     connect(hierarchy, &Hierarchy::entityRemoved, dupIff,    &IFFDisplay::RemoveEntity);
     connect(hierarchy, &Hierarchy::entityRemoved, dupRadio,  &RADIODisplay::RemoveEntity);
     connect(hierarchy, &Hierarchy::entityRemoved, dupEsm,    &ESMDisplay::RemoveEntity);
     connect(hierarchy, &Hierarchy::entityRemoved, dupCsm,    &CSMDisplay::RemoveEntity);
+    connect(hierarchy, &Hierarchy::entityRemoved, dupEo,     &EODisplay::RemoveEntity);
     connect(hierarchy, &Hierarchy::entityRemoved, dupAis,    &AISDisplay::RemoveEntity);
     connect(hierarchy, &Hierarchy::entityRemoved, dupAdsb,   &ADSBDisplay::RemoveEntity);
+    connect(hierarchy, &Hierarchy::entityRemoved, dupAesa,   &AESARadarDisplay::RemoveEntity);
     connect(hierarchy, &Hierarchy::entityRemoved, dupSonar,  &SonarDisplay::RemoveEntity);
 
-    // Sonar scan results
+    // ── Sonar scan ──
     connect(simulation, &Simulation::Update, this, [=]() {
-        if (!hierarchy ) return;
+        if (!hierarchy) return;
         for (auto& [id, sensor] : hierarchy->Sensors) {
             Sonar *sonar = dynamic_cast<Sonar*>(sensor);
             if (!sonar) continue;
@@ -2434,74 +2411,270 @@ void RuntimeEditor::createDuplicateSensorsWindow()
         }
     });
 
-    // Entity selection sync — lock respect karo
+    // ════════════════════════════════════════════════════════════════
+    // ── LOCAL FILTER LAMBDA
+    // ════════════════════════════════════════════════════════════════
+    auto applyDupFilter = [=](const QString &entityId) {
+        auto clearAllTabs = [&]() {
+            while (dupTabs->count() > 0)
+                dupTabs->removeTab(0);
+            dupDock->setWindowTitle("Sensors - Copy");
+        };
+
+
+        if (entityId.isEmpty() || !hierarchy || !hierarchy->Entities.count(entityId.toStdString())) {
+            clearAllTabs();
+            return;
+        }
+
+        Entity* entity = hierarchy->Entities[entityId.toStdString()];
+
+        static const QMap<QString, QString> sensorTypeToTab = {
+            {"Radar", "Radar"}, {"AESA Radar", "AESA"}, {"ESM", "ESM"},
+            {"CSM", "CSM"}, {"EO", "EO"}, {"AIS", "AIS"},
+            {"ADSB", "ADSB"}, {"Sonar", "SONAR"}
+        };
+
+        QStringList attachedTabs;
+
+
+        QJsonObject entityJson = entity->toJson();
+        QJsonObject sensorsMap = entityJson["sensors"].toObject()["sensors"].toObject();
+
+        for (const QString &key : sensorsMap.keys()) {
+            QString sType = sensorsMap[key].toObject()["SensorType"].toString();
+            QString tab = sensorTypeToTab.value(sType, "");
+            if (!tab.isEmpty() && !attachedTabs.contains(tab)) {
+                attachedTabs.append(tab);
+            }
+        }
+
+
+        if (!entityJson["iffs"].toObject()["iffs"].toObject().isEmpty())
+            attachedTabs.append("IFF");
+
+
+        if (!entityJson["radios"].toObject()["radios"].toObject().isEmpty())
+            attachedTabs.append("RADIO");
+
+
+        if (attachedTabs.isEmpty()) {
+            clearAllTabs();
+            return;
+        }
+
+
+        QString currentTabName = (dupTabs->count() > 0)
+                                     ? dupTabs->tabText(dupTabs->currentIndex())
+                                     : QString();
+
+
+        while (dupTabs->count() > 0)
+            dupTabs->removeTab(0);
+
+
+        static const QStringList tabOrder = {
+            "Radar", "IFF", "RADIO", "ESM", "CSM", "EO",
+            "AIS", "ADSB", "AESA", "SONAR"
+        };
+
+        int newCurrentIndex = -1;
+        for (const QString &tabName : tabOrder) {
+            if (!attachedTabs.contains(tabName))
+                continue;
+
+            QWidget *widget = nullptr;
+            if (tabName == "Radar") widget = dupRadar;
+            else if (tabName == "IFF") widget = dupIff;
+            else if (tabName == "RADIO") widget = dupRadio;
+            else if (tabName == "ESM") widget = dupEsm;
+            else if (tabName == "CSM") widget = dupCsm;
+            else if (tabName == "EO") widget = dupEo;
+            else if (tabName == "AIS") widget = dupAis;
+            else if (tabName == "ADSB") widget = dupAdsb;
+            else if (tabName == "AESA") widget = dupAesa;
+            else if (tabName == "SONAR") widget = dupSonar;
+
+            if (widget) {
+                int idx = dupTabs->addTab(widget, tabName);
+                if (tabName == currentTabName)
+                    newCurrentIndex = idx;
+            }
+        }
+
+        if (newCurrentIndex == -1 && dupTabs->count() > 0)
+            newCurrentIndex = 0;
+
+        if (newCurrentIndex != -1)
+            dupTabs->setCurrentIndex(newCurrentIndex);
+
+        // Title update
+        QString displayName = capitalizeFirstLetter(
+            QString::fromStdString(entity->Name));
+        dupDock->setWindowTitle("Sensors - " + displayName);
+    };
+
+    // ── Entity selection sync (lock respect karo) ──
     connect(treeView, &HierarchyTree::itemSelected, dupDock,
             [=](QVariantMap data) {
                 if (dupDock->isLocked()) return;
-                QString type = data["type"].toString();
-                if (type != "entity" ) return;
-                auto it = hierarchy->Entities.find(
-                    data["ID"].toString().toStdString());
+
+                QString type;
+                if (data["type"].type() == QVariant::Map) {
+                    QVariantMap td = data["type"].toMap();
+                    if (td.contains("type") && td["type"].toString() == "option")
+                        type = "profile";
+                } else {
+                    type = data["type"].toString();
+                }
+                if (type != "entity") return;
+
+                QString entityId = data["ID"].toString();
+                auto it = hierarchy->Entities.find(entityId.toStdString());
                 if (it == hierarchy->Entities.end()) return;
                 Entity *e = it->second;
-                QString entityName = capitalizeFirstLetter(QString::fromStdString(e->Name));
-                dupDock->setWindowTitle("Sensors - " + entityName);
+
+                // Filter tabs for this entity
+                applyDupFilter(entityId);
+
+                // Select entity in all dup displays
                 dupRadar->selectEntity(e);
                 dupIff->selectEntity(e);
                 dupRadio->selectEntity(e);
-                dupCsm->selectEntity(e);
                 dupEsm->selectEntity(e);
+                dupCsm->selectEntity(e);
+                dupEo->selectEntity(e);
                 dupAis->selectEntity(e);
                 dupAdsb->selectEntity(e);
+                dupAesa->selectEntity(e);
+                dupSonar->selectEntity(e);
             });
-    // Position
+
+    // ── Position ──
     QRect sGeo = sidebarDock->geometry();
     dupDock->setGeometry(sGeo.x() - 320,
                          sGeo.y() + sGeo.height() + 5,
                          sGeo.width(),
                          height() - sGeo.y() - sGeo.height() - 150);
-    if (hierarchy ) {
+    if (hierarchy) {
         QString currentId = inspector ? inspector->getConnectedID() : "";
         if (!currentId.isEmpty() &&
             hierarchy->Entities.count(currentId.toStdString())) {
-            Entity *e = (hierarchy->Entities)[currentId.toStdString()];
-            QString entityName = capitalizeFirstLetter(QString::fromStdString(e->Name));
-            dupDock->setWindowTitle("Sensors - " + entityName);
+            Entity *e = hierarchy->Entities[currentId.toStdString()];
+            applyDupFilter(currentId);
             dupRadar->selectEntity(e);
             dupIff->selectEntity(e);
             dupRadio->selectEntity(e);
-            dupCsm->selectEntity(e);
             dupEsm->selectEntity(e);
+            dupCsm->selectEntity(e);
+            dupEo->selectEntity(e);
             dupAis->selectEntity(e);
             dupAdsb->selectEntity(e);
+            dupAesa->selectEntity(e);
         }
     }
     dupDock->show();
     dupDock->raise();
 }
-void RuntimeEditor::runUnitTestsOnce()
+void RuntimeEditor::filterSensorTabsByCategory(const QString &category)
 {
-    static bool testsRun = false;
-    if (testsRun) return;
-    testsRun = true;
 
-    QTimer::singleShot(0, []() {
-        Console* console = nullptr;
-        MainWindow* mw = MainWindow::instance();
-        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-            console = mw->databaseEditor->console;
-        }
-        if (!console) {
-            qDebug() << "RuntimeEditor: console not available, cannot run tests";
-            return;
-        }
+}
 
-        // Use the existing RuntimeEditor instance (the real one)
-        // because it's created when switching to runtime editor.
-        if (mw && mw->runtimeEditor) {
-            runRuntimeEditorTests(mw->runtimeEditor, console);
-        } else {
-            qDebug() << "RuntimeEditor: instance not available";
-        }
-    });
+void RuntimeEditor::filterSensorTabsForEntity(const QString &entityId, const QString &category)
+{
+
+    auto clearAllTabs = [this]() {
+        while (displayTabs->count() > 0)
+            displayTabs->removeTab(0);
+        if (displayDock)
+            displayDock->setWindowTitle("Sensors");
+    };
+
+
+    if (entityId.isEmpty() || !hierarchy || !hierarchy->Entities.count(entityId.toStdString())) {
+        clearAllTabs();
+        return;
+    }
+
+    static const QMap<QString, QString> sensorTypeToTab = {
+        {"Radar", "Radar"}, {"AESA Radar", "AESA"}, {"ESM", "ESM"},
+        {"CSM", "CSM"}, {"EO", "EO"}, {"AIS", "AIS"},
+        {"ADSB", "ADSB"}, {"Sonar", "SONAR"}
+    };
+
+    QStringList attachedTabs;
+    QJsonObject entityJson = hierarchy->Entities[entityId.toStdString()]->toJson();
+
+    QJsonObject sensorsMap = entityJson["sensors"].toObject()["sensors"].toObject();
+    for (const QString &key : sensorsMap.keys()) {
+        QString sType = sensorsMap[key].toObject()["SensorType"].toString();
+        QString tab = sensorTypeToTab.value(sType, "");
+        if (!tab.isEmpty() && !attachedTabs.contains(tab))
+            attachedTabs.append(tab);
+    }
+
+    if (!entityJson["iffs"].toObject()["iffs"].toObject().isEmpty())
+        attachedTabs.append("IFF");
+
+    if (!entityJson["radios"].toObject()["radios"].toObject().isEmpty())
+        attachedTabs.append("RADIO");
+
+
+    if (attachedTabs.isEmpty()) {
+        clearAllTabs();
+        return;
+    }
+
+
+    QString currentTabName = (displayTabs->count() > 0)
+                                 ? displayTabs->tabText(displayTabs->currentIndex())
+                                 : QString();
+
+
+    while (displayTabs->count() > 0)
+        displayTabs->removeTab(0);
+
+
+    static const QStringList tabOrder = {
+        "Radar", "IFF", "RADIO", "ESM", "CSM", "EO", "AIS", "ADSB", "AESA", "SONAR"
+    };
+
+    int newCurrentIndex = -1;
+
+    for (const QString &tabName : tabOrder) {
+        if (!attachedTabs.contains(tabName))
+            continue;
+
+        QWidget *widget = nullptr;
+        if      (tabName == "Radar") widget = radarDisplayUI;
+        else if (tabName == "IFF")   widget = iffDisplayUI;
+        else if (tabName == "RADIO") widget = radioDisplayUI;
+        else if (tabName == "ESM")   widget = esmDisplayUI;
+        else if (tabName == "CSM")   widget = csmDisplayUI;
+        else if (tabName == "EO")    widget = eoDisplayUI;
+        else if (tabName == "AIS")   widget = aisDisplayUI;
+        else if (tabName == "ADSB")  widget = adsbDisplayUI;
+        else if (tabName == "AESA")  widget = aesaRadarDisplayUI;
+        else if (tabName == "SONAR") widget = sonarDisplayUI;
+
+        if (!widget) continue;
+
+        int idx = displayTabs->addTab(widget, tabName);
+        if (tabName == currentTabName)
+            newCurrentIndex = idx;
+    }
+
+
+    if (newCurrentIndex == -1 && displayTabs->count() > 0)
+        newCurrentIndex = 0;
+
+    if (newCurrentIndex != -1)
+        displayTabs->setCurrentIndex(newCurrentIndex);
+
+
+    QString displayName = capitalizeFirstLetter(
+        QString::fromStdString(hierarchy->Entities[entityId.toStdString()]->Name));
+    if (displayDock)
+        displayDock->setWindowTitle("Sensors - " + displayName);
 }

@@ -1,4 +1,8 @@
-
+/* ========================================================================= */
+/* File: tacticalrules.h                                                     */
+/* Purpose: Defines the Tactical Rules widget for engagement, sensors, etc.  */
+/* Written by: Arti Rajpoot                                                  */
+/* ========================================================================= */
 #pragma once
 
 #include <QWidget>
@@ -28,7 +32,7 @@ public:
     QJsonObject  toJsonBothTeams() const;
     void         loadBothTeamsFromJson(const QJsonObject &data);
         int getRulesCount() const;
-        static void runUnitTestsOnce();
+        // static void runUnitTestsOnce();
 
 public slots:
     // Called by DoctrineParameters::forceTypeChanged

@@ -1,13 +1,27 @@
 #ifndef GUI_MISSION_TEST_H
 #define GUI_MISSION_TEST_H
 
-#include <QString>
+#include <QObject>
 
-// Forward declaration
 class MissionEditor;
-class Console;
 
-// Function to run all GUI tests for Mission Editor
-void runMissionEditorTests(MissionEditor* editor, Console* console);
+class TestMissionEditor : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void init();
+    void cleanup();
+
+    void testPanelsExist();
+    void testDoctrineDefaultForceType();
+    void testTacticalRulesInitiallyEmpty();
+    void testHierarchyTreeHasItems();
+
+    void testUnsavedChangesFlag();
+
+private:
+    MissionEditor* editor = nullptr;
+};
 
 #endif // GUI_MISSION_TEST_H

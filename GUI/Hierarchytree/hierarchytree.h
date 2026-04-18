@@ -178,14 +178,6 @@ private slots:
     void updateProfileDropdown();
 
 private:
-    // %%% UI Components %%%
-    // Main tree widget
-    // QTreeWidget *tree;
-    // Search bar for filtering entities
-    // QLineEdit *searchBar;
-    // Dropdown for profile filtering
-    // QComboBox *profileFilterCombo;
-    // Context menu
     ContextMenu *contextMenu;
     // %%% Layouts %%%
     QVBoxLayout *mainLayout;

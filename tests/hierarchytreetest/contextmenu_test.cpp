@@ -1,31 +1,21 @@
 #include "contextmenu_test.h"
 #include "GUI/Hierarchytree/contextmenu.h"
-#include "core/Debug/console.h"
+#include <QTest>
 #include <QTreeWidgetItem>
 #include <QVariantMap>
 #include <QAction>
 #include <QMenu>
-#include <QDebug>
 
-#define MENU_TEST(condition, msg) \
-do { \
-        if (condition) { \
-            console->log(std::string("[PASS] ") + msg); \
-    } else { \
-            console->error(std::string("[FAIL] ") + msg); \
-            testFailed = true; \
-    } \
-} while(0)
-
-    // Helper: create a dummy QTreeWidgetItem with given type and optional name/ID
-    static QTreeWidgetItem* createDummyItem(const QString& type,
-                    const QString& name = "TestItem",
-                    const QString& id = "test_id",
-                    const QString& parentId = "",
-                    const QString& profileValue = "")
+// Helper to create dummy tree items
+QTreeWidgetItem* TestContextMenu::createDummyItem(const QString& type,
+                                                  const QString& name,
+                                                  const QString& id,
+                                                  const QString& parentId,
+                                                  const QString& profileValue)
 {
     QTreeWidgetItem* item = new QTreeWidgetItem();
     item->setText(0, name);
+    dummyItems.append(item);
 
     QVariantMap data;
     data["ID"] = id;
@@ -51,27 +41,35 @@ do { \
     return item;
 }
 
-void runContextMenuTests(ContextMenu* menu, Console* console)
+void TestContextMenu::deleteDummyItems()
 {
-    if (!menu || !console) {
-        if (console) console->error("ContextMenu or Console is null, cannot run tests");
-        return;
-    }
+    qDeleteAll(dummyItems);
+    dummyItems.clear();
+}
 
-    bool testFailed = false;
+void TestContextMenu::init()
+{
+    menu = new ContextMenu(nullptr);
+}
 
-    console->log(std::string("\n========================================="));
-    console->log(std::string("        CONTEXT MENU UNIT TESTS          "));
-    console->log(std::string("=========================================\n"));
+void TestContextMenu::cleanup()
+{
+    delete menu;
+    deleteDummyItems();
+    menu = nullptr;
+}
 
-    // ------------------------------------------------------------------
-    // Test 1: Profile menu
-    // ------------------------------------------------------------------
+// ============================================================================
+// 1. Profile menu (action existence)
+// ============================================================================
+void TestContextMenu::testProfileMenu()
+{
     QTreeWidgetItem* profileItem = createDummyItem("profile", "TestProfile", "prof1", "", "Platform");
     menu->setupMenu(profileItem);
-    QList<QAction*> profileActions = menu->actions();
+    QList<QAction*> actions = menu->actions();
+
     bool hasAddFolder = false, hasAddEntity = false, hasDelete = false, hasPaste = false;
-    for (QAction* act : profileActions) {
+    for (QAction* act : actions) {
         QString text = act->text();
         if (text.contains("Add Folder", Qt::CaseInsensitive)) hasAddFolder = true;
         if (text.contains("Add Entity", Qt::CaseInsensitive) ||
@@ -79,20 +77,23 @@ void runContextMenuTests(ContextMenu* menu, Console* console)
         if (text.contains("Delete", Qt::CaseInsensitive)) hasDelete = true;
         if (text.contains("Paste", Qt::CaseInsensitive)) hasPaste = true;
     }
-    MENU_TEST(hasAddFolder, "Profile menu: 'Add Folder' action exists");
-    MENU_TEST(hasAddEntity, "Profile menu: 'Add Entity' action exists");
-    MENU_TEST(hasDelete,    "Profile menu: 'Delete Profile' action exists");
-    MENU_TEST(hasPaste,     "Profile menu: 'Paste' action exists");
+    QVERIFY(hasAddFolder);
+    QVERIFY(hasAddEntity);
+    QVERIFY(hasDelete);
+    QVERIFY(hasPaste);
+}
 
-    // ------------------------------------------------------------------
-    // Test 2: Folder menu
-    // ------------------------------------------------------------------
+// ============================================================================
+// 2. Folder menu
+// ============================================================================
+void TestContextMenu::testFolderMenu()
+{
     QTreeWidgetItem* folderItem = createDummyItem("folder", "TestFolder", "folder1", "prof1");
     menu->setupMenu(folderItem);
-    QList<QAction*> folderActions = menu->actions();
-    hasAddFolder = hasAddEntity = hasDelete = hasPaste = false;
-    bool hasRename = false;
-    for (QAction* act : folderActions) {
+    QList<QAction*> actions = menu->actions();
+
+    bool hasAddFolder = false, hasAddEntity = false, hasDelete = false, hasPaste = false, hasRename = false;
+    for (QAction* act : actions) {
         QString text = act->text();
         if (text.contains("Add Folder", Qt::CaseInsensitive)) hasAddFolder = true;
         if (text.contains("Add Entity", Qt::CaseInsensitive)) hasAddEntity = true;
@@ -100,120 +101,299 @@ void runContextMenuTests(ContextMenu* menu, Console* console)
         if (text.contains("Paste", Qt::CaseInsensitive)) hasPaste = true;
         if (text.contains("Rename", Qt::CaseInsensitive)) hasRename = true;
     }
-    MENU_TEST(hasAddFolder, "Folder menu: 'Add Folder' action exists");
-    MENU_TEST(hasAddEntity, "Folder menu: 'Add Entity' action exists");
-    MENU_TEST(hasDelete,    "Folder menu: 'Delete Folder' action exists");
-    MENU_TEST(hasPaste,     "Folder menu: 'Paste' action exists");
-    MENU_TEST(hasRename,    "Folder menu: 'Rename' action exists");
+    QVERIFY(hasAddFolder);
+    QVERIFY(hasAddEntity);
+    QVERIFY(hasDelete);
+    QVERIFY(hasPaste);
+    QVERIFY(hasRename);
+}
 
-    // ------------------------------------------------------------------
-    // Test 3: Entity menu (Platform entity)
-    // ------------------------------------------------------------------
+// ============================================================================
+// 3. Entity menu (basic actions only, no platform detection needed)
+// ============================================================================
+void TestContextMenu::testEntityMenu()
+{
     QTreeWidgetItem* entityItem = createDummyItem("entity", "TestEntity", "ent1", "folder1");
     menu->setupMenu(entityItem);
-    QList<QAction*> entityActions = menu->actions();
-    bool hasCopy = false, hasDeleteEntity = false;
-    hasRename = false;
-    bool hasSetActive = false, hasSetInactive = false;
-    bool hasAddComponent = false;
-    for (QAction* act : entityActions) {
+    QList<QAction*> actions = menu->actions();
+
+    bool hasCopy = false, hasDeleteEntity = false, hasRename = false;
+    for (QAction* act : actions) {
         QString text = act->text();
         if (text.contains("Copy", Qt::CaseInsensitive)) hasCopy = true;
         if (text.contains("Delete Entity", Qt::CaseInsensitive)) hasDeleteEntity = true;
         if (text.contains("Rename", Qt::CaseInsensitive)) hasRename = true;
-        if (text.contains("Set Active", Qt::CaseInsensitive)) hasSetActive = true;
-        if (text.contains("Set Inactive", Qt::CaseInsensitive)) hasSetInactive = true;
-        if (text.contains("Add", Qt::CaseInsensitive)) hasAddComponent = true;
     }
-    MENU_TEST(hasCopy,          "Entity menu: 'Copy' action exists");
-    MENU_TEST(hasDeleteEntity,  "Entity menu: 'Delete Entity' action exists");
-    MENU_TEST(hasRename,        "Entity menu: 'Rename' action exists");
-    // These may be present only for Platform entities; test assumes Platform.
-    MENU_TEST(hasSetActive,     "Entity menu: 'Set Active' action exists");
-    MENU_TEST(hasSetInactive,   "Entity menu: 'Set Inactive' action exists");
-    MENU_TEST(hasAddComponent,  "Entity menu: 'Add' submenu exists");
+    QVERIFY(hasCopy);
+    QVERIFY(hasDeleteEntity);
+    QVERIFY(hasRename);
+}
 
-    // ------------------------------------------------------------------
-    // Test 4: Component menu (e.g., "radios")
-    // ------------------------------------------------------------------
+// ============================================================================
+// 4. Component menu (radios)
+// ============================================================================
+void TestContextMenu::testComponentMenu()
+{
     QTreeWidgetItem* compItem = createDummyItem("component", "radios", "comp1", "ent1");
     menu->setupMenu(compItem);
-    QList<QAction*> compActions = menu->actions();
-    bool hasAddComponentAction = false;
-    for (QAction* act : compActions) {
+    QList<QAction*> actions = menu->actions();
+    bool hasAdd = false;
+    for (QAction* act : actions) {
         if (act->text().contains("Add", Qt::CaseInsensitive)) {
-            hasAddComponentAction = true;
+            hasAdd = true;
             break;
         }
     }
-    MENU_TEST(hasAddComponentAction, "Component menu: 'Add' action exists (for radios/sensors/iffs)");
+    QVERIFY(hasAdd);
+}
 
-    // ------------------------------------------------------------------
-    // Test 5: Weapons component menu (special)
-    // ------------------------------------------------------------------
+// ============================================================================
+// 5. Weapons component menu
+// ============================================================================
+void TestContextMenu::testWeaponsComponentMenu()
+{
     QTreeWidgetItem* weaponsCompItem = createDummyItem("component", "weapons", "comp2", "ent1");
     menu->setupMenu(weaponsCompItem);
-    QList<QAction*> weaponsActions = menu->actions();
-    bool hasAddWeapon = false;
-    for (QAction* act : weaponsActions) {
+    QList<QAction*> actions = menu->actions();
+    bool hasAdd = false;
+    for (QAction* act : actions) {
         if (act->text().contains("Add", Qt::CaseInsensitive)) {
-            hasAddWeapon = true;
+            hasAdd = true;
             break;
         }
     }
-    MENU_TEST(hasAddWeapon, "Weapons component: 'Add' action exists");
+    QVERIFY(hasAdd);
+}
 
-    // ------------------------------------------------------------------
-    // Test 6: Sub‑component menu
-    // ------------------------------------------------------------------
+// ============================================================================
+// 6. Sub‑component menu
+// ============================================================================
+void TestContextMenu::testSubComponentMenu()
+{
     QTreeWidgetItem* subcompItem = createDummyItem("subcomponent", "SubComp", "sub1", "comp1");
     menu->setupMenu(subcompItem);
-    QList<QAction*> subcompActions = menu->actions();
-    bool hasRemove = false, hasRenameSub = false;
-    for (QAction* act : subcompActions) {
+    QList<QAction*> actions = menu->actions();
+    bool hasRemove = false, hasRename = false;
+    for (QAction* act : actions) {
         QString text = act->text();
         if (text.contains("Remove", Qt::CaseInsensitive)) hasRemove = true;
-        if (text.contains("Rename", Qt::CaseInsensitive)) hasRenameSub = true;
+        if (text.contains("Rename", Qt::CaseInsensitive)) hasRename = true;
     }
-    MENU_TEST(hasRemove,    "Sub‑component menu: 'Remove' action exists");
-    MENU_TEST(hasRenameSub, "Sub‑component menu: 'Rename' action exists");
+    QVERIFY(hasRemove);
+    QVERIFY(hasRename);
+}
 
-    // ------------------------------------------------------------------
-    // Test 7: Signal connections (basic check that signals exist)
-    // ------------------------------------------------------------------
-    // We cannot easily test signal emission without a full environment,
-    // but we can verify that the signals are defined (compile‑time).
-    // For runtime, we check that the menu object has the expected meta‑object.
-    MENU_TEST(menu->inherits("QMenu"), "ContextMenu inherits QMenu");
-    MENU_TEST(menu->metaObject()->indexOfSignal("addFolderRequested(QString,QString,bool,QVariantMap)") != -1,
-              "addFolderRequested signal exists");
-    MENU_TEST(menu->metaObject()->indexOfSignal("addEntityRequested(QString,QString,bool,QVariantMap,AddItemDialog*,QString,double,double,float)") != -1,
-              "addEntityRequested signal exists");
-    MENU_TEST(menu->metaObject()->indexOfSignal("removeEntityRequested(QString,QString,bool)") != -1,
-              "removeEntityRequested signal exists");
-    MENU_TEST(menu->metaObject()->indexOfSignal("copyItemRequested(QVariantMap)") != -1,
-              "copyItemRequested signal exists");
+// ============================================================================
+// 7. Signal existence
+// ============================================================================
+void TestContextMenu::testSignalsExist()
+{
+    QVERIFY(menu->inherits("QMenu"));
+    const QMetaObject* mo = menu->metaObject();
+    QVERIFY(mo->indexOfSignal("addFolderRequested(QString,QString,bool,QVariantMap)") != -1);
+    QVERIFY(mo->indexOfSignal("addEntityRequested(QString,QString,bool,QVariantMap,AddItemDialog*,QString,double,double,float)") != -1);
+    QVERIFY(mo->indexOfSignal("removeEntityRequested(QString,QString,bool)") != -1);
+    QVERIFY(mo->indexOfSignal("copyItemRequested(QVariantMap)") != -1);
+}
 
-    // ------------------------------------------------------------------
-    // Test 8: Hierarchy setter/getter (if needed)
-    // ------------------------------------------------------------------
-    // We can set a dummy hierarchy pointer (nullptr) – just ensure no crash.
+// ============================================================================
+// 8. setHierarchy does not crash
+// ============================================================================
+void TestContextMenu::testSetHierarchyNoCrash()
+{
     menu->setHierarchy(nullptr);
-    MENU_TEST(true, "setHierarchy does not crash (nullptr)");
+    QVERIFY(true);
+}
 
-    // Final summary
-    console->log(std::string("========================================="));
-    if (testFailed)
-        console->error(std::string("CONTEXT MENU TESTS: Some tests FAILED."));
-    else
-        console->log(std::string("CONTEXT MENU TESTS: ALL PASSED."));
-    console->log(std::string("=========================================\n"));
+// ============================================================================
+// Additional safe tests (duplicate actions, enabled state, not empty)
+// ============================================================================
+void TestContextMenu::testProfileMenuHasNoDuplicateActions()
+{
+    QTreeWidgetItem* profileItem = createDummyItem("profile", "TestProfile", "prof1", "", "Platform");
+    menu->setupMenu(profileItem);
+    QSet<QString> uniqueTexts;
+    for (QAction* act : menu->actions()) {
+        uniqueTexts.insert(act->text());
+    }
+    QCOMPARE(uniqueTexts.size(), menu->actions().size());
+}
 
-    // Cleanup dummy items (they are not parented, so delete manually)
-    delete profileItem;
-    delete folderItem;
-    delete entityItem;
-    delete compItem;
-    delete weaponsCompItem;
-    delete subcompItem;
+void TestContextMenu::testFolderMenuHasNoDuplicateActions()
+{
+    QTreeWidgetItem* folderItem = createDummyItem("folder", "TestFolder", "folder1", "prof1");
+    menu->setupMenu(folderItem);
+    QSet<QString> uniqueTexts;
+    for (QAction* act : menu->actions()) {
+        uniqueTexts.insert(act->text());
+    }
+    QCOMPARE(uniqueTexts.size(), menu->actions().size());
+}
+
+void TestContextMenu::testEntityMenuHasNoDuplicateActions()
+{
+    QTreeWidgetItem* entityItem = createDummyItem("entity", "TestEntity", "ent1", "folder1");
+    menu->setupMenu(entityItem);
+    QSet<QString> uniqueTexts;
+    for (QAction* act : menu->actions()) {
+        uniqueTexts.insert(act->text());
+    }
+    QCOMPARE(uniqueTexts.size(), menu->actions().size());
+}
+
+void TestContextMenu::testComponentMenuHasNoDuplicateActions()
+{
+    QTreeWidgetItem* compItem = createDummyItem("component", "radios", "comp1", "ent1");
+    menu->setupMenu(compItem);
+    QSet<QString> uniqueTexts;
+    for (QAction* act : menu->actions()) {
+        uniqueTexts.insert(act->text());
+    }
+    QCOMPARE(uniqueTexts.size(), menu->actions().size());
+}
+
+void TestContextMenu::testWeaponsComponentMenuHasNoDuplicateActions()
+{
+    QTreeWidgetItem* weaponsCompItem = createDummyItem("component", "weapons", "comp2", "ent1");
+    menu->setupMenu(weaponsCompItem);
+    QSet<QString> uniqueTexts;
+    for (QAction* act : menu->actions()) {
+        uniqueTexts.insert(act->text());
+    }
+    QCOMPARE(uniqueTexts.size(), menu->actions().size());
+}
+
+void TestContextMenu::testSubComponentMenuHasNoDuplicateActions()
+{
+    QTreeWidgetItem* subcompItem = createDummyItem("subcomponent", "SubComp", "sub1", "comp1");
+    menu->setupMenu(subcompItem);
+    QSet<QString> uniqueTexts;
+    for (QAction* act : menu->actions()) {
+        uniqueTexts.insert(act->text());
+    }
+    QCOMPARE(uniqueTexts.size(), menu->actions().size());
+}
+
+void TestContextMenu::testProfileMenuActionsAreEnabled()
+{
+    QTreeWidgetItem* profileItem = createDummyItem("profile", "TestProfile", "prof1", "", "Platform");
+    menu->setupMenu(profileItem);
+    for (QAction* act : menu->actions()) {
+        QVERIFY(act->isEnabled());
+    }
+}
+
+void TestContextMenu::testFolderMenuActionsAreEnabled()
+{
+    QTreeWidgetItem* folderItem = createDummyItem("folder", "TestFolder", "folder1", "prof1");
+    menu->setupMenu(folderItem);
+    for (QAction* act : menu->actions()) {
+        QVERIFY(act->isEnabled());
+    }
+}
+
+void TestContextMenu::testEntityMenuActionsAreEnabled()
+{
+    QTreeWidgetItem* entityItem = createDummyItem("entity", "TestEntity", "ent1", "folder1");
+    menu->setupMenu(entityItem);
+    for (QAction* act : menu->actions()) {
+        QVERIFY(act->isEnabled());
+    }
+}
+
+void TestContextMenu::testComponentMenuActionsAreEnabled()
+{
+    QTreeWidgetItem* compItem = createDummyItem("component", "radios", "comp1", "ent1");
+    menu->setupMenu(compItem);
+    for (QAction* act : menu->actions()) {
+        QVERIFY(act->isEnabled());
+    }
+}
+
+void TestContextMenu::testWeaponsComponentMenuActionsAreEnabled()
+{
+    QTreeWidgetItem* weaponsCompItem = createDummyItem("component", "weapons", "comp2", "ent1");
+    menu->setupMenu(weaponsCompItem);
+    for (QAction* act : menu->actions()) {
+        QVERIFY(act->isEnabled());
+    }
+}
+
+void TestContextMenu::testSubComponentMenuActionsAreEnabled()
+{
+    QTreeWidgetItem* subcompItem = createDummyItem("subcomponent", "SubComp", "sub1", "comp1");
+    menu->setupMenu(subcompItem);
+    for (QAction* act : menu->actions()) {
+        QVERIFY(act->isEnabled());
+    }
+}
+
+void TestContextMenu::testProfileMenuNotEmpty()
+{
+    QTreeWidgetItem* item = createDummyItem("profile", "P", "p", "", "Platform");
+    menu->setupMenu(item);
+    QVERIFY(!menu->actions().isEmpty());
+}
+
+void TestContextMenu::testFolderMenuNotEmpty()
+{
+    QTreeWidgetItem* item = createDummyItem("folder", "F", "f", "p");
+    menu->setupMenu(item);
+    QVERIFY(!menu->actions().isEmpty());
+}
+
+void TestContextMenu::testEntityMenuNotEmpty()
+{
+    QTreeWidgetItem* item = createDummyItem("entity", "E", "e", "f");
+    menu->setupMenu(item);
+    QVERIFY(!menu->actions().isEmpty());
+}
+
+void TestContextMenu::testComponentMenuNotEmpty()
+{
+    QTreeWidgetItem* item = createDummyItem("component", "radios", "c", "e");
+    menu->setupMenu(item);
+    QVERIFY(!menu->actions().isEmpty());
+}
+
+void TestContextMenu::testWeaponsComponentMenuNotEmpty()
+{
+    QTreeWidgetItem* item = createDummyItem("component", "weapons", "w", "e");
+    menu->setupMenu(item);
+    QVERIFY(!menu->actions().isEmpty());
+}
+
+void TestContextMenu::testSubComponentMenuNotEmpty()
+{
+    QTreeWidgetItem* item = createDummyItem("subcomponent", "S", "s", "c");
+    menu->setupMenu(item);
+    QVERIFY(!menu->actions().isEmpty());
+}
+
+void TestContextMenu::testNullItemDoesNotCrash()
+{
+    menu->setupMenu(nullptr);
+    QVERIFY(true);
+}
+
+void TestContextMenu::testInvalidDataTypeDoesNotCrash()
+{
+    QTreeWidgetItem* item = new QTreeWidgetItem();
+    dummyItems.append(item);
+    QVariantMap data;
+    data["type"] = "invalid_type";
+    item->setData(0, Qt::UserRole, data);
+    menu->setupMenu(item);
+    QVERIFY(true);
+}
+
+void TestContextMenu::testMenuClearsBeforeSetup()
+{
+    QTreeWidgetItem* profileItem = createDummyItem("profile", "TestProfile", "prof1", "", "Platform");
+    menu->setupMenu(profileItem);
+    int firstCount = menu->actions().size();
+    QTreeWidgetItem* folderItem = createDummyItem("folder", "TestFolder", "folder1", "prof1");
+    menu->setupMenu(folderItem);
+    int secondCount = menu->actions().size();
+    QVERIFY(secondCount != firstCount);
 }

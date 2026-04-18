@@ -1,3 +1,9 @@
+/* ========================================================================= */
+/* File: WaypointEditDialog.h                                                */
+/* Purpose: Dialog for editing waypoint parameters (lat, lon, alt, speed)    */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
+
 #ifndef WAYPOINTEDITDIALOG_H
 #define WAYPOINTEDITDIALOG_H
 

@@ -15,7 +15,7 @@ public:
     std::string Name;
     bool Active;
     std::string ID;
-    Constants::EntityType type;
+    Constants::EntityType type = Constants::EntityType::Platform;
     std::unordered_map<std::string, Folder*> Folders;
     std::unordered_map<std::string, Entity*> Entities;
 
@@ -23,7 +23,7 @@ public:
     void addFolderWithObject(Folder *folder);
     void removeFolder(std::string name);
 
-    Entity* addEntity(std::string name, std::string iD = "");
+    Entity* addEntity(std::string name, std::string iD = "",QString data1="");
     void addEntityWithObject(Entity *entity);
     void removeEntity(std::string name);
     void setProfileType(Constants::EntityType Type);

@@ -2,6 +2,7 @@
 /* File: projectinformation-styles.h                                        */
 /* Purpose: Dark theme styles for Feedback/Project Information dialog       */
 /* Background: #0F2636, Border: #27446d, Text: White, Accent: #0078D4       */
+// Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef PROJECTINFORMATION_STYLES_H

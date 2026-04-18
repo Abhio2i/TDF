@@ -1,3 +1,8 @@
+/* ========================================================================= */
+/* File: waypointeditdialog.cpp                                              */
+/* Purpose: Implements dialog for editing waypoint parameters                */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #include "waypointeditdialog.h"
 
 WaypointEditDialog::WaypointEditDialog(QWidget *parent)
@@ -11,25 +16,20 @@ WaypointEditDialog::WaypointEditDialog(QWidget *parent)
 {
     setupUI();
     setupConnections();
-
-    // Set dialog properties
     setWindowTitle("Edit Waypoint");
     setFixedSize(300, 200);
-
-    // Set window flags to prevent flickering
     setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::WindowCloseButtonHint);
     setModal(true);
 }
 
 WaypointEditDialog::~WaypointEditDialog()
 {
-    // All widgets are child of dialog, so they will be deleted automatically
+
 }
 
 void WaypointEditDialog::setupUI()
 {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
-
     // Latitude field
     QHBoxLayout* latLayout = new QHBoxLayout();
     QLabel* latLabel = new QLabel("Latitude:", this);

@@ -46,6 +46,7 @@ public:
                     double illumination = 1.0,
                     double glintFactor  = 1.0
                     ) const;
+    double getSetThreshold(double distance,double area);
     double getThreshold()
     {
         return detectionThreshold;

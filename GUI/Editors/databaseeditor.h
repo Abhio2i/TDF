@@ -41,11 +41,11 @@ public:
     bool hasUnsavedChanges = false;
     void loadFromJsonFile(const QString &filePath);
     Hierarchy* hierarchy = nullptr;
-      Console* console = nullptr;
-      HierarchyTree *treeView = nullptr;
-        QDockWidget *consoleDock = nullptr;
-      static void runUnitTestsOnce();
-         QStatusBar *statusBar;
+    Console* console = nullptr;
+    HierarchyTree *treeView = nullptr;
+    QDockWidget *consoleDock = nullptr;
+    // static void runUnitTestsOnce();
+    QStatusBar *statusBar;
 public slots:
     void showProfileInfo();
     void showApplicationDialog();
@@ -80,12 +80,6 @@ private:
     // %%% Core Components %%%
     // Scenario data structure
     Scenario* scenario = nullptr;
-    // Console for debugging
-    // Console* console = nullptr;
-    // %%% UI Components %%%
-    // Hierarchy tree view widget
-    // HierarchyTree *treeView = nullptr;
-    // Inspector panel widget
     Inspector *inspector = nullptr;
     // Console view widget
     ConsoleView *consoleView = nullptr;
@@ -96,8 +90,6 @@ private:
     QDockWidget *navigationDock = nullptr;
     // Dock widget for inspector
     QDockWidget *inspectorDock = nullptr;
-    // Dock widget for console
-    // QDockWidget *consoleDock = nullptr;
     // %%% Inspector Management %%%
     // List of inspector docks
     QList<QDockWidget*> inspectorDocks;

@@ -11,9 +11,7 @@
 #include <QHeaderView>                           // For table header
 #include <QTime>                                 // For time formatting
 #include <core/Simulation/simulation.h>
-#include "tests/graphwidgettest/graphwidget_test.h"
-#include "GUI/mainwindow.h"
-#include <QTimer>
+
 
 // %%% Helper Functions %%%
 /* Convert seconds to HH:MM:SS format */
@@ -119,7 +117,6 @@ GraphWidget::GraphWidget(QWidget *parent): QWidget(parent) {
 
     // Initial update
     update();
-    runUnitTestsOnce();
 
 }
 
@@ -448,26 +445,4 @@ void GraphWidget::drawYTick(QPainter &p, int startY, int endY, int x, int canvas
         }
     }
 }
-void GraphWidget::runUnitTestsOnce()
-{
-    static bool testsRun = false;
-    if (testsRun) return;
-    testsRun = true;
 
-    QTimer::singleShot(0, []() {
-        Console* console = nullptr;
-        MainWindow* mw = MainWindow::instance();
-        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-            console = mw->databaseEditor->console;
-        }
-        if (!console) {
-            qDebug() << "GraphWidget: console not available, cannot run tests";
-            return;
-        }
-
-        // Create a temporary GraphWidget (no parent, won't show)
-        GraphWidget* testWidget = new GraphWidget(nullptr);
-        runGraphWidgetTests(testWidget, console);
-        testWidget->deleteLater();
-    });
-}

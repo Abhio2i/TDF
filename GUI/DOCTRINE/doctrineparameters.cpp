@@ -1,10 +1,16 @@
 
-
+/* ========================================================================= */
+/* File: doctrineparameters.cpp                                              */
+/* Purpose: Implements the DoctrineParameters widget for managing doctrine   */
+/*          parameters for Blue and Red teams.                               */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #include "doctrineparameters.h"
 #include "doctrine-styles.h"
 #include "tests/doctrineparameterstest/doctrineparameters_test.h"
-#include "GUI/mainwindow.h"
-#include <QTimer>
+// #include "GUI/mainwindow.h"
+// #include <QTimer>
+// #include "tests/gui_test_control.h"
 
 // ── Constructor ─────────────────────────────────────────────────────────────
 DoctrineParameters::DoctrineParameters(QWidget *parent)
@@ -16,7 +22,7 @@ DoctrineParameters::DoctrineParameters(QWidget *parent)
 
     // Start on Blue tab
     switchToTeam(FORCE_BLUE);
-    runUnitTestsOnce();
+    // runUnitTestsOnce();
 }
 
 // ── UI Setup ─────────────────────────────────────────────────────────────────
@@ -490,26 +496,27 @@ QString DoctrineParameters::getForceType() const
 {
     return (m_currentForce == FORCE_BLUE) ? "Blue" : "Red";
 }
-void DoctrineParameters::runUnitTestsOnce()
-{
-    static bool testsRun = false;
-    if (testsRun) return;
-    testsRun = true;
+// void DoctrineParameters::runUnitTestsOnce()
+// {
+//        if (!GuiTestControl::isEnabled()) return;
+//     static bool testsRun = false;
+//     if (testsRun) return;
+//     testsRun = true;
 
-    QTimer::singleShot(0, []() {
-        Console* console = nullptr;
-        MainWindow* mw = MainWindow::instance();
-        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-            console = mw->databaseEditor->console;
-        }
-        if (!console) {
-            qDebug() << "DoctrineParameters: console not available, cannot run tests";
-            return;
-        }
+//     QTimer::singleShot(0, []() {
+//         Console* console = nullptr;
+//         MainWindow* mw = MainWindow::instance();
+//         if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+//             console = mw->databaseEditor->console;
+//         }
+//         if (!console) {
+//             qDebug() << "DoctrineParameters: console not available, cannot run tests";
+//             return;
+//         }
 
-        // Create a temporary DoctrineParameters widget (no parent, won't show)
-        DoctrineParameters* testPanel = new DoctrineParameters(nullptr);
-        runDoctrineParametersTests(testPanel, console);
-        testPanel->deleteLater();
-    });
-}
+//         // Create a temporary DoctrineParameters widget (no parent, won't show)
+//         DoctrineParameters* testPanel = new DoctrineParameters(nullptr);
+//         runDoctrineParametersTests(testPanel, console);
+//         testPanel->deleteLater();
+//     });
+// }

@@ -306,7 +306,7 @@ QVector3D Transform::scale3D() {
     return matrix->scale3D();
 }
 
-void Transform::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+void Transform::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
 
 }
 

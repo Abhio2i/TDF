@@ -1,3 +1,8 @@
+/* ========================================================================= */
+/* File: vectortemplate.cpp                                                  */
+/* Purpose: Implements vector editing widget for inspector table cells       */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #include "vectortemplate.h"
 #include <QHBoxLayout>
 #include <QLabel>

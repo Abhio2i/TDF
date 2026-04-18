@@ -1,3 +1,8 @@
+/* ========================================================================= */
+/* File: geocordstemplate.cpp                                                */
+/* Purpose: Implements geocoordinates editing widget for inspector table     */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #include "geocordstemplate.h"
 #include <QHBoxLayout>
 #include <QLineEdit>

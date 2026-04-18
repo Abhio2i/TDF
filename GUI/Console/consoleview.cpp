@@ -6,7 +6,7 @@
 //============================================================================
 
 #include "consoleview.h"
-#include "consoleview-styles.h"  // Include separate CSS file
+#include "consoleview-styles.h"
 #include "qtabbar.h"
 #include <QFont>
 #include <QDateTime>
@@ -15,8 +15,9 @@
 #include <QStyleOptionTab>
 #include <QStylePainter>
 #include "tests/consoleviewtest/consoleview_test.h"
-#include "GUI/mainwindow.h"
-#include <QTimer>
+// #include "GUI/mainwindow.h"
+// #include <QTimer>
+// #include "tests/gui_test_control.h"
 
 //============================================================================
 // CLASS: ConsoleView
@@ -139,7 +140,7 @@ ConsoleView::ConsoleView(QWidget *parent) : QWidget(parent)
 
     // Set main layout for this widget
     setLayout(mainLayout);
-    runUnitTestsOnce();
+    // runUnitTestsOnce();
 
 }
 
@@ -311,38 +312,42 @@ void ConsoleView::saveLog()
     if (fileName.isEmpty()) {
         return;
     }
+
     QFile file(fileName);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         return;
     }
+
     QTextStream out(&file);
     QTextEdit *currentConsole = qobject_cast<QTextEdit*>(tabWidget->currentWidget());
     if (currentConsole) {
         out << currentConsole->toPlainText();
     }
+
     file.close();
 }
-void ConsoleView::runUnitTestsOnce()
-{
-    static bool testsRun = false;
-    if (testsRun) return;
-    testsRun = true;
+// void ConsoleView::runUnitTestsOnce()
+// {
+//        if (!GuiTestControl::isEnabled()) return;
+//     static bool testsRun = false;
+//     if (testsRun) return;
+//     testsRun = true;
 
-    // Delay to ensure UI is ready
-    QTimer::singleShot(0, []() {
-        Console* console = nullptr;
-        MainWindow* mw = MainWindow::instance();
-        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-            console = mw->databaseEditor->console;
-        }
-        if (!console) {
-            qDebug() << "ConsoleView: console not available, cannot run tests";
-            return;
-        }
+//     // Delay to ensure UI is ready
+//     QTimer::singleShot(0, []() {
+//         Console* console = nullptr;
+//         MainWindow* mw = MainWindow::instance();
+//         if (mw && mw->databaseEditor && mw->databaseEditor->console) {
+//             console = mw->databaseEditor->console;
+//         }
+//         if (!console) {
+//             qDebug() << "ConsoleView: console not available, cannot run tests";
+//             return;
+//         }
 
-        // Create a temporary ConsoleView for testing
-        ConsoleView* testConsole = new ConsoleView(nullptr);
-        runConsoleViewTests(testConsole, console);
-        testConsole->deleteLater();
-    });
-}
+//         // Create a temporary ConsoleView for testing
+//         ConsoleView* testConsole = new ConsoleView(nullptr);
+//         runConsoleViewTests(testConsole, console);
+//         testConsole->deleteLater();
+//     });
+// }

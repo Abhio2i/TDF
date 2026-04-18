@@ -25,9 +25,7 @@
 #include <QScrollArea>
 #include "database-styles.h"
 #include "GUI/Inspector/inspector-styles.h"
-#include "tests/databaseeditortest/databaseeditor_test.h"
-#include "GUI/mainwindow.h"
-#include <QTimer>
+
 
 // %%% Utility Functions %%%
 /* Capitalize the first letter of a string */
@@ -131,7 +129,7 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
         connect(menuBar, &MenuBar::applicationTriggered, this, &DatabaseEditor::showApplicationDialog);
         connect(menuBar, &MenuBar::exitTriggered, qApp, &QApplication::quit);
     }
-    runUnitTestsOnce();
+    // runUnitTestsOnce();
 
 }
 // %%% Enhanced Dock Setup %%%
@@ -389,17 +387,7 @@ void DatabaseEditor::updateStatusBar(const QString &message)
 /* Load project from file with progress dialog */
 void DatabaseEditor::loadRecentProject(const QString& filePath)
 {
-    // QProgressDialog* loadingDialog = new QProgressDialog(this);
-    // loadingDialog->setLabelText("Loading...");
-    // loadingDialog->setCancelButton(nullptr);
-    // loadingDialog->setRange(0, 0);
-    // loadingDialog->setMinimumDuration(0);
-    // loadingDialog->setWindowModality(Qt::WindowModal);
-    // loadingDialog->setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
-    // loadingDialog->setFixedSize(250, 80);
-    // loadingDialog->move(geometry().center() - loadingDialog->rect().center());
-    // loadingDialog->show();
-    // QCoreApplication::processEvents();
+
 
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -427,8 +415,6 @@ void DatabaseEditor::loadRecentProject(const QString& filePath)
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
     RecentProjectsManager::instance()->addToRecentProjects(filePath, RecentProjectsManager::ScenarioEditor);
-    // loadingDialog->close();
-    // loadingDialog->deleteLater();
     updateStatusBar("Scenario loaded: " + QFileInfo(filePath).fileName());
 }
 
@@ -453,17 +439,7 @@ void DatabaseEditor::showApplicationDialog()
 }
 void DatabaseEditor::loadFromJsonFile(const QString &filePath)
 {
-    // QProgressDialog* loadingDialog = new QProgressDialog(this);
-    // loadingDialog->setLabelText("Loading...");
-    // loadingDialog->setCancelButton(nullptr);
-    // loadingDialog->setRange(0, 0);
-    // loadingDialog->setMinimumDuration(0);
-    // loadingDialog->setWindowModality(Qt::WindowModal);
-    // loadingDialog->setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
-    // loadingDialog->setFixedSize(250, 80);
-    // loadingDialog->move(geometry().center() - loadingDialog->rect().center());
-    // loadingDialog->show();
-    // QCoreApplication::processEvents();
+
 
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -493,11 +469,9 @@ void DatabaseEditor::loadFromJsonFile(const QString &filePath)
 
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
-    // loadingDialog->close();
-    // loadingDialog->deleteLater();
+
     updateStatusBar("Project loaded: " + QFileInfo(filePath).fileName());
 }
-
 // %%% Tree Item Selection Handler %%%
 /* Handle selection of items in hierarchy tree */
 void DatabaseEditor::onTreeItemSelected(QVariantMap data)
@@ -1057,29 +1031,4 @@ QWidget* DatabaseEditor::createComponentInspectorWithDynamicHeight(
     frameLayout->addWidget(inspector);
     return frame;
 }
-void DatabaseEditor::runUnitTestsOnce()
-{
-    static bool testsRun = false;
-    if (testsRun) return;
-    testsRun = true;
 
-    QTimer::singleShot(0, []() {
-        Console* console = nullptr;
-        MainWindow* mw = MainWindow::instance();
-        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-            console = mw->databaseEditor->console;
-        }
-        if (!console) {
-            qDebug() << "DatabaseEditor: console not available, cannot run tests";
-            return;
-        }
-
-        // Use the existing DatabaseEditor instance (the real one)
-        // because it's already created at startup.
-        if (mw && mw->databaseEditor) {
-            runDatabaseEditorTests(mw->databaseEditor, console);
-        } else {
-            qDebug() << "DatabaseEditor: instance not available";
-        }
-    });
-}

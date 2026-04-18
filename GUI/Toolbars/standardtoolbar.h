@@ -7,9 +7,9 @@
 #ifndef STANDARDTOOLBAR_H
 #define STANDARDTOOLBAR_H
 
-#include <QToolBar>                               // For toolbar base class
-#include <QAction>                                // For action items
-#include <QPixmap>                                // For pixmap handling
+#include <QToolBar>
+#include <QAction>
+#include <QPixmap>
 
 // %%% Class Definition %%%
 /* Toolbar for standard editing tools */

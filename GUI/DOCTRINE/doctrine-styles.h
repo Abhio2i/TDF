@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: doctrine-styles.h                                                 */
 /* Purpose: Stylesheet constants for the Doctrine Parameters panel           */
+// Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef DOCTRINE_STYLES_H

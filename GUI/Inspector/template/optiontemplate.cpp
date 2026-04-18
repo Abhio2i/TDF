@@ -1,3 +1,8 @@
+/* ========================================================================= */
+/* File: optiontemplate.cpp                                                  */
+/* Purpose: Implements dropdown option widget for inspector table cells      */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #include "optiontemplate.h"
 #include <QHBoxLayout>
 #include <QComboBox>

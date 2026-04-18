@@ -3,10 +3,7 @@
 /* Purpose: Radar display — mode selector, click-to-lock, air/surface view   */
 //               Written by Arti Rajpoot
 /* ========================================================================= */
-/* ========================================================================= */
-/* File: radardisplay.cpp                                                    */
-/* Purpose: Radar display — mode selector, click-to-lock, air/surface view   */
-/* ========================================================================= */
+
 
 #include "radardisplay.h"
 #include "core/Hierarchy/Utils/entityutils.h"

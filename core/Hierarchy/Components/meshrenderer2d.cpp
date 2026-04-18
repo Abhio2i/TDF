@@ -24,7 +24,7 @@ MeshRenderer2D::MeshRenderer2D():Component(nullptr) {
     Meshes.push_back(mesh);
 }
 
-void MeshRenderer2D::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+void MeshRenderer2D::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
 
 }
 

@@ -1,93 +1,78 @@
 #include "sidebarwidget_test.h"
 #include "GUI/Sidebar/sidebarwidget.h"
-#include "core/Debug/console.h"
+#include <QTest>
 #include <QPushButton>
 #include <QButtonGroup>
 #include <QHBoxLayout>
-#include <QDebug>
 
-#define SIDEBAR_TEST(condition, msg) \
-do { \
-        if (condition) { \
-            console->log(std::string("[PASS] ") + msg); \
-    } else { \
-            console->error(std::string("[FAIL] ") + msg); \
-            testFailed = true; \
-    } \
-} while(0)
-
-    void runSidebarWidgetTests(SidebarWidget* widget, Console* console)
+void TestSidebarWidget::init()
 {
-    if (!widget || !console) {
-        if (console) console->error("SidebarWidget or Console is null, cannot run tests");
-        return;
-    }
+    widget = new SidebarWidget(nullptr);
+    widget->show(); // ensure visibility for layout checks
+    QTest::qWait(50);
+}
 
-    bool testFailed = false;
+void TestSidebarWidget::cleanup()
+{
+    delete widget;
+    widget = nullptr;
+}
 
-    console->log(std::string("\n========================================="));
-    console->log(std::string("       SIDEBAR WIDGET UNIT TESTS        "));
-    console->log(std::string("=========================================\n"));
+void TestSidebarWidget::testBasicProperties()
+{
+    QVERIFY(widget->isVisible());
+    QCOMPARE(widget->height(), 28);
+}
 
-    // ----- Test 1: Basic properties -----
-    SIDEBAR_TEST(widget->isVisible(), "Sidebar widget is visible");
-    SIDEBAR_TEST(widget->height() == 28, "Sidebar height is 28 pixels");
-
-    // ----- Test 2: Layout exists -----
+void TestSidebarWidget::testLayout()
+{
     QHBoxLayout* layout = qobject_cast<QHBoxLayout*>(widget->layout());
-    SIDEBAR_TEST(layout != nullptr, "Widget has QHBoxLayout");
-    if (layout) {
-        SIDEBAR_TEST(layout->spacing() == 1, "Layout spacing is 1");
-        SIDEBAR_TEST(layout->contentsMargins().left() == 0, "Layout margins are zero");
-    }
+    QVERIFY(layout != nullptr);
+    QCOMPARE(layout->spacing(), 1);
+    QCOMPARE(layout->contentsMargins().left(), 0);
+}
 
-    // ----- Test 3: Buttons exist -----
+void TestSidebarWidget::testButtonsExist()
+{
     QList<QPushButton*> buttons = widget->findChildren<QPushButton*>();
-    SIDEBAR_TEST(buttons.size() >= 4, "At least 4 buttons exist (Sensors, Library, Inspector, TestScript)");
+    QVERIFY(buttons.size() >= 4);
 
-    // Check button texts
-    QStringList expectedTexts = {"Sensors", "Library", "Inspector", "TestScript"};
-    int foundCount = 0;
-    for (const QString& expected : expectedTexts) {
+    QStringList expected = {"Sensors", "Library", "Inspector", "TestScript"};
+    int found = 0;
+    for (const QString& exp : expected) {
         for (QPushButton* btn : buttons) {
-            if (btn->text() == expected) {
-                foundCount++;
+            if (btn->text() == exp) {
+                found++;
                 break;
             }
         }
     }
-    SIDEBAR_TEST(foundCount == expectedTexts.size(), "All expected buttons present with correct text");
+    QCOMPARE(found, expected.size());
+}
 
-    // ----- Test 4: Button properties (checkable, viewName property) -----
+void TestSidebarWidget::testButtonProperties()
+{
+    QList<QPushButton*> buttons = widget->findChildren<QPushButton*>();
     for (QPushButton* btn : buttons) {
-        SIDEBAR_TEST(btn->isCheckable(), QString("Button '%1' is checkable").arg(btn->text()).toStdString().c_str());
+        QVERIFY(btn->isCheckable());
         QString viewName = btn->property("viewName").toString();
-        SIDEBAR_TEST(!viewName.isEmpty(), QString("Button '%1' has viewName property set").arg(btn->text()).toStdString().c_str());
+        QVERIFY(!viewName.isEmpty());
     }
+}
 
-    // ----- Test 5: Button group exclusive behavior -----
-    QButtonGroup* buttonGroup = widget->findChild<QButtonGroup*>();
-    SIDEBAR_TEST(buttonGroup != nullptr, "Button group exists");
-    if (buttonGroup) {
-        SIDEBAR_TEST(buttonGroup->exclusive(), "Button group is exclusive");
-        SIDEBAR_TEST(buttonGroup->buttons().size() == buttons.size(),
-                     "Button group contains all buttons");
-    }
+void TestSidebarWidget::testButtonGroup()
+{
+    QButtonGroup* group = widget->findChild<QButtonGroup*>();
+    QVERIFY(group != nullptr);
+    QVERIFY(group->exclusive());
+    QList<QPushButton*> buttons = widget->findChildren<QPushButton*>();
+    QCOMPARE(group->buttons().size(), buttons.size());
+}
 
-    // ----- Test 6: Default active button (none initially, but setActiveButton can change) -----
-    // Initially no button is checked? Actually buttons are checkable but none checked by default.
-    bool anyChecked = false;
-    for (QPushButton* btn : buttons) {
-        if (btn->isChecked()) {
-            anyChecked = true;
-            break;
-        }
-    }
-    // It's acceptable if none are checked initially (user must click)
-    SIDEBAR_TEST(true, "No button checked by default (or acceptable)");
-
-    // ----- Test 7: setActiveButton works -----
+void TestSidebarWidget::testSetActiveButton()
+{
     widget->setActiveButton("Library");
+    QList<QPushButton*> buttons = widget->findChildren<QPushButton*>();
     bool libraryChecked = false;
     for (QPushButton* btn : buttons) {
         if (btn->text() == "Library" && btn->isChecked()) {
@@ -95,34 +80,27 @@ do { \
             break;
         }
     }
-    SIDEBAR_TEST(libraryChecked, "setActiveButton('Library') checks the Library button");
-
-    // Reset: setActiveButton to another view
+    QVERIFY(libraryChecked);
     widget->setActiveButton("Inspector");
     bool inspectorChecked = false;
-    for (QPushButton* btn : buttons) {
-        if (btn->text() == "Inspector" && btn->isChecked()) {
-            inspectorChecked = true;
-            break;
-        }
-    }
-    SIDEBAR_TEST(inspectorChecked, "setActiveButton('Inspector') checks Inspector button");
-    // Ensure Library is now unchecked
     bool libraryStillChecked = false;
     for (QPushButton* btn : buttons) {
-        if (btn->text() == "Library" && btn->isChecked()) {
-            libraryStillChecked = true;
-            break;
-        }
+        if (btn->text() == "Inspector" && btn->isChecked()) inspectorChecked = true;
+        if (btn->text() == "Library" && btn->isChecked()) libraryStillChecked = true;
     }
-    SIDEBAR_TEST(!libraryStillChecked, "setActiveButton deselects previously selected button");
+    QVERIFY(inspectorChecked);
+    QVERIFY(!libraryStillChecked);
+}
 
-    // ----- Test 8: Signals are emitted (check signal exists) -----
+void TestSidebarWidget::testSignalsExist()
+{
     const QMetaObject* mo = widget->metaObject();
-    bool hasViewSelected = (mo->indexOfSignal("viewSelected(QString)") != -1);
-    SIDEBAR_TEST(hasViewSelected, "viewSelected signal exists");
+    QVERIFY(mo->indexOfSignal("viewSelected(QString)") != -1);
+}
 
-    // ----- Test 9: Sensors button visibility toggle -----
+void TestSidebarWidget::testSensorsButtonVisibility()
+{
+    QList<QPushButton*> buttons = widget->findChildren<QPushButton*>();
     QPushButton* sensorsBtn = nullptr;
     for (QPushButton* btn : buttons) {
         if (btn->text() == "Sensors") {
@@ -130,26 +108,19 @@ do { \
             break;
         }
     }
-    if (sensorsBtn) {
-        widget->setSensorsButtonVisible(false);
-        SIDEBAR_TEST(!sensorsBtn->isVisible(), "setSensorsButtonVisible(false) hides Sensors button");
-        widget->setSensorsButtonVisible(true);
-        SIDEBAR_TEST(sensorsBtn->isVisible(), "setSensorsButtonVisible(true) shows Sensors button");
-    } else {
-        SIDEBAR_TEST(false, "Sensors button not found");
-    }
+    QVERIFY(sensorsBtn != nullptr);
 
-    // ----- Test 10: StyleSheet applied (basic check – no crash) -----
-    SIDEBAR_TEST(!widget->styleSheet().isEmpty(), "Widget has a stylesheet");
+    widget->setSensorsButtonVisible(false);
+    QVERIFY(!sensorsBtn->isVisible());
+    widget->setSensorsButtonVisible(true);
+    QVERIFY(sensorsBtn->isVisible());
+}
+
+void TestSidebarWidget::testStyleSheets()
+{
+    QVERIFY(!widget->styleSheet().isEmpty());
+    QList<QPushButton*> buttons = widget->findChildren<QPushButton*>();
     for (QPushButton* btn : buttons) {
-        SIDEBAR_TEST(!btn->styleSheet().isEmpty(), QString("Button '%1' has stylesheet").arg(btn->text()).toStdString().c_str());
+        QVERIFY(!btn->styleSheet().isEmpty());
     }
-
-    // Final summary
-    console->log(std::string("========================================="));
-    if (testFailed)
-        console->error(std::string("SIDEBAR WIDGET TESTS: Some tests FAILED."));
-    else
-        console->log(std::string("SIDEBAR WIDGET TESTS: ALL PASSED."));
-    console->log(std::string("=========================================\n"));
 }

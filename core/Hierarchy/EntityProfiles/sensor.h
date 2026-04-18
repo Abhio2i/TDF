@@ -24,6 +24,91 @@ struct Target{
     float radialVelocity = 0.0f;  // ADD THIS — m/s, + = closing, - = opening
 
 };
+// Perspective of User
+struct EO_Entity{
+    struct Vec2 {
+        double x = 0, y = 0;
+
+        Vec2(double x_ = 0, double y_ = 0)
+            : x(x_), y(y_) {}
+
+        Vec2(const Vec2& _vec2)
+            : x(_vec2.x), y(_vec2.y) {}
+    };
+    struct Vec3 {
+        double x = 0, y = 0, z = 0;
+
+        Vec3(double x_ = 0, double y_ = 0,double z_ = 0)
+            : x(x_), y(y_), z(z_) {}
+
+        Vec3(const Vec3& _vec3)
+            : x(_vec3.x), y(_vec3.y), z(_vec3.z) {}
+    };
+    std::string name;
+    Vec2 vec2;
+    Vec3 vec3;
+    double relativeHeading;
+    double relativePitch;
+    double size;
+    EO_Entity(std::string _name = "",
+              double _size = 0,
+              double _relativeHeading = 0.00f,
+              double _relativePitch = 0.00f,
+              const Vec2& _vec2 = Vec2(),
+              const Vec3& _vec3 = Vec3())
+        : name(_name),vec2(_vec2),vec3(_vec3),relativeHeading (_relativeHeading),
+        relativePitch (_relativePitch), size(_size){}
+
+    // struct ViewDir{
+    //     double x = 0;
+    //     double y = 0;
+    //     double z = 0;
+    //     ViewDir(double _x,double _y,double _z):
+    //         x(_x),y(_y),z(_z){};
+    // };
+    // double screenX = 0;
+    // double screenY = 0;
+    // double distance      = 0;
+    // double angle         = 0;
+    // double projectionArea= 0;
+    // ViewDir viewDir;
+    // EO_Entity(double _distance, double _angle, double _projectionArea, ViewDir _viewDir)
+    //     :distance(_distance),angle(_angle),projectionArea(_projectionArea), viewDir(_viewDir){};
+};
+struct EO_IR_State{
+    struct coordinate{
+        double x =0;
+        double y =0;
+        coordinate(double _x,double _y):
+            x(_x),y(_y){};
+    };
+    struct dimension{
+        double x = 1;
+        double y = 1;
+        dimension(double _x,double _y):
+            x(_x),y(_y){};
+        coordinate center(){
+            coordinate coord(x/2, y/2);
+            return coord;
+        }
+    };
+    struct vanishingPodouble{
+        double x = 0;
+        double y = 0;
+        vanishingPodouble(double _x,double _y):
+            x(_x),y(_y){};
+    };
+    struct horizonMidPodouble{
+        double x = 0;
+        double y = 0;
+        horizonMidPodouble(double _x,double _y):
+            x(_x),y(_y){};
+    };
+
+    EO_Entity eo_seneor_entity;
+    std::vector<EO_Entity> entityList;
+
+};
 
 // struct Target{
 //     Platform *entity;
@@ -106,6 +191,8 @@ public:
     QVector<Target> csmtargets;
     std::unordered_set<Platform*> esmdetects;
     QVector<Target> esmtargets;
+    EO_Entity eoSensor;
+    QVector<EO_Entity> eoEntities;
     // --- Generic Radar Targets ---
     int getTargetCount() const;                  // Number of Generic targets
     Target getTarget(int index) const;           // Get Generic target by index

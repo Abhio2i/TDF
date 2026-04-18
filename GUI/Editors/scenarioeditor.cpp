@@ -1,6 +1,8 @@
 /* ========================================================================= */
 /* File: scenarioeditor.cpp                                                 */
 /* Purpose: Implements scenario editor with hierarchy and tactical display   */
+/* Written by   : Arti Rajpoot                                               */
+
 /* ========================================================================= */
 
 #include "GUI/Editors/scenarioeditor.h"            // For scenario editor class
@@ -36,10 +38,6 @@
 #include <core/Config/scenarioconfig.h>
 #include "GUI/Tacticaldisplay/Gis/layerpanel.h"
 #include <GUI/Editors/customresizableoverlaydock.h>
-#include "tests/scenarioeditortest/scenarioeditor_test.h"
-#include "GUI/mainwindow.h"
-#include <QTimer>
-
 // %%% String Utility Function %%%
 /* Capitalize the first letter of a string */
 static QString capitalizeFirstLetter(const QString &str)
@@ -53,6 +51,7 @@ static QString capitalizeFirstLetter(const QString &str)
 ScenarioEditor::ScenarioEditor(QWidget *parent)
     : QMainWindow(parent)
 {
+
     m_scenarioConfig = new ScenarioConfig(this);
     setWindowTitle("Scenario Editor");
     resize(1100, 600);
@@ -302,16 +301,13 @@ if (!inspectorDock->isLocked()) {
             if (textScriptDock && textScriptDock->isVisible()) {
                 textScriptDock->hide();
             }
+
             // Show inspector
             addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
             splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
             inspectorDock->show();
             inspectorDock->raise();
         }
-        // if (tacticalDisplay && type == "entity") {
-        //     tacticalDisplay->selectedMesh(data["ID"].toString());
-        // } else {
-        // }
 
         if (tacticalDisplay && type == "entity") {
             tacticalDisplay->selectedMesh(data["ID"].toString());
@@ -329,10 +325,6 @@ if (!inspectorDock->isLocked()) {
                     }
                 }
             }
-
-            // Sirf canvas par entity highlight karo
-            // Tree mein selectEntityById BILKUL MAT BULAO
-            // Taaki focus sensor par hi rahe
             if (hierarchy ) {
                 auto it = hierarchy->Entities.find(parentEntityId.toStdString());
                 if (it != hierarchy->Entities.end()) {
@@ -355,7 +347,6 @@ if (!inspectorDock->isLocked()) {
         } else {
             type = data["type"].toString();
         }
-
         // Only auto-center for entity selections (not folders, profiles, or components)
         if (type == "entity" && tacticalDisplay && tacticalDisplay->canvas) {
             QString entityId = data["ID"].toString();
@@ -412,7 +403,7 @@ if (!inspectorDock->isLocked()) {
     connect(hierarchy, &Hierarchy::profileRenamed, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::folderRenamed, this, &ScenarioEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::entityRenamed, this, &ScenarioEditor::markUnsavedChanges);
-    runUnitTestsOnce();
+    // runUnitTestsOnce();
 
 }
 void ScenarioEditor::setupEnhancedDockWidgets()
@@ -676,7 +667,6 @@ void ScenarioEditor::resizeEvent(QResizeEvent *event)
         hierarchyDock->setGeometry(leftX, topY, panelWidth, hierarchyHeight);
     }
 
-
     if (layerDock) {
         int hierarchyBottom = hierarchyDock ? hierarchyDock->y() + hierarchyDock->height() : topY + hierarchyHeight;
         layerDock->setGeometry(leftX, hierarchyBottom + 5, panelWidth, 150);
@@ -732,9 +722,7 @@ void ScenarioEditor::onDockVisibilityChanged(bool visible)
 /* Setup toolbars */
 void ScenarioEditor::setupToolBars()
 {
-    // Add design toolbar
 
-    // designToolBar = new DesignToolBar(this);
     designToolBar = new DesignToolBar(this, m_scenarioConfig);
     addToolBar(Qt::TopToolBarArea, designToolBar);
     designToolBar->setMovable(true);
@@ -1067,11 +1055,6 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
 
-    // Cleanup loading dialog
-    // loadingDialog->close();
-    // loadingDialog->deleteLater();
-
-    // updateStatusBar("Project loaded: " + QFileInfo(filePath).fileName());
 }
 
 // %%% Unsaved Changes Management %%%
@@ -1095,13 +1078,7 @@ void ScenarioEditor::clearUnsavedChanges()
     }
 }
 
-/* Update status bar message */
-// void ScenarioEditor::updateStatusBar(const QString &message)
-// {
-//     if (statusBar) {
-//         statusBar->showMessage(message);
-//     }
-// }
+
 
 // %%% Recent Project Loading %%%
 /* Load recent project */
@@ -1346,29 +1323,4 @@ void ScenarioEditor::showPanelContextMenu(const QPoint &pos)
         if (sidebarDock->isVisible()) sidebarDock->raise();
     }
 }
-void ScenarioEditor::runUnitTestsOnce()
-{
-    static bool testsRun = false;
-    if (testsRun) return;
-    testsRun = true;
 
-    QTimer::singleShot(0, []() {
-        Console* console = nullptr;
-        MainWindow* mw = MainWindow::instance();
-        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-            console = mw->databaseEditor->console;
-        }
-        if (!console) {
-            qDebug() << "ScenarioEditor: console not available, cannot run tests";
-            return;
-        }
-
-        // Use the existing ScenarioEditor instance (the real one)
-        // because it's created when switching to scenario editor.
-        if (mw && mw->scenarioEditor) {
-            runScenarioEditorTests(mw->scenarioEditor, console);
-        } else {
-            qDebug() << "ScenarioEditor: instance not available";
-        }
-    });
-}

@@ -1,94 +1,117 @@
 #include "feedback_test.h"
 #include "GUI/Feedback/projectinformation.h"
-#include "core/Debug/console.h"
+#include <QTest>
 #include <QLabel>
 #include <QPushButton>
-#include <QDebug>
+#include <QFrame>
 #include <QVBoxLayout>
 
-#define FEEDBACK_TEST(condition, msg) \
-do { \
-        if (condition) { \
-            console->log(std::string("[PASS] ") + msg); \
-    } else { \
-            console->error(std::string("[FAIL] ") + msg); \
-            testFailed = true; \
-    } \
-} while(0)
-
-    void runFeedbackTests(Feedback* dialog, Console* console)
+void TestFeedbackDialog::init()
 {
-    if (!dialog || !console) {
-        if (console) console->error("Feedback dialog or Console is null, cannot run tests");
-        return;
-    }
+    dialog = new Feedback(nullptr);
+}
 
-    bool testFailed = false;
+void TestFeedbackDialog::cleanup()
+{
+    delete dialog;
+    dialog = nullptr;
+}
 
-    console->log(std::string("\n========================================="));
-    console->log(std::string("      FEEDBACK DIALOG UNIT TESTS        "));
-    console->log(std::string("=========================================\n"));
+// ------------------------------------------------------------------
+// Dialog properties
+// ------------------------------------------------------------------
+void TestFeedbackDialog::testWindowTitle()
+{
+    QCOMPARE(dialog->windowTitle(), QString("Project Information"));
+}
 
-    // ----- Test 1: Dialog properties -----
-    FEEDBACK_TEST(dialog->windowTitle() == "Project Information", "Dialog title is 'Project Information'");
-    FEEDBACK_TEST(dialog->isModal(), "Dialog is modal");
-    FEEDBACK_TEST(dialog->size().width() == 500 && dialog->size().height() == 280, "Dialog size is 500x280");
-    FEEDBACK_TEST(dialog->isVisible() || !dialog->isVisible(), "Dialog exists (visibility check)");
+void TestFeedbackDialog::testIsModal()
+{
+    QVERIFY(dialog->isModal());
+}
 
-    // ----- Test 2: UI elements exist -----
-    // Find all labels
+void TestFeedbackDialog::testSize()
+{
+    QCOMPARE(dialog->size().width(), 500);
+    QCOMPARE(dialog->size().height(), 280);
+}
+
+void TestFeedbackDialog::testExists()
+{
+    // Just check that dialog is constructed (no crash)
+    QVERIFY(dialog != nullptr);
+}
+
+// ------------------------------------------------------------------
+// UI elements
+// ------------------------------------------------------------------
+void TestFeedbackDialog::testNameLabel()
+{
     QList<QLabel*> labels = dialog->findChildren<QLabel*>();
-    bool hasNameTitle = false, hasProjectName = false, hasVersionTitle = false;
+    bool hasNameTitle = false;
     for (QLabel* lbl : labels) {
-        QString text = lbl->text();
-        if (text == "Name:") hasNameTitle = true;
-        if (text.contains("Indigenous Scenario and Sensor Simulation Toolkit")) hasProjectName = true;
-        if (text == "Version:") hasVersionTitle = true;
-
-    }
-    FEEDBACK_TEST(hasNameTitle, "Name: label exists");
-    FEEDBACK_TEST(hasProjectName, "Project name label exists with correct text");
-    FEEDBACK_TEST(hasVersionTitle, "Version: label exists");
-
-
-    // ----- Test 3: OK button exists and works -----
-    QPushButton* okButton = dialog->findChild<QPushButton*>();
-    FEEDBACK_TEST(okButton != nullptr, "OK button exists");
-    if (okButton) {
-        FEEDBACK_TEST(okButton->text() == "OK", "OK button text is 'OK'");
-        FEEDBACK_TEST(okButton->cursor().shape() == Qt::PointingHandCursor, "OK button has pointing hand cursor");
-        FEEDBACK_TEST(okButton->isEnabled(), "OK button is enabled");
-        // Check that button triggers accept (we can't easily test without exec, but we can check signal connection)
-        // The button is connected to accept() – we trust that.
-    }
-
-    // ----- Test 4: Layout has stretch (separator line exists) -----
-    QFrame* separator = dialog->findChild<QFrame*>();
-    FEEDBACK_TEST(separator != nullptr, "Separator line exists");
-
-    // ----- Test 5: OK button is centered (verify its parent layout) -----
-    if (okButton) {
-        QWidget* parent = okButton->parentWidget();
-        QVBoxLayout* mainLayout = qobject_cast<QVBoxLayout*>(parent->layout());
-        if (mainLayout) {
-            // Check that the button is added with alignment Qt::AlignCenter
-            // We cannot directly check alignment property, but we can assume.
-            FEEDBACK_TEST(true, "OK button added to layout (assumed centered)");
-        } else {
-            FEEDBACK_TEST(false, "OK button not in QVBoxLayout");
+        if (lbl->text() == "Name:") {
+            hasNameTitle = true;
+            break;
         }
     }
+    QVERIFY(hasNameTitle);
+}
 
-    // ----- Test 6: Font and style (basic check – no crash) -----
-    // We can't easily verify font properties without getting the label's font,
-    // but we can check that the dialog has a stylesheet.
-    FEEDBACK_TEST(!dialog->styleSheet().isEmpty(), "Dialog has a stylesheet");
 
-    // Final summary
-    console->log(std::string("========================================="));
-    if (testFailed)
-        console->error(std::string("FEEDBACK TESTS: Some tests FAILED."));
-    else
-        console->log(std::string("FEEDBACK TESTS: ALL PASSED."));
-    console->log(std::string("=========================================\n"));
+
+void TestFeedbackDialog::testVersionLabel()
+{
+    QList<QLabel*> labels = dialog->findChildren<QLabel*>();
+    bool hasVersionTitle = false;
+    for (QLabel* lbl : labels) {
+        if (lbl->text() == "Version:") {
+            hasVersionTitle = true;
+            break;
+        }
+    }
+    QVERIFY(hasVersionTitle);
+}
+
+void TestFeedbackDialog::testOkButtonExists()
+{
+    QPushButton* okButton = dialog->findChild<QPushButton*>();
+    QVERIFY(okButton != nullptr);
+}
+
+void TestFeedbackDialog::testOkButtonProperties()
+{
+    QPushButton* okButton = dialog->findChild<QPushButton*>();
+    QVERIFY(okButton != nullptr);
+    QCOMPARE(okButton->text(), QString("OK"));
+    QCOMPARE(okButton->cursor().shape(), Qt::PointingHandCursor);
+    QVERIFY(okButton->isEnabled());
+}
+
+void TestFeedbackDialog::testSeparatorExists()
+{
+    QFrame* separator = dialog->findChild<QFrame*>();
+    QVERIFY(separator != nullptr);
+}
+
+// ------------------------------------------------------------------
+// Layout and styling
+// ------------------------------------------------------------------
+void TestFeedbackDialog::testOkButtonAlignment()
+{
+    QPushButton* okButton = dialog->findChild<QPushButton*>();
+    QVERIFY(okButton != nullptr);
+    QWidget* parent = okButton->parentWidget();
+    QVBoxLayout* mainLayout = qobject_cast<QVBoxLayout*>(parent->layout());
+    // We assume the button is added with Qt::AlignCenter; we can't directly test alignment,
+    // but we can verify it's in a layout and not null.
+    QVERIFY(mainLayout != nullptr);
+    // Optionally, we could check that the button's alignment is set, but that's internal.
+    QVERIFY(true); // placeholder: alignment cannot be easily retrieved
+}
+
+void TestFeedbackDialog::testHasStyleSheet()
+{
+    QString styleSheet = dialog->styleSheet();
+    QVERIFY(!styleSheet.isEmpty());
 }

@@ -53,7 +53,7 @@ private:
 public:
     void preprocessing();
     Hierarchy* m_hierarchy;
-    std::unordered_map<std::string, Platform*> *m_platform;
+    std::unordered_map<std::string, Platform*> m_platform;
     PreProcessEntityList getPreProcessEntityList(){ return *ppel; }
     double getPreProcessEntityDistance(std::string ID){ return (*ppel).at(ID).distanceBtwUser; }
     double getPreProcessEntityAngle   (std::string ID){ return (*ppel).at(ID).angleBtwUser; }
@@ -78,6 +78,8 @@ public:
                           double p2latitude ,
                           double p2longitude,
                           double p2altitude);
+    double relativeAngle(double sensorAngle, double targetAngle);
+    double viewAngle(double sensorAngle, double targetAngle);
 private:
     PreProcessEntityList* ppel;
     Coordinate toCartesian(double lat, double lon, double alt);

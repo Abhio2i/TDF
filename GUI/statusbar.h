@@ -1,6 +1,7 @@
 //============================================================================
 // File        : StatusBar.h
 // Description : Custom status bar with only Save button
+/* Written by   : Arti Rajpoot                                               */
 //============================================================================
 #pragma once
 
@@ -43,18 +44,18 @@ public:
     QPushButton* saveButton() const { return m_saveBtn; }
     void setFileName(const QString& fileName, bool hasUnsavedChanges = false);
     void clearFileName();
+    // static void runUnitTestsOnce();
+
 
 signals:
-    void saveRequested();   // emitted when Save button is clicked
+    void saveRequested();
 private slots:
     void updateRamUsage();
 private:
     void buildUI();
     void applyStyles();
-
-    // ── Only Save button remains ───────────────────────────────────────────
     QPushButton *m_saveBtn = nullptr;
-        QLabel *m_fileNameLabel = nullptr;
+    QLabel *m_fileNameLabel = nullptr;
     QLabel      *m_ramLabel     = nullptr;
     QTimer      *m_ramTimer     = nullptr;
 };

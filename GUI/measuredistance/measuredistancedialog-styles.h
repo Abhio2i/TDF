@@ -2,6 +2,7 @@
 /* File: measuredistancedialog-styles.h                                     */
 /* Purpose: Dark theme styles for MeasureDistanceDialog                     */
 /* Background: #0F2636, Border: #27446d, Text: White, Accent: #0078D4       */
+/* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
 #ifndef MEASUREDISTANCEDIALOG_STYLES_H

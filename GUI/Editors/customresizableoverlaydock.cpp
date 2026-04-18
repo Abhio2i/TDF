@@ -1,4 +1,9 @@
-
+ /*========================================================================= */
+/* File: customresizableoverlaydock.cpp                                      */
+/* Purpose: Implements a resizable overlay dock with custom title bar       */
+/*          and lock button functionality                                    */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #include "customresizableoverlaydock.h"
 #include <QCursor>
 #include <QPainter>
@@ -21,15 +26,13 @@ CustomResizableOverlayDock::CustomResizableOverlayDock(const QString &title, QWi
     setMouseTracking(true);
     setAttribute(Qt::WA_Hover, true);
 
-    // REMOVED: qApp->installEventFilter(this)
-    // Sirf apne aap pe lagao — global nahi
+
     installEventFilter(this);
     setupTitleBar(title);
 }
 
 // ─── setWidget override ───────────────────────────────────────────────────────
-// Content widget (body area) pe mouseTracking + eventFilter lagao
-// Bina iske body area pe mouse events filter tak pohonchte hi nahi
+
 void CustomResizableOverlayDock::setWidget(QWidget *widget)
 {
     QDockWidget::setWidget(widget);
@@ -55,7 +58,7 @@ void CustomResizableOverlayDock::mousePressEvent(QMouseEvent *event)
             resizing = true;
             dragPosition = event->globalPos() - frameGeometry().topLeft();
             event->accept();
-            return; // QDockWidget::mousePressEvent mat bulao — cursor kharab karta hai
+            return;
         } else {
             dragPosition = event->globalPos() - frameGeometry().topLeft();
             event->accept();
@@ -256,7 +259,6 @@ void CustomResizableOverlayDock::setupTitleBar(const QString &title)
     titleBar->setLayout(layout);
     setTitleBarWidget(titleBar);
 
-    // Titlebar + saare children pe mouseTracking + eventFilter
     titleBar->setMouseTracking(true);
     titleBar->setAttribute(Qt::WA_Hover, true);
     titleBar->installEventFilter(this);

@@ -57,7 +57,7 @@ Vector* Rigidbody::setAngularVelocity(const Vector& v) {
     return angularVelocity;
 }
 
-void Rigidbody::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+void Rigidbody::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
 
 }
 

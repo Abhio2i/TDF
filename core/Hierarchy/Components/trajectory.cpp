@@ -14,7 +14,7 @@ Trajectory::Trajectory():Component(nullptr) {
     customParameters = QJsonObject(); // Initialize customParameters
 }
 
-void Trajectory::addSubComponent(std::string name, QString data1, QString data2, QString data3){
+void Trajectory::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
 
 }
 

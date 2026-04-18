@@ -2,6 +2,7 @@
 /* ========================================================================= */
 /* File: iconsdialog.h                                                      */
 /* Purpose: Dialog for selecting images from resources                       */
+/* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
 #ifndef ICONSDIALOG_H

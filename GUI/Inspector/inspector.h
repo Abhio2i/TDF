@@ -4,6 +4,7 @@
 // Written by   : Arti Rajpoot
 /* ========================================================================= */
 
+
 #ifndef INSPECTOR_H
 #define INSPECTOR_H
 
@@ -31,6 +32,7 @@ class GeocordsTemplate;
 class OptionTemplate;
 class VectorTemplate;
 class CustomParameterDialog;
+
 
 // %%% WheelableLineEdit Class %%%
 /* Custom line edit widget that supports value adjustment via mouse wheel */
@@ -81,7 +83,7 @@ public:
     QString getMainID() const { return mainID; }
     QString getName() const { return Name; }
     QString getConnectedID() const { return ConnectedID; }
-    static void runUnitTestsOnce();
+   // void runUnitTestsOnce();
 public slots:
     // %%% Data Initialization %%%
     /* Initialize inspector with specific data */

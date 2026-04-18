@@ -12,6 +12,7 @@
 #include <qgsproject.h>                            // For QGIS project management
 #include <qgscoordinatetransform.h>                // For coordinate transforms
 
+
 TacticalDisplay::TacticalDisplay(QWidget *parent)
     : QWidget(parent)
 {
@@ -256,3 +257,4 @@ void TacticalDisplay::onCoordinateSystemChanged(const QString& crsId) {
        // qDebug() << "TacticalDisplay: Forwarded CRS change to GISlib:" << crsId;
     }
 }
+

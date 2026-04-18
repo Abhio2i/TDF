@@ -101,12 +101,10 @@ IconsDialog::IconsDialog(QWidget *parent)
 
 QString IconsDialog::selectedImagePath() const
 {
-    // First check if we have a manually selected path (from Browse button)
     if (!m_selectedPath.isEmpty()) {
         return m_selectedPath;
     }
 
-    // Otherwise return the selected item from list
     QListWidgetItem *item = listWidget->currentItem();
     if (item)
         return item->data(Qt::UserRole).toString();

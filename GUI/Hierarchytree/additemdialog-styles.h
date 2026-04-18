@@ -2,6 +2,7 @@
 /* File: additemdialog-styles.h                                             */
 /* Purpose: Dark theme styles for AddItemDialog - WITH CHECKMARK IMAGE      */
 /* Background: #0F2636, Border: #27446d, Text: White, Accent: #0078D4       */
+/* Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef ADDITEMDIALOG_STYLES_H
@@ -162,7 +163,6 @@ QDialog QComboBox::down-arrow {
     }
 )";
 
-/* Simple Dialog - for IFF/Radio/Sensor (no scroll) */
 const QString SimpleDialog = R"(
     QDialog {
         background-color: #0F2636;

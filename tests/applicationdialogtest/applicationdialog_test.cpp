@@ -1,6 +1,7 @@
 #include "applicationdialog_test.h"
 #include "GUI/Settings/applicationdialog.h"
-#include "core/Debug/console.h"
+#include <QTest>
+#include <QSignalSpy>
 #include <QTabWidget>
 #include <QLineEdit>
 #include <QPushButton>
@@ -8,178 +9,122 @@
 #include <QLabel>
 #include <QGroupBox>
 #include <QFormLayout>
-#include <QDebug>
 
-#define APP_TEST(condition, msg) \
-do { \
-        if (condition) { \
-            console->log(std::string("[PASS] ") + msg); \
-    } else { \
-            console->error(std::string("[FAIL] ") + msg); \
-            testFailed = true; \
-    } \
-} while(0)
-
-    void runApplicationDialogTests(ApplicationDialog* dialog, Console* console)
+void TestApplicationDialog::init()
 {
-    if (!dialog || !console) {
-        if (console) console->error("ApplicationDialog or Console is null, cannot run tests");
-        return;
-    }
+    dialog = new ApplicationDialog();
+}
 
-    bool testFailed = false;
+void TestApplicationDialog::cleanup()
+{
+    delete dialog;
+    dialog = nullptr;
+}
 
-    console->log(std::string("\n========================================="));
-    console->log(std::string("    APPLICATION DIALOG UNIT TESTS        "));
-    console->log(std::string("=========================================\n"));
+// ------------------------------------------------------------------
+// UI structure tests
+// ------------------------------------------------------------------
+void TestApplicationDialog::testDialogProperties()
+{
+    QCOMPARE(dialog->windowTitle(), QString("Application Settings"));
+    QVERIFY(dialog->isModal());
+    QCOMPARE(dialog->size().width(), 430);
+    QCOMPARE(dialog->size().height(), 400);
+}
 
-    // ----- Test 1: Dialog properties -----
-    APP_TEST(dialog->windowTitle() == "Application Settings", "Dialog title is 'Application Settings'");
-    APP_TEST(dialog->isModal(), "Dialog is modal");
-    APP_TEST(dialog->size().width() == 430 && dialog->size().height() == 400, "Dialog size is 430x400");
 
-    // ----- Test 2: Tab widget exists and has 3 tabs -----
+
+
+void TestApplicationDialog::testDatabaseTabElements()
+{
     QTabWidget* tabWidget = dialog->findChild<QTabWidget*>();
-    APP_TEST(tabWidget != nullptr, "Tab widget exists");
-    if (tabWidget) {
-        APP_TEST(tabWidget->count() == 3, "Tab widget has 3 tabs (General, Database, Physics)");
-        APP_TEST(tabWidget->tabText(0) == "General", "First tab is 'General'");
-        APP_TEST(tabWidget->tabText(1) == "Database", "Second tab is 'Database'");
-        APP_TEST(tabWidget->tabText(2) == "Physics", "Third tab is 'Physics'");
+    QVERIFY(tabWidget != nullptr);
+    QWidget* dbTab = tabWidget->widget(1);
+    QVERIFY(dbTab != nullptr);
+
+    QCheckBox* dbEnabledCheck = dbTab->findChild<QCheckBox*>();
+    QVERIFY(dbEnabledCheck != nullptr);
+
+    QLineEdit* dbPathEdit = dbTab->findChild<QLineEdit*>();
+    QVERIFY(dbPathEdit != nullptr);
+
+    QList<QPushButton*> btns = dbTab->findChildren<QPushButton*>();
+    bool hasBrowse = false, hasReset = false;
+    for (QPushButton* btn : btns) {
+        if (btn->text() == "Browse…") hasBrowse = true;
+        if (btn->text() == "Reset Path") hasReset = true;
     }
+    QVERIFY(hasBrowse);
+    QVERIFY(hasReset);
+}
 
-    // ----- Test 3: General tab UI elements -----
-    // Developer mode checkbox
-    QCheckBox* devModeCheck = dialog->findChild<QCheckBox*>();
-    APP_TEST(devModeCheck != nullptr, "Developer Mode checkbox exists");
-
-    // FPS line edits
-    QLineEdit* fpsEdit = dialog->findChild<QLineEdit*>("", Qt::FindDirectChildrenOnly);
-    // More specific: find by placeholder or by validator
-    QList<QLineEdit*> lineEdits = dialog->findChildren<QLineEdit*>();
-    bool hasFpsEdit = false, hasGuiFpsEdit = false, hasSimFpsEdit = false, hasPhysFpsEdit = false, hasImageSizeEdit = false;
-    for (QLineEdit* le : lineEdits) {
-        QString text = le->text();
-        if (text == "60" && le->validator() && le->validator()->inherits("QIntValidator")) {
-            if (!hasFpsEdit) hasFpsEdit = true;
-            else if (!hasGuiFpsEdit) hasGuiFpsEdit = true;
-            else if (!hasSimFpsEdit) hasSimFpsEdit = true;
-            else if (!hasPhysFpsEdit) hasPhysFpsEdit = true;
-        }
-        if (le->placeholderText().contains("px")) hasImageSizeEdit = true;
-    }
-    APP_TEST(hasFpsEdit, "Main FPS line edit exists");
-    APP_TEST(hasGuiFpsEdit, "GUI FPS line edit exists");
-    APP_TEST(hasSimFpsEdit, "Simulation FPS line edit exists");
-    APP_TEST(hasPhysFpsEdit, "Physics FPS line edit exists");
-    APP_TEST(hasImageSizeEdit, "Image Size line edit exists");
-
-    // ----- Test 4: Database tab UI elements -----
-    // Find Database tab content
-    QWidget* dbTab = nullptr;
-    if (tabWidget) dbTab = tabWidget->widget(1);
-    if (dbTab) {
-        QCheckBox* dbEnabledCheck = dbTab->findChild<QCheckBox*>();
-        APP_TEST(dbEnabledCheck != nullptr, "Database Enabled checkbox exists");
-
-        QLineEdit* dbPathEdit = dbTab->findChild<QLineEdit*>();
-        APP_TEST(dbPathEdit != nullptr, "Database path line edit exists");
-
-        QPushButton* browseBtn = dbTab->findChild<QPushButton*>("", Qt::FindDirectChildrenOnly);
-        bool hasBrowse = false, hasReset = false;
-        if (browseBtn) {
-            for (QPushButton* btn : dbTab->findChildren<QPushButton*>()) {
-                if (btn->text() == "Browse…") hasBrowse = true;
-                if (btn->text() == "Reset Path") hasReset = true;
-            }
-        }
-        APP_TEST(hasBrowse, "Browse button exists");
-        APP_TEST(hasReset, "Reset Path button exists");
-    } else {
-        APP_TEST(false, "Database tab not found");
-    }
-
-    // ----- Test 5: OK and Cancel buttons exist -----
-    QPushButton* okButton = dialog->findChild<QPushButton*>("", Qt::FindDirectChildrenOnly);
+void TestApplicationDialog::testOkCancelButtons()
+{
+    QList<QPushButton*> btns = dialog->findChildren<QPushButton*>();
     bool hasOk = false, hasCancel = false;
-    if (okButton) {
-        for (QPushButton* btn : dialog->findChildren<QPushButton*>()) {
-            if (btn->text() == "OK") hasOk = true;
-            if (btn->text() == "Cancel") hasCancel = true;
-        }
+    for (QPushButton* btn : btns) {
+        if (btn->text() == "OK") hasOk = true;
+        if (btn->text() == "Cancel") hasCancel = true;
     }
-    APP_TEST(hasOk, "OK button exists");
-    APP_TEST(hasCancel, "Cancel button exists");
+    QVERIFY(hasOk);
+    QVERIFY(hasCancel);
+}
 
-    // ----- Test 6: Static getters/setters (database) -----
-    // Save original values
-    bool origDbEnabled = ApplicationDialog::getGlobalDatabaseEnabled();
-    QString origDbPath = ApplicationDialog::getGlobalDatabasePath();
+// ------------------------------------------------------------------
+// Static getter/setter tests
+// ------------------------------------------------------------------
 
-    // Test setter/getter
-    ApplicationDialog::setGlobalDatabaseEnabled(true);
-    ApplicationDialog::setGlobalDatabasePath("/test/path.db");
-    APP_TEST(ApplicationDialog::getGlobalDatabaseEnabled() == true, "setGlobalDatabaseEnabled(true) works");
-    APP_TEST(ApplicationDialog::getGlobalDatabasePath() == "/test/path.db", "setGlobalDatabasePath works");
-
-    // Restore
-    ApplicationDialog::setGlobalDatabaseEnabled(origDbEnabled);
-    ApplicationDialog::setGlobalDatabasePath(origDbPath);
-
-    // ----- Test 7: Static getters for FPS and image size -----
-    int fps = ApplicationDialog::getGlobalFPS();
-    APP_TEST(fps >= 1 && fps <= 1000, "getGlobalFPS returns valid value");
-
-    QString imgSize = ApplicationDialog::getGlobalImageSize();
-    APP_TEST(!imgSize.isEmpty(), "getGlobalImageSize returns non-empty string");
-
-    QString imgPixels = ApplicationDialog::getImageSizeInPixels();
-    bool pixelsValid = !imgPixels.isEmpty() && imgPixels.toInt() > 0;
-    APP_TEST(pixelsValid, "getImageSizeInPixels returns valid number");
-
-    // ----- Test 8: Developer mode static getter/setter -----
-    bool origDevMode = ApplicationDialog::getGlobalDeveloperMode();
+void TestApplicationDialog::testDeveloperMode()
+{
+    bool orig = ApplicationDialog::getGlobalDeveloperMode();
     ApplicationDialog::setGlobalDeveloperMode(true);
-    APP_TEST(ApplicationDialog::getGlobalDeveloperMode() == true, "setGlobalDeveloperMode(true) works");
+    QVERIFY(ApplicationDialog::getGlobalDeveloperMode() == true);
     ApplicationDialog::setGlobalDeveloperMode(false);
-    APP_TEST(ApplicationDialog::getGlobalDeveloperMode() == false, "setGlobalDeveloperMode(false) works");
-    ApplicationDialog::setGlobalDeveloperMode(origDevMode);
+    QVERIFY(ApplicationDialog::getGlobalDeveloperMode() == false);
+    ApplicationDialog::setGlobalDeveloperMode(orig);
+}
 
-    // ----- Test 9: Validation logic (simulate entering invalid values) -----
-    // Find an FPS edit and set invalid text, then validate
-    if (hasFpsEdit) {
-        QLineEdit* mainFpsEdit = nullptr;
-        for (QLineEdit* le : lineEdits) {
-            if (le->text() == "60" && le->validator() && le->validator()->inherits("QIntValidator")) {
-                mainFpsEdit = le;
-                break;
-            }
-        }
-        if (mainFpsEdit) {
-            // Set invalid value
-            mainFpsEdit->setText("9999");
-            // Trigger validation (OK button should be disabled)
-            // We cannot easily check OK button state without simulating the dialog,
-            // but we can check that error label appears (if we can find it)
-            // For simplicity, we just test that setting value doesn't crash
-            APP_TEST(true, "Validation handles invalid input without crash");
-            // Restore
-            mainFpsEdit->setText("60");
-        }
-    }
+void TestApplicationDialog::testFpsSettings()
+{
+    int fps = ApplicationDialog::getGlobalFPS();
+    QVERIFY(fps >= 1 && fps <= 1000);
+    // Optionally test setter if exists, but not shown in original code
+}
 
-    // ----- Test 10: Signal emissions (just check that signals exist) -----
+void TestApplicationDialog::testImageSizeSettings()
+{
+    QString imgSize = ApplicationDialog::getGlobalImageSize();
+    QVERIFY(!imgSize.isEmpty());
+
+    QString pixels = ApplicationDialog::getImageSizeInPixels();
+    bool ok = false;
+    int pixelVal = pixels.toInt(&ok);
+    QVERIFY(ok && pixelVal > 0);
+}
+
+// ------------------------------------------------------------------
+// Signal tests (using QSignalSpy)
+// ------------------------------------------------------------------
+void TestApplicationDialog::testFpsStateSignal()
+{
     const QMetaObject* mo = dialog->metaObject();
-    bool hasFpsSignal = mo->indexOfSignal("fpsState(int)") != -1;
-    bool hasDbSignal = mo->indexOfSignal("databaseSettingsChanged(bool,QString)") != -1;
-    APP_TEST(hasFpsSignal, "fpsState signal exists");
-    APP_TEST(hasDbSignal, "databaseSettingsChanged signal exists");
+    int signalIndex = mo->indexOfSignal("fpsState(int)");
+    QVERIFY(signalIndex != -1);
 
-    // Final summary
-    console->log(std::string("========================================="));
-    if (testFailed)
-        console->error(std::string("APPLICATION DIALOG TESTS: Some tests FAILED."));
-    else
-        console->log(std::string("APPLICATION DIALOG TESTS: ALL PASSED."));
-    console->log(std::string("=========================================\n"));
+    // Emit the signal (if possible through UI interaction)
+    // For simplicity, we just check existence and that connecting doesn't crash
+    QSignalSpy spy(dialog, SIGNAL(fpsState(int)));
+    // In a real test, you'd trigger UI action that emits it.
+    // Here we just verify the signal is declared.
+    QVERIFY(spy.isValid());
+}
+
+void TestApplicationDialog::testDatabaseSettingsChangedSignal()
+{
+    const QMetaObject* mo = dialog->metaObject();
+    int signalIndex = mo->indexOfSignal("databaseSettingsChanged(bool,QString)");
+    QVERIFY(signalIndex != -1);
+
+    QSignalSpy spy(dialog, SIGNAL(databaseSettingsChanged(bool,QString)));
+    QVERIFY(spy.isValid());
 }

@@ -6,13 +6,14 @@
 
 EOSensor::EOSensor(Hierarchy* h) : Sensor(h) {
     subType = SubType::EO;
-    azimuth = 360;
+    // azimuth = 360;
     frequency = 10.0f;
     eo_ir = new EO_IR(h);
     m_h = h;
-    range = 50;
-    m_Platforms= &h->Platforms;
-    m_Specialzones = &h->Specialzones;
+    // range = 50;
+    //m_Platforms= h->Platforms;
+    m_Platforms= root->Platforms;
+    m_Specialzones = h->Specialzones;
     //EO_PayLoad eo_payload;
     //eo = new EO(eo_payload);
 }
@@ -51,31 +52,26 @@ void EOSensor::scan(){
     if(!Active)return;
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
     if(!parentEntity) return;
-    Transform* source = root->Platforms[parentEntity->ID]->transform;
+    Transform* source = (root->Platforms)[parentEntity->ID]->transform;
     if(!source) return;
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
 
     str = QString();
+
     auto key = parentEntity->ID;
-    auto sensor_platform = m_Platforms->find(key);
-    if(sensor_platform != m_Platforms->end()){
+    auto sensor_platform = m_Platforms.find(key);
+    if(sensor_platform != m_Platforms.end()){
         str += sensor_platform->second->Name.c_str();
         str += " ";
     }else{
         str += "NAN";
         return;
     }
-    // if(m_Specialzones->find(key) != m_Specialzones->end()){
-    //     auto ssz = m_Specialzones->at(key);
-    //     auto srd = eo_ir->eo_surrounding;
-    //     srd.atmCoeff      = 1;
-    //     srd.rainCoeff     = ssz->rain;
-    //     srd.fogCoeff      = ssz->fog;
-    //     srd.humidityCoeff = ssz->humidity;
-    //     eo_ir->eo->setEnvironment(srd);
-    // }else{
-    //     eo_ir->eo->setEnvironment({1,1,1,1});
-    // }
+
+    str += QString("Input:[Az:%1, Rg:%2]").arg(
+        QString::number(azimuth),
+        QString::number(range*1000));
+
 
     Transform *sensor_tf;
     if(sensor_platform->second->transform){
@@ -90,45 +86,91 @@ void EOSensor::scan(){
 
         // Setting Up Surrounding
         auto eo_surrounding = eo_ir->eo_surrounding;
-        if(m_Specialzones->find(key) != m_Specialzones->end()){
-            auto ssz = m_Specialzones->at(key);
+        QString AV[] = {"NA","AV"};
+        int AVnum = 0;
+        if(m_Specialzones.find(key) != m_Specialzones.end()){
+            auto ssz = m_Specialzones.at(key);
             // eo_surrounding = getSurrounding(ssz);
             eo_surrounding = getSurrounding(ssz->collider->CollideRadius,1,ssz->rain,ssz->fog,ssz->humidity);
+            AVnum = 1;
         }else{
             eo_surrounding = getSurrounding();
         }
-        // Display Values
-        str += QString("Env: [A:%1, R:%2, H:%3, F:%4 ]").arg(
-            QString::number(eo_surrounding.k_atm ),
-            QString::number(eo_surrounding.k_rain),
-            QString::number(eo_surrounding.k_fog ),
-            QString::number(eo_surrounding.k_fog ));
-
         // Setting Up Sensor
-        auto eo_sensor      = eo_ir->eo_sensor;
+
+        auto eo_sensor = eo_ir->eo_sensor;
+        eo_sensor.fov      = azimuth;
+        eo_sensor.maxRange = range;
         // Initializing EO Sensor
         eo = eo_ir->initEO(eo_sensor,eo_surrounding);
+
+
+        /*    Get & Set Threshold Range Start          */
+        double threshold  = eo->getSetThreshold(range*1000,8);
+        /*     Get & Set Threshold Range Start         */
+
+        // Display Values
+        str += QString("Env(%1) : [A:%2, R:%3, H:%4, F:%5, Th:%6 ]").arg(
+            AV[AVnum],
+            QString::number(eo_surrounding.k_atm ),
+            QString::number(eo_surrounding.k_rain),
+            QString::number(eo_surrounding.k_humidity),
+            QString::number(eo_surrounding.k_fog ),
+            QString::number(threshold ));
 
     }else{
         return;
     }
     /*            Defining the EO Sensor End             */
 
+    //
+    // /*               Dynamic Range Start                 */
+    // range = eo->getMaxRange(80)/1000.f;
+    // /*                Dynamic Range End                  */
+    //
 
-    /*               Dynamic Range Start                 */
-    range = eo->getMaxRange(80)/1000.f;
-    /*                Dynamic Range End                  */
+    double sensorLatitude  = source->getLatitude ();
+    double sensorLongitude = source->getLongitude();
+    double sensorAltitude  = source->getAltitude()*0.3048;
+    double sensorHeading   = source->getHeading();
+    double sensorPitch     = source->pitch();
 
     /*     Getting Sensored Entity Coordinates Start     */
     Coordinate sensor_cood =
-        {source->getLatitude(),
-         source->getLongitude(),
-         source->getAltitude()};
+        {sensorLatitude ,
+         sensorLongitude,
+         sensorAltitude };
     /*      Getting Sensored Entity Coordinates End      */
 
-    str += "Contains: {";
+    /*             EO Vision of Sensor Start             */
+
+    Vec3 sensorECEF = eoVision.geoToECEF(
+        sensorLatitude ,
+        sensorLongitude,
+        sensorAltitude );
+
+    QString dstr = QString("Sensor : {"
+                   "Latitude :%1, "
+                   "Longitude :%2, "
+                   "Altitude :%3, "
+                   "Heading :%4, "
+                   "Pitch :%5"
+                   "} "
+                   ).arg(
+                   QString::number(sensorLatitude ),
+                   QString::number(sensorLongitude),
+                   QString::number(sensorAltitude ),
+                   QString::number(sensorHeading  ),
+                   QString::number(sensorPitch    )
+                   );
+
+    /*              EO Vision of Sensor End              */
+    m_Platforms= root->Platforms;
+    str += QString("Contains %1 : {").arg(m_Platforms.size());
+    dstr += " :{";
     ewtargets.clear();
-    for (auto& [ID, platform] : *m_Platforms){
+    eoEntities.clear();
+    for (auto& [ID, platform] : m_Platforms){
         if(key == ID) continue;
         str += QString(" %1: ").arg(platform->Name.c_str());
         if(Transform *tf = platform->transform){
@@ -170,6 +212,100 @@ void EOSensor::scan(){
                 QString::number(viewDir.y),
                 QString::number(viewDir.z),
                 QString::number(projectionArea));
+            /*     Getting Sensored Entity Coordinates Start     */
+            //double azimuthRad = azimuth * M_PI / 180.0;
+            double displayWidth = 0.02;
+
+            double targetLatitude  = platform->transform->getLatitude ();
+            double targetLongitude = platform->transform->getLongitude();
+            double targetAltitude  = platform->transform->getAltitude()*0.3048;
+            double targetHeading   = platform->transform->getHeading();
+            double targetPitch     = platform->transform->pitch();
+            double sensorHeading = source->getHeading();
+            double sensorPitch   = source->pitch();
+            double baseSize      = 15;
+            dstr += QString("Tragets : {"
+                           "Latitude :%1, "
+                           "Longitude :%2, "
+                           "Altitude :%3, "
+                           "Heading :%4, "
+                           "Pitch :%5, "
+                           "Display Width: %6, "
+                           "Base Size: %7"
+                           "}, "
+                           ).arg(
+                           QString::number(targetLatitude  ),
+                           QString::number(targetLongitude ),
+                           QString::number(targetAltitude  ),
+                           QString::number(targetHeading   ),
+                           QString::number(targetPitch     ),
+                           QString::number(displayWidth  ),
+                           QString::number(baseSize    )
+                           );
+
+            Vec3 targetECEF = eoVision.geoToECEF(targetLatitude, targetLongitude, targetAltitude);
+            Vec3 enu = eoVision.ecefToENU(targetECEF, sensorECEF, sensorLatitude, sensorLongitude);
+            Vec3 view = eoVision.rotateToSensorFrame(enu, sensorHeading, sensorPitch);
+
+            //if (!(eoVision.isInsideFOV(view, azimuth, azimuth))) continue;
+            double distance_ = enu.length();
+            if (distance_ < 1.0) {
+                dstr += "WARNING: Target too close or same as sensor\n";
+            }
+            bool isInsideFOV = eoVision.isInsideFOV(view, azimuth, azimuth);
+            if(!isInsideFOV) continue;
+            double focalLength = (displayWidth / 2) / tan((azimuth * M_PI / 180.0) / 2);
+            //double focalLength = (displayWidth / 2) / tan(azimuthRad / 2);
+            //double focalLength = (displayWidth / 2) / tan( azimuth/ 2);
+            Vec2 screen = eoVision.project(view, focalLength);
+            //double size = baseSize * (focalLength / enu.length());
+            double size = baseSize * (focalLength / enu.length());
+            size = std::max(0.0, size);
+            std::string name = platform->Name;
+            view.normalized();
+            double relativeHeading = eo_ir->relativeAngle(sensorHeading,targetHeading);
+            double relativePitch   = eo_ir->relativeAngle(sensorPitch,targetPitch);
+            double relativeBearingAngle = gra.computeRelativeAngle(
+                sensorLatitude,sensorLongitude,sensorHeading,
+                targetLatitude,targetLongitude);
+            double elevationAngle = gre.computeRelativeElevation(
+                sensorLatitude,sensorLongitude,sensorAltitude,sensorHeading,
+                targetLatitude,targetLongitude,targetAltitude);
+            // double relativeHeadingII = eo_ir->relativeAngle();
+            // double relativePitchII   = eo_ir->relativeAngle();
+
+            EO_Entity eo_entity(name,size,relativeHeading,targetPitch,
+                {screen.x,screen.y},{view.x,view.y,view.z});
+
+            eoEntities.push_back(eo_entity);
+
+            dstr += QString("Result of Target : {"
+                            "targetECEF : (x:%1,y:%2,z:%3), "
+                            "enu : (x:%4,y:%5,z:%6), "
+                            "view : (x:%7,y:%8,z:%9), "
+                            "focalLength :%10, "
+                            "isInsideFOV :%11, "
+                            "screen : (x:%12,y:%13), "
+                            "size: %14"
+                            "}, "
+                            ).arg(
+            QString::number(targetECEF.x),
+            QString::number(targetECEF.y),
+            QString::number(targetECEF.z),
+            QString::number(enu.x),
+            QString::number(enu.y),
+            QString::number(enu.z),
+            QString::number(view.x),
+            QString::number(view.y),
+            QString::number(view.z),
+            QString::number(focalLength),
+            QString::number(isInsideFOV),
+            QString::number(screen.x),
+            QString::number(screen.y),
+            QString::number(size));
+            /*      Getting Sensored Entity Coordinates End      */
+
+
 
             // Checking Detection of Entity
             bool isDetected = eo->isDetected(projectionArea,distance,angle,ilm,glt);
@@ -185,68 +321,16 @@ void EOSensor::scan(){
             target.angle = angle;//-((h.azimuth_deg+h)+180.f);
             target.radius = distance/1000.f;
             ewtargets.append(target);
+
+
         }
 
     }
     str += " }";
-
+    dstr += "}";
+    debug(dstr,D_Details);
     debug(str,D_INIT);
 
-
-    // // C# foreach (Transform tr in targets) -> C++ range-based for loop
-    // for (auto& [key, entity] : *root->Radios)
-    // {
-    //     if(!entity || !entity->parentEntity || !entity->parentEntity->Active) continue;
-    //     auto it = root->Platforms->find(entity->parentEntity->ID);
-    //     if (it != root->Platforms->end()) {
-    //         Platform* platform = it->second;
-    //         // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
-    //         if(platform->ID == parentEntity->ID || !platform || !platform->transform) continue;
-    //         QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
-    //         //float distance = localPos.length();
-    //         float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
-
-    //         // horizontal angle (Y axis) : x vs z
-    //         float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
-    //         float fre1 = entity->minFrequency;
-    //         float fre2 = entity->maxFrequency;
-    //         // qDebug()<<yAngle<<","<<detectCheck(localPos,metredis)<<","<<(fre1 < frequency && fre2> frequency);
-    //         if (entity->Active && detectCheck(localPos,metredis) && fre1 < frequency && fre2> frequency)  // .position() is assumed
-    //         {
-    //             //qDebug()<< "detect";
-    //             if (ewdetects.count(platform) == 0)
-    //             {
-    //                 ewdetects.insert(platform);
-    //                 Target target;
-    //                 target.entity = platform;
-    //                 target.angle = yAngle;
-    //                 target.radius = metredis;
-    //                 ewtargets.append(target);
-    //             }else{
-    //                 for (int i = 0; i < ewtargets.size(); ++i) {
-    //                     if (ewtargets.at(i).entity == platform) {
-    //                         ewtargets[i].angle = yAngle;
-    //                         ewtargets[i].radius = metredis;
-    //                         break;
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //         else
-    //         {
-    //             if (ewdetects.count(platform) > 0)
-    //             {
-    //                 for (int i = 0; i < ewtargets.size(); ++i) {
-    //                     if (ewtargets.at(i).entity == platform) {
-    //                         ewtargets.removeAt(i);
-    //                         break;
-    //                     }
-    //                 }
-    //                 ewdetects.erase(platform);
-    //             }
-    //         }
-    //     }
-    // }
 }
 
 QJsonObject EOSensor::toJson() const {
@@ -260,6 +344,9 @@ QJsonObject EOSensor::toJson() const {
     defaultObj["range"] = toParm(range,"km",0,    500);
     defaultObj["frequency"] = toParm(frequency,"Ghz", 0.1,  100);
     defaultObj["azimuth"] = toParm(azimuth,"deg", 0,    360);
+    // defaultObj["FOV"] = toParm(azimuth,"deg", 0,    360);
+    // defaultObj["max distance"] = toParm(range,"km",0,    500);
+    // defaultObj["threshold"] = toParm(range,"%", 0.000000000, 1.000000000);
     obj["default"] = defaultObj;
     return obj;
 }
@@ -280,6 +367,13 @@ void EOSensor::fromJson(const QJsonObject& obj) {
 
         if (defaultObj.contains("azimuth"))
             azimuth = valueFromParm(defaultObj["azimuth"].toObject());
+
+        // if (defaultObj.contains("FOV"))
+        //     azimuth = valueFromParm(defaultObj["FOV"].toObject());
+        // if (defaultObj.contains("max distance"))
+        //     azimuth = valueFromParm(defaultObj["max distance"].toObject());
+        // if (defaultObj.contains("threshold"))
+        //     azimuth = valueFromParm(defaultObj["threshold"].toObject());
     }
 }
 /*------------    Custom Debugger Start    ------------*/

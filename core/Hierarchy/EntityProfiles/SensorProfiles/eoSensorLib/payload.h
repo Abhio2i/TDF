@@ -33,6 +33,12 @@ struct Axis {
     double x = NULL, y = NULL, z = NULL;
     double magnitude() const { return std::sqrt(x*x + y*y + z*z); }
 };
+struct Vec2 {
+    double x, y;
+
+    Vec2(double x_=0, double y_=0)
+        : x(x_), y(y_) {}
+};
 
 struct Vec3 {
     double x, y, z;
@@ -43,6 +49,25 @@ struct Vec3 {
         double mag = std::sqrt(x*x + y*y + z*z);
         if (mag == 0) return Vec3(0,0,0);
         return Vec3(x/mag, y/mag, z/mag);
+    }
+    // Vector subtraction
+    Vec3 operator-(const Vec3& other) const {
+        return {x - other.x, y - other.y, z - other.z};
+    }
+
+    // Scalar division
+    Vec3 operator/(double s) const {
+        return {x / s, y / s, z / s};
+    }
+
+    // Scalar multiplication
+    Vec3 operator*(double s) const {
+        return {x * s, y * s, z * s};
+    }
+
+    // Length
+    double length() const {
+        return sqrt(x*x + y*y + z*z);
     }
 };
 struct EntityDimension {

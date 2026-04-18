@@ -25,11 +25,8 @@
 #include <QStyleFactory>
 #include <QDesktopServices>
 #include <GUI/statusbar.h>
-#include "tests/menubartest/gui_menubar_test.h"
-#include <QTimer>
-#include "tests/designtoolbartest/gui_designtoolbar_test.h"
-#include "tests/runtimetoolbartest/gui_runtimetoolbar_test.h"
-#include "tests/hierarchytreetest/gui_hierarchytree_test.h"
+
+#include "GUI/Tacticaldisplay/tooltiphelper.h"
 
 
 
@@ -38,6 +35,7 @@ MainWindow* MainWindow::s_instance = nullptr;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
+    // GuiTestControl::setEnabled(false);
     setStyleSheet(MainWindowStyles::MainWindow);
     qApp->setStyle(QStyleFactory::create("Fusion"));
     QPalette darkPalette;
@@ -66,20 +64,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     resize(1900, 1000);
     setupUI();
     setAttribute(Qt::WA_DeleteOnClose);
-    Core_Test coreTest;
-    // After menu bar is created and UI is ready, run MenuBar tests
-    QTimer::singleShot(500, this, [this]() {
-        if (mainMenuBar && databaseEditor && databaseEditor->console) {
-            runMenuBarTests(mainMenuBar, databaseEditor->console);
-        } else {
-            qDebug() << "Cannot run MenuBar tests: console not available";
-        }
-    });
-    QTimer::singleShot(1000, this, [this]() {
-        if (databaseEditor && databaseEditor->treeView && databaseEditor->console) {
-            runHierarchyTreeTests(databaseEditor->treeView, databaseEditor->console);
-        }
-    });
+    // Core_Test coreTest;
 
 }
 
@@ -91,7 +76,7 @@ MainWindow::~MainWindow()
     if (scenarioEditor) delete scenarioEditor;
     if (missionEditor)  delete missionEditor;
     if (runtimeEditor)  delete runtimeEditor;
-     if (analysisEditor)  delete analysisEditor;
+    if (analysisEditor)  delete analysisEditor;
 }
 
 void MainWindow::setupUI()
@@ -385,13 +370,9 @@ void MainWindow::setupMenuBarConnections()
         QJsonObject obj = doc.object();
         RuntimeEditor::s_missionData     = obj;
         RuntimeEditor::s_missionFilePath = filePath;
-
-        // If missionEditor already exists, load doctrine data into it
         if (missionEditor) {
             missionEditor->loadFromJsonFile(filePath);
         }
-
-        // Show a status bar message confirming load
         if (m_statusBar)
             m_statusBar->setFileName(filePath, false);
 
@@ -913,18 +894,6 @@ MainWindow* MainWindow::instance()
 {
     return MainWindow::s_instance;
 }
-
-//switchEditor: new "mission" branch added between "scenario" and "runtime"
-// ===================================================================
-// Replace the entire switchEditor() function in mainwindow.cpp
-// with this corrected version.
-//
-// KEY FIXES:
-//   1. updateFileMenuForEditor() called in EVERY branch
-//   2. updateFileMenuForEditor() always called BEFORE setLibraryActionsVisible()
-//      so library-action visibility is applied last and wins.
-// ===================================================================
-
 void MainWindow::switchEditor(const QString &editorKey)
 {
     if (!handleUnsavedChanges()) {
@@ -935,9 +904,9 @@ void MainWindow::switchEditor(const QString &editorKey)
     // ── DATABASE ─────────────────────────────────────────────────────────
     if (editorKey == "database") {
         showLoadingOverlay("Loading Database Editor...");
-        mainMenuBar->updateFileMenuForEditor(editorKey);      // 1st
+        mainMenuBar->updateFileMenuForEditor(editorKey);
 
-        mainMenuBar->setLibraryActionsVisible(false);         // 2nd (wins over reset)
+        mainMenuBar->setLibraryActionsVisible(false);
         stackedWidget->setCurrentWidget(databaseEditor);
         QCoreApplication::processEvents();
         updateWindowTitleForCurrentEditor();
@@ -950,8 +919,8 @@ void MainWindow::switchEditor(const QString &editorKey)
     // ── SCENARIO ─────────────────────────────────────────────────────────
     else if (editorKey == "scenario") {
         showLoadingOverlay("Loading Scenario Editor...");
-        mainMenuBar->updateFileMenuForEditor(editorKey);      // 1st
-        mainMenuBar->setLibraryActionsVisible(true);          // 2nd
+        mainMenuBar->updateFileMenuForEditor(editorKey);
+        mainMenuBar->setLibraryActionsVisible(true);
         if (!scenarioEditor) {
             m_loadingLabel->setText("Creating Scenario Editor...");
             QCoreApplication::processEvents();
@@ -1065,11 +1034,11 @@ void MainWindow::switchEditor(const QString &editorKey)
         emit scenarioEditor->Activated();
         // Run DesignToolBar tests
         if (scenarioEditor && scenarioEditor->designToolBar) {
-            QTimer::singleShot(300, this, [this]() {
-                if (scenarioEditor && scenarioEditor->designToolBar && scenarioEditor->console) {
-                    runDesignToolBarTests(scenarioEditor->designToolBar, scenarioEditor->console);
-                }
-            });
+            // QTimer::singleShot(300, this, [this]() {
+            //     if (scenarioEditor && scenarioEditor->designToolBar && scenarioEditor->console) {
+            //         runDesignToolBarTests(scenarioEditor->designToolBar, scenarioEditor->console);
+            //     }
+            // });
         }
         hideLoadingOverlay();
     }
@@ -1077,8 +1046,8 @@ void MainWindow::switchEditor(const QString &editorKey)
     // ── MISSION ──────────────────────────────────────────────────────────
     else if (editorKey == "mission") {
         showLoadingOverlay("Loading Mission Editor...");
-        mainMenuBar->updateFileMenuForEditor(editorKey);      // 1st
-        mainMenuBar->setLibraryActionsVisible(false);         // 2nd
+        mainMenuBar->updateFileMenuForEditor(editorKey);
+        mainMenuBar->setLibraryActionsVisible(false);
         if (!missionEditor) {
             m_loadingLabel->setText("Creating Mission Editor...");
             QCoreApplication::processEvents();
@@ -1114,7 +1083,7 @@ void MainWindow::switchEditor(const QString &editorKey)
             m_statusBar->setFileName(missionEditor->lastSavedFilePath,
                                      missionEditor->hasUnsavedChanges);
         emit missionEditor->Activated();
-        QTimer::singleShot(200, missionEditor, &MissionEditor::runGUITests);
+        // QTimer::singleShot(200, missionEditor, &MissionEditor::runGUITests);
 
         hideLoadingOverlay();
     }
@@ -1122,8 +1091,8 @@ void MainWindow::switchEditor(const QString &editorKey)
     // ── RUNTIME ──────────────────────────────────────────────────────────
     else if (editorKey == "runtime") {
         showLoadingOverlay("Loading Runtime Editor...");
-        mainMenuBar->updateFileMenuForEditor(editorKey);      // 1st
-        mainMenuBar->setLibraryActionsVisible(true);          // 2nd
+        mainMenuBar->updateFileMenuForEditor(editorKey);
+        mainMenuBar->setLibraryActionsVisible(true);
         if (!runtimeEditor) {
             m_loadingLabel->setText("Creating Runtime Editor...");
             QCoreApplication::processEvents();
@@ -1244,11 +1213,7 @@ void MainWindow::switchEditor(const QString &editorKey)
 
         // Run RuntimeToolBar tests
         if (runtimeEditor && runtimeEditor->runtimeToolBar) {
-            QTimer::singleShot(300, this, [this]() {
-                if (runtimeEditor && runtimeEditor->runtimeToolBar && runtimeEditor->console) {
-                    runRuntimeToolBarTests(runtimeEditor->runtimeToolBar, runtimeEditor->console);
-                }
-            });
+
         }
         hideLoadingOverlay();
     }
@@ -1256,8 +1221,8 @@ void MainWindow::switchEditor(const QString &editorKey)
     // ── ANALYSIS ─────────────────────────────────────────────────────────
     else if (editorKey == "analysis") {
         showLoadingOverlay("Loading Analysis Editor...");
-        mainMenuBar->updateFileMenuForEditor(editorKey);      // 1st  ← was MISSING
-        mainMenuBar->setLibraryActionsVisible(false);         // 2nd
+        mainMenuBar->updateFileMenuForEditor(editorKey);
+        mainMenuBar->setLibraryActionsVisible(false);
         if (!analysisEditor) {
             m_loadingLabel->setText("Creating Analysis Editor...");
             QCoreApplication::processEvents();

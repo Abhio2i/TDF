@@ -23,7 +23,6 @@ class AddItemDialog;
 class ContextMenu : public QMenu
 {
     Q_OBJECT
-
 public:
     // %%% Constructor %%%
     /* Initialize context menu with optional parent widget */
@@ -42,7 +41,7 @@ public:
 
     // %%% Multi-Select Support %%%
     QList<QVariantMap> m_copiedItems;
-    static void runUnitTestsOnce();
+    // static void runUnitTestsOnce();
 
 signals:
     // %%% Folder Operations Signals %%%
@@ -111,6 +110,7 @@ private:
     void setupComponentMenu(const QVariantMap &data);
     /* Configure menu options for sub-component items */
     void setupSubComponentMenu(const QVariantMap &data);
+
 };
 
 #endif // CONTEXTMENU_H

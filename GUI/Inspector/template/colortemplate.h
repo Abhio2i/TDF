@@ -3,6 +3,7 @@
 /* ========================================================================= */
 /* File: colortemplate.h                                                    */
 /* Purpose: Defines widget for managing color templates                      */
+/* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
 #ifndef COLORTEMPLATE_H

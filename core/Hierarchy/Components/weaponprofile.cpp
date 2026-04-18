@@ -32,7 +32,7 @@ WeaponProfile::WeaponProfile(Hierarchy* h) : Component(h)
 void WeaponProfile::addSubComponent(std::string name,
                                     QString data1,
                                     QString data2,
-                                    QString /*data3*/)
+                                    QJsonObject /*data3*/)
 {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
 

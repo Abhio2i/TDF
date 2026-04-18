@@ -1,13 +1,12 @@
 //============================================================================
 // File        : StatusBar.cpp
 // Description : Custom status bar with only Save button
+// Written by: Arti Rajpoot
 //============================================================================
 #include "statusbar.h"
 #include <QSizeGrip>
 #include <QFileInfo>
 #include <QTimer>
-
-// Linux RAM reading ke liye
 #ifdef Q_OS_LINUX
 #include <sys/resource.h>
 #include <unistd.h>
@@ -26,43 +25,13 @@ StatusBar::StatusBar(QWidget *parent)
     setSizeGripEnabled(false);
     buildUI();
     applyStyles();
+    // runUnitTestsOnce();
+
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-//  buildUI  –  create only Save button
-// ────────────────────────────────────────────────────────────────────────────
-// void StatusBar::buildUI()
-// {
-//     // ── File name label (left side) ────────────────────────────────────────
-//     m_fileNameLabel = new QLabel(this);
-//     m_fileNameLabel->setObjectName("statusFileNameLabel");
-//     m_fileNameLabel->setStyleSheet(
-//         "QLabel#statusFileNameLabel {"
-//         "  color: #8BAFC7;"
-//         "  font-size: 12px;"
-//         "  padding-left: 5px;"
-//         "}"
-//         );
-
-//     // Add to left side (permanent widgets go to right)
-//     addWidget(m_fileNameLabel);
-
-//     // ── Save button (far right) ────────────────────────────────────────────
-//     m_saveBtn = new QPushButton("Save", this);
-//     m_saveBtn->setObjectName("statusSaveBtn");
-//     m_saveBtn->setFixedSize(55, 20);
-//     m_saveBtn->setCursor(Qt::PointingHandCursor);
-//     m_saveBtn->setToolTip("Save (Ctrl+S)");
-
-//     addPermanentWidget(m_saveBtn);
-
-//     // Forward button click as a named signal
-//     connect(m_saveBtn, &QPushButton::clicked,
-//             this,      &StatusBar::saveRequested);
-// }
 void StatusBar::buildUI()
 {
-    // ── File name label (left side) ───────────────────────────────────────
+    // ── File name label ───────────────────────────────────────
     m_fileNameLabel = new QLabel(this);
     m_fileNameLabel->setObjectName("statusFileNameLabel");
     m_fileNameLabel->setStyleSheet(
@@ -74,7 +43,7 @@ void StatusBar::buildUI()
         );
     addWidget(m_fileNameLabel);
 
-    // ── RAM usage label (left side - file name ke baad) ──────────────────
+    // ── RAM usage label──────────────────
     m_ramLabel = new QLabel("RAM: -- MB", this);
     m_ramLabel->setObjectName("statusRamLabel");
     m_ramLabel->setFixedWidth(110);
@@ -87,7 +56,7 @@ void StatusBar::buildUI()
         "  border-left: 1px solid #1A3A4F;"
         "}"
         );
-    addWidget(m_ramLabel);  // ← addPermanentWidget se addWidget kar diya
+    addWidget(m_ramLabel);
 
     // ── Save button (far right) ───────────────────────────────────────────
     m_saveBtn = new QPushButton("Save", this);
@@ -95,7 +64,7 @@ void StatusBar::buildUI()
     m_saveBtn->setFixedSize(55, 20);
     m_saveBtn->setCursor(Qt::PointingHandCursor);
     m_saveBtn->setToolTip("Save (Ctrl+S)");
-    addPermanentWidget(m_saveBtn);  // ← ye right pe rahega
+    addPermanentWidget(m_saveBtn);
 
     connect(m_saveBtn, &QPushButton::clicked, this, &StatusBar::saveRequested);
 
@@ -219,12 +188,11 @@ void StatusBar::updateRamUsage()
         QByteArray data = statm.readAll();
         statm.close();
 
-        // Format: "total resident shared text lib data dirty"
-        // resident (index 1) = actual physical RAM pages
+
         QList<QByteArray> parts = data.simplified().split(' ');
         if (parts.size() >= 2) {
             long pages    = parts[1].toLong();
-            long pageSize = sysconf(_SC_PAGESIZE); // bytes per page (4096)
+            long pageSize = sysconf(_SC_PAGESIZE);
             ramKB = (pages * pageSize) / 1024L;
         }
     }
@@ -248,3 +216,4 @@ void StatusBar::updateRamUsage()
         m_ramLabel->setText("RAM: N/A");
     }
 }
+

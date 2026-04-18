@@ -8,8 +8,7 @@
 #include <QIcon>
 #include <QSize>
 #include <QToolButton>
-#include "tests/navigationpagetest/navigationpage_test.h"
-#include "GUI/mainwindow.h"
+
 
 
 // %%% Constructor %%%
@@ -20,19 +19,14 @@ NavigationPage::NavigationPage(QWidget *parent)
     mainLayout->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
     mainLayout->setSpacing(5);
     mainLayout->setContentsMargins(15, 5, 15, 5);
-
     QToolButton* databaseBtn = createNavButton(":/icons/images/database.png", "Database", "database");
     mainLayout->addWidget(databaseBtn);
     mainLayout->addWidget(createNavButton(":/icons/images/stories.png",  "Scenario", "scenario"));
-    // %%% NEW: Mission button added after Scenario %%%
     mainLayout->addWidget(createNavButton(":/icons/images/mission.png",  "Mission",  "mission"));
     mainLayout->addWidget(createNavButton(":/icons/images/runtime.png",  "Runtime",  "runtime"));
     mainLayout->addWidget(createNavButton(":/icons/images/analysis.png",  "Analysis/Reports",  "analysis"));
-
-
     setFixedHeight(50);
     setActiveButton(databaseBtn);
-    runUnitTestsOnce();
 }
 
 /* Create a navigation button with icon and label */
@@ -69,7 +63,7 @@ QToolButton* NavigationPage::createNavButton(const QString &iconPath,
         );
 
     connect(button, &QPushButton::clicked, this, [=]() {
-        previousButton = activeButton;      // save current before switching
+        previousButton = activeButton;
         setActiveButton(button);
         emit editorRequested(editorKey);
     });
@@ -121,25 +115,4 @@ void NavigationPage::restorePreviousButton()
 {
     if (previousButton) setActiveButton(previousButton);
 }
-void NavigationPage::runUnitTestsOnce()
-{
-    static bool testsRun = false;
-    if (testsRun) return;
 
-    // Delay test execution to ensure UI and console are fully ready
-    QTimer::singleShot(500, this, [this]() {
-        if (testsRun) return;
-        testsRun = true;
-
-        Console* console = nullptr;
-        MainWindow* mw = MainWindow::instance();
-        if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-            console = mw->databaseEditor->console;
-        }
-
-
-
-
-        runNavigationPageTests(this, console);
-    });
-}

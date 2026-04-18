@@ -150,7 +150,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                 if (!dialog) return;
                 QString sensorType = dialog->getSensorType();
-                Entity* newEntity = hierarchy->addEntity(parentId, entityName, isProfileParent);
+                Entity* newEntity = hierarchy->addEntity(parentId, entityName, isProfileParent,sensorType);
 
                 if (sensorType != "Generic" && newEntity) {
                     Sensor* sensorEntity = dynamic_cast<Sensor*>(newEntity);
@@ -316,15 +316,18 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
             [=](QString entityID, QString componentType, QString componentName,
                 QString sensorType, QString sensorProfileId) {
                 if (componentType == "iffs") {
+                    QJsonObject obj = (library->Iffs)[sensorProfileId.toStdString()]->toJson();
                     hierarchy->addSubComponent(entityID, ComponentType::IFFProfile,
-                                               componentName, sensorType, sensorProfileId);
+                                               componentName, sensorType, sensorProfileId,obj);
                 } else if (componentType == "sensors") {
+                    QJsonObject obj = (library->Sensors)[sensorProfileId.toStdString()]->toJson();
                     hierarchy->addSubComponent(entityID, ComponentType::SensorProfile,
-                                               componentName, sensorType, sensorProfileId);
+                                               componentName, sensorType, sensorProfileId,obj);
                     hierarchy->attachSensors(entityID, componentName, sensorType);
                 } else if (componentType == "radios") {
+                    QJsonObject obj = (library->Radios)[sensorProfileId.toStdString()]->toJson();
                     hierarchy->addSubComponent(entityID, ComponentType::RadioProfile,
-                                               componentName, sensorType, sensorProfileId);
+                                               componentName, sensorType, sensorProfileId,obj);
                 } else if (componentType == "weapons") {
                     try {
                         if (entityID.isEmpty() || componentName.isEmpty()) {
@@ -532,7 +535,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
             this, [=](QList<QPair<QString, QString>> entityInfoList) {
                 for (const auto& entityInfo : entityInfoList) {
                     try {
-                        hierarchy->removeEntity(entityInfo.first, entityInfo.second, false);
+                        hierarchy->removeEntity(entityInfo.first, entityInfo.second);
                     } catch (const std::exception& e) {}
                 }
             });
@@ -657,9 +660,12 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                     Platform* platform = dynamic_cast<Platform*>(it->second);
                     if (!platform || !platform->sensors) continue;
-
+                    QJsonObject obj;
+                        if(!profileId.isEmpty()){
+                            obj = (library->Sensors)[profileId.toStdString()]->toJson();;
+                        }
                     hierarchy->addSubComponent(QString::fromStdString(platform->sensors->ID),
-                                               ComponentType::SensorProfile, sensorName, sensorType, profileId);
+                                               ComponentType::SensorProfile, sensorName, sensorType, profileId,obj);
                 }
             });
 
@@ -685,9 +691,12 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                     Platform* platform = dynamic_cast<Platform*>(it->second);
                     if (!platform || !platform->iffs) continue;
-
+                    QJsonObject obj;
+                    if(!profileId.isEmpty()){
+                        obj = (library->Iffs)[profileId.toStdString()]->toJson();;
+                    };
                     hierarchy->addSubComponent(QString::fromStdString(platform->iffs->ID),
-                                               ComponentType::IFFProfile, iffName, "", profileId);
+                                               ComponentType::IFFProfile, iffName, "", profileId,obj);
                 }
             });
 
@@ -713,9 +722,12 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                     Platform* platform = dynamic_cast<Platform*>(it->second);
                     if (!platform || !platform->radios) continue;
-
+                    QJsonObject obj;
+                    if(!profileId.isEmpty()){
+                        obj = (library->Radios)[profileId.toStdString()]->toJson();;
+                    }
                     hierarchy->addSubComponent(QString::fromStdString(platform->radios->ID),
-                                               ComponentType::RadioProfile, radioName, "", profileId);
+                                               ComponentType::RadioProfile, radioName, "", profileId,obj);
                 }
             });
 
@@ -989,7 +1001,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                 Entity* fe = hierarchy->addEntity(formationProfileId, formationName, true);
                 if (!fe) { QMessageBox::critical(nullptr, "Error", "Failed to create formation entity."); return; }
-                hierarchy->removeEntity(formationProfileId, QString::fromStdString(fe->ID), false);
+                hierarchy->removeEntity(formationProfileId, QString::fromStdString(fe->ID));
 
                 Formation* formation  = new Formation(hierarchy);
                 formation->Name       = formationName.toStdString();
@@ -1457,7 +1469,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
             QJsonDocument doc(data);
             scenarioFile.write(doc.toJson(QJsonDocument::Indented));
             scenarioFile.close();
-            // qDebug() << "Scenario instance copy saved to:" << scenarioFilePath;
             return true;
         }
 
@@ -1900,8 +1911,7 @@ void HierarchyConnector::loadToLibrary(QMainWindow* parent)
 
     QJsonObject hier = obj["hierarchy"].toObject();
 
-    // ✅ FIXED: Don't call clear() - it causes crash
-    // Just load the JSON directly - it will replace existing data
+
     try {
         targetLibrary->fromJson(hier);
 

@@ -280,75 +280,7 @@ void RADIODisplay::paintEvent(QPaintEvent * /*event*/)
 /* Draw radio targets with frequency filtering */
 void RADIODisplay::drawRadioTargets(QPainter &p, const QPoint &center, int outerRadius)
 {
-    // if (!entity || !radio) {
-    //     p.setPen(Qt::white);
-    //     p.drawText(center, "No Radio Selected\nSelect an entity with Radio");
-    //     return;
-    // }
 
-    // if (radio->targets.empty()) {
-    //     p.setPen(Qt::yellow);
-    //     p.drawText(center.x() - 50, center.y(), "No Radio Targets");
-    //     return;
-    // }
-
-    // const int dotSize = 8;
-    // float currentFreqMin = radio->frequencyMin;
-    // float currentFreqMax = radio->frequencyMax;
-    // float currentFreqUsed = radio->frequencyUsed;
-
-    // for (int i = 0; i < radio->targets.size(); ++i) {
-    //     const Radio::RadioTarget &target = radio->targets.at(i);
-
-    //     // Skip targets outside range
-    //     if (target.radius > range) {
-    //         continue;
-    //     }
-
-    //     // Check frequency match
-    //     bool frequencyMatch = false;
-
-    //     if (currentFreqUsed > 0 && target.frequency > 0) {
-    //         // Match exact frequency if in use
-    //         float freqTolerance = 1.0f;
-    //         frequencyMatch = (std::abs(currentFreqUsed - target.frequency) <= freqTolerance);
-    //     } else {
-    //         // Match frequency band
-    //         float targetFreqMin = target.frequency - (radio->bandwidth / 2 / 1000.0f);
-    //         float targetFreqMax = target.frequency + (radio->bandwidth / 2 / 1000.0f);
-
-    //         frequencyMatch = (currentFreqMax >= targetFreqMin && currentFreqMin <= targetFreqMax);
-    //     }
-
-    //     if (!frequencyMatch) {
-    //         continue;
-    //     }
-
-    //     // Calculate target position
-    //     float per = target.radius / range;
-    //     float radius = outerRadius * per;
-    //     float angle = target.angle;
-    //     double theta = qDegreesToRadians(angle + 90);
-
-    //     QPointF pos(center.x() + radius * cos(theta),
-    //                 center.y() - radius * sin(theta));
-
-    //     // Draw target dot
-    //     p.setBrush(Qt::blue);
-    //     p.setPen(Qt::NoPen);
-    //     p.drawEllipse(QRectF(pos.x() - dotSize / 2, pos.y() - dotSize / 2, dotSize, dotSize));
-
-    //     // Draw line to target
-    //     p.setPen(QPen(radarGreen, 1, Qt::DotLine));
-    //     p.drawLine(center, QPoint(pos.x(), pos.y()));
-
-    //     // Draw info for hovered target
-    //     if (i == hoveredTargetIndex) {
-    //         p.setPen(QPen(Qt::yellow, 1));
-    //         QString info = QString("D:%1 A:%2 F:%3").arg(target.radius, 0, 'f', 1).arg(target.angle, 0, 'f', 1).arg(target.frequency, 0, 'f', 1);
-    //         p.drawText(pos.x() + 5, pos.y() - 5, info);
-    //     }
-    // }
 }
 
 /* Draw entity direction and path */

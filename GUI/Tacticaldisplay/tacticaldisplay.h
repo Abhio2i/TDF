@@ -1,3 +1,8 @@
+/* ========================================================================= */
+/* File: TacticalDisplay.h                                                   */
+/* Purpose: Defines widget for tactical display visualization                */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 
 #ifndef TACTICALDISPLAY_H
 #define TACTICALDISPLAY_H
@@ -33,6 +38,7 @@ public:
     void hide3DView();
     QWidget* mapCanvasContainer = nullptr;
     CanvasWidget* getCanvasWidget() const { return canvas; };
+    // static void runUnitTestsOnce();
 
 
 public slots:
@@ -61,6 +67,7 @@ protected:
 
 public:
     // %%% UI Components %%%
+      int currentZoom = 3;
     // Canvas widget
     CanvasWidget *canvas;
     // Canvas dock widget
@@ -96,8 +103,6 @@ public:
 
 private:
     // %%% Data Members %%%
-    // Current zoom level
-    int currentZoom = 3;
     bool is3DViewVisible = false;
     // Overlay label
     QLabel *overlayLabel;

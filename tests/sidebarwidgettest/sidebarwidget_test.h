@@ -1,9 +1,30 @@
 #ifndef SIDEBARWIDGET_TEST_H
 #define SIDEBARWIDGET_TEST_H
 
-class SidebarWidget;
-class Console;
+#include <QObject>
 
-void runSidebarWidgetTests(SidebarWidget* widget, Console* console);
+class SidebarWidget;
+
+class TestSidebarWidget : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void init();
+    void cleanup();
+
+    void testBasicProperties();
+    void testLayout();
+    void testButtonsExist();
+    void testButtonProperties();
+    void testButtonGroup();
+    void testSetActiveButton();
+    void testSignalsExist();
+    void testSensorsButtonVisibility();
+    void testStyleSheets();
+
+private:
+    SidebarWidget* widget = nullptr;
+};
 
 #endif

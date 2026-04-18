@@ -10,6 +10,11 @@
 #include <QAction>                                 // For menu actions
 #include <QKeySequence>                            // For keyboard shortcuts
 
+#include <QTimer>
+#include <QDebug>
+
+
+
 // %%% Constructor %%%
 /* Initialize menu bar with actions */
 MenuBar::MenuBar(QWidget *parent)
@@ -98,6 +103,7 @@ MenuBar::MenuBar(QWidget *parent)
     connect(deleteAction, &QAction::triggered, this, &MenuBar::deleteTriggered);
     connect(openRuntimeInstanceAction, &QAction::triggered,
             this, &MenuBar::openRuntimeInstanceTriggered);
+
 }
 
 // %%% Getter Methods %%%
@@ -186,5 +192,3 @@ QAction* MenuBar::getProfileAction()
 {
     return profileAction;
 }
-
-

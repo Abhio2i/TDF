@@ -1,6 +1,7 @@
 /* ========================================================================= */
 /* File: tactical-styles.h                                                 */
 /* Purpose: Stylesheet constants for the Tactical Rules panel                */
+/* Written by: Arti Rajpoot                                                  */
 /* ========================================================================= */
 
 #ifndef TACTICAL_STYLES_H

@@ -1,4 +1,8 @@
-
+/* ========================================================================= */
+/* File: HierarchyStyles.h                                                   */
+/* Purpose: Defines dark theme styles for hierarchy tree UI components       */
+/* Written by   : Arti Rajpoot                                               */
+/* ========================================================================= */
 #ifndef HIERARCHY_STYLES_H
 #define HIERARCHY_STYLES_H
 

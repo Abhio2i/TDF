@@ -184,9 +184,9 @@ public:
     bool m_bombsReleased = false;  // guard: launchBombs() fires only once per flight
     std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;
-    void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;
     void updateComponent(QString name, const QJsonObject& obj) override;
+    void removeComponent(std::string name) override;
     QJsonObject customParameters; // Added to store custom parameters
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;

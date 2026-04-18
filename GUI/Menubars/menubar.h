@@ -7,10 +7,10 @@
 #ifndef MENUBAR_H
 #define MENUBAR_H
 
-#include <QMenuBar>                               // For menu bar base class
-#include <QMenu>                                  // For menu widget
-#include <QAction>                                // For action items
-#include <GUI/Feedback/projectinformation.h>                // For feedback window
+#include <QMenuBar>
+#include <QMenu>
+#include <QAction>
+#include <GUI/Feedback/projectinformation.h>
 
 // %%% Class Definition %%%
 /* Menu bar for application UI */
@@ -86,6 +86,7 @@ public:
     QAction* getOpenMissionFileAction();
 
     void runMenuBarTests();
+    // void runUnitTestsOnce();
 
 
 signals:

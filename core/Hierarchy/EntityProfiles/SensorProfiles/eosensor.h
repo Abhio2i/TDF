@@ -7,14 +7,21 @@
 
 #include <core/Hierarchy/EntityProfiles/sensor.h>
 #include "core/Hierarchy/profilecategaory.h"
+#include "eoSensorLib/eovision.h"
+#include "eoSensorLib/georelativeangle.h"
+#include "eoSensorLib/georelativeelevation.h"
+
 class EOSensor: public Sensor
 {
     Q_OBJECT
 public:
     Hierarchy* m_h;
+    EOVision eoVision;
+    GeoRelativeAngle gra;
+    GeoRelativeElevation gre;
     explicit EOSensor(Hierarchy* h);
-    std::unordered_map<std::string, Platform*> *m_Platforms;
-    std::unordered_map<std::string, Specialzone*> *m_Specialzones;
+    std::unordered_map<std::string, Platform*> m_Platforms;
+    std::unordered_map<std::string, Specialzone*> m_Specialzones;
 
     Surrounding getSurrounding(double radius   = 10000.0,
                                double atmCoeff = 0.00001,  // %
@@ -42,11 +49,7 @@ public:
         D_NULL            = 0b10000000000000,
         D_JustPrint       = 0b01000000000000,
         D_INIT            = 0b00100000000000,
-        D_Connect         = 0b00010000000000,
-        D_GetPayLoad      = 0b00001000000000,
-        D_SetPayLoad      = 0b00000100000000,
-        D_Trajectory      = 0b00000010000000,
-        D_LoadInBetween   = 0b00000001000000,
+        D_Details         = 0b00010000000000,
     }debugSQLite;
     Q_ENUM(debugSQLite)
 
@@ -57,7 +60,8 @@ private:
      *   Custom Debugging    */
     /*  ===> " USE ME " for debugging   <===*/
     int debugList = D_JustPrint
-                    | D_INIT
+    //                | D_Details
+    //                | D_INIT
         ;
     /*   To find the the debugOptions inside
      *   debugType or not "Helping Function" */

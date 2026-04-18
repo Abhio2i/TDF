@@ -3,7 +3,6 @@
 /* ========================================================================= */
 /* File: runtimeeditor.h                                                    */
 /* Purpose: Defines the main window for the runtime editor application       */
-// Written by   : Arti Rajpoot
 /* ========================================================================= */
 
 #ifndef RUNTIMEEDITOR_H
@@ -42,9 +41,9 @@
 #include <GUI/Tacticaldisplay/Gis/layerpanel.h>
 #include "GUI/Editors/customresizableoverlaydock.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h" //by amjad
-#include "core/Hierarchy/Components/transform.h"   // ← ADD (already ho sakta hai)
-#include "core/Hierarchy/EntityProfiles/platform.h" // ← ADD
-#include <QElapsedTimer>                            // ← ADD
+#include "core/Hierarchy/Components/transform.h"
+#include "core/Hierarchy/EntityProfiles/platform.h"
+#include <QElapsedTimer>
 #include "GUI/Panel/aesaradardisplay.h"
 // %%% Class Definition %%%
 /* Main window class for the runtime editor */
@@ -81,12 +80,11 @@ public:
     TacticalDisplay *tacticalDisplay;
     static QJsonObject s_missionData;
     static QString     s_missionFilePath;
-     Console *console;
+    Console *console;
     RuntimeToolBar *runtimeToolBar;
-    static void runUnitTestsOnce();
-  DesignToolBar *designToolBar;
+    DesignToolBar *designToolBar;
     void markUnsavedChanges();
-     ConsoleView *consoleView;
+    ConsoleView *consoleView;
 
 
 
@@ -94,6 +92,7 @@ public slots:
     void showProfileInfo();
     void showApplicationDialog();
     void createDuplicateSensorsWindow();
+    void filterSensorTabsByCategory(const QString &category);
 
 
 protected:
@@ -122,11 +121,14 @@ private slots:
     void resetLayout();
     // void onRecentLibraryTriggered();
     void showPanelContextMenu(const QPoint &pos);
+    void filterSensorTabsForEntity(const QString &entityId, const QString &category);
+
 
 signals:
     // Signal unsaved changes state
     void unsavedChangesChanged(bool hasChanges);
     void Activated();
+
 
 private:
     // %%% UI Setup Methods %%%
@@ -192,14 +194,13 @@ private:
     QTimer *recordingTimer = nullptr;
     ScenarioConfig* m_scenarioConfig;
     bool m_canvasSelecting = false;
-
     ActiveSonar   m_activeSonar; // by amjad
     QElapsedTimer m_sonarTimer;
     Entity* m_selectedSonarEntity = nullptr;
+    QString m_lastSelectedEntityId;
 
 private:
     qint64 pausedTimeMs = 0;
-
 private slots:
     void onRunScriptFileRequested(const QString& filePath);
 };

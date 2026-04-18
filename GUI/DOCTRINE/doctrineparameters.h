@@ -1,4 +1,8 @@
-
+/* ========================================================================= */
+/* File: doctrineparameters.h                                                */
+/* Purpose: Defines the Doctrine Parameters widget for Blue/Red force config */
+/* Written by: Arti Rajpoot                                                  */
+/* ========================================================================= */
 #pragma once
 
 #include <QWidget>
@@ -28,7 +32,7 @@ public:
     void         resetState();
     int          currentForce() const { return m_currentForce; }
       QString getForceType() const;
-static void runUnitTestsOnce();
+// static void runUnitTestsOnce();
 
 signals:
     void valueChanged(QJsonObject data);

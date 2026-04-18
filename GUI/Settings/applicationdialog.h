@@ -61,7 +61,7 @@ public:
     static bool getGlobalDeveloperMode();
     static void setGlobalDeveloperMode(bool enabled);
     static void loadSelectedDatabase();
-static void runUnitTestsOnce();
+// static void runUnitTestsOnce();
 signals:
     void fpsState(int value);
     void guiFPSState(int value);
