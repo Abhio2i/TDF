@@ -11,7 +11,6 @@ MeshRenderer2D::MeshRenderer2D():Component(nullptr) {
     color2 = std::make_shared<QColor>(Qt::blue);
     Sprite = new std::string(":/texture/images/Texture/fighterjet.png");
     Texture = new std::string(":/texture/images/Texture/waall.jpg");
-    customParameters = QJsonObject(); // Initialize customParameters
     Mesh *mesh = new Mesh();
     mesh->color = color;
     mesh->Sprite = Sprite;
@@ -60,10 +59,9 @@ QJsonObject MeshRenderer2D::toJson() const {
     textureObj["value"] = QString::fromStdString(*Texture);
     obj["texture"] = textureObj;
 
-    // Add custom parameters
-    for (auto it = customParameters.begin(); it != customParameters.end(); ++it) {
-        obj[it.key()] = it.value();
-    }
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
 
     //qDebug() << "MeshRenderer2D::toJson output:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
     return obj;
@@ -100,13 +98,10 @@ void MeshRenderer2D::fromJson(const QJsonObject& obj) {
         }
     }
 
-    // Custom parameters
-    QStringList standardKeys = {"active", "id", "sprite", "texture", "color"};
-    for (auto it = obj.begin(); it != obj.end(); ++it) {
-        if (!standardKeys.contains(it.key())) {
-            customParameters[it.key()] = it.value();
-        }
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
+
 
 
     //qDebug() << "MeshRenderer2D::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);

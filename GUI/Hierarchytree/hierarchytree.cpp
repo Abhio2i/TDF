@@ -1,9 +1,28 @@
-
-/* ========================================================================= */
-/* File: hierarchytree.cpp                                                  */
-/* Purpose: Implements hierarchy tree widget with drag-and-drop support      */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         contextmenu.cpp
+ * MODULE:       Context-Sensitive Menu for Hierarchy Tree
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the ContextMenu class which provides a context‑sensitive
+ *               menu for hierarchy tree operations. The menu adapts to different
+ *               item types (profile, folder, entity, component, sub‑component)
+ *               and emits signals for add/remove/copy/paste/rename/activate and
+ *               team/category assignment. Supports multi‑select copy/paste and
+ *               integration with AddItemDialog for creating new entities/folders.
+ *
+ * REQUIREMENTS: Implements REQ-CONTEXT-010 through REQ-CONTEXT-020
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-CONTEXT-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "hierarchytree.h"                         // For hierarchy tree class
 #include <QIcon>                                   // For icons
@@ -143,7 +162,6 @@ HierarchyTree::~HierarchyTree()
 {
     // Delete context menu
     delete contextMenu;
-    // Tree widget is deleted automatically as a child
 }
 /* Get all profile names */
 QStringList HierarchyTree::getAllProfileNames() const
@@ -206,11 +224,9 @@ void HierarchyTree::onProfileFilterChanged(int index)
     QString profileFilter = "All Profiles";
 
     if (profileFilterCombo->currentIndex() > 0) {
-        // Get FULL NAME from UserRole
         profileFilter = profileFilterCombo->currentData(Qt::UserRole).toString();
 
         if (profileFilter.isEmpty()) {
-            // Fallback to display text
             profileFilter = profileFilterCombo->currentText();
         }
     }
@@ -276,7 +292,6 @@ bool HierarchyTree::itemMatchesSearch(QTreeWidgetItem* item, const QString& sear
         }
     }
 
-    // Only search entities by default, but you can modify to search other types
     if (type == "entity") {
         return itemText.contains(searchText, Qt::CaseInsensitive);
     }
@@ -646,8 +661,6 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
                 QString parentId = data["parentId"].toString();
                 if (Items.contains(parentId)) {
                     QVariantMap parentData = Items[parentId]->data(0, Qt::UserRole).toMap();
-
-                    // Case 1: Direct profile parent
                     if (parentData["type"].type() == QVariant::Map) {
                         QVariantMap typeData = parentData["type"].toMap();
                         if (typeData.contains("type") && typeData["type"].toString() == "option"
@@ -657,7 +670,6 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
                             continue;
                         }
                     }
-                    // Case 2: Folder parent — grandparent profile check karo
                     else if (parentData["type"].toString() == "folder") {
                         QString grandParentId = parentData["parentId"].toString();
                         if (Items.contains(grandParentId)) {
@@ -679,11 +691,9 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
             break;
         }
 
-        // ── Har case mein Copy aur Delete ─────────────────────────────────
         QAction *copyAction   = contextMenu.addAction(QIcon(":/icons/images/copy.png"),   "Copy");
         QAction *deleteAction = contextMenu.addAction(QIcon(":/icons/images/delete.png"), "Delete");
 
-        // ── Sirf Platform entities hain to extra options ───────────────────
         QAction *setActiveAction    = nullptr;
         QAction *setInactiveAction  = nullptr;
         QMenu   *addCompMenu        = nullptr;
@@ -856,18 +866,14 @@ void HierarchyTree::dragMoveEvent(QDragMoveEvent *event)
 /* Handle drop event */
 void HierarchyTree::dropEvent(QDropEvent *event)
 {
-    // Validate MIME data
     if (event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist") ||
         event->mimeData()->hasFormat("application/x-entity")) {
-        // Get target item
         QPoint viewportPos = tree->viewport()->mapFrom(this, event->pos());
-        // 2. Ab item find karein
         QTreeWidgetItem *targetItem = tree->itemAt(viewportPos);
         if (!targetItem) {
             event->ignore();
             return;
         }
-        // Get target data
         QVariantMap targetData = targetItem->data(0, Qt::UserRole).toMap();
         QString targetType;
         if (targetData["type"].type() == QVariant::Map) {
@@ -881,7 +887,6 @@ void HierarchyTree::dropEvent(QDropEvent *event)
         } else {
             targetType = targetData["type"].toString();
         }
-        // Validate target type
         if (targetType == "entity" || targetType == "subcomponent") {
             event->ignore();
             return;
@@ -891,13 +896,10 @@ void HierarchyTree::dropEvent(QDropEvent *event)
         QDataStream stream(&itemData, QIODevice::ReadOnly);
         QVariantMap sourceData = dragsourceData;
         dragsourceData.clear();
-        // stream >> sourceData;
-        // Validate source type
         if (sourceData["type"].toString() != "entity") {
             event->ignore();
             return;
         }
-        // Emit drop signal
         emit itemDropped(sourceData, targetData);
         event->acceptProposedAction();
     }else{
@@ -946,8 +948,8 @@ void HierarchyTree::selectEntityById(const QString& entityId)
     // Check if entity exists
     if (Items.contains(entityId)) {
         QTreeWidgetItem* item = Items[entityId];
-        tree->setCurrentItem(item); // Select item
-        tree->scrollToItem(item);   // Scroll to item
+        tree->setCurrentItem(item);
+        tree->scrollToItem(item);
     }
 }
 void HierarchyTree::setLibraryFileName(const QString& fileName)
@@ -957,26 +959,21 @@ void HierarchyTree::setLibraryFileName(const QString& fileName)
         QString displayName = fileInfo.fileName();
         emit libraryFileNameChanged(displayName);
     } else {
-        emit libraryFileNameChanged("Library"); // Default
+        emit libraryFileNameChanged("Library");
     }
 }
 /* Select multiple entities in tree by IDs */
 void HierarchyTree::selectMultipleEntitiesInTree(const QList<QString>& entityIds)
 {
     if (!tree || entityIds.isEmpty()) return;
-    // Block signals to prevent recursive calls
     tree->blockSignals(true);
-    // Clear current selection
     tree->clearSelection();
-    // Track if we scrolled to first item
     bool scrolledToFirst = false;
-    // Find and select all items with matching IDs
     for (const QString& entityId : entityIds) {
         if (Items.contains(entityId)) {
             QTreeWidgetItem* item = Items[entityId];
             if (item) {
                 item->setSelected(true);
-                // Scroll to first selected item only
                 if (!scrolledToFirst) {
                     tree->scrollToItem(item);
                     scrolledToFirst = true;
@@ -998,14 +995,12 @@ void HierarchyTree::selectMultipleEntitiesInTree(const QList<QString>& entityIds
             }
         }
     }
-    // Emit the multi-selection signal
     if (!selectedDataList.isEmpty()) {
         emit itemsSelected(selectedDataList);
     }
 }
 void HierarchyTree::subComponentRenamed(QString componentId, QString subCompId, QString newName)
 {
-    // Tree mein subCompId wala item dhundho aur naam update karo
     QTreeWidgetItemIterator it(getTreeWidget());
     while (*it) {
         QVariantMap data = (*it)->data(0, Qt::UserRole).toMap();
@@ -1024,11 +1019,9 @@ void HierarchyTree::setEntityActiveState(const QString& entityId, bool active)
     if (!item)
         return;
     if (active) {
-        // Restore normal white text
         item->setForeground(0, QColor(255, 255, 255));
         item->setToolTip(0, "");
     } else {
-        // Gray out to signal inactive state
         item->setForeground(0, QColor(120, 120, 120));
         item->setToolTip(0, "Inactive");
     }

@@ -1,3 +1,8 @@
+/**
+ * @file platform.cpp
+ * @brief Implementation of the Platform class for simulation entities with sensors, weapons, and AI decision-making.
+ */
+
 #include "platform.h"
 #include "core/Hierarchy/EntityProfiles/radio.h"
 #include "core/Hierarchy/EntityProfiles/sensor.h"
@@ -13,6 +18,10 @@
 #include "core/Debug/profiler.h"
 #include "GUI/Editors/runtimeeditor.h"
 
+/**
+ * @brief Constructs a Platform entity.
+ * @param h Pointer to the parent Hierarchy.
+ */
 Platform::Platform(Hierarchy* h) : Entity(h) {
     type = Constants::EntityType::Platform;
     std::shared_ptr<Parameter> par = std::make_shared<Parameter>();
@@ -25,6 +34,9 @@ Platform::Platform(Hierarchy* h) : Entity(h) {
     taskgroup->hide();
 }
 
+/**
+ * @brief Destructor – removes all supported components and cleans up.
+ */
 Platform::~Platform(){
     std::vector<std::string>supportedComponents =  Platform::getSupportedComponents();
     for (const std::string &component : supportedComponents) {
@@ -33,10 +45,14 @@ Platform::~Platform(){
     delete taskgroup;
 }
 
+/**
+ * @brief Initializes doctrine, tactical policies, and sensor states from mission data.
+ * Called after the entity is fully constructed.
+ */
 void Platform::Start(){
     QJsonObject obj = RuntimeEditor::s_missionData;
     if(obj.empty())return;
-    QString tm = team == Team::RedTeam?"red":"blue";
+    QString tm = team == Team::RedTeam ? "red" : "blue";
     if (obj.contains("doctrine")){
         QJsonObject doctrine = obj["doctrine"].toObject();
         if(doctrine.contains(tm)){
@@ -149,79 +165,21 @@ void Platform::Start(){
         }
         break;
     }
-
-    // --- PART 2: Mission Specific Logic ---
-    // switch (mtype) {
-    // case MissionType::PATROL:
-    //     SetSensorScanArc(360.0f);        // Har taraf nazar rakho
-    //     SetCruisingSpeed(0.6f);          // Moderate speed for endurance
-    //     EnableAutoNavigation(true);       // Defined path par chalo
-    //     break;
-
-    // case MissionType::SURVEILLANCE:
-    // case MissionType::RECONNAISSANCE:
-    //     SetHighSensitivitySensors(true); // Max range detection
-    //     SetSignalEmissions(0.1f);        // Low profile/Quiet operations
-    //     SetDataLogging(true);            // Recording mission data
-    //     break;
-
-    // case MissionType::STRIKE:
-    //     SetTargetLockPriority(true);     // Weapon systems priority
-    //     SetCruisingSpeed(1.0f);          // Full speed to target
-    //     SetSensorScanArc(60.0f);         // Narrow, focused beam for precision
-    //     break;
-
-    // case MissionType::INTERCEPTION:
-    //     SetResponseTime(0.1f);           // Ultra-fast reaction
-    //     SetCruisingSpeed(1.2f);          // Afterburners/Max thrust
-    //     SetTargetTrackingMode(true);     // Constant lock-on
-    //     break;
-
-    // case MissionType::ESCORT:
-    //     SetFormationFlying(true);        // Maintain distance with ally
-    //     SetSensorScanArc(180.0f);        // Frontal and flank protection
-    //     SetCollisionAvoidance(true);     // Don't hit the escorted unit
-    //     break;
-
-    // case MissionType::AREA_DENIAL:
-    //     SetStationaryDefense(true);      // Hold a specific coordinate
-    //     SetAggressiveTargeting(true);    // Pre-emptive scanning
-    //     SetAutoDeployMines(true);        // If applicable
-    //     break;
-
-    // case MissionType::SEARCH_AND_RESCUE:
-    //     SetSensorFilter("LifeSigns");    // Specific signal filtering
-    //     SetCruisingSpeed(0.4f);          // Slow and steady for scanning
-    //     EnableExternalLights(true);      // Visible for survivors
-    //     break;
-
-    // case MissionType::BLOCKADE:
-    //     SetJammingSystems(true);         // Communication block
-    //     SetInterdictionMode(true);       // Stop any passing object
-    //     SetScanningIntensity(1.0f);      // Heavy sensor usage
-    //     break;
-
-    // case MissionType::DEFENSIVE_HOLD:
-    //     SetFortificationMode(true);      // Shields/Armor priority
-    //     SetEnergyManagement("Shields");  // Divert power to defense
-    //     SetSensorScanArc(120.0f);        // Focused on approach vectors
-    //     break;
-    // }
 }
 
-
-
+/**
+ * @brief Resets the platform state, allowing bombs to be released again on next flight.
+ */
 void Platform::reset(){
     m_bombsReleased = false;   // allow bombs to drop again on next flight
     //taskgroup->reset();
 }
 
-// =============================================================================
-// Platform::launchBombs()
-// Iterates the WeaponProfile and calls Bomb::launch() on every unlaunched Bomb.
-// Called automatically by update() when altitude first crosses DROP_ALTITUDE_M.
-// Safe to call manually (e.g. from a script) — isLaunched guard prevents re-launch.
-// =============================================================================
+/**
+ * @brief Launches all bombs attached to this platform.
+ * Iterates over the WeaponProfile and calls Bomb::launch() on each unlaunched bomb.
+ * Called automatically when altitude first crosses DROP_ALTITUDE_M.
+ */
 void Platform::launchBombs()
 {
     if (!weapons || !weapons->weapons || weapons->weapons->empty()) {
@@ -250,14 +208,23 @@ void Platform::launchBombs()
                  " at alt=" + std::to_string(static_cast<int>(transform->geocord->altitude)) + "m");
 }
 
+/**
+ * @brief Called when the simulation starts (stub for taskgroup).
+ */
 void Platform::start(){
     //taskgroup->run();
 }
 
+/**
+ * @brief Called when the simulation pauses (stub for taskgroup).
+ */
 void Platform::pause(){
     //taskgroup->pause();
 }
 
+/**
+ * @brief Performs per‑frame updates: fuel consumption, sensor scans, decision‑making.
+ */
 void Platform::update(){
     float fuelconsumption = 0.02*(dynamicModel->currentSpeed/3000.0f);
     fuel -= fuelconsumption;
@@ -267,16 +234,16 @@ void Platform::update(){
         engaged = false;
         detectionCount = 0;
     }
-    // ── 300 ft bomb auto-release ──────────────────────────────────────────────
-    // When the aircraft first climbs above DROP_ALTITUDE_M (300 ft = 91.44 m),
-    // release all bombs in the WeaponProfile exactly once per flight.
-    // m_bombsReleased prevents re-triggering on every subsequent update() call.
-    if (!m_bombsReleased && transform && transform->geocord &&
-        transform->geocord->altitude >= static_cast<double>(DROP_ALTITUDE_FT))
-    {
-        launchBombs();
-        m_bombsReleased = true;   // bombs released — don't check again this flight
-    }
+    // // ── 300 ft bomb auto-release ──────────────────────────────────────────────
+    // // When the aircraft first climbs above DROP_ALTITUDE_M (300 ft = 91.44 m),
+    // // release all bombs in the WeaponProfile exactly once per flight.
+    // // m_bombsReleased prevents re-triggering on every subsequent update() call.
+    // if (!m_bombsReleased && transform && transform->geocord &&
+    //     transform->geocord->altitude >= static_cast<double>(DROP_ALTITUDE_FT))
+    // {
+    //     launchBombs();
+    //     m_bombsReleased = true;   // bombs released — don't check again this flight
+    // }
     //qDebug()<<"update";
     int csmTime = 0;
     int esmTime = 0;
@@ -301,25 +268,7 @@ void Platform::update(){
             csmTime +=elapsedMs;
 
         }else
-        if(s->subType == Sensor::SubType::EO){
-            //qDebug() << "[Platform::update] calling csmScan";
-            QElapsedTimer timer;
-            timer.start();  // Start measuring
-            s->scan();
-            qint64 elapsedMs = timer.elapsed();
-            csmTime +=elapsedMs;
-
-        }else
-        if(s->subType == Sensor::SubType::AIS){
-            //qDebug() << "[Platform::update] calling csmScan";
-            QElapsedTimer timer;
-            timer.start();  // Start measuring
-            s->scan();
-            qint64 elapsedMs = timer.elapsed();
-            csmTime +=elapsedMs;
-
-        }else
-            if(s->subType == Sensor::SubType::ADSB){
+            if(s->subType == Sensor::SubType::EO){
                 //qDebug() << "[Platform::update] calling csmScan";
                 QElapsedTimer timer;
                 timer.start();  // Start measuring
@@ -328,21 +277,39 @@ void Platform::update(){
                 csmTime +=elapsedMs;
 
             }else
-            if(s->subType == Sensor::SubType::ESM){
-                QElapsedTimer timer;
-                timer.start();  // Start measuring
-                //qDebug() << "[Platform::update] calling esmScan";
-                s->scan();
-                qint64 elapsedMs = timer.elapsed();
-                esmTime +=elapsedMs;
-            }else{
-                //qDebug() << "[Platform::update] calling scan + ewscan (Generic)";
-                QElapsedTimer timer;
-                timer.start();  // Start measuring
-                s->scan();
-                qint64 elapsedMs = timer.elapsed();
-                radarTime +=elapsedMs;
-            }
+                if(s->subType == Sensor::SubType::AIS){
+                    //qDebug() << "[Platform::update] calling csmScan";
+                    QElapsedTimer timer;
+                    timer.start();  // Start measuring
+                    s->scan();
+                    qint64 elapsedMs = timer.elapsed();
+                    csmTime +=elapsedMs;
+
+                }else
+                    if(s->subType == Sensor::SubType::ADSB){
+                        //qDebug() << "[Platform::update] calling csmScan";
+                        QElapsedTimer timer;
+                        timer.start();  // Start measuring
+                        s->scan();
+                        qint64 elapsedMs = timer.elapsed();
+                        csmTime +=elapsedMs;
+
+                    }else
+                        if(s->subType == Sensor::SubType::ESM){
+                            QElapsedTimer timer;
+                            timer.start();  // Start measuring
+                            //qDebug() << "[Platform::update] calling esmScan";
+                            s->scan();
+                            qint64 elapsedMs = timer.elapsed();
+                            esmTime +=elapsedMs;
+                        }else{
+                            //qDebug() << "[Platform::update] calling scan + ewscan (Generic)";
+                            QElapsedTimer timer;
+                            timer.start();  // Start measuring
+                            s->scan();
+                            qint64 elapsedMs = timer.elapsed();
+                            radarTime +=elapsedMs;
+                        }
     }
 
     Profiler::currentFrame->CSMTime +=csmTime;
@@ -386,11 +353,11 @@ void Platform::update(){
     if(team == Team::RedTeam||team == Team::BlueTeam){
         Decision();
     }
-
-
 }
 
-
+/**
+ * @brief AI decision‑making: target selection, retreat logic, engagement rules, and weapon release.
+ */
 void Platform::Decision(){
 
     float lowestRange = 11000000000;
@@ -431,7 +398,7 @@ void Platform::Decision(){
         }
     }
     detectionCount = enemyCount;
-     weaponcount = weapons->weapons->size();
+    weaponcount = weapons->weapons->size();
     // --- STEP 1: Retreat Logic (Same as before) ---
     bool shouldRetreat = false;
     if (retreat != Retreat::NEVER_RETREAT) {
@@ -442,8 +409,6 @@ void Platform::Decision(){
         else if (retreat == Retreat::TACTICAL_WITHDRAWAL && isVictom) shouldRetreat = true;
     }
 
-
-
     if (shouldRetreat) {
         dynamicModel->followTarget = false;
         trajectory->goHome();
@@ -451,7 +416,7 @@ void Platform::Decision(){
     }
 
     // --- STEP 2: Target Selection (Using Engagement Policy) ---
-    // Yahan hum engagement policy ke basis par "Primary Target" pick karenge
+    // Select the primary target based on the engagement policy
     Platform* primaryTarget = nullptr;
 
     switch (engagement) {
@@ -460,7 +425,7 @@ void Platform::Decision(){
         break;
 
     case Engagement::HIGHEST_THREAT:
-        primaryTarget = closestTarget; // e.g., Boss ya Heavy Tank
+        primaryTarget = closestTarget; // e.g., Boss or Heavy Tank
         break;
 
     case Engagement::LOWEST_HEALTH_TARGET:
@@ -468,7 +433,7 @@ void Platform::Decision(){
         break;
 
     case Engagement::HIGH_VALUE_TARGET:
-        primaryTarget = closestTarget; // e.g., Healer ya Commander
+        primaryTarget = closestTarget; // e.g., Healer or Commander
         break;
 
     case Engagement::ASSIGNED_TARGET_ONLY:
@@ -476,7 +441,7 @@ void Platform::Decision(){
         break;
 
     case Engagement::GROUP_ENGAGEMENT:
-        primaryTarget = closestTarget; // Jahan zyada dushman hon
+        primaryTarget = closestTarget; // Where enemies are densest
         break;
 
     case Engagement::SEQUENTIAL_ENGAGEMENT:
@@ -522,7 +487,7 @@ void Platform::Decision(){
     // --- STEP 4: Weapon Release ---
     if (primaryTarget!=nullptr && primaryTarget->Active && canFire && primaryTarget && !primaryTarget->isVictom ) {
         if (weaponrelease == WeaponRelease::AUTOMATIC || weaponrelease == WeaponRelease::WEAPON_FREE) {
-            ////ExecuteFireSequence(primaryTarget); // Target ko shoot karo
+            // ExecuteFireSequence(primaryTarget); // Shoot the target
             if (weapons) {
                 for (auto const& pair : *weapons->weapons) {
                     Weapon* w = pair.second;
@@ -544,7 +509,9 @@ void Platform::Decision(){
     }
 }
 
-
+/**
+ * @brief Manually fires a missile at the closest enemy target, respecting ROI rules.
+ */
 void Platform::fireMissile(){
     if(roi != ROI::COMMAND_AUTHORIZATION_REQUIRED) return;
     float lowestRange = 11000000000;
@@ -598,30 +565,54 @@ void Platform::fireMissile(){
     }
 }
 
-
+/**
+ * @brief Emits signals to notify the hierarchy that this entity has been added.
+ */
 void Platform::spawn() {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
     emit parent->entityAddedPointer(QString::fromStdString(parentID),this);
 }
 
+/**
+ * @brief Adds a custom string parameter.
+ * @param key Parameter name.
+ * @param value Parameter value.
+ */
 void Platform::addParam(std::string key,std::string value){
     customParameters[QString::fromStdString(key)] = QString::fromStdString(value);
 }
 
+/**
+ * @brief Edits an existing custom parameter.
+ * @param key Parameter name.
+ * @param value New value.
+ */
 void Platform::editParam(std::string key,std::string value){
     customParameters[QString::fromStdString(key)] = QString::fromStdString(value);
 }
 
+/**
+ * @brief Retrieves a custom parameter value.
+ * @param key Parameter name.
+ * @return String value (empty if not found).
+ */
 std::string Platform::getParam(std::string key){
     return customParameters[QString::fromStdString(key)].toString().toStdString();
 }
 
+/**
+ * @brief Removes a custom parameter.
+ * @param key Parameter name.
+ */
 void Platform::removeParam(std::string key){
     customParameters.remove(QString::fromStdString(key));
 }
 
-
+/**
+ * @brief Returns a list of component names supported by Platform.
+ * @return Vector of component names.
+ */
 std::vector<std::string> Platform::getSupportedComponents() {
     std::vector<std::string> supported;
     supported.push_back("transform");
@@ -640,6 +631,10 @@ std::vector<std::string> Platform::getSupportedComponents() {
     return supported;
 }
 
+/**
+ * @brief Serializes the Platform entity to JSON.
+ * @return QJsonObject containing all platform data.
+ */
 QJsonObject Platform::toJson() const {
     QJsonObject obj;
     obj["name"] = QString::fromStdString(Name);
@@ -738,7 +733,10 @@ QJsonObject Platform::toJson() const {
     return obj;
 }
 
-
+/**
+ * @brief Deserializes the Platform entity from JSON.
+ * @param obj JSON object containing platform data.
+ */
 void Platform::fromJson(const QJsonObject& obj) {
 
     if (obj.contains("active"))
@@ -928,10 +926,12 @@ void Platform::fromJson(const QJsonObject& obj) {
             customParameters[it.key()] = it.value();
         }
     }
-
 }
 
-
+/**
+ * @brief Adds a component to the platform by name.
+ * @param name Component name ("transform", "trajectory", "dynamicModel", etc.).
+ */
 void Platform::addComponent(std::string name) {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (name == "transform") {
@@ -1061,6 +1061,10 @@ void Platform::addComponent(std::string name) {
     }
 }
 
+/**
+ * @brief Removes a component by name.
+ * @param name Component name.
+ */
 void Platform::removeComponent(std::string name) {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (name == "transform") {
@@ -1139,6 +1143,11 @@ void Platform::removeComponent(std::string name) {
     }
 }
 
+/**
+ * @brief Retrieves a component's JSON data by name.
+ * @param name Component name.
+ * @return QJsonObject representing the component.
+ */
 QJsonObject Platform::getComponent(std::string name) {
     if (name == "transform") {
         if (!transform) { Console::error(name + ": not exist"); return QJsonObject(); }
@@ -1177,6 +1186,11 @@ QJsonObject Platform::getComponent(std::string name) {
     return QJsonObject();
 }
 
+/**
+ * @brief Updates a component from JSON data.
+ * @param name Component name.
+ * @param obj JSON object containing new data.
+ */
 void Platform::updateComponent(QString name, const QJsonObject& obj) {
     if (name == "transform") {
         if (!transform) { Console::error(name.toStdString() + ": not exist"); return; }
@@ -1214,6 +1228,11 @@ void Platform::updateComponent(QString name, const QJsonObject& obj) {
     }
 }
 
+/**
+ * @brief Retrieves a Sensor by its display name.
+ * @param name Sensor name.
+ * @return Pointer to the Sensor, or nullptr if not found.
+ */
 Sensor* Platform::getSensorByName(const std::string& name) const
 {
     if (!sensors || !sensors->sensors)
@@ -1227,6 +1246,12 @@ Sensor* Platform::getSensorByName(const std::string& name) const
 
     return nullptr;
 }
+
+/**
+ * @brief Retrieves a Radio by its display name.
+ * @param name Radio name.
+ * @return Pointer to the Radio, or nullptr if not found.
+ */
 Radio* Platform::getRadioByName(const std::string& name) const
 {
     if (!radios || !radios->radios)
@@ -1241,6 +1266,12 @@ Radio* Platform::getRadioByName(const std::string& name) const
 
     return nullptr;
 }
+
+/**
+ * @brief Retrieves an IFF component by its display name.
+ * @param name IFF name.
+ * @return Pointer to the IFF, or nullptr if not found.
+ */
 IFF* Platform::getIFFByName(const std::string& name) const
 {
     if (!iffs || !iffs->iffs)
@@ -1255,6 +1286,12 @@ IFF* Platform::getIFFByName(const std::string& name) const
 
     return nullptr;
 }
+
+/**
+ * @brief Retrieves a Weapon by its display name.
+ * @param name Weapon name.
+ * @return Pointer to the Weapon, or nullptr if not found.
+ */
 Weapon* Platform::getWeaponByName(const std::string& name) const {
     if (!weapons) return nullptr;
     for (auto& [key, weapon] : *weapons->weapons) {

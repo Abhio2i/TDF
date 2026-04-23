@@ -1,8 +1,30 @@
-/* ========================================================================= */
-/* File: applicationdialog.cpp                                               */
-/* Purpose: Implements application settings dialog with 3 tabs               */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         applicationdialog.cpp
+ * MODULE:       Application Settings Dialog
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the ApplicationDialog class which provides a modal
+ *               dialog for configuring application‑wide settings and parameters.
+ *               Includes tabs for General (FPS limits, developer mode, image size),
+ *               Database (enable/disable, path selection), and Physics (FPS).
+ *               Settings are stored globally as static members and can be accessed
+ *               from anywhere in the application. Supports validation of user
+ *               input, signal emission on setting changes, and persistent storage
+ *               via global static variables (intended to be saved to QSettings).
+ *
+ * REQUIREMENTS: Implements REQ-APP-010 through REQ-APP-018
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-APP-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "applicationdialog.h"
 #include "applicationdialog-styles.h"

@@ -271,17 +271,7 @@ QJsonObject Radio::toJson() const {
     obj["parent_id"] = QString::fromStdString(parentID);
     obj["active"] = Active;
 
-    // Serialize parameters
-    QJsonObject paramMap;
-    for (const auto& [key, param] : parameters) {
-        if (param) {
-            paramMap[QString::fromStdString(key)] = param->toJson();
-        }
-    }
-    QJsonObject parObj;
-    parObj["type"] = "parameter";
-    parObj["value"] = paramMap;
-    obj["parameters"] = parObj;
+
 
     QJsonObject RadioTypeObj;
     RadioTypeObj["type"] = "option";
@@ -394,6 +384,11 @@ QJsonObject Radio::toJson() const {
    // Env["wind_attenuation_db_per_km_per_mps"] = toParm(cfg.propagation.wind_attenuation_db_per_km_per_mps,"db/km");
    // Env["sea_attenuation_db_per_km"] = toParm(cfg.propagation.sea_attenuation_db_per_km,"db/km");
     obj["Environmental"] = Env;
+
+
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
 
 
     return obj;
@@ -572,19 +567,10 @@ void Radio::fromJson(const QJsonObject& obj) {
 
     }
 
-    // Deserialize parameters
-    if (obj.contains("parameters")) {
-        QJsonObject parObj = obj["parameters"].toObject();
-        if (parObj.contains("value")) {
-            QJsonObject paramMap = parObj["value"].toObject();
-            for (const QString& key : paramMap.keys()) {
-                QJsonObject paramObj = paramMap[key].toObject();
-                std::shared_ptr<Parameter> param = std::make_shared<Parameter>();
-                param->fromJson(paramObj);
-                parameters[key.toStdString()] = param;
-            }
-        }
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
+
     lib_radio->configure(cfg);
 }
 

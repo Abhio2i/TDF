@@ -160,6 +160,9 @@ QJsonObject SensorProfile::toJson() const {
         }
     }
     obj["sensors"] = sensorObj;
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
     return obj;
 }
 void SensorProfile::fromJson(const QJsonObject& obj) {
@@ -213,6 +216,11 @@ void SensorProfile::fromJson(const QJsonObject& obj) {
             }
         }
     }
+
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
+    }
+
 }
 Sensor* SensorProfile::getSensor(const std::string& id) const
 {

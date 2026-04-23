@@ -1,8 +1,30 @@
-/* ========================================================================= */
-/* File: angelscripthighlighter.cpp                                       */
-/* Purpose: Implements syntax highlighter for AngelScript code             */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         angelscripthighlighter.cpp
+ * MODULE:       AngelScript Syntax Highlighter
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the AngelScriptHighlighter class which provides
+ *               syntax highlighting for AngelScript code within QTextDocument.
+ *               Highlights keywords, strings, functions, single‑line comments,
+ *               and multi‑line comments using regular expression rules.
+ *
+ * REQUIREMENTS: Implements REQ-HIGHLIGHT-010 through REQ-HIGHLIGHT-015
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-HIGHLIGHT-001
+ *
+ * CHANGE HISTORY:
+ *   Rev 1  01 Jan 2026  Initial implementation. Basic AngelScript highlighting.
+ *   Rev 2  20 Apr 2026  DO-178C DAL B compliant comments added throughout.
+ *                       Added requirement references and structured file header.
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "angelscripthighlighter.h"
 

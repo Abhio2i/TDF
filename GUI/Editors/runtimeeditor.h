@@ -1,9 +1,53 @@
 
-// #endif // RUNTIMEEDITOR_H
-/* ========================================================================= */
-/* File: runtimeeditor.h                                                    */
-/* Purpose: Defines the main window for the runtime editor application       */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         runtimeeditor.h
+ * MODULE:       Runtime Editor Main Window
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the RuntimeEditor class which serves as the main
+ *               window for runtime simulation and editing. It manages hierarchy
+ *               tree views (mission and library), tactical display (2D canvas),
+ *               3D scene widget, inspector panels, console view, various sensor
+ *               displays (radar, IFF, radio, ESM, CSM, EO, AIS, ADSB, sonar,
+ *               AESA radar), logging, script execution, toolbars (standard,
+ *               design, runtime, network), menu bar, and dock widgets.
+ *               Supports loading JSON mission files, tracking unsaved changes,
+ *               resetting layout, recent projects, and displaying profile/
+ *               application information.
+ *
+ * REQUIREMENTS: REQ-RUNTIME-010  Main window with menu bar and toolbars
+ *               REQ-RUNTIME-011  Hierarchy tree view (mission) dock widget
+ *               REQ-RUNTIME-012  Library tree view dock widget
+ *               REQ-RUNTIME-013  Tactical display (2D canvas) dock widget
+ *               REQ-RUNTIME-014  Scene3D widget dock widget
+ *               REQ-RUNTIME-015  Inspector panel dock widget (multiple tabs)
+ *               REQ-RUNTIME-016  Console view dock widget
+ *               REQ-RUNTIME-017  Text script widget dock widget
+ *               REQ-RUNTIME-018  Sensor displays (radar, IFF, radio, etc.)
+ *               REQ-RUNTIME-019  Logger dialog for data recording
+ *               REQ-RUNTIME-020  Load mission from JSON file
+ *               REQ-RUNTIME-021  Track unsaved changes
+ *               REQ-RUNTIME-022  Reset layout to default
+ *               REQ-RUNTIME-023  Recent projects list
+ *               REQ-RUNTIME-024  Show profile info / application dialog
+ *               REQ-RUNTIME-025  Show feedback window
+ *               REQ-RUNTIME-026  Timing data export as JSON
+ *               REQ-RUNTIME-027  Sidebar view and display tab switching
+ *               REQ-RUNTIME-028  Duplicate sensors window
+ *               REQ-RUNTIME-029  Filter sensor tabs by category
+ *               REQ-RUNTIME-030  Canvas selecting mode
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-RUNTIME-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef RUNTIMEEDITOR_H
 #define RUNTIMEEDITOR_H
@@ -86,8 +130,6 @@ public:
     void markUnsavedChanges();
     ConsoleView *consoleView;
 
-
-
 public slots:
     void showProfileInfo();
     void showApplicationDialog();
@@ -108,8 +150,6 @@ private slots:
     void addInspectorTab();
     // Show feedback window
     void showFeedbackWindow();
-    // Mark unsaved changes
-    // void markUnsavedChanges();
     // Toggle radar display
     void toggleRadarDisplay();
     // Toggle logger display
@@ -119,7 +159,6 @@ private slots:
     void setupEnhancedDockWidgets();
     void onDockVisibilityChanged(bool visible);
     void resetLayout();
-    // void onRecentLibraryTriggered();
     void showPanelContextMenu(const QPoint &pos);
     void filterSensorTabsForEntity(const QString &entityId, const QString &category);
 
@@ -134,8 +173,6 @@ private:
     // %%% UI Setup Methods %%%
     GraphWidget *graphWidget = nullptr;
     ScriptEngine* scriptengine = nullptr;
-
-    // CUSTOM RESIZABLE OVERLAY DOCKS
     CustomResizableOverlayDock *hierarchyDock;
     CustomResizableOverlayDock *tacticalDisplayDock;
     CustomResizableOverlayDock *consoleDock;
@@ -151,22 +188,18 @@ private:
     void setupMenuBar();
     // Configure toolbars
     void setupToolBars();
-    // Configure dock widgets (legacy)
+    // Configure dock widgets
     void setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures);
     // Connect toolbar signals
     void setupToolBarConnections();
 
     // %%% UI Components %%%
     Inspector *inspector;
-    // Console *console;
-    // ConsoleView *consoleView;
     Scene3DWidget *scene3dwidget;
     TextScriptWidget *textScriptView;
     HierarchyConnector* m_hierarchyConnector;
     QVariantMap copydata;
     Hierarchy* copyhirarchy = nullptr;
-    // DesignToolBar *designToolBar;
-    // RuntimeToolBar *runtimeToolBar;
     NetworkToolbar *networkToolBar;
     LayerPanel *layerPanel = nullptr;
     MenuBar *menuBar;

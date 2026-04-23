@@ -1,11 +1,47 @@
 
 
-/* ========================================================================= */
-/* File: scenarioeditor.h                                                   */
-/* Purpose: Defines the main window for the scenario editor application      */
-// Written by   : Arti Rajpoot
-/* ========================================================================= */
-
+/* =============================================================================
+ * FILE:         scenarioeditor.h
+ * MODULE:       Scenario Editor Main Window
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the ScenarioEditor class which serves as the main
+ *               window for scenario creation and editing. It manages hierarchy
+ *               tree views (mission and library), tactical display (2D canvas),
+ *               inspector panels, console view, toolbars (standard, design),
+ *               menu bar, text script widget, layer panel, and dock widgets.
+ *               Supports loading/saving JSON scenario files, tracking unsaved
+ *               changes, resetting layout, recent projects, script execution,
+ *               and displaying profile/application information.
+ *
+ * REQUIREMENTS: REQ-SCENARIO-010  Main window with menu bar and toolbars
+ *               REQ-SCENARIO-011  Hierarchy tree view (mission) dock widget
+ *               REQ-SCENARIO-012  Library tree view dock widget
+ *               REQ-SCENARIO-013  Tactical display (2D canvas) dock widget
+ *               REQ-SCENARIO-014  Inspector panel dock widget (multiple tabs)
+ *               REQ-SCENARIO-015  Console view dock widget
+ *               REQ-SCENARIO-016  Text script widget dock widget
+ *               REQ-SCENARIO-017  Layer panel dock widget
+ *               REQ-SCENARIO-018  Load scenario from JSON file
+ *               REQ-SCENARIO-019  Track unsaved changes
+ *               REQ-SCENARIO-020  Reset layout to default
+ *               REQ-SCENARIO-021  Recent projects list
+ *               REQ-SCENARIO-022  Show profile info / application dialog
+ *               REQ-SCENARIO-023  Show feedback window
+ *               REQ-SCENARIO-024  Script engine integration
+ *               REQ-SCENARIO-025  Simulation control
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-SCENARIO-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #ifndef SCENARIOEDITOR_H
 #define SCENARIOEDITOR_H
 
@@ -61,8 +97,7 @@ public:
     Hierarchy* hierarchy;
      Console *console;
      DesignToolBar *designToolBar;
-     // static void runUnitTestsOnce();
-         ConsoleView *consoleView;
+     ConsoleView *consoleView;
   LayerPanel *layerPanel = nullptr;
      CustomResizableOverlayDock *hierarchyDock;
      CustomResizableOverlayDock *tacticalDisplayDock;
@@ -71,7 +106,7 @@ public:
      CustomResizableOverlayDock *libraryDock;
      CustomResizableOverlayDock *sidebarDock;
      CustomResizableOverlayDock *textScriptDock;
-         CustomResizableOverlayDock *layerDock = nullptr;
+     CustomResizableOverlayDock *layerDock = nullptr;
 
 public slots:
     void showProfileInfo();
@@ -103,25 +138,12 @@ signals:
     void Activated();
 private:
     // %%% Core Components %%%
-
-    // CustomResizableOverlayDock *hierarchyDock;
-    // CustomResizableOverlayDock *tacticalDisplayDock;
-    // CustomResizableOverlayDock *consoleDock;
-    // CustomResizableOverlayDock *inspectorDock;
-    // CustomResizableOverlayDock *libraryDock;
-    // CustomResizableOverlayDock *sidebarDock;
-    // CustomResizableOverlayDock *textScriptDock;
-    // Script engine instance
     ScriptEngine* scriptengine = nullptr;
     // Inspector panel widget
     Inspector *inspector;
     QVariantMap copydata;
     // Store copied hierarchy
     Hierarchy* copyhirarchy = nullptr;
-    // LayerPanel *layerPanel = nullptr;
-    // CustomResizableOverlayDock *layerDock = nullptr;
-    // ConsoleView *consoleView;
-    // Text script view widget
     TextScriptWidget *textScriptView;
     // %%% UI Setup Methods %%%
     // Configure menu bar
@@ -135,18 +157,15 @@ private:
     void setupToolBarConnections();
     // %%% Toolbar Components %%%
     // Design toolbar
-    // DesignToolBar *designToolBar;
     QList<QDockWidget*> inspectorDocks;
     // Count inspector instances
     int inspectorCount = 0;
     // List of inspectors
     QList<Inspector*> inspectors;
-    // Update status bar message
-    // Status bar widget
     QStatusBar *statusBar;
     Simulation *simulation;
     ScenarioConfig* m_scenarioConfig;
-     void showPanelContextMenu(const QPoint &pos);
+    void showPanelContextMenu(const QPoint &pos);
 private slots:
     void onRunScriptFileRequested(const QString& filePath);
 

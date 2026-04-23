@@ -1,4 +1,7 @@
-
+/**
+ * @file dynamicmodel.cpp
+ * @brief Implementation of the DynamicModel component for entity motion and formation flying.
+ */
 
 #include "dynamicmodel.h"
 #include <core/InputSystem/inputmanager.h>
@@ -13,6 +16,9 @@
 #include "qmetaobject.h"
 #include <QDebug>
 
+/**
+ * @brief Normalizes an angle to the range [-180, 180] degrees.
+ */
 auto normalizeAngle = [](float angle) {
     while (angle > 180.0f) angle -= 360.0f;
     while (angle < -180.0f) angle += 360.0f;
@@ -20,38 +26,44 @@ auto normalizeAngle = [](float angle) {
 };
 
 /**
- * @brief World Velocity को Local (Body) Velocity में बदलने का फंक्शन
- * @param vEast     - पूर्व दिशा में वेग (m/s या Knots)
- * @param vNorth    - उत्तर दिशा में वेग
- * @param vVertical - ऊपर की ओर वेग (Climb Rate)
- * @param rotation  - एयरक्राफ्ट का मौजूदा रोटेशन (Quaternion)
- * @return QVector3D - Local Velocity (X=Side, Y=Up, Z=Forward)
+ * @brief Converts world velocity to local (body) velocity.
+ * @param vEast     Velocity in east direction (m/s or knots)
+ * @param vNorth    Velocity in north direction
+ * @param vVertical Vertical velocity (climb rate)
+ * @param rotation  Current rotation of the aircraft (quaternion)
+ * @return QVector3D Local velocity (X = side, Y = up, Z = forward)
  */
 QVector3D worldToLocalVelocity(float vEast, float vNorth, float vVertical, QQuaternion rotation)
 {
-    // 1. वर्ल्ड वेलोसिटी वेक्टर तैयार करें
-    // Qt/OpenGL स्टैंडर्ड के अनुसार:
-    // X = East, Y = Up (Vertical), Z = -North (सामने की दिशा -Z होती है)
+    // 1. Prepare world velocity vector
+    // According to Qt/OpenGL standard:
+    // X = East, Y = Up (Vertical), Z = -North (forward direction is -Z)
     QVector3D globalVelocity(vEast, vVertical, -vNorth);
 
-    // 2. रोटेशन को नॉर्मलाइज़ करें (गणितीय सटीकता के लिए ज़रूरी)
+    // 2. Normalize rotation (required for mathematical precision)
     rotation.normalize();
 
-    // 3. Global से Local में ट्रांसफ़ॉर्म करें
-    // inverted() का उपयोग करने से हम वर्ल्ड फ्रेम से बॉडी फ्रेम में आ जाते हैं
+    // 3. Transform from global to local
+    // Using inverted() converts from world frame to body frame
     QVector3D localVel = rotation.inverted().rotatedVector(globalVelocity);
 
     return localVel;
 }
 
 
+/**
+ * @brief Constructs a DynamicModel component.
+ */
 DynamicModel::DynamicModel():Component(nullptr) {
     control = true;
     follow = true;
     moveSpeed = 800;
-    customParameters = QJsonObject(); // Initialize customParameters
+    AdditionalParameters = QJsonObject(); // Initialize
 }
 
+/**
+ * @brief Initializes the dynamic model, setting start time and default values.
+ */
 void DynamicModel::init(){
     if(startTime<Simulation::simulationTime){
         startTime = Simulation::simulationTime;
@@ -62,15 +74,21 @@ void DynamicModel::init(){
 
     moveSpeed = 800;
 
-    customParameters = QJsonObject(); // Initialize customParameters
+    AdditionalParameters = QJsonObject(); // Initialize
     angdeg = transform->toEulerAngles().y();
 }
 
+/**
+ * @brief Called when the component starts; captures initial heading.
+ */
 void DynamicModel::start(){
-
     angdeg = transform->toEulerAngles().y();
 }
 
+/**
+ * @brief Updates the dynamic model each frame, handling trajectory following.
+ * @param deltaTime Time step in seconds.
+ */
 void DynamicModel::Update(float deltaTime) {
     if (!control || !transform || !rigidbody || !trajectory) return;
 
@@ -84,6 +102,10 @@ void DynamicModel::Update(float deltaTime) {
 }
 
 
+/**
+ * @brief Implements trajectory following, formation keeping, and turn coordination.
+ *        Handles both autonomous waypoint following and wingman formation flight.
+ */
 void DynamicModel::FollowTrajectory() {
 
     //============================================================================
@@ -210,31 +232,25 @@ void DynamicModel::FollowTrajectory() {
             float maxSpeedMS;
 
             if (distance > 2000.0f) {
-                // CATCH-UP MODE: Mothership speed ka 1.5x allow karo taaki formation ban sake
-                // moveSpeed ki bhi cap lagao taaki unrealistic na ho
-                // max() se ensure karo ki mothership se zyada speed mile
-                // min() se ensure karo ki apni max speed se aage na jaaye
+                // CATCH-UP MODE: Allow 1.5x mothership speed to catch up, but cap at own max speed
                 float catchUpSpeed = std::min(mothershipSpeedMS * 1.5f, maxSpeed / 3.6f);
-                catchUpSpeed = std::max(catchUpSpeed, moveSpeed / 3.6f); // at least apni moveSpeed
+                catchUpSpeed = std::max(catchUpSpeed, moveSpeed / 3.6f); // at least own moveSpeed
                 maxSpeedMS = catchUpSpeed * speedModifier;
             } else {
-                // FORMATION MODE: Sirf 300 km/h extra allow karo — smooth follow ke liye
+                // FORMATION MODE: Allow only +300 km/h extra for smooth following
                 float maxAllowedMS = (mothershipSpeedKmh + 300.0f) / 3.6f;
                 maxSpeedMS = std::min((moveSpeed / 3.6f) * speedModifier, maxAllowedMS);
             }
 
-            // SLOWING RADIUS: Sirf last 800m pe slowdown hoga
-            // Pehle distance*40% tha — 10km door ho toh 4km se slow hona shuru — bahut zyada tha
-            // Ab fixed 800m — door se full speed, paas aake smooth brake
+            // SLOWING RADIUS: Slow down only within the last 800m
             float slowingRadius = 800.0f;
 
             QVector3D desiredVel;
             if (distance > slowingRadius) {
-                // Full speed se aao jab tak 800m door ho
+                // Full speed until within slowing radius
                 desiredVel = error.normalized() * maxSpeedMS;
             } else {
-                // Last 800m mein linear slowdown — smooth landing
-                // t*t (quadratic) hataya kyunki bahut slow ho jaata tha
+                // Linear slowdown over last 800m for smooth landing
                 float t = distance / slowingRadius;
                 desiredVel = error.normalized() * maxSpeedMS * t;
             }
@@ -251,9 +267,7 @@ void DynamicModel::FollowTrajectory() {
             QVector3D steering = (desiredVel - velocity) * dampingFactor;
             velocity += (steering / mass) * delta;
 
-            // FIX 3: Hard velocity clamp
-            // Pehle velocity accumulate hoti rehti thi — koi upper limit nahi tha
-            // Isse physics velocity badh jaati thi aur entity target se aage nikal jaati thi (overshoot)
+            // Hard velocity clamp to prevent overshoot
             if (velocity.length() > maxSpeedMS) {
                 velocity = velocity.normalized() * maxSpeedMS;
             }
@@ -295,157 +309,8 @@ void DynamicModel::FollowTrajectory() {
     FlatXYZ targt = geoToFlatXYZ(target.x,target.z,target.y);
     QVector3D target_qvec(targt.x, targt.y, targt.z);
     QVector2D tar(target_qvec.x(),target_qvec.z());
-    // if(moveSpeed <minSpeed){
-    //     moveSpeed = minSpeed;
-    // }
-    // if(moveSpeed > maxSpeed){
-    //     moveSpeed = maxSpeed;
-    // }
-    // if(Altitude>maxAltitude){
-    //     Altitude = maxAltitude;
-    // }
-    // if(Altitude<0){
-    //     Altitude = 0;
-    // }
+
     float movespd = (moveSpeed/3600.0f);//km/h to km/s
-    // float accel = (Acceleration/1000.0f);//m/s to km/s
-    // float dccel = (Decceleration/1000.0f);//m/s to km/s
-    // float alt = Altitude * FTtoKM;//ft to km
-    // float clmbrate = climbRate * FTminToKMs;//ft/min to km/s
-    // float divrate = diveRate * FTminToKMs;//ft/min to km/s
-    // currentAltitude = current.y();
-
-
-
-    // float diffspeed = std::abs(speed-movespd);
-    // float lastspeed = speed;
-    // if(currentSpeed < 300){
-
-    //     // alt = 10*FTtoKM;
-    //     // divrate = 9.8f/1000.0f;
-    // }
-
-    // if(speed<movespd){
-    //     if(diffspeed<accel){
-    //         accel = 0.5f*diffspeed;
-    //     }
-    //     speed += accel*delta;
-    // }else{
-    //     if(diffspeed<dccel){
-    //         dccel = 0.5f*diffspeed;
-    //     }
-    //     speed -= dccel*delta;
-    // }
-    // // float deltaSpeed = std::abs(speed - lastspeed)*1000 * (1/delta);
-    // float distance = last.distanceToPoint(tar)*1000;
-    // float offset = movespd*1000;//active current speed
-    // // //qDebug()<<distance<<","<<deltaSpeed ;
-    // if((speed*1000) > offset  &&  distance < (movespd*1000*3)){
-    //     speed -= offset* delta * 0.4f;
-    // }
-    // speed = speed<0?0:speed;
-
-    // // //qDebug()<<delta;
-    // float diffaalt = std::abs(currentAltitude-alt);
-    // if(currentAltitude<alt){
-    //     if(diffaalt<clmbrate){
-    //         clmbrate = 0.5f*diffaalt;
-    //     }
-    //     currentAltitude += clmbrate*delta;
-    // }else{
-    //     if(diffaalt<divrate){
-    //         divrate = 0.5f*diffaalt;
-    //     }
-    //     currentAltitude -= divrate*delta;
-    // }
-    // QVector3D direction = target_qvec - current;
-    // direction = direction.normalized();
-
-    // float angleRad = atan2(direction.x(), direction.z());
-    // float targetDeg = angleRad * (180.0f / M_PI);
-    // float deltaang = std::abs(normalizeAngle(targetDeg - angdeg));
-
-    // float tunrate = turnRate;
-    // if(deltaang <= tunrate){
-    //     tunrate = 0.5f*deltaang;
-    // }
-    // float tr = convertToClockwise360(targetDeg);
-    // float cr = convertToClockwise360(angdeg);
-    // targetDeg = normalizeAngle(targetDeg);
-    // angdeg = normalizeAngle(angdeg);
-    // float diff1 = std::abs(tr-cr);//0-360
-    // float diff2 = std::abs(targetDeg-angdeg);//-180 0 180
-
-    // if(diff2>diff1){
-    //     angdeg = cr;
-    //     targetDeg = tr;
-    // }
-
-    // if(angdeg>targetDeg){
-    //     angdeg -= tunrate * delta;
-    // }else{
-    //     angdeg += tunrate * delta;
-    // }
-
-    // // //qDebug()<<targetDeg<<","<<angdeg <<","<<deltaang;
-    // transform->matrix->setRotation(QQuaternion::fromEulerAngles(QVector3D(0,angdeg,0)));
-
-    // // transform->lookAt(target_qvec);
-    // current += ((transform->forward() * speed) + (windDierction* windSpeed))  * delta;
-    // current.setY(currentAltitude);
-
-    // //calculate driftangle
-    // // 1. Wind Angle निकालें (हवा और हेडिंग के बीच का अंतर)
-    // float windAngleRad = qDegreesToRadians(qRadiansToDegrees(qAtan2(windDierction.x(), -windDierction.z())) - TrueHeading);
-
-    // float sinDrift = (windSpeed / TrueAirSpeed) * qSin(windAngleRad);
-
-    // // सुरक्षा के लिए लिमिट चेक (ताकि asin एरर न दे)
-    // if (sinDrift > 1.0f) sinDrift = 1.0f;
-    // if (sinDrift < -1.0f) sinDrift = -1.0f;
-
-    // DriftAngle = qRadiansToDegrees(qAsin(sinDrift));
-
-    // ///calculate pitch
-    // float ratio = VerticalVelocity / TrueAirSpeed;
-
-    // // 3. सुरक्षा के लिए चेक करें (ताकि asin एरर न दे)
-    // if (ratio > 1.0f) ratio = 1.0f;
-    // if (ratio < -1.0f) ratio = -1.0f;
-
-    // // 4. Angle निकालें (Radians में) और फिर Degrees में बदलें
-    // float pitchDegrees = qRadiansToDegrees(qAsin(ratio));
-    // float g = 9.81f;
-
-    // // 4. Bank Angle निकालें: tan(theta) = (v * omega) / g
-    // float rollDegrees = qRadiansToDegrees(qAtan((TrueAirSpeed * qDegreesToRadians(turnRate)) / g));
-
-    // Pitchrate = (pitch - pitchDegrees)*(1/delta);
-    // Rollrate = (roll - rollDegrees)*(1/delta);
-    // Yawrate = (yaw - transform->yaw())*(1/delta);
-
-    // pitch = pitchDegrees;
-    // roll = rollDegrees;
-    // yaw = transform->yaw();
-    // transform->matrix->setTranslation(current);
-    // float unit = (1/delta)*3600;
-    // NorthVelocity = (current.x()-last3d.x()) * unit;
-    // EastVelocity = (current.z()-last3d.z()) * unit;
-    // VerticalVelocity = (current.y()-last3d.y()) * unit;
-    // TrueAirSpeed = QVector2D(current.x(),current.z()).distanceToPoint(last) * unit;
-    // GroundVelocity = (windSpeed*3600)+TrueAirSpeed;
-    // velocity = worldToLocalVelocity(EastVelocity, NorthVelocity, VerticalVelocity, transform->rotation());
-    // if(windSpeed > 0){
-    //     currentSpeed = QVector2D(current.x(),current.z()).distanceToPoint(last) * (1/delta) * 3600;
-    // }else{
-    //     currentSpeed = (speed * 3600)+(windSpeed*3600);
-    // }
-    // windDierction.setX(0);
-    // windDierction.setY(0);
-    // windDierction.setZ(0);
-    // windSpeed = 0;
-    // // ////////////////////////////////////////////////////
-
 
 
     transform->trailData.push_back(QVector3D(transform->getLatitude(),0,transform->getLongitude()));
@@ -516,11 +381,17 @@ void DynamicModel::FollowTrajectory() {
 
 }
 
+/**
+ * @brief Linear interpolation helper.
+ */
 float DynamicModel::lerp(float a, float b, float t){
     return a + (b - a) * t;
 }
 
 
+/**
+ * @brief Converts TerrainSurface enum to string.
+ */
 QString surfaceTypeToString(DynamicModel::TerrainSurface type) {
     switch (type) {
     case DynamicModel::TerrainSurface::Generic: return "Generic";
@@ -531,6 +402,9 @@ QString surfaceTypeToString(DynamicModel::TerrainSurface type) {
     }
 }
 
+/**
+ * @brief Converts string to TerrainSurface enum.
+ */
 DynamicModel::TerrainSurface stringTosurfaceType(const QString& str) {
     if (str == "Generic") return DynamicModel::TerrainSurface::Generic;
     if (str == "Ground") return DynamicModel::TerrainSurface::Ground;
@@ -539,6 +413,9 @@ DynamicModel::TerrainSurface stringTosurfaceType(const QString& str) {
     return DynamicModel::TerrainSurface::Generic; // Default
 }
 
+/**
+ * @brief Returns list of terrain surface option strings for UI.
+ */
 QStringList surfaceTypeOptions() {
     QStringList list;
     int index = DynamicModel::staticMetaObject.indexOfEnumerator("TerrainSurface");
@@ -550,23 +427,38 @@ QStringList surfaceTypeOptions() {
 }
 
 
-
+/**
+ * @brief Adds a sub‑component (unused for DynamicModel).
+ */
 void DynamicModel::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
 
 }
 
+/**
+ * @brief Removes a sub‑component (unused).
+ */
 void DynamicModel::removeSubComponent(std::string ID){
 
 }
 
+/**
+ * @brief Updates a sub‑component (unused).
+ */
 void DynamicModel::updateSubComponent(std::string ID, const QJsonObject& obj){
 
 }
 
+/**
+ * @brief Gets sub‑component data (unused).
+ */
 QJsonObject DynamicModel::getsubComponentData(std::string ID) const{
     return QJsonObject();
 }
 
+/**
+ * @brief Serializes the DynamicModel component to JSON.
+ * @return QJsonObject containing all dynamic model parameters.
+ */
 QJsonObject DynamicModel::toJson() const {
     QJsonObject obj;
     obj["id"] = QString::fromStdString(ID);
@@ -619,15 +511,18 @@ QJsonObject DynamicModel::toJson() const {
     obj["passabillity"] = passabillityObj;
 
 
-    // Add custom parameters
-    for (auto it = customParameters.begin(); it != customParameters.end(); ++it) {
-        //obj[it.key()] = it.value();
-    }
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
 
     ////qDebug() << "DynamicModel::toJson output:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
     return obj;
 }
 
+/**
+ * @brief Deserializes the DynamicModel component from JSON.
+ * @param obj JSON object containing dynamic model data.
+ */
 void DynamicModel::fromJson(const QJsonObject& obj) {
     ////qDebug() << "DynamicModel::fromJson input:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
 
@@ -724,20 +619,17 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
             terrainIs = passabillityObj["terrainIsPassable"].toBool();
     }
 
-    // Custom parameters
-    QStringList standardKeys = {
-        "control", "turnRadius", "start", "moveSpeed","responses","maximums","passabillity"
-    };
-    for (auto it = obj.begin(); it != obj.end(); ++it) {
-        if (!standardKeys.contains(it.key())) {
-            customParameters[it.key()] = it.value();
-        }
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
 
-    ////qDebug() << "DynamicModel::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);
+    ////qDebug() << "DynamicModel::fromJson :" << QJsonDocument().toJson(QJsonDocument::Compact);
 }
 
+/**
+ * @brief Sets the movement speed (clamped to valid range).
+ * @param speed Desired speed.
+ */
 void DynamicModel::setMoveSpeed(float speed) {
     //moveSpeed = qBound(1.0f, speed, 10.0f);
 }
-

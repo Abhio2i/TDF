@@ -1,8 +1,33 @@
-/* ========================================================================= */
-/* File: contextmenu.cpp                                                     */
-/* Purpose: Implements context menu functionality for hierarchy tree items   */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         additemdialog.cpp
+ * MODULE:       Add Item Dialog
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the AddItemDialog class which provides a modal
+ *               dialog for adding new items (entities or folders) with
+ *               configurable properties and components. Supports entity/folder
+ *               creation, sensor/IFF/radio/weapon component configuration,
+ *               scenario parameters (range, speed, turn radius, trajectory),
+ *               profile selection, and entity component inheritance. The dialog
+ *               adapts its UI based on dialog type (Entity/Folder) and mode
+ *               (Normal, ComponentSensor, ComponentIFF, ComponentRadio,
+ *               ComponentWeapon). Includes searchable entity selection with
+ *               autocompletion, city data loading from JSON, and comprehensive
+ *               input validation.
+ *
+ * REQUIREMENTS: Implements REQ-DIALOG-010 through REQ-DIALOG-018
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-DIALOG-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "contextmenu.h"
 #include "contextmenu-styles.h"
 #include "GUI/Hierarchytree/additemdialog.h"
@@ -466,7 +491,6 @@ void ContextMenu::setupFolderMenu(const QVariantMap &data)
             return;
         }
 
-        // Baaki sab profiles (Sensor, IFF, Radio, Formation, FixedPoints, SpecialZone, Platform)
         QString specificTypeForDialog = parentProfileType.isEmpty() ? "Platform" : parentProfileType;
         AddItemDialog dialog(AddItemDialog::EntityType,
                              specificTypeForDialog,

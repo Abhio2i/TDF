@@ -1,9 +1,39 @@
-
-/* ========================================================================= */
-/* File: contextmenu.h                                                       */
-/* Purpose: Context-sensitive menu for hierarchy tree operations             */
-// Written by   : Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         contextmenu.h
+ * MODULE:       Context-Sensitive Menu for Hierarchy Tree
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the ContextMenu class which provides a context‑sensitive
+ *               menu for hierarchy tree operations. The menu adapts to different
+ *               item types (profile, folder, entity, component, sub‑component)
+ *               and emits signals for add/remove/copy/paste/rename/activate and
+ *               team/category assignment. Supports multi‑select copy/paste and
+ *               integration with AddItemDialog for creating new entities/folders.
+ *
+ * REQUIREMENTS: REQ-CONTEXT-010  Context menu for hierarchy tree
+ *               REQ-CONTEXT-011  Profile item menu (add/remove profile)
+ *               REQ-CONTEXT-012  Folder item menu (add/remove folder)
+ *               REQ-CONTEXT-013  Entity item menu (add/remove entity, components,
+ *                                 copy/paste, rename, set active, team, category)
+ *               REQ-CONTEXT-014  Component item menu (radio, sensor, IFF, weapon)
+ *               REQ-CONTEXT-015  Sub‑component item menu
+ *               REQ-CONTEXT-016  Copy/paste (single and multiple items)
+ *               REQ-CONTEXT-017  Add component to entity (sensor, IFF, radio, weapon)
+ *               REQ-CONTEXT-018  Set entity active/inactive
+ *               REQ-CONTEXT-019  Assign team (Blue/Red) to entity
+ *               REQ-CONTEXT-020  Assign category to entity
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-CONTEXT-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef CONTEXTMENU_H
 #define CONTEXTMENU_H

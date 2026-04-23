@@ -1,9 +1,28 @@
-
-/* ========================================================================= */
-/* File: recentprojectsmanager.cpp                                           */
-/* Purpose: Implementation of recent projects manager functionality          */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         recentprojectsmanager.cpp
+ * MODULE:       Recent Projects Manager
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the RecentProjectsManager class, a singleton manager
+ *               for handling recent projects across different editor types
+ *               (ScenarioEditor, MissionEditor, RuntimeEditor, DatabaseEditor,
+ *               LibraryData). Provides persistent storage using QSettings,
+ *               adding/clearing/retrieving recent project lists, and displaying
+ *               a recent projects menu with projectSelected signal emission.
+ *
+ * REQUIREMENTS: Implements REQ-RECENT-010 through REQ-RECENT-017
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-RECENT-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "recentprojectsmanager.h"
 #include <QMenu>

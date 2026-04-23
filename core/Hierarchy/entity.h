@@ -1,6 +1,29 @@
+// =============================================================================
+// FILE:        entity.h
+// MODULE:      Tactical Simulation Entity Management
+// PROJECT:     Tactical Display/Simulation Framework (TDF)
+// ORGANISATION: Oxygen 2 Innovation (O2I)
+// STANDARD:    RTCA DO-178C / ED-12C, DAL B (Guidelines applied)
+//
+// DESCRIPTION:  Defines the abstract Entity base class. This is the fundamental
+//               building block for all simulation objects (Aircraft, Ships, etc.).
+//               It manages common attributes like Team, Country, Health, and
+//               provides an interface for dynamic component attachment.
+//
+// AUTHOR:       Pankaj Chauhan
+// REVIEWED BY:  [Reviewer Name], [Review Date]
+//
+// CHANGE HISTORY:
+//   Rev 1  Sep 2025  Initial implementation for TDF project.
+//   Rev 2  Mar 2026  Integrated Radio, Sensor, and IFF tracking.
+//   Rev 3  Apr 2026  Added DO-178C compliant documentation and health metrics.
+//
+// COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+// =============================================================================
 
 #ifndef ENTITY_H
 #define ENTITY_H
+
 #include "core/Hierarchy/Components/attachedenitities.h"
 #include <QObject>
 #include <QString>
@@ -14,20 +37,30 @@
 #include <core/Hierarchy/Components/component.h>
 #include <core/Hierarchy/Components/dynamicmodel.h>
 #include <core/Hierarchy/Components/mission.h>
-// #include "core/Hierarchy/EntityProfiles/iff.h"
-// #include "core/Hierarchy/EntityProfiles/radio.h"
-// #include "core/Hierarchy/EntityProfiles/sensor.h"
+
+// Forward declarations to reduce compile time
 class Hierarchy;
 class AttachedEnitities;
 class Radio;
 class Weapon;
 class Sensor;
 class IFF;
+
+// =============================================================================
+// CLASS: Entity (Abstract)
+//
+// DESCRIPTION: Base class for all simulation actors. Defines the interface for
+//              spawning, component management, and state serialization.
+// =============================================================================
 class Entity: public QObject
 {
     Q_OBJECT
 
 public:
+    // =========================================================================
+    // SECTION: Enumerations & Constants
+    // DESCRIPTION: Definitions for Country, Team, and Category classifications.
+    // =========================================================================
     enum Country {
         AFGHANISTAN, ALBANIA, ALGERIA, ANDORRA, ANGOLA, ANTIGUA_AND_BARBUDA, ARGENTINA, ARMENIA, AUSTRALIA, AUSTRIA,
         AZERBAIJAN, BAHAMAS, BAHRAIN, BANGLADESH, BARBADOS, BELARUS, BELGIUM, BELIZE, BENIN, BHUTAN,
@@ -50,16 +83,11 @@ public:
         TURKMENISTAN, TUVALU, UGANDA, UKRAINE, UNITED_ARAB_EMIRATES, UNITED_KINGDOM, UNITED_STATES_OF_AMERICA, URUGUAY, UZBEKISTAN, VANUATU,
         VENEZUELA, VIETNAM, YEMEN, ZAMBIA, ZIMBABWE
     };
+
     enum Team{
-        RedTeam,
-        BlueTeam,
-        GreenTeam,
-        YellowTeam,
-        GreyTeam,
-        AlphaTeam,
-        BetaTeam,
-        GammaTeam
+        RedTeam, BlueTeam, GreenTeam, YellowTeam, GreyTeam, AlphaTeam, BetaTeam, GammaTeam
     };
+
     const std::string CountryNames[195] = {
         "AFGHANISTAN", "ALBANIA", "ALGERIA", "ANDORRA", "ANGOLA", "ANTIGUA_AND_BARBUDA", "ARGENTINA", "ARMENIA", "AUSTRALIA", "AUSTRIA",
         "AZERBAIJAN", "BAHAMAS", "BAHRAIN", "BANGLADESH", "BARBADOS", "BELARUS", "BELGIUM", "BELIZE", "BENIN", "BHUTAN",
@@ -82,30 +110,23 @@ public:
         "TURKMENISTAN", "TUVALU", "UGANDA", "UKRAINE", "UNITED_ARAB_EMIRATES", "UNITED_KINGDOM", "UNITED_STATES_OF_AMERICA", "URUGUAY", "UZBEKISTAN", "VANUATU",
         "VENEZUELA", "VIETNAM", "YEMEN", "ZAMBIA", "ZIMBABWE"
     };
-    const std::string TeamNames[8] = { "RedTeam",
-                                      "BlueTeam",
-                                      "GreenTeam",
-                                      "YellowTeam",
-                                      "GreyTeam",
-                                      "AlphaTeam",
-                                      "BetaTeam",
-                                      "GammaTeam"};
-    enum Category{
-        Aircraft,
-        Helicopter,
-        Ship,
-        Submarine,
-        Tank/*,
-        Missile,
-        Bomb*/
+
+    const std::string TeamNames[8] = {
+        "RedTeam", "BlueTeam", "GreenTeam", "YellowTeam", "GreyTeam", "AlphaTeam", "BetaTeam", "GammaTeam"
     };
-    const std::string CategoryNames[5] = {"Aircraft",
-                                          "Helicopter",
-                                          "Ship",
-                                          "Submarine",
-                                          "Tank"/*,
-                                          "Missile",
-                                          "Bomb"*/};
+
+    enum Category{
+        Aircraft, Helicopter, Ship, Submarine, Tank
+    };
+
+    const std::string CategoryNames[5] = {
+        "Aircraft", "Helicopter", "Ship", "Submarine", "Tank"
+    };
+
+    // =========================================================================
+    // SECTION: Lifecycle & Hierarchy
+    // DESCRIPTION: Constructor, destructor, and basic tree connectivity.
+    // =========================================================================
     Entity(Hierarchy* h);
     ~Entity();
     Hierarchy* root;
@@ -116,6 +137,11 @@ public:
     std::string ID;
     std::string parentID;
     Constants::EntityType type;
+
+    // =========================================================================
+    // SECTION: State & Metrics
+    // DESCRIPTION: Physical status, tactical affiliation, and health variables.
+    // =========================================================================
     Category category = Entity::Category::Aircraft;
     Country country = Entity::Country::INDIA;
     Team team = Entity::Team::GreyTeam;
@@ -128,10 +154,17 @@ public:
     float detectionCount = 0;
     float weaponcount = 0;
     float hitcount = 0;
+
+    // =========================================================================
+    // SECTION: Sub-System Management (Radios, Sensors, Weapons)
+    // DESCRIPTION: Containers and methods for managing attached tactical equipment.
+    // =========================================================================
     std::unordered_map<std::string, std::shared_ptr<Parameter>> parameters;
     std::vector<Radio*> radioList;
     std::vector<Sensor*> sensorList;
     std::vector<IFF*> iffList;
+    std::vector<Weapon*> weaponList;
+
     void addRadio(Radio* radio);
     void removeRadio(Radio* radio);
     void clearRadios();
@@ -141,12 +174,14 @@ public:
     void addIFF(IFF* iff);
     void removeIFF(IFF* iff);
     void clearIFFs();
-
-    std::vector<Weapon*> weaponList;
     void addWeapon(Weapon* weapon);
     void removeWeapon(Weapon* weapon);
     void clearWeapons();
 
+    // =========================================================================
+    // SECTION: Virtual Interface (DO-178C Compliance)
+    // DESCRIPTION: Mandatory methods for derived simulation objects.
+    // =========================================================================
     virtual void spawn() = 0;
     virtual std::vector<std::string> getSupportedComponents() = 0;
     virtual void addComponent(std::string name) = 0;
@@ -156,7 +191,6 @@ public:
 
     virtual QJsonObject toJson() const = 0;
     virtual void fromJson(const QJsonObject& obj) = 0;
-
 };
 
 #endif // ENTITY_H

@@ -1,8 +1,26 @@
 //============================================================================
-// File        : csmdisplay.cpp
-// Description : Implementation of CSMDisplay class . radar-style display, target tracking,
-//               interactive hover detection, and performance profiling.
-//               Written by Arti Rajpoot
+// FILE:         csmdisplay.cpp
+// MODULE:       CSM (Communications Support Measures) Display
+// PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+// ORGANISATION: Oxygen 2 Innovation (O2I).
+// STANDARD:     RTCA DO-178C / ED-12C, DAL B
+// COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+//
+// DESCRIPTION:  Implements the CSMDisplay class which provides a widget for
+//               visualising Communications Support Measures (CSM) / electronic
+//               support data. It displays targets in a polar (radar‑like) format
+//               with configurable range, rings, ticks, and hover detection.
+//               Integrates with Hierarchy and Sensor/Platform entities for
+//               real‑time tracking and display updates.
+//
+// REQUIREMENTS: Implements REQ-CSM-010 through REQ-CSM-017
+//
+// AUTHOR:       Arti Rajpoot
+// REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-CSM-001
+//
+//
+// COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+//               Restricted circulation — defence simulation use only.
 //============================================================================
 
 #include "csmdisplay.h"                            // For EW display class
@@ -26,11 +44,18 @@ CSMDisplay::CSMDisplay(QWidget *parent)
     QSizePolicy policy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     policy.setHeightForWidth(true);
     setSizePolicy(policy);
-    // Set padding
     padding = 40;
-
-    // Enable mouse tracking for hover detection
     setMouseTracking(true);
+    sensorDropdown = new QComboBox(this);
+    sensorDropdown->setStyleSheet(
+        "QComboBox { background-color: #001a00; color: #00ff00; "
+        "border: 1px solid #00ff00; font-size: 10px; padding: 2px; }"
+        "QComboBox QAbstractItemView { background-color: #001a00; "
+        "color: #00ff00; selection-background-color: #003300; }"
+        );
+    sensorDropdown->hide();
+    connect(sensorDropdown, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &CSMDisplay::onSensorSelected);
 }
 
 // %%% Size Management %%%
@@ -72,9 +97,9 @@ void CSMDisplay::mouseMoveEvent(QMouseEvent *event)
     int outerRadius = outerDiameter / 2;
     QPoint center(w / 2, h / 2);
 
-    // Check if mouse is near any target
+
     int closestIndex = -1;
-    double minDistance = 20.0; // Pixel threshold for hover detection
+    double minDistance = 20.0;
 
     int i=0;
     for (const Target &t : sensor->ewtargets) {
@@ -104,7 +129,7 @@ void CSMDisplay::mouseMoveEvent(QMouseEvent *event)
 
     if (hoveredTargetIndex != closestIndex) {
         hoveredTargetIndex = closestIndex;
-        update(); // Repaint to show/hide labels
+        update();
     }
 
     QWidget::mouseMoveEvent(event);
@@ -138,17 +163,22 @@ void CSMDisplay::selectEntity(Entity* entit)
     entity = platform;
 
     sensor = nullptr;
+        sensorlist.clear();
     for (auto const& pair :  *entity->sensors->sensors) {
         Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::CSM) {
-            sensor = s;
+            if(sensor == nullptr){
+                sensor = s;
+            }
+            sensorlist.append(s);
             setWindowTitle("CSM Display (" + QString::fromStdString(entity->Name) + ")");
-            break;
         }
     }
 
     // Reset hover state when entity changes
     hoveredTargetIndex = -1;
+    updateDropdown();
+
         update();
 }
 
@@ -159,10 +189,12 @@ void CSMDisplay::RemoveEntity(QString ID)
         // Clear entity and sensor
         entity = nullptr;
         sensor = nullptr;
+            sensorlist.clear();
         // Reset window title
         setWindowTitle("CSM Display");
         // Reset hover state
         hoveredTargetIndex = -1;
+         if (sensorDropdown) sensorDropdown->hide();
     }
 }
 
@@ -426,4 +458,55 @@ void CSMDisplay::drawTargetAndPath(QPainter &painter)
             painter.drawText(targetX - 20, targetY + 5, QString("%1").arg(radius));
         }
     }
+}
+void CSMDisplay::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    if (sensorDropdown) {
+        int dropW = 120;
+        int dropH = 22;
+        sensorDropdown->setGeometry(width() - dropW - padding, 4, dropW, dropH);
+    }
+}
+
+void CSMDisplay::updateDropdown()
+{
+    if (!sensorDropdown) return;
+
+    QSignalBlocker blocker(sensorDropdown);
+    sensorDropdown->clear();
+
+    if (sensorlist.isEmpty()) {
+        sensorDropdown->hide();
+        return;
+    }
+
+    for (int i = 0; i < sensorlist.size(); ++i) {
+        Sensor* s = sensorlist[i];
+        QString name = s ? QString::fromStdString(s->Name) : QString("CSM %1").arg(i + 1);
+        if (name.trimmed().isEmpty())
+            name = QString("CSM %1").arg(i + 1);
+        sensorDropdown->addItem(name);
+    }
+
+    int currentIdx = sensorlist.indexOf(sensor);
+    if (currentIdx >= 0)
+        sensorDropdown->setCurrentIndex(currentIdx);
+
+    if (sensorlist.size() > 1)
+        sensorDropdown->show();
+    else
+        sensorDropdown->hide();
+
+    sensorDropdown->setGeometry(width() - 120 - padding, 4, 120, 22);
+}
+
+void CSMDisplay::onSensorSelected(int index)
+{
+    if (index < 0 || index >= sensorlist.size()) return;
+    sensor = sensorlist[index];
+    hoveredTargetIndex = -1;
+    if (sensor)
+        setRange(sensor->range);
+    update();
 }

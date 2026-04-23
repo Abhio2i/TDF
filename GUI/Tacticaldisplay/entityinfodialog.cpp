@@ -1,10 +1,32 @@
-
-/* ========================================================================= */
-/* File: entityinfodialog.cpp                                               */
-/* Purpose: Implementation of entity information dialog                      */
-// Written by: Arti Rajpoot
-/* ========================================================================= */
-
+/* =============================================================================
+ * FILE:         entityinfodialog.cpp
+ * MODULE:       Entity Information Dialog
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the EntityInfoDialog class which provides a modal
+ *               dialog for displaying and managing entity information.
+ *               Shows entity attributes, position, speed/altitude table,
+ *               equipment (sensors, radios, IFF, weapons, formation),
+ *               and options (track, centre, aggregated script, follow
+ *               trajectory, show connection, show detection). Integrates
+ *               with CanvasWidget, Hierarchy, Platform, Formation, and
+ *               MeshEntry to display real‑time entity data. Supports
+ *               editing speed/altitude values via table cells and emits
+ *               signals when updates occur.
+ *
+ * REQUIREMENTS: Implements REQ-ENTITYINFO-010 through REQ-ENTITYINFO-018
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-ENTITYINFO-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "entityinfodialog.h"
 #include "entityinfodialog-styles.h"
 #include <QHeaderView>
@@ -28,7 +50,6 @@ EntityInfoDialog::EntityInfoDialog(QWidget *parent)
     : QDialog(parent)
 {
     setupUI();
-    // runUnitTestsOnce();
 
 }
 
@@ -38,7 +59,6 @@ void EntityInfoDialog::setupUI()
     setFixedSize(500, 600);
     setWindowFlags(Qt::Dialog | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
 
-    // Apply dark theme to dialog
     setStyleSheet(EntityInfoDialogStyles::Dialog);
 
     mainLayout = new QVBoxLayout(this);
@@ -111,17 +131,14 @@ void EntityInfoDialog::createSpeedAltTableSection()
                                    QAbstractItemView::DoubleClicked |
                                    QAbstractItemView::EditKeyPressed |
                                    QAbstractItemView::SelectedClicked);
-    // Set column properties
     speedAltTable->setItem(0, 0, new QTableWidgetItem("Speed"));
     speedAltTable->item(0, 0)->setForeground(Qt::white);
 
     speedAltTable->setItem(0, 1, new QTableWidgetItem("-"));
-    // Current column ko non-editable banayein
     speedAltTable->item(0, 1)->setFlags(speedAltTable->item(0, 1)->flags() & ~Qt::ItemIsEditable);
     speedAltTable->item(0, 1)->setForeground(Qt::white);
 
     speedAltTable->setItem(0, 2, new QTableWidgetItem("-"));
-    // Requested column ko editable banayein
     speedAltTable->item(0, 2)->setFlags(speedAltTable->item(0, 2)->flags() | Qt::ItemIsEditable);
     speedAltTable->item(0, 2)->setForeground(Qt::white);
 
@@ -129,12 +146,10 @@ void EntityInfoDialog::createSpeedAltTableSection()
     speedAltTable->item(1, 0)->setForeground(Qt::white);
 
     speedAltTable->setItem(1, 1, new QTableWidgetItem("-"));
-    // Current column ko non-editable banayein
     speedAltTable->item(1, 1)->setFlags(speedAltTable->item(1, 1)->flags() & ~Qt::ItemIsEditable);
     speedAltTable->item(1, 1)->setForeground(Qt::white);
 
     speedAltTable->setItem(1, 2, new QTableWidgetItem("-"));
-    // Requested column ko editable banayein
     speedAltTable->item(1, 2)->setFlags(speedAltTable->item(1, 2)->flags() | Qt::ItemIsEditable);
     speedAltTable->item(1, 2)->setForeground(Qt::white);
 
@@ -279,13 +294,11 @@ void EntityInfoDialog::setEntityInfo(const QString& entityId, const QString& ent
     } else {
         titleLabel->setText("Name: " + entityId);
     }
-    // Update trajectory checkbox
     if (entryInfo->trajectory) {
         followTrajectoryCheckBox->setChecked(entryInfo->trajectory->FollowPath);
     } else {
         followTrajectoryCheckBox->setChecked(false);
     }
-    // Set detection checkbox state
     if (entryInfo->entity) {
         entryInfo->detection = showDetectionCheckBox->isChecked();
     }
@@ -902,14 +915,11 @@ void EntityInfoDialog::onFormationClicked()
         titleLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.title { font-size: 16px; color: white; font-weight: bold; padding-bottom: 10px; }");
         layout->addWidget(titleLabel);
 
-        // Try to find formation for this entity
         Formation* formation = findFormationForEntity(entryInfo->platform);
 
         if (formation) {
-            // Display formation information
             displayFormationInfo(formation, entryInfo->platform, layout);
         } else {
-            // Check if this entity IS a Formation entity itself
             Formation* thisFormation = dynamic_cast<Formation*>(entryInfo->platform);
             if (thisFormation) {
                 displayFormationInfo(thisFormation, entryInfo->platform, layout);
@@ -956,16 +966,13 @@ Formation* EntityInfoDialog::findFormationForEntity(Entity* entity)
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(entity);
     if (!parent ) return nullptr;
 
-    // Search through all entities to find Formation entities
     for (auto& pair : parent->Entities) {
         Formation* formation = dynamic_cast<Formation*>(pair.second);
         if (formation) {
-            // Check if this entity is the mothership
             if (formation->mothership && formation->mothership->entity == entity) {
                 return formation;
             }
 
-            // Check if this entity is an ally
             if (formation->formationPositions) {
                 for (auto& fp : *formation->formationPositions) {
                     if (fp.second && fp.second->entity == entity) {

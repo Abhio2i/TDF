@@ -1,8 +1,28 @@
-/* ========================================================================= */
-/* File: navigationpage.cpp                                                  */
-/* Purpose: Navigation page with Database, Scenario, Mission, Runtime btns  */
-/* Written by: Arti Rajpoot                                                  */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         navigationpage.cpp
+ * MODULE:       Navigation Page Widget
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the NavigationPage class which provides a widget
+ *               containing a set of navigation buttons for switching between
+ *               different editors (e.g., DatabaseEditor, ScenarioEditor,
+ *               MissionEditor, RuntimeEditor, AnalysisEditor). Supports visual
+ *               indication of the active button, restoration of the previously
+ *               active button, and emits a signal when an editor is requested.
+ *
+ * REQUIREMENTS: Implements REQ-NAV-010 through REQ-NAV-013
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-NAV-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "navigationpage.h"
 #include <QHBoxLayout>
 #include <QIcon>
@@ -19,12 +39,22 @@ NavigationPage::NavigationPage(QWidget *parent)
     mainLayout->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
     mainLayout->setSpacing(5);
     mainLayout->setContentsMargins(15, 5, 15, 5);
-    QToolButton* databaseBtn = createNavButton(":/icons/images/database.png", "Database", "database");
+
+    databaseBtn = createNavButton(":/icons/images/database.png", "Database", "database");
+    scenarioBtn = createNavButton(":/icons/images/stories.png",  "Scenario", "scenario");
+    missionBtn  = createNavButton(":/icons/images/mission.png",  "Mission",  "mission");
+    runtimeBtn  = createNavButton(":/icons/images/runtime.png",  "Runtime",  "runtime");
+    analysisBtn = createNavButton(":/icons/images/analysis.png", "Analysis/Reports", "analysis");
+
     mainLayout->addWidget(databaseBtn);
-    mainLayout->addWidget(createNavButton(":/icons/images/stories.png",  "Scenario", "scenario"));
-    mainLayout->addWidget(createNavButton(":/icons/images/mission.png",  "Mission",  "mission"));
-    mainLayout->addWidget(createNavButton(":/icons/images/runtime.png",  "Runtime",  "runtime"));
-    mainLayout->addWidget(createNavButton(":/icons/images/analysis.png",  "Analysis/Reports",  "analysis"));
+    mainLayout->addWidget(scenarioBtn);
+    mainLayout->addWidget(missionBtn);
+    mainLayout->addWidget(runtimeBtn);
+    mainLayout->addWidget(analysisBtn);
+
+    missionBtn->hide();
+    analysisBtn->hide();
+
     setFixedHeight(50);
     setActiveButton(databaseBtn);
 }

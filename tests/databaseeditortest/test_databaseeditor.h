@@ -70,7 +70,6 @@ private:
     QString ensureFolderExists();
     QString ensureEntityExists();
 
-
     // Helper methods
     QString ensureProfileId();
     QString ensureFolderId();

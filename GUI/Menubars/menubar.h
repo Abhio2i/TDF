@@ -1,8 +1,40 @@
-/* ========================================================================= */
-/* File: menubar.h                                                          */
-/* Purpose: Defines menu bar for application interface                       */
-// Written by   : Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         menubar.h
+ * MODULE:       Application Menu Bar
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the MenuBar class which provides the main application
+ *               menu bar. It contains File, Edit, View, and Feedback menus with
+ *               actions for file operations (new, open, save, save as, load to
+ *               library, recent projects, exit), edit operations (undo, redo,
+ *               select/deselect all, cut, copy, paste, duplicate, rename, delete),
+ *               view operations (play/pause simulation), feedback, profile info,
+ *               application info, XML loading, and runtime instance opening.
+ *               Supports dynamic visibility of library actions and editor‑specific
+ *               menu updates. Emits signals for all triggerable actions.
+ *
+ * REQUIREMENTS: REQ-MENU-010  File menu with New, Open, Save, Save As, Load to
+ *                             Library, Recent Projects, Exit
+ *               REQ-MENU-011  Edit menu with Undo, Redo, Select/Deselect All,
+ *                             Cut, Copy, Paste, Duplicate, Rename, Delete
+ *               REQ-MENU-012  View menu with Play/Pause simulation
+ *               REQ-MENU-013  Feedback menu with Feedback, Profile Info,
+ *                             Application Info
+ *               REQ-MENU-014  Load XML and Open Runtime Instance actions
+ *               REQ-MENU-015  Signals emitted on action triggers
+ *               REQ-MENU-016  Dynamic hiding/showing of library actions
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-MENU-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef MENUBAR_H
 #define MENUBAR_H

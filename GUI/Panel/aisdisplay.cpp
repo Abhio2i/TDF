@@ -129,12 +129,16 @@ void AISDisplay::selectEntity(Entity* entit)
     entity = platform;
 
     sensor = nullptr;
+        sensorlist.clear();
     for (auto const& pair :  *entity->sensors->sensors) {
         Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::AIS) {
-            sensor = s;
+            if(sensor == nullptr){
+                sensor = s;
+            }
+            sensorlist.append(s);
             setWindowTitle("AIS Display (" + QString::fromStdString(entity->Name) + ")");
-            break;
+
         }
     }
 
@@ -150,6 +154,7 @@ void AISDisplay::RemoveEntity(QString ID)
         // Clear entity and sensor
         entity = nullptr;
         sensor = nullptr;
+            sensorlist.clear();
         // Reset window title
         setWindowTitle("CSM Display");
         // Reset hover state

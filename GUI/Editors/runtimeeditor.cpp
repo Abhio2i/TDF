@@ -38,6 +38,8 @@
 #include <QProgressDialog>                      // For progress indication
 #include <GUI/Editors/customresizableoverlaydock.h>
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h"
+#include <QPointer>
+#include "GUI/Panel/sonardisplay.h"
 
 QJsonObject RuntimeEditor::s_missionData;
 QString     RuntimeEditor::s_missionFilePath;
@@ -199,22 +201,44 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     //above by aman
 
     connect(simulation, &Simulation::Update, sonarDisplayUI, &SonarDisplay::updateRadar);  // add by amjad
+    connect(simulation, &Simulation::Update,
+            sonarDisplayUI, &SonarDisplay::onSimulationUpdate);
     // ── Sonar scan loop ──
-    connect(simulation, &Simulation::Update, this, [=]() {
+    connect(simulation, &Simulation::Update, this, [this]() {
+
         if (!sonarDisplayUI || !hierarchy) return;
+
         Entity* selectedEntity = sonarDisplayUI->getSelectedEntity();
         if (!selectedEntity) return;
+
         for (auto& [id, sensor] : hierarchy->Sensors)
         {
             Sonar* sonar = dynamic_cast<Sonar*>(sensor);
             if (!sonar) continue;
             if (sonar->parentEntity != selectedEntity) continue;
+
             sonar->scan();
-            sonarDisplayUI->setPingInterval(sonar->getPingInterval());
-            sonarDisplayUI->updateContacts(sonar->getLastResults());
+
+            if (sonarDisplayUI)
+            {
+                auto results = sonar->getLastResults();
+                int ping     = sonar->getPingInterval();
+
+                SonarDisplay* ui = sonarDisplayUI;  // 🔥 local safe copy
+
+                QMetaObject::invokeMethod(ui, [ui, results, ping]() {
+
+                    if (!ui) return;
+
+                    ui->setPingInterval(ping);
+                    ui->updateContacts(results);
+
+                }, Qt::QueuedConnection);
+            }
         }
     });
     connect(hierarchy, &Hierarchy::entityRemoved, sonarDisplayUI, &SonarDisplay::RemoveEntity);     // add by amjad
+
     connect(displayDock, &QDockWidget::visibilityChanged, this, [=](bool visible) {
         if (!visible) {
             if (runtimeToolBar) {
@@ -452,27 +476,22 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         } else {
             type = data["type"].toString();
         }
+
         // ===== FORMATION MULTI-SELECT LOGIC =====
         if (type == "entity") {
             QString entityID = data["ID"].toString();
-
-            // Check if this entity is a Formation
-            if (hierarchy&&
-                hierarchy->Entities.find(entityID.toStdString()) != hierarchy->Entities.end()) {
+            if (hierarchy && hierarchy->Entities.find(entityID.toStdString()) != hierarchy->Entities.end()) {
                 Entity* entity = (hierarchy->Entities)[entityID.toStdString()];
                 Formation* formation = dynamic_cast<Formation*>(entity);
                 if (formation) {
                     QList<QString> formationEntityIds;
                     formationEntityIds.append(entityID);
-
-                    // Add mothership
                     if (formation->mothership && formation->mothership->entity) {
                         QString mothershipId = QString::fromStdString(formation->mothership->entity->ID);
                         if (mothershipId != "dummy" && !mothershipId.isEmpty()) {
                             formationEntityIds.append(mothershipId);
                         }
                     }
-                    // Add all allies
                     if (formation->formationPositions) {
                         for (const auto& pair : *formation->formationPositions) {
                             FormationPosition* pos = pair.second;
@@ -490,76 +509,107 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                     if (tacticalDisplay && tacticalDisplay->canvas) {
                         tacticalDisplay->canvas->selectMultipleEntities(formationEntityIds);
                     }
-
                     return;
                 }
             }
         }
+
         QString name = data["name"].toString();
         QString ID = data["parentId"].toString();
         QString displayName = capitalizeFirstLetter(name);
-        if (!inspectorDock->isLocked()) {
 
+        // ===== INSPECTOR UPDATE =====
+        if (!inspectorDock->isLocked()) {
             for (Inspector* inspector : inspectors) {
                 if (type == "subcomponent") {
                     QJsonObject componentData = (hierarchy->Components)[data["parentId"].toString().toStdString()]->getsubComponentData(data["ID"].toString().toStdString());
-
                     if (!componentData.isEmpty()) {
                         inspector->init(ID, displayName + "_sub", componentData);
                     }
-                }else if (type == "component") {
+                } else if (type == "component") {
                     QJsonObject componentData = hierarchy->getComponentData(ID, name);
                     if (!componentData.isEmpty()) {
                         inspector->init(ID, displayName, componentData);
                     }
-                }  else if (type == "profile") {
+                } else if (type == "profile") {
                     inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
                 } else if (type == "folder") {
                     inspector->init(ID, displayName + "_self", (hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
                 } else if (type == "entity") {
                     m_lastSelectedEntityId = data["ID"].toString();
-
                     inspector->init(data["ID"].toString(), displayName + "_self", (hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
-
-                    if (!displayDock || !displayDock->isLocked()) {
-                        QJsonObject entityJson = (hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson();
-                        QString category = entityJson["Category"].toObject()["value"].toString();
-                        filterSensorTabsForEntity(data["ID"].toString(), category);
-                        if (displayDock) displayDock->setWindowTitle("Sensors - " + displayName);
-
-                        if (radarDisplayUI)
-                            radarDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                        if (iffDisplayUI)
-                            iffDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                        if (radioDisplayUI)
-                            radioDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                        if (csmDisplayUI)
-                            csmDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                        if (eoDisplayUI)
-                            eoDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                        if (aisDisplayUI)
-                            aisDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                        if (adsbDisplayUI)
-                            adsbDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                        if (esmDisplayUI)
-                            esmDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                        if(aesaRadarDisplayUI)
-                            aesaRadarDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                        if (sonarDisplayUI)
-                            sonarDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                    }
                 } else {
                     inspector->init(ID, displayName, QJsonObject());
                 }
             }
         }
+
+        // ===== SENSOR DISPLAY UPDATE =====
+        // For entity: update sensors directly
+        if (type == "entity") {
+            if (!displayDock->isLocked()) {
+                QJsonObject entityJson = (hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson();
+                QString category = entityJson["Category"].toObject()["value"].toString();
+                filterSensorTabsForEntity(data["ID"].toString(), category);
+                if (displayDock) displayDock->setWindowTitle("Sensors - " + displayName);
+
+                if (radarDisplayUI) radarDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                if (iffDisplayUI) iffDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                if (radioDisplayUI) radioDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                if (csmDisplayUI) csmDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                if (eoDisplayUI) eoDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                if (aisDisplayUI) aisDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                if (adsbDisplayUI) adsbDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                if (esmDisplayUI) esmDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                if (aesaRadarDisplayUI) aesaRadarDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                if (sonarDisplayUI) sonarDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
+            }
+        }
+        // For component/subcomponent: find parent entity and update sensors (without changing tree selection)
+        else if (type == "component" || type == "subcomponent") {
+            QString parentEntityId;
+            if (type == "component") {
+                parentEntityId = data["parentId"].toString();
+            } else { // subcomponent
+                QString compId = data["parentId"].toString();
+                if (hierarchy && hierarchy->Components.find(compId.toStdString()) != hierarchy->Components.end()) {
+                    parentEntityId = QString::fromStdString(hierarchy->Components[compId.toStdString()]->parentID);
+                } else {
+                    parentEntityId = data["parentId"].toString();
+                }
+            }
+
+            if (!parentEntityId.isEmpty() && hierarchy && hierarchy->Entities.count(parentEntityId.toStdString())) {
+                // Update sensor displays if not locked
+                if (!displayDock->isLocked()) {
+                    Entity* entity = hierarchy->Entities[parentEntityId.toStdString()];
+                    QString entityDisplayName = capitalizeFirstLetter(QString::fromStdString(entity->Name));
+                    QString category = entity->toJson()["Category"].toObject()["value"].toString();
+
+                    filterSensorTabsForEntity(parentEntityId, category);
+                    if (displayDock) displayDock->setWindowTitle("Sensors - " + entityDisplayName);
+
+                    if (radarDisplayUI) radarDisplayUI->selectEntity(entity);
+                    if (iffDisplayUI) iffDisplayUI->selectEntity(entity);
+                    if (radioDisplayUI) radioDisplayUI->selectEntity(entity);
+                    if (csmDisplayUI) csmDisplayUI->selectEntity(entity);
+                    if (eoDisplayUI) eoDisplayUI->selectEntity(entity);
+                    if (aisDisplayUI) aisDisplayUI->selectEntity(entity);
+                    if (adsbDisplayUI) adsbDisplayUI->selectEntity(entity);
+                    if (esmDisplayUI) esmDisplayUI->selectEntity(entity);
+                    if (aesaRadarDisplayUI) aesaRadarDisplayUI->selectEntity(entity);
+                    if (sonarDisplayUI) sonarDisplayUI->selectEntity(entity);
+                }
+            }
+        }
+
+        // ===== SHOW INSPECTOR DOCK IF NEEDED =====
         bool anyDockVisible = (displayDock && displayDock->isVisible()) ||
                               (libraryDock && libraryDock->isVisible()) ||
                               (textScriptDock && textScriptDock->isVisible()) ||
                               (loggerDock && loggerDock->isVisible());
 
         if (!inspectorDock->isVisible() && !anyDockVisible) {
-            // Koi dock nahi khula — Inspector dikhao
             QRect sGeo = sidebarDock->geometry();
             inspectorDock->setGeometry(sGeo.x(), sGeo.y() + sGeo.height() + 5,
                                        sGeo.width(), height() - sGeo.y() - sGeo.height() - 150);
@@ -567,25 +617,22 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             inspectorDock->raise();
         }
 
+        // ===== TACTICAL DISPLAY (CANVAS) SELECTION =====
+        // Keep existing behaviour: entity click focuses map, component click selects parent entity on canvas
         if (tacticalDisplay && type == "entity") {
             tacticalDisplay->selectedMesh(data["ID"].toString());
         }
         else if (tacticalDisplay && (type == "subcomponent" || type == "component")) {
-            // Parent entity ka ID dhundho
             QString parentEntityId = data["parentId"].toString();
-
             if (type == "subcomponent") {
-                if (hierarchy ) {
-                    auto it = hierarchy->Components.find(
-                        data["parentId"].toString().toStdString());
+                if (hierarchy) {
+                    auto it = hierarchy->Components.find(data["parentId"].toString().toStdString());
                     if (it != hierarchy->Components.end()) {
                         parentEntityId = QString::fromStdString(it->second->parentID);
                     }
                 }
             }
-
-
-            if (hierarchy ) {
+            if (hierarchy) {
                 auto it = hierarchy->Entities.find(parentEntityId.toStdString());
                 if (it != hierarchy->Entities.end()) {
                     tacticalDisplay->selectedMesh(parentEntityId);
@@ -2361,8 +2408,8 @@ void RuntimeEditor::createDuplicateSensorsWindow()
     AISDisplay    *dupAis   = new AISDisplay(dupTabs);    dupAis->setHierarchy(hierarchy);
     ADSBDisplay   *dupAdsb  = new ADSBDisplay(dupTabs);   dupAdsb->setHierarchy(hierarchy);
     AESARadarDisplay *dupAesa = new AESARadarDisplay(dupTabs); dupAesa->setHierarchy(hierarchy);
-    SonarDisplay  *dupSonar = new SonarDisplay(dupTabs);
-
+    // SonarDisplay  *dupSonar = new SonarDisplay(dupTabs);
+    QPointer<SonarDisplay> dupSonar = new SonarDisplay(dupTabs);
     // ── Saare tabs pehle add karo  ──
     dupTabs->addTab(dupRadar,  "Radar");
     dupTabs->addTab(dupIff,    "IFF");
@@ -2402,13 +2449,33 @@ void RuntimeEditor::createDuplicateSensorsWindow()
     connect(hierarchy, &Hierarchy::entityRemoved, dupSonar,  &SonarDisplay::RemoveEntity);
 
     // ── Sonar scan ──
-    connect(simulation, &Simulation::Update, this, [=]() {
-        if (!hierarchy) return;
-        for (auto& [id, sensor] : hierarchy->Sensors) {
+    // SonarDisplay* dupSonar = new SonarDisplay(dupTabs);
+    dupSonar->selectEntity(sonarDisplayUI->getSelectedEntity());
+    dupSonar->setHeading(sonarDisplayUI->getHeading());
+    dupSonar->setPingInterval(sonarDisplayUI->getPingInterval());
+
+    connect(simulation, &Simulation::Update, this, [this, dupSonar]() {
+
+        if (!hierarchy || !dupSonar) return;
+
+        std::vector<DetectionResult> allResults;
+
+        for (auto& [id, sensor] : hierarchy->Sensors)
+        {
             Sonar *sonar = dynamic_cast<Sonar*>(sensor);
             if (!sonar) continue;
-            dupSonar->updateContacts(sonar->getLastResults());
+
+            auto r = sonar->getLastResults();
+            allResults.insert(allResults.end(), r.begin(), r.end());
         }
+
+        QMetaObject::invokeMethod(dupSonar, [dupSonar, allResults]() {
+
+            if (!dupSonar) return;
+
+            dupSonar->updateContacts(allResults);
+
+        }, Qt::QueuedConnection);
     });
 
     // ════════════════════════════════════════════════════════════════
@@ -2430,7 +2497,7 @@ void RuntimeEditor::createDuplicateSensorsWindow()
         Entity* entity = hierarchy->Entities[entityId.toStdString()];
 
         static const QMap<QString, QString> sensorTypeToTab = {
-            {"Radar", "Radar"}, {"AESA Radar", "AESA"}, {"ESM", "ESM"},
+            {"Radar", "Radar"}, {"AESARadar", "AESA"}, {"ESM", "ESM"},
             {"CSM", "CSM"}, {"EO", "EO"}, {"AIS", "AIS"},
             {"ADSB", "ADSB"}, {"Sonar", "SONAR"}
         };
@@ -2598,7 +2665,7 @@ void RuntimeEditor::filterSensorTabsForEntity(const QString &entityId, const QSt
     }
 
     static const QMap<QString, QString> sensorTypeToTab = {
-        {"Radar", "Radar"}, {"AESA Radar", "AESA"}, {"ESM", "ESM"},
+        {"Radar", "Radar"}, {"AESARadar", "AESA"}, {"ESM", "ESM"},
         {"CSM", "CSM"}, {"EO", "EO"}, {"AIS", "AIS"},
         {"ADSB", "ADSB"}, {"Sonar", "SONAR"}
     };

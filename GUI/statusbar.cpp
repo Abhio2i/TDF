@@ -1,7 +1,26 @@
 //============================================================================
-// File        : StatusBar.cpp
-// Description : Custom status bar with only Save button
-// Written by: Arti Rajpoot
+// FILE:         StatusBar.cpp
+// MODULE:       Custom Status Bar
+// PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+// ORGANISATION: Oxygen 2 Innovation (O2I).
+// STANDARD:     RTCA DO-178C / ED-12C, DAL B
+// COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+//
+// DESCRIPTION:  Implements the StatusBar class which provides a customised
+//               QStatusBar containing only a Save button and a file name
+//               display. Legacy methods for status messages, coordinates,
+//               simulation time, and zoom level are kept for compatibility
+//               but perform no action. Includes a RAM usage monitor with
+//               a timer for periodic updates.
+//
+// REQUIREMENTS: Implements REQ-STATUSBAR-010 through REQ-STATUSBAR-015
+//
+// AUTHOR:       Arti Rajpoot
+// REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-STATUSBAR-002
+//
+//
+// COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+//               Restricted circulation — defence simulation use only.
 //============================================================================
 #include "statusbar.h"
 #include <QSizeGrip>

@@ -1,9 +1,29 @@
-
-/* ========================================================================= */
-/* File: hierarchyconnector.cpp                                             */
-/* Purpose: Manages connections between hierarchy, UI, and file operations   */
-// Written by   : Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         hierarchyconnector.cpp
+ * MODULE:       Hierarchy UI Connector
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the HierarchyConnector class, a singleton that
+ *               provides connectivity between the core Hierarchy data model
+ *               and UI components (HierarchyTree, TacticalDisplay, Inspector,
+ *               QMainWindow). It manages signal/slot connections, file
+ *               operations (new/open/save), copy/paste, library data
+ *               initialisation, dummy data generation, recent projects,
+ *               and feedback data collection.
+ *
+ * REQUIREMENTS: Implements REQ-CONN-010 through REQ-CONN-019
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-CONN-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "hierarchyconnector.h"                     // For hierarchy connector class
 #include <QToolBar>                                // For toolbar handling
@@ -258,15 +278,15 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                     emit hierarchy->trajectoryisAdded(platform->ID.c_str(), platform->trajectory);
 
                     std::string id = platform->sensors->ID;
-                    hierarchy->addSubComponent(QString::fromStdString(id), ComponentType::SensorProfile, "Radar_" + entityName, "Generic");
-                    hierarchy->addSubComponent(QString::fromStdString(id), ComponentType::SensorProfile, "ESM_"   + entityName, "ESM");
-                    hierarchy->addSubComponent(QString::fromStdString(id), ComponentType::SensorProfile, "CSM_"   + entityName, "CSM");
+                    hierarchy->addSubComponent(QString::fromStdString(id),  "Radar_" + entityName, "Generic");
+                    hierarchy->addSubComponent(QString::fromStdString(id),  "ESM_"   + entityName, "ESM");
+                    hierarchy->addSubComponent(QString::fromStdString(id),  "CSM_"   + entityName, "CSM");
 
                     id = platform->iffs->ID;
-                    hierarchy->addSubComponent(QString::fromStdString(id), ComponentType::IFFProfile, "IFF_" + entityName);
+                    hierarchy->addSubComponent(QString::fromStdString(id),  "IFF_" + entityName);
 
                     id = platform->radios->ID;
-                    hierarchy->addSubComponent(QString::fromStdString(id), ComponentType::RadioProfile, "Radio" + entityName);
+                    hierarchy->addSubComponent(QString::fromStdString(id),  "Radio" + entityName);
 
                     if (dialog) {
                         const int minspd   = dialog->getMinPlaneSpeed();
@@ -317,16 +337,16 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                 QString sensorType, QString sensorProfileId) {
                 if (componentType == "iffs") {
                     QJsonObject obj = (library->Iffs)[sensorProfileId.toStdString()]->toJson();
-                    hierarchy->addSubComponent(entityID, ComponentType::IFFProfile,
+                    hierarchy->addSubComponent(entityID,
                                                componentName, sensorType, sensorProfileId,obj);
                 } else if (componentType == "sensors") {
                     QJsonObject obj = (library->Sensors)[sensorProfileId.toStdString()]->toJson();
-                    hierarchy->addSubComponent(entityID, ComponentType::SensorProfile,
+                    hierarchy->addSubComponent(entityID,
                                                componentName, sensorType, sensorProfileId,obj);
                     hierarchy->attachSensors(entityID, componentName, sensorType);
                 } else if (componentType == "radios") {
                     QJsonObject obj = (library->Radios)[sensorProfileId.toStdString()]->toJson();
-                    hierarchy->addSubComponent(entityID, ComponentType::RadioProfile,
+                    hierarchy->addSubComponent(entityID,
                                                componentName, sensorType, sensorProfileId,obj);
                 } else if (componentType == "weapons") {
                     try {
@@ -334,10 +354,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                             QMessageBox::warning(nullptr, "Validation Error", "Invalid weapon data provided");
                             return;
                         }
-                        // if (!hierarchy ) {
-                        //     QMessageBox::critical(nullptr, "Error", "Hierarchy not available");
-                        //     return;
-                        // }
+
                         auto it = hierarchy->Entities.find(entityID.toStdString());
                         if (it == hierarchy->Entities.end()) {
                             QMessageBox::warning(nullptr, "Error", "Parent entity not found");
@@ -665,7 +682,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                             obj = (library->Sensors)[profileId.toStdString()]->toJson();;
                         }
                     hierarchy->addSubComponent(QString::fromStdString(platform->sensors->ID),
-                                               ComponentType::SensorProfile, sensorName, sensorType, profileId,obj);
+                                               sensorName, sensorType, profileId,obj);
                 }
             });
 
@@ -696,7 +713,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                         obj = (library->Iffs)[profileId.toStdString()]->toJson();;
                     };
                     hierarchy->addSubComponent(QString::fromStdString(platform->iffs->ID),
-                                               ComponentType::IFFProfile, iffName, "", profileId,obj);
+                                                iffName, "", profileId,obj);
                 }
             });
 
@@ -727,7 +744,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                         obj = (library->Radios)[profileId.toStdString()]->toJson();;
                     }
                     hierarchy->addSubComponent(QString::fromStdString(platform->radios->ID),
-                                               ComponentType::RadioProfile, radioName, "", profileId,obj);
+                                                radioName, "", profileId,obj);
                 }
             });
 
@@ -889,13 +906,13 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                         auto sit = map.find(sourceId.toStdString());
                         if (sit != map.end() && sit->second)
                             senstype = sit->second->subTypeToString(sit->second->subType);
-                        hierarchy->addSubComponent(targetId, ComponentType::SensorProfile, srname, senstype, sourceId);
+                        hierarchy->addSubComponent(targetId,  srname, senstype, sourceId);
                     } else if ((trname == "iffs" || type == Constants::EntityType::Platform) &&
                                sourcetype == Constants::EntityType::IFF) {
-                        hierarchy->addSubComponent(targetId, ComponentType::IFFProfile, srname, "", sourceId);
+                        hierarchy->addSubComponent(targetId,  srname, "", sourceId);
                     } else if ((trname == "radios" || type == Constants::EntityType::Platform) &&
                                sourcetype == Constants::EntityType::Radio) {
-                        hierarchy->addSubComponent(targetId, ComponentType::RadioProfile, srname, "", sourceId);
+                        hierarchy->addSubComponent(targetId,  srname, "", sourceId);
                     }
 
                     if (iscomp || sourcetype != type) return;
@@ -1256,7 +1273,6 @@ void HierarchyConnector::initializeLibraryData(Hierarchy* library)
     ProfileCategaory* formation = library->addProfileCategaory("Formation");
     if (formation) formation->setProfileType(Constants::EntityType::Formation);
 
-    // If database disabled in settings — profiles structure ban gayi, Aircraft.db skip
     if (!ApplicationDialog::getGlobalDatabaseEnabled()) {
         qDebug() << "[HierarchyConnector] Default database disabled, skipping Aircraft.db load.";
         return;
@@ -1277,8 +1293,6 @@ void HierarchyConnector::initializeLibraryData(Hierarchy* library)
             QJsonObject obj = doc.object();
             if (obj.contains("hierarchy")) {
                 QJsonObject hierarchyObj = obj["hierarchy"].toObject();
-
-                // ✅ FIXED: Don't call clear() - fromJson will replace data
                 library->fromJson(hierarchyObj);
                 return;
             } else {
@@ -1409,12 +1423,9 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
         QString targetPath = tdfPath + "/" + subfolderName;
 
         QDir dir;
-        // Create TDF folder if it doesn't exist
         if (!dir.exists(tdfPath)) {
             dir.mkpath(tdfPath);
         }
-
-        // Create subfolder (Database, Scenario, or Runtime) if it doesn't exist
         if (!dir.exists(targetPath)) {
             dir.mkpath(targetPath);
         }
@@ -1451,13 +1462,10 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
 
         // Check if filename starts with "Scenario_" or "Runtime_"
         if (runtimeFileName.startsWith("Scenario_")) {
-            // Replace "Scenario_" with "Instance_Scenario_"
             scenarioFileName = "Instance_" + runtimeFileName + ".sc";
         } else if (runtimeFileName.startsWith("Runtime_")) {
-            // Replace "Runtime_" with "Instance_Scenario_"
             scenarioFileName = "Instance_" + runtimeFileName.replace("Runtime_", "Scenario_") + ".sc";
         } else {
-            // Add "Instance_Scenario_" prefix
             scenarioFileName = "Instance_Scenario_" + runtimeFileName + ".sc";
         }
 
@@ -1521,7 +1529,7 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
             return;
         }
 
-        // ✅ Load the selected file in appropriate editor
+        // Load the selected file in appropriate editor
         if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(parent)) {
             rtEditor->loadFromJsonFile(filePath);
             RecentProjectsManager::instance()->addToRecentProjects(filePath,
@@ -1616,8 +1624,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
         QJsonObject obj = doc.object();
         if (obj.contains("hierarchy")) {
             QJsonObject hier = obj["hierarchy"].toObject();
-
-            // Load to appropriate library based on editor type
             if (ScenarioEditor* se = qobject_cast<ScenarioEditor*>(parent)) {
                 se->library->clear();
                 se->library->fromJson(hier);
@@ -1918,12 +1924,9 @@ void HierarchyConnector::loadToLibrary(QMainWindow* parent)
         // Update UI
         if (targetLibTreeView) {
             targetLibTreeView->setLibraryFileName(filePath);
-            // Refresh the tree view
             targetLibTreeView->getTreeWidget()->clearSelection();
             targetLibTreeView->getTreeWidget()->update();
         }
-
-        // Add to recent projects
         RecentProjectsManager::instance()->addToRecentProjects(filePath,
                                                                RecentProjectsManager::LibraryData);
 
@@ -2077,7 +2080,7 @@ void HierarchyConnector::openXmlFile(Hierarchy* hierarchy,QString fullPath)
                                 if(!e.isNull() && e.tagName() == "DBList") {
                                     QString nm = e.firstChild().toElement().attribute("Name");
                                     if(nm.isEmpty())break;
-                                    hierarchy->addSubComponent(QString::fromStdString(plf->sensors->ID), ComponentType::SensorProfile,
+                                    hierarchy->addSubComponent(QString::fromStdString(plf->sensors->ID),
                                                                nm, "Generic");
                                 }
                                 n = n.nextSibling();
@@ -2091,7 +2094,7 @@ void HierarchyConnector::openXmlFile(Hierarchy* hierarchy,QString fullPath)
                                 if(!e.isNull() && e.tagName() == "DBList") {
                                     QString nm = e.firstChild().toElement().attribute("Name");
                                     if(nm.isEmpty())break;
-                                    hierarchy->addSubComponent(QString::fromStdString(plf->radios->ID), ComponentType::RadioProfile,
+                                    hierarchy->addSubComponent(QString::fromStdString(plf->radios->ID),
                                                                nm);
                                 }
                                 n = n.nextSibling();
@@ -2106,7 +2109,7 @@ void HierarchyConnector::openXmlFile(Hierarchy* hierarchy,QString fullPath)
                                 if(!e.isNull() && e.tagName() == "DBList") {
                                     QString nm = e.firstChild().toElement().attribute("Name");
                                     if(nm.isEmpty())break;
-                                    hierarchy->addSubComponent(QString::fromStdString(plf->iffs->ID), ComponentType::IFFProfile,
+                                    hierarchy->addSubComponent(QString::fromStdString(plf->iffs->ID),
                                                                nm);
                                 }
                                 n = n.nextSibling();

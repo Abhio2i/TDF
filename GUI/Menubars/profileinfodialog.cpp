@@ -1,9 +1,26 @@
 //============================================================================
-// File        : profileinfodialog.cpp
-// Description : Implementation of ProfileInfoDialog class for displaying
-//               real-time performance metrics including FPS, execution times,
-//               and various system component timings with live updates.
-//               Written by Arti Rajpoot
+// FILE:         profileinfodialog.cpp
+// MODULE:       Profile Information Dialog
+// PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+// ORGANISATION: Oxygen 2 Innovation (O2I).
+// STANDARD:     RTCA DO-178C / ED-12C, DAL B
+// COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+//
+// DESCRIPTION:  Implements the ProfileInfoDialog class which provides a modal
+//               dialog for displaying real‑time application performance metrics
+//               and profile information. It shows frames per second (FPS), CPU
+//               usage, memory usage, and other runtime statistics. The dialog
+//               updates periodically via a timer and allows copying the
+//               information to the clipboard.
+//
+// REQUIREMENTS: Implements REQ-PROFILE-010 through REQ-PROFILE-015
+//
+// AUTHOR:       Arti Rajpoot
+// REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-PROFILE-001
+//
+//
+// COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+//               Restricted circulation — defence simulation use only.
 //============================================================================
 
 #include "profileinfodialog.h"

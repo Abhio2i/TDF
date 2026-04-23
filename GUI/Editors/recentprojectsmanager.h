@@ -1,8 +1,35 @@
-/* ========================================================================= */
-/* File: recentprojectsmanager.h                                             */
-/* Purpose: Manages recent projects list for various editor types            */
-// Written by   : Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         recentprojectsmanager.h
+ * MODULE:       Recent Projects Manager
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the RecentProjectsManager class, a singleton manager
+ *               for handling recent projects across different editor types
+ *               (ScenarioEditor, MissionEditor, RuntimeEditor, DatabaseEditor,
+ *               LibraryData). Provides persistent storage using QSettings,
+ *               adding/clearing/retrieving recent project lists, and displaying
+ *               a recent projects menu with projectSelected signal emission.
+ *
+ * REQUIREMENTS: REQ-RECENT-010  Singleton manager for recent projects
+ *               REQ-RECENT-011  Support multiple editor types
+ *               REQ-RECENT-012  Persistent storage of recent projects
+ *               REQ-RECENT-013  Add file path to recent projects list
+ *               REQ-RECENT-014  Retrieve recent projects list
+ *               REQ-RECENT-015  Clear recent projects list for an editor type
+ *               REQ-RECENT-016  Display recent projects menu
+ *               REQ-RECENT-017  Emit projectSelected signal on menu selection
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-RECENT-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef RECENTPROJECTSMANAGER_H
 #define RECENTPROJECTSMANAGER_H

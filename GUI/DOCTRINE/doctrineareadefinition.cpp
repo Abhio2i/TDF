@@ -1,8 +1,27 @@
-/* ========================================================================= */
-/* File: doctrineareadefinition.cpp                                        */
-/* Purpose: Implements the Doctrine Area Definition panel widget             */
-// Written by   : Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         doctrineareadefinition.cpp
+ * MODULE:       Doctrine Area Definition Panel
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the DoctrineAreaDefinition class which provides a
+ *               widget panel for displaying doctrine area definition information.
+ *               The panel consists of a title label, a visual divider, and a
+ *               content label. Styling is applied for consistent UI presentation.
+ *
+ * REQUIREMENTS: Implements REQ-DOCTRINE-010 through REQ-DOCTRINE-014
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-DOCTRINE-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
+
 
 #include "doctrineareadefinition.h"
 #include "doctrine-styles.h"

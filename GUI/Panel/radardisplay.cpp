@@ -342,12 +342,16 @@ void RadarDisplay::selectEntity(Entity* entit)
     id     = QString::fromStdString(platform->ID);
     entity = platform;
     sensor = nullptr;
+    sensorlist.clear();
     lockedTargetID = 0;
 
     for (auto const& pair : *entity->sensors->sensors) {
         Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::Generic) {
-            sensor = s;
+            if(sensor == nullptr){
+                sensor = s;
+            }
+            sensorlist.append(s);
 
             // ALIGNMENT: getRadarConfig() now returns RadarConfig.
             // Fields minAzimuth / maxAzimuth are identical in RadarConfig.
@@ -364,7 +368,7 @@ void RadarDisplay::selectEntity(Entity* entit)
             setDisplayMode(is360 ? DisplayMode::SURFACE : DisplayMode::AIR);
             setWindowTitle("Radar Display — " +
                            QString::fromStdString(entity->Name));
-            break;
+
         }
     }
     updateModeButtonStyles();
@@ -394,6 +398,7 @@ void RadarDisplay::RemoveEntity(QString ID)
     if (id == ID) {
         entity = nullptr;
         sensor = nullptr;
+        sensorlist.clear();
         targets.clear();
         screenTargets.clear();
         lockedTargetID = 0;

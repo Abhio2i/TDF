@@ -1,5 +1,26 @@
-
-
+// =============================================================================
+// FILE:        sensor.h
+// MODULE:      Tactical Simulation Sensor Systems
+// PROJECT:     Tactical Display/Simulation Framework (TDF)
+// ORGANISATION: Oxygen 2 Innovation (O2I)
+// STANDARD:    RTCA DO-178C / ED-12C, DAL B (Guidelines applied)
+//
+// DESCRIPTION:  Defines the Sensor class and associated data structures for
+//               tactical detection systems (Radar, Sonar, ESM, EO/IR).
+//               Manages target tracking, signal processing parameters,
+//               and field-of-view (FOV) logic.
+//
+// AUTHOR:       Pankaj Chauhan
+// REVIEWED BY:  [Reviewer Name], [Review Date]
+//
+// CHANGE HISTORY:
+//   Rev 1  Sep 2025  Initial implementation for TDF project.
+//   Rev 2  Jan 2026  Added EO_Entity and Radial Velocity tracking.
+//   Rev 3  Mar 2026  Integrated AESA and Sonar sub-types.
+//   Rev 4  Apr 2026  Aligned with DO-178C documentation standards for O2I.
+//
+// COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+// =============================================================================
 
 #ifndef SENSOR_H
 #define SENSOR_H
@@ -12,6 +33,10 @@
 #include <unordered_set>
 #include <vector>
 
+// =============================================================================
+// SECTION: Auxiliary Data Structures
+// DESCRIPTION: Structures for target tracking and Electro-Optical (EO) data.
+// =============================================================================
 struct Target{
     Platform *entity;
     float radius;
@@ -24,7 +49,8 @@ struct Target{
     float radialVelocity = 0.0f;  // ADD THIS — m/s, + = closing, - = opening
 
 };
-// Perspective of User
+
+
 struct EO_Entity{
     struct Vec2 {
         double x = 0, y = 0;
@@ -59,21 +85,6 @@ struct EO_Entity{
         : name(_name),vec2(_vec2),vec3(_vec3),relativeHeading (_relativeHeading),
         relativePitch (_relativePitch), size(_size){}
 
-    // struct ViewDir{
-    //     double x = 0;
-    //     double y = 0;
-    //     double z = 0;
-    //     ViewDir(double _x,double _y,double _z):
-    //         x(_x),y(_y),z(_z){};
-    // };
-    // double screenX = 0;
-    // double screenY = 0;
-    // double distance      = 0;
-    // double angle         = 0;
-    // double projectionArea= 0;
-    // ViewDir viewDir;
-    // EO_Entity(double _distance, double _angle, double _projectionArea, ViewDir _viewDir)
-    //     :distance(_distance),angle(_angle),projectionArea(_projectionArea), viewDir(_viewDir){};
 };
 struct EO_IR_State{
     struct coordinate{
@@ -110,29 +121,29 @@ struct EO_IR_State{
 
 };
 
-// struct Target{
-//     Platform *entity;
-//     float radius;
-//     float angle;
-//     float speed;
-//     float direction;
-//     float altitude;
-//     float lat;
-//     float lon;
-// };
 
+// =============================================================================
+// CLASS: Sensor
+//
+// DESCRIPTION: Concrete implementation of a tactical sensor. Supports multiple
+//              detection modes and maintains a registry of tracked contacts.
+// =============================================================================
 class Sensor : public Entity
 {
     Q_OBJECT
 public:
     explicit Sensor(Hierarchy* h);
 
-    // Sensor attributes
+    // =========================================================================
+    // SECTION: Sensor Enumerations
+    // DESCRIPTION: Definitions for technology types, modes, and capabilities.
+    // =========================================================================
     enum class Type { Active, Passive };
     enum class Mode { Search, Track, TrackWhileScan, FireControl };
     enum class SubType { Generic, CSM, ESM,EO,Sonar,AIS, ADSB , AESA };
     enum class DetectionCapabilities { All, MovingOnly };
     Q_ENUM(DetectionCapabilities);
+
     struct Detection {
         struct GeoCoords {
             double latitude;
@@ -160,6 +171,11 @@ public:
     // --- Add below Mode enum ---
     SubType subType = SubType::Generic;
     DetectionCapabilities capabilities = DetectionCapabilities::All;
+
+    // =========================================================================
+    // SECTION: Physical & Operational Attributes
+    // DESCRIPTION: Parameters governing range, FOV, and signal characteristics.
+    // =========================================================================
     Entity* parentEntity = nullptr;
     float frequency = 8;//ghz
     float azimuth = 60;//deg
@@ -180,6 +196,10 @@ public:
     float noiseFigure = 0.0f; // dB
     bool clutterRejection = false;
     bool eccmCapability = false;
+    // =========================================================================
+    // SECTION: Contact & Target Tracking
+    // DESCRIPTION: Containers for detected simulation entities.
+    // =========================================================================
     std::vector<Detection> detections;
     std::unordered_set<Platform*> detects;
     QVector<Target> targets;
@@ -212,9 +232,19 @@ public:
     float esmSensitivity = 1.0f;
     bool csmActive = true;
     bool esmActive = true;
+
+    // =========================================================================
+    // SECTION: Sensor Logic API
+    // DESCRIPTION: Methods for environmental scanning and target processing.
+    // =========================================================================
     virtual void scan();
     void clearTargets();
     bool detectCheck(QVector3D localPos, float distance, float multi = 1.0f);
+
+    // =========================================================================
+    // SECTION: Virtual Interface Overrides
+    // DESCRIPTION: Entity lifecycle and component system integration.
+    // =========================================================================
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
     void addComponent(std::string name) override;
@@ -222,6 +252,10 @@ public:
     QJsonObject getComponent(std::string name) override;
     void updateComponent(QString name, const QJsonObject& obj) override;
 
+    // =========================================================================
+    // SECTION: Serialization & String Utilities
+    // DESCRIPTION: Logic for state persistence and type-safe conversions.
+    // =========================================================================
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& obj) override;
     static SubType getSubTypeFromString(const QString& str) {
@@ -237,10 +271,18 @@ public:
     SubType stringToSubType(const QString& str) const;
 
 signals:
+    // =========================================================================
+    // SECTION: Signals
+    // DESCRIPTION: Events for tactical updates and UI notifications.
+    // =========================================================================
     void availableConnectionsUpdated(const QJsonArray& msgArray);
     void enemyDetected();
     void enemyNotFound();
 private:
+    // =========================================================================
+    // SECTION: Private State & Helpers
+    // DESCRIPTION: Internal flags and string conversion logic.
+    // =========================================================================
     bool enemyAvailabel = false;
     QString modeToString(Mode m) const;
     Mode stringToMode(const QString& str) const;

@@ -1,8 +1,32 @@
-/* ========================================================================= */
-/* File: iconsdialog.cpp                                                    */
-/* Purpose: Implements image selection dialog                                */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+
+/* =============================================================================
+ * FILE:         iconsdialog.cpp
+ * MODULE:       Icons Selection Dialog
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the IconsDialog class which provides a modal dialog
+ *               for selecting images from application resources. The dialog
+ *               displays a list of available icons, supports searching/filtering,
+ *               and returns the selected image path. It integrates with the
+ *               Inspector panel to assign icons to entities or components.
+ *
+ * REQUIREMENTS: REQ-ICON-010  Icon selection dialog
+ *               REQ-ICON-011  Display all images from resource prefixes
+ *               REQ-ICON-012  Search/filter images by name
+ *               REQ-ICON-013  Return selected image path
+ *               REQ-ICON-014  Integration with Inspector panel
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-ICON-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "iconsdialog.h"
 #include "qlineedit.h"
@@ -30,7 +54,6 @@ IconsDialog::IconsDialog(QWidget *parent)
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
-    // ========== SEARCH BAR WITH BROWSE BUTTON ==========
     QHBoxLayout *searchLayout = new QHBoxLayout();
 
     QPushButton *browseBtn = new QPushButton("Browse", this);
@@ -129,27 +152,21 @@ void IconsDialog::loadAllImagesAutomatically()
         ":/"
     };
 
-    // Image file extensions
     QStringList imageExtensions = {"*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif", "*.svg"};
 
-    // Scan each resource prefix
     for (const QString &prefix : resourcePrefixes) {
         scanResourcePrefix(prefix, imageExtensions);
     }
-    // Display all images initially
     filterImages("");
 }
 
 void IconsDialog::scanResourcePrefix(const QString &prefix, const QStringList &extensions)
 {
-    // Use QDirIterator to recursively scan the resource prefix
     QDirIterator it(prefix, extensions, QDir::Files, QDirIterator::Subdirectories);
 
     while (it.hasNext()) {
         QString filePath = it.next();
         QString fileName = it.fileName();
-
-        // Check for duplicates
         bool isDuplicate = false;
         for (const auto &pair : allImages) {
             if (pair.second == filePath) {
@@ -158,7 +175,6 @@ void IconsDialog::scanResourcePrefix(const QString &prefix, const QStringList &e
             }
         }
         if (!isDuplicate) {
-            // Validate image
             QPixmap pixmap(filePath);
             if (!pixmap.isNull()) {
                 allImages.append(qMakePair(fileName, filePath));
@@ -176,10 +192,8 @@ bool IconsDialog::addImageToList(const QString &imagePath, const QString &fileNa
         }
     }
 
-    // Load and validate image
     QPixmap pixmap(imagePath);
     if (!pixmap.isNull()) {
-        // Create scaled pixmap with fixed size for consistency
         QPixmap scaledPixmap = pixmap.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         QListWidgetItem *item = new QListWidgetItem(
             QIcon(scaledPixmap),
@@ -192,11 +206,8 @@ bool IconsDialog::addImageToList(const QString &imagePath, const QString &fileNa
                                  "<span style='color: #ccc;'>%2</span>"
                                  "</div>").arg(fileName, imagePath));
 
-        // Set text color to white for the item
         item->setForeground(Qt::white);
-        // Set text alignment to center
         item->setTextAlignment(Qt::AlignCenter);
-        // Enable word wrap for long file names
         item->setFlags(item->flags() | Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         listWidget->addItem(item);
         return true;

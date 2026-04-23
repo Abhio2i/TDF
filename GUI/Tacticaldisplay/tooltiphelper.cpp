@@ -1,9 +1,27 @@
-/* ========================================================================= */
-/* File: tooltiphelper.cpp                                                   */
-/* Purpose: Implements helper functions for generating and displaying       */
-/*          entity tooltips with configurable fields                         */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         tooltiphelper.cpp
+ * MODULE:       Tooltip Helper
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the TooltipHelper class which provides static helper
+ *               functions for generating and displaying rich HTML tooltips
+ *               for entities on the tactical display. Supports configurable
+ *               fields (basic info, dynamic model data, position, speed),
+ *               HTML formatting, compact mode, and tooltip display.
+ *
+ * REQUIREMENTS: Implements REQ-TOOLTIP-010 through REQ-TOOLTIP-017
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-TOOLTIP-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "tooltiphelper.h"
 #include <QVector3D>
 #include <cmath>
@@ -53,11 +71,9 @@ QStringList TooltipHelper::getAvailableFields()
 QString TooltipHelper::generateEntityTooltip(const MeshEntry& entry,
                                              const QSet<QString>& activeFields)
 {
-    // Collect all data
     QString name = entry.name;
     QMap<QString, QString> data = getDynamicModelInfo(entry);
 
-    // Add position info
     QString positionInfo = getPositionInfo(entry);
     if (!positionInfo.isEmpty()) {
         QStringList posParts = positionInfo.split(",");
@@ -85,7 +101,6 @@ QMap<QString, QString> TooltipHelper::getDynamicModelInfo(const MeshEntry& entry
     if (entry.platform && entry.platform->dynamicModel) {
         DynamicModel* dm = entry.platform->dynamicModel;
 
-        // Speed information
         if (dm->moveSpeed >= 0) {
             data["Move Speed"] = QString::number(dm->moveSpeed, 'f', 2) + " km/h";
         }
@@ -170,11 +185,9 @@ QString TooltipHelper::formatTooltipHTML(const QString& name,
         "Dive Rate", "Latitude", "Longitude", "Altitude","Trajectory ETA"
     };
 
-    // If no active fields specified, show all
     bool showAll = activeFields.isEmpty();
 
     for (const QString& key : orderedKeys) {
-        // Skip if field is not active (unless showing all)
         if (!showAll && !activeFields.contains(key)) {
             continue;
         }
@@ -270,20 +283,17 @@ double TooltipHelper::calculateCompletionTime(const MeshEntry& entry)
         return -1.0;
     }
 
-    //  CURRENT POSITION (entity's actual runtime position)
     QPointF currentPos(entry.coreTransform->getLongitude(),
                        entry.coreTransform->getLatitude());
 
-    // FIND NEAREST UPCOMING WAYPOINT
     int nearestWaypointIndex = findNearestUpcomingWaypoint(entry, currentPos);
 
     if (nearestWaypointIndex < 0) {
-        return 0.0; // Already reached destination
+        return 0.0;
     }
 
     double totalTime = 0.0;
 
-    //  STEP 1: Current position to NEXT waypoint
     Waypoints* nextWp = entry.trajectory->Trajectories[nearestWaypointIndex];
     QPointF nextWpPos(nextWp->position->z, nextWp->position->x);
 
@@ -291,7 +301,6 @@ double TooltipHelper::calculateCompletionTime(const MeshEntry& entry)
     double timeToNext = (distanceToNext / currentSpeed) * 3600.0; // seconds
     totalTime += timeToNext;
 
-    //  STEP 2: Remaining waypoints
     for (size_t i = nearestWaypointIndex; i < entry.trajectory->Trajectories.size() - 1; ++i) {
         Waypoints* wp1 = entry.trajectory->Trajectories[i];
         Waypoints* wp2 = entry.trajectory->Trajectories[i + 1];
@@ -353,7 +362,6 @@ int TooltipHelper::findNearestUpcomingWaypoint(const MeshEntry& entry, const QPo
         return -1;
     }
 
-    // Check if entity has reached last waypoint
     Waypoints* lastWp = entry.trajectory->Trajectories.back();
     QPointF lastWpPos(lastWp->position->z, lastWp->position->x);
     double distToLast = calculateHaversineDistance(currentPos, lastWpPos);
@@ -366,9 +374,7 @@ int TooltipHelper::findNearestUpcomingWaypoint(const MeshEntry& entry, const QPo
 
     int currentTargetIndex = entry.trajectory->current;
 
-    // Safety check: Make sure index is valid
     if (currentTargetIndex < 0 || currentTargetIndex >= entry.trajectory->Trajectories.size()) {
-        // Fallback: Find nearest waypoint manually
         double minDistance = std::numeric_limits<double>::max();
         int nearestIndex = 0;
 

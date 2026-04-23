@@ -1,9 +1,29 @@
 //============================================================================
-// File        : consoleview.cpp
-// Description : Implements the ConsoleView class for handling multiple
-//               console tabs (general, error, debug, warning, log) in Qt.
-//               Written by Arti Rajpoot
+// FILE:         consoleview.cpp
+// MODULE:       Console View / Logging UI
+// PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+// ORGANISATION: Oxygen 2 Innovation (O2I).
+// STANDARD:     RTCA DO-178C / ED-12C, DAL B
+// COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+//
+// DESCRIPTION:  Implements the ConsoleView class which provides a widget with
+//               multiple QTextEdit consoles (general, error, debug, warning,
+//               log) and control buttons for clearing and saving logs. Supports
+//               coloured timestamped message appending and automatic tab
+//               switching when new messages arrive. The implementation includes
+//               UI setup, console configuration, button styling, and message
+//               formatting with timestamps.
+//
+// REQUIREMENTS: Implements REQ-CONSOLE-010 through REQ-CONSOLE-017
+//
+// AUTHOR:       Arti Rajpoot
+// REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-CONSOLE-001
+//
+//
+// COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+//               Restricted circulation — defence simulation use only.
 //============================================================================
+
 
 #include "consoleview.h"
 #include "consoleview-styles.h"

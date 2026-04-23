@@ -1,10 +1,35 @@
-//============================================================================
-// File        : RADIODisplay.h
-// Description : Header file for RADIODisplay class . radar-style display,
-//               target tracking, and interactive hover detection for
-//               radio communication data.
-//               Written by Arti Rajpoot
-//============================================================================
+/* =============================================================================
+ * FILE:         RADIODisplay.h
+ * MODULE:       Radio Communication Display
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the RADIODisplay class which provides a widget for
+ *               visualising radio communication links and detected radio
+ *               emissions. It displays radio targets in a polar (radar‑like)
+ *               format with configurable range, rings, ticks, and hover
+ *               detection. Integrates with Hierarchy and Radio/Platform
+ *               entities for real‑time tracking and display updates.
+ *
+ * REQUIREMENTS: REQ-RADIO-010  Radio communication visualisation widget
+ *               REQ-RADIO-011  Display radio targets with distance and angle
+ *               REQ-RADIO-012  Configurable range and ring count
+ *               REQ-RADIO-013  Draw radar rings, ticks, labels, centre mark
+ *               REQ-RADIO-014  Mouse hover detection over targets
+ *               REQ-RADIO-015  Integration with Hierarchy and Radio entities
+ *               REQ-RADIO-016  Update display on entity selection and removal
+ *               REQ-RADIO-017  Maintain aspect ratio (16:9)
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-RADIO-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef RADIODISPLAY_H
 #define RADIODISPLAY_H
@@ -14,6 +39,7 @@
 #include <QWidget>
 #include <QVector>
 #include <QMouseEvent>
+#include <QComboBox>
 
 // %%% Class Definition %%%
 class RADIODisplay : public QWidget
@@ -34,6 +60,7 @@ public:
 
 
     Radio* radio = nullptr;
+        QVector<Radio*> radiolist;
     // Entity platform
     Platform* entity = nullptr;
 
@@ -41,7 +68,9 @@ protected:
     void paintEvent(QPaintEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;
-
+    void resizeEvent(QResizeEvent *event) override;
+private slots:
+    void onRadioSelected(int index);
 private:
     // %%% Display Properties %%%
     // int range = 10; // meters
@@ -57,6 +86,8 @@ private:
     QPoint mousePos;
     int hoveredTargetIndex = -1;
     QVector<Radio::RadioTarget> targets;
+    QComboBox* radioDropdown = nullptr;
+    void updateDropdown();
 
     // %%% Drawing Methods %%%
     void drawBackground(QPainter &p);

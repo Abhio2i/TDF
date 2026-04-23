@@ -26,6 +26,7 @@ public:
     void updateRadar();
     // Sensor instance
     Sensor* sensor = nullptr;
+    QVector<Sensor*> sensorlist;
     // Entity platform
     Platform* entity = nullptr;
 

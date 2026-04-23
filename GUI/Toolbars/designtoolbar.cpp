@@ -1,12 +1,29 @@
-
-//============================================================================
-// DesignToolBar
-// Written by: Arti Rajpoot
-// Purpose:
-// - Provides the main design toolbar for GIS and tactical display
-// - Manages view modes, shape tools, layers, grids, trajectories, and imports
-// - Acts as a central UI control hub emitting signals to the canvas and GIS logic
-//============================================================================
+/* =============================================================================
+ * FILE:         designtoolbar.cpp
+ * MODULE:       Design Toolbar
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the DesignToolBar class which provides a toolbar for
+ *               design and map interaction. Includes actions for view, move,
+ *               rotate, scale, zoom, grid control, snapping, measure distance,
+ *               map layer management (preset, custom, GeoJSON), coordinate
+ *               system selection, tooltip options, and trajectory editing.
+ *               Also defines StayOpenMenu, a custom QMenu that stays open
+ *               when an action is clicked.
+ *
+ * REQUIREMENTS: Implements REQ-DESIGNTOOLBAR-010 through REQ-DESIGNTOOLBAR-018
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-DESIGNTOOLBAR-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "GUI/Toolbars/designtoolbar.h"
 #include "designtoolbar-styles.h"
 #include "GUI/Tacticaldisplay/Gis/custommapdialog.h"
@@ -34,7 +51,7 @@
 #include <QHBoxLayout>
 #include <qgsvectorlayer.h>
 #include <qgsproject.h>
-// #include "tests/gui_test_control.h"
+
 
 // Icon size constant for toolbar buttons (smaller - 16x16)
 const QSize ICON_SIZE(20, 20);
@@ -80,11 +97,11 @@ void DesignToolBar::createActions() {
 
     // Initialize with OpenStreetMap as default selected layer
     selectedBaseLayers.clear();
-    selectedBaseLayers.append("osm");  // OpenStreetMap is selected by default
+    selectedBaseLayers.append("osm");
 
     // Initialize layer order tracking with OSM as default
     currentLayerOrder.clear();
-    currentLayerOrder.append("osm");  // OSM is the default base layer
+    currentLayerOrder.append("osm");
 
     // Main map layer selection action
     mapSelectLayerAction = new QAction(QIcon(withWhiteBg(":/icons/images/map.png")), tr("Map Layer"), this);
@@ -154,7 +171,6 @@ void DesignToolBar::createActions() {
         }
     }
 
-    // Add separator between sections
     mapLayerMenu->addSeparator();
 
     // ========== SECTION 2: Selected Layers ==========

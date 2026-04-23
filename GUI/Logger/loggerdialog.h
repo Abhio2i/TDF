@@ -32,7 +32,6 @@
 #include <QStackedWidget>
 #include <QMouseEvent>
 #include "core/Recorder/recorder.h"
-//#include "core/Recorder/payload.h"
 #include <QDebug>
 
 #include "core/SQLite/sqlite.h"
@@ -136,8 +135,6 @@ public:
         }
         connect(timer, &QTimer::timeout, this, [this]() {
             inspectTimelineWidget();
-            //update();
-            //qDebug()<<"Time Line Widget: "<<formatTime(*durationPtr);
         });
     }
     void pause(){
@@ -156,12 +153,10 @@ public:
 
     bool replayMode = false;
     bool modeisRecording = true;
-    //bool toRunInRecording = true;
     QTime  recordingDuration;
     qint64 pausedTimeMs = 0;
     qint64 currentReplayTimeMs = 0;
     qint64 recordingDurationMs = 0;
-    //    qint64* recordingDurationMsPtr = recordingDurationMs;
 
 private:
     QDateTime recordingStartTime;
@@ -269,29 +264,17 @@ public:
             return;
         }
         qint64 clickedTimestamp = getTimestampFromPosition(event->pos().x());
-
-        //qDebug() << "Clicked Time:" << formatTime(clickedTimestamp);
         emit sendClickedTimestamp(clickedTimestamp);
-        // // Update your replay position
-        // if (leftTimer) {
-        //     *leftTimer = clickedTimestamp;
-        // }
-        //update(); // repaint
-        //qDebug() << "Clicked Timestamp:" << clickedTimestamp;
+
     }
     qint64 getTimestampFromPosition(int x)
     {
         int margin = 10;
         int width = this->width() - 2 * margin;
-
-        // Clamp x within timeline bounds
         if (x < margin) x = margin;
         if (x > margin + width) x = margin + width;
-
         double ratio = double(x - margin) / double(width);
-
         qint64 timestamp = ratio * (*maxDurationPtr);
-
         return timestamp;
     }
 
@@ -319,14 +302,6 @@ protected:
             QString leftTime = formatTime(*leftTimer);
             QString rightTime= formatTime(*rightTimer);
 
-            // if (replayMode) {
-            //     leftTime = formatTime(currentReplayTimeMs);
-            // } else {
-            //     leftTime = "00:00:00";
-            // }
-
-            // rightTime = formatTime(recordingDurationMs);
-
             painter.setPen(Qt::black);
             QFont f = painter.font();
             f.setBold(true);
@@ -335,27 +310,7 @@ protected:
             painter.drawText(margin, margin + timelineY - 15, leftTime);
             painter.drawText(margin + width - 80, margin + timelineY - 15, rightTime);
         }
-        // if (recordingDurationMs > 0 ) {
-        //     // Draw time labels at both ends
-        //     QString leftTime;
-        //     QString rightTime;
 
-        //     if (replayMode) {
-        //         leftTime = formatTime(currentReplayTimeMs);
-        //     } else {
-        //         leftTime = "00:00:00";
-        //     }
-
-        //     rightTime = formatTime(recordingDurationMs);
-
-        //     painter.setPen(Qt::black);
-        //     QFont f = painter.font();
-        //     f.setBold(true);
-        //     painter.setFont(f);
-
-        //     painter.drawText(margin, margin + timelineY - 15, leftTime);
-        //     painter.drawText(margin + width - 80, margin + timelineY - 15, rightTime);
-        // }
         if (!durationDblPtr) {
             painter.setPen(QPen(Qt::gray, 1));
             painter.drawText(margin + 10, margin + timelineY - 15, tr("No active recording"));

@@ -1,3 +1,8 @@
+/**
+ * @file specialzone.cpp
+ * @brief Implementation of the SpecialZone entity for environmental effects (wind, weather, radio propagation).
+ */
+
 #include "specialzone.h"
 
 #include "core/Hierarchy/EntityProfiles/radio.h"
@@ -7,16 +12,30 @@
 #include "qmath.h"
 #include <core/Hierarchy/hierarchy.h>
 #include <core/Debug/console.h>
+
+/**
+ * @brief Constructs a SpecialZone entity.
+ * @param h Pointer to the parent Hierarchy.
+ */
 Specialzone::Specialzone(Hierarchy* h) : Entity(h) {
     type = Constants::EntityType::SpecialZone;
 }
 
+/**
+ * @brief Emits signals to notify the hierarchy that this zone has been added.
+ */
 void Specialzone::spawn() {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
-
 }
 
+/**
+ * @brief Updates the zone's effects on nearby platforms each frame.
+ * @param delta Time step in seconds.
+ *
+ * Applies wind effects to platforms within the collider radius and within altitude bounds.
+ * Also modifies radio propagation parameters (humidity, temperature, rain, wind) for radios inside the zone.
+ */
 void Specialzone::Update(float delta){
     time += delta;
     if(root){
@@ -24,13 +43,12 @@ void Specialzone::Update(float delta){
         for (auto& [key, entity] : root->Platforms){
             if(!entity || !entity->Active || entity->isDestroy || !entity->transform) continue;
             float distance = transform->matrix->translation().distanceToPoint(entity->transform->matrix->translation())*1000;
-            // qDebug()<<distance;
             if(entity->dynamicModel){
-                float alt = entity->dynamicModel->currentAltitude * 1;//KMtoFT;
+                float alt = entity->dynamicModel->currentAltitude * 1; // KMtoFT factor not applied
                 if(distance < collider->CollideRadius && alt > (MinAltitude-100) && alt < MaxAltitude){
                     entity->dynamicModel->windAngle = direction;
                     entity->dynamicModel->windDierction = getDynamicWind(direction,  time);
-                    entity->dynamicModel->windSpeed = Speed;//getDynamicSpeed(Speed,  time);
+                    entity->dynamicModel->windSpeed = Speed;
                 }else{
                     entity->dynamicModel->windSpeed = 0;
                 }
@@ -38,7 +56,7 @@ void Specialzone::Update(float delta){
 
             if(entity->radios && entity->radios->radios->size() > 0){
                 if(distance < collider->CollideRadius){
-                    for (auto const& pair : *entity->radios->radios) { // assuming you have a list of radios on this platform
+                    for (auto const& pair : *entity->radios->radios) {
                         Radio* r = pair.second;
                         if (r && r->lib_radio) {
                             radio::RadioConfig cfg = r->lib_radio->getConfiguration();
@@ -49,28 +67,20 @@ void Specialzone::Update(float delta){
                             r->lib_radio->configure(cfg);
                         }
                     }
-                }else{
-                    // for (auto const& pair : *entity->radios->radios) { // assuming you have a list of radios on this platform
-                    //     Radio* r = pair.second;
-                    //     if (r) {
-                    //         radio::RadioConfig cfg = r->lib_radio->getConfiguration();
-                    //         cfg.propagation.humidity_percent = 30;
-                    //         cfg.propagation.temperature_c = 30;
-                    //         cfg.propagation.rain_rate_mm_per_hr = 0;
-                    //         cfg.propagation.wind_speed_mps = 0;
-                    //         r->lib_radio->configure(cfg);
-                    //     }
-                    // }
                 }
-
             }
         }
     }
 }
 
+/**
+ * @brief Computes a dynamic wind direction vector with time‑varying noise.
+ * @param baseAngle Base wind direction in degrees.
+ * @param time Current simulation time.
+ * @return Unit vector representing wind direction.
+ */
 QVector3D Specialzone::getDynamicWind(float baseAngle, float time) {
-
-    float angleNoise = qCos(time * 0.8f) * 10.0f; // 10 degree tak ka variation
+    float angleNoise = qCos(time * 0.8f) * 10.0f; // ±10 degree variation
     float finalAngle = qDegreesToRadians(baseAngle + angleNoise);
 
     return QVector3D(
@@ -80,6 +90,12 @@ QVector3D Specialzone::getDynamicWind(float baseAngle, float time) {
         );
 }
 
+/**
+ * @brief Computes dynamic wind speed with sinusoidal fluctuations (currently unused).
+ * @param baseSpeed Base wind speed in km/h.
+ * @param time Current simulation time.
+ * @return Wind speed in km/s.
+ */
 float Specialzone::getDynamicSpeed(float baseSpeed, float time){
     float speedNoise = qSin(time * 1.2f) * 0.7f + qSin(time * 3.5f) * 0.3f;
     float finalSpeed = baseSpeed + (speedNoise * (baseSpeed * 0.3f)); // 30% fluctuation
@@ -87,6 +103,10 @@ float Specialzone::getDynamicSpeed(float baseSpeed, float time){
     return kmPerSec;
 }
 
+/**
+ * @brief Returns the list of component names supported by SpecialZone.
+ * @return Vector containing "transform", "collider", "bitmap".
+ */
 std::vector<std::string> Specialzone::getSupportedComponents() {
     std::vector<std::string> supported;
     supported.push_back("transform");
@@ -95,6 +115,10 @@ std::vector<std::string> Specialzone::getSupportedComponents() {
     return supported;
 }
 
+/**
+ * @brief Serializes the SpecialZone entity to JSON.
+ * @return QJsonObject containing zone parameters and components.
+ */
 QJsonObject Specialzone::toJson() const {
     QJsonObject obj;
     obj["name"] = QString::fromStdString(Name);
@@ -130,6 +154,10 @@ QJsonObject Specialzone::toJson() const {
     return obj;
 }
 
+/**
+ * @brief Deserializes the SpecialZone entity from JSON.
+ * @param obj JSON object containing zone data.
+ */
 void Specialzone::fromJson(const QJsonObject& obj) {
     if (obj.contains("active"))
         Active = obj["active"].toBool();
@@ -145,7 +173,6 @@ void Specialzone::fromJson(const QJsonObject& obj) {
         if (entityObj.contains("value"))
             type = stringToEntityType(entityObj["value"].toString());
     }
-
 
     if (obj.contains("dimension") && obj["dimension"].isObject()) {
         QJsonObject dimensionObj = obj["dimension"].toObject();
@@ -172,14 +199,16 @@ void Specialzone::fromJson(const QJsonObject& obj) {
         transform->fromJson(obj["transform"].toObject());
     }
 
-
-    if (obj.contains("bitmap") && obj["bitmap"].isObject()) { // Fix: Correct key
+    if (obj.contains("bitmap") && obj["bitmap"].isObject()) {
         if (!meshRenderer2d) addComponent("bitmap");
         meshRenderer2d->fromJson(obj["bitmap"].toObject());
     }
-
 }
 
+/**
+ * @brief Adds a component to the SpecialZone.
+ * @param name Component name ("transform", "collider", or "bitmap").
+ */
 void Specialzone::addComponent(std::string name) {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (name == "transform") {
@@ -217,10 +246,13 @@ void Specialzone::addComponent(std::string name) {
             emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(meshRenderer2d->ID), "bitmap");
             emit parent->entityMeshAdded(QString::fromStdString(parentID), this);
         }
-
     }
 }
 
+/**
+ * @brief Removes a component from the SpecialZone.
+ * @param name Component name.
+ */
 void Specialzone::removeComponent(std::string name) {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (name == "transform") {
@@ -249,6 +281,11 @@ void Specialzone::removeComponent(std::string name) {
     }
 }
 
+/**
+ * @brief Retrieves a component's JSON data by name.
+ * @param name Component name.
+ * @return QJsonObject representing the component, or empty if not found.
+ */
 QJsonObject Specialzone::getComponent(std::string name) {
     if (name == "transform") {
         if (!transform) { Console::error(name + ": not exist"); return QJsonObject(); }
@@ -260,10 +297,14 @@ QJsonObject Specialzone::getComponent(std::string name) {
         if (!meshRenderer2d) { Console::error(name + ": not exist"); return QJsonObject(); }
         return meshRenderer2d->toJson();
     }
-
     return QJsonObject();
 }
 
+/**
+ * @brief Updates a component from JSON data.
+ * @param name Component name.
+ * @param obj JSON object containing new data.
+ */
 void Specialzone::updateComponent(QString name, const QJsonObject& obj) {
     if (name == "transform") {
         if (!transform) { Console::error(name.toStdString() + ": not exist"); return; }

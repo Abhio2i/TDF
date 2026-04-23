@@ -1,11 +1,27 @@
-
 //============================================================================
-// File        : iffdisplay.cpp
-// Description : Implementation of IFFDisplay class for Identification
-//               Friend or Foe (IFF) visualization with radar-style display,
-//               target identification, friend/foe color coding, and
-//               interactive hover detection.
-//               Written by Arti Rajpoot
+// FILE:         iffdisplay.cpp
+// MODULE:       IFF (Identification Friend or Foe) Display
+// PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+// ORGANISATION: Oxygen 2 Innovation (O2I).
+// STANDARD:     RTCA DO-178C / ED-12C, DAL B
+// COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+//
+// DESCRIPTION:  Implements the IFFDisplay class which provides a widget for
+//               visualising Identification Friend or Foe (IFF) interrogation
+//               responses. It displays detected IFF responders in a polar
+//               (radar‑like) format with configurable range, rings, ticks,
+//               and hover detection. Supports display of responder ID, name,
+//               mode, code, and status. Integrates with Hierarchy and IFF/
+//               Platform entities for real‑time tracking.
+//
+// REQUIREMENTS: Implements REQ-IFF-010 through REQ-IFF-017
+//
+// AUTHOR:       Arti Rajpoot
+// REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-IFF-001
+//
+//
+// COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+//               Restricted circulation — defence simulation use only.
 //============================================================================
 
 #include "iffdisplay.h"
@@ -17,6 +33,7 @@
 #include <QDebug>
 #include <core/Debug/console.h>
 #include <core/Hierarchy/EntityProfiles/iff.h>
+#include <QComboBox>
 
 // %%% Constructor %%%
 /* Initialize IFF display */
@@ -29,6 +46,16 @@ IFFDisplay::IFFDisplay(QWidget *parent)
     setMouseTracking(true);
     setSizePolicy(policy);
     padding = 40;
+    iffDropdown = new QComboBox(this);
+    iffDropdown->setStyleSheet(
+        "QComboBox { background-color: #001a00; color: #00ff00; "
+        "border: 1px solid #00ff00; font-size: 10px; padding: 2px; }"
+        "QComboBox QAbstractItemView { background-color: #001a00; "
+        "color: #00ff00; selection-background-color: #003300; }"
+        );
+    iffDropdown->hide();
+    connect(iffDropdown, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &IFFDisplay::onIFFSelected);
 }
 
 // %%% Size Management %%%
@@ -67,7 +94,7 @@ void IFFDisplay::mouseMoveEvent(QMouseEvent *event)
     int outerRadius = outerDiameter / 2;
     QPoint center(w / 2, h / 2);
 
-    // Check if mouse is near any target
+
     int closestIndex = -1;
     double minDistance = 15.0;
 
@@ -127,18 +154,23 @@ void IFFDisplay::selectEntity(Entity* entit)
 
     // Select first valid IFF
     iff = nullptr;
+    ifflist.clear();
     for (auto const& pair :  *entity->iffs->iffs) {
         IFF* i = pair.second;
         if (i) {
-            iff = i;
+            if(iff==nullptr){
+                iff = i;
+            }
+            ifflist.append(i);
             setWindowTitle("IFF Display (" + QString::fromStdString(entity->Name) + ")");
 
-            break;
         }
     }
     if (!iff) {
     }
     hoveredTargetIndex = -1;
+    updateDropdown();
+
     update();
 }
 
@@ -147,9 +179,12 @@ void IFFDisplay::RemoveEntity(QString ID)
     if (id == ID) {
         entity = nullptr;
         iff = nullptr;
+        ifflist.clear();
         setWindowTitle("IFF Display");
         // Reset hover state
         hoveredTargetIndex = -1;
+        if (iffDropdown) iffDropdown->hide();
+
     }
 }
 
@@ -192,8 +227,6 @@ void IFFDisplay::paintEvent(QPaintEvent * /*event*/)
     if (!iff->targets.isEmpty()) {
         int i=0;
         for (const IFF::IFFTarget &t : iff->targets) {
-            // const Target &t = targets[i];
-
 
             double per = t.radius / range;
             if (per < 0.0) per = 0.0;
@@ -476,4 +509,55 @@ void IFFDisplay::drawTopMarker(QPainter &p, const QPoint &center, int outerRadiu
     p.setPen(radarGreen);
     p.drawText(tx, ty, txt);
     p.restore();
+}
+void IFFDisplay::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    if (iffDropdown) {
+        int dropW = 120;
+        int dropH = 22;
+        iffDropdown->setGeometry(width() - dropW - padding, 4, dropW, dropH);
+    }
+}
+void IFFDisplay::updateDropdown()
+{
+    if (!iffDropdown) return;
+
+    QSignalBlocker blocker(iffDropdown);
+    iffDropdown->clear();
+
+    if (ifflist.isEmpty()) {
+        iffDropdown->hide();
+        return;
+    }
+
+    for (int i = 0; i < ifflist.size(); ++i) {
+        IFF* f = ifflist[i];
+        QString name = f ? QString::fromStdString(f->Name) : QString("IFF %1").arg(i + 1);
+        if (name.trimmed().isEmpty())
+            name = QString("IFF %1").arg(i + 1);
+        iffDropdown->addItem(name);
+    }
+
+    int currentIdx = ifflist.indexOf(iff);
+    if (currentIdx >= 0)
+        iffDropdown->setCurrentIndex(currentIdx);
+
+    if (ifflist.size() > 1)
+        iffDropdown->show();
+    else
+        iffDropdown->hide();
+
+    int dropW = 120;
+    int dropH = 22;
+    iffDropdown->setGeometry(width() - dropW - padding, 4, dropW, dropH);
+}
+void IFFDisplay::onIFFSelected(int index)
+{
+    if (index < 0 || index >= ifflist.size()) return;
+    iff = ifflist[index];
+    hoveredTargetIndex = -1;
+    if (iff)
+        setRange(iff->emittingRange * 1.0f);
+    update();
 }

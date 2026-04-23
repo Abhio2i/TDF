@@ -1,9 +1,30 @@
-
-/* ========================================================================= */
-/* File: geocordstemplate.h                                                 */
-/* Purpose: Defines widget for managing geocoordinates templates             */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         geocordstemplate.h
+ * MODULE:       Geocoordinates Template Manager
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the GeocordsTemplate class which provides a widget for
+ *               managing geocoordinate templates. It interfaces with the
+ *               Inspector panel to set up geocoordinate cells in a table,
+ *               maintain connected entity IDs, template names, and emit
+ *               value changes when a coordinate is modified.
+ *
+ * REQUIREMENTS: REQ-GEO-010  Geocoordinate template management widget
+ *               REQ-GEO-011  Setup geocoordinate cell in table widget
+ *               REQ-GEO-012  Maintain connected ID and template name
+ *               REQ-GEO-013  Signal valueChanged on coordinate modification
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-GEO-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef GEOCORDSTEMPLATE_H
 #define GEOCORDSTEMPLATE_H

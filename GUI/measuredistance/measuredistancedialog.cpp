@@ -1,8 +1,28 @@
-/* ========================================================================= */
-/* File: measuredistancedialog.cpp                                         */
-/* Purpose: Implements dialog for measuring and displaying distances        */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         measuredistancedialog.cpp
+ * MODULE:       Distance Measurement Dialog
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the MeasureDistanceDialog class which provides a
+ *               modal dialog for measuring and displaying distances between
+ *               points. Supports Cartesian and ellipsoidal (geodesic) distance
+ *               modes, multiple unit conversions (meters, kilometers, feet,
+ *               miles, degrees), segment list display, total distance
+ *               aggregation, and signals for measurement type and unit changes.
+ *
+ * REQUIREMENTS: Implements REQ-MEASURE-010 through REQ-MEASURE-018
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-MEASURE-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "measuredistancedialog.h"                  // For measure distance dialog
 #include "measuredistancedialog-styles.h"           // Include separate CSS file

@@ -1,17 +1,34 @@
-
-/* ========================================================================= */
-/* File: tacticalrules.cpp                                                   */
-/* Purpose: Implements TacticalRules panel for Blue/Red team tactical rules  */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         tacticalrules.cpp
+ * MODULE:       Tactical Rules Configuration
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the TacticalRules class which provides a configuration
+ *               widget for tactical parameters such as engagement range, weapon
+ *               release authority, sensor activation rules, formation type,
+ *               support request threshold, and fuel safety margin. Supports
+ *               per-team (Blue/Red) configuration with JSON serialization,
+ *               reset functionality, and signals for value changes and apply
+ *               requests.
+ *
+ * REQUIREMENTS: Implements REQ-TACTICAL-010 through REQ-TACTICAL-021
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-TACTICAL-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "tacticalrules.h"
 #include "tactical-styles.h"
 #include <QJsonArray>
 #include <QJsonValue>
 #include "tests/tacticalrulestest/tacticalrules_test.h"
-// #include "GUI/mainwindow.h"
-// #include <QTimer>
-// #include "tests/gui_test_control.h"
 // ── Constructor ──────────────────────────────────────────────────────────────
 TacticalRules::TacticalRules(QWidget *parent)
     : QWidget(parent)
@@ -19,7 +36,6 @@ TacticalRules::TacticalRules(QWidget *parent)
     setupUI();
     applyStyles();
     populateDropdowns();
-    // runUnitTestsOnce();
 }
 
 // ── UI Setup ─────────────────────────────────────────────────────────────────
@@ -308,27 +324,3 @@ int TacticalRules::getRulesCount() const
 
     return 0;
 }
-// void TacticalRules::runUnitTestsOnce()
-// {
-//        if (!GuiTestControl::isEnabled()) return;
-//     static bool testsRun = false;
-//     if (testsRun) return;
-//     testsRun = true;
-
-//     QTimer::singleShot(0, []() {
-//         Console* console = nullptr;
-//         MainWindow* mw = MainWindow::instance();
-//         if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-//             console = mw->databaseEditor->console;
-//         }
-//         if (!console) {
-//             qDebug() << "TacticalRules: console not available, cannot run tests";
-//             return;
-//         }
-
-
-//         TacticalRules* testPanel = new TacticalRules(nullptr);
-//         runTacticalRulesTests(testPanel, console);
-//         testPanel->deleteLater();
-//     });
-// }

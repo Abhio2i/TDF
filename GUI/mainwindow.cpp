@@ -1,11 +1,32 @@
-//============================================================================
-// File        : mainwindow.cpp
-// Description : Implementation of MainWindow class for the main application
-//               window that manages database, scenario, mission, and runtime
-//               editors with navigation, unsaved changes handling, and editor
-//               switching.
-//               Written by Arti Rajpoot
-//============================================================================
+/* =============================================================================
+ * FILE:         main.cpp
+ * MODULE:       Application Entry Point
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Application entry point – initialises QApplication, registers
+ *               custom meta‑types, applies a dark theme stylesheet, installs
+ *               a custom message handler for debug/log output, initialises the
+ *               TDF (Tool Data Folder) structure, creates and shows the main
+ *               window, and enters the Qt event loop.
+ *
+ * REQUIREMENTS: REQ-MAIN-030  Application initialisation
+ *               REQ-MAIN-031  Register custom meta‑types for Qt signals/slots
+ *               REQ-MAIN-032  Apply global dark theme stylesheet
+ *               REQ-MAIN-033  Install custom message handler for logging
+ *               REQ-MAIN-034  Initialise TDF folder structure at startup
+ *               REQ-MAIN-035  Show main window and start event loop
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-MAIN-002
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "mainwindow.h"
 #include "core/core_test.h"
 #include "mainwindow-styles.h"
@@ -25,17 +46,12 @@
 #include <QStyleFactory>
 #include <QDesktopServices>
 #include <GUI/statusbar.h>
-
 #include "GUI/Tacticaldisplay/tooltiphelper.h"
-
-
 
 ScenarioConfig* MainWindow::scenarioconfig = nullptr;
 MainWindow* MainWindow::s_instance = nullptr;
-
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
-    // GuiTestControl::setEnabled(false);
     setStyleSheet(MainWindowStyles::MainWindow);
     qApp->setStyle(QStyleFactory::create("Fusion"));
     QPalette darkPalette;
@@ -50,17 +66,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     darkPalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
     qApp->setPalette(darkPalette);
     qApp->setStyleSheet(qApp->styleSheet() + MainWindowStyles::ToolTip);
-
     MainWindow::s_instance = this;
     MainWindow::scenarioconfig = new ScenarioConfig();
     ApplicationDialog::setGlobalDatabaseEnabled(scenarioconfig->getSavedDatabaseEnabled());
     ApplicationDialog::setGlobalDatabasePath(scenarioconfig->getSavedDatabasePath());
-
     setWindowTitle("Indigenous Scenario and Sensor Simulation Toolkit");
     if (scenarioconfig && !scenarioconfig->software_version.isEmpty()) {
         setWindowTitle(windowTitle() + QString(" - V_%1").arg(scenarioconfig->software_version));
     }
-
     resize(1900, 1000);
     setupUI();
     setAttribute(Qt::WA_DeleteOnClose);
@@ -103,7 +116,6 @@ void MainWindow::setupUI()
     navigationPage->setStyleSheet(MainWindowStyles::NavigationPage);
     topBarLayout->addWidget(navigationPage);
     topBarLayout->addStretch();
-
     QPushButton *helpButton = new QPushButton(this);
     helpButton->setObjectName("helpButton");
     helpButton->setFixedSize(24, 24);
@@ -127,36 +139,107 @@ void MainWindow::setupUI()
     topBarLayout->setContentsMargins(0, 0, 10, 0);
     connect(helpButton, &QPushButton::clicked, this, [=]() {
         QString appDirPath = QApplication::applicationDirPath();
-        qDebug() << "App dir:" << appDirPath;
-        QDir dir(appDirPath);
-        QString tdfBasePath;
-        while (!dir.isRoot()) {
-            if (dir.dirName().contains("TDF", Qt::CaseInsensitive)) {
-                tdfBasePath = dir.absolutePath();
+
+        QStringList searchPaths = {
+            appDirPath + "/../../DB",
+            appDirPath + "/../../../DB",
+            appDirPath + "/../DB",
+            appDirPath + "/DB",
+        };
+
+        QString helpPath;
+        for (const QString& path : searchPaths) {
+            QDir d(path);
+            if (d.exists()) {
+                helpPath = d.absolutePath();
                 break;
             }
-            dir.cdUp();
         }
-        if (!tdfBasePath.isEmpty()) {
-            QString helpPath = tdfBasePath + "/DB";
-            QDir dbDir(helpPath);
-            QStringList helpDirs = dbDir.entryList(QStringList() << "TDF_HELP_V_*", QDir::Dirs | QDir::NoDotAndDotDot);
 
-            if (!helpDirs.isEmpty()) {
-                QString htmlFilePath = helpPath + "/" + helpDirs.first() + "/build/html/index.html";
-                qDebug() << "Help file path:" << htmlFilePath;
+        if (helpPath.isEmpty()) {
+            QMessageBox::warning(this, "Error", "DB directory not found!");
+            return;
+        }
 
-                if (QFileInfo::exists(htmlFilePath)) {
-                    QUrl url = QUrl::fromLocalFile(htmlFilePath);
-                    QProcess::startDetached("google-chrome", QStringList() << "--new-window" << url.toString());
-                } else {
-                    QMessageBox::warning(this, "Error", "index.html not found!");
+        QDir dbDir(helpPath);
+        QStringList helpDirs = dbDir.entryList(
+            QStringList() << "TDF_HELP_V_*",
+            QDir::Dirs | QDir::NoDotAndDotDot
+            );
+
+        if (helpDirs.isEmpty()) {
+            QMessageBox::warning(this, "Error", "TDF_HELP_V_* directory not found!");
+            return;
+        }
+
+        QString srcHelpDir = helpPath + "/" + helpDirs.first() + "/build/html";
+
+
+        QString destHelpDir = QDir::homePath() + "/TDF/Help/" + helpDirs.first() + "/build/html";
+
+        QDir destDir(destHelpDir);
+        if (!destDir.exists()) {
+        destDir.mkpath(destHelpDir);
+        std::function<void(const QString&, const QString&)> copyDir;
+            copyDir = [&](const QString& src, const QString& dst) {
+                QDir srcDir(src);
+                QDir dstDir(dst);
+                if (!dstDir.exists()) dstDir.mkpath(dst);
+                for (const QString& file : srcDir.entryList(QDir::Files)) {
+                    QFile::copy(src + "/" + file, dst + "/" + file);
                 }
-            } else {
-                QMessageBox::warning(this, "Error", "TDF_HELP_V_* directory not found!");
+                for (const QString& subDir : srcDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+                    copyDir(src + "/" + subDir, dst + "/" + subDir);
+                }
+            };
+            copyDir(srcHelpDir, destHelpDir);
+        }
+        QString htmlFilePath = destHelpDir + "/index.html";
+        qDebug() << "Help file path (copied):" << htmlFilePath;
+
+        if (QFileInfo::exists(htmlFilePath)) {
+            qDebug() << "Opening URL:" << htmlFilePath;
+
+
+            QString origDir = qgetenv("APPIMAGE_STARTUP_WDIR");
+            if (origDir.isEmpty()) origDir = QDir::homePath();
+
+
+            QStringList browsers = {
+                "/usr/bin/google-chrome",
+                "/usr/bin/chromium-browser",
+                "/usr/bin/chromium",
+                "/usr/bin/firefox",
+                "/usr/bin/xdg-open"
+            };
+            QString browser;
+            for (const QString& b : browsers) {
+                if (QFileInfo::exists(b)) {
+                    browser = b;
+                    break;
+                }
             }
+            if (browser.isEmpty()) {
+                QMessageBox::warning(this, "Error", "No browser found!");
+                return;
+            }
+
+            QString chromeCmd = QString(
+                                    "cd \"%1\" && "
+                                    "env -i "
+                                    "HOME=\"%3\" "
+                                    "DISPLAY=:0 "
+                                    "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin "
+                                    "\"%2\" --no-sandbox \"%4\" &"
+                                    ).arg(origDir)
+                                    .arg(browser)
+                                    .arg(QDir::homePath())
+                                    .arg(htmlFilePath);
+
+            qDebug() << "Chrome cmd:" << chromeCmd;
+            system(chromeCmd.toStdString().c_str());
         } else {
-            QMessageBox::warning(this, "Error", "TDF directory not found!");
+            QMessageBox::warning(this, "Error", "index.html not found after copy!");
         }
     });
 
@@ -179,7 +262,7 @@ void MainWindow::setupUI()
     scenarioEditor = nullptr;
     missionEditor  = nullptr;
     runtimeEditor  = nullptr;
-      analysisEditor = nullptr;
+    analysisEditor = nullptr;
 
     setCentralWidget(centralWidget);
 
@@ -242,6 +325,7 @@ void MainWindow::setupMenuBarConnections()
         } else {
             return;
         }
+
         RecentProjectsManager::instance()->showRecentProjectsMenu(this, editorType);
     });
 
@@ -417,7 +501,6 @@ void MainWindow::setupMenuBarConnections()
     // Settings
     connect(mainMenuBar, &MenuBar::applicationTriggered, this, [=]() {
         ApplicationDialog dialog(this);
-
         QMainWindow *currentEditor = getCurrentEditor();
         if (currentEditor) {
             if (ScenarioEditor* scEditor = qobject_cast<ScenarioEditor*>(currentEditor)) {
@@ -472,7 +555,6 @@ void MainWindow::setupMenuBarConnections()
                             QMessageBox::warning(this, "Error", "Invalid library file format:\n" + err.errorString());
                             return;
                         }
-
                         QJsonObject obj = doc.object();
                         if (obj.contains("hierarchy")) {
                             if (m_loadingLabel) { m_loadingLabel->setText("Loading Database..."); QCoreApplication::processEvents(); }
@@ -540,11 +622,9 @@ QString MainWindow::ensureTDFSubfolder(const QString& subfolderName)
     QString homeDir = QDir::homePath();
     QString tdfPath = homeDir + "/TDF";
     QString targetPath = tdfPath + "/" + subfolderName;
-
     QDir dir;
     if (!dir.exists(tdfPath))    dir.mkpath(tdfPath);
     if (!dir.exists(targetPath)) dir.mkpath(targetPath);
-
     return targetPath;
 }
 
@@ -559,10 +639,8 @@ void MainWindow::loadFileWithTDFSupport(QMainWindow* editor,
     else if (editorType == RecentProjectsManager::ScenarioEditor) subfolderName = "Scenario";
     else if (editorType == RecentProjectsManager::MissionEditor)  subfolderName = "Mission";
     else if (editorType == RecentProjectsManager::RuntimeEditor)  subfolderName = "Runtime";
-
     QString startPath = ensureTDFSubfolder(subfolderName);
     QString filePath = QFileDialog::getOpenFileName(this, "Open File", startPath, filter);
-
     if (filePath.isEmpty()) return;
 
     showLoadingOverlay("Loading file...");
@@ -587,6 +665,7 @@ void MainWindow::loadFileWithTDFSupport(QMainWindow* editor,
     }
     hideLoadingOverlay();
 }
+
 void MainWindow::saveFileWithTDFSupport(QMainWindow* editor)
 {
     RecentProjectsManager::EditorType editorType;
@@ -608,10 +687,10 @@ void MainWindow::saveFileWithTDFSupport(QMainWindow* editor)
         tacticalDisplay = scEditor->tacticalDisplay;
         lastFilePath = scEditor->lastSavedFilePath;
     }  else if (MissionEditor* msEditor = qobject_cast<MissionEditor*>(editor)) {
-    editorType = RecentProjectsManager::MissionEditor;
-    extension = "ms"; subfolderName = "Mission"; defaultPrefix = "Mission";
-    lastFilePath = msEditor->lastSavedFilePath;
-} else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(editor)) {
+        editorType = RecentProjectsManager::MissionEditor;
+        extension = "ms"; subfolderName = "Mission"; defaultPrefix = "Mission";
+        lastFilePath = msEditor->lastSavedFilePath;
+    } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(editor)) {
         editorType = RecentProjectsManager::RuntimeEditor;
         extension = "rn"; subfolderName = "Runtime"; defaultPrefix = "Runtime";
         hierarchy = rtEditor->hierarchy;
@@ -698,10 +777,10 @@ void MainWindow::saveToSameFileWithTDFSupport(QMainWindow* editor)
         hierarchy = scEditor->hierarchy;
         tacticalDisplay = scEditor->tacticalDisplay;
         filePath = scEditor->lastSavedFilePath;
-       } else if (MissionEditor* msEditor = qobject_cast<MissionEditor*>(editor)) {
-    editorType = RecentProjectsManager::MissionEditor;
-    expectedExtension = "ms"; expectedSubfolder = "Mission";
-    filePath = msEditor->lastSavedFilePath;
+    } else if (MissionEditor* msEditor = qobject_cast<MissionEditor*>(editor)) {
+        editorType = RecentProjectsManager::MissionEditor;
+        expectedExtension = "ms"; expectedSubfolder = "Mission";
+        filePath = msEditor->lastSavedFilePath;
     }else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(editor)) {
         editorType = RecentProjectsManager::RuntimeEditor;
         expectedExtension = "rn"; expectedSubfolder = "Runtime";
@@ -1032,13 +1111,7 @@ void MainWindow::switchEditor(const QString &editorKey)
         if (m_statusBar)
             m_statusBar->setFileName(scenarioEditor->lastSavedFilePath, scenarioEditor->hasUnsavedChanges);
         emit scenarioEditor->Activated();
-        // Run DesignToolBar tests
         if (scenarioEditor && scenarioEditor->designToolBar) {
-            // QTimer::singleShot(300, this, [this]() {
-            //     if (scenarioEditor && scenarioEditor->designToolBar && scenarioEditor->console) {
-            //         runDesignToolBarTests(scenarioEditor->designToolBar, scenarioEditor->console);
-            //     }
-            // });
         }
         hideLoadingOverlay();
     }
@@ -1083,7 +1156,6 @@ void MainWindow::switchEditor(const QString &editorKey)
             m_statusBar->setFileName(missionEditor->lastSavedFilePath,
                                      missionEditor->hasUnsavedChanges);
         emit missionEditor->Activated();
-        // QTimer::singleShot(200, missionEditor, &MissionEditor::runGUITests);
 
         hideLoadingOverlay();
     }
@@ -1235,11 +1307,11 @@ void MainWindow::switchEditor(const QString &editorKey)
         QCoreApplication::processEvents();
         if (runtimeEditor && runtimeEditor->hierarchy) {
 
-                int i = 0;
-                for (const auto& [key, entity] : runtimeEditor->hierarchy->Platforms) {
-                    if (entity) { } else { }
-                    i++;
-                }
+            int i = 0;
+            for (const auto& [key, entity] : runtimeEditor->hierarchy->Platforms) {
+                if (entity) { } else { }
+                i++;
+            }
 
             QJsonObject analysisJson = runtimeEditor->hierarchy->loadAnalysisJson();
             if (!analysisJson.isEmpty()) {

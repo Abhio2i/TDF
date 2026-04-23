@@ -15,7 +15,20 @@ struct PendingEcho
     float       distance;      // target distance
     float       bearing;       // target bearing
     float       targetStrength;
+    float       dirFactor      = 1.0f;
     std::string category;
+    double targetLat;
+    double targetLon;
+    float targetDepth;
+    float moveSpeed;
+    std::string targetId;
+};
+
+struct SoundLayer
+{
+    float minDepth;
+    float maxDepth;
+    float soundSpeed;
 };
 
 class Sonar: public Sensor
@@ -56,6 +69,8 @@ private:
     double m_lastLat = 0.0;
     double m_lastLon = 0.0;
 
+    float getSoundSpeed(float depth);
+
     // ── Internal helpers ──
     std::vector<SonarTarget> collectTargets(double lat, double lon) const;
 
@@ -63,6 +78,11 @@ private:
 
     void processEchoQueue(float simTime);
 
+    std::vector<SonarTarget> applyOcclusionFilter(
+        const std::vector<SonarTarget>& input,
+        double selfLat, double selfLon);
+
+    float computeDirectionalFactor(float bearing, float heading) const;
 };
 
 #endif // SONAR_H

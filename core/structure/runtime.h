@@ -1,3 +1,25 @@
+// =============================================================================
+// FILE:        runtime.h
+// MODULE:      Runtime Environment
+// PROJECT:     Tactical Display/Simulation Framework (TDF)
+// ORGANISATION: Oxygen 2 Innovation (O2I)
+// STANDARD:    RTCA DO-178C / ED-12C, DAL B (Guidelines applied)
+//
+// DESCRIPTION: Defines the Runtime class, which aggregates and manages all
+//              core simulation subsystems: Hierarchy, SessionManager,
+//              Simulation, SceneRenderer, ScriptEngine, NetworkManager,
+//              Profiler, Console, Recorder, SharedMemoryWrapper, and SQLite.
+//              Runs simulation and shared memory in separate threads.
+//
+// AUTHOR:      [Original Author Name]
+// REVIEWED BY: [Reviewer Name], [Review Date]
+//
+// CHANGE HISTORY:
+//   Rev 1  [Date]  Initial implementation.
+//
+// COPYRIGHT:   Oxygen 2 Innovation (O2I). All rights reserved.
+// =============================================================================
+
 #ifndef RUNTIME_H
 #define RUNTIME_H
 
@@ -19,42 +41,53 @@
 
 #include <core/SQLite/sqlite.h>// For SQLite By Himanshu
 
-class Runtime : public QObject  // QObject se inherit kiya
+// =============================================================================
+// CLASS: Runtime
+//
+// DESCRIPTION: Central runtime container that owns and initialises all major
+//              simulation components. Provides start/stop/replay slots and
+//              runs the simulation and shared memory tasks in separate threads
+//              to avoid blocking the main (UI) thread.
+// =============================================================================
+class Runtime : public QObject
 {
-    Q_OBJECT  // Meta-object system ke liye zaroori hai
+    Q_OBJECT
 
 public:
     Runtime();
     ~Runtime();
 
-    // ScenarioConfig *scenarioconfig;
-    Hierarchy *hierarchy;
-    Hierarchy *Library;
-    SessionManager *sessionManager;
-    Simulation *simulation;
-    SceneRenderer *scenerenderer;
-    ScriptEngine *scriptengine;
-    NetworkManager *networkManager;
-    Profiler *profiler;
-    Console *console;
-    Recorder *recorder;  // Using external Recorder
-    Recording *recording;       // Using external Recorder Recording
-    Replay    *replay;
-    SharedMemoryWrapper* sharedWrapper; //Shared Memory By Himanshu
-
-    SQLite *sqlite; //SQLite Memory By Himanshu
+    // =========================================================================
+    // SECTION: Core Component Pointers
+    // DESCRIPTION: References to all major subsystems (owned by Runtime).
+    // =========================================================================
+    // ScenarioConfig *scenarioconfig; // (commented out)
+    Hierarchy *hierarchy;           //!< Main entity hierarchy (runtime)
+    Hierarchy *Library;             //!< Library hierarchy (static assets/profiles)
+    SessionManager *sessionManager; //!< User session preferences
+    Simulation *simulation;         //!< Simulation engine
+    SceneRenderer *scenerenderer;   //!< 3D scene renderer
+    ScriptEngine *scriptengine;     //!< Scripting engine (e.g., for mission logic)
+    NetworkManager *networkManager; //!< Network synchronisation manager
+    Profiler *profiler;             //!< Performance profiler
+    Console *console;               //!< Logging console
+    Recorder *recorder;             //!< Simulation recorder (external)
+    Recording *recording;           //!< Active recording session
+    Replay    *replay;              //!< Replay controller
+    SharedMemoryWrapper* sharedWrapper; //!< Shared memory interface (Himanshu)
+    SQLite *sqlite;                 //!< SQLite database interface (Himanshu)
 
 signals:
+    // No signals defined currently
 
 public slots:
-    void handleStart();
-    void handleStop();
-    void handleReplay();
+    void handleStart();     //!< Starts the simulation (called from UI)
+    void handleStop();      //!< Stops the simulation
+    void handleReplay();    //!< Starts replay mode
 
 private:
-    QThread *simulationThread;
-    QThread *sharedMemoryThread; // Add this line New by Himanshu
+    QThread *simulationThread;      //!< Thread where simulation runs
+    QThread *sharedMemoryThread;    //!< Thread for shared memory updates (Himanshu)
 };
-
 
 #endif // RUNTIME_H

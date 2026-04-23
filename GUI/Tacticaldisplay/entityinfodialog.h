@@ -1,8 +1,44 @@
-/* ========================================================================= */
-/* File: entityinfodialog.h                                                 */
-/* Purpose: Dialog for displaying and managing entity information           */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         entityinfodialog.h
+ * MODULE:       Entity Information Dialog
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the EntityInfoDialog class which provides a modal
+ *               dialog for displaying and managing entity information.
+ *               Shows entity attributes, position, speed/altitude table,
+ *               equipment (sensors, radios, IFF, weapons, formation),
+ *               and options (track, centre, aggregated script, follow
+ *               trajectory, show connection, show detection). Integrates
+ *               with CanvasWidget, Hierarchy, Platform, Formation, and
+ *               MeshEntry to display real‑time entity data. Supports
+ *               editing speed/altitude values via table cells and emits
+ *               signals when updates occur.
+ *
+ * REQUIREMENTS: REQ-ENTITYINFO-010  Entity information dialog
+ *               REQ-ENTITYINFO-011  Display entity ID, name, and mesh info
+ *               REQ-ENTITYINFO-012  Attribute section (type, category, team)
+ *               REQ-ENTITYINFO-013  Position section (latitude, longitude, altitude)
+ *               REQ-ENTITYINFO-014  Speed/Altitude table with editable cells
+ *               REQ-ENTITYINFO-015  Equipment section: sensors, radios, IFF,
+ *                                   weapons, formation buttons
+ *               REQ-ENTITYINFO-016  Options section: track, centre, aggregated
+ *                                   script, follow trajectory, show connection,
+ *                                   show detection
+ *               REQ-ENTITYINFO-017  Clear displayed information
+ *               REQ-ENTITYINFO-018  Signal speedAltitudeUpdated when speed/alt
+ *                                   table is edited
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-ENTITYINFO-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef ENTITYINFODIALOG_H
 #define ENTITYINFODIALOG_H
@@ -39,7 +75,6 @@ public:
     void updateEntityInfo();
     /* Clear all displayed information */
     void clearInfo();
-    // static void runUnitTestsOnce();
 
 signals:
     // %%% Update Signal %%%

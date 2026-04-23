@@ -70,6 +70,15 @@ float ActiveSonar::computeDistance() const
 
 float ActiveSonar::getSoundSpeed() const { return m_soundSpeed; }
 
+float ActiveSonar::getSoundSpeedAtDepth(float depth) const
+{
+    // simple realistic behavior (no JSON, no complex math)
+
+    if (depth < 100.0f) return 1520.0f;   // surface
+    if (depth < 300.0f) return 1480.0f;   // thermocline
+    return 1500.0f;                       // deep
+}
+
 DetectionResult ActiveSonar::detect(const SonarInput &input,
                                     double targetLat,
                                     double targetLon)
@@ -101,11 +110,15 @@ DetectionResult ActiveSonar::detect(const SonarInput &input,
         input.absorption
         );
 
+    // DI from beam width
+    float DI = 10.0f * log10(360.0f / m_beamWidth);
+
     float snr = SonarModel::computeActiveSNR(
         input.sourceLevel,
         tl,
         input.targetStrength,
-        input.noiseLevel
+        input.noiseLevel,
+        DI
         );
 
     float signalExcess = snr - input.detectionThreshold;
@@ -208,14 +221,21 @@ DetectionResult ActiveSonar::processSingleTarget(
 
     // SNR — target ki apni targetStrength use karo
     float tl  = SonarModel::computeTransmissionLoss(distance, input.absorption);
+
+    // DI from beam width
+    float DI = 10.0f * log10(360.0f / m_beamWidth);
+
     float snr = SonarModel::computeActiveSNR(input.sourceLevel, tl,
                                              target.targetStrength,
-                                             input.noiseLevel);
+                                             input.noiseLevel,  DI);
 
-    float signalExcess = snr - input.detectionThreshold;
+    float dt = SonarModel::validateDetectionThreshold(
+        input.detectionThreshold);
+
+    float signalExcess = snr - dt;
 
     // Check 4 — SNR
-    if (!SonarModel::detectionDecision(snr, input.detectionThreshold))
+    if (!SonarModel::detectionDecision(snr, dt))
     {
         result.reason   = "WEAK SIGNAL";
         result.distance = distance;

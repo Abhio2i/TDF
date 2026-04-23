@@ -27,6 +27,7 @@ public:
     // Sensor instance
     Sensor* sensor = nullptr;
     // Entity platform
+    QVector<Sensor*> sensorlist;
     Platform* entity = nullptr;
 
 protected:

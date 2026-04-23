@@ -1,10 +1,34 @@
-
-//============================================================================
-// File        : CSMDisplay.h
-// Description : Header file for CSMDisplay class . target tracking,
-//               and interactive hover detection for sensor data.
-//               Written by Arti Rajpoot
-//============================================================================
+/* =============================================================================
+ * FILE:         CSMDisplay.h
+ * MODULE:       CSM (Communications Support Measures) Display
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the CSMDisplay class which provides a widget for
+ *               visualising Communications Support Measures (CSM) / electronic
+ *               support data. It displays targets in a polar (radar‑like) format
+ *               with configurable range, rings, ticks, and hover detection.
+ *               Integrates with Hierarchy and Sensor/Platform entities for
+ *               real‑time tracking and display updates.
+ *
+ * REQUIREMENTS: REQ-CSM-010  CSM visualisation widget
+ *               REQ-CSM-011  Display targets with angle and radius
+ *               REQ-CSM-012  Configurable range and ring count
+ *               REQ-CSM-013  Draw radar rings, ticks, labels, centre mark
+ *               REQ-CSM-014  Mouse hover detection over targets
+ *               REQ-CSM-015  Integration with Hierarchy and Sensor entities
+ *               REQ-CSM-016  Update display on entity selection and removal
+ *               REQ-CSM-017  Maintain aspect ratio (16:9)
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-CSM-001
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef CSMDisplay_H
 #define CSMDisplay_H
@@ -14,6 +38,7 @@
 #include <QWidget>                                // For widget base class
 #include <QVector>                                // For vector container
 #include <core/Debug/profiler.h>
+#include <QComboBox>
 
 // %%% Data Structures %%%
 /* Structure for electronic warfare target */
@@ -50,6 +75,7 @@ public:
     void updateRadar();
     // Sensor instance
     Sensor* sensor = nullptr;
+        QVector<Sensor*> sensorlist;
     // Entity platform
     Platform* entity = nullptr;
 
@@ -60,11 +86,11 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     // Handle mouse leave
     void leaveEvent(QEvent *event) override;
-
+        void resizeEvent(QResizeEvent *event) override;
+private slots:
+    void onSensorSelected(int index);
 private:
     // %%% Display Properties %%%
-    // Radar range
-    // int range = 100;
     // Aspect ratio for display
     const double ASPECT_RATIO = 16.0/9.0;
     // Padding for display
@@ -89,6 +115,8 @@ private:
     // Hover tracking
     int hoveredTargetIndex = -1;
     QPoint lastMousePos;
+    QComboBox* sensorDropdown = nullptr;
+    void updateDropdown();
 
     // %%% Drawing Methods %%%
     // Draw background

@@ -19,7 +19,6 @@ Rigidbody::Rigidbody():Component(nullptr) {
     deltaTime = 0.0f;
     velocity = new Vector();
     angularVelocity = new Vector();
-    customParameters = QJsonObject(); // Initialize customParameters
 }
 
 void Rigidbody::addForce(const Vector& force) {
@@ -100,10 +99,9 @@ QJsonObject Rigidbody::toJson() const {
     if (angularVelocity)
         obj["angularVelocity"] = angularVelocity->toJson();
 
-    // Add custom parameters
-    for (auto it = customParameters.begin(); it != customParameters.end(); ++it) {
-        obj[it.key()] = it.value();
-    }
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
 
     //qDebug() << "Rigidbody::toJson output:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
     return obj;
@@ -153,19 +151,10 @@ void Rigidbody::fromJson(const QJsonObject& obj) {
         if (freezeObj.contains("freezeRotationZ"))
             freezeRotationZ = freezeObj["freezeRotationZ"].toBool();
     }
-    // Custom parameters
-    QStringList standardKeys = {
-        "active", "gravity", "kinematics",
-        "freezePositionX", "freezePositionY", "freezePositionZ",
-        "freezeRotationX", "freezeRotationY", "freezeRotationZ",
-        "mass", "drag", "angulardrag", "deltaTime",
-        "velocity", "angularVelocity"
-    };
-    for (auto it = obj.begin(); it != obj.end(); ++it) {
-        if (!standardKeys.contains(it.key())) {
-            customParameters[it.key()] = it.value();
-        }
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
+
 
     //qDebug() << "Rigidbody::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);
 }

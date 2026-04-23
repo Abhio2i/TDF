@@ -1,16 +1,32 @@
-
-/* ========================================================================= */
-/* File: doctrineparameters.cpp                                              */
-/* Purpose: Implements the DoctrineParameters widget for managing doctrine   */
-/*          parameters for Blue and Red teams.                               */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         doctrineparameters.cpp
+ * MODULE:       Doctrine Parameters Configuration
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the DoctrineParameters class which provides a
+ *               configuration widget for Blue and Red force doctrine parameters.
+ *               The widget includes a tabbed interface (Blue/Red) with controls
+ *               for doctrine name, mission objective, mission type, rules of
+ *               engagement, engagement policy, retreat policy, detection policy,
+ *               and zone clearance. Supports loading/saving to JSON, resetting
+ *               state, and emitting signals on value changes.
+ *
+ * REQUIREMENTS: Implements REQ-DOCTRINE-030 through REQ-DOCTRINE-042
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-DOCTRINE-003
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "doctrineparameters.h"
 #include "doctrine-styles.h"
 #include "tests/doctrineparameterstest/doctrineparameters_test.h"
-// #include "GUI/mainwindow.h"
-// #include <QTimer>
-// #include "tests/gui_test_control.h"
 
 // ── Constructor ─────────────────────────────────────────────────────────────
 DoctrineParameters::DoctrineParameters(QWidget *parent)
@@ -22,7 +38,6 @@ DoctrineParameters::DoctrineParameters(QWidget *parent)
 
     // Start on Blue tab
     switchToTeam(FORCE_BLUE);
-    // runUnitTestsOnce();
 }
 
 // ── UI Setup ─────────────────────────────────────────────────────────────────
@@ -496,27 +511,3 @@ QString DoctrineParameters::getForceType() const
 {
     return (m_currentForce == FORCE_BLUE) ? "Blue" : "Red";
 }
-// void DoctrineParameters::runUnitTestsOnce()
-// {
-//        if (!GuiTestControl::isEnabled()) return;
-//     static bool testsRun = false;
-//     if (testsRun) return;
-//     testsRun = true;
-
-//     QTimer::singleShot(0, []() {
-//         Console* console = nullptr;
-//         MainWindow* mw = MainWindow::instance();
-//         if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-//             console = mw->databaseEditor->console;
-//         }
-//         if (!console) {
-//             qDebug() << "DoctrineParameters: console not available, cannot run tests";
-//             return;
-//         }
-
-//         // Create a temporary DoctrineParameters widget (no parent, won't show)
-//         DoctrineParameters* testPanel = new DoctrineParameters(nullptr);
-//         runDoctrineParametersTests(testPanel, console);
-//         testPanel->deleteLater();
-//     });
-// }

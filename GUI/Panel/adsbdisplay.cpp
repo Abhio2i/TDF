@@ -121,12 +121,15 @@ void ADSBDisplay::selectEntity(Entity* entit)
     // Set entity ID and pointer
     entity = platform;
     sensor = nullptr;
+    sensorlist.clear();
     for (auto const& pair :  *entity->sensors->sensors) {
         Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::ADSB) {
-            sensor = s;
+            if(sensor == nullptr){
+                sensor = s;
+            }
+            sensorlist.append(s);
             setWindowTitle("ADSB Display (" + QString::fromStdString(entity->Name) + ")");
-            break;
         }
     }
     // Reset hover state when entity changes
@@ -141,6 +144,7 @@ void ADSBDisplay::RemoveEntity(QString ID)
         // Clear entity and sensor
         entity = nullptr;
         sensor = nullptr;
+        sensorlist.clear();
         // Reset window title
         setWindowTitle("CSM Display");
         // Reset hover state

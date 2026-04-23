@@ -1,8 +1,29 @@
-/* ========================================================================= */
-/* File: projectinformation.cpp                                              */
-/* Purpose: Implements Feedback dialog for project information               */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         projectinformation.cpp
+ * MODULE:       Project Information / Feedback Dialog
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the Feedback class which provides a dialog for
+ *               displaying project information, version details, and optionally
+ *               collecting user feedback. This dialog is typically invoked from
+ *               the application's "About" or "Feedback" menu items.
+ *
+ * REQUIREMENTS: Implements REQ-INFO-010 through REQ-INFO-013
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-INFO-001
+ *
+ *
+ * NOTE:         The file is named ProjectInformation.cpp but implements class
+ *               Feedback. This is intentional for backward compatibility.
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "projectinformation.h"
 #include "projectinformation-styles.h"
 #include <QLabel>

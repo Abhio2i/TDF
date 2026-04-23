@@ -140,12 +140,16 @@ void EODisplay::selectEntity(Entity* entit)
     entity = platform;
 
     sensor = nullptr;
+        sensorlist.clear();
     for (auto const& pair :  *entity->sensors->sensors) {
         Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::EO) {
-            sensor = s;
+            if(sensor == nullptr){
+                sensor = s;
+            }
+            sensorlist.append(s);
             setWindowTitle("EO Display (" + QString::fromStdString(entity->Name) + ")");
-            break;
+
         }
     }
 
@@ -161,6 +165,7 @@ void EODisplay::RemoveEntity(QString ID)
         // Clear entity and sensor
         entity = nullptr;
         sensor = nullptr;
+            sensorlist.clear();
         // Reset window title
         setWindowTitle("EO Display");
         // Reset hover state

@@ -1,21 +1,44 @@
-/* ========================================================================= */
-/* File: MissionEditor.cpp                                                 */
-/* Purpose: Implements database editor with hierarchy and doctrine views     */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
 
-#include "missioneditor.h"                        // For database editor class
-#include "GUI/Feedback/projectinformation.h"      // For feedback window
-#include "GUI/Console/consoleview.h"              // For console view
-#include "GUI/Menubars/menubar.h"                 // For menu bar
-#include "GUI/Toolbars/standardtoolbar.h"         // For standard toolbar
+/* =============================================================================
+ * FILE:         MissionEditor.cpp
+ * MODULE:       Mission Editor Main Window
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the MissionEditor class which serves as the main
+ *               window for mission editing. It manages hierarchy tree view,
+ *               doctrine parameters panel, tactical rules panel, assumptions
+ *               notes panel, area definition panel, console view, menu bar,
+ *               tool bars, dock widgets, status bar, and scenario data.
+ *               Supports loading/saving JSON files, tracking unsaved changes,
+ *               resetting layout, recent projects, and displaying profile/
+ *               application information.
+ *
+ * REQUIREMENTS: Implements REQ-MISSION-010 through REQ-MISSION-025
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-MISSION-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
+
+#include "missioneditor.h"
+#include "GUI/Feedback/projectinformation.h"
+#include "GUI/Console/consoleview.h"
+#include "GUI/Menubars/menubar.h"
+#include "GUI/Toolbars/standardtoolbar.h"
 #include "qstandardpaths.h"
-#include <core/structure/scenario.h>              // For scenario structure
-#include <QDockWidget>                            // For dock widget
-#include <QSplitter>                              // For splitter widget
-#include <QMenuBar>                               // For menu bar
-#include <QApplication>                           // For application instance
-#include <QSettings>                              // For saving dock state
+#include <core/structure/scenario.h>
+#include <QDockWidget>
+#include <QSplitter>
+#include <QMenuBar>
+#include <QApplication>
+#include <QSettings>
 #include <QTimer>
 #include <QMessageBox>
 #include <GUI/Menubars/profileinfodialog.h>
@@ -476,10 +499,10 @@ void MissionEditor::loadFromJsonFile(const QString &filePath)
     QJsonObject obj = doc.object();
 
     if (obj.contains("doctrine") && doctrinePanel)
-        doctrinePanel->loadFromJson(obj["doctrine"].toObject());           // handles both old/new format
+        doctrinePanel->loadFromJson(obj["doctrine"].toObject());
 
     if (obj.contains("tactical") && tacticalPanel)
-        tacticalPanel->loadBothTeamsFromJson(obj["tactical"].toObject());  // handles both old/new format
+        tacticalPanel->loadBothTeamsFromJson(obj["tactical"].toObject());
 
 
     lastSavedFilePath = filePath;

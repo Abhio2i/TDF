@@ -9,6 +9,8 @@
 #include "core/Hierarchy/hierarchy.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h"
 
+class Simulation;
+
 struct SonarContact
 {
     double angle   = 0;
@@ -31,6 +33,10 @@ public:
     void RemoveEntity(QString id);
     void updateRadar();
 
+    ~SonarDisplay();
+
+    void setSimulation(Simulation* sim);
+
     void updateContacts(const std::vector<DetectionResult>& results);
 
     // Heading — set from sonar entity
@@ -46,6 +52,12 @@ public:
     }
 
     Entity* getSelectedEntity() const { return entity; }
+
+    void onSimulationUpdate();
+
+    float getHeading() const { return m_heading; }
+    int   getPingInterval() const { return m_pingIntervalMs; }
+
 
 protected:
     void paintEvent(QPaintEvent *event)  override;
@@ -63,6 +75,12 @@ private:
     float  m_beamWidth = 360.0f; // sonar beam width
 
     qint64 m_pingIntervalMs = 10000;
+
+     Simulation* simulation = nullptr;
+
+
+    qint64 lastUpdateTime = 0;
+    bool simulationRunning = false;
 
     QTimer sweepTimer;
     // Button rects — set in paintEvent
@@ -84,6 +102,8 @@ private:
     void drawContacts(QPainter &p, QPoint center, int radius);
     void drawContactLabels(QPainter &p, QPoint center, int radius); // ← NEW
     void drawRangeButtons(QPainter &p);
+
+    void updateHeadingFromEntity();
 };
 
 #endif // SONARDISPLAY_H

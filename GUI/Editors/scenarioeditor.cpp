@@ -1,9 +1,30 @@
-/* ========================================================================= */
-/* File: scenarioeditor.cpp                                                 */
-/* Purpose: Implements scenario editor with hierarchy and tactical display   */
-/* Written by   : Arti Rajpoot                                               */
-
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         scenarioeditor.cpp
+ * MODULE:       Scenario Editor Main Window
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the ScenarioEditor class which provides the main
+ *               window for scenario creation and editing. It manages hierarchy
+ *               tree views (mission and library), tactical display (2D canvas),
+ *               inspector panels, console view, toolbars, menu bar, text script
+ *               widget, layer panel, and dock widgets. Supports loading/saving
+ *               JSON scenario files, tracking unsaved changes, resetting layout,
+ *               recent projects, script execution, and displaying profile/
+ *               application information.
+ *
+ * REQUIREMENTS: Implements REQ-SCENARIO-010 through REQ-SCENARIO-025
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-SCENARIO-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "GUI/Editors/scenarioeditor.h"            // For scenario editor class
 #include "GUI/Menubars/menubar.h"                 // For menu bar
@@ -71,12 +92,9 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
             scriptengine, &ScriptEngine::loadAndCompileScript);
     connect(textScriptView, &TextScriptWidget::runScriptFile,
             this, &ScenarioEditor::onRunScriptFileRequested);
-    // Configure hierarchy connector
     HierarchyConnector::instance()->setHierarchy(hierarchy);
     HierarchyConnector::instance()->setLibrary(library);
     HierarchyConnector::instance()->setLibTreeView(libTreeView);
-
-    // Connect recent projects signals
     connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
             this, [=](const QString& filePath, RecentProjectsManager::EditorType type) {
                 if (type == RecentProjectsManager::ScenarioEditor) {
@@ -85,8 +103,6 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
             });
     connect(this, &ScenarioEditor::Activated,
             tacticalDisplay->canvas, &CanvasWidget::ReInit);
-
-    // Connect console log signals
     connect(console, &Console::logUpdate, this, [=](std::string log) {
         if (consoleView) {
             consoleView->appendLog(QString::fromStdString(log));
@@ -1011,7 +1027,6 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this, "Error",
                              QString("Failed to open JSON file: %1").arg(filePath));
-        // loadingDialog->deleteLater();
         return;
     }
 
@@ -1024,7 +1039,6 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
         QMessageBox::warning(this, "Error",
                              QString("Failed to parse JSON: %1").arg(err.errorString()));
-        // loadingDialog->deleteLater();
         return;
     }
 
@@ -1032,7 +1046,6 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
 
     // Load hierarchy data
     if (obj.contains("hierarchy")) {
-        // loadingDialog->setLabelText("Loading...");
         QCoreApplication::processEvents();
         QJsonObject hier = obj["hierarchy"].toObject();
         hierarchy->fromJson(hier);
@@ -1045,7 +1058,6 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
 
     // Load tactical display data
     if (tacticalDisplay && obj.contains("tactical")) {
-        // loadingDialog->setLabelText("Loading...");
         QCoreApplication::processEvents();
         QJsonObject tac = obj["tactical"].toObject();
         tacticalDisplay->canvas->fromJson(tac);

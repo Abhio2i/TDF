@@ -1,9 +1,39 @@
-/* ========================================================================= */
-/* File: applicationdialog.h                                                */
-/* Purpose: Dialog for configuring application-wide settings and parameters */
-// Written by Arti Rajpoot
-/* ========================================================================= */
-
+/* =============================================================================
+ * FILE:         applicationdialog.h
+ * MODULE:       Application Settings Dialog
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the ApplicationDialog class which provides a modal
+ *               dialog for configuring application‑wide settings and parameters.
+ *               Includes tabs for General (FPS limits, developer mode, image size),
+ *               Database (enable/disable, path selection), and Physics (FPS).
+ *               Settings are stored globally as static members and can be accessed
+ *               from anywhere in the application. Supports validation of user
+ *               input, signal emission on setting changes, and persistent storage
+ *               via global static variables (intended to be saved to QSettings).
+ *
+ * REQUIREMENTS: REQ-APP-010  Application settings dialog
+ *               REQ-APP-011  General tab: FPS (main, GUI, simulation, physics),
+ *                            developer mode, image size
+ *               REQ-APP-012  Database tab: enable/disable database, select database path
+ *               REQ-APP-013  Physics tab: physics FPS (reuse from General)
+ *               REQ-APP-014  Input validation for FPS and image size
+ *               REQ-APP-015  Global static accessors and mutators for settings
+ *               REQ-APP-016  Signals emitted when settings are applied
+ *               REQ-APP-017  Reset to default settings
+ *               REQ-APP-018  Browse and reset database path
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-APP-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #ifndef APPLICATIONDIALOG_H
 #define APPLICATIONDIALOG_H
 

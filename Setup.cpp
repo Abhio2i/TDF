@@ -1,10 +1,28 @@
-
-/* ========================================================================= */
-/* File: Setup.cpp                                                           */
-/* Purpose: Implements TDFManager for managing folder structure and resource */
-/*          paths for aircraft and city data                                 */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         Setup.cpp
+ * MODULE:       TDF Folder & Resource Manager
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen to Innovation Pvt. Ltd.
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the TDFManager class which manages the TDF (Tool Data
+ *               Folder) folder structure and resource paths for aircraft and
+ *               city data. Provides singleton access, initialises the TDF
+ *               directory structure, copies required resource files from
+ *               application resources to the TDF if they do not already exist,
+ *               and returns the appropriate file paths.
+ *
+ * REQUIREMENTS: Implements REQ-SETUP-010 through REQ-SETUP-016
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-SETUP-001
+ *
+ *
+ * COPYRIGHT:    Oxygen to Innovation Pvt. Ltd. All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "Setup.h"
 #include <QDebug>
 #include <QStandardPaths>

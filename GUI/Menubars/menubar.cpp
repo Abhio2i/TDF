@@ -1,8 +1,30 @@
-/* ========================================================================= */
-/* File: menubar.cpp                                                      */
-/* Purpose: Implements menu bar with file, edit, view, and feedback menus   */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         menubar.cpp
+ * MODULE:       Application Menu Bar
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the MenuBar class which provides the main application
+ *               menu bar. It contains File, Edit, View, and Feedback menus with
+ *               actions for file operations (new, open, save, save as, load to
+ *               library, recent projects, exit), edit operations (undo, redo,
+ *               select/deselect all, cut, copy, paste, duplicate, rename, delete),
+ *               view operations (play/pause simulation), feedback, profile info,
+ *               application info, XML loading, and runtime instance opening.
+ *               Supports dynamic visibility of library actions and editor‑specific
+ *               menu updates. Emits signals for all triggerable actions.
+ *
+ * REQUIREMENTS: Implements REQ-MENU-010 through REQ-MENU-016
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-MENU-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================*/
 
 #include "menubar.h"                               // For menu bar class
 #include "menubar-styles.h"                        // Include separate CSS file
@@ -20,18 +42,16 @@
 MenuBar::MenuBar(QWidget *parent)
     : QMenuBar(parent)
 {
-    // Apply dark theme to menu bar
-    setStyleSheet(MenuBarStyles::MenuBar);
 
-    // Create file menu
+    setStyleSheet(MenuBarStyles::MenuBar);
     fileMenu = addMenu("File");
     fileMenu->setStyleSheet(MenuBarStyles::Menu);
-
     newFileAction = new QAction("New File", this);
     recentProjectAction = new QAction("Recent Project", this);
     recentProjectLibraryAction = new QAction("Recent Library", this);
     loadJsonAction = new QAction("Open File", this);
     loadXmlAction = new QAction("Open XML File", this);
+
     loadToLibraryAction = new QAction("Open File to Library", this);
     openRuntimeInstanceAction = new QAction("Open Runtime Instance", this);
     openMissionFileAction = new QAction("Open Mission File", this);
@@ -39,7 +59,6 @@ MenuBar::MenuBar(QWidget *parent)
     sameSaveAction->setShortcut(QKeySequence("Ctrl+S"));
     saveJsonAction = new QAction("Save As", this);
     exitAction = new QAction("Exit", this);
-
     fileMenu->addAction(newFileAction);
     fileMenu->addAction(recentProjectAction);
     fileMenu->addAction(recentProjectLibraryAction);
@@ -142,40 +161,38 @@ void MenuBar::setLibraryActionsVisible(bool visible)
 }
 
 // %%% Update File Menu Per Editor %%%
-/* Show/hide File menu items based on the active editor.
-   IMPORTANT: always call this BEFORE setLibraryActionsVisible()
-   so that library-visibility is applied last and wins. */
+
 void MenuBar::updateFileMenuForEditor(const QString& editorKey)
 {
-    // ── Step 1: reset everything to visible ──
+
     newFileAction->setVisible(true);
     recentProjectAction->setVisible(true);
     recentProjectLibraryAction->setVisible(true);
     loadJsonAction->setVisible(true);
-    loadXmlAction->setVisible(true);
+    loadXmlAction->setVisible(false);
     loadToLibraryAction->setVisible(true);
     openRuntimeInstanceAction->setVisible(true);
-    openMissionFileAction->setVisible(true);
+    openMissionFileAction->setVisible(false);
     sameSaveAction->setVisible(true);
     saveJsonAction->setVisible(true);
     exitAction->setVisible(true);
 
-    // ── Step 2: hide what is not needed per editor ──
+
     if (editorKey == "database" || editorKey == "scenario")
     {
-        // Only hide Open Mission File
+
         openMissionFileAction->setVisible(false);
     }
     else if (editorKey == "mission")
     {
-        // Hide: New File | Open XML File | Open Mission File
+
         newFileAction->setVisible(false);
         loadXmlAction->setVisible(false);
         openMissionFileAction->setVisible(false);
     }
     else if (editorKey == "analysis")
     {
-        // Hide everything except Exit
+
         newFileAction->setVisible(false);
         recentProjectAction->setVisible(false);
         recentProjectLibraryAction->setVisible(false);

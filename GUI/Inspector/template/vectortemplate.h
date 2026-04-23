@@ -1,9 +1,32 @@
-
-/* ========================================================================= */
-/* File: vectortemplate.h                                                   */
-/* Purpose: Defines widget for managing vector templates                     */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         vectortemplate.h
+ * MODULE:       Vector Template Manager
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the VectorTemplate class which provides a widget for
+ *               managing vector templates (numeric arrays or coordinate tuples)
+ *               within the Inspector panel. It sets up vector cells in a table,
+ *               maintains connected entity IDs and template names, supports
+ *               copying/pasting vector data, and emits value changes when a
+ *               vector element is modified.
+ *
+ * REQUIREMENTS: REQ-VECTOR-010  Vector template management widget
+ *               REQ-VECTOR-011  Setup vector cell in table widget
+ *               REQ-VECTOR-012  Maintain connected ID and template name
+ *               REQ-VECTOR-013  Signal valueChanged on vector modification
+ *               REQ-VECTOR-014  Format vector numbers for display
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-VECTOR-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef VECTORTEMPLATE_H
 #define VECTORTEMPLATE_H

@@ -1,10 +1,33 @@
-/* ========================================================================= */
-/* File: customresizableoverlaydock.h                                        */
-/* Purpose: Custom QDockWidget with resize handles, lock functionality,      */
-/*          and overlay capability. Supports moving, resizing, and locking   */
-/*          the dock position/size.                                          */
-/* Written by: Arti Rajpoot                                                  */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         customresizableoverlaydock.h
+ * MODULE:       Custom Resizable Overlay Dock
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the CustomResizableOverlayDock class which extends
+ *               QDockWidget with resize handles (left/right), lock functionality
+ *               to fix position/size, and overlay capability. Supports moving,
+ *               resizing via mouse drag, lock toggling, and emits signals on
+ *               move, resize, and lock state changes.
+ *
+ * REQUIREMENTS: REQ-DOCK-010  Custom dock widget with resize handles
+ *               REQ-DOCK-011  Resize margin detection and cursor update
+ *               REQ-DOCK-012  Lock/unlock position and size
+ *               REQ-DOCK-013  Lock button in title bar
+ *               REQ-DOCK-014  Signals for moved, resized, lockToggled
+ *               REQ-DOCK-015  Overlay capability (stays on top)
+ *               REQ-DOCK-016  Event filter for title bar interactions
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-DOCK-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #ifndef CUSTOMRESIZABLEOVERLAYDOCK_H
 #define CUSTOMRESIZABLEOVERLAYDOCK_H
 
@@ -24,14 +47,10 @@ public:
 
     enum HandlePosition { Left, Right };
     HandlePosition handlePos = Right;
-
     bool isLocked() const { return m_locked; }
     void setLocked(bool locked);
-
     void enableLockButton();
     void setWindowTitle(const QString &title);
-
-    // Override so content widget also gets mouseTracking + eventFilter
     void setWidget(QWidget *widget);
 
 protected:
@@ -56,13 +75,10 @@ private:
     bool resizing = false;
     Qt::Edges resizeEdge = Qt::Edges();
     static constexpr int resizeMargin = 12;
-
     Qt::Edges getResizeEdge(const QPoint &pos) const;
     void updateCursor(const QPoint &pos);
-
     bool m_locked = false;
     QToolButton *m_lockButton = nullptr;
-
     void setupTitleBar(const QString &title);
 };
 

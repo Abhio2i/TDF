@@ -1,14 +1,31 @@
-
-
-//============================================================================
-// File        : networktoolbar.cpp
-// Description : Implementation of NetworkToolbar class for network session
-//               management including start/stop sessions, status monitoring,
-//               packet analysis, and real-time network metrics visualization.
-//============================================================================
+/* =============================================================================
+ * FILE:         networktoolbar.cpp
+ * MODULE:       Network Toolbar
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the NetworkToolbar class which provides a toolbar for
+ *               network management and monitoring. It includes actions to start
+ *               and stop network sessions, view network status, and open a packet
+ *               analyzer. Integrates with NetworkManager to handle network
+ *               operations and displays packet data in a table with periodic
+ *               updates. Supports loading configuration from JSON.
+ *
+ * REQUIREMENTS: Implements REQ-NETTOOLBAR-010 through REQ-NETTOOLBAR-015
+ *
+ * AUTHOR:       Aarti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-NETTOOLBAR-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "networktoolbar.h"
-#include "networktoolbar-styles.h"  // Include separate CSS file
+#include "networktoolbar-styles.h"
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QDialogButtonBox>
@@ -242,7 +259,6 @@ void NetworkToolbar::enableMessageSendingUI() {
     layout->addWidget(sendButton);
     msgWidget->setLayout(layout);
 
-    // Add to your main window (assumes you have a layout to add to)
     if (mainWindowLayout) {
         mainWindowLayout->addWidget(msgWidget);
     }
@@ -250,7 +266,6 @@ void NetworkToolbar::enableMessageSendingUI() {
     connect(sendButton, &QPushButton::clicked, this, [this, inputField]() {
         QString msg = inputField->text().trimmed();
         if (!msg.isEmpty()) {
-            // networkManager->sendServerMessage(msg);
             inputField->clear();
         }
     });

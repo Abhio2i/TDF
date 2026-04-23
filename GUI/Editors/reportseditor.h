@@ -1,11 +1,41 @@
-
-/* ========================================================================= */
-/* File: reportseditor.h                                                     */
-/* Purpose: Reports dashboard — Mission Summary, Engagement Timeline,        */
-/*          Detection Probability chart, ECM/ECCM Analysis, Weapon Usage,   */
-/*          Lessons Learned, Report Options, and export actions.             */
-/* Written by: Arti Rajpoot                                                  */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         reportseditor.h
+ * MODULE:       Reports Dashboard
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the ReportsEditor class and its helper widgets
+ *               (ReportTimelineWidget, ReportGaugeWidget) which together form
+ *               a comprehensive reports dashboard. Provides mission summary,
+ *               engagement timeline (custom painted), detection probability chart,
+ *               ECM/ECCM analysis, weapon usage table, lessons learned, report
+ *               options (section selection, format choice), and export actions
+ *               (PDF, Word, Print, save/load templates). Loads data from JSON
+ *               and supports team selection for dynamic updates.
+ *
+ * REQUIREMENTS: REQ-REPORTS-010  Mission summary KPI cards
+ *               REQ-REPORTS-011  Engagement timeline with event points
+ *               REQ-REPORTS-012  Detection probability chart (QChart)
+ *               REQ-REPORTS-013  ECM/ECCM analysis panel
+ *               REQ-REPORTS-014  Weapon usage table with hit percentages
+ *               REQ-REPORTS-015  Lessons Learned text section
+ *               REQ-REPORTS-016  Report section selection checkboxes
+ *               REQ-REPORTS-017  Export to PDF and Word
+ *               REQ-REPORTS-018  Print report
+ *               REQ-REPORTS-019  Save/load report templates
+ *               REQ-REPORTS-020  Team selector for per-team data views
+ *               REQ-REPORTS-021  Semi-circle gauge widget for burn‑through range
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-REPORTS-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #ifndef REPORTSEDITOR_H
 #define REPORTSEDITOR_H
 

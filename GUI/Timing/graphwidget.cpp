@@ -1,52 +1,110 @@
-/* ========================================================================= */
-/* File: graphwidget.cpp                                                     */
-/* Purpose: Implements timeline graph visualization for entity tracking      */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
 
-#include "graphwidget.h"                          // For graph widget class
-#include "qpainter.h"                            // For painting operations
-#include <QtMath>                                // For math functions
-#include <QWheelEvent>                           // For mouse wheel events
-#include <QHeaderView>                           // For table header
-#include <QTime>                                 // For time formatting
+/* =============================================================================
+ * FILE:         graphwidget.cpp
+ * MODULE:       Timeline Graph Widget
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the GraphWidget class which provides a timeline graph
+ *               widget for visualising entity activity over time. It displays
+ *               horizontal bars representing each entity's active period,
+ *               supports zooming via mouse wheel, and updates a status table
+ *               with real‑time entity state information. Integrates with
+ *               Hierarchy to access entity data.
+ *
+ * REQUIREMENTS: Implements REQ-GRAPH-010 through REQ-GRAPH-017
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-GRAPH-001
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
+
+#include "graphwidget.h"
+#include "qpainter.h"
+#include <QtMath>
+#include <QWheelEvent>
+#include <QHeaderView>
+#include <QTime>
+#include <algorithm>
+#include <cctype>
 #include <core/Simulation/simulation.h>
 
 
 // %%% Helper Functions %%%
 /* Convert seconds to HH:MM:SS format */
 QString GraphWidget::formatTime(double seconds) {
-    // Calculate hours, minutes, seconds
     int totalSeconds = static_cast<int>(seconds);
-    int hours = totalSeconds / 3600;
+    int hours   = totalSeconds / 3600;
     int minutes = (totalSeconds % 3600) / 60;
-    int secs = totalSeconds % 60;
-
-    // Return formatted string with leading zeros
+    int secs    = totalSeconds % 60;
     return QString("%1:%2:%3")
-        .arg(hours, 2, 10, QChar('0'))
+        .arg(hours,   2, 10, QChar('0'))
         .arg(minutes, 2, 10, QChar('0'))
-        .arg(secs, 2, 10, QChar('0'));
+        .arg(secs,    2, 10, QChar('0'));
+}
+
+// %%% Natural Sort Helpers %%%
+
+static int extractTrailingNumber(const std::string& s) {
+    int i = static_cast<int>(s.size()) - 1;
+    while (i >= 0 && std::isdigit(static_cast<unsigned char>(s[i]))) i--;
+    std::string numStr = s.substr(i + 1);
+    if (numStr.empty()) return -1;
+    return std::stoi(numStr);
+}
+
+static bool naturalLess(Platform* a, Platform* b) {
+    const std::string& na = a->Name;
+    const std::string& nb = b->Name;
+
+    // Find where strings diverge
+    size_t i = 0;
+    while (i < na.size() && i < nb.size() && na[i] == nb[i]) i++;
+
+    // If both diverge at a digit — compare numerically
+    if (i < na.size() && i < nb.size() &&
+        std::isdigit(static_cast<unsigned char>(na[i])) &&
+        std::isdigit(static_cast<unsigned char>(nb[i]))) {
+        int numA = extractTrailingNumber(na);
+        int numB = extractTrailingNumber(nb);
+        if (numA != numB) return numA < numB;
+    }
+
+    return na < nb;
+}
+
+// %%% Sorted Platforms Helper %%%
+
+QVector<Platform*> GraphWidget::getSortedPlatforms() {
+    QVector<Platform*> sorted;
+    for (auto& [key, platform] : h->Platforms) {
+        if (platform) sorted.append(platform);
+    }
+
+    std::sort(sorted.begin(), sorted.end(), naturalLess);
+    return sorted;
 }
 
 // %%% Custom Canvas Class %%%
-/* Custom widget for graph drawing with event handling */
+
 class GraphCanvas : public QWidget {
 public:
     GraphWidget* parent;
-
-    /* Initialize canvas with parent reference */
     GraphCanvas(GraphWidget* p) : QWidget(p), parent(p) {
         setStyleSheet("background-color: black;");
     }
 
 protected:
-    /* Handle paint events by delegating to parent */
+
     void paintEvent(QPaintEvent *) override {
         parent->drawGraph(this);
     }
 
-    /* Handle wheel events for zoom functionality */
     void wheelEvent(QWheelEvent *event) override {
         parent->handleWheel(event);
     }
@@ -55,27 +113,23 @@ protected:
 // %%% Constructor %%%
 /* Initialize graph widget with default settings */
 GraphWidget::GraphWidget(QWidget *parent): QWidget(parent) {
-    // Configure window properties
     setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint);
     setStyleSheet("background-color: black;");
 
-    // Initialize variables
-    time = 0;
-    zoom = 100;
+    time   = 0;
+    zoom   = 100;
     entity = 0;
 
-    // Create main layout
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
-    // Create table widget for entity status
     tableWidget = new QTableWidget(this);
     tableWidget->setColumnCount(5);
-    tableWidget->setHorizontalHeaderLabels({"Entity Name", "Start Time", "End Time", "Total Duration", "Status"});
+    tableWidget->setHorizontalHeaderLabels({"Entity Name", "Start Time", "End Time",
+                                            "Total Duration", "Status"});
     tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
-    // Apply table styling
     tableWidget->setStyleSheet(
         "QTableWidget {"
         "   background-color: #1a1a1a;"
@@ -95,71 +149,63 @@ GraphWidget::GraphWidget(QWidget *parent): QWidget(parent) {
         "}"
         );
 
-    // Configure table behavior
     tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
     tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     tableWidget->horizontalHeader()->setStretchLastSection(true);
-    tableWidget->setMaximumHeight(150); // Fixed height for table
+    tableWidget->setMaximumHeight(150);
 
-    // Create graph canvas
     graphCanvas = new GraphCanvas(this);
 
-    // Add widgets to layout
     mainLayout->addWidget(tableWidget);
     mainLayout->addWidget(graphCanvas, 1);
-
     setLayout(mainLayout);
 
-    // Example test data
     graphDataList.append({0, 1.5, 4.0, Qt::blue});
     graphDataList.append({1, 0.5, 3.2, Qt::green});
     graphDataList.append({2, 5.0, 8.5, Qt::red});
 
-    // Initial update
     update();
-
 }
 
 // %%% Hierarchy Management %%%
-/* Set hierarchy reference for entity data */
+
 void GraphWidget::setHierarchy(Hierarchy* hier){
     h = hier;
 }
 
 // %%% Refresh Method %%%
-/* Update widget with new time delta */
+
 void GraphWidget::refresh(float delta){
     if(h){
-        entity = h->Platforms.size();          // Update entity count
-        t += delta;            // Accumulate time
-        t = Simulation::simulationTime;
-        time = Simulation::simulationTime;                               // Set current time
-        updateTable();                          // Update table display
-        if(graphCanvas) graphCanvas->update();  // Update canvas display
+        entity = h->Platforms.size();
+        t     += delta;
+        t      = Simulation::simulationTime;
+        time   = Simulation::simulationTime;
+        updateTable();
+        if(graphCanvas) graphCanvas->update();
     }
 }
 
 // %%% Table Update %%%
-/* Update table with current entity status */
-void GraphWidget::updateTable(){
-    if(!h) return;                              // Exit if no hierarchy
 
-    // Clear existing table rows
+void GraphWidget::updateTable(){
+    if(!h) return;
+
     tableWidget->setRowCount(0);
 
-    int entityNum = 0;                          // Entity counter
-    for (auto& [key, platform] : h->Platforms) {
+
+    QVector<Platform*> sorted = getSortedPlatforms();
+
+    for (Platform* platform : sorted) {
         if (!platform || !platform->dynamicModel) continue;
 
-        // Get entity timing information
-        double startTime = platform->dynamicModel->startTime;
-        double endTime = platform->dynamicModel->endTime < 0 ? t : platform->dynamicModel->endTime;
+        double startTime     = platform->dynamicModel->startTime;
+        double endTime       = platform->dynamicModel->endTime < 0
+                             ? t : platform->dynamicModel->endTime;
         if (endTime < startTime) endTime = startTime;
 
-        // Calculate total duration
         double totalDuration = endTime - startTime;
 
-        // Determine status based on current time
         QString status;
         if (t < startTime) {
             status = "Pending";
@@ -169,17 +215,16 @@ void GraphWidget::updateTable(){
             status = "Completed";
         }
 
-        // Add new row to table
         int row = tableWidget->rowCount();
         tableWidget->insertRow(row);
 
-        // Populate row cells
-        tableWidget->setItem(row, 0, new QTableWidgetItem("Entity " + QString::number(entityNum)));
+        // ✅ Actual entity name
+        tableWidget->setItem(row, 0, new QTableWidgetItem(
+                                         QString::fromStdString(platform->Name)));
         tableWidget->setItem(row, 1, new QTableWidgetItem(formatTime(startTime)));
         tableWidget->setItem(row, 2, new QTableWidgetItem(formatTime(endTime)));
         tableWidget->setItem(row, 3, new QTableWidgetItem(formatTime(totalDuration)));
 
-        // Status cell with color coding
         QTableWidgetItem* statusItem = new QTableWidgetItem(status);
         if (status == "Running") {
             statusItem->setForeground(Qt::green);
@@ -189,8 +234,6 @@ void GraphWidget::updateTable(){
             statusItem->setForeground(Qt::yellow);
         }
         tableWidget->setItem(row, 4, statusItem);
-
-        entityNum++;                            // Increment entity counter
     }
 }
 
@@ -198,14 +241,11 @@ void GraphWidget::updateTable(){
 /* Handle mouse wheel events for zoom control */
 void GraphWidget::handleWheel(QWheelEvent *event)
 {
-    // Adjust zoom based on wheel direction
     if (event->angleDelta().y() > 0) {
-        zoom += 10;                             // Zoom in
+        zoom += 10;
     } else {
-        if (zoom > 20) zoom -= 10;              // Zoom out with minimum limit
+        if (zoom > 20) zoom -= 10;
     }
-
-    // Update canvas if hierarchy exists
     if(!h) return;
     graphCanvas->update();
 }
@@ -213,236 +253,229 @@ void GraphWidget::handleWheel(QWheelEvent *event)
 // %%% Graph Drawing %%%
 /* Main graph drawing method */
 void GraphWidget::drawGraph(QWidget* canvas) {
-    if(!h) return;                              // Exit if no hierarchy
+    if(!h) return;
 
     QPainter p(canvas);
-    p.setRenderHint(QPainter::Antialiasing);    // Enable smooth rendering
+    p.setRenderHint(QPainter::Antialiasing);
 
-    // Get canvas dimensions
     int w = canvas->width();
     int h = canvas->height();
-    int padding = 50;                           // Border padding
 
-    // Set drawing color
+
+    QFontMetrics fm(p.font());
+    int maxNameWidth = 50;
+    for (auto& [key, platform] : this->h->Platforms) {
+        if (platform) {
+            int nameWidth = fm.horizontalAdvance(
+                                QString::fromStdString(platform->Name)) + 15;
+            if (nameWidth > maxNameWidth) maxNameWidth = nameWidth;
+        }
+    }
+
+    int leftPadding  = maxNameWidth;
+    int rightPadding = 50;
+    int topPadding   = 50;
+    int botPadding   = 50;
+
     p.setPen(QPen(Qt::white, 2));
 
-    // Calculate drawing boundaries
-    int startX = padding;
-    int endX = w - padding;
-    int bottomY = h - padding;
-    int topY = padding;
+    int startX  = leftPadding;
+    int endX    = w - rightPadding;
+    int bottomY = h - botPadding;
+    int topY    = topPadding;
 
     // Draw X-axis
     p.drawLine(startX, bottomY, endX, bottomY);
     drawXTick(p, startX, endX, bottomY, w);
 
+    QVector<QString> entityNames;
+    QVector<Platform*> sorted = getSortedPlatforms();
+    for (Platform* platform : sorted) {
+        entityNames.append(QString::fromStdString(platform->Name));
+    }
+
     // Draw Y-axis
     p.drawLine(startX, bottomY, startX, topY);
-    drawYTick(p, bottomY, topY, startX, h);
+    drawYTick(p, bottomY, topY, startX, h, entityNames);
 
-    // Set clipping area for graph content
+    // Set clipping area
     QRect chartArea(startX, topY, endX - startX, bottomY - topY);
     p.setClipRect(chartArea);
 
-    // Draw entity data
     drawData(p, startX, bottomY, w, h);
 
-    p.setClipping(false);                       // Reset clipping
+    p.setClipping(false);
 }
 
-/* Draw entity timeline data */
-void GraphWidget::drawData(QPainter &p, int startX, int bottomY, int canvasWidth, int canvasHeight) {
-    if (!h || h->Platforms.size() <= 0) return; // Check for valid data
+/* Draw entity timeline data — naturally sorted order */
+void GraphWidget::drawData(QPainter &p, int startX, int bottomY,
+                           int canvasWidth, int canvasHeight) {
+    if (!h || h->Platforms.size() <= 0) return;
 
-    // Calculate available space
-    int availableWidth = (canvasWidth - 100);
+    int availableWidth  = (canvasWidth  - 100);
     int availableHeight = (canvasHeight - 100);
 
-    // Calculate spacing based on zoom
-    double xSpacing = (availableWidth / (double)time) * (zoom / 100.0);
+    double xSpacing = (availableWidth  / (double)time)   * (zoom / 100.0);
     double ySpacing = (availableHeight / (double)entity) * (zoom / 100.0);
 
-    int entityNum = 0;                          // Entity counter
-    for (auto& [key, platform] : h->Platforms) {
+    // ✅ Same naturally sorted order as Y-axis labels
+    QVector<Platform*> sorted = getSortedPlatforms();
+
+    int entityNum = 0;
+    for (Platform* platform : sorted) {
         if (!platform || !platform->dynamicModel) continue;
 
-        // Get entity timing
         double startTime = platform->dynamicModel->startTime;
-        double endTime = platform->dynamicModel->endTime < 0 ? t : platform->dynamicModel->endTime;
+        double endTime   = platform->dynamicModel->endTime < 0
+                             ? t : platform->dynamicModel->endTime;
         if (endTime < startTime) endTime = startTime;
 
-        // Calculate screen coordinates
         int x1 = startX + (startTime * xSpacing);
-        int x2 = startX + (endTime * xSpacing);
-        int y = bottomY - (entityNum * ySpacing);
+        int x2 = startX + (endTime   * xSpacing);
+        int y  = bottomY - (entityNum * ySpacing);
 
-        // Drawing dimensions
-        int barWidth = x2 - x1;
         int barHeight = 4;
         int dotRadius = 4;
+        int barWidth  = x2 - x1;
 
-        // Draw timeline bar
+        // Draw timeline bar (cyan)
         p.setBrush(Qt::cyan);
         p.setPen(Qt::NoPen);
         p.drawRect(x1, y - (barHeight / 2), barWidth, barHeight);
 
-        // Draw start point dot (yellow)
+        // Draw start dot (yellow)
         p.setBrush(Qt::yellow);
         p.setPen(QPen(Qt::white, 1));
         p.drawEllipse(QPoint(x1, y), dotRadius, dotRadius);
 
-        // Draw end point dot (red)
+        // Draw end dot (red)
         p.setBrush(Qt::red);
         p.drawEllipse(QPoint(x2, y), dotRadius, dotRadius);
 
-        entityNum++;                            // Next entity
+        entityNum++;
     }
 }
 
 /* Draw X-axis ticks and time labels */
 void GraphWidget::drawXTick(QPainter &p, int startX, int endX, int y, int canvasWidth) {
     int availableWidth = endX - startX;
-    if (availableWidth <= 0 || time <= 0) return; // Validate dimensions
+    if (availableWidth <= 0 || time <= 0) return;
 
-    // Calculate tick spacing
     double tickSpacing = (availableWidth / (double)time) * (zoom / 100.0);
 
-    // Calculate text dimensions for overlap checking
     QFontMetrics fm(p.font());
-    QString sampleTime = formatTime(time);      // Longest possible text
-    int textWidth = fm.horizontalAdvance(sampleTime) + 10; // Width with padding
+    QString sampleTime = formatTime(time);
+    int textWidth = fm.horizontalAdvance(sampleTime) + 10;
 
-    // Calculate dynamic step based on available space
     int step = 1;
     double requiredSpacing = textWidth / tickSpacing;
 
-    // Adjust step for spacing
     if (tickSpacing < 1) {
-        // Very small spacing - increase step
         step = qMax(1, static_cast<int>(qCeil(requiredSpacing)));
     } else if (tickSpacing * step < textWidth) {
-        // Overlap detected - increase step
         step = qMax(1, static_cast<int>(qCeil(textWidth / tickSpacing)));
     }
 
-    // Ensure reasonable step size
     if (step > time / 4) {
         step = qMax(1, time / 4);
     }
 
-    // Draw ticks with intelligent positioning
     for (int i = 0; i <= time; i += step) {
         int x = startX + (i * tickSpacing);
-        if (x > endX) break;                    // Stop at boundary
+        if (x > endX) break;
 
-        // Draw tick line
         p.drawLine(x, y - 5, x, y + 5);
 
-        // Format time label
         QString timeLabel = formatTime(i);
 
-        // Check for text overlap
         bool canDrawHorizontal = true;
         if (i > 0) {
-            int prevX = startX + ((i - step) * tickSpacing);
+            int prevX         = startX + ((i - step) * tickSpacing);
             int prevTextWidth = fm.horizontalAdvance(formatTime(i - step));
             if (x - prevX < (prevTextWidth + textWidth) / 2) {
                 canDrawHorizontal = false;
             }
         }
 
-        // Draw label based on available space
         if (canDrawHorizontal) {
-            // Normal horizontal text
             QRect textRect(x - 40, y + 10, 80, 20);
             p.drawText(textRect, Qt::AlignCenter, timeLabel);
         } else {
-            // Rotated text for dense labels
             p.save();
             p.translate(x, y + 25);
-            p.rotate(45);                        // 45 degree angle
+            p.rotate(45);
             p.drawText(0, 0, timeLabel);
             p.restore();
         }
     }
 
-    // Always show start and end times clearly
     if (step > 1) {
-        // Start time (0)
-        QString startLabel = formatTime(0);
         QRect startRect(startX - 20, y + 10, 40, 20);
-        p.drawText(startRect, Qt::AlignCenter, startLabel);
+        p.drawText(startRect, Qt::AlignCenter, formatTime(0));
 
-        // End time
-        QString endLabel = formatTime(time);
         QRect endRect(endX - 20, y + 10, 40, 20);
-        p.drawText(endRect, Qt::AlignCenter, endLabel);
+        p.drawText(endRect, Qt::AlignCenter, formatTime(time));
     }
 }
 
 /* Draw Y-axis ticks and entity labels */
-void GraphWidget::drawYTick(QPainter &p, int startY, int endY, int x, int canvasHeight) {
+void GraphWidget::drawYTick(QPainter &p, int startY, int endY, int x,
+                            int canvasHeight, QVector<QString> entityNames) {
     int availableHeight = startY - endY;
-    int numEntities = entity;
+    int numEntities     = entity;
 
-    if (numEntities == 0) return;               // No entities to display
+    if (numEntities == 0) return;
 
-    // Calculate spacing
     double spacing = (availableHeight / (double)numEntities) * (zoom / 100.0);
 
-    // Calculate step for label density
-    int minVerticalGap = 25;                    // Minimum space between labels
+    int minVerticalGap = 25;
     int step = 1;
     if (spacing < minVerticalGap) {
         step = qCeil(minVerticalGap / spacing);
     }
 
-    // Draw ticks with intelligent spacing
     for (int i = 0; i < numEntities; i += step) {
         int y = startY - (i * spacing);
-        if (y < endY) break;                    // Stop at boundary
+        if (y < endY) break;
 
-        // Draw tick line
         p.drawLine(x - 5, y, x + 5, y);
 
-        // Create entity label
-        QString label = "Entity" + QString::number(i);
-        QFontMetrics fm(p.font());
-        int labelWidth = fm.horizontalAdvance(label);
 
-        // Check if label will fit
+        QString label = (i < entityNames.size())
+                            ? entityNames[i]
+                            : "Entity" + QString::number(i);
+
         if (i > 0 && step == 1 && spacing < 30) {
-            // If spacing is small, show alternate labels
             if (i % 2 == 0) {
-                QRect textRect(x - 100, y - 10, 100, 20);
+                QRect textRect(0, y - 10, x - 8, 20);
                 p.drawText(textRect, Qt::AlignRight | Qt::AlignVCenter, label);
             }
         } else {
-            // Show all labels
-            QRect textRect(x - 100, y - 10, 100, 20);
+            QRect textRect(0, y - 10, x - 8, 20);
             p.drawText(textRect, Qt::AlignRight | Qt::AlignVCenter, label);
         }
     }
 
-    // Always show first and last entity
     if (step > 1 && numEntities > 0) {
         // First entity
-        QString firstLabel = "Entity0";
+        QString firstLabel = entityNames.isEmpty()
+                                 ? "Entity0" : entityNames[0];
         int y = startY;
         p.drawLine(x - 5, y, x + 5, y);
-        QRect firstRect(x - 100, y - 10, 100, 20);
+        QRect firstRect(0, y - 10, x - 8, 20);
         p.drawText(firstRect, Qt::AlignRight | Qt::AlignVCenter, firstLabel);
 
         // Last entity
         if (numEntities > 1) {
-            QString lastLabel = "Entity" + QString::number(numEntities - 1);
+            QString lastLabel = ((numEntities - 1) < entityNames.size())
+                                    ? entityNames[numEntities - 1]
+                                    : "Entity" + QString::number(numEntities - 1);
             y = startY - ((numEntities - 1) * spacing);
             if (y >= endY) {
                 p.drawLine(x - 5, y, x + 5, y);
-                QRect lastRect(x - 100, y - 10, 100, 20);
+                QRect lastRect(0, y - 10, x - 8, 20);
                 p.drawText(lastRect, Qt::AlignRight | Qt::AlignVCenter, lastLabel);
             }
         }
     }
 }
-

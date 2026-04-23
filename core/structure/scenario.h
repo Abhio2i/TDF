@@ -1,3 +1,25 @@
+// =============================================================================
+// FILE:        scenario.h
+// MODULE:      Scenario Management
+// PROJECT:     Tactical Display/Simulation Framework (TDF)
+// ORGANISATION: Oxygen 2 Innovation (O2I)
+// STANDARD:    RTCA DO-178C / ED-12C, DAL B (Guidelines applied)
+//
+// DESCRIPTION: Defines the Scenario class, which aggregates core simulation
+//              components for a specific scenario: Hierarchy (runtime and
+//              library), SessionManager, SceneRenderer, ScriptEngine, and
+//              Console. Provides Qt signal/slot capabilities for scenario
+//              lifecycle events.
+//
+// AUTHOR:      [Original Author Name]
+// REVIEWED BY: [Reviewer Name], [Review Date]
+//
+// CHANGE HISTORY:
+//   Rev 1  [Date]  Initial implementation.
+//
+// COPYRIGHT:   Oxygen 2 Innovation (O2I). All rights reserved.
+// =============================================================================
+
 #ifndef SCENARIO_H
 #define SCENARIO_H
 
@@ -11,24 +33,38 @@
 #include <core/Network/networkmanager.h>
 #include <core/Debug/console.h>
 
-class Scenario : public QObject  // QObject se inherit kiya
+// =============================================================================
+// CLASS: Scenario
+//
+// DESCRIPTION: Container for all components needed to run a simulation
+//              scenario. Holds references to the runtime hierarchy, asset
+//              library, session preferences, renderer, scripting engine, and
+//              console. Intended to be instantiated per scenario.
+// =============================================================================
+class Scenario : public QObject
 {
-    Q_OBJECT  // Meta-object system ke liye zaroori hai
+    Q_OBJECT
 
 public:
     Scenario();
-    // ScenarioConfig *scenarioconfig;
-    Hierarchy *hierarchy;
-    Hierarchy *Library;
-    SessionManager *sessionManager;
-    SceneRenderer *scenerenderer;
-    ScriptEngine *scriptengine;
-    Console *console;
+
+    // =========================================================================
+    // SECTION: Core Component Pointers
+    // DESCRIPTION: References to major subsystems for this scenario.
+    // =========================================================================
+    // ScenarioConfig *scenarioconfig;   //!< (Commented out) Scenario configuration
+    Hierarchy *hierarchy;               //!< Runtime entity hierarchy
+    Hierarchy *Library;                 //!< Library hierarchy (static assets/profiles)
+    SessionManager *sessionManager;     //!< User session preferences
+    SceneRenderer *scenerenderer;       //!< 3D scene renderer
+    ScriptEngine *scriptengine;         //!< Scripting engine for mission logic
+    Console *console;                   //!< Logging console
+
 signals:
-    //void scenarioStarted();  // Signal define kiya
+    //void scenarioStarted();            //!< Emitted when scenario starts (commented out)
 
 public slots:
-    //void onScenarioStarted();
+    //void onScenarioStarted();          //!< Slot for scenario start event (commented out)
 };
 
 #endif // SCENARIO_H

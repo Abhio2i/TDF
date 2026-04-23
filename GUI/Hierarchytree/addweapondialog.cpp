@@ -1,3 +1,5 @@
+//======================Waris===========================
+
 #include "addweapondialog.h"
 #include <QApplication>
 #include <QPalette>

@@ -1,10 +1,30 @@
-
-/* ========================================================================= */
-/* File: analysiseditor.cpp                                                  */
-/* Purpose: Dynamic multi-team analytics — any teams from JSON auto-shown.  */
-/* Written by: Arti Rajpoot                                                  */
-/* ========================================================================= */
-
+/* =============================================================================
+ * FILE:         analysiseditor.cpp
+ * MODULE:       Analysis Editor / Multi-Team Analytics Dashboard
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the AnalysisEditor class which provides a fully
+ *               dynamic, multi‑team analytics dashboard. It loads scenario or
+ *               analysis JSON files, computes metrics (success probability,
+ *               losses, detection/weapon effectiveness), displays interactive
+ *               charts (engagement timeline, success probability, losses vs
+ *               engagements), and supports team selectors, series visibility,
+ *               and export of results. The implementation includes parsing of
+ *               hierarchy entities to auto‑generate team metrics and timelines.
+ *
+ * REQUIREMENTS: Implements REQ-ANALYSIS-010 through REQ-ANALYSIS-022
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-ANALYSIS-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "analysiseditor.h"
 #include <QDir>
 #include <QFileDialog>

@@ -1,10 +1,37 @@
+/**
+ * @file aircraft.cpp
+ * @brief Implementation of the Aircraft class for fixed-wing flight dynamics.
+ */
+
 #include "aircraft.h"
 #include <cmath>
 #include <algorithm>
+
+/**
+ * @brief Constructs an Aircraft object.
+ */
 Aircraft::Aircraft() {}
 
+/**
+ * @brief Destructor.
+ */
 Aircraft::~Aircraft() {}
 
+/**
+ * @brief Updates aircraft physics and navigation over a fixed timestep.
+ * @param delta Time step in seconds.
+ *
+ * This method performs:
+ * - State synchronization (heading, altitude)
+ * - Climb and pitch calculation with predictive level‑off
+ * - Pitch smoothing with dynamic rate
+ * - Navigation (yaw) using shortest‑path turn logic
+ * - Engine thrust based on altitude efficiency
+ * - Speed control with acceleration/deceleration
+ * - Roll (bank) from turn rate
+ * - Position update with wind displacement
+ * - Waypoint reach detection
+ */
 void Aircraft::FixedUpdate(float delta){
     // 1. STATE SYNCHRONIZATION
     _currentHeading = EularAngles.y;
@@ -14,7 +41,7 @@ void Aircraft::FixedUpdate(float delta){
 
     // Calculate Altitude Ratio (efficiency drops as we approach Ceiling)
     float altRatio = 1.0f - (Altitude / CeilingHeight);
-    altRatio = std::clamp(altRatio,0.0f,1.0f);
+    altRatio = std::clamp(altRatio, 0.0f, 1.0f);
 
     // 2. CLIMB AND PITCH CALCULATION
     // Calculate required vertical rate based on altitude gap and ceiling efficiency
@@ -37,7 +64,7 @@ void Aircraft::FixedUpdate(float delta){
         RequirePitch = 0; // Level off nose
     }
 
-    // Assign pitch direction (In Unity, negative X usually tilts the nose UP)
+    // Assign pitch direction (negative X tilts nose UP in many coordinate systems)
     RequirePitch = (targetAltitude > Altitude) ? -std::abs(RequirePitch) : std::abs(RequirePitch);
 
     // 3. PITCH SMOOTHING
@@ -69,7 +96,7 @@ void Aircraft::FixedUpdate(float delta){
 
     _smoothTurnRate = Lerp(_smoothTurnRate, dynamicTurnRate, delta * 2.0f);
 
-    // Calculate shortest rotation path
+    // Calculate shortest rotation path using 0-360 conversion
     float target360 = (float)convertToClockwise360(targetHeading);
     float current360 = (float)convertToClockwise360(_currentHeading);
     targetHeading = NormalizeAngle(targetHeading);
@@ -120,10 +147,10 @@ void Aircraft::FixedUpdate(float delta){
 
     // Add Wind Displacement
     vec3 windVector = vec3(
-                            std::sin(WindDirection * Deg2Rad),
-                            0,
-                            std::cos(WindDirection * Deg2Rad)
-                            ) * WindIntensity * delta;
+                          std::sin(WindDirection * Deg2Rad),
+                          0,
+                          std::cos(WindDirection * Deg2Rad)
+                          ) * WindIntensity * delta;
 
     _moveVelocity += windVector;
 
@@ -134,7 +161,7 @@ void Aircraft::FixedUpdate(float delta){
     Velocity = _moveVelocity / delta;
     // localVelocity = transform.InverseTransformDirection(Velocity);
 
-    if(vec3::Distance(Position,TargetPosition)< speed)
+    if (vec3::Distance(Position, TargetPosition) < speed)
     {
         waypointReach = true;
     }
@@ -142,23 +169,38 @@ void Aircraft::FixedUpdate(float delta){
     {
         waypointReach = false;
     }
-
-
 }
 
+/**
+ * @brief Normalizes an angle to the range [-180, 180] degrees.
+ * @param angle Input angle in degrees.
+ * @return Normalized angle.
+ */
 float Aircraft::NormalizeAngle(float angle) {
     while (angle > 180.0f) angle -= 360.0f;
     while (angle < -180.0f) angle += 360.0f;
     return angle;
 }
 
+/**
+ * @brief Converts a longitude from -180..180 to 0..360 clockwise.
+ * @param lon180 Longitude in degrees (-180 to 180).
+ * @return Longitude in degrees (0 to 360).
+ */
 double Aircraft::convertToClockwise360(double lon180) {
     double lon360 = (lon180 < 0) ? (lon180 + 360.0) : lon180;
-    double clockwise =lon360;
+    double clockwise = lon360;
     if (clockwise >= 360.0) clockwise = 0.0;
     return clockwise;
 }
 
+/**
+ * @brief Linear interpolation between two floats.
+ * @param a Start value.
+ * @param b End value.
+ * @param t Interpolation factor (0..1).
+ * @return Interpolated value.
+ */
 float Aircraft::Lerp(float a, float b, float t) {
     return a + t * (b - a);
 }

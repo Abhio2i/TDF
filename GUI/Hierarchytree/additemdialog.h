@@ -1,9 +1,38 @@
-
-/* ========================================================================= */
-/* File: additemdialog.h                                                    */
-/* Purpose: Dialog for adding items with configurable properties and components */
-// Written by   : Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         additemdialog.h
+ * MODULE:       Add Item Dialog
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the AddItemDialog class which provides a modal dialog
+ *               for adding new items (entities or folders) with configurable
+ *               properties and components. Supports entity/folder creation,
+ *               sensor/IFF/radio/weapon component configuration, scenario
+ *               parameters (range, speed, turn radius, trajectory), profile
+ *               selection, and entity component inheritance. The dialog adapts
+ *               its UI based on dialog type (Entity/Folder) and mode (Normal,
+ *               ComponentSensor, ComponentIFF, ComponentRadio, ComponentWeapon).
+ *
+ * REQUIREMENTS: REQ-DIALOG-010  Add entity or folder dialog
+ *               REQ-DIALOG-011  Configure entity name and number/ID
+ *               REQ-DIALOG-012  Select component types (sensor, IFF, radio, weapon)
+ *               REQ-DIALOG-013  Configure scenario parameters (range, speed, etc.)
+ *               REQ-DIALOG-014  Select trajectory type and parameters
+ *               REQ-DIALOG-015  Populate profiles from hierarchy (sensor, IFF, etc.)
+ *               REQ-DIALOG-016  Inherit components from existing entity
+ *               REQ-DIALOG-017  Validate user inputs before acceptance
+ *               REQ-DIALOG-018  Return configured component map
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-DIALOG-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef ADDITEMDIALOG_H
 #define ADDITEMDIALOG_H

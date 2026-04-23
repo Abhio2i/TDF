@@ -1,3 +1,8 @@
+/**
+ * @file fixedpoints.cpp
+ * @brief Implementation of the FixedPoints entity for static geographic markers.
+ */
+
 #include "fixedpoints.h"
 #include "core/Hierarchy/Utils/entityutils.h"
 #include "core/Hierarchy/hierarchy.h"
@@ -5,18 +10,27 @@
 #include <core/Debug/console.h>
 #include <core/GlobalRegistry.h>
 
+/**
+ * @brief Constructs a FixedPoints entity.
+ * @param h Pointer to the parent Hierarchy.
+ */
 FixedPoints::FixedPoints(Hierarchy *h):Entity(h) {
     type = Constants::EntityType::FixedPoint;
 }
 
-
-
+/**
+ * @brief Emits signals to notify the hierarchy that this entity has been added.
+ */
 void FixedPoints::spawn() {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
 }
 
-std::vector<std::string>FixedPoints:: getSupportedComponents() {
+/**
+ * @brief Returns a list of component names supported by FixedPoints.
+ * @return Vector containing "transform", "collider", "bitmap".
+ */
+std::vector<std::string> FixedPoints::getSupportedComponents() {
     std::vector<std::string> supported;
     supported.push_back("transform");
     supported.push_back("collider");
@@ -24,7 +38,10 @@ std::vector<std::string>FixedPoints:: getSupportedComponents() {
     return supported;
 }
 
-
+/**
+ * @brief Serializes the FixedPoints entity to JSON.
+ * @return QJsonObject containing transform, collider, and bitmap data.
+ */
 QJsonObject FixedPoints::toJson() const {
     QJsonObject obj;
     obj["name"] = QString::fromStdString(Name);
@@ -32,8 +49,6 @@ QJsonObject FixedPoints::toJson() const {
     obj["id"] = QString::fromStdString(ID);
     obj["parent_id"] = QString::fromStdString(parentID);
     obj["active"] = Active;
-
-
 
     if (transform) obj["transform"] = transform->toJson();
     if (collider) obj["collider"] = collider->toJson();
@@ -51,6 +66,10 @@ QJsonObject FixedPoints::toJson() const {
     return obj;
 }
 
+/**
+ * @brief Deserializes the FixedPoints entity from JSON.
+ * @param obj JSON object containing entity data.
+ */
 void FixedPoints::fromJson(const QJsonObject& obj) {
     if (obj.contains("active"))
         Active = obj["active"].toBool();
@@ -77,12 +96,16 @@ void FixedPoints::fromJson(const QJsonObject& obj) {
         collider->fromJson(obj["collider"].toObject());
     }
 
-    if (obj.contains("bitmap") && obj["bitmap"].isObject()) { // Fix: Correct key
+    if (obj.contains("bitmap") && obj["bitmap"].isObject()) { // Correct key
         if (!meshRenderer2d) addComponent("bitmap");
         meshRenderer2d->fromJson(obj["bitmap"].toObject());
     }
 }
 
+/**
+ * @brief Adds a component by name to the FixedPoints entity.
+ * @param name Component name ("transform", "collider", or "bitmap").
+ */
 void FixedPoints::addComponent(std::string name) {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (name == "transform") {
@@ -104,6 +127,8 @@ void FixedPoints::addComponent(std::string name) {
         if (!meshRenderer2d) {
             if (!transform)
                 addComponent("transform");
+            if (!collider)
+                addComponent("collider");
             meshRenderer2d = new MeshRenderer2D();
             meshRenderer2d->Sprite = new std::string(":/texture/images/Texture/marker.png");
             meshRenderer2d->Meshes[0]->Sprite = meshRenderer2d->Sprite;
@@ -115,6 +140,10 @@ void FixedPoints::addComponent(std::string name) {
     }
 }
 
+/**
+ * @brief Removes a component by name.
+ * @param name Component name.
+ */
 void FixedPoints::removeComponent(std::string name) {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (name == "transform") {
@@ -143,6 +172,11 @@ void FixedPoints::removeComponent(std::string name) {
     }
 }
 
+/**
+ * @brief Retrieves a component's JSON data by name.
+ * @param name Component name.
+ * @return QJsonObject representing the component, or empty if not found.
+ */
 QJsonObject FixedPoints::getComponent(std::string name) {
     if (name == "transform") {
         if (!transform) { Console::error(name + ": not exist"); return QJsonObject(); }
@@ -158,6 +192,11 @@ QJsonObject FixedPoints::getComponent(std::string name) {
     return QJsonObject();
 }
 
+/**
+ * @brief Updates a component from JSON data.
+ * @param name Component name.
+ * @param obj JSON object containing new data.
+ */
 void FixedPoints::updateComponent(QString name, const QJsonObject& obj) {
     if (name == "transform") {
         if (!transform) { Console::error(name.toStdString() + ": not exist"); return; }

@@ -2019,7 +2019,7 @@ void GISlib::receiveImage(QString url, QByteArray data) {
 
     // Process empty data (download failure)
     if (data.isEmpty()) {
-        qDebug() << "Empty data for tile" << key << ", retries left:" << retries - 1;
+        // qDebug() << "Empty data for tile" << key << ", retries left:" << retries - 1;
         if (retries > 0) {
             // Retry download with decreased retry count
             tileRetries[key] = retries - 1;

@@ -1,9 +1,39 @@
-
-/* ========================================================================= */
-/* File: hierarchytree.h                                                    */
-/* Purpose: Defines widget for displaying hierarchy tree                     */
-// Written by   : Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         hierarchytree.h
+ * MODULE:       Hierarchy Tree Widget
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the HierarchyTree class which provides a widget for
+ *               displaying and interacting with a hierarchical tree of profiles,
+ *               folders, entities, components, and sub‑components. Supports
+ *               adding/removing/renaming items, context menus, drag‑and‑drop,
+ *               multi‑select, copy/paste, filtering by profile and search text,
+ *               and signals for UI actions. Includes a custom CompactMenuAction
+ *               for compact menu items.
+ *
+ * REQUIREMENTS: REQ-TREE-010  Display hierarchy tree with expandable nodes
+ *               REQ-TREE-011  Add/remove/rename profiles, folders, entities,
+ *                             components, sub‑components
+ *               REQ-TREE-012  Context menu for operations
+ *               REQ-TREE-013  Drag‑and‑drop support
+ *               REQ-TREE-014  Multi‑select and bulk operations
+ *               REQ-TREE-015  Filter by profile type and search text
+ *               REQ-TREE-016  Copy/paste items
+ *               REQ-TREE-017  Signals for item selection, copy, paste, drop
+ *               REQ-TREE-018  Update entity active state visualisation
+ *               REQ-TREE-019  Library file name display
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-TREE-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef HIERARCHYTREE_H
 #define HIERARCHYTREE_H
@@ -21,7 +51,6 @@
 
 // %%% Forward Declarations %%%
 class ContextMenu;
-// In hierarchytree.h, add this class before HierarchyTree class definition
 class CompactMenuAction : public QWidgetAction {
 public:
     CompactMenuAction(const QIcon& icon, const QString& text, QObject* parent = nullptr)
@@ -29,7 +58,7 @@ public:
         QWidget* widget = new QWidget();
         QHBoxLayout* layout = new QHBoxLayout(widget);
         layout->setContentsMargins(2, 2, 2, 2);
-        layout->setSpacing(0);  // Zero spacing - NO SPACE between icon and text
+        layout->setSpacing(0);
 
         // Icon label
         QLabel* iconLabel = new QLabel();
@@ -133,12 +162,8 @@ signals:
     // void copyItemsRequested(QList<QVariantMap> data);
     // Signal paste item request
     void pasteItemRequested(QVariantMap targetData);
-    // Signal paste multiple items request
-    // void pasteItemsRequested(QVariantMap targetData, QList<QVariantMap> itemsToPaste);
     // Signal remove component request
     void removeComponentRequested(QString entityID, QString componentName);
-    // Signal remove multiple entities request
-    // void removeEntitiesRequested(QList<QPair<QString, QString>> entityInfoList);
     // Signal item drop event
     void itemDropped(QVariantMap sourceData, QVariantMap targetData);
     // Signal entity selection

@@ -1,8 +1,28 @@
-/* ========================================================================= */
-/* File: waypointeditdialog.cpp                                              */
-/* Purpose: Implements dialog for editing waypoint parameters                */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         waypointeditdialog.cpp
+ * MODULE:       Waypoint Editing Dialog
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the WaypointEditDialog class which provides a modal
+ *               dialog for editing waypoint parameters (latitude, longitude,
+ *               altitude, speed). Used within trajectory editing workflows
+ *               to modify individual waypoint data. Supports setting initial
+ *               values, retrieving updated values, and a static convenience
+ *               method for one‑shot editing.
+ *
+ * REQUIREMENTS: Implements REQ-WAYPOINT-010 through REQ-WAYPOINT-014
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-WAYPOINT-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "waypointeditdialog.h"
 
 WaypointEditDialog::WaypointEditDialog(QWidget *parent)

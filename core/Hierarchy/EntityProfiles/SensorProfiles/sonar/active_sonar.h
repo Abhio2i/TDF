@@ -41,12 +41,16 @@ public:
     // ── interval check ──
     bool canPing(float currentTime) const;
 
+    bool  isInBeam(float targetBearing) const;
+
     // Getters
     float getComputedDistance() const;
     float getTravelTime()       const;
     bool  hasEcho()             const;
     float getSoundSpeed() const;
     float getLastPingTime()     const;
+
+    float getSoundSpeedAtDepth(float depth) const;
 
 private:
     double m_entityLat;
@@ -68,8 +72,6 @@ private:
     bool  m_echoReceived;
 
     float computeDistance() const;
-
-    bool  isInBeam(float targetBearing) const;
 
     DetectionResult processSingleTarget(const SonarTarget &target,
                                         const SonarInput  &input) const;

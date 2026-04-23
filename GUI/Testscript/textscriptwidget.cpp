@@ -1,8 +1,28 @@
-/* ========================================================================= */
-/* File: textscriptwidget.cpp                                             */
-/* Purpose: Implements widget for managing and displaying script files      */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         textscriptwidget.cpp
+ * MODULE:       Text Script Management Widgets
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the TextScriptItemWidget and TextScriptWidget classes
+ *               which provide a UI for managing and displaying AngelScript files.
+ *               The item widget represents a single script with play/pause controls.
+ *               The main widget displays a list of scripts, supports context menu
+ *               operations (rename, remove, edit), and emits signals to run/pause
+ *               scripts, rename/remove script files, and open the script editor.
+ *
+ * REQUIREMENTS: Implements REQ-SCRIPTWIDGET-010 through REQ-SCRIPTWIDGET-015
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-SCRIPTWIDGET-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "textscriptwidget.h"                      // For text script widget class
 #include "GUI/Testscript/testscriptdialog.h"       // For test script dialog
@@ -25,12 +45,9 @@
 TextScriptItemWidget::TextScriptItemWidget(const QString &fileName, const QString &filePath, QWidget *parent)
     : QWidget(parent)
 {
-    // Set up layout with proper margins
     QHBoxLayout *layout = new QHBoxLayout(this);
     layout->setContentsMargins(8, 4, 8, 4);
     layout->setSpacing(8);
-
-    // Make widget expand horizontally and have fixed height
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setFixedHeight(32);
 
@@ -88,11 +105,9 @@ TextScriptWidget::TextScriptWidget(QWidget *parent)
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(5);
 
-    // Create a horizontal layout for button to control alignment
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     buttonLayout->setContentsMargins(0, 0, 0, 0);
 
-    // Create add script button - WITHOUT fixed width
     addScriptButton = new QPushButton(QIcon(":/icons/images/add.png"), tr("Add Script"), this);
     addScriptButton->setStyleSheet(
         "QPushButton {"
@@ -299,7 +314,6 @@ void TextScriptWidget::handleRenameAction()
             newName += ".as";
         }
         emit renameScript(filePath, newName);
-        // Rename file
         QDir dir(QFileInfo(filePath).absolutePath());
         if (dir.rename(QFileInfo(filePath).fileName(), newName)) {
             QString newFilePath = dir.filePath(newName);

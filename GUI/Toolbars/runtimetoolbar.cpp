@@ -1,11 +1,28 @@
-
-//============================================================================
-// File        : runtimetoolbar.cpp
-// Description : Implementation of RuntimeToolBar class for simulation control toolbar.
-//               Provides controls for start/pause/stop, speed adjustment, timing graph,
-//               logger, and radar display toggle functionality.
-// Written by: Arti Rajpoot
-//============================================================================
+/* =============================================================================
+ * FILE:         runtimetoolbar.cpp
+ * MODULE:       Runtime Toolbar
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the RuntimeToolBar class which provides a toolbar for
+ *               runtime control and monitoring. Includes actions for start, pause,
+ *               stop, next step, reset, timing graph, logger, radar toggle, and
+ *               a speed slider with time label. Supports simulation state
+ *               (STOPPED, RUNNING, PAUSED), snapshot storage, event filtering,
+ *               and emits signals for simulation control and timing/logging.
+ *
+ * REQUIREMENTS: Implements REQ-RUNTIMETOOLBAR-010 through REQ-RUNTIMETOOLBAR-018
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-RUNTIMETOOLBAR-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "runtimetoolbar.h"
 #include "runtimetoolbar-styles.h"
@@ -30,10 +47,8 @@
 #include "GUI/Timing/graphwidget.h"
 #include "GUI/Editors/runtimeeditor.h"
 
-// Icon size constant for toolbar buttons (smaller - 16x16)
 const QSize ICON_SIZE(20, 20);
 
-// Helper function to create icons with white background
 QPixmap RuntimeToolBar::withWhiteBg(const QString &iconPath)
 {
     QPixmap pixmap(iconPath);
@@ -50,14 +65,9 @@ QPixmap RuntimeToolBar::withWhiteBg(const QString &iconPath)
 RuntimeToolBar::RuntimeToolBar(QWidget *parent) : QToolBar(parent)
 {
     setWindowTitle("Runtime ToolBar");
-
-    // Apply toolbar styles
     setStyleSheet(RuntimeToolbarStyles::Toolbar);
-
-    // Apply tooltip style
     QToolTip::setPalette(QPalette());
     setToolTipDuration(2000);
-
     elapsedSeconds = 0;
     currentState = STOPPED;
     blinkState = false;
@@ -72,7 +82,6 @@ void RuntimeToolBar::Init(){
     elapsedSeconds = 0;
     currentState = STOPPED;
     blinkState = false;
-    // Reset toggle button back to play icon
     startAction->setIcon(QIcon(withWhiteBg(":/icons/images/play.png")));
     startAction->setText(tr("Start"));
     startAction->setChecked(false);
@@ -86,7 +95,6 @@ void RuntimeToolBar::createActions()
     this->setIconSize(ICON_SIZE);
 
 
-    // Start/Pause Toggle Action — single button that flips between play and pause
     startAction = new QAction(QIcon(withWhiteBg(":/icons/images/play.png")), tr("Start"), this);
     startAction->setCheckable(true);
     startAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_P));

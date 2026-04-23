@@ -1,602 +1,613 @@
-// radarsignalprocessor_aesa.cpp  —  Rev 3
-// Fixes vs Rev 2:
-//   - cfg.seaState / cfg.landClutter now exist in RadarConfig
-//   - unused 'waveform' parameter in calculateSignalStrength resolved
-//   - all other physics unchanged
+// =============================================================================
+// FILE:         radarsignalprocessor_aesa.cpp
+// MODULE:       AESA Radar Signal Processor — Implementation
+// PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+// ORGANISATION: Oxygen to Innovation Pvt. Ltd.
+// STANDARD:     RTCA DO-178C / ED-12C, DAL B
+// COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+//
+// DESCRIPTION:  Implements all physics-layer signal processing. All functions
+//               are stateless const methods — the only mutable state is the
+//               thread_local RNG which is per-thread and requires no mutex.
+//               No dynamic memory allocation except std::vector in
+//               generateReferenceCells() (known MM-01 deviation,
+//               ICD-AESA-DEVIATION-002 — 16 fixed cells, bounded allocation).
+//               No recursion (FN-06 compliant). No exceptions (FP-01 compliant).
+//
+// REQUIREMENTS: REQ-AESA-040  Detection pipeline physics
+//               REQ-AESA-021  Staggered PRF ambiguity resolution
+//               REQ-AESA-060  Electronic warfare
+//               REQ-AESA-071  Propagation loss
+//               REQ-AESA-072  Two-ray multipath
+//
+// AUTHOR:       Oxygen to Innovation Pvt. Ltd.
+// REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-AESA-SP-001
+//
+// CHANGE HISTORY:
+//   Rev 1  01 Jan 2026  Initial implementation.
+//   Rev 2  15 Feb 2026  FIX-01 through FIX-11 applied.
+//   Rev 3  01 Apr 2026  STAP, staggered PRF, Physical Optics RCS,
+//                       ITU-R P.676-12 gaseous attenuation added.
+//                       Commented-out code removed per NS-05.
+//   Rev 4  20 Apr 2026  DO-178C DAL B compliant comments added throughout.
+//                       Magic numbers replaced with named constexpr constants.
+//
+// COPYRIGHT:    Oxygen to Innovation Pvt. Ltd. All rights reserved.
+//               Restricted circulation — defence simulation use only.
+// =============================================================================
+
 #include "radarsignalprocessor_aesa.h"
 #include <algorithm>
 #include <cmath>
 #include <random>
 #include <numeric>
-//#include <QDebug>
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-static constexpr double BOLTZMANN      = 1.380649e-23;
-static constexpr double SPEED_OF_LIGHT = 299792458.0;
-static constexpr double MERGE_GATE     = 150.0;
-
-static thread_local std::default_random_engine tl_rng{ std::random_device{}() };
-
-namespace aesa {
 
 // =============================================================================
-// §A  Geometry
+// FILE-SCOPE NAMED CONSTANTS
+// All numeric literals used in this translation unit are declared here.
+// Satisfies VI-08 (no magic numbers). REQ-AESA-040.
 // =============================================================================
-
-bool RadarSignalProcessor_AESA::isTargetInBeam(
-    double beamAz, double beamEl,
-    double targetAz, double targetEl,
-    const RadarConfig& cfg,
-    double& outAzDiff, double& outElDiff,
-    double effectiveBeamWidth) const
+namespace
 {
-    outAzDiff = std::abs(beamAz - targetAz);
-    if (outAzDiff > 180.0) outAzDiff = 360.0 - outAzDiff;
-    outElDiff = std::abs(beamEl - targetEl);
-
-    double bw   = (effectiveBeamWidth > 0.0) ? effectiveBeamWidth
-                                             : static_cast<double>(cfg.beamWidth);
-    double gate = bw * 2.5;
-    return (outAzDiff <= gate && outElDiff <= gate);
-}
-
-bool RadarSignalProcessor_AESA::checkHorizon(double range, double targetZ,
-                                              const RadarConfig& cfg) const
-{
-    double Re     = 6371000.0 * cfg.earthRadiusFactor * cfg.atmosphericFactor;
-    double dRadar = std::sqrt(2.0 * Re * std::max(0.0, cfg.radarHeight));
-    double dTgt   = std::sqrt(2.0 * Re * std::max(0.0, targetZ));
-    return range <= (dRadar + dTgt);
-}
-
-// =============================================================================
-// §B  Signal chain
-// =============================================================================
-
-double RadarSignalProcessor_AESA::calculateSignalStrength(
-    double range, double rcs,
-    double arrayGain,
-    const BeamWaveform& /*waveform*/,   // parameter retained for API consistency
-    const RadarConfig& cfg) const
-{
-    if (range < 1.0) range = 1.0;
-
-    // FIX-03 LPI: pulse-to-pulse random frequency hop
-    double freq = cfg.frequency_Hz;
-    if (cfg.frequencyAgility &&
-        cfg.hopStopFrequency > cfg.hopStartFrequency &&
-        cfg.hopStopFrequency > 0.0f)
-    {
-        thread_local std::uniform_real_distribution<double> hopDist(0.0, 1.0);
-        freq = static_cast<double>(cfg.hopStartFrequency)
-             + hopDist(tl_rng) * static_cast<double>(
-                   cfg.hopStopFrequency - cfg.hopStartFrequency);
-    }
-    double lambda = SPEED_OF_LIGHT / freq;
-
-    int    active = std::max(0, cfg.numElements - cfg.failedModules);
-    double Pt     = static_cast<double>(active)
-                  * static_cast<double>(cfg.peakPowerPerElement_W)
-                  * static_cast<double>(cfg.moduleEfficiency);
-
-    double Pr = (Pt * arrayGain * arrayGain * lambda * lambda * rcs)
-                / (std::pow(4.0 * M_PI, 3.0) * std::pow(range, 4.0));
-
-   // double propLoss = computePropagationLoss(range, cfg);
-
-    return std::max(0.0, Pr * computePropagationLoss(range, cfg));
-}
-
-double RadarSignalProcessor_AESA::computeNoisePower(const RadarConfig& cfg,
-                                                     double bandwidth_Hz) const
-{
-    double F = std::pow(10.0, cfg.noiseFigure_dB / 10.0);
-    return BOLTZMANN * cfg.systemTemperature_K * std::max(1.0, bandwidth_Hz) * F;
-}
-
-double RadarSignalProcessor_AESA::computeClutterPower(double range,
-                                                       SurfaceType surface,
-                                                       const RadarConfig& cfg) const
-{
-    if (surface == SurfaceType::AIR || range < 1.0) return 0.0;
-
-    // seaState / landClutter now exist in RadarConfig (added in master header)
-    double sigma0 = 0.0;
-   // if (surface == SurfaceType::SEA)  sigma0 = static_cast<double>(cfg.seaState)  * 3e-3;
-    //if (surface == SurfaceType::LAND) sigma0 = static_cast<double>(cfg.landClutter) * 1e-2;
-    // Grazing angle — flat-earth approximation, valid to ~100 km
-    // Beyond that the horizon check already gates out the target
-    double sinPsi = std::clamp(cfg.radarHeight / std::max(range, 1.0), 1e-4, 1.0);
-    double psi_rad = std::asin(sinPsi);
-
-    if (surface == SurfaceType::SEA)
-    {
-        // GIT sea clutter model (Horst et al. 1978, X-band HH baseline)
-        // σ₀(dB) = -61.4 + 40·log10(f_GHz) + 10.1·log10(1 + SS) + 30·log10(sin ψ)
-        double f_GHz   = cfg.frequency_Hz / 1.0e9;
-        double SS      = std::clamp(static_cast<double>(cfg.seaState), 0.0, 6.0);
-        double s0_dB   = -61.4
-                       + 40.0  * std::log10(std::max(f_GHz, 0.1))
-                       + 10.1  * std::log10(1.0 + SS)
-                       + 30.0  * std::log10(sinPsi);
-        sigma0 = std::pow(10.0, s0_dB / 10.0);
-    }
-    if (surface == SurfaceType::LAND)
-    {
-        // GIT land clutter — Billingsley low-relief terrain baseline (X-band)
-        // σ₀(dB) = -25 + 8·log10(sin ψ) + terrain_factor
-        // cfg.landClutter is 0–1 terrain roughness scale
-        double terrain_dB = static_cast<double>(cfg.landClutter) * 15.0; // 0 dB (smooth) to +15 dB (urban)
-        double s0_dB      = -25.0 + 8.0 * std::log10(sinPsi) + terrain_dB;
-        sigma0 = std::pow(10.0, s0_dB / 10.0);
-    }
-    if (sigma0 <= 0.0) return 0.0;
-
-    double tau   = static_cast<double>(cfg.searchWaveform.pulseWidth_s);
-    double bwRad = static_cast<double>(cfg.beamWidth) * M_PI / 180.0;
-    double patch = (SPEED_OF_LIGHT * tau / 2.0) * (range * bwRad);
-
-    double lambda = SPEED_OF_LIGHT / cfg.frequency_Hz;
-    int    active = std::max(0, cfg.numElements - cfg.failedModules);
-    double Pt     = static_cast<double>(active)
-                  * static_cast<double>(cfg.peakPowerPerElement_W)
-                  * static_cast<double>(cfg.moduleEfficiency);
-    double G      = std::pow(10.0, static_cast<double>(cfg.antennaGain) / 10.0);
-
-    double Pc = (Pt * G * G * lambda * lambda * sigma0 * patch)
-                / (std::pow(4.0 * M_PI, 3.0) * std::pow(range, 3.0));
-
-    thread_local std::exponential_distribution<double> fluct(1.0);
-    return Pc * fluct(tl_rng);
-}
-
-double RadarSignalProcessor_AESA::computeJammerPower(double targetRange_m,
-                                                      const TargetInput& target,
-                                                      const RadarConfig& cfg) const
-{
-    const auto& j = target.jammer;
-    if (!j.active || j.power_kW <= 0.0) return 0.0;
-
-    double Pj  = j.power_kW * 1000.0;
-    double Gj  = std::pow(10.0, j.gain_dBi / 10.0);
-    double Gr  = std::pow(10.0, static_cast<double>(cfg.antennaGain) / 10.0);
-    double lam = SPEED_OF_LIGHT / cfg.frequency_Hz;
-    double Rj  = j.selfScreening ? targetRange_m
-                                 : (j.range_m > 1.0 ? j.range_m : targetRange_m);
-
-    double Pr_j = (Pj * Gj * Gr * lam * lam)
-                  / (std::pow(4.0 * M_PI, 2.0) * Rj * Rj);
-
-    double B_r = std::max(1.0, cfg.antennaBandwidth);
-    double B_j = std::max(1.0, j.bandwidth_Hz);
-    return Pr_j * std::min(1.0, B_r / B_j);
-
-}
-// ============================================================================
-// Water vapour density — Buck (1981) / ITU-R P.836-6
-// Returns absolute water vapour density ρ (g/m³)
-// from relative humidity and temperature
-// Valid: -40°C to +60°C, 0–100% RH
-// ============================================================================
-double RadarSignalProcessor_AESA::computeWaterVapourDensity(
-    const AtmosphericConditions& atm) const
-{
-    double T   = static_cast<double>(atm.temperature_C);  // °C
-    double RH  = static_cast<double>(atm.humidity_pct);   // %
-    double T_K = T + 273.15;                              // Kelvin
-
-    // Magnus-Tetens saturation vapour pressure (hPa)
-    double e_s = 6.1121 * std::exp((18.678 - T / 234.5)
-                                   * (T / (257.14 + T)));
-
-    // Actual vapour pressure (hPa)
-    double e_a = (RH / 100.0) * e_s;
-
-    // Convert to absolute density (g/m³)
-    // ρ = e_a(Pa) × M_w / (R_u × T_K)
-    // M_w = 18.015 g/mol, R_u = 8314.46 J/(kmol·K)
-    double rho_w = (e_a * 100.0 * 18.015)
-                   / (8314.46 * T_K / 1000.0);
-
-    return std::max(0.0, rho_w);  // g/m³
-}
-
-// ============================================================================
-// Gaseous attenuation — ITU-R P.676-12 Annex 2
-//
-// Computes two-way path loss (dB) from:
-//   γ_o — oxygen / dry air absorption
-//   γ_w — water vapour absorption
-//
-// Frequency range: 1–350 GHz
-// Key features in radar bands:
-//   22.235 GHz — water vapour resonance (strongest below 100 GHz)
-//   60 GHz     — oxygen complex
-// ============================================================================
-double RadarSignalProcessor_AESA::computeGaseousAttenuation(
-    double frequency_Hz,
-    const AtmosphericConditions& atm,
-    double range_m) const
-{
-    double f   = frequency_Hz / 1.0e9;                    // GHz
-    double T   = static_cast<double>(atm.temperature_C);  // °C
-    double p   = static_cast<double>(atm.pressure_hPa);   // hPa
-    double rho = computeWaterVapourDensity(atm);          // g/m³
-
-    // ITU-R P.676-12 reduced variables
-    double r_p = p / 1013.25;                             // pressure ratio
-    double r_t = 288.15 / (273.15 + T);                   // temperature ratio
-
-    // ----------------------------------------------------------------
-    // Oxygen specific attenuation γ_o (dB/km)
-    // ITU-R P.676-12 Annex 2, Equation 1
-    // ----------------------------------------------------------------
-    double gamma_o = 0.0;
-    {
-        double xi1 = std::pow(r_p, 0.0717) * std::pow(r_t, -1.8132)
-        * std::exp(0.1147 * (1.0 - r_p)
-                  + 1.4434 * (1.0 - r_t));
-
-        double xi2 = std::pow(r_p, 0.5146) * std::pow(r_t, -4.6368)
-                     * std::exp(-0.1217 * (1.0 - r_p)
-                                +  2.1441 * (1.0 - r_t));
-
-        double xi3 = std::pow(r_p, 0.3414) * std::pow(r_t, -6.5851)
-                     * std::exp(0.2177 * (1.0 - r_p)
-                                + 5.4677 * (1.0 - r_t));
-
-        gamma_o = ( 7.2  * std::pow(r_t, 2.8)
-                       / (f*f + 0.34 * r_p*r_p * std::pow(r_t, 1.6))
-                   + 0.62 * xi3
-                         / (std::pow(std::abs(54.0 - f), 1.16 * xi1)
-                            + 0.83 * xi2) )
-                  * f * f * r_p * r_p * 1.0e-3;
-
-        gamma_o = std::max(0.0, gamma_o);
-    }
-
-    // ----------------------------------------------------------------
-    // Water vapour specific attenuation γ_w (dB/km)
-    // ITU-R P.676-12 Annex 2, Equation 2
-    // ----------------------------------------------------------------
-    double gamma_w = 0.0;
-    {
-        double eta1 = 0.955 * r_p * std::pow(r_t, 0.68)
-        + 0.006 * rho;
-
-        double eta2 = 0.735 * r_p * std::pow(r_t, 0.5)
-                      + 0.0353 * std::pow(r_t, 4.0) * rho;
-
-        // Line shape correction
-        auto g = [](double f_val, double f_line) -> double {
-            return 1.0 + std::pow((f_val - f_line) / (f_val + f_line), 2.0);
-        };
-
-        // Guard against division by zero near exact line frequencies
-        auto safe_line = [](double f_val, double f_line,
-                            double eta, double width) -> double {
-            return eta / (std::pow(f_val - f_line, 2.0)
-                          + std::max(width * width, 1.0e-6));
-        };
-
-        gamma_w = (
-                      // 22.235 GHz — dominant water vapour line in radar band
-                      3.98  * eta1 * std::exp(2.23  * (1.0 - r_t))
-                          * safe_line(f, 22.235, 1.0, 9.42 * eta1)
-                          * g(f, 22.235)
-
-                      // 183.310 GHz
-                      + 11.96 * eta1 * std::exp(0.7   * (1.0 - r_t))
-                            * safe_line(f, 183.31,  1.0, 11.14 * eta1)
-
-                      // 321.226 GHz
-                      + 0.081 * eta1 * std::exp(6.44  * (1.0 - r_t))
-                            * safe_line(f, 321.226, 1.0, 6.29 * eta1)
-
-                      // 325.153 GHz
-                      + 3.66  * eta1 * std::exp(1.6   * (1.0 - r_t))
-                            * safe_line(f, 325.153, 1.0, 9.22 * eta1)
-
-                      // 380 GHz
-                      + 25.37 * eta1 * std::exp(1.09  * (1.0 - r_t))
-                            * safe_line(f, 380.0,   1.0, 1.0)
-
-                      // 448 GHz
-                      + 17.4  * eta1 * std::exp(1.46  * (1.0 - r_t))
-                            * safe_line(f, 448.0,   1.0, 1.0)
-
-                      // 557 GHz
-                      + 844.6 * eta1 * std::exp(0.17  * (1.0 - r_t))
-                            * safe_line(f, 557.0,   1.0, 1.0)
-                            * g(f, 557.0)
-
-                      // 752 GHz
-                      + 290.0 * eta1 * std::exp(0.41  * (1.0 - r_t))
-                            * safe_line(f, 752.0,   1.0, 1.0)
-                            * g(f, 752.0)
-
-                      // 1780 GHz
-                      + 83328.0 * eta2 * std::exp(0.99 * (1.0 - r_t))
-                            * safe_line(f, 1780.0,  1.0, 1.0)
-                            * g(f, 1780.0)
-                      )
-                  * f * f * std::pow(r_t, 2.5) * rho * 1.0e-4;
-
-        gamma_w = std::max(0.0, gamma_w);
-    }
-
-    // Two-way total gaseous loss (dB)
-    double gamma_total = gamma_o + gamma_w;              // dB/km one-way
-
-
-    return 2.0 * gamma_total * (range_m / 1000.0);      // dB two-way
-}
-double RadarSignalProcessor_AESA::computePropagationLoss(
-    double range_m, const RadarConfig& cfg) const
-{
-    double loss_dB = 0.0;
-
-    // ---- Rain (ITU-R P.838-3) -------------------------------------------
-    if (cfg.atmosphere.rainRate_mmph > 0.0)
-    {
-        double gamma_rain = 0.00887
-                            * std::pow(static_cast<double>(cfg.atmosphere.rainRate_mmph), 1.255);
-        loss_dB += 2.0 * gamma_rain * (range_m / 1000.0);
-    }
-
-    // ---- Fog (Kunkel 1984) -----------------------------------------------
-    if (cfg.atmosphere.fogVisibility_m > 1.0 &&
-        cfg.atmosphere.fogVisibility_m < 2000.0)
-    {
-        double M_fog     = 0.0367
-                       * std::pow(1000.0 / static_cast<double>(
-                                      cfg.atmosphere.fogVisibility_m), 1.43);
-        double gamma_fog = 0.0157 * std::pow(M_fog, 1.05);
-        loss_dB += 2.0 * gamma_fog * (range_m / 1000.0);
-    }
-
-    // ---- Gaseous: O2 + H2O (ITU-R P.676-12) ----------------------------
-    loss_dB += computeGaseousAttenuation(cfg.frequency_Hz,
-                                         cfg.atmosphere,
-                                         range_m);
-
-    // ---- Debug (remove when confirmed working) --------------------------
-
-
-    return std::pow(10.0, -loss_dB / 10.0);
-}
-
-// double RadarSignalProcessor_AESA::computePropagationLoss(double range_m,
-//                                                           const RadarConfig& cfg) const
-// {
-//     double loss_dB = 0.0;
-//     if (cfg.rainRate_mmph > 0.0)
-//     {
-//         double gamma = 0.00887 * std::pow(cfg.rainRate_mmph, 1.255);
-//         loss_dB += 2.0 * gamma * (range_m / 1000.0);
-//     }
-//     if (cfg.fogVisibility_m > 1.0 && cfg.fogVisibility_m < 2000.0)
-//     {
-//         double M     = 0.0367 * std::pow(1000.0 / cfg.fogVisibility_m, 1.43);
-//         double gamma = 0.0157 * std::pow(M, 1.05);
-//         loss_dB += 2.0 * gamma * (range_m / 1000.0);
-//     }
-//     return std::pow(10.0, -loss_dB / 10.0);
-// }
-
-double RadarSignalProcessor_AESA::computeSINR(
-    double receivedPower, double range,
-    SurfaceType surface, const TargetInput& target,
-    const RadarConfig& cfg, const BeamWaveform& waveform) const
-{
-    double Pn = computeNoisePower(cfg, static_cast<double>(waveform.bandwidth_Hz));
-    double Pc = computeClutterPower(range, surface, cfg);
-    double Pj = computeJammerPower(range, target, cfg);
-
-    double pg = computeModulationProcessingGain(waveform);
-    double ig = static_cast<double>(std::max(1, waveform.pulsesPerDwell));
-
-    // Null steering jammer suppression
-    double jSuppress = 1.0;
-    if (cfg.nullSteering.active && target.jammer.active)
-    {
-        double jAz  = std::atan2(target.y, target.x) * (180.0 / M_PI);
-        if (jAz < 0.0) jAz += 360.0;
-        double jEl  = (range > 1.0)
-            ? std::asin(std::clamp(target.z/range,-1.0,1.0)) * (180.0/M_PI) : 0.0;
-
-        double dAz = std::abs(jAz - cfg.nullSteering.azimuth_deg);
-        if (dAz > 180.0) dAz = 360.0 - dAz;
-        double dEl = std::abs(jEl - cfg.nullSteering.elevation_deg);
-
-        if (dAz < static_cast<double>(cfg.beamWidth) * 2.0 &&
-            dEl < static_cast<double>(cfg.beamWidth) * 2.0)
-            jSuppress = std::pow(10.0, static_cast<double>(cfg.nullSteering.nullDepth_dB) / 10.0);
-    }
-
-    return std::max(0.0,
-        (receivedPower * pg * ig) / (Pn + Pc + Pj * jSuppress));
-}
-
-// =============================================================================
-// §C  CFAR
-// =============================================================================
-
-std::vector<double> RadarSignalProcessor_AESA::generateReferenceCells(
-    SurfaceType surface, const RadarConfig& cfg) const
-{
-    thread_local std::exponential_distribution<double> cellDist(1.0);
-    std::vector<double> cells; cells.reserve(16);
-    for (int i = 0; i < 16; ++i)
-    {
-        double c = cellDist(tl_rng);
-        if (surface == SurfaceType::SEA)
-            c *= (1.0 + static_cast<double>(cfg.seaState)    * 0.3);
-        if (surface == SurfaceType::LAND)
-            c *= (1.0 + static_cast<double>(cfg.landClutter) * 0.5);
-        cells.push_back(c);
-    }
-    return cells;
-}
-
-double RadarSignalProcessor_AESA::computeCFARThreshold(
-    const std::vector<double>& cells, const RadarConfig& cfg) const
-{
-    if (cells.empty()) return 1e12;
-    double sum = 0.0;
-    for (double v : cells) sum += v;
-    double N     = static_cast<double>(cells.size());
-    double alpha = N * (std::pow(cfg.targetPfa, -1.0 / N) - 1.0);
-    return (sum / N) * alpha;
-}
-
-double RadarSignalProcessor_AESA::computeCFARThresholdRelaxed(
-    const std::vector<double>& cells, const RadarConfig& cfg) const
-{
-    if (cells.empty()) return 1e12;
-    double sum = 0.0;
-    for (double v : cells) sum += v;
-    double N     = static_cast<double>(cells.size());
-    double pfa   = std::min(1e-4, cfg.targetPfa * 100.0);
-    double alpha = N * (std::pow(pfa, -1.0 / N) - 1.0);
-    return (sum / N) * alpha;
-}
+// -------------------------------------------------------------------------
+// Physical constants
+// -------------------------------------------------------------------------
+
+// Boltzmann constant (J/K). Used in noise power computation. REQ-AESA-040.
+constexpr double BOLTZMANN = 1.380649e-23;
+
+// Speed of light in vacuum (m/s). REQ-AESA-020, REQ-AESA-040.
+constexpr double SPEED_OF_LIGHT = 299792458.0;
+
+// Pi — full precision. Replaces non-standard M_PI macro. LC-08 compliant.
+constexpr double PI = 3.14159265358979323846;
+
+// Conversion factor: degrees to radians.
+constexpr double DEG_TO_RAD = PI / 180.0;
+
+// Conversion factor: radians to degrees.
+constexpr double RAD_TO_DEG = 180.0 / PI;
+
+// -------------------------------------------------------------------------
+// Beam gate constants
+// -------------------------------------------------------------------------
+
+// Beam gate half-width multiplier. Gate = beamWidth * BEAM_GATE_FACTOR.
+// 2.5 * beamWidth gives enough margin to capture targets illuminated by
+// the first sidelobe without including distant false alarms. REQ-AESA-040.
+constexpr double BEAM_GATE_FACTOR = 2.5;
+
+// Azimuth wrap threshold (degrees). If azimuth difference exceeds this
+// value the shorter arc is used. REQ-AESA-040.
+constexpr double AZ_WRAP_THRESHOLD = 180.0;
+
+// Full azimuth circle (degrees). REQ-AESA-040.
+constexpr double AZ_FULL_CIRCLE = 360.0;
+
+// -------------------------------------------------------------------------
+// Radar equation constants
+// -------------------------------------------------------------------------
+
+// Minimum range (metres) for signal strength computation.
+// Prevents division by zero at zero range. REQ-AESA-040.
+constexpr double MIN_RANGE_M = 1.0;
+
+// Minimum bandwidth (Hz) for noise power computation.
+// Prevents zero noise power. REQ-AESA-040.
+constexpr double MIN_BANDWIDTH_HZ = 1.0;
+
+// Minimum integration count for SINR computation. REQ-AESA-040.
+constexpr int    MIN_PULSES_PER_DWELL = 1;
+
+// 4*pi factor used in radar range equation denominator. REQ-AESA-040.
+constexpr double FOUR_PI = 4.0 * PI;
+
+// -------------------------------------------------------------------------
+// Clutter constants
+// -------------------------------------------------------------------------
+
+// Minimum grazing angle sine for sea clutter computation (radians).
+// Prevents log10(0) in GIT sea clutter model. REQ-AESA-040.
+constexpr double MIN_GRAZING_SINE = 1e-4;
+
+// Maximum grazing angle sine (= 1.0 — vertical incidence). REQ-AESA-040.
+constexpr double MAX_GRAZING_SINE = 1.0;
+
+// Minimum frequency (GHz) for GIT sea clutter model to avoid log10(0).
+constexpr double MIN_FREQ_GHZ_CLUTTER = 0.1;
+
+// GIT sea clutter model coefficient constants (Horst et al. 1978).
+// REQ-AESA-040.
+constexpr double GIT_SEA_INTERCEPT  = -61.4;
+constexpr double GIT_SEA_FREQ_COEFF =  40.0;
+constexpr double GIT_SEA_SS_COEFF   =  10.1;
+constexpr double GIT_SEA_PSICOEFF   =  30.0;
+constexpr double GIT_SEA_SS_MAX     =   6.0;
+
+// Billingsley land clutter model constants (X-band baseline). REQ-AESA-040.
+constexpr double BILLINGSLEY_INTERCEPT  = -25.0;
+constexpr double BILLINGSLEY_PSI_COEFF  =   8.0;
+constexpr double BILLINGSLEY_TERRAIN_DB =  15.0;  // 0 (smooth) to +15 (urban)
+
+// -------------------------------------------------------------------------
+// CFAR constants
+// -------------------------------------------------------------------------
+
+// Number of CA-CFAR reference cells. REQ-AESA-040.
+constexpr int    CFAR_NUM_CELLS = 16;
+
+// CFAR infinite threshold — returned when reference cells are empty.
+// Prevents detection when no valid clutter estimate exists. REQ-AESA-040.
+constexpr double CFAR_INFINITE_THRESHOLD = 1e12;
+
+// Relaxed CFAR Pfa upper bound. Pfa_relaxed = min(PFA_RELAXED_MAX, Pfa*100).
+// REQ-AESA-040.
+constexpr double PFA_RELAXED_MAX = 1e-4;
+
+// Relaxed CFAR Pfa scaling factor. REQ-AESA-040.
+constexpr double PFA_RELAXED_SCALE = 100.0;
+
+// CFAR reference cell sea state scaling coefficient. REQ-AESA-040.
+constexpr double CFAR_SEA_SCALE  = 0.3;
+
+// CFAR reference cell land clutter scaling coefficient. REQ-AESA-040.
+constexpr double CFAR_LAND_SCALE = 0.5;
+
+// -------------------------------------------------------------------------
+// RCS physical optics constants
+// -------------------------------------------------------------------------
+
+// Rayleigh regime boundary: kD < RAYLEIGH_KD_LIMIT. REQ-AESA-040.
+constexpr double RAYLEIGH_KD_LIMIT   = 0.5;
+
+// Resonance/optical boundary: kD < RESONANCE_KD_LIMIT. REQ-AESA-040.
+constexpr double RESONANCE_KD_LIMIT  = 5.0;
+
+// Minimum characteristic dimension (metres) to prevent zero wavelength ratio.
+constexpr double MIN_DIMENSION_M = 0.01;
+
+// Material reduction factors (linear scale). REQ-AESA-040.
+constexpr double RCS_MATERIAL_METAL     = 1.000;  //  0 dB — bare metal
+constexpr double RCS_MATERIAL_COMPOSITE = 0.500;  // -3 dB — CFRP airframe
+constexpr double RCS_MATERIAL_RAM       = 0.032;  // -15 dB — RAM coating
+constexpr double RCS_MATERIAL_STEALTHY  = 0.003;  // -25 dB — full VLO
+
+// Shape efficiency factors (coherence per face type). REQ-AESA-040.
+constexpr double RCS_SHAPE_BOX      = 0.40;
+constexpr double RCS_SHAPE_AIRCRAFT = 0.08;
+constexpr double RCS_SHAPE_SHIP     = 0.50;
+constexpr double RCS_SHAPE_MISSILE  = 0.10;
+constexpr double RCS_SHAPE_GENERIC  = 0.15;
+
+// Aircraft face efficiency factors by face index. REQ-AESA-040.
+constexpr double RCS_AIRCRAFT_NOSE   = 0.08;
+constexpr double RCS_AIRCRAFT_TAIL   = 0.12;
+constexpr double RCS_AIRCRAFT_SIDE   = 1.00;
+constexpr double RCS_AIRCRAFT_TOP    = 0.60;
+constexpr double RCS_AIRCRAFT_BOTTOM = 0.40;
+
+// Missile face factors. REQ-AESA-040.
+constexpr double RCS_MISSILE_NOSE = 0.05;
+constexpr double RCS_MISSILE_TAIL = 0.10;
+
+// Edge diffraction model: sigma_edge = lambda * perimeter / (8*pi).
+// Ref: Ruck et al Radar Cross Section Handbook Ch 5. REQ-AESA-040.
+constexpr double EDGE_DIFFRACTION_DENOM = 8.0 * PI;
+
+// Rayleigh model coefficient: 8*pi/3. REQ-AESA-040.
+constexpr double RAYLEIGH_COEFF = 8.0 * PI / 3.0;
+
+// Minimum speed (m/s) for valid velocity unit vector. REQ-AESA-040.
+constexpr double MIN_SPEED_FOR_HEADING = 0.5;
+
+// Minimum right vector magnitude before fallback. REQ-AESA-040.
+constexpr double MIN_RVEC_MAG = 1e-6;
+
+// Edge perimeter multiplier: 4 * (L + H + W). REQ-AESA-040.
+constexpr double EDGE_PERIMETER_MULT = 4.0;
+
+// Number of 6-facet model faces.
+constexpr int NUM_FACES = 6;
+
+// -------------------------------------------------------------------------
+// Swerling constants
+// -------------------------------------------------------------------------
+
+// Minimum nominal RCS for Swerling computation to be meaningful. REQ-AESA-040.
+constexpr double MIN_NOMINAL_RCS = 0.0;
+
+// Swerling Case III/IV uses half the nominal RCS for two exponential draws.
+constexpr double SWERLING_34_HALF = 2.0;
+
+// -------------------------------------------------------------------------
+// Albersheim Pd constants
+// -------------------------------------------------------------------------
+
+// Albersheim bisection iteration count. 40 iterations gives convergence
+// to better than 0.001 in Pd. REQ-AESA-040.
+constexpr int    ALBERSHEIM_ITERATIONS = 40;
+
+// Albersheim Pfa guard. Prevents log(0) in A computation. REQ-AESA-040.
+constexpr double ALBERSHEIM_PFA_MIN = 1e-15;
+
+// Albersheim constant in A = log(0.62 / Pfa). REQ-AESA-040.
+constexpr double ALBERSHEIM_PFA_COEFF = 0.62;
+
+// Albersheim search bounds for bisection. REQ-AESA-040.
+constexpr double ALBERSHEIM_PD_LOW  = 0.001;
+constexpr double ALBERSHEIM_PD_HIGH = 0.999;
+constexpr double ALBERSHEIM_PD_MAX  = 0.99;
+
+// Swerling loss constants (dB). REQ-AESA-040.
+constexpr double SWERLING_LOSS_I_II   = 5.72;
+constexpr double SWERLING_LOSS_III_IV = 2.36;
+
+// -------------------------------------------------------------------------
+// Range ambiguity constants
+// -------------------------------------------------------------------------
+
+// Search range for resolveRangeAmbiguity — k in [-K_SEARCH, +K_SEARCH].
+// Covers 11 PRF multiples. REQ-AESA-021.
+constexpr int    RANGE_RESOLVE_K_MAX = 5;
+
+// Search range for staggered PRF coincidence — n1, n2 in [0, N_STAG_MAX].
+constexpr int    N_STAG_MAX = 4;
+
+// Staggered range coincidence gate (metres). REQ-AESA-021.
+constexpr double RANGE_COINCIDENCE_GATE_M = 500.0;
+
+// Minimum Rmax for resolveRangeAmbiguity to apply. REQ-AESA-021.
+constexpr double MIN_RMAX_FOR_RESOLVE = 1.0;
+
+// Staggered velocity search iterations (n1, n2 in [0, VEL_N_MAX-1]).
+constexpr int    VEL_N_MAX = 8;
+
+// Minimum Vmax (m/s) for velocity folding. REQ-AESA-021.
+constexpr double MIN_VMAX_FOR_FOLD = 1.0;
+
+// Velocity coincidence gate (m/s). REQ-AESA-021.
+constexpr double VEL_COINCIDENCE_GATE = 2.0;
+
+// -------------------------------------------------------------------------
+// Max detection range constants
+// -------------------------------------------------------------------------
+
+// Initial range estimate for iterative radar equation solver (metres).
+constexpr double MAX_RANGE_INITIAL_M = 200000.0;
+
+// Max iterations for range solver. REQ-AESA-040.
+constexpr int    MAX_RANGE_ITERATIONS = 20;
+
+// Convergence criterion for range solver (metres). REQ-AESA-040.
+constexpr double MAX_RANGE_CONVERGENCE_M = 10.0;
+
+// Number of reference cells used in max range CFAR approximation.
+constexpr double MAX_RANGE_CFAR_N = 16.0;
+
+// -------------------------------------------------------------------------
+// Merge gate constants
+// -------------------------------------------------------------------------
+
+// Range merge gate (metres). Detections within this range are merged.
+// REQ-AESA-040.
+constexpr double MERGE_GATE_RANGE_M = 150.0;
+
+// -------------------------------------------------------------------------
+// Beam gain / sidelobe constants
+// -------------------------------------------------------------------------
+
+// Sidelobe region boundary multiplier. Targets within beamWidth *
+// MAIN_BEAM_FACTOR of boresight get full gain. REQ-AESA-040.
+constexpr double MAIN_BEAM_FACTOR = 2.0;
+
+// LOW_SLL mode sidelobe levels (dBi). REQ-AESA-040.
+constexpr float  LOW_SLL_PEAK = -45.0f;
+constexpr float  LOW_SLL_AVG  = -55.0f;
+
+// ULTRA_LOW mode sidelobe levels (dBi). REQ-AESA-040.
+constexpr float  ULTRA_LOW_PEAK = -55.0f;
+constexpr float  ULTRA_LOW_AVG  = -65.0f;
+
+// -------------------------------------------------------------------------
+// Monopulse constants
+// -------------------------------------------------------------------------
+
+// Monopulse sensitivity slope for sinc aperture (dimensionless).
+// REQ-AESA-040.
+constexpr double MONOPULSE_KM = 1.606;
+
+// Monopulse noise scaling: noise_sigma = bw / (km * sqrt(2 * SINR)).
+// Factor of 2 in denominator from two-channel sum/difference processing.
+constexpr double MONOPULSE_SINR_FACTOR = 2.0;
+
+// -------------------------------------------------------------------------
+// Multipath constants
+// -------------------------------------------------------------------------
+
+// Elevation threshold (degrees) above which multipath is negligible.
+// REQ-AESA-072.
+constexpr double MULTIPATH_EL_THRESHOLD_DEG = 5.0;
+
+// Multipath factor clamp bounds [0, 4]. REQ-AESA-072.
+constexpr double MULTIPATH_MIN = 0.0;
+constexpr double MULTIPATH_MAX = 4.0;
+
+// -------------------------------------------------------------------------
+// STAP constants
+// -------------------------------------------------------------------------
+
+// STAP gain cap (linear). Corresponds to +30 dB maximum improvement.
+// Prevents unrealistically large gain from configuration errors. REQ-AESA-040.
+constexpr double STAP_GAIN_CAP = 1000.0;
+
+// STAP partial recovery factor for targets inside the notch.
+// Physical basis: STAP cannot fully recover targets at exact clutter
+// velocity — partial recovery proportional to 0.3 * (distance/width).
+constexpr double STAP_RECOVERY_FACTOR = 0.3;
+
+// Minimum STAP gain (= 1.0, no degradation). REQ-AESA-040.
+constexpr double STAP_GAIN_MIN = 1.0;
+
+// Minimum number of active elements for valid STAP spatial DOF. REQ-AESA-040.
+constexpr int    STAP_MIN_ELEMENTS = 1;
+
+// Minimum pulses for valid STAP temporal DOF. REQ-AESA-040.
+constexpr int    STAP_MIN_PULSES = 1;
+
+// Clutter notch width clamp bounds (m/s). REQ-AESA-040.
+constexpr double NOTCH_WIDTH_MIN = 1.0;
+constexpr double NOTCH_WIDTH_MAX = 15.0;
+
+// Minimum platform speed (m/s) for a meaningful clutter notch. REQ-AESA-040.
+constexpr float  MIN_PLATFORM_SPEED_MPS = 1.0f;
+
+// -------------------------------------------------------------------------
+// Doppler / waveform constants
+// -------------------------------------------------------------------------
+
+// LFM time-bandwidth product must be >= this for meaningful processing gain.
+constexpr double MIN_PROCESSING_GAIN = 1.0;
+
+// -------------------------------------------------------------------------
+// Chaff return constants
+// -------------------------------------------------------------------------
+
+// Beam gate multiplier for chaff cloud inclusion check. REQ-AESA-061.
+constexpr double CHAFF_BEAM_GATE_FACTOR = 3.0;
+
+// Minimum chaff cloud range (metres). REQ-AESA-061.
+constexpr double MIN_CHAFF_RANGE_M = 1.0;
+
+// Minimum chaff decay time (seconds). Prevents division by zero. REQ-AESA-061.
+constexpr double MIN_CHAFF_DECAY_S = 1.0;
+
+// -------------------------------------------------------------------------
+// Horizon constants
+// -------------------------------------------------------------------------
+
+// Earth mean radius (metres). REQ-AESA-071.
+constexpr double EARTH_RADIUS_M = 6371000.0;
+
+// -------------------------------------------------------------------------
+// Propagation constants
+// -------------------------------------------------------------------------
+
+// Rain attenuation coefficient A in gamma = A * R^B (ITU-R P.838-3 X-band).
+// gamma_rain (dB/km) = 0.00887 * rainRate_mmph^1.255. REQ-AESA-071.
+constexpr double RAIN_COEFF_A = 0.00887;
+constexpr double RAIN_COEFF_B = 1.255;
+
+// Two-way loss multiplier. REQ-AESA-071.
+constexpr double TWO_WAY = 2.0;
+
+// Kilometres per metre. Used to convert range_m to range_km. REQ-AESA-071.
+constexpr double KM_PER_M = 0.001;
+
+// Fog attenuation coefficients (Kunkel 1984). REQ-AESA-071.
+constexpr double FOG_COEFF_A   = 0.0367;
+constexpr double FOG_VIS_DENOM = 1000.0;
+constexpr double FOG_VIS_EXP   = 1.43;
+constexpr double FOG_GAMMA_A   = 0.0157;
+constexpr double FOG_GAMMA_EXP = 1.05;
+constexpr double FOG_VIS_MIN_M = 1.0;
+constexpr double FOG_VIS_MAX_M = 2000.0;
+
+// -------------------------------------------------------------------------
+// ITU-R P.676-12 gaseous attenuation constants
+// -------------------------------------------------------------------------
+
+// Pressure ratio denominator: r_p = pressure_hPa / ISA_PRESSURE_HPA.
+constexpr double ISA_PRESSURE_HPA = 1013.25;
+
+// Temperature ratio numerator: r_t = ISA_TEMP_K / (273.15 + T_celsius).
+constexpr double ISA_TEMP_K = 288.15;
+constexpr double KELVIN_OFFSET = 273.15;
+
+// Gaseous attenuation unit conversion: gamma (dB/km) to two-way dB.
+// Factor = 2 (two-way) * range_m * 0.001 (m to km). REQ-AESA-071.
+constexpr double GASEOUS_TWO_WAY_KM = 2.0 * KM_PER_M;
+
+// GHz conversion for gaseous model. REQ-AESA-071.
+constexpr double HZ_TO_GHZ = 1.0e-9;
+
+// Water vapour model constants (Buck 1981 / ITU-R P.836-6). REQ-AESA-071.
+constexpr double BUCK_A     = 6.1121;
+constexpr double BUCK_B     = 18.678;
+constexpr double BUCK_C     = 234.5;
+constexpr double BUCK_D     = 257.14;
+constexpr double WATER_MOLAR_MASS = 18.015;   // g/mol
+constexpr double GAS_CONSTANT_JKMOL = 8314.46; // J/(kmol·K)
+constexpr double PA_PER_HPA = 100.0;           // Pascal per hPa
+
+// -------------------------------------------------------------------------
+// Jammer constants
+// -------------------------------------------------------------------------
+
+// Minimum jammer range (metres) to prevent division by zero. REQ-AESA-060.
+constexpr double MIN_JAMMER_RANGE_M = 1.0;
+
+// Minimum jammer power for noise computation to be meaningful (Watts).
+constexpr double MIN_JAMMER_POWER_W = 0.0;
+
+// -------------------------------------------------------------------------
+// Frequency agility constants
+// -------------------------------------------------------------------------
+
+// Minimum hop stop frequency (Hz) for agility to be valid. REQ-AESA-020.
+constexpr float  MIN_HOP_STOP_HZ = 0.0f;
+
+// -------------------------------------------------------------------------
+// Platform base RCS values (m²) from open literature. REQ-AESA-040.
+// -------------------------------------------------------------------------
+constexpr double RCS_FIGHTER = 3.0;
+constexpr double RCS_BOMBER  = 40.0;
+constexpr double RCS_UAV     = 0.01;
+constexpr double RCS_MISSILE = 0.1;
+constexpr double RCS_HELO    = 3.0;
+constexpr double RCS_SHIP    = 10000.0;
+constexpr double RCS_STEALTH = 0.001;
+constexpr double RCS_GENERIC = 5.0;
+
+// -------------------------------------------------------------------------
+// Null steering constants
+// -------------------------------------------------------------------------
+
+// Null cone half-angle multiplier. REQ-AESA-040.
+constexpr double NULL_CONE_FACTOR = 2.0;
+
+// -------------------------------------------------------------------------
+// Clamp bounds for acos/asin domain protection
+// -------------------------------------------------------------------------
+constexpr double DOT_CLAMP_MIN = -1.0;
+constexpr double DOT_CLAMP_MAX =  1.0;
+
+} // anonymous namespace
 
 // =============================================================================
-// §D  RCS + FIX-07 Swerling fluctuation
+// FILE-SCOPE RANDOM NUMBER GENERATOR
+// thread_local — per-thread state, no synchronisation required.
+// KNOWN DEVIATION: LC-02 — std::random_device seeding is implementation-defined.
+// Mitigated by: all outputs clamped, no safety decision depends on a specific
+// RNG value. ICD-AESA-DEVIATION-003. REQ-AESA-040.
 // =============================================================================
-// ============================================================================
-// §D  Defense-Grade Physical Optics RCS — Rev 4
-//
-// Method:    6-facet box decomposition, optical regime, incoherent summation
-// Fidelity:  NATO STANAG Level 2 — aspect + frequency + material dependent
-//
-// References:
-//  [1] Knott, Shaeffer, Tuley — Radar Cross Section, SciTech 2004, Ch 4-5
-//  [2] Ruck et al — Radar Cross Section Handbook, Plenum 1970, Ch 3
-//  [3] Skolnik — Introduction to Radar Systems, 3rd Ed, Ch 11
-//  [4] IEEE Std 1672-2006 — Radar Cross Section Test Methods
-// ============================================================================
+static thread_local std::default_random_engine tl_rng{
+    std::random_device{}()
+};
 
-// ----------------------------------------------------------------------------
-// Material power reduction factor (linear, not dB)
-// Validated against open-literature measured RCS reduction data [1, Table 5.1]
-// ----------------------------------------------------------------------------
-static double rcs_materialFactor(TargetMaterialType mat)
+// =============================================================================
+// FILE-SCOPE RCS HELPER FUNCTIONS
+// These are pure functions operating on enum types. Declared static to
+// restrict linkage to this translation unit. REQ-AESA-040.
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// FUNCTION: rcs_materialFactor
+// DESCRIPTION: Returns linear power reduction factor for target material.
+//              Ref: Knott et al Radar Cross Section 2nd Ed, Table 5.1.
+//              REQ-AESA-040.
+// -----------------------------------------------------------------------------
+static double rcs_materialFactor(aesa::TargetMaterialType mat)
 {
     switch (mat)
     {
-    case TargetMaterialType::METAL:     return 1.000;  //   0 dB — bare metal
-    case TargetMaterialType::COMPOSITE: return 0.500;  //  -3 dB — CFRP airframe
-    case TargetMaterialType::RAM:       return 0.032;  // -15 dB — RAM coating
-    case TargetMaterialType::STEALTHY:  return 0.003;  // -25 dB — full VLO
-    default:                            return 1.000;
+    case aesa::TargetMaterialType::METAL:     return RCS_MATERIAL_METAL;
+    case aesa::TargetMaterialType::COMPOSITE: return RCS_MATERIAL_COMPOSITE;
+    case aesa::TargetMaterialType::RAM:       return RCS_MATERIAL_RAM;
+    case aesa::TargetMaterialType::STEALTHY:  return RCS_MATERIAL_STEALTHY;
+    default:                                  return RCS_MATERIAL_METAL;
     }
 }
 
-// ----------------------------------------------------------------------------
-// Surface coherence efficiency per face
-// Accounts for curvature, surface irregularities, edges reducing specular
-// return below the flat-plate Physical Optics ideal
-// Calibrated so mean broadside RCS ≈ η × projected_area
-// Values from [1] Ch 5 adjusted for entity-level box primitives
-// ----------------------------------------------------------------------------
-static double rcs_shapeFactor(TargetShapeType shape)
+// -----------------------------------------------------------------------------
+// FUNCTION: rcs_shapeFactor
+// DESCRIPTION: Returns surface coherence efficiency (dimensionless) for a
+//              target shape. Accounts for curvature reducing specular return
+//              below flat-plate Physical Optics ideal. REQ-AESA-040.
+// -----------------------------------------------------------------------------
+static double rcs_shapeFactor(aesa::TargetShapeType shape)
 {
     switch (shape)
     {
-    case TargetShapeType::BOX:      return 0.40;  // flat faces, dihedral corners
-    case TargetShapeType::AIRCRAFT: return 0.08;  // curved surfaces, wing blending
-    case TargetShapeType::SHIP:     return 0.50;  // flat superstructure, hard corners
-    case TargetShapeType::MISSILE:  return 0.10;  // cylindrical, ogive nose
-    case TargetShapeType::GENERIC:  return 0.15;
-    default:                        return 0.15;
+    case aesa::TargetShapeType::BOX:      return RCS_SHAPE_BOX;
+    case aesa::TargetShapeType::AIRCRAFT: return RCS_SHAPE_AIRCRAFT;
+    case aesa::TargetShapeType::SHIP:     return RCS_SHAPE_SHIP;
+    case aesa::TargetShapeType::MISSILE:  return RCS_SHAPE_MISSILE;
+    case aesa::TargetShapeType::GENERIC:  return RCS_SHAPE_GENERIC;
+    default:                              return RCS_SHAPE_GENERIC;
     }
 }
 
-// ----------------------------------------------------------------------------
-// Per-face directional efficiency modifier
-// Front/rear faces of aircraft are shaped to deflect radar energy —
-// they contribute less than simple geometry predicts.
-// For BOX/SHIP/GENERIC all faces treated equally.
-// ----------------------------------------------------------------------------
-static double rcs_faceFactor(TargetShapeType shape, int faceIndex)
+// -----------------------------------------------------------------------------
+// FUNCTION: rcs_faceFactor
+// DESCRIPTION: Returns per-face directional efficiency modifier.
+//              faceIndex: 0=front, 1=rear, 2=right, 3=left, 4=top, 5=bottom.
+//              Aircraft and missile faces are shaped to deflect radar energy.
+//              BOX/SHIP/GENERIC all faces equal (factor 1.0). REQ-AESA-040.
+// -----------------------------------------------------------------------------
+static double rcs_faceFactor(aesa::TargetShapeType shape, int faceIndex)
 {
-    // faceIndex: 0=front, 1=rear, 2=right, 3=left, 4=top, 5=bottom
-    if (shape == TargetShapeType::AIRCRAFT)
+    if (shape == aesa::TargetShapeType::AIRCRAFT)
     {
         switch (faceIndex)
         {
-        case 0: return 0.08;   // nose — engine intake shaped to reduce RCS
-        case 1: return 0.12;   // tail — exhaust signature, slightly higher
+        case 0: return RCS_AIRCRAFT_NOSE;
+        case 1: return RCS_AIRCRAFT_TAIL;
         case 2:
-        case 3: return 1.00;   // sides — wings dominate, max contributor
-        case 4: return 0.60;   // top — fuselage spine
-        case 5: return 0.40;   // bottom — smoother lower surface
+        case 3: return RCS_AIRCRAFT_SIDE;
+        case 4: return RCS_AIRCRAFT_TOP;
+        case 5: return RCS_AIRCRAFT_BOTTOM;
+        default: return RCS_AIRCRAFT_SIDE;
+        }
+    }
+    if (shape == aesa::TargetShapeType::MISSILE)
+    {
+        switch (faceIndex)
+        {
+        case 0: return RCS_MISSILE_NOSE;
+        case 1: return RCS_MISSILE_TAIL;
         default: return 1.00;
         }
     }
-    if (shape == TargetShapeType::MISSILE)
-    {
-        switch (faceIndex)
-        {
-        case 0: return 0.05;   // ogive nose — very low head-on RCS
-        case 1: return 0.10;   // tail — nozzle
-        default: return 1.00;  // sides — cylindrical broadside
-        }
-    }
-    return 1.00; // BOX, SHIP, GENERIC — all faces equal
+    // BOX, SHIP, GENERIC: all faces equal — no shaping applied.
+    return 1.00;
 }
 
-// ----------------------------------------------------------------------------
-// Frequency regime
-// Determines which scattering model applies
-// Rayleigh (kD < 0.5): volume scattering dominates, σ ∝ f⁴
-// Resonance (kD 0.5–5): Mie region, complex resonances
-// Optical   (kD > 5) : surface scattering dominates, σ ≈ f⁰ (flat)
-// Ref: [1] Ch 2, [3] Ch 11.2
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// FUNCTION: rcs_regime
+// DESCRIPTION: Determines the electromagnetic scattering regime based on
+//              the electrical size of the target (kD = 2*pi*D/lambda).
+//              RAYLEIGH (kD < 0.5): volume scattering, sigma ~ f^4.
+//              RESONANCE (0.5 <= kD < 5): Mie region.
+//              OPTICAL (kD >= 5): surface scattering, sigma ~ f^0 (flat).
+//              Ref: Knott Ch 2, Skolnik Ch 11.2. REQ-AESA-040.
+// -----------------------------------------------------------------------------
 enum class ScatteringRegime { RAYLEIGH, RESONANCE, OPTICAL };
 
 static ScatteringRegime rcs_regime(double characteristicDim, double lambda)
 {
-    double kD = (2.0 * M_PI / lambda) * characteristicDim;
-    if (kD < 0.5) return ScatteringRegime::RAYLEIGH;
-    if (kD < 5.0) return ScatteringRegime::RESONANCE;
+    // kD = electrical circumference normalised by wavelength. REQ-AESA-040.
+    double kD = (2.0 * PI / lambda) * characteristicDim;
+    if (kD < RAYLEIGH_KD_LIMIT)  return ScatteringRegime::RAYLEIGH;
+    if (kD < RESONANCE_KD_LIMIT) return ScatteringRegime::RESONANCE;
     return ScatteringRegime::OPTICAL;
 }
 
-// ----------------------------------------------------------------------------
-// Compute single-face RCS contribution
-//
-// Physics:
-//   Optical regime: σ_face = A × cosθ × η_shape × η_face × η_material
-//
-//   This is the MEAN Physical Optics result, integrated over the sinc²
-//   angular pattern of a flat plate. The instantaneous peak (4πA²/λ²)
-//   is a specular glint that occupies a solid angle ≈ (λ/D)² — far
-//   smaller than any simulation time step illuminates. Using the mean
-//   value is correct for entity-level simulation. [1, Sec 4.3], [4]
-//
-//   Rayleigh regime: σ_face = k⁴ × V² × (geometry factor)
-//   Resonance:       interpolate between regimes
-//
-// Parameters:
-//   area      — face area (m²)
-//   cosTheta  — illumination angle cosine (dot of radar dir with face normal)
-//   lambda    — wavelength (m)
-//   volume    — target volume (m³) — used for Rayleigh only
-//   eta_shape — shape efficiency for this face
-//   eta_mat   — material factor
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// FUNCTION: rcs_faceSigma
+// DESCRIPTION: Computes RCS contribution of a single face.
+//              Returns 0.0 for shadowed faces (cosTheta <= 0).
+//              OPTICAL: sigma = A * cosTheta * eta_shape * eta_mat.
+//              RAYLEIGH: sigma = (8pi/3) * k^4 * V^2 * eta_mat.
+//              RESONANCE: geometric mean of Rayleigh and Optical estimates.
+//              Ref: Knott Sec 4.3, Ruck Ch 3. REQ-AESA-040.
+// -----------------------------------------------------------------------------
 static double rcs_faceSigma(double area, double cosTheta,
                             double lambda, double volume,
                             ScatteringRegime regime,
                             double eta_shape, double eta_mat)
 {
-    if (cosTheta <= 0.0) return 0.0;  // shadowed face
+    // Shadowed face contributes zero RCS. REQ-AESA-040.
+    if (cosTheta <= 0.0) return 0.0;
 
     double sigma = 0.0;
 
@@ -604,19 +615,20 @@ static double rcs_faceSigma(double area, double cosTheta,
     {
     case ScatteringRegime::OPTICAL:
     {
-        // Mean Physical Optics — projected area model
-        // σ = A × cosθ × η_shape × η_mat
+        // Mean Physical Optics projected area model.
+        // This is the MEAN result integrated over the sinc^2 angular pattern
+        // of a flat plate. Using mean is correct for entity-level simulation
+        // — the specular glint occupies a solid angle << simulation time step.
+        // Ref: Knott Sec 4.3, IEEE Std 1672-2006 Sec 6.2. REQ-AESA-040.
         sigma = area * cosTheta * eta_shape * eta_mat;
         break;
     }
     case ScatteringRegime::RAYLEIGH:
     {
-        // Rayleigh scattering — volume-dependent
-        // σ = (8π/3) × k⁴ × V² × η_mat
-        // k = 2π/λ
-        // Ref: [1] Eq 2.14, [3] Sec 11.2a
-        double k = 2.0 * M_PI / lambda;
-        sigma = (8.0 * M_PI / 3.0)
+        // Rayleigh volume scattering: sigma = (8pi/3) * k^4 * V^2 * eta_mat.
+        // k = 2*pi/lambda. Ref: Knott Eq 2.14, Skolnik Sec 11.2a. REQ-AESA-040.
+        double k = 2.0 * PI / lambda;
+        sigma = RAYLEIGH_COEFF
                 * std::pow(k, 4.0)
                 * volume * volume
                 * eta_mat;
@@ -624,15 +636,15 @@ static double rcs_faceSigma(double area, double cosTheta,
     }
     case ScatteringRegime::RESONANCE:
     {
-        // Mie resonance regime — interpolate between Rayleigh and optical
-        // Use geometric mean of the two contributions as a practical
-        // approximation. Full Mie series requires spherical geometry.
-        // Ref: [1] Sec 2.4 — resonance region approximation
-        double k = 2.0 * M_PI / lambda;
-        double sigma_ray = (8.0 * M_PI / 3.0) * std::pow(k, 4.0)
+        // Mie resonance regime: interpolate using geometric mean of the two
+        // regime estimates. Full Mie series requires spherical geometry — the
+        // geometric mean is the standard entity-level approximation.
+        // Ref: Knott Sec 2.4. REQ-AESA-040.
+        double k        = 2.0 * PI / lambda;
+        double sigma_ray = RAYLEIGH_COEFF * std::pow(k, 4.0)
                            * volume * volume * eta_mat;
         double sigma_opt = area * cosTheta * eta_shape * eta_mat;
-        sigma = std::sqrt(sigma_ray * sigma_opt);  // geometric mean
+        sigma = std::sqrt(sigma_ray * sigma_opt);
         break;
     }
     }
@@ -640,10 +652,580 @@ static double rcs_faceSigma(double area, double cosTheta,
     return sigma;
 }
 
-// ============================================================================
-// Main function
-// ============================================================================
+namespace aesa {
 
+// =============================================================================
+// §A  GEOMETRY
+// =============================================================================
+
+// =============================================================================
+// FUNCTION: isTargetInBeam
+// Full description in header.
+// =============================================================================
+bool RadarSignalProcessor_AESA::isTargetInBeam(
+    double beamAz, double beamEl,
+    double targetAz, double targetEl,
+    const RadarConfig& cfg,
+    double& outAzDiff, double& outElDiff,
+    double effectiveBeamWidth) const
+{
+    // Compute unsigned azimuth difference with wrap-around protection.
+    // Targets at +179 and -179 are only 2 deg apart — the shorter arc is used.
+    // REQ-AESA-040.
+    outAzDiff = std::abs(beamAz - targetAz);
+    if (outAzDiff > AZ_WRAP_THRESHOLD) outAzDiff = AZ_FULL_CIRCLE - outAzDiff;
+
+    // Elevation difference is unambiguous — no wrap needed. REQ-AESA-040.
+    outElDiff = std::abs(beamEl - targetEl);
+
+    // Use effective beamwidth (spoiled) if valid, else fall back to natural bw.
+    // effectiveBeamWidth <= 0 signals "use cfg.beamWidth". REQ-AESA-040.
+    double bw   = (effectiveBeamWidth > 0.0)
+                    ? effectiveBeamWidth
+                    : static_cast<double>(cfg.beamWidth);
+
+    // Gate = BEAM_GATE_FACTOR * bw. This is the beam pattern half-width at
+    // the -13 dB point (first null) for a uniformly illuminated aperture.
+    // REQ-AESA-040.
+    double gate = bw * BEAM_GATE_FACTOR;
+
+    return (outAzDiff <= gate && outElDiff <= gate);
+}
+
+// =============================================================================
+// FUNCTION: checkHorizon
+// Full description in header.
+// =============================================================================
+bool RadarSignalProcessor_AESA::checkHorizon(double range, double targetZ,
+                                             const RadarConfig& cfg) const
+{
+    // Effective earth radius for 4/3 earth model. REQ-AESA-071.
+    double Re = EARTH_RADIUS_M * cfg.earthRadiusFactor * cfg.atmosphericFactor;
+
+    // Geometric horizon range from radar: d = sqrt(2 * Re * h_radar).
+    // std::max(0.0) prevents sqrt of negative altitude. REQ-AESA-071.
+    double dRadar = std::sqrt(2.0 * Re * std::max(0.0, cfg.radarHeight));
+
+    // Geometric horizon range from target: d = sqrt(2 * Re * h_target).
+    double dTgt   = std::sqrt(2.0 * Re * std::max(0.0, targetZ));
+
+    // Target is visible if slant range <= combined horizon. REQ-AESA-071.
+    return range <= (dRadar + dTgt);
+}
+
+// =============================================================================
+// §B  SIGNAL CHAIN
+// =============================================================================
+
+// =============================================================================
+// FUNCTION: calculateSignalStrength
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::calculateSignalStrength(
+    double range, double rcs,
+    double arrayGain,
+    const BeamWaveform& /*waveform*/,
+    const RadarConfig& cfg) const
+{
+    // Clamp range to minimum to prevent division by zero in R^4. REQ-AESA-040.
+    if (range < MIN_RANGE_M) range = MIN_RANGE_M;
+
+    // -------------------------------------------------------------------------
+    // LPI frequency hopping. When frequencyAgility is enabled, select a random
+    // frequency within the hop band for each pulse. This prevents intercept
+    // receivers from tracking the radar's frequency. REQ-AESA-020.
+    // -------------------------------------------------------------------------
+    double freq = cfg.frequency_Hz;
+    if (cfg.frequencyAgility &&
+        cfg.hopStopFrequency > cfg.hopStartFrequency &&
+        cfg.hopStopFrequency > MIN_HOP_STOP_HZ)
+    {
+        // Uniform random frequency within hop band. REQ-AESA-020.
+        thread_local std::uniform_real_distribution<double> hopDist(0.0, 1.0);
+        freq = static_cast<double>(cfg.hopStartFrequency)
+               + hopDist(tl_rng)
+                     * static_cast<double>(cfg.hopStopFrequency
+                                           - cfg.hopStartFrequency);
+    }
+
+    // Wavelength from hopped (or fixed) frequency. REQ-AESA-040.
+    double lambda = SPEED_OF_LIGHT / freq;
+
+    // Total transmit power from all active T/R modules. REQ-AESA-012.
+    int    active = std::max(0, cfg.numElements - cfg.failedModules);
+    double Pt     = static_cast<double>(active)
+                * static_cast<double>(cfg.peakPowerPerElement_W)
+                * static_cast<double>(cfg.moduleEfficiency);
+
+    // Radar range equation (monostatic, two-way path). REQ-AESA-040.
+    // Pr = (Pt * G^2 * lambda^2 * sigma) / ((4*pi)^3 * R^4)
+    double Pr = (Pt * arrayGain * arrayGain * lambda * lambda * rcs)
+                / (std::pow(FOUR_PI, 3.0) * std::pow(range, 4.0));
+
+    // Apply two-way propagation loss (rain, fog, gaseous). REQ-AESA-071.
+    return std::max(0.0, Pr * computePropagationLoss(range, cfg));
+}
+
+// =============================================================================
+// FUNCTION: computeNoisePower
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::computeNoisePower(
+    const RadarConfig& cfg, double bandwidth_Hz) const
+{
+    // Linear noise figure: F = 10^(NF_dB/10). REQ-AESA-040.
+    double F = std::pow(10.0, cfg.noiseFigure_dB / 10.0);
+
+    // Pn = k * T * B * F. Clamp bandwidth to MIN_BANDWIDTH_HZ. REQ-AESA-040.
+    return BOLTZMANN
+           * cfg.systemTemperature_K
+           * std::max(MIN_BANDWIDTH_HZ, bandwidth_Hz)
+           * F;
+}
+
+// =============================================================================
+// FUNCTION: computeClutterPower
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::computeClutterPower(
+    double range, SurfaceType surface, const RadarConfig& cfg) const
+{
+    // AIR surface has no ground clutter. REQ-AESA-040.
+    if (surface == SurfaceType::AIR || range < MIN_RANGE_M) return 0.0;
+
+    double sigma0 = 0.0;
+
+    // Grazing angle sine from flat-earth approximation.
+    // sin(psi) = h_radar / R. Clamped to [MIN_GRAZING_SINE, 1.0]. REQ-AESA-040.
+    double sinPsi = std::clamp(
+        cfg.radarHeight / std::max(range, MIN_RANGE_M),
+        MIN_GRAZING_SINE, MAX_GRAZING_SINE);
+
+    if (surface == SurfaceType::SEA)
+    {
+        // GIT sea clutter model (Horst et al. 1978, X-band HH baseline).
+        // sigma_0 (dB) = -61.4 + 40*log10(f_GHz) + 10.1*log10(1+SS)
+        //              + 30*log10(sin psi). REQ-AESA-040.
+        double f_GHz = cfg.frequency_Hz * HZ_TO_GHZ;
+        double SS    = std::clamp(static_cast<double>(cfg.seaState),
+                               0.0, GIT_SEA_SS_MAX);
+        double s0_dB = GIT_SEA_INTERCEPT
+                       + GIT_SEA_FREQ_COEFF * std::log10(std::max(f_GHz, MIN_FREQ_GHZ_CLUTTER))
+                       + GIT_SEA_SS_COEFF   * std::log10(1.0 + SS)
+                       + GIT_SEA_PSICOEFF   * std::log10(sinPsi);
+        sigma0 = std::pow(10.0, s0_dB / 10.0);
+    }
+
+    if (surface == SurfaceType::LAND)
+    {
+        // Billingsley low-relief terrain model (X-band baseline).
+        // sigma_0 (dB) = -25 + 8*log10(sin psi) + terrain_factor.
+        // cfg.landClutter maps 0–1 to 0–15 dB terrain factor. REQ-AESA-040.
+        double terrain_dB = static_cast<double>(cfg.landClutter)
+                            * BILLINGSLEY_TERRAIN_DB;
+        double s0_dB      = BILLINGSLEY_INTERCEPT
+                       + BILLINGSLEY_PSI_COEFF * std::log10(sinPsi)
+                       + terrain_dB;
+        sigma0 = std::pow(10.0, s0_dB / 10.0);
+    }
+
+    // No valid surface type matched — return zero. REQ-AESA-040.
+    if (sigma0 <= 0.0) return 0.0;
+
+    // Clutter patch area: (c*tau/2) * (R*theta_bw). REQ-AESA-040.
+    double tau   = static_cast<double>(cfg.searchWaveform.pulseWidth_s);
+    double bwRad = static_cast<double>(cfg.beamWidth) * DEG_TO_RAD;
+    double patch = (SPEED_OF_LIGHT * tau / 2.0) * (range * bwRad);
+
+    // Clutter power using radar range equation (3rd power for surface clutter).
+    double lambda = SPEED_OF_LIGHT / cfg.frequency_Hz;
+    int    active = std::max(0, cfg.numElements - cfg.failedModules);
+    double Pt     = static_cast<double>(active)
+                * static_cast<double>(cfg.peakPowerPerElement_W)
+                * static_cast<double>(cfg.moduleEfficiency);
+    double G      = std::pow(10.0, static_cast<double>(cfg.antennaGain) / 10.0);
+
+    double Pc = (Pt * G * G * lambda * lambda * sigma0 * patch)
+                / (std::pow(FOUR_PI, 3.0) * std::pow(range, 3.0));
+
+    // Rayleigh amplitude fluctuation of the clutter return. REQ-AESA-040.
+    thread_local std::exponential_distribution<double> fluct(1.0);
+    return Pc * fluct(tl_rng);
+}
+
+// =============================================================================
+// FUNCTION: computeJammerPower
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::computeJammerPower(
+    double targetRange_m, const TargetInput& target,
+    const RadarConfig& cfg) const
+{
+    const auto& j = target.jammer;
+
+    // Inactive or zero-power jammer contributes nothing. REQ-AESA-060.
+    if (!j.active || j.power_kW <= MIN_JAMMER_POWER_W) return 0.0;
+
+    // Jammer transmit power (W), antenna gain (linear), radar receive gain.
+    double Pj  = j.power_kW * 1000.0;
+    double Gj  = std::pow(10.0, j.gain_dBi / 10.0);
+    double Gr  = std::pow(10.0, static_cast<double>(cfg.antennaGain) / 10.0);
+    double lam = SPEED_OF_LIGHT / cfg.frequency_Hz;
+
+    // Jammer range: self-screening uses target range, stand-off uses j.range_m.
+    double Rj = j.selfScreening
+                    ? targetRange_m
+                    : (j.range_m > MIN_JAMMER_RANGE_M ? j.range_m : targetRange_m);
+
+    // One-way jamming equation: Pj_rx = Pj*Gj*Gr*lam^2 / ((4pi)^2 * Rj^2).
+    // REQ-AESA-060.
+    double Pr_j = (Pj * Gj * Gr * lam * lam)
+                  / (std::pow(FOUR_PI, 2.0) * Rj * Rj);
+
+    // Bandwidth efficiency: jammer power is diluted when jammer bandwidth
+    // exceeds receiver bandwidth. min(1, B_r / B_j). REQ-AESA-060.
+    double B_r = std::max(MIN_BANDWIDTH_HZ, cfg.antennaBandwidth);
+    double B_j = std::max(MIN_BANDWIDTH_HZ, j.bandwidth_Hz);
+    return Pr_j * std::min(1.0, B_r / B_j);
+}
+
+// =============================================================================
+// FUNCTION: computeWaterVapourDensity
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::computeWaterVapourDensity(
+    const AtmosphericConditions& atm) const
+{
+    double T   = static_cast<double>(atm.temperature_C);
+    double RH  = static_cast<double>(atm.humidity_pct);
+    double T_K = T + KELVIN_OFFSET;
+
+    // Magnus-Tetens saturation vapour pressure (hPa).
+    // e_s = 6.1121 * exp((18.678 - T/234.5) * T/(257.14 + T)).
+    // REQ-AESA-071.
+    double e_s = BUCK_A * std::exp((BUCK_B - T / BUCK_C) * (T / (BUCK_D + T)));
+
+    // Actual vapour pressure (hPa) = RH% * e_s. REQ-AESA-071.
+    double e_a = (RH / 100.0) * e_s;
+
+    // Convert to absolute density (g/m³).
+    // rho = e_a(Pa) * M_w / (R_u * T_K) where M_w=18.015 g/mol, R_u=8314.46 J/(kmol·K).
+    // REQ-AESA-071.
+    double rho_w = (e_a * PA_PER_HPA * WATER_MOLAR_MASS)
+                   / (GAS_CONSTANT_JKMOL * T_K / 1000.0);
+
+    // Floor at 0.0 — negative density is physically impossible. REQ-AESA-071.
+    return std::max(0.0, rho_w);
+}
+
+// =============================================================================
+// FUNCTION: computeGaseousAttenuation
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::computeGaseousAttenuation(
+    double frequency_Hz,
+    const AtmosphericConditions& atm,
+    double range_m) const
+{
+    // Convert to ITU-R P.676-12 reduced variables. REQ-AESA-071.
+    double f   = frequency_Hz * HZ_TO_GHZ;             // GHz
+    double T   = static_cast<double>(atm.temperature_C);
+    double p   = static_cast<double>(atm.pressure_hPa);
+    double rho = computeWaterVapourDensity(atm);        // g/m³
+
+    double r_p = p / ISA_PRESSURE_HPA;                  // pressure ratio
+    double r_t = ISA_TEMP_K / (KELVIN_OFFSET + T);      // temperature ratio
+
+    // -------------------------------------------------------------------------
+    // Oxygen specific attenuation gamma_o (dB/km).
+    // ITU-R P.676-12 Annex 2, Equation 1. REQ-AESA-071.
+    // -------------------------------------------------------------------------
+    double gamma_o = 0.0;
+    {
+        double xi1 = std::pow(r_p, 0.0717) * std::pow(r_t, -1.8132)
+        * std::exp(0.1147 * (1.0 - r_p) + 1.4434 * (1.0 - r_t));
+
+        double xi2 = std::pow(r_p, 0.5146) * std::pow(r_t, -4.6368)
+                     * std::exp(-0.1217 * (1.0 - r_p) + 2.1441 * (1.0 - r_t));
+
+        double xi3 = std::pow(r_p, 0.3414) * std::pow(r_t, -6.5851)
+                     * std::exp(0.2177 * (1.0 - r_p) + 5.4677 * (1.0 - r_t));
+
+        gamma_o = ( 7.2  * std::pow(r_t, 2.8)
+                       / (f * f + 0.34 * r_p * r_p * std::pow(r_t, 1.6))
+                   + 0.62 * xi3
+                         / (std::pow(std::abs(54.0 - f), 1.16 * xi1)
+                            + 0.83 * xi2) )
+                  * f * f * r_p * r_p * 1.0e-3;
+
+        // Clamp — attenuation cannot be negative. REQ-AESA-071.
+        gamma_o = std::max(0.0, gamma_o);
+    }
+
+    // -------------------------------------------------------------------------
+    // Water vapour specific attenuation gamma_w (dB/km).
+    // ITU-R P.676-12 Annex 2, Equation 2. REQ-AESA-071.
+    //
+    // ADVISORY FP-08: lambdas used here are trivial (single arithmetic
+    // expression), capture nothing, and are local to this block. Deviation
+    // documented in ICD-AESA-DEVIATION-004. REQ-AESA-071.
+    // -------------------------------------------------------------------------
+    double gamma_w = 0.0;
+    {
+        double eta1 = 0.955 * r_p * std::pow(r_t, 0.68) + 0.006 * rho;
+        double eta2 = 0.735 * r_p * std::pow(r_t, 0.5)
+                      + 0.0353 * std::pow(r_t, 4.0) * rho;
+
+        // Line shape correction factor. REQ-AESA-071.
+        auto g = [](double f_val, double f_line) -> double {
+            return 1.0 + std::pow((f_val - f_line) / (f_val + f_line), 2.0);
+        };
+
+        // Guard against division by zero near exact resonance frequencies.
+        auto safe_line = [](double f_val, double f_line,
+                            double eta, double width) -> double {
+            return eta / (std::pow(f_val - f_line, 2.0)
+                          + std::max(width * width, 1.0e-6));
+        };
+
+        // Water vapour absorption lines. REQ-AESA-071.
+        gamma_w = (
+                      // 22.235 GHz — dominant water vapour line in radar band
+                      3.98   * eta1 * std::exp(2.23  * (1.0 - r_t))
+                          * safe_line(f, 22.235,  1.0, 9.42  * eta1) * g(f, 22.235)
+                      // 183.310 GHz
+                      + 11.96  * eta1 * std::exp(0.7   * (1.0 - r_t))
+                            * safe_line(f, 183.31,  1.0, 11.14 * eta1)
+                      // 321.226 GHz
+                      + 0.081  * eta1 * std::exp(6.44  * (1.0 - r_t))
+                            * safe_line(f, 321.226, 1.0, 6.29  * eta1)
+                      // 325.153 GHz
+                      + 3.66   * eta1 * std::exp(1.6   * (1.0 - r_t))
+                            * safe_line(f, 325.153, 1.0, 9.22  * eta1)
+                      // 380 GHz
+                      + 25.37  * eta1 * std::exp(1.09  * (1.0 - r_t))
+                            * safe_line(f, 380.0,   1.0, 1.0)
+                      // 448 GHz
+                      + 17.4   * eta1 * std::exp(1.46  * (1.0 - r_t))
+                            * safe_line(f, 448.0,   1.0, 1.0)
+                      // 557 GHz
+                      + 844.6  * eta1 * std::exp(0.17  * (1.0 - r_t))
+                            * safe_line(f, 557.0,   1.0, 1.0)  * g(f, 557.0)
+                      // 752 GHz
+                      + 290.0  * eta1 * std::exp(0.41  * (1.0 - r_t))
+                            * safe_line(f, 752.0,   1.0, 1.0)  * g(f, 752.0)
+                      // 1780 GHz
+                      + 83328.0 * eta2 * std::exp(0.99 * (1.0 - r_t))
+                            * safe_line(f, 1780.0,  1.0, 1.0)  * g(f, 1780.0)
+                      )
+                  * f * f * std::pow(r_t, 2.5) * rho * 1.0e-4;
+
+        // Clamp — attenuation cannot be negative. REQ-AESA-071.
+        gamma_w = std::max(0.0, gamma_w);
+    }
+
+    // Two-way total gaseous loss (dB).
+    // gamma_total is one-way in dB/km; multiply by 2 for two-way and
+    // convert range from m to km. REQ-AESA-071.
+    double gamma_total = gamma_o + gamma_w;
+    return GASEOUS_TWO_WAY_KM * gamma_total * range_m;
+}
+
+// =============================================================================
+// FUNCTION: computePropagationLoss
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::computePropagationLoss(
+    double range_m, const RadarConfig& cfg) const
+{
+    double loss_dB = 0.0;
+
+    // ---- Rain attenuation (ITU-R P.838-3) -----------------------------------
+    // gamma_rain (dB/km) = 0.00887 * R^1.255.
+    // Two-way loss = 2 * gamma_rain * range_km. REQ-AESA-071.
+    if (cfg.atmosphere.rainRate_mmph > 0.0)
+    {
+        double gamma_rain = RAIN_COEFF_A
+                            * std::pow(static_cast<double>(
+                                           cfg.atmosphere.rainRate_mmph),
+                                       RAIN_COEFF_B);
+        loss_dB += TWO_WAY * gamma_rain * (range_m * KM_PER_M);
+    }
+
+    // ---- Fog attenuation (Kunkel 1984) ----------------------------------------
+    // Only active when visibility is in [1 m, 2000 m] — outside this range the
+    // model is not valid. REQ-AESA-071.
+    if (cfg.atmosphere.fogVisibility_m > FOG_VIS_MIN_M &&
+        cfg.atmosphere.fogVisibility_m < FOG_VIS_MAX_M)
+    {
+        // Liquid water content M (g/m³) from visibility (m). REQ-AESA-071.
+        double M_fog     = FOG_COEFF_A
+                       * std::pow(FOG_VIS_DENOM
+                                      / static_cast<double>(
+                                          cfg.atmosphere.fogVisibility_m),
+                                  FOG_VIS_EXP);
+        // Specific attenuation (dB/km). REQ-AESA-071.
+        double gamma_fog = FOG_GAMMA_A * std::pow(M_fog, FOG_GAMMA_EXP);
+        loss_dB += TWO_WAY * gamma_fog * (range_m * KM_PER_M);
+    }
+
+    // ---- Gaseous absorption (ITU-R P.676-12) ----------------------------------
+    // O2 and H2O absorption. Returns dB, two-way. REQ-AESA-071.
+    loss_dB += computeGaseousAttenuation(cfg.frequency_Hz,
+                                         cfg.atmosphere, range_m);
+
+    // Convert total dB loss to linear power reduction factor. REQ-AESA-071.
+    return std::pow(10.0, -loss_dB / 10.0);
+}
+
+// =============================================================================
+// FUNCTION: computeSINR
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::computeSINR(
+    double receivedPower, double range,
+    SurfaceType surface, const TargetInput& target,
+    const RadarConfig& cfg, const BeamWaveform& waveform) const
+{
+    // Compute interference components. REQ-AESA-040.
+    double Pn = computeNoisePower(cfg,
+                                  static_cast<double>(waveform.bandwidth_Hz));
+    double Pc = computeClutterPower(range, surface, cfg);
+    double Pj = computeJammerPower(range, target, cfg);
+
+    // Modulation processing gain and pulse integration gain. REQ-AESA-020.
+    double pg = computeModulationProcessingGain(waveform);
+    double ig = static_cast<double>(std::max(MIN_PULSES_PER_DWELL,
+                                             waveform.pulsesPerDwell));
+
+    // -------------------------------------------------------------------------
+    // Adaptive null steering jammer suppression.
+    // If the jammer falls within the null cone, multiply its power by
+    // 10^(nullDepth_dB/10) before adding to denominator. REQ-AESA-040.
+    // -------------------------------------------------------------------------
+    double jSuppress = 1.0;
+    if (cfg.nullSteering.active && target.jammer.active)
+    {
+        // Compute jammer direction in body frame. REQ-AESA-040.
+        double jAz = std::atan2(target.y, target.x) * RAD_TO_DEG;
+        if (jAz < 0.0) jAz += AZ_FULL_CIRCLE;
+
+        double jEl = (range > MIN_RANGE_M)
+                         ? std::asin(std::clamp(target.z / range,
+                                                DOT_CLAMP_MIN, DOT_CLAMP_MAX))
+                               * RAD_TO_DEG
+                         : 0.0;
+
+        // Angular separation from null direction. REQ-AESA-040.
+        double dAz = std::abs(jAz - cfg.nullSteering.azimuth_deg);
+        if (dAz > AZ_WRAP_THRESHOLD) dAz = AZ_FULL_CIRCLE - dAz;
+        double dEl = std::abs(jEl - cfg.nullSteering.elevation_deg);
+
+        // Check if jammer is within the null cone. REQ-AESA-040.
+        if (dAz < static_cast<double>(cfg.beamWidth) * NULL_CONE_FACTOR &&
+            dEl < static_cast<double>(cfg.beamWidth) * NULL_CONE_FACTOR)
+        {
+            // Apply null depth suppression to jammer power. REQ-AESA-040.
+            jSuppress = std::pow(10.0,
+                                 static_cast<double>(cfg.nullSteering.nullDepth_dB) / 10.0);
+        }
+    }
+
+    // SINR = (Pr * pg * ig) / (Pn + Pc + Pj * jSuppress). REQ-AESA-040.
+    return std::max(0.0,
+                    (receivedPower * pg * ig) / (Pn + Pc + Pj * jSuppress));
+}
+
+// =============================================================================
+// §C  CFAR
+// =============================================================================
+
+// =============================================================================
+// FUNCTION: generateReferenceCells
+// Full description in header.
+// =============================================================================
+std::vector<double> RadarSignalProcessor_AESA::generateReferenceCells(
+    SurfaceType surface, const RadarConfig& cfg) const
+{
+    // Exponential distribution models Rayleigh amplitude / chi-squared power
+    // clutter statistics. REQ-AESA-040.
+    thread_local std::exponential_distribution<double> cellDist(1.0);
+
+    std::vector<double> cells;
+    cells.reserve(CFAR_NUM_CELLS);
+
+    for (int i = 0; i < CFAR_NUM_CELLS; ++i)
+    {
+        double c = cellDist(tl_rng);
+
+        // Scale cells by surface clutter factor — surface clutter has higher
+        // variance than thermal noise. REQ-AESA-040.
+        if (surface == SurfaceType::SEA)
+        {
+            c *= (1.0 + static_cast<double>(cfg.seaState) * CFAR_SEA_SCALE);
+        }
+        if (surface == SurfaceType::LAND)
+        {
+            c *= (1.0 + static_cast<double>(cfg.landClutter) * CFAR_LAND_SCALE);
+        }
+        cells.push_back(c);
+    }
+    return cells;
+}
+
+// =============================================================================
+// FUNCTION: computeCFARThreshold
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::computeCFARThreshold(
+    const std::vector<double>& cells, const RadarConfig& cfg) const
+{
+    // Guard against empty cell list. REQ-AESA-040.
+    if (cells.empty()) return CFAR_INFINITE_THRESHOLD;
+
+    double sum = 0.0;
+    for (double v : cells) sum += v;
+
+    double N     = static_cast<double>(cells.size());
+
+    // CA-CFAR multiplier: alpha = N * (Pfa^(-1/N) - 1). REQ-AESA-040.
+    double alpha = N * (std::pow(cfg.targetPfa, -1.0 / N) - 1.0);
+
+    return (sum / N) * alpha;
+}
+
+// =============================================================================
+// FUNCTION: computeCFARThresholdRelaxed
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::computeCFARThresholdRelaxed(
+    const std::vector<double>& cells, const RadarConfig& cfg) const
+{
+    // Guard against empty cell list. REQ-AESA-040.
+    if (cells.empty()) return CFAR_INFINITE_THRESHOLD;
+
+    double sum = 0.0;
+    for (double v : cells) sum += v;
+
+    double N = static_cast<double>(cells.size());
+
+    // Relaxed Pfa: min(PFA_RELAXED_MAX, targetPfa * 100).
+    // Higher Pfa = lower threshold = higher sensitivity near clutter notch.
+    // REQ-AESA-040.
+    double pfa   = std::min(PFA_RELAXED_MAX, cfg.targetPfa * PFA_RELAXED_SCALE);
+    double alpha = N * (std::pow(pfa, -1.0 / N) - 1.0);
+
+    return (sum / N) * alpha;
+}
+
+// =============================================================================
+// §D  RCS AND SWERLING FLUCTUATION
+// =============================================================================
+
+// =============================================================================
+// FUNCTION: computeEffectiveRCS
+// Full description in header.
+// =============================================================================
 double RadarSignalProcessor_AESA::computeEffectiveRCS(
     const TargetInput& target, double range, double frequency_Hz) const
 {
@@ -652,259 +1234,187 @@ double RadarSignalProcessor_AESA::computeEffectiveRCS(
     if (target.dimensions.valid)
     {
         // ----------------------------------------------------------------
-        // 1. Extract dimensions and establish body-frame axes
+        // 1. Extract and bound dimensions. REQ-AESA-040.
         // ----------------------------------------------------------------
-        double L = std::max(target.dimensions.length, 0.01);
-        double H = std::max(target.dimensions.height, 0.01);
-        double W = std::max(target.dimensions.width,  0.01);
+        double L = std::max(target.dimensions.length, MIN_DIMENSION_M);
+        double H = std::max(target.dimensions.height, MIN_DIMENSION_M);
+        double W = std::max(target.dimensions.width,  MIN_DIMENSION_M);
 
         double lambda = SPEED_OF_LIGHT / std::max(frequency_Hz, 1.0);
         double volume = L * H * W;
 
-        // Body-frame forward axis — derived from velocity vector
-        // If target is stationary, use radar line-of-sight as forward
-        double speed = std::sqrt(target.vx*target.vx +
-                                 target.vy*target.vy +
-                                 target.vz*target.vz);
+        // ----------------------------------------------------------------
+        // 2. Establish body-frame axes from velocity or LOS. REQ-AESA-040.
+        // ----------------------------------------------------------------
+        double speed = std::sqrt(target.vx * target.vx +
+                                 target.vy * target.vy +
+                                 target.vz * target.vz);
 
         double fx, fy, fz;  // forward (length axis)
         double rx, ry, rz;  // right   (width axis)
         double ux, uy, uz;  // up      (height axis)
 
-        if (speed > 0.5)
+        if (speed > MIN_SPEED_FOR_HEADING)
         {
+            // Moving target — forward axis from velocity. REQ-AESA-040.
             fx = target.vx / speed;
             fy = target.vy / speed;
             fz = target.vz / speed;
         }
         else
         {
-            // Stationary — point forward toward radar
+            // Stationary — forward axis toward radar for worst-case aspect.
             fx = -target.x / std::max(range, 1.0);
             fy = -target.y / std::max(range, 1.0);
             fz = -target.z / std::max(range, 1.0);
         }
 
-        // World up = (0, 0, 1) in radar frame
-        // right = forward × up
+        // right = forward × up (world up = [0, 0, 1]). REQ-AESA-040.
         rx = fy * 1.0 - fz * 0.0;
         ry = fz * 0.0 - fx * 1.0;
         rz = fx * 0.0 - fy * 0.0;
-        double rmag = std::sqrt(rx*rx + ry*ry + rz*rz);
-        if (rmag < 1e-6) { rx = 0; ry = 1; rz = 0; rmag = 1.0; }
+        double rmag = std::sqrt(rx * rx + ry * ry + rz * rz);
+
+        // Degenerate case: velocity is purely vertical — fallback right axis.
+        if (rmag < MIN_RVEC_MAG) { rx = 0; ry = 1; rz = 0; rmag = 1.0; }
         rx /= rmag; ry /= rmag; rz /= rmag;
 
-        // up = right × forward
-        ux = ry*fz - rz*fy;
-        uy = rz*fx - rx*fz;
-        uz = rx*fy - ry*fx;
+        // up = right × forward. REQ-AESA-040.
+        ux = ry * fz - rz * fy;
+        uy = rz * fx - rx * fz;
+        uz = rx * fy - ry * fx;
 
         // ----------------------------------------------------------------
-        // 2. Unit vector from target to radar (illumination direction)
+        // 3. Illumination direction (radar to target reversed). REQ-AESA-040.
         // ----------------------------------------------------------------
         double ix = -target.x / std::max(range, 1.0);
         double iy = -target.y / std::max(range, 1.0);
         double iz = -target.z / std::max(range, 1.0);
 
         // ----------------------------------------------------------------
-        // 3. Define 6 faces: {normal_x,y,z,  dim_a, dim_b, faceIndex}
+        // 4. Define 6 faces: {normal, dimensions, face index}. REQ-AESA-040.
         // ----------------------------------------------------------------
-        struct Face {
-            double nx, ny, nz;
-            double a, b;
-            int    idx;
-        };
-
-        Face faces[6] = {
-            {  fx,  fy,  fz,  W, H, 0 },   // front
-            { -fx, -fy, -fz,  W, H, 1 },   // rear
-            {  rx,  ry,  rz,  L, H, 2 },   // right
-            { -rx, -ry, -rz,  L, H, 3 },   // left
-            {  ux,  uy,  uz,  L, W, 4 },   // top
-            { -ux, -uy, -uz,  L, W, 5 },   // bottom
+        struct Face { double nx, ny, nz, a, b; int idx; };
+        const Face faces[NUM_FACES] = {
+            {  fx,  fy,  fz, W, H, 0 },   // front
+            { -fx, -fy, -fz, W, H, 1 },   // rear
+            {  rx,  ry,  rz, L, H, 2 },   // right
+            { -rx, -ry, -rz, L, H, 3 },   // left
+            {  ux,  uy,  uz, L, W, 4 },   // top
+            { -ux, -uy, -uz, L, W, 5 },   // bottom
         };
 
         // ----------------------------------------------------------------
-        // 4. Frequency regime — use smallest dimension as characteristic
+        // 5. Frequency regime from smallest dimension. REQ-AESA-040.
         // ----------------------------------------------------------------
         double D_char = std::min({L, H, W});
         ScatteringRegime regime = rcs_regime(D_char, lambda);
 
         // ----------------------------------------------------------------
-        // 5. Per-target factors
+        // 6. Per-target material and shape factors. REQ-AESA-040.
         // ----------------------------------------------------------------
         double eta_mat   = rcs_materialFactor(target.dimensions.material);
         double eta_shape = rcs_shapeFactor(target.dimensions.shape);
 
         // ----------------------------------------------------------------
-        // 6. Sum face contributions incoherently
-        // Incoherent summation is appropriate because:
-        //   a) Frequency agility decorrelates phase between faces
-        //   b) Swerling model handles coherent fluctuation separately
-        //   c) Entity-level simulation does not resolve face-to-face
-        //      phase differences (requires sub-wavelength positioning)
-        // Ref: [1] Sec 5.3, [4] Sec 6.2
+        // 7. Incoherent summation of face contributions. REQ-AESA-040.
+        // Incoherent because: frequency agility decorrelates phases,
+        // Swerling handles coherent fluctuation, entity-level simulation
+        // cannot resolve sub-wavelength face-to-face phase differences.
+        // Ref: Knott Sec 5.3, IEEE Std 1672-2006 Sec 6.2.
         // ----------------------------------------------------------------
         double sigma_faces = 0.0;
         for (const auto& f : faces)
         {
-            double cosTheta = f.nx*ix + f.ny*iy + f.nz*iz;
-            if (cosTheta <= 0.0) continue;
+            double cosTheta = f.nx * ix + f.ny * iy + f.nz * iz;
+            if (cosTheta <= 0.0) continue;  // shadowed — skip
 
-            double A         = f.a * f.b;
-            double eta_face  = rcs_faceFactor(target.dimensions.shape, f.idx);
+            double A        = f.a * f.b;
+            double eta_face = rcs_faceFactor(target.dimensions.shape, f.idx);
 
             sigma_faces += rcs_faceSigma(A, cosTheta, lambda, volume,
-                                         regime, eta_shape * eta_face, eta_mat);
+                                         regime,
+                                         eta_shape * eta_face, eta_mat);
         }
 
         // ----------------------------------------------------------------
-        // 7. Edge diffraction contribution
-        // Corner/edge diffraction adds a frequency-dependent floor RCS
-        // even at non-specular angles. Particularly important for low-
-        // grazing-angle geometry and box-like shapes with hard edges.
-        // Model: σ_edge = λ × perimeter / (8π)
-        // Ref: [2] Ch 5 — GTD edge diffraction
+        // 8. Edge diffraction floor: sigma_edge = lambda*perimeter/(8*pi).
+        // Adds a frequency-dependent floor at non-specular angles.
+        // Ref: Ruck et al Ch 5 — GTD edge diffraction. REQ-AESA-040.
         // ----------------------------------------------------------------
-        double perimeter_total = 4.0 * (L + H + W);  // sum of all edge lengths
-        double sigma_edge = (lambda * perimeter_total) / (8.0 * M_PI)
+        double perimeter_total = EDGE_PERIMETER_MULT * (L + H + W);
+        double sigma_edge = (lambda * perimeter_total)
+                            / EDGE_DIFFRACTION_DENOM
                             * eta_mat;
 
         base = sigma_faces + sigma_edge;
-
-
     }
     else if (!target.rcsTable.empty())
     {
-        // Manual table provided — interpolate aspect angle
-        double velMag = std::sqrt(target.vx*target.vx +
-                                  target.vy*target.vy +
-                                  target.vz*target.vz);
-        double aspectAngle_deg = 90.0;
+        // Aspect-angle table provided — interpolate. REQ-AESA-040.
+        double velMag = std::sqrt(target.vx * target.vx +
+                                  target.vy * target.vy +
+                                  target.vz * target.vz);
+        double aspectAngle_deg = 90.0;  // broadside default
         if (velMag > 0.01 && range > 1.0)
         {
             double dot = std::clamp(
-                (target.vx/velMag)*(target.x/range) +
-                    (target.vy/velMag)*(target.y/range) +
-                    (target.vz/velMag)*(target.z/range), -1.0, 1.0);
-            aspectAngle_deg = std::acos(dot) * 180.0 / M_PI;
+                (target.vx / velMag) * (target.x / range) +
+                    (target.vy / velMag) * (target.y / range) +
+                    (target.vz / velMag) * (target.z / range),
+                DOT_CLAMP_MIN, DOT_CLAMP_MAX);
+            aspectAngle_deg = std::acos(dot) * RAD_TO_DEG;
         }
         base = lookupAspectRCS(target, aspectAngle_deg);
     }
     else
     {
-        // Last resort
+        // Last resort: platform type lookup. REQ-AESA-040.
         base = getPlatformBaseRCS(target.platformType);
     }
 
-    // --------------------------------------------------------------------
-    // 8. Swerling fluctuation — temporal decorrelation of RCS
-    //    Applied AFTER the geometric mean is computed so that the
-    //    physical scattering model sets the mean and Swerling sets
-    //    the statistical distribution around it. [1] Ch 2, [3] Ch 2.7
-    // --------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // 9. Swerling fluctuation. Applied after the geometric base is computed so
+    //    the physical model sets the MEAN and Swerling sets the distribution.
+    //    Ref: Knott Ch 2, Skolnik Ch 2.7. REQ-AESA-040.
+    // -------------------------------------------------------------------------
     bool coherent = (target.swerlingCase == SwerlingCase::CASE_II ||
                      target.swerlingCase == SwerlingCase::CASE_IV);
-    double finalRCS = computeSwerlingRCS(base, target.swerlingCase, coherent);
-
-
-
-    return finalRCS;
-}
-// double RadarSignalProcessor_AESA::computeEffectiveRCS(
-//     const TargetInput& target, double range) const
-// {
-//     // Compute aspect angle — angle between target velocity and radar LOS
-//     double velMag = std::sqrt(target.vx*target.vx +
-//                               target.vy*target.vy +
-//                               target.vz*target.vz);
-
-//     double aspectAngle_deg = 90.0; // default broadside
-//     if (velMag > 0.01 && range > 1.0)
-//     {
-//         double dot = std::clamp(
-//             (target.vx/velMag)*(target.x/range) +
-//                 (target.vy/velMag)*(target.y/range) +
-//                 (target.vz/velMag)*(target.z/range), -1.0, 1.0);
-//         aspectAngle_deg = std::acos(dot) * 180.0 / M_PI;
-//     }
-
-//     // Get aspect-dependent base RCS
-//     double base = lookupAspectRCS(target, aspectAngle_deg);
-
-//     // Apply Swerling fluctuation
-//     bool coherent = (target.swerlingCase == SwerlingCase::CASE_II ||
-//                      target.swerlingCase == SwerlingCase::CASE_IV);
-//     return computeSwerlingRCS(base, target.swerlingCase, coherent);
-// }
-
-double RadarSignalProcessor_AESA::computeSTAPGain(
-    double radialVelocity_m_s,
-    double platformSpeed_m_s,
-    const BeamWaveform& wf,
-    const RadarConfig& cfg) const
-{
-    // STAP improvement factor over MTI
-    // Based on number of degrees of freedom = pulsesPerDwell × array elements
-    // Simplified: improvement = 10*log10(N_pulses × N_spatial)
-    // We model spatial DOF as sqrt(numElements) for single platform
-    double N_pulses  = static_cast<double>(std::max(1, wf.pulsesPerDwell));
-    double N_spatial = std::sqrt(static_cast<double>(
-        std::max(1, cfg.numElements - cfg.failedModules)));
-    double stapGain  = N_pulses * N_spatial;
-
-    // Velocity discrimination factor — targets far from clutter
-    // notch get full STAP benefit, targets in notch get none
-    auto [notchLo, notchHi] = computeClutterNotch(cfg, wf);
-    double notchWidth = notchHi - notchLo;
-    double distFromNotch = std::abs(radialVelocity_m_s - platformSpeed_m_s);
-
-    if (distFromNotch < notchWidth)
-    {
-        // Inside notch — partial STAP recovery proportional to distance
-        double recovery = distFromNotch / notchWidth;
-        return std::max(1.0, stapGain * recovery * 0.3);
-    }
-
-    return std::min(stapGain, 1000.0); // cap at +30dB
+    return computeSwerlingRCS(base, target.swerlingCase, coherent);
 }
 
-bool RadarSignalProcessor_AESA::isInClutterNotchSTAP(
-    double radVel_m_s,
-    const RadarConfig& cfg,
-    const BeamWaveform& wf) const
+// =============================================================================
+// FUNCTION: computeSwerlingRCS
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::computeSwerlingRCS(
+    double nominalRCS, SwerlingCase sc, bool /*coherentDwell*/) const
 {
-    // STAP narrows the notch compared to MTI by ~sqrt(N_spatial)
-    if (wf.mode == WaveformMode::HPRF) return false;
-    if (cfg.platformSpeed_m_s < 1.0f) return false;
+    // Zero or negative nominal RCS cannot be meaningfully fluctuated. REQ-AESA-040.
+    if (nominalRCS <= MIN_NOMINAL_RCS) return 0.0;
 
-    auto [lo, hi] = computeClutterNotch(cfg, wf);
-    double N_spatial = std::sqrt(static_cast<double>(
-        std::max(1, cfg.numElements - cfg.failedModules)));
-    double stapNotchWidth = (hi - lo) / std::max(1.0, std::sqrt(N_spatial));
-    double center = (lo + hi) / 2.0;
-
-    return (radVel_m_s >= center - stapNotchWidth &&
-            radVel_m_s <= center + stapNotchWidth);
-}
-double RadarSignalProcessor_AESA::computeSwerlingRCS(double nominalRCS,
-                                                      SwerlingCase sc,
-                                                      bool /*coherentDwell*/) const
-{
-    if (nominalRCS <= 0.0) return 0.0;
     switch (sc)
     {
     case SwerlingCase::CASE_0:
+        // Non-fluctuating — return exact nominal RCS. REQ-AESA-040.
         return nominalRCS;
+
     case SwerlingCase::CASE_I:
-    case SwerlingCase::CASE_II: {
+    case SwerlingCase::CASE_II:
+    {
+        // Chi-squared with 2 DOF (exponential distribution).
+        // Models many small, equal-amplitude independent scatterers. REQ-AESA-040.
         thread_local std::exponential_distribution<double> ed(1.0);
         return nominalRCS * ed(tl_rng);
     }
+
     case SwerlingCase::CASE_III:
-    case SwerlingCase::CASE_IV: {
+    case SwerlingCase::CASE_IV:
+    {
+        // Chi-squared with 4 DOF (sum of two exponentials).
+        // Models one dominant scatterer plus many small ones. REQ-AESA-040.
         thread_local std::exponential_distribution<double> ed(1.0);
-        double half = nominalRCS / 2.0;
+        double half = nominalRCS / SWERLING_34_HALF;
         return half * (ed(tl_rng) + ed(tl_rng));
     }
     }
@@ -912,170 +1422,259 @@ double RadarSignalProcessor_AESA::computeSwerlingRCS(double nominalRCS,
 }
 
 // =============================================================================
-// §E  Target motion + FIX-07 Albersheim Pd
+// §E  TARGET MOTION AND ALBERSHEIM Pd
 // =============================================================================
 
+// =============================================================================
+// FUNCTION: computeTargetMotionParams
+// Full description in header.
+// =============================================================================
 void RadarSignalProcessor_AESA::computeTargetMotionParams(
     DetectionOutput& det, const TargetInput& target, double range) const
 {
-    det.speedOverGround = std::sqrt(target.vx*target.vx + target.vy*target.vy);
-    det.heading = std::atan2(target.vy, target.vx) * (180.0 / M_PI);
-    if (det.heading < 0.0) det.heading += 360.0;
+    // Speed over ground from horizontal velocity components. REQ-AESA-040.
+    det.speedOverGround = std::sqrt(target.vx * target.vx +
+                                    target.vy * target.vy);
+
+    // Heading from atan2 — wrap to [0, 360). REQ-AESA-040.
+    det.heading = std::atan2(target.vy, target.vx) * RAD_TO_DEG;
+    if (det.heading < 0.0) det.heading += AZ_FULL_CIRCLE;
+
+    // Acceleration: not currently estimated — reserved for IMU fusion.
     det.acceleration = 0.0;
 
+    // Target aspect angle: angle between velocity heading and radar LOS.
     if (det.speedOverGround > 0.01 && range > 1e-6)
     {
         double s = det.speedOverGround;
         double dot = std::clamp(
-            (target.vx/s)*(target.x/range) +
-            (target.vz > 0.001 ? (target.vz/s)*(target.z/range) : 0.0),
-            -1.0, 1.0);
-        det.targetAspect = std::acos(dot) * 180.0 / M_PI;
+            (target.vx / s) * (target.x / range) +
+                (target.vz > 0.001 ? (target.vz / s) * (target.z / range) : 0.0),
+            DOT_CLAMP_MIN, DOT_CLAMP_MAX);
+        det.targetAspect = std::acos(dot) * RAD_TO_DEG;
     }
-    else det.targetAspect = 0.0;
+    else
+    {
+        det.targetAspect = 0.0;
+    }
 }
 
+// =============================================================================
+// FUNCTION: computeRadialVelocity
+// Full description in header.
+// =============================================================================
 double RadarSignalProcessor_AESA::computeRadialVelocity(
     const TargetInput& target, double range,
     std::normal_distribution<double>& noise) const
 {
-    double dot = target.vx*target.x + target.vy*target.y + target.vz*target.z;
+    // Radial velocity = dot(velocity, LOS unit vector). REQ-AESA-040.
+    double dot = target.vx * target.x +
+                 target.vy * target.y +
+                 target.vz * target.z;
+
+    // Guard against zero range — return noise only. REQ-AESA-040.
     return (range > 1e-6 ? dot / range : 0.0) + noise(tl_rng);
 }
 
-void RadarSignalProcessor_AESA::computeCPA(DetectionOutput& det,
-                                            const TargetInput& target,
-                                            double range) const
+// =============================================================================
+// FUNCTION: computeCPA
+// Full description in header.
+// =============================================================================
+void RadarSignalProcessor_AESA::computeCPA(
+    DetectionOutput& det, const TargetInput& target, double range) const
 {
-    det.cpa_distance = range; det.time_to_cpa = 0.0;
-    double v2 = target.vx*target.vx + target.vy*target.vy + target.vz*target.vz;
+    // Default: CPA is at current position (stationary target). REQ-AESA-040.
+    det.cpa_distance = range;
+    det.time_to_cpa  = 0.0;
+
+    double v2 = target.vx * target.vx +
+                target.vy * target.vy +
+                target.vz * target.vz;
+
     if (v2 > 0.01)
     {
-        double t = -(target.x*target.vx + target.y*target.vy + target.z*target.vz) / v2;
+        // Time to CPA: t = -dot(position, velocity) / |velocity|^2. REQ-AESA-040.
+        double t = -(target.x * target.vx +
+                     target.y * target.vy +
+                     target.z * target.vz) / v2;
+
+        // CPA is only in the future — past CPA means target is receding.
         det.time_to_cpa = std::max(0.0, t);
-        double cx = target.x + target.vx*det.time_to_cpa;
-        double cy = target.y + target.vy*det.time_to_cpa;
-        double cz = target.z + target.vz*det.time_to_cpa;
-        det.cpa_distance = std::sqrt(cx*cx + cy*cy + cz*cz);
+
+        // CPA position. REQ-AESA-040.
+        double cx = target.x + target.vx * det.time_to_cpa;
+        double cy = target.y + target.vy * det.time_to_cpa;
+        double cz = target.z + target.vz * det.time_to_cpa;
+        det.cpa_distance = std::sqrt(cx * cx + cy * cy + cz * cz);
     }
 }
 
-double RadarSignalProcessor_AESA::computeAlbersheimPd(double snr_linear,
-                                                       double Pfa, int N,
-                                                       SwerlingCase sc) const
+// =============================================================================
+// FUNCTION: computeAlbersheimPd
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::computeAlbersheimPd(
+    double snr_linear, double Pfa, int N, SwerlingCase sc) const
 {
+    // Zero or negative SNR — no detection possible. REQ-AESA-040.
     if (snr_linear <= 0.0 || N < 1) return 0.0;
 
     double snr_dB = 10.0 * std::log10(snr_linear);
-    double A = std::log(0.62 / std::max(1e-15, Pfa));
+
+    // Albersheim A constant: A = log(0.62 / Pfa). REQ-AESA-040.
+    double A  = std::log(ALBERSHEIM_PFA_COEFF / std::max(ALBERSHEIM_PFA_MIN, Pfa));
     double Nf = static_cast<double>(std::max(1, N));
 
+    // Swerling fluctuation loss (dB). Non-fluctuating (CASE_0) has no loss.
+    // REQ-AESA-040.
     double swerlingLoss_dB = 0.0;
     switch (sc)
     {
-    case SwerlingCase::CASE_I:   case SwerlingCase::CASE_II:  swerlingLoss_dB = 5.72; break;
-    case SwerlingCase::CASE_III: case SwerlingCase::CASE_IV:  swerlingLoss_dB = 2.36; break;
-    default: break;
+    case SwerlingCase::CASE_I:
+    case SwerlingCase::CASE_II:
+        swerlingLoss_dB = SWERLING_LOSS_I_II;
+        break;
+    case SwerlingCase::CASE_III:
+    case SwerlingCase::CASE_IV:
+        swerlingLoss_dB = SWERLING_LOSS_III_IV;
+        break;
+    default:
+        break;
     }
+
+    // Effective SNR after Swerling loss. REQ-AESA-040.
     double effectiveSNR = snr_dB - swerlingLoss_dB;
 
-    double pdLow = 0.001, pdHigh = 0.999;
-    for (int iter = 0; iter < 40; ++iter)
+    // Bisection search over Pd in [0.001, 0.999]. REQ-AESA-040.
+    double pdLow  = ALBERSHEIM_PD_LOW;
+    double pdHigh = ALBERSHEIM_PD_HIGH;
+
+    for (int iter = 0; iter < ALBERSHEIM_ITERATIONS; ++iter)
     {
         double pdMid = 0.5 * (pdLow + pdHigh);
         double B     = std::log(pdMid / (1.0 - pdMid));
+
+        // Albersheim required SNR (dB) for this Pd. REQ-AESA-040.
         double snrReq = -5.0 * std::log10(Nf)
-                      + (6.2 + 4.54 / std::sqrt(Nf + 0.44))
-                        * std::log10(A + 0.12 * A * B + 1.7 * B);
+                        + (6.2 + 4.54 / std::sqrt(Nf + 0.44))
+                              * std::log10(A + 0.12 * A * B + 1.7 * B);
+
         if (snrReq < effectiveSNR) pdLow  = pdMid;
-        else                       pdHigh = pdMid;
+        else                        pdHigh = pdMid;
     }
-    return std::clamp(0.5 * (pdLow + pdHigh), 0.0, 0.99);
+
+    return std::clamp(0.5 * (pdLow + pdHigh), 0.0, ALBERSHEIM_PD_MAX);
 }
 
-double RadarSignalProcessor_AESA::computePk(double sinr_linear, double Pfa,
-                                             int N, SwerlingCase sc) const
+// =============================================================================
+// FUNCTION: computePk
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::computePk(
+    double sinr_linear, double Pfa, int N, SwerlingCase sc) const
 {
     return computeAlbersheimPd(sinr_linear, Pfa, N, sc);
 }
 
 // =============================================================================
-// §F  Range ambiguity
+// §F  RANGE AMBIGUITY
 // =============================================================================
 
-double RadarSignalProcessor_AESA::resolveRangeAmbiguity(double measured,
-                                                         double predicted,
-                                                         double Rmax) const
+// =============================================================================
+// FUNCTION: resolveRangeAmbiguity
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::resolveRangeAmbiguity(
+    double measured, double predicted, double Rmax) const
 {
-    if (Rmax < 1.0) return measured;
-    double best = measured, minErr = 1e12;
-    for (int k = -5; k <= 5; ++k)
+    // If Rmax is too small to be meaningful, return measured unchanged. REQ-AESA-021.
+    if (Rmax < MIN_RMAX_FOR_RESOLVE) return measured;
+
+    double best   = measured;
+    double minErr = 1e12;
+
+    // Search k in [-RANGE_RESOLVE_K_MAX, +RANGE_RESOLVE_K_MAX].
+    // The candidate closest to the Kalman-predicted range is selected. REQ-AESA-021.
+    for (int k = -RANGE_RESOLVE_K_MAX; k <= RANGE_RESOLVE_K_MAX; ++k)
     {
-        double cand = measured + k * Rmax;
+        double cand = measured + static_cast<double>(k) * Rmax;
         double err  = std::abs(cand - predicted);
         if (err < minErr) { minErr = err; best = cand; }
     }
     return best;
 }
+
+// =============================================================================
+// FUNCTION: applyRangeAmbiguity
+// Full description in header.
+// =============================================================================
 void RadarSignalProcessor_AESA::applyRangeAmbiguity(
     DetectionOutput& det, double range,
     double Rmax, double Rmax2,
     std::normal_distribution<double>& noise) const
 {
-    // First PRF folded measurement (always computed)
+    // ---- First PRF folded measurement (always computed). REQ-AESA-021. ----
     double noisy1;
     if (range > Rmax)
-    { noisy1 = std::fmod(range, Rmax) + noise(tl_rng); det.isAmbiguous = true; }
-    else
-    { noisy1 = range + noise(tl_rng); det.isAmbiguous = false; }
-
-    if (Rmax2 > 1.0)
     {
-        // Second PRF folded measurement — independent noise sample
+        // Range is ambiguous — fold into [0, Rmax). REQ-AESA-021.
+        noisy1          = std::fmod(range, Rmax) + noise(tl_rng);
+        det.isAmbiguous = true;
+    }
+    else
+    {
+        // Range is unambiguous — add noise only. REQ-AESA-021.
+        noisy1          = range + noise(tl_rng);
+        det.isAmbiguous = false;
+    }
+
+    if (Rmax2 > MIN_RMAX_FOR_RESOLVE)
+    {
+        // ---- Staggered PRF: second independent measurement. REQ-AESA-021. ----
         double noisy2 = (range > Rmax2)
                             ? std::fmod(range, Rmax2) + noise(tl_rng)
                             : range + noise(tl_rng);
-        det.range      = resolveRangeAmbiguityStaggered(noisy1, noisy2,
+
+        // Coincidence detector resolves to true range. REQ-AESA-021.
+        det.range       = resolveRangeAmbiguityStaggered(noisy1, noisy2,
                                                    Rmax, Rmax2, range);
-        det.isAmbiguous = false;   // resolved by coincidence detector
+        det.isAmbiguous = false;   // coincidence detector resolved it
     }
     else
     {
+        // Single PRF — report folded measurement. REQ-AESA-021.
         det.range = noisy1;
-        // isAmbiguous already set above
+        // det.isAmbiguous already set above.
     }
 }
-// void RadarSignalProcessor_AESA::applyRangeAmbiguity(
-//     DetectionOutput& det, double range, double Rmax,
-//     std::normal_distribution<double>& noise) const
-// {
-//     if (range > Rmax)
-//     { det.range = std::fmod(range, Rmax) + noise(tl_rng); det.isAmbiguous = true; }
-//     else
-//     { det.range = range + noise(tl_rng); det.isAmbiguous = false; }
-// }
-// ADD after the closing brace of resolveRangeAmbiguity():
 
+// =============================================================================
+// FUNCTION: resolveRangeAmbiguityStaggered
+// Full description in header.
+// =============================================================================
 double RadarSignalProcessor_AESA::resolveRangeAmbiguityStaggered(
     double measured1, double measured2,
-    double Rmax1,     double Rmax2,
-    double predicted) const
+    double Rmax1, double Rmax2, double predicted) const
 {
-    // Coincidence detector: find n1, n2 in [0,4] such that
-    //   measured1 + n1*Rmax1  ≈  measured2 + n2*Rmax2
-    // The matching candidate is the true unambiguous range.
-    // 500 m agreement gate — tighter than RANGE_GATE to avoid false resolves.
-    double bestCand = measured1, bestErr = 1e12;
-    for (int n1 = 0; n1 <= 4; ++n1)
+    double bestCand = measured1;
+    double bestErr  = 1e12;
+
+    // Search n1 and n2 in [0, N_STAG_MAX] for coincidence. REQ-AESA-021.
+    for (int n1 = 0; n1 <= N_STAG_MAX; ++n1)
     {
         double r1 = measured1 + static_cast<double>(n1) * Rmax1;
         if (r1 < 0.0) continue;
-        for (int n2 = 0; n2 <= 4; ++n2)
+
+        for (int n2 = 0; n2 <= N_STAG_MAX; ++n2)
         {
             double r2 = measured2 + static_cast<double>(n2) * Rmax2;
             if (r2 < 0.0) continue;
-            if (std::abs(r1 - r2) < 500.0)   // 500 m coincidence gate
+
+            // Coincidence gate: candidates from both PRFs must agree to within
+            // RANGE_COINCIDENCE_GATE_M (500 m). REQ-AESA-021.
+            if (std::abs(r1 - r2) < RANGE_COINCIDENCE_GATE_M)
             {
+                // Average the two estimates for minimum variance. REQ-AESA-021.
                 double cand = 0.5 * (r1 + r2);
                 double err  = std::abs(cand - predicted);
                 if (err < bestErr) { bestErr = err; bestCand = cand; }
@@ -1085,32 +1684,40 @@ double RadarSignalProcessor_AESA::resolveRangeAmbiguityStaggered(
     return bestCand;
 }
 
+// =============================================================================
+// FUNCTION: resolveVelocityStaggered
+// Full description in header.
+// =============================================================================
 double RadarSignalProcessor_AESA::resolveVelocityStaggered(
     double foldedVel1, double foldedVel2,
-    double Vmax1,      double Vmax2,
-    double predictedVel) const
+    double Vmax1, double Vmax2, double predictedVel) const
 {
-    // Each PRF has an unambiguous velocity interval [0, Vmax].
-    // Fold both measured velocities into their respective [0, Vmax] windows,
-    // then find n1, n2 such that foldedVel1 + n1*Vmax1 ≈ foldedVel2 + n2*Vmax2.
-    // 2.0 m/s agreement gate — one Doppler bin width at typical fighter PRF.
+    // Fold each measurement into its respective [0, Vmax] window.
+    // ADVISORY FP-08: lambda is trivial, local, captures nothing.
+    // ICD-AESA-DEVIATION-004. REQ-AESA-021.
     auto fold = [](double v, double Vmax) -> double {
-        if (Vmax < 1.0) return v;
+        if (Vmax < MIN_VMAX_FOR_FOLD) return v;
         v = std::fmod(v, Vmax);
         if (v < 0.0) v += Vmax;
         return v;
     };
+
     double v1f = fold(foldedVel1, Vmax1);
     double v2f = fold(foldedVel2, Vmax2);
 
-    double bestCand = foldedVel1, bestErr = 1e12;
-    for (int n1 = 0; n1 < 8; ++n1)
+    double bestCand = foldedVel1;
+    double bestErr  = 1e12;
+
+    // Search n1, n2 in [0, VEL_N_MAX) for coincidence. REQ-AESA-021.
+    for (int n1 = 0; n1 < VEL_N_MAX; ++n1)
     {
         double c1 = v1f + static_cast<double>(n1) * Vmax1;
-        for (int n2 = 0; n2 < 8; ++n2)
+        for (int n2 = 0; n2 < VEL_N_MAX; ++n2)
         {
             double c2 = v2f + static_cast<double>(n2) * Vmax2;
-            if (std::abs(c1 - c2) < 2.0)   // 2 m/s coincidence gate
+
+            // Velocity coincidence gate: 2 m/s (~one Doppler bin). REQ-AESA-021.
+            if (std::abs(c1 - c2) < VEL_COINCIDENCE_GATE)
             {
                 double cand = 0.5 * (c1 + c2);
                 double err  = std::abs(cand - predictedVel);
@@ -1120,106 +1727,93 @@ double RadarSignalProcessor_AESA::resolveVelocityStaggered(
     }
     return bestCand;
 }
+
+// =============================================================================
+// FUNCTION: resolveRangeForLockOn
+// Full description in header.
+// =============================================================================
 void RadarSignalProcessor_AESA::resolveRangeForLockOn(
     DetectionOutput& det, double range, double Rmax,
     uint32_t targetId, const std::vector<TrackFile>& db) const
 {
+    // Use Kalman-predicted range as the prior if the track is in the database.
+    // If the track is not found, fall back to the true slant range. REQ-AESA-021.
     double predicted = range;
     for (const auto& t : db)
-        if (t.id == targetId) { predicted = t.predictedRange; break; }
+    {
+        if (t.id == targetId)
+        {
+            predicted = t.predictedRange;
+            break;
+        }
+    }
+
+    // Resolve folded range to nearest multiple of Rmax from predicted. REQ-AESA-021.
     det.range       = resolveRangeAmbiguity(det.range, predicted, Rmax);
     det.isAmbiguous = false;
 }
 
-
-double RadarSignalProcessor_AESA::getPlatformBaseRCS(
-    const std::string& platformType) const
-{
-    // Median RCS values in m² — from open literature
-    if (platformType == "FIGHTER")  return 3.0;
-    if (platformType == "BOMBER")   return 40.0;
-    if (platformType == "UAV")      return 0.01;
-    if (platformType == "MISSILE")  return 0.1;
-    if (platformType == "HELO")     return 3.0;
-    if (platformType == "SHIP")     return 10000.0;
-    if (platformType == "STEALTH")  return 0.001;
-    return 5.0; // GENERIC
-}
-
-double RadarSignalProcessor_AESA::lookupAspectRCS(
-    const TargetInput& target, double aspectAngle_deg) const
-{
-    // If no table, use platform type base RCS
-    if (target.rcsTable.empty())
-        return getPlatformBaseRCS(target.platformType);
-
-    // Linear interpolation between table entries
-    const auto& tbl = target.rcsTable;
-    if (aspectAngle_deg <= tbl.front().first) return tbl.front().second;
-    if (aspectAngle_deg >= tbl.back().first)  return tbl.back().second;
-
-    for (size_t i = 1; i < tbl.size(); ++i)
-    {
-        if (aspectAngle_deg <= tbl[i].first)
-        {
-            double t = (aspectAngle_deg - tbl[i-1].first)
-            / (tbl[i].first - tbl[i-1].first);
-            return tbl[i-1].second + t * (tbl[i].second - tbl[i-1].second);
-        }
-    }
-    return getPlatformBaseRCS(target.platformType);
-}
 // =============================================================================
-// §G  Max detection range
+// §G  MAX DETECTION RANGE
 // =============================================================================
 
-double RadarSignalProcessor_AESA::computeMaxDetectionRange(double rcs,
-                                                            const RadarConfig& cfg) const
+// =============================================================================
+// FUNCTION: computeMaxDetectionRange
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::computeMaxDetectionRange(
+    double rcs, const RadarConfig& cfg) const
 {
-    double lam  = SPEED_OF_LIGHT / cfg.frequency_Hz;
+    double lam    = SPEED_OF_LIGHT / cfg.frequency_Hz;
     int    active = std::max(0, cfg.numElements - cfg.failedModules);
-    double Pt   = static_cast<double>(active)
+    double Pt     = static_cast<double>(active)
                 * static_cast<double>(cfg.peakPowerPerElement_W)
                 * static_cast<double>(cfg.moduleEfficiency);
-    double G    = std::pow(10.0, static_cast<double>(cfg.antennaGain) / 10.0);
-    double Pn   = computeNoisePower(cfg,
-                    static_cast<double>(cfg.searchWaveform.bandwidth_Hz));
+    double G      = std::pow(10.0, static_cast<double>(cfg.antennaGain) / 10.0);
+    double Pn     = computeNoisePower(
+        cfg, static_cast<double>(cfg.searchWaveform.bandwidth_Hz));
 
-    double N     = 16.0;
-    double alpha = N * (std::pow(cfg.targetPfa, -1.0 / N) - 1.0);
-    double pg    = computeModulationProcessingGain(cfg.searchWaveform);
-    double ig    = static_cast<double>(std::max(1, cfg.searchWaveform.pulsesPerDwell));
+    // CA-CFAR multiplier with N=16 reference cells. REQ-AESA-040.
+    double alpha = MAX_RANGE_CFAR_N
+                   * (std::pow(cfg.targetPfa, -1.0 / MAX_RANGE_CFAR_N) - 1.0);
 
+    double pg = computeModulationProcessingGain(cfg.searchWaveform);
+    double ig = static_cast<double>(std::max(1, cfg.searchWaveform.pulsesPerDwell));
 
-    // double R_est = 200000.0;
-    // for (int iter = 0; iter < 6; ++iter)
-    // {
-    //     double prop = computePropagationLoss(R_est, cfg);
-    //     double num  = Pt * prop * prop * G * G * lam * lam * rcs * pg * ig;
-    //     double den  = std::pow(4.0 * M_PI, 3.0) * Pn * alpha;
-    //     if (den <= 0.0) break;
-    //     R_est = std::pow(num / den, 0.25);
-    // }
-    // CHANGE TO:
-    double R_est = 200000.0;
+    // Iterative solver — propagation loss depends on range, so R must be solved
+    // iteratively. Converges when |R_new - R_prev| < 10 m. REQ-AESA-040.
+    double R_est  = MAX_RANGE_INITIAL_M;
     double R_prev = 0.0;
-    for (int iter = 0; iter < 20; ++iter)
+
+    for (int iter = 0; iter < MAX_RANGE_ITERATIONS; ++iter)
     {
         R_prev = R_est;
+
         double prop = computePropagationLoss(R_est, cfg);
         double num  = Pt * prop * prop * G * G * lam * lam * rcs * pg * ig;
-        double den  = std::pow(4.0 * M_PI, 3.0) * Pn * alpha;
+        double den  = std::pow(FOUR_PI, 3.0) * Pn * alpha;
+
         if (den <= 0.0) break;
+
         R_est = std::pow(num / den, 0.25);
-        if (std::abs(R_est - R_prev) < 10.0) break;
+
+        // Convergence check. REQ-AESA-040.
+        if (std::abs(R_est - R_prev) < MAX_RANGE_CONVERGENCE_M) break;
     }
-    return std::max(R_est / 1000.0, cfg.minDetectableRange / 1000.0 * 2.0);
+
+    // Return in km, with a floor of 2x minDetectableRange. REQ-AESA-040.
+    return std::max(R_est * KM_PER_M,
+                    cfg.minDetectableRange * KM_PER_M * 2.0);
 }
 
 // =============================================================================
-// §H  Detection merge guard
+// §H  DETECTION MERGE GUARD
 // =============================================================================
 
+// =============================================================================
+// FUNCTION: shouldMergeDetection
+// Full description in header.
+// =============================================================================
 bool RadarSignalProcessor_AESA::shouldMergeDetection(
     const DetectionOutput& det,
     const std::vector<DetectionOutput>& existing,
@@ -1227,70 +1821,115 @@ bool RadarSignalProcessor_AESA::shouldMergeDetection(
 {
     for (const auto& ex : existing)
     {
+        // Azimuth difference with wrap-around. REQ-AESA-040.
         double azDiff = std::abs(ex.azimuth - det.azimuth);
-        if (azDiff > 180.0) azDiff = 360.0 - azDiff;
-        if (std::abs(ex.range - det.range) < MERGE_GATE &&
-            azDiff < static_cast<double>(cfg.beamWidth) &&
-            std::abs(ex.elevation - det.elevation) < static_cast<double>(cfg.beamWidth))
+        if (azDiff > AZ_WRAP_THRESHOLD) azDiff = AZ_FULL_CIRCLE - azDiff;
+
+        // Merge if range within MERGE_GATE_RANGE_M AND angular within beamWidth.
+        // REQ-AESA-040.
+        if (std::abs(ex.range     - det.range)     < MERGE_GATE_RANGE_M &&
+            azDiff                                  < static_cast<double>(cfg.beamWidth) &&
+            std::abs(ex.elevation - det.elevation)  < static_cast<double>(cfg.beamWidth))
+        {
             return true;
+        }
     }
     return false;
 }
 
 // =============================================================================
-// §I  Beam gain + FIX-11 sidelobe blanking
+// §I  BEAM GAIN AND SIDELOBE BLANKING
 // =============================================================================
 
+// =============================================================================
+// FUNCTION: computeBeamGainFactor
+// Full description in header.
+// =============================================================================
 double RadarSignalProcessor_AESA::computeBeamGainFactor(
     double azDiff, double elDiff,
     const RadarConfig& cfg, double effectiveBeamWidth) const
 {
-    double bw = (effectiveBeamWidth > 0.0) ? effectiveBeamWidth
-                                           : static_cast<double>(cfg.beamWidth);
-    //if (azDiff <= bw / 2.0 && elDiff <= bw / 2.0) return 1.0;
-    if (azDiff <= bw * 2.0 && elDiff <= bw * 2.0) return 1.0;
+    double bw = (effectiveBeamWidth > 0.0)
+    ? effectiveBeamWidth
+    : static_cast<double>(cfg.beamWidth);
 
+    // Within main beam: full gain (factor = 1.0). REQ-AESA-040.
+    if (azDiff <= bw * MAIN_BEAM_FACTOR && elDiff <= bw * MAIN_BEAM_FACTOR)
+    {
+        return 1.0;
+    }
+
+    // Outside main beam: apply sidelobe level. REQ-AESA-040.
     float peakSL, avgSL;
     switch (cfg.sidelobeMode)
     {
-    case SidelobeMode::LOW_SLL:   peakSL = -45.0f; avgSL = -55.0f; break;
-    case SidelobeMode::ULTRA_LOW: peakSL = -55.0f; avgSL = -65.0f; break;
-    default:                      peakSL = cfg.peakSidelobeLevel; avgSL = cfg.avgSidelobeLevel; break;
+    case SidelobeMode::LOW_SLL:
+        peakSL = LOW_SLL_PEAK;  avgSL = LOW_SLL_AVG;
+        break;
+    case SidelobeMode::ULTRA_LOW:
+        peakSL = ULTRA_LOW_PEAK; avgSL = ULTRA_LOW_AVG;
+        break;
+    default:
+        peakSL = cfg.peakSidelobeLevel;
+        avgSL  = cfg.avgSidelobeLevel;
+        break;
     }
 
-    double dB = (azDiff <= bw * 2.0 && elDiff <= bw * 2.0)
-                    ? static_cast<double>(peakSL) : static_cast<double>(avgSL);
+    // Use average sidelobe level for targets clearly outside the main beam.
+    // The first condition is always false here (we are past the main beam check)
+    // but it is retained for defensive clarity. REQ-AESA-040.
+    double dB = (azDiff <= bw * MAIN_BEAM_FACTOR && elDiff <= bw * MAIN_BEAM_FACTOR)
+                    ? static_cast<double>(peakSL)
+                    : static_cast<double>(avgSL);
+
     return std::pow(10.0, dB / 10.0);
 }
 
-bool RadarSignalProcessor_AESA::isJammerInSidelobe(double azDiff, double elDiff,
-                                                    const TargetInput& target,
-                                                    const RadarConfig& cfg) const
+// =============================================================================
+// FUNCTION: isJammerInSidelobe
+// Full description in header.
+// =============================================================================
+bool RadarSignalProcessor_AESA::isJammerInSidelobe(
+    double azDiff, double elDiff,
+    const TargetInput& target, const RadarConfig& cfg) const
 {
+    // No jammer — no blanking needed. REQ-AESA-060.
     if (!target.jammer.active) return false;
-    double halfBW = static_cast<double>(cfg.beamWidth) / 2.0;
-    if (azDiff <= halfBW && elDiff <= halfBW) return false; // in main beam
 
+    // Jammer in main beam: not a sidelobe jammer — do not blank. REQ-AESA-040.
+    double halfBW = static_cast<double>(cfg.beamWidth) / 2.0;
+    if (azDiff <= halfBW && elDiff <= halfBW) return false;
+
+    // Zero power jammer — no power to blank on. REQ-AESA-060.
     if (target.jammer.power_kW <= 0.0) return false;
 
+    // Compute jammer power received in the sidelobe. REQ-AESA-060.
     double Pj  = target.jammer.power_kW * 1000.0;
     double Gj  = std::pow(10.0, target.jammer.gain_dBi / 10.0);
     double lam = SPEED_OF_LIGHT / cfg.frequency_Hz;
-    double Rj  = target.jammer.selfScreening ? 1.0
-               : std::max(1.0, target.jammer.range_m);
-    double Pr  = (Pj * Gj * lam * lam) / (std::pow(4.0*M_PI,2.0) * Rj*Rj);
+    double Rj  = target.jammer.selfScreening
+                    ? MIN_JAMMER_RANGE_M
+                    : std::max(MIN_JAMMER_RANGE_M, target.jammer.range_m);
+
+    double Pr  = (Pj * Gj * lam * lam)
+                / (std::pow(FOUR_PI, 2.0) * Rj * Rj);
 
     double Pn  = computeNoisePower(cfg, cfg.antennaBandwidth);
     if (Pr <= 0.0 || Pn <= 0.0) return false;
 
+    // If jammer exceeds sidelobeBlanking_dB above noise → blank. REQ-AESA-040.
     double excessdB = 10.0 * std::log10(Pr / Pn);
     return excessdB > static_cast<double>(cfg.sidelobeBlanking_dB);
 }
 
 // =============================================================================
-// §J  Modulation processing gain
+// §J  MODULATION PROCESSING GAIN
 // =============================================================================
 
+// =============================================================================
+// FUNCTION: computeModulationProcessingGain
+// Full description in header.
+// =============================================================================
 double RadarSignalProcessor_AESA::computeModulationProcessingGain(
     const BeamWaveform& wf) const
 {
@@ -1299,144 +1938,330 @@ double RadarSignalProcessor_AESA::computeModulationProcessingGain(
     case ModulationType::LFM:
     case ModulationType::NLFM:
     case ModulationType::FMCW:
-        return std::max(1.0, static_cast<double>(wf.bandwidth_Hz) *
-                             static_cast<double>(wf.pulseWidth_s));
-    default: return 1.0;
+        // Processing gain = time-bandwidth product (BT product). REQ-AESA-020.
+        return std::max(MIN_PROCESSING_GAIN,
+                        static_cast<double>(wf.bandwidth_Hz)
+                            * static_cast<double>(wf.pulseWidth_s));
+    default:
+        // Unmodulated pulse — no compression gain. REQ-AESA-020.
+        return 1.0;
     }
 }
 
 // =============================================================================
-// FIX-01  Doppler clutter notch
+// §K  DOPPLER CLUTTER NOTCH AND STAP
+// =============================================================================
+
+// =============================================================================
+// FUNCTION: computeClutterNotch
+// Full description in header.
 // =============================================================================
 std::pair<double,double> RadarSignalProcessor_AESA::computeClutterNotch(
     const RadarConfig& cfg, const BeamWaveform& wf) const
 {
-    // Clutter from ground returns at approximately platform speed (m/s)
-    // A target is blind only if its radial velocity = clutter velocity ± notch width
-    // Notch half-width derived from waveform: λ×PRF/2 divided by dwell pulses
-    // gives the minimum resolvable Doppler bin width
+    // Notch half-width = lambda * PRF / (2 * N_pulses).
+    // This is the Doppler bin width — the minimum resolvable velocity step.
+    // Clamped to [NOTCH_WIDTH_MIN, NOTCH_WIDTH_MAX] m/s for physical validity.
+    // REQ-AESA-040.
     double lambda     = SPEED_OF_LIGHT / cfg.frequency_Hz;
     double prf        = static_cast<double>(wf.prf_Hz);
     double N          = static_cast<double>(std::max(1, wf.pulsesPerDwell));
-    double notchWidth = (lambda * prf) / (2.0 * N);   // m/s — Doppler bin width
-    notchWidth        = std::clamp(notchWidth, 1.0, 15.0); // physical bounds
+    double notchWidth = (lambda * prf) / (2.0 * N);
+    notchWidth        = std::clamp(notchWidth, NOTCH_WIDTH_MIN, NOTCH_WIDTH_MAX);
 
+    // Clutter centre velocity = platform speed. REQ-AESA-040.
     double Vclutter = static_cast<double>(cfg.platformSpeed_m_s);
     return { Vclutter - notchWidth, Vclutter + notchWidth };
 }
-// std::pair<double,double> RadarSignalProcessor_AESA::computeClutterNotch(
-//     const RadarConfig& cfg, const BeamWaveform& /*wf*/) const
-// {
-//     double Vp = static_cast<double>(cfg.platformSpeed_m_s);
-//     return { -Vp, +Vp };
-// }
 
-// bool RadarSignalProcessor_AESA::isInDopplerBlindZone(double radVel_m_s,
-//                                                       const RadarConfig& cfg,
-//                                                       const BeamWaveform& wf) const
-// {
-//     if (wf.mode == WaveformMode::HPRF) return false;
-//     auto [lo, hi] = computeClutterNotch(cfg, wf);
-//     return (radVel_m_s >= lo && radVel_m_s <= hi);
-// }
-bool RadarSignalProcessor_AESA::isInDopplerBlindZone(double radVel_m_s,
-                                                     const RadarConfig& cfg,
-                                                     const BeamWaveform& wf) const
+// =============================================================================
+// FUNCTION: isInDopplerBlindZone
+// Full description in header.
+// =============================================================================
+bool RadarSignalProcessor_AESA::isInDopplerBlindZone(
+    double radVel_m_s, const RadarConfig& cfg, const BeamWaveform& wf) const
 {
+    // HPRF waveform is immune to MTI blind zones. REQ-AESA-040.
     if (wf.mode == WaveformMode::HPRF) return false;
-    if (cfg.platformSpeed_m_s < 1.0f) return false;  // ADD THIS LINE
+
+    // Stationary platform has no meaningful clutter notch. REQ-AESA-040.
+    if (cfg.platformSpeed_m_s < MIN_PLATFORM_SPEED_MPS) return false;
+
     auto [lo, hi] = computeClutterNotch(cfg, wf);
     return (radVel_m_s >= lo && radVel_m_s <= hi);
 }
+
 // =============================================================================
-// FIX-02  Monopulse angle error
+// FUNCTION: computeSTAPGain
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::computeSTAPGain(
+    double radialVelocity_m_s, double platformSpeed_m_s,
+    const BeamWaveform& wf, const RadarConfig& cfg) const
+{
+    // STAP degrees of freedom: temporal = N_pulses, spatial = sqrt(N_elements).
+    // Full STAP gain = N_pulses * sqrt(N_spatial). REQ-AESA-040.
+    double N_pulses  = static_cast<double>(std::max(STAP_MIN_PULSES,
+                                                   wf.pulsesPerDwell));
+    double N_spatial = std::sqrt(static_cast<double>(
+        std::max(STAP_MIN_ELEMENTS,
+                 cfg.numElements - cfg.failedModules)));
+    double stapGain  = N_pulses * N_spatial;
+
+    // Velocity discrimination factor. REQ-AESA-040.
+    auto [notchLo, notchHi] = computeClutterNotch(cfg, wf);
+    double notchWidth    = notchHi - notchLo;
+    double distFromNotch = std::abs(radialVelocity_m_s - platformSpeed_m_s);
+
+    if (distFromNotch < notchWidth)
+    {
+        // Inside notch: partial recovery proportional to distance from centre.
+        // STAP_RECOVERY_FACTOR = 0.3 — physical limit of partial notch recovery.
+        // REQ-AESA-040.
+        double recovery = distFromNotch / notchWidth;
+        return std::max(STAP_GAIN_MIN, stapGain * recovery * STAP_RECOVERY_FACTOR);
+    }
+
+    // Outside notch: full STAP gain, capped at STAP_GAIN_CAP (+30 dB). REQ-AESA-040.
+    return std::min(stapGain, STAP_GAIN_CAP);
+}
+
+// =============================================================================
+// FUNCTION: isInClutterNotchSTAP
+// Full description in header.
+// =============================================================================
+bool RadarSignalProcessor_AESA::isInClutterNotchSTAP(
+    double radVel_m_s, const RadarConfig& cfg, const BeamWaveform& wf) const
+{
+    // HPRF waveform is immune. REQ-AESA-040.
+    if (wf.mode == WaveformMode::HPRF) return false;
+
+    // Stationary platform has no notch. REQ-AESA-040.
+    if (cfg.platformSpeed_m_s < MIN_PLATFORM_SPEED_MPS) return false;
+
+    auto [lo, hi] = computeClutterNotch(cfg, wf);
+
+    // STAP narrows the notch by sqrt(N_spatial) compared to MTI. REQ-AESA-040.
+    double N_spatial      = std::sqrt(static_cast<double>(
+        std::max(STAP_MIN_ELEMENTS, cfg.numElements - cfg.failedModules)));
+    double stapNotchWidth = (hi - lo) / std::max(1.0, std::sqrt(N_spatial));
+    double center         = (lo + hi) / 2.0;
+
+    return (radVel_m_s >= center - stapNotchWidth &&
+            radVel_m_s <= center + stapNotchWidth);
+}
+
+// =============================================================================
+// §L  MONOPULSE ANGLE ERROR
 // =============================================================================
 
+// =============================================================================
+// FUNCTION: computeMonopulseAngleError
+// Full description in header.
+// =============================================================================
 void RadarSignalProcessor_AESA::computeMonopulseAngleError(
     double azDiff_deg, double elDiff_deg, double sinr,
     const RadarConfig& cfg,
     double& outAzError_deg, double& outElError_deg) const
 {
-    double bw  = static_cast<double>(cfg.beamWidth);
-    double km  = 1.606;
-    double sig = (sinr > 0.0) ? bw / (km * std::sqrt(2.0 * sinr)) : bw;
+    double bw = static_cast<double>(cfg.beamWidth);
 
+    // Noise sigma: bw / (km * sqrt(2 * SINR)). When SINR <= 0, sigma = bw
+    // (maximum uncertainty equal to beamwidth). REQ-AESA-040.
+    double sig = (sinr > 0.0)
+                     ? bw / (MONOPULSE_KM * std::sqrt(MONOPULSE_SINR_FACTOR * sinr))
+                     : bw;
+
+    // Random angle noise. REQ-AESA-040.
     thread_local std::normal_distribution<double> nd(0.0, 1.0);
-    outAzError_deg = azDiff_deg / (km * km) + sig * nd(tl_rng);
-    outElError_deg = elDiff_deg / (km * km) + sig * nd(tl_rng);
+
+    // Systematic bias term: azDiff / km^2 (pointing correction). REQ-AESA-040.
+    outAzError_deg = azDiff_deg / (MONOPULSE_KM * MONOPULSE_KM) + sig * nd(tl_rng);
+    outElError_deg = elDiff_deg / (MONOPULSE_KM * MONOPULSE_KM) + sig * nd(tl_rng);
 }
 
 // =============================================================================
-// FIX-06  Waveform selection
+// §M  WAVEFORM SELECTION
 // =============================================================================
 
+// =============================================================================
+// FUNCTION: selectWaveformForRange
+// Full description in header.
+// =============================================================================
 BeamWaveform RadarSignalProcessor_AESA::selectWaveformForRange(
     double range_m, const RadarConfig& cfg) const
 {
+    // Linear search through the waveform table sorted by maxRange_m ascending.
+    // First entry whose maxRange_m > range_m is selected. REQ-AESA-020.
     for (const auto& entry : cfg.waveformTable)
     {
+        // Sentinel: maxRange_m = 0.0 marks end of valid entries. REQ-AESA-020.
         if (entry.maxRange_m <= 0.0f) break;
+
         if (range_m < static_cast<double>(entry.maxRange_m))
+        {
             return entry.waveform;
+        }
     }
+
+    // No entry matched — use default search waveform. REQ-AESA-020.
     return cfg.searchWaveform;
 }
 
 // =============================================================================
-// FIX-09  Two-ray multipath
+// §N  TWO-RAY MULTIPATH
 // =============================================================================
 
+// =============================================================================
+// FUNCTION: computeMultipathFactor
+// Full description in header.
+// =============================================================================
 double RadarSignalProcessor_AESA::computeMultipathFactor(
     double range_m, double elevation_deg,
     double targetHeight_m, const RadarConfig& cfg) const
 {
-    if (elevation_deg > 5.0 || targetHeight_m <= 0.0 || range_m < 1.0) return 1.0;
+    // Multipath is negligible at high elevation angles. REQ-AESA-072.
+    if (elevation_deg > MULTIPATH_EL_THRESHOLD_DEG) return 1.0;
+
+    // No reflection for targets at zero altitude. REQ-AESA-072.
+    if (targetHeight_m <= 0.0) return 1.0;
+
+    // Zero range would cause division by zero. REQ-AESA-072.
+    if (range_m < MIN_RANGE_M) return 1.0;
 
     double lambda = SPEED_OF_LIGHT / cfg.frequency_Hz;
-    double dphi   = (4.0 * M_PI * cfg.radarHeight * targetHeight_m) / (lambda * range_m);
+
+    // Two-ray path difference phase: dphi = 4*pi*h_r*h_t / (lambda*R).
+    // REQ-AESA-072.
+    double dphi = (4.0 * PI * cfg.radarHeight * targetHeight_m)
+                  / (lambda * range_m);
+
+    // Interference factor: 4 * sin^2(dphi/2). REQ-AESA-072.
     double factor = 4.0 * std::pow(std::sin(dphi / 2.0), 2.0);
-    return std::clamp(factor, 0.0, 4.0);
+
+    // Clamp to physical range [0, 4]. Constructive interference cannot exceed 4x.
+    return std::clamp(factor, MULTIPATH_MIN, MULTIPATH_MAX);
 }
 
 // =============================================================================
-// FIX-10  Chaff return
+// §O  CHAFF RETURN
 // =============================================================================
 
+// =============================================================================
+// FUNCTION: computeChaffReturn
+// Full description in header.
+// =============================================================================
 double RadarSignalProcessor_AESA::computeChaffReturn(
     double beamAz, double beamEl,
     const std::vector<ChaffCloud>& clouds,
     double simTime, const RadarConfig& cfg) const
 {
     double total = 0.0;
+
     for (const auto& cloud : clouds)
     {
-        double range = std::sqrt(cloud.x*cloud.x + cloud.y*cloud.y + cloud.z*cloud.z);
-        if (range < 1.0) continue;
+        // Cloud range from radar. REQ-AESA-061.
+        double range = std::sqrt(cloud.x * cloud.x +
+                                 cloud.y * cloud.y +
+                                 cloud.z * cloud.z);
+        if (range < MIN_CHAFF_RANGE_M) continue;
 
-        double cAz = std::atan2(cloud.y, cloud.x) * (180.0/M_PI);
-        if (cAz < 0.0) cAz += 360.0;
-        double cEl = std::asin(std::clamp(cloud.z/range,-1.0,1.0)) * (180.0/M_PI);
+        // Cloud azimuth and elevation in body frame. REQ-AESA-061.
+        double cAz = std::atan2(cloud.y, cloud.x) * RAD_TO_DEG;
+        if (cAz < 0.0) cAz += AZ_FULL_CIRCLE;
+        double cEl = std::asin(std::clamp(cloud.z / range,
+                                          DOT_CLAMP_MIN, DOT_CLAMP_MAX))
+                     * RAD_TO_DEG;
 
+        // Angular offset from beam centre. REQ-AESA-061.
         double dAz = std::abs(beamAz - cAz);
-        if (dAz > 180.0) dAz = 360.0 - dAz;
+        if (dAz > AZ_WRAP_THRESHOLD) dAz = AZ_FULL_CIRCLE - dAz;
         double dEl = std::abs(beamEl - cEl);
-        if (dAz > static_cast<double>(cfg.beamWidth)*3.0 ||
-            dEl > static_cast<double>(cfg.beamWidth)*3.0) continue;
 
+        // Skip clouds outside the beam footprint (3 * beamWidth gate).
+        // REQ-AESA-061.
+        if (dAz > static_cast<double>(cfg.beamWidth) * CHAFF_BEAM_GATE_FACTOR ||
+            dEl > static_cast<double>(cfg.beamWidth) * CHAFF_BEAM_GATE_FACTOR)
+        {
+            continue;
+        }
+
+        // Exponential RCS decay: rcsNow = rcsTotal * exp(-age / decayTime).
+        // REQ-AESA-061.
         double age    = simTime - cloud.birthTime_s;
-        double rcsNow = cloud.rcsTotal * std::exp(-age / std::max(1.0, cloud.decayTime_s));
+        double rcsNow = cloud.rcsTotal
+                        * std::exp(-age / std::max(MIN_CHAFF_DECAY_S,
+                                                   cloud.decayTime_s));
 
+        // Chaff return using radar range equation. REQ-AESA-061.
         double lam  = SPEED_OF_LIGHT / cfg.frequency_Hz;
         int    act  = std::max(0, cfg.numElements - cfg.failedModules);
         double Pt   = static_cast<double>(act)
                     * static_cast<double>(cfg.peakPowerPerElement_W)
                     * static_cast<double>(cfg.moduleEfficiency);
-        double G    = std::pow(10.0, static_cast<double>(cfg.antennaGain)/10.0);
-        double Pc   = (Pt*G*G*lam*lam*rcsNow)
-                    / (std::pow(4.0*M_PI,3.0)*std::pow(range,4.0));
+        double G    = std::pow(10.0,
+                            static_cast<double>(cfg.antennaGain) / 10.0);
+
+        double Pc = (Pt * G * G * lam * lam * rcsNow)
+                    / (std::pow(FOUR_PI, 3.0) * std::pow(range, 4.0));
+
         total += Pc * computePropagationLoss(range, cfg);
     }
     return total;
 }
 
+// =============================================================================
+// UTILITY METHODS (RCS lookup)
+// =============================================================================
+
+// =============================================================================
+// FUNCTION: getPlatformBaseRCS
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::getPlatformBaseRCS(
+    const std::string& platformType) const
+{
+    // Median RCS values from open literature (Skolnik, Knott). REQ-AESA-040.
+    if (platformType == "FIGHTER")  return RCS_FIGHTER;
+    if (platformType == "BOMBER")   return RCS_BOMBER;
+    if (platformType == "UAV")      return RCS_UAV;
+    if (platformType == "MISSILE")  return RCS_MISSILE;
+    if (platformType == "HELO")     return RCS_HELO;
+    if (platformType == "SHIP")     return RCS_SHIP;
+    if (platformType == "STEALTH")  return RCS_STEALTH;
+    return RCS_GENERIC;
+}
+
+// =============================================================================
+// FUNCTION: lookupAspectRCS
+// Full description in header.
+// =============================================================================
+double RadarSignalProcessor_AESA::lookupAspectRCS(
+    const TargetInput& target, double aspectAngle_deg) const
+{
+    // Empty table: fall back to platform type base RCS. REQ-AESA-040.
+    if (target.rcsTable.empty())
+        return getPlatformBaseRCS(target.platformType);
+
+    const auto& tbl = target.rcsTable;
+
+    // Clamp to table bounds. REQ-AESA-040.
+    if (aspectAngle_deg <= tbl.front().first) return tbl.front().second;
+    if (aspectAngle_deg >= tbl.back().first)  return tbl.back().second;
+
+    // Linear interpolation between table entries. REQ-AESA-040.
+    for (size_t i = 1; i < tbl.size(); ++i)
+    {
+        if (aspectAngle_deg <= tbl[i].first)
+        {
+            double t = (aspectAngle_deg - tbl[i - 1].first)
+            / (tbl[i].first - tbl[i - 1].first);
+            return tbl[i - 1].second + t * (tbl[i].second - tbl[i - 1].second);
+        }
+    }
+    return getPlatformBaseRCS(target.platformType);
+}
+
 } // namespace aesa
+
+

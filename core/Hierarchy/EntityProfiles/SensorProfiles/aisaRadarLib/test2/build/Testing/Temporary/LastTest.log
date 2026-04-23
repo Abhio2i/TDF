@@ -1,0 +1,643 @@
+Start testing: Apr 21 09:56 IST
+----------------------------------------------------------
+1/6 Testing: test_radarantenna
+1/6 Test: test_radarantenna
+Command: "/home/o2i/Desktop/work/TDF_4.0.18_18_April-1/core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test2/build/test_radarantenna"
+Directory: /home/o2i/Desktop/work/TDF_4.0.18_18_April-1/core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test2/build
+"test_radarantenna" start time: Apr 21 09:56 IST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+[==========] Running 43 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 43 tests from RadarAntenna
+[ RUN      ] RadarAntenna.PointBeamNaNDoesNotCrash
+[       OK ] RadarAntenna.PointBeamNaNDoesNotCrash (0 ms)
+[ RUN      ] RadarAntenna.GainNaNSteeringDoesNotCrash
+[       OK ] RadarAntenna.GainNaNSteeringDoesNotCrash (0 ms)
+[ RUN      ] RadarAntenna.ResetZerosAllState
+[       OK ] RadarAntenna.ResetZerosAllState (0 ms)
+[ RUN      ] RadarAntenna.ResetOnFreshObjectNoOp
+[       OK ] RadarAntenna.ResetOnFreshObjectNoOp (0 ms)
+[ RUN      ] RadarAntenna.DoubleResetIsIdempotent
+[       OK ] RadarAntenna.DoubleResetIsIdempotent (0 ms)
+[ RUN      ] RadarAntenna.PointBeamStoresAngles
+[       OK ] RadarAntenna.PointBeamStoresAngles (0 ms)
+[ RUN      ] RadarAntenna.PointBeamAtBoresight
+[       OK ] RadarAntenna.PointBeamAtBoresight (0 ms)
+[ RUN      ] RadarAntenna.PointBeamNegativeAzimuth
+[       OK ] RadarAntenna.PointBeamNegativeAzimuth (0 ms)
+[ RUN      ] RadarAntenna.PointBeamNegativeElevation
+[       OK ] RadarAntenna.PointBeamNegativeElevation (0 ms)
+[ RUN      ] RadarAntenna.ClampsAzimuthBeyondMaxSteering
+[       OK ] RadarAntenna.ClampsAzimuthBeyondMaxSteering (0 ms)
+[ RUN      ] RadarAntenna.ClampsElevationAboveMax
+[       OK ] RadarAntenna.ClampsElevationAboveMax (0 ms)
+[ RUN      ] RadarAntenna.ClampsElevationBelowMin
+[       OK ] RadarAntenna.ClampsElevationBelowMin (0 ms)
+[ RUN      ] RadarAntenna.ExtremeAzimuth360DoesNotCrash
+[       OK ] RadarAntenna.ExtremeAzimuth360DoesNotCrash (0 ms)
+[ RUN      ] RadarAntenna.ExtremeNegativeAzimuthDoesNotCrash
+[       OK ] RadarAntenna.ExtremeNegativeAzimuthDoesNotCrash (0 ms)
+[ RUN      ] RadarAntenna.SpoilFactorBelowOneClampedToOne
+[       OK ] RadarAntenna.SpoilFactorBelowOneClampedToOne (0 ms)
+[ RUN      ] RadarAntenna.SpoilFactorZeroClampedToOne
+[       OK ] RadarAntenna.SpoilFactorZeroClampedToOne (0 ms)
+[ RUN      ] RadarAntenna.SpoilFactorNegativeClampedToOne
+[       OK ] RadarAntenna.SpoilFactorNegativeClampedToOne (0 ms)
+[ RUN      ] RadarAntenna.SpoilFactorLargeValueAccepted
+[       OK ] RadarAntenna.SpoilFactorLargeValueAccepted (0 ms)
+[ RUN      ] RadarAntenna.EffectiveBeamWidthScalesWithSpoil
+[       OK ] RadarAntenna.EffectiveBeamWidthScalesWithSpoil (0 ms)
+[ RUN      ] RadarAntenna.EffectiveBeamWidthSpoilOneEqualsBeamWidth
+[       OK ] RadarAntenna.EffectiveBeamWidthSpoilOneEqualsBeamWidth (0 ms)
+[ RUN      ] RadarAntenna.BoresightAlwaysReachable
+[       OK ] RadarAntenna.BoresightAlwaysReachable (0 ms)
+[ RUN      ] RadarAntenna.JustInsideLimitReachable
+[       OK ] RadarAntenna.JustInsideLimitReachable (0 ms)
+[ RUN      ] RadarAntenna.BeyondLimitNotReachable
+[       OK ] RadarAntenna.BeyondLimitNotReachable (0 ms)
+[ RUN      ] RadarAntenna.WellBeyondLimitNotReachable
+[       OK ] RadarAntenna.WellBeyondLimitNotReachable (0 ms)
+[ RUN      ] RadarAntenna.NegativeAzimuthWithinLimitReachable
+[       OK ] RadarAntenna.NegativeAzimuthWithinLimitReachable (0 ms)
+[ RUN      ] RadarAntenna.ZeroMaxSteeringOnlyBoresightReachable
+[       OK ] RadarAntenna.ZeroMaxSteeringOnlyBoresightReachable (0 ms)
+[ RUN      ] RadarAntenna.SteeringAngleSamePointIsZero
+[       OK ] RadarAntenna.SteeringAngleSamePointIsZero (0 ms)
+[ RUN      ] RadarAntenna.SteeringAngle90DegAz
+[       OK ] RadarAntenna.SteeringAngle90DegAz (0 ms)
+[ RUN      ] RadarAntenna.SteeringAngleSymmetric
+[       OK ] RadarAntenna.SteeringAngleSymmetric (0 ms)
+[ RUN      ] RadarAntenna.SteeringAngleAlwaysNonNegative
+[       OK ] RadarAntenna.SteeringAngleAlwaysNonNegative (0 ms)
+[ RUN      ] RadarAntenna.SteeringAngle180OppositeHemisphere
+[       OK ] RadarAntenna.SteeringAngle180OppositeHemisphere (0 ms)
+[ RUN      ] RadarAntenna.GainAtBoresightMatchesAntennaGain
+[       OK ] RadarAntenna.GainAtBoresightMatchesAntennaGain (0 ms)
+[ RUN      ] RadarAntenna.GainMonotonicallyDecreasesWithSteering
+[       OK ] RadarAntenna.GainMonotonicallyDecreasesWithSteering (0 ms)
+[ RUN      ] RadarAntenna.GainAlwaysPositive
+[       OK ] RadarAntenna.GainAlwaysPositive (0 ms)
+[ RUN      ] RadarAntenna.GainHalvedModulesReducesToQuarter
+[       OK ] RadarAntenna.GainHalvedModulesReducesToQuarter (0 ms)
+[ RUN      ] RadarAntenna.GainAllModulesFailedNearZero
+[       OK ] RadarAntenna.GainAllModulesFailedNearZero (0 ms)
+[ RUN      ] RadarAntenna.GainSpoilTwoReducesToQuarter
+[       OK ] RadarAntenna.GainSpoilTwoReducesToQuarter (0 ms)
+[ RUN      ] RadarAntenna.GainZeroElementsIsZero
+[       OK ] RadarAntenna.GainZeroElementsIsZero (0 ms)
+[ RUN      ] RadarAntenna.GainMoreFailedThanTotalDoesNotCrash
+[       OK ] RadarAntenna.GainMoreFailedThanTotalDoesNotCrash (0 ms)
+[ RUN      ] RadarAntenna.ScanBoundaryInitiallyFalse
+[       OK ] RadarAntenna.ScanBoundaryInitiallyFalse (0 ms)
+[ RUN      ] RadarAntenna.ScanBoundarySetAndClear
+[       OK ] RadarAntenna.ScanBoundarySetAndClear (0 ms)
+[ RUN      ] RadarAntenna.ScanBoundaryDoubleSet
+[       OK ] RadarAntenna.ScanBoundaryDoubleSet (0 ms)
+[ RUN      ] RadarAntenna.ScanBoundaryClearedByReset
+[       OK ] RadarAntenna.ScanBoundaryClearedByReset (0 ms)
+[----------] 43 tests from RadarAntenna (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 43 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 43 tests.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_radarantenna" end time: Apr 21 09:56 IST
+"test_radarantenna" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/6 Testing: test_radarsignalprocessor
+2/6 Test: test_radarsignalprocessor
+Command: "/home/o2i/Desktop/work/TDF_4.0.18_18_April-1/core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test2/build/test_radarsignalprocessor"
+Directory: /home/o2i/Desktop/work/TDF_4.0.18_18_April-1/core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test2/build
+"test_radarsignalprocessor" start time: Apr 21 09:56 IST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+[==========] Running 81 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 81 tests from SignalProc
+[ RUN      ] SignalProc.JammerPowerZeroWithNoJammer
+[       OK ] SignalProc.JammerPowerZeroWithNoJammer (0 ms)
+[ RUN      ] SignalProc.JammerPowerPositiveWhenActive
+[       OK ] SignalProc.JammerPowerPositiveWhenActive (0 ms)
+[ RUN      ] SignalProc.TargetAtBeamCentreIsInBeam
+[       OK ] SignalProc.TargetAtBeamCentreIsInBeam (0 ms)
+[ RUN      ] SignalProc.TargetFarOffAxisNotInBeam
+[       OK ] SignalProc.TargetFarOffAxisNotInBeam (0 ms)
+[ RUN      ] SignalProc.EffectiveBeamWidthExpandsGate
+[       OK ] SignalProc.EffectiveBeamWidthExpandsGate (0 ms)
+[ RUN      ] SignalProc.BeamCheckBothAzAndElMustBeInGate
+[       OK ] SignalProc.BeamCheckBothAzAndElMustBeInGate (0 ms)
+[ RUN      ] SignalProc.HorizonShortRangeVisible
+[       OK ] SignalProc.HorizonShortRangeVisible (0 ms)
+[ RUN      ] SignalProc.HorizonBeyondHorizonBlocked
+[       OK ] SignalProc.HorizonBeyondHorizonBlocked (0 ms)
+[ RUN      ] SignalProc.HorizonVeryShortRangeAlwaysVisible
+[       OK ] SignalProc.HorizonVeryShortRangeAlwaysVisible (0 ms)
+[ RUN      ] SignalProc.HorizonTargetHighAltitudeExtendsHorizon
+[       OK ] SignalProc.HorizonTargetHighAltitudeExtendsHorizon (0 ms)
+[ RUN      ] SignalProc.NoisePowerPositive
+[       OK ] SignalProc.NoisePowerPositive (0 ms)
+[ RUN      ] SignalProc.NoisePowerLinearInBandwidth
+[       OK ] SignalProc.NoisePowerLinearInBandwidth (0 ms)
+[ RUN      ] SignalProc.NoisePowerZeroBandwidthFlooredAtOne
+[       OK ] SignalProc.NoisePowerZeroBandwidthFlooredAtOne (0 ms)
+[ RUN      ] SignalProc.NoisePowerIncreasesWithNoiseFigure
+[       OK ] SignalProc.NoisePowerIncreasesWithNoiseFigure (0 ms)
+[ RUN      ] SignalProc.SignalStrengthFourthPowerRangeLaw
+[       OK ] SignalProc.SignalStrengthFourthPowerRangeLaw (0 ms)
+[ RUN      ] SignalProc.SignalStrengthPositive
+[       OK ] SignalProc.SignalStrengthPositive (0 ms)
+[ RUN      ] SignalProc.SignalStrengthDecreasesWithRange
+[       OK ] SignalProc.SignalStrengthDecreasesWithRange (0 ms)
+[ RUN      ] SignalProc.SignalStrengthIncreasesWithRCS
+[       OK ] SignalProc.SignalStrengthIncreasesWithRCS (0 ms)
+[ RUN      ] SignalProc.SignalStrengthMinimumRangeFloor
+[       OK ] SignalProc.SignalStrengthMinimumRangeFloor (0 ms)
+[ RUN      ] SignalProc.PropagationClearAtmosphereNearUnity
+[       OK ] SignalProc.PropagationClearAtmosphereNearUnity (0 ms)
+[ RUN      ] SignalProc.PropagationHeavyRainReducesSignal
+[       OK ] SignalProc.PropagationHeavyRainReducesSignal (0 ms)
+[ RUN      ] SignalProc.PropagationFogReducesSignal
+[       OK ] SignalProc.PropagationFogReducesSignal (0 ms)
+[ RUN      ] SignalProc.PropagationLossIsNeverNegative
+[       OK ] SignalProc.PropagationLossIsNeverNegative (0 ms)
+[ RUN      ] SignalProc.PropagationLossWorseAtLongerRange
+[       OK ] SignalProc.PropagationLossWorseAtLongerRange (0 ms)
+[ RUN      ] SignalProc.CFARThresholdPositive
+[       OK ] SignalProc.CFARThresholdPositive (0 ms)
+[ RUN      ] SignalProc.CFARThresholdLinearInCellMean
+[       OK ] SignalProc.CFARThresholdLinearInCellMean (0 ms)
+[ RUN      ] SignalProc.CFAREmptyCellsReturnsHugeThreshold
+[       OK ] SignalProc.CFAREmptyCellsReturnsHugeThreshold (0 ms)
+[ RUN      ] SignalProc.CFARRelaxedLowerThanNormal
+[       OK ] SignalProc.CFARRelaxedLowerThanNormal (0 ms)
+[ RUN      ] SignalProc.CFARHigherPfaLowersThreshold
+[       OK ] SignalProc.CFARHigherPfaLowersThreshold (0 ms)
+[ RUN      ] SignalProc.SwerlingCase0IsNominal
+[       OK ] SignalProc.SwerlingCase0IsNominal (0 ms)
+[ RUN      ] SignalProc.SwerlingCase1AlwaysPositive
+[       OK ] SignalProc.SwerlingCase1AlwaysPositive (0 ms)
+[ RUN      ] SignalProc.SwerlingCase3AlwaysPositive
+[       OK ] SignalProc.SwerlingCase3AlwaysPositive (0 ms)
+[ RUN      ] SignalProc.SwerlingZeroRCSReturnsZero
+[       OK ] SignalProc.SwerlingZeroRCSReturnsZero (0 ms)
+[ RUN      ] SignalProc.SwerlingNegativeRCSReturnsZero
+[       OK ] SignalProc.SwerlingNegativeRCSReturnsZero (0 ms)
+[ RUN      ] SignalProc.StealthMaterialReducesRCSSignificantly
+[       OK ] SignalProc.StealthMaterialReducesRCSSignificantly (0 ms)
+[ RUN      ] SignalProc.EffectiveRCSPositiveWithDimensions
+[       OK ] SignalProc.EffectiveRCSPositiveWithDimensions (0 ms)
+[ RUN      ] SignalProc.EffectiveRCSWithNoDimensionsFallsBackToPlatformType
+[       OK ] SignalProc.EffectiveRCSWithNoDimensionsFallsBackToPlatformType (0 ms)
+[ RUN      ] SignalProc.ShipRCSLargerThanUAV
+[       OK ] SignalProc.ShipRCSLargerThanUAV (0 ms)
+[ RUN      ] SignalProc.StealthRCSSmallerThanFighter
+[       OK ] SignalProc.StealthRCSSmallerThanFighter (0 ms)
+[ RUN      ] SignalProc.PkHighSNRNearOne
+[       OK ] SignalProc.PkHighSNRNearOne (0 ms)
+[ RUN      ] SignalProc.PkVeryLowSNRNearZero
+[       OK ] SignalProc.PkVeryLowSNRNearZero (0 ms)
+[ RUN      ] SignalProc.PkMonotonicallyIncreasesWithSNR
+[       OK ] SignalProc.PkMonotonicallyIncreasesWithSNR (0 ms)
+[ RUN      ] SignalProc.PkZeroSNRIsZero
+[       OK ] SignalProc.PkZeroSNRIsZero (0 ms)
+[ RUN      ] SignalProc.PkNeverExceedsOne
+[       OK ] SignalProc.PkNeverExceedsOne (0 ms)
+[ RUN      ] SignalProc.PkMorePulsesGivesHigherPd
+[       OK ] SignalProc.PkMorePulsesGivesHigherPd (0 ms)
+[ RUN      ] SignalProc.StationaryPlatformNeverBlind
+[       OK ] SignalProc.StationaryPlatformNeverBlind (0 ms)
+[ RUN      ] SignalProc.HPRFNeverBlind
+[       OK ] SignalProc.HPRFNeverBlind (0 ms)
+[ RUN      ] SignalProc.TargetAtPlatformSpeedIsBlind
+[       OK ] SignalProc.TargetAtPlatformSpeedIsBlind (0 ms)
+[ RUN      ] SignalProc.TargetFarFromClutterNotBlind
+[       OK ] SignalProc.TargetFarFromClutterNotBlind (0 ms)
+[ RUN      ] SignalProc.MultipathHighElevationIsUnity
+[       OK ] SignalProc.MultipathHighElevationIsUnity (0 ms)
+[ RUN      ] SignalProc.MultipathLowElevationInRange0to4
+[       OK ] SignalProc.MultipathLowElevationInRange0to4 (0 ms)
+[ RUN      ] SignalProc.MultipathZeroTargetHeightIsUnity
+[       OK ] SignalProc.MultipathZeroTargetHeightIsUnity (0 ms)
+[ RUN      ] SignalProc.ShortRangeSelectsHPRF
+[       OK ] SignalProc.ShortRangeSelectsHPRF (0 ms)
+[ RUN      ] SignalProc.MediumRangeSelectsMPRF
+[       OK ] SignalProc.MediumRangeSelectsMPRF (0 ms)
+[ RUN      ] SignalProc.LongRangeSelectsLPRF
+[       OK ] SignalProc.LongRangeSelectsLPRF (0 ms)
+[ RUN      ] SignalProc.VeryLongRangeFallsBackToSearchWaveform
+[       OK ] SignalProc.VeryLongRangeFallsBackToSearchWaveform (0 ms)
+[ RUN      ] SignalProc.LFMGainIsTimeBandwidthProduct
+[       OK ] SignalProc.LFMGainIsTimeBandwidthProduct (0 ms)
+[ RUN      ] SignalProc.NLFMGainIsTimeBandwidthProduct
+[       OK ] SignalProc.NLFMGainIsTimeBandwidthProduct (0 ms)
+[ RUN      ] SignalProc.NoneModulationGainIsUnity
+[       OK ] SignalProc.NoneModulationGainIsUnity (0 ms)
+[ RUN      ] SignalProc.UnambiguousRangeUnchanged
+[       OK ] SignalProc.UnambiguousRangeUnchanged (0 ms)
+[ RUN      ] SignalProc.AmbiguousRangeResolvedByPredicted
+[       OK ] SignalProc.AmbiguousRangeResolvedByPredicted (0 ms)
+[ RUN      ] SignalProc.RangeAmbiguityZeroRmaxReturnsInput
+[       OK ] SignalProc.RangeAmbiguityZeroRmaxReturnsInput (0 ms)
+[ RUN      ] SignalProc.MainLobeGainIsUnity
+[       OK ] SignalProc.MainLobeGainIsUnity (0 ms)
+[ RUN      ] SignalProc.SidelobeGainBelowMainLobe
+[       OK ] SignalProc.SidelobeGainBelowMainLobe (0 ms)
+[ RUN      ] SignalProc.SidelobeGainAlwaysPositive
+[       OK ] SignalProc.SidelobeGainAlwaysPositive (0 ms)
+[ RUN      ] SignalProc.MaxRangePositiveAndReasonable
+[       OK ] SignalProc.MaxRangePositiveAndReasonable (0 ms)
+[ RUN      ] SignalProc.LargerRCSGivesGreaterRange
+[       OK ] SignalProc.LargerRCSGivesGreaterRange (0 ms)
+[ RUN      ] SignalProc.MaxRangeScalesWith4thRootOfRCS
+[       OK ] SignalProc.MaxRangeScalesWith4thRootOfRCS (0 ms)
+[ RUN      ] SignalProc.MergeGuardReturnsFalseForDistantDet
+[       OK ] SignalProc.MergeGuardReturnsFalseForDistantDet (0 ms)
+[ RUN      ] SignalProc.MergeGuardReturnsTrueForNearbyDet
+[       OK ] SignalProc.MergeGuardReturnsTrueForNearbyDet (0 ms)
+[ RUN      ] SignalProc.MergeGuardEmptyListAlwaysFalse
+[       OK ] SignalProc.MergeGuardEmptyListAlwaysFalse (0 ms)
+[ RUN      ] SignalProc.ClutterPowerZeroForAirTarget
+[       OK ] SignalProc.ClutterPowerZeroForAirTarget (0 ms)
+[ RUN      ] SignalProc.ClutterPowerPositiveForSeaTarget
+[       OK ] SignalProc.ClutterPowerPositiveForSeaTarget (0 ms)
+[ RUN      ] SignalProc.SINRPositiveWithValidInputs
+[       OK ] SignalProc.SINRPositiveWithValidInputs (0 ms)
+[ RUN      ] SignalProc.SINRZeroReceivedPowerIsZero
+[       OK ] SignalProc.SINRZeroReceivedPowerIsZero (0 ms)
+[ RUN      ] SignalProc.MonopulseErrorFiniteAtHighSNR
+[       OK ] SignalProc.MonopulseErrorFiniteAtHighSNR (0 ms)
+[ RUN      ] SignalProc.MonopulseErrorFiniteAtZeroSNR
+[       OK ] SignalProc.MonopulseErrorFiniteAtZeroSNR (0 ms)
+[ RUN      ] SignalProc.StaggeredRangeResolverFindsCorrectRange
+[       OK ] SignalProc.StaggeredRangeResolverFindsCorrectRange (0 ms)
+[ RUN      ] SignalProc.StaggeredVelocityResolverFindsCorrectVelocity
+[       OK ] SignalProc.StaggeredVelocityResolverFindsCorrectVelocity (0 ms)
+[ RUN      ] SignalProc.SidelobeBlankingReturnsFalseNoJammer
+[       OK ] SignalProc.SidelobeBlankingReturnsFalseNoJammer (0 ms)
+[ RUN      ] SignalProc.SidelobeBlankingReturnsFalseInMainLobe
+[       OK ] SignalProc.SidelobeBlankingReturnsFalseInMainLobe (0 ms)
+[----------] 81 tests from SignalProc (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 81 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 81 tests.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_radarsignalprocessor" end time: Apr 21 09:56 IST
+"test_radarsignalprocessor" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/6 Testing: test_radarscheduler
+3/6 Test: test_radarscheduler
+Command: "/home/o2i/Desktop/work/TDF_4.0.18_18_April-1/core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test2/build/test_radarscheduler"
+Directory: /home/o2i/Desktop/work/TDF_4.0.18_18_April-1/core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test2/build
+"test_radarscheduler" start time: Apr 21 09:56 IST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+[==========] Running 26 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 26 tests from Scheduler
+[ RUN      ] Scheduler.InvertedAzimuthRangeDoesNotCrash
+[       OK ] Scheduler.InvertedAzimuthRangeDoesNotCrash (0 ms)
+[ RUN      ] Scheduler.ZeroMissedScansToDrop
+[       OK ] Scheduler.ZeroMissedScansToDrop (0 ms)
+[ RUN      ] Scheduler.ResetClearsAll
+[       OK ] Scheduler.ResetClearsAll (0 ms)
+[ RUN      ] Scheduler.ResetOnFreshObjectNoOp
+[       OK ] Scheduler.ResetOnFreshObjectNoOp (0 ms)
+[ RUN      ] Scheduler.BuildScheduleNotEmpty
+[       OK ] Scheduler.BuildScheduleNotEmpty (0 ms)
+[ RUN      ] Scheduler.SearchGridSizeReasonable
+[       OK ] Scheduler.SearchGridSizeReasonable (0 ms)
+[ RUN      ] Scheduler.FirstBeamInTWSIsSearch
+[       OK ] Scheduler.FirstBeamInTWSIsSearch (0 ms)
+[ RUN      ] Scheduler.RebuildResetsIndex
+[       OK ] Scheduler.RebuildResetsIndex (0 ms)
+[ RUN      ] Scheduler.LockOnScheduleHasSingleFCBeam
+[       OK ] Scheduler.LockOnScheduleHasSingleFCBeam (0 ms)
+[ RUN      ] Scheduler.LockOnBeamUsesTrackPosition
+[       OK ] Scheduler.LockOnBeamUsesTrackPosition (0 ms)
+[ RUN      ] Scheduler.LockOnWithNoTrackUsesDefault
+[       OK ] Scheduler.LockOnWithNoTrackUsesDefault (0 ms)
+[ RUN      ] Scheduler.LockOnFCBeamHasHighestPriority
+[       OK ] Scheduler.LockOnFCBeamHasHighestPriority (0 ms)
+[ RUN      ] Scheduler.ValidatedTrackExpandsSchedule
+[       OK ] Scheduler.ValidatedTrackExpandsSchedule (0 ms)
+[ RUN      ] Scheduler.UnvalidatedTrackNotInterleaved
+[       OK ] Scheduler.UnvalidatedTrackNotInterleaved (0 ms)
+[ RUN      ] Scheduler.ManoeuveringTargetDoublesTrackBeams
+[       OK ] Scheduler.ManoeuveringTargetDoublesTrackBeams (0 ms)
+[ RUN      ] Scheduler.MultipleTracksAllInterleaved
+[       OK ] Scheduler.MultipleTracksAllInterleaved (0 ms)
+[ RUN      ] Scheduler.ScanCompleteAfterAllSearchBeams
+[       OK ] Scheduler.ScanCompleteAfterAllSearchBeams (0 ms)
+[ RUN      ] Scheduler.ScanCompleteFlagClearsOnNextTick
+[       OK ] Scheduler.ScanCompleteFlagClearsOnNextTick (0 ms)
+[ RUN      ] Scheduler.ScanNotCompleteInitially
+[       OK ] Scheduler.ScanNotCompleteInitially (0 ms)
+[ RUN      ] Scheduler.DutyCycleEnforcedOnOverBudgetWaveform
+[       OK ] Scheduler.DutyCycleEnforcedOnOverBudgetWaveform (0 ms)
+[ RUN      ] Scheduler.DutyCycleQueryInRange
+[       OK ] Scheduler.DutyCycleQueryInRange (0 ms)
+[ RUN      ] Scheduler.DutyCycleUpdatedAfterAdvance
+[       OK ] Scheduler.DutyCycleUpdatedAfterAdvance (0 ms)
+[ RUN      ] Scheduler.AdvanceBeyondDwellMovesIndex
+[       OK ] Scheduler.AdvanceBeyondDwellMovesIndex (0 ms)
+[ RUN      ] Scheduler.PartialDwellDoesNotAdvance
+[       OK ] Scheduler.PartialDwellDoesNotAdvance (0 ms)
+[ RUN      ] Scheduler.ZeroDtDoesNotAdvance
+[       OK ] Scheduler.ZeroDtDoesNotAdvance (0 ms)
+[ RUN      ] Scheduler.IndexWrapsAroundSchedule
+[       OK ] Scheduler.IndexWrapsAroundSchedule (0 ms)
+[----------] 26 tests from Scheduler (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 26 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 26 tests.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_radarscheduler" end time: Apr 21 09:56 IST
+"test_radarscheduler" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/6 Testing: test_radartracker
+4/6 Test: test_radartracker
+Command: "/home/o2i/Desktop/work/TDF_4.0.18_18_April-1/core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test2/build/test_radartracker"
+Directory: /home/o2i/Desktop/work/TDF_4.0.18_18_April-1/core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test2/build
+"test_radartracker" start time: Apr 21 09:56 IST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+[==========] Running 38 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 38 tests from Tracker
+[ RUN      ] Tracker.MaxTracksCapEnforced
+[       OK ] Tracker.MaxTracksCapEnforced (28 ms)
+[ RUN      ] Tracker.PredictStableAfter1000Calls
+[       OK ] Tracker.PredictStableAfter1000Calls (0 ms)
+[ RUN      ] Tracker.ClearEmptiesDatabase
+[       OK ] Tracker.ClearEmptiesDatabase (0 ms)
+[ RUN      ] Tracker.ClearOnEmptyDatabaseNoOp
+[       OK ] Tracker.ClearOnEmptyDatabaseNoOp (0 ms)
+[ RUN      ] Tracker.DoubleClearIsIdempotent
+[       OK ] Tracker.DoubleClearIsIdempotent (0 ms)
+[ RUN      ] Tracker.CreateNewTrackAddsEntry
+[       OK ] Tracker.CreateNewTrackAddsEntry (0 ms)
+[ RUN      ] Tracker.DuplicateIDNotInserted
+[       OK ] Tracker.DuplicateIDNotInserted (0 ms)
+[ RUN      ] Tracker.NewTrackNotValidatedWithMinHits3
+[       OK ] Tracker.NewTrackNotValidatedWithMinHits3 (0 ms)
+[ RUN      ] Tracker.HitCountInitialisedToOne
+[       OK ] Tracker.HitCountInitialisedToOne (0 ms)
+[ RUN      ] Tracker.NewTrackPositionMatchesDetection
+[       OK ] Tracker.NewTrackPositionMatchesDetection (0 ms)
+[ RUN      ] Tracker.MultipleDistinctTracksCreated
+[       OK ] Tracker.MultipleDistinctTracksCreated (0 ms)
+[ RUN      ] Tracker.PredictMovesPositionWithVelocity
+[       OK ] Tracker.PredictMovesPositionWithVelocity (0 ms)
+[ RUN      ] Tracker.PredictUpdatesPredictedRange
+[       OK ] Tracker.PredictUpdatesPredictedRange (0 ms)
+[ RUN      ] Tracker.PredictClearsIsUpdatedFlag
+[       OK ] Tracker.PredictClearsIsUpdatedFlag (0 ms)
+[ RUN      ] Tracker.PredictZeroDtNoPositionChange
+[       OK ] Tracker.PredictZeroDtNoPositionChange (0 ms)
+[ RUN      ] Tracker.PredictMultipleTracksAllUpdated
+[       OK ] Tracker.PredictMultipleTracksAllUpdated (0 ms)
+[ RUN      ] Tracker.FindBestMatchReturnsNearbyTrack
+[       OK ] Tracker.FindBestMatchReturnsNearbyTrack (0 ms)
+[ RUN      ] Tracker.FindBestMatchNullForFarDetection
+[       OK ] Tracker.FindBestMatchNullForFarDetection (0 ms)
+[ RUN      ] Tracker.FindBestMatchNullOnEmptyDatabase
+[       OK ] Tracker.FindBestMatchNullOnEmptyDatabase (0 ms)
+[ RUN      ] Tracker.FindBestMatchSkipsAlreadyUpdated
+[       OK ] Tracker.FindBestMatchSkipsAlreadyUpdated (0 ms)
+[ RUN      ] Tracker.FindBestMatchPicksClosestTrack
+[       OK ] Tracker.FindBestMatchPicksClosestTrack (0 ms)
+[ RUN      ] Tracker.KalmanUpdateIncrementsHitCount
+[       OK ] Tracker.KalmanUpdateIncrementsHitCount (0 ms)
+[ RUN      ] Tracker.KalmanUpdateValidatesAfterMinHits
+[       OK ] Tracker.KalmanUpdateValidatesAfterMinHits (0 ms)
+[ RUN      ] Tracker.KalmanUpdateSetsIsUpdated
+[       OK ] Tracker.KalmanUpdateSetsIsUpdated (0 ms)
+[ RUN      ] Tracker.KalmanUpdateResetsMissCount
+[       OK ] Tracker.KalmanUpdateResetsMissCount (0 ms)
+[ RUN      ] Tracker.ScanMissCountIncrementsWhenNotUpdated
+[       OK ] Tracker.ScanMissCountIncrementsWhenNotUpdated (0 ms)
+[ RUN      ] Tracker.TrackDroppedAfterMissLimit
+[       OK ] Tracker.TrackDroppedAfterMissLimit (0 ms)
+[ RUN      ] Tracker.TrackKeptWhenUpdatedThisScan
+[       OK ] Tracker.TrackKeptWhenUpdatedThisScan (0 ms)
+[ RUN      ] Tracker.TrackDroppedAfterCoastTimeout
+[       OK ] Tracker.TrackDroppedAfterCoastTimeout (0 ms)
+[ RUN      ] Tracker.GetValidatedTracksFiltersUnvalidated
+[       OK ] Tracker.GetValidatedTracksFiltersUnvalidated (0 ms)
+[ RUN      ] Tracker.TrackOutputRangePositive
+[       OK ] Tracker.TrackOutputRangePositive (0 ms)
+[ RUN      ] Tracker.TrackOutputAzimuthReasonable
+[       OK ] Tracker.TrackOutputAzimuthReasonable (0 ms)
+[ RUN      ] Tracker.GetValidatedTracksEmptyWhenNoneValidated
+[       OK ] Tracker.GetValidatedTracksEmptyWhenNoneValidated (0 ms)
+[ RUN      ] Tracker.InjectExternalTrackValidatedAndFlagged
+[       OK ] Tracker.InjectExternalTrackValidatedAndFlagged (0 ms)
+[ RUN      ] Tracker.InjectExternalTrackDuplicateIgnored
+[       OK ] Tracker.InjectExternalTrackDuplicateIgnored (0 ms)
+[ RUN      ] Tracker.InjectMultipleExternalTracks
+[       OK ] Tracker.InjectMultipleExternalTracks (0 ms)
+[ RUN      ] Tracker.JPDAUpdateSingleDetectionIncrementsHit
+[       OK ] Tracker.JPDAUpdateSingleDetectionIncrementsHit (0 ms)
+[ RUN      ] Tracker.JPDAUpdateEmptyDetectionsNoChange
+[       OK ] Tracker.JPDAUpdateEmptyDetectionsNoChange (0 ms)
+[----------] 38 tests from Tracker (29 ms total)
+
+[----------] Global test environment tear-down
+[==========] 38 tests from 1 test suite ran. (29 ms total)
+[  PASSED  ] 38 tests.
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Passed.
+"test_radartracker" end time: Apr 21 09:56 IST
+"test_radartracker" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/6 Testing: test_radarsignallibrary
+5/6 Test: test_radarsignallibrary
+Command: "/home/o2i/Desktop/work/TDF_4.0.18_18_April-1/core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test2/build/test_radarsignallibrary"
+Directory: /home/o2i/Desktop/work/TDF_4.0.18_18_April-1/core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test2/build
+"test_radarsignallibrary" start time: Apr 21 09:56 IST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+[==========] Running 23 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 23 tests from SignalLib
+[ RUN      ] SignalLib.AccumulateCreatesIntercept
+[       OK ] SignalLib.AccumulateCreatesIntercept (0 ms)
+[ RUN      ] SignalLib.AccumulateMultipleTargets
+[       OK ] SignalLib.AccumulateMultipleTargets (0 ms)
+[ RUN      ] SignalLib.DRFMGhostNotAccumulated
+[       OK ] SignalLib.DRFMGhostNotAccumulated (0 ms)
+[ RUN      ] SignalLib.DRFMGhostDoesNotPolluteLegitEntry
+[       OK ] SignalLib.DRFMGhostDoesNotPolluteLegitEntry (0 ms)
+[ RUN      ] SignalLib.ZeroPowerAccumulatedWithoutCrash
+[       OK ] SignalLib.ZeroPowerAccumulatedWithoutCrash (0 ms)
+[ RUN      ] SignalLib.SignalDepthIncrementsWithEachCall
+[       OK ] SignalLib.SignalDepthIncrementsWithEachCall (0 ms)
+[ RUN      ] SignalLib.PRICountIncrementsPerCall
+[       OK ] SignalLib.PRICountIncrementsPerCall (0 ms)
+[ RUN      ] SignalLib.AccumulatedPRIMatchesWaveform
+[       OK ] SignalLib.AccumulatedPRIMatchesWaveform (0 ms)
+[ RUN      ] SignalLib.AccumulatedFrequencyMatchesConfig
+[       OK ] SignalLib.AccumulatedFrequencyMatchesConfig (0 ms)
+[ RUN      ] SignalLib.FrequencyAgilityUsesHopMidpoint
+[       OK ] SignalLib.FrequencyAgilityUsesHopMidpoint (0 ms)
+[ RUN      ] SignalLib.ModulationTypeStored
+[       OK ] SignalLib.ModulationTypeStored (0 ms)
+[ RUN      ] SignalLib.PruneRemovesExpiredEntry
+[       OK ] SignalLib.PruneRemovesExpiredEntry (0 ms)
+[ RUN      ] SignalLib.PruneKeepsRecentEntry
+[       OK ] SignalLib.PruneKeepsRecentEntry (0 ms)
+[ RUN      ] SignalLib.PruneSelectivelyRemovesOld
+[       OK ] SignalLib.PruneSelectivelyRemovesOld (0 ms)
+[ RUN      ] SignalLib.PruneOnEmptyLibraryNoOp
+[       OK ] SignalLib.PruneOnEmptyLibraryNoOp (0 ms)
+[ RUN      ] SignalLib.PruneZeroCoastRemovesAll
+[       OK ] SignalLib.PruneZeroCoastRemovesAll (0 ms)
+[ RUN      ] SignalLib.MatchesEmitterByFrequency
+[       OK ] SignalLib.MatchesEmitterByFrequency (0 ms)
+[ RUN      ] SignalLib.NoMatchForWrongFrequency
+[       OK ] SignalLib.NoMatchForWrongFrequency (0 ms)
+[ RUN      ] SignalLib.EmptyLibraryNoMatch
+[       OK ] SignalLib.EmptyLibraryNoMatch (0 ms)
+[ RUN      ] SignalLib.MultipleLibraryEntriesFirstMatchWins
+[       OK ] SignalLib.MultipleLibraryEntriesFirstMatchWins (0 ms)
+[ RUN      ] SignalLib.ClearRemovesAllEntries
+[       OK ] SignalLib.ClearRemovesAllEntries (0 ms)
+[ RUN      ] SignalLib.ClearThenAccumulateWorks
+[       OK ] SignalLib.ClearThenAccumulateWorks (0 ms)
+[ RUN      ] SignalLib.DoubleClearIsIdempotent
+[       OK ] SignalLib.DoubleClearIsIdempotent (0 ms)
+[----------] 23 tests from SignalLib (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 23 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 23 tests.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_radarsignallibrary" end time: Apr 21 09:56 IST
+"test_radarsignallibrary" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/6 Testing: test_radarmodel
+6/6 Test: test_radarmodel
+Command: "/home/o2i/Desktop/work/TDF_4.0.18_18_April-1/core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test2/build/test_radarmodel"
+Directory: /home/o2i/Desktop/work/TDF_4.0.18_18_April-1/core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test2/build
+"test_radarmodel" start time: Apr 21 09:56 IST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+[==========] Running 37 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 37 tests from RadarModel
+[ RUN      ] RadarModel.InitAndStartSetsTWSMode
+[       OK ] RadarModel.InitAndStartSetsTWSMode (0 ms)
+[ RUN      ] RadarModel.EndClearsOutput
+[       OK ] RadarModel.EndClearsOutput (0 ms)
+[ RUN      ] RadarModel.ResetClearsDetectionsAndTracks
+[       OK ] RadarModel.ResetClearsDetectionsAndTracks (0 ms)
+[ RUN      ] RadarModel.DoubleInitIsIdempotent
+[       OK ] RadarModel.DoubleInitIsIdempotent (0 ms)
+[ RUN      ] RadarModel.StartAfterEndRestarts
+[       OK ] RadarModel.StartAfterEndRestarts (0 ms)
+[ RUN      ] RadarModel.GetConfigReturnsSetConfig
+[       OK ] RadarModel.GetConfigReturnsSetConfig (0 ms)
+[ RUN      ] RadarModel.SetConfigUpdatesHeight
+[       OK ] RadarModel.SetConfigUpdatesHeight (0 ms)
+[ RUN      ] RadarModel.SetConfigPreservesMode
+[       OK ] RadarModel.SetConfigPreservesMode (0 ms)
+[ RUN      ] RadarModel.SetModeSurveillance
+[       OK ] RadarModel.SetModeSurveillance (0 ms)
+[ RUN      ] RadarModel.LockOnSetsMode
+[       OK ] RadarModel.LockOnSetsMode (0 ms)
+[ RUN      ] RadarModel.BreakLockReturnsSurveillance
+[       OK ] RadarModel.BreakLockReturnsSurveillance (0 ms)
+[ RUN      ] RadarModel.BreakLockClearsDetectionsAndTracks
+[       OK ] RadarModel.BreakLockClearsDetectionsAndTracks (0 ms)
+[ RUN      ] RadarModel.SurveillanceModeTracksEmpty
+[       OK ] RadarModel.SurveillanceModeTracksEmpty (0 ms)
+[ RUN      ] RadarModel.NoTargetsNoDetections
+[       OK ] RadarModel.NoTargetsNoDetections (0 ms)
+[ RUN      ] RadarModel.UpdateBeforeStartDoesNotCrash
+[       OK ] RadarModel.UpdateBeforeStartDoesNotCrash (0 ms)
+[ RUN      ] RadarModel.UpdateWithZeroDtDoesNotCrash
+[       OK ] RadarModel.UpdateWithZeroDtDoesNotCrash (0 ms)
+[ RUN      ] RadarModel.UpdateWithLargeDtDoesNotCrash
+[       OK ] RadarModel.UpdateWithLargeDtDoesNotCrash (0 ms)
+[ RUN      ] RadarModel.CloseTargetEventuallyDetected
+[       OK ] RadarModel.CloseTargetEventuallyDetected (0 ms)
+[ RUN      ] RadarModel.DetectionHasCorrectTargetID
+[       OK ] RadarModel.DetectionHasCorrectTargetID (0 ms)
+[ RUN      ] RadarModel.FarTargetWithZeroRCSNotDetected
+[       OK ] RadarModel.FarTargetWithZeroRCSNotDetected (0 ms)
+[ RUN      ] RadarModel.MultipleTargetsCanBeDetected
+[       OK ] RadarModel.MultipleTargetsCanBeDetected (0 ms)
+[ RUN      ] RadarModel.DisplayRangeInBounds
+[       OK ] RadarModel.DisplayRangeInBounds (0 ms)
+[ RUN      ] RadarModel.DisplayRangeNotZero
+[       OK ] RadarModel.DisplayRangeNotZero (0 ms)
+[ RUN      ] RadarModel.CurrentAzimuthChangesOverTime
+[       OK ] RadarModel.CurrentAzimuthChangesOverTime (0 ms)
+[ RUN      ] RadarModel.AddChaffDoesNotCrash
+[       OK ] RadarModel.AddChaffDoesNotCrash (0 ms)
+[ RUN      ] RadarModel.ClearChaffDoesNotCrash
+[       OK ] RadarModel.ClearChaffDoesNotCrash (0 ms)
+[ RUN      ] RadarModel.MultipleChaffCloudsDoNotCrash
+[       OK ] RadarModel.MultipleChaffCloudsDoNotCrash (0 ms)
+[ RUN      ] RadarModel.MaxDetectionRangeReasonable
+[       OK ] RadarModel.MaxDetectionRangeReasonable (0 ms)
+[ RUN      ] RadarModel.MaxRangeLargerRCSGivesMoreRange
+[       OK ] RadarModel.MaxRangeLargerRCSGivesMoreRange (0 ms)
+[ RUN      ] RadarModel.CurrentTaskIsSearchInTWS
+[       OK ] RadarModel.CurrentTaskIsSearchInTWS (0 ms)
+[ RUN      ] RadarModel.DutyCycleInRange
+[       OK ] RadarModel.DutyCycleInRange (0 ms)
+[ RUN      ] RadarModel.InjectExternalTrackDoesNotCrash
+[       OK ] RadarModel.InjectExternalTrackDoesNotCrash (0 ms)
+[ RUN      ] RadarModel.AirOnlyCategoryFiltersOutSurface
+[       OK ] RadarModel.AirOnlyCategoryFiltersOutSurface (0 ms)
+[ RUN      ] RadarModel.TargetAtExactRadarPositionNocrash
+[       OK ] RadarModel.TargetAtExactRadarPositionNocrash (0 ms)
+[ RUN      ] RadarModel.TargetWithNaNPositionNoCrash
+[       OK ] RadarModel.TargetWithNaNPositionNoCrash (0 ms)
+[ RUN      ] RadarModel.TargetIDZeroNoCrash
+[       OK ] RadarModel.TargetIDZeroNoCrash (0 ms)
+[ RUN      ] RadarModel.LockOnUnknownIDNoCrash
+[       OK ] RadarModel.LockOnUnknownIDNoCrash (0 ms)
+[----------] 37 tests from RadarModel (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 37 tests from 1 test suite ran. (1 ms total)
+[  PASSED  ] 37 tests.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_radarmodel" end time: Apr 21 09:56 IST
+"test_radarmodel" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Apr 21 09:56 IST

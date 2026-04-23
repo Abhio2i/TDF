@@ -1,8 +1,33 @@
-/* ========================================================================= */
-/* File: standardtoolbar.h                                                  */
-/* Purpose: Defines toolbar for standard editing actions                     */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         standardtoolbar.h
+ * MODULE:       Standard Toolbar
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the StandardToolBar class which provides a toolbar for
+ *               standard editing actions (new, save, cut, copy, paste, undo,
+ *               redo) along with add trajectory and test script actions.
+ *               Integrates with the main application to provide common file
+ *               and edit operations in a consistent toolbar interface.
+ *
+ * REQUIREMENTS: REQ-STDTOOLBAR-010  Standard editing toolbar
+ *               REQ-STDTOOLBAR-011  New file action
+ *               REQ-STDTOOLBAR-012  Save file action
+ *               REQ-STDTOOLBAR-013  Cut, copy, paste actions
+ *               REQ-STDTOOLBAR-014  Undo, redo actions
+ *               REQ-STDTOOLBAR-015  Add trajectory action
+ *               REQ-STDTOOLBAR-016  Test script action
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-STDTOOLBAR-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef STANDARDTOOLBAR_H
 #define STANDARDTOOLBAR_H

@@ -1,8 +1,38 @@
-/* ========================================================================= */
-/* File: testscriptdialog.h                                                 */
-/* Purpose: Defines widget for editing and running test scripts              */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         testscriptdialog.h
+ * MODULE:       Test Script Editor Dialog
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the TestScriptDialog class which provides a widget for
+ *               editing, loading, saving, and running AngelScript test scripts.
+ *               Includes a code editor with line numbers, syntax highlighting
+ *               (via AngelScriptHighlighter), autocompletion, script name/type
+ *               selection, and buttons for script operations (new, load, run,
+ *               OK, cancel). Supports both edit mode (loading an existing file)
+ *               and new script creation. Emits signals to run the script and
+ *               notify when closed.
+ *
+ * REQUIREMENTS: REQ-TESTSCRIPT-010  Test script editor widget
+ *               REQ-TESTSCRIPT-011  Code editor with line numbers
+ *               REQ-TESTSCRIPT-012  Syntax highlighting for AngelScript
+ *               REQ-TESTSCRIPT-013  Autocompletion for keywords
+ *               REQ-TESTSCRIPT-014  Load script from file
+ *               REQ-TESTSCRIPT-015  Create new script
+ *               REQ-TESTSCRIPT-016  Run script (emit signal with code)
+ *               REQ-TESTSCRIPT-017  Script name and type selection
+ *               REQ-TESTSCRIPT-018  OK/Cancel buttons to close
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-TESTSCRIPT-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef TESTSCRIPTDIALOG_H
 #define TESTSCRIPTDIALOG_H

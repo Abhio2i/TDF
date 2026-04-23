@@ -1,9 +1,43 @@
 
-/* ========================================================================= */
-/* File: databaseeditor.h                                                   */
-/* Purpose: Defines the main window for the database editor application      */
-// Written by   : Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         databaseeditor.h
+ * MODULE:       Database Editor Main Window
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the DatabaseEditor class which serves as the main
+ *               window for the database editor application. It manages the
+ *               hierarchy tree view, inspector panels, console view, menu bar,
+ *               tool bars, dock widgets, status bar, and scenario data.
+ *               Supports loading/saving JSON files, tracking unsaved changes,
+ *               managing multiple inspector tabs, resetting layout, and
+ *               displaying profile/application information.
+ *
+ * REQUIREMENTS: REQ-EDITOR-010  Main window with menu bar and tool bars
+ *               REQ-EDITOR-011  Hierarchy tree view dock widget
+ *               REQ-EDITOR-012  Inspector panel dock widget with multiple tabs
+ *               REQ-EDITOR-013  Console view dock widget
+ *               REQ-EDITOR-014  Load scenario from JSON file
+ *               REQ-EDITOR-015  Track unsaved changes
+ *               REQ-EDITOR-016  Reset layout to default
+ *               REQ-EDITOR-017  Recent projects list
+ *               REQ-EDITOR-018  Show profile info dialog
+ *               REQ-EDITOR-019  Show application dialog
+ *               REQ-EDITOR-020  Show feedback window
+ *               REQ-EDITOR-021  Hierarchy loaded signal
+ *               REQ-EDITOR-022  Unsaved changes changed signal
+ *               REQ-EDITOR-023  Component inspector creation
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-EDITOR-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef DATABASEEDITOR_H
 #define DATABASEEDITOR_H
@@ -44,7 +78,6 @@ public:
     Console* console = nullptr;
     HierarchyTree *treeView = nullptr;
     QDockWidget *consoleDock = nullptr;
-    // static void runUnitTestsOnce();
     QStatusBar *statusBar;
 public slots:
     void showProfileInfo();
@@ -58,7 +91,6 @@ private slots:
     void onDockVisibilityChanged(bool visible);
     void resetLayout();
     void onRecentProjectTriggered();
-    // void clearRecentProjects();
     void loadRecentProject(const QString& filePath);
     void onTreeItemSelected(QVariantMap data);
     void cleanupExtraInspectors();
@@ -112,7 +144,6 @@ private:
         const QString& title,
         const QJsonObject& data,
         int initialHeight);
-    // QStatusBar *statusBar;
 };
 
 #endif

@@ -1,11 +1,30 @@
-
-/* ========================================================================= */
-/* File: reportseditor.cpp                                                   */
-/* Purpose: Same UI as original. Dynamic data from JSON.                     */
-/*          Working PDF export (QPrinter), Word export (OOXML .docx),        */
-/*          and Print dialog.                                                */
-/* Written by: Arti Rajpoot                                                  */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         reportseditor.cpp
+ * MODULE:       Reports Dashboard
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the ReportsEditor class and its helper widgets
+ *               (ReportTimelineWidget, ReportGaugeWidget) which together form
+ *               a comprehensive reports dashboard. Provides mission summary,
+ *               engagement timeline (custom painted), detection probability chart,
+ *               ECM/ECCM analysis, weapon usage table, lessons learned, report
+ *               options (section selection, format choice), and export actions
+ *               (PDF, Word, Print, save/load templates). Loads data from JSON
+ *               and supports team selection for dynamic updates.
+ *
+ * REQUIREMENTS: Implements REQ-REPORTS-010 through REQ-REPORTS-021
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-REPORTS-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "reportseditor.h"
 #include <QMessageBox>

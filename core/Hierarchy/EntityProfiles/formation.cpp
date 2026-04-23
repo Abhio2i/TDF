@@ -1,5 +1,3 @@
-
-
 //============================================================================
 // Written by: Waris
 // Formation
@@ -17,29 +15,40 @@
 #include <core/Hierarchy/hierarchy.h>
 #include <core/Debug/console.h>
 
-// Constructor
-// Initializes formation defaults and allocates storage for formation positions
+/**
+ * @brief Constructs a Formation entity.
+ * @param h Pointer to the parent Hierarchy.
+ */
 Formation::Formation(Hierarchy* h)
     : Entity(h), formationType(Constants::FormationType::Line), count(0),
     mothership(nullptr), formationPositions(new std::unordered_map<std::string,FormationPosition*>())
 {
 }
 
-// Spawns the formation entity into the hierarchy
-// Registers the entity and creates the mothership component
+/**
+ * @brief Spawns the formation entity into the hierarchy.
+ * Registers the entity and creates the mothership component.
+ */
 void Formation::spawn() {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
     addComponent("mothership");
-
 }
-// Returns supported components for the formation (currently none exposed)
+
+/**
+ * @brief Returns supported components for the formation (currently none exposed).
+ * @return Empty vector.
+ */
 std::vector<std::string> Formation::getSupportedComponents() {
     std::vector<std::string> supported;
     return supported;
 }
-// Serializes the formation state into JSON
-// Includes formation metadata, mothership, positions, and formation type
+
+/**
+ * @brief Serializes the formation state into JSON.
+ * Includes formation metadata, mothership, positions, and formation type.
+ * @return QJsonObject containing the formation data.
+ */
 QJsonObject Formation::toJson() const {
     QJsonObject obj;
     obj["name"] = QString::fromStdString(Name);
@@ -80,8 +89,12 @@ QJsonObject Formation::toJson() const {
 
     return obj;
 }
-// Deserializes formation data from JSON
-// Restores entity links, formation positions, offsets, and formation type
+
+/**
+ * @brief Deserializes formation data from JSON.
+ * Restores entity links, formation positions, offsets, and formation type.
+ * @param obj JSON object containing formation data.
+ */
 void Formation::fromJson(const QJsonObject& obj) {
     if(obj.contains("name")){
         Name = obj["name"].toString().toStdString();
@@ -166,6 +179,10 @@ void Formation::fromJson(const QJsonObject& obj) {
     }
 }
 
+/**
+ * @brief Dynamically creates formation positions based on the current type and count.
+ * Calculates offsets for each ally slot and adds them as components.
+ */
 void Formation::formationCreate() {
     // 1. Cleanup: Safely remove existing positions
     std::vector<std::string> keysToRemove;
@@ -179,88 +196,6 @@ void Formation::formationCreate() {
         formationPositions->clear();
     }
 
-    // 2. Dynamic Generation
-    // float spacing = 0.5f;
-
-    // for (int i = 0; i < count; i++) {
-    //     std::string name = "ally_" + std::to_string(i);
-    //     addComponent(name);
-
-    //     FormationPosition* pos = (*formationPositions)[name];
-    //     if (!pos || !pos->Offset) continue;
-
-    //     pos->Offset->y = 0;
-
-    //     // 3. Per-Type Geometry
-    //     switch (formationType) {
-    //     case Constants::FormationType::Line: {
-    //         float sign = (i % 2 == 0) ? -1.0f : 1.0f;
-    //         float dist = ((i + 1) / 2) * spacing;
-    //         pos->Offset->x = sign * dist;
-    //         pos->Offset->z = 0;
-    //         break;
-    //     }
-    //     case Constants::FormationType::V: {
-    //         float sign = (i % 2 == 0) ? -1.0f : 1.0f;
-    //         float dist = ((i + 1) / 2) * spacing;
-    //         pos->Offset->x = sign * dist;
-    //         pos->Offset->z = -dist;
-    //         break;
-    //     }
-    //     case Constants::FormationType::Diamond: {
-    //         int half = count / 2;
-    //         if (i < half) {
-    //             float sign = (i % 2 == 0) ? -1.0f : 1.0f;
-    //             float dist = ((i + 1) / 2) * spacing;
-    //             pos->Offset->x = sign * dist;
-    //             pos->Offset->z = -dist;
-    //         } else {
-    //             int j = i - half;
-    //             float sign = (j % 2 == 0) ? -1.0f : 1.0f;
-    //             float dist = ((j + 1) / 2) * spacing;
-    //             pos->Offset->x = sign * dist;
-    //             pos->Offset->z = dist * 2;
-    //         }
-    //         break;
-    //     }
-    //     case Constants::FormationType::Square: {
-    //         int side = static_cast<int>(std::sqrt(count)) + 1;
-    //         int row = i / side;
-    //         int col = i % side;
-    //         pos->Offset->x = (col - side / 2) * spacing;
-    //         pos->Offset->z = (row - side / 2) * spacing;
-    //         break;
-    //     }
-    //     case Constants::FormationType::Column: {
-    //         pos->Offset->x = 0;
-    //         pos->Offset->z = -(i + 1) * spacing;
-    //         break;
-    //     }
-    //     case Constants::FormationType::EchelonLeft: {
-    //         pos->Offset->x = -(i + 1) * spacing;
-    //         pos->Offset->z = -(i + 1) * spacing;
-    //         break;
-    //     }
-    //     case Constants::FormationType::EchelonRight: {
-    //         pos->Offset->x = (i + 1) * spacing;
-    //         pos->Offset->z = -(i + 1) * spacing;
-    //         break;
-    //     }
-    //     case Constants::FormationType::StaggeredColumn: {
-    //         float sign = (i % 2 == 0) ? -1.0f : 1.0f;
-    //         pos->Offset->x = sign * spacing * 0.5f;
-    //         pos->Offset->z = -(i + 1) * spacing;
-    //         break;
-    //     }
-    //     case Constants::FormationType::Wedge: {
-    //         float sign = (i % 2 == 0) ? -1.0f : 1.0f;
-    //         float dist = ((i + 1) / 2) * spacing;
-    //         pos->Offset->x = sign * dist;
-    //         pos->Offset->z = -(i + 1) * spacing;
-    //         break;
-    //     }
-    //     }
-    // }
     // 2. Dynamic Generation
     float spacing = 0.5f;
     for (int i = 0; i < count; i++) {
@@ -323,7 +258,7 @@ void Formation::formationCreate() {
             pos->Offset->x = x;
             pos->Offset->z = z;
         }
-        // 5. SQUARE (FIXED: Added float x, z declaration)
+        // 5. SQUARE
         else if (formationType == Constants::FormationType::Square) {
             int pointsPerSide = std::ceil((float)count / 4.0f);
             float sideLength = pointsPerSide * spacing;
@@ -331,7 +266,6 @@ void Formation::formationCreate() {
             int side = i / pointsPerSide;
             int indexOnSide = i % pointsPerSide;
             float step = (float)indexOnSide / (float)pointsPerSide * sideLength;
-            // Variables declare karna zaroori hai
             float x = 0;
             float z = 0;
             switch (side) {
@@ -378,7 +312,6 @@ void Formation::formationCreate() {
         else if (formationType == Constants::FormationType::Wedge) {
             // Determine side: Even indices (0, 2, 4...) go Left (-1), Odd (1, 3, 5...) go Right (1)
             float side = (i % 2 == 0) ? -1.0f : 1.0f;
-
             int row = (i / 2) + 1;
             pos->Offset->x = side * spacing * row;
             pos->Offset->z = -spacing * row;
@@ -387,11 +320,15 @@ void Formation::formationCreate() {
     }
 }
 
+/**
+ * @brief Adds a formation position component.
+ * @param name Name of the position (e.g., "mothership" or "ally_0").
+ */
 void Formation::addComponent(std::string name) {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     FormationPosition* fp = new FormationPosition();
 
-    // FIXED: Generate unique component ID instead of using "ID"
+    // Generate unique component ID using formation ID + position name
     std::string componentID = ID + "_" + name;
 
     if(name == "mothership"){
@@ -400,38 +337,30 @@ void Formation::addComponent(std::string name) {
         (*formationPositions)[name] = fp;
     }
 
-    // FIXED: Pass the unique componentID instead of hardcoded "ID"
     emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(componentID), QString::fromStdString(name));
-
 }
 
-// Removes a formation position component
+/**
+ * @brief Removes a formation position component.
+ * @param name Name of the position to remove.
+ */
 void Formation::removeComponent(std::string name) {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     (*formationPositions).erase(name);
     emit parent->componentRemoved(QString::fromStdString(ID), QString::fromStdString(name));
 }
-// Returns a component's serialized data by name
-// QJsonObject Formation::getComponent(std::string name) {
-//     if(name == "mothership"){
-//         return mothership->toJson();
-//     }else{
-//         if (formationPositions->find(name) != formationPositions->end()) {
-//             // exists
-//             return (*formationPositions)[name]->toJson();
-//         }
-//     }
 
-//     return QJsonObject();
-// }
-
+/**
+ * @brief Returns a component's serialized data by name.
+ * @param name Component name ("mothership" or ally name).
+ * @return QJsonObject containing the formation position data.
+ */
 QJsonObject Formation::getComponent(std::string name) {
     if(name == "mothership"){
         qDebug() << "Getting mothership component";
         return mothership->toJson();
     }else{
         if (formationPositions->find(name) != formationPositions->end()) {
-            // exists
             FormationPosition* pos = (*formationPositions)[name];
             qDebug() << "Getting component:" << name.c_str();
             qDebug() << "Position has Offset:" << (pos->Offset ? "Yes" : "No");
@@ -444,10 +373,15 @@ QJsonObject Formation::getComponent(std::string name) {
             return pos->toJson();
         }
     }
-
     return QJsonObject();
 }
 
+/**
+ * @brief Updates a component from JSON data.
+ * Handles formation type, count, mothership, and individual ally updates.
+ * @param name Component name.
+ * @param obj JSON object containing update data.
+ */
 void Formation::updateComponent(QString name, const QJsonObject& obj) {
     // 1. Handle Formation Type change
     if (name == "type") {
@@ -514,40 +448,59 @@ void Formation::updateComponent(QString name, const QJsonObject& obj) {
     }
     pos->fromJson(obj);
 }
-// Converts formation enum to display string
+
+/**
+ * @brief Converts formation enum to display string.
+ * @param type Formation type.
+ * @return String representation.
+ */
 QString Formation::formationTypeToString(Constants::FormationType type) const {
     switch (type) {
     case Constants::FormationType::Line:    return "Line";
     case Constants::FormationType::V:       return "V";
     case Constants::FormationType::Diamond: return "Diamond";
-    case Constants::FormationType::Square:  return "Square"; // Added
+    case Constants::FormationType::Square:  return "Square";
     case Constants::FormationType::Column:  return "Column";
     case Constants::FormationType::EchelonLeft: return "Echelon Left";
-    case Constants::FormationType::EchelonRight: return "Echelon Right"; // Add this
+    case Constants::FormationType::EchelonRight: return "Echelon Right";
     case Constants::FormationType::StaggeredColumn: return "Staggered Column";
     case Constants::FormationType::Wedge: return "Wedge";
     default: return "Line";
     }
 }
-// Converts display string back to formation enum
+
+/**
+ * @brief Converts display string back to formation enum.
+ * @param str String representation.
+ * @return Corresponding FormationType.
+ */
 Constants::FormationType Formation::stringToFormationType(QString str) const {
     if (str == "Line")    return Constants::FormationType::Line;
     if (str == "V")       return Constants::FormationType::V;
     if (str == "Diamond") return Constants::FormationType::Diamond;
-    if (str == "Square")  return Constants::FormationType::Square; // Added
+    if (str == "Square")  return Constants::FormationType::Square;
     if (str == "Column")  return Constants::FormationType::Column;
     if (str == "Echelon Left") return Constants::FormationType::EchelonLeft;
-    if (str == "Echelon Right") return Constants::FormationType::EchelonRight; // Add this
+    if (str == "Echelon Right") return Constants::FormationType::EchelonRight;
     if (str == "Staggered Column") return Constants::FormationType::StaggeredColumn;
     if (str == "Wedge") return Constants::FormationType::Wedge;
     return Constants::FormationType::Line;
 }
-// Returns available formation type options
+
+/**
+ * @brief Returns available formation type options for UI.
+ * @return QStringList of formation names.
+ */
 QStringList Formation::formationTypeOptions() const {
     return {"Line", "V", "Diamond", "Square","Column", "Echelon Left", "Echelon Right", "Staggered Column", "Wedge"};
 }
-// Resolves entity references after loading from JSON
-// Links formation positions to actual entities and enables follow behavior
+
+/**
+ * @brief Resolves entity references after loading from JSON.
+ * Links formation positions to actual entities and enables follow behavior.
+ * @param position FormationPosition to resolve.
+ * @param obj JSON object containing entity reference.
+ */
 void Formation::resolveEntityReference(FormationPosition* position, const QJsonObject& obj) {
     if (obj.contains("entity") && obj["entity"].isObject()) {
         QJsonObject entityObj = obj["entity"].toObject();

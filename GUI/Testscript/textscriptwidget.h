@@ -1,8 +1,34 @@
-/* ========================================================================= */
-/* File: textscriptwidget.h                                                 */
-/* Purpose: Defines widgets for managing and displaying script files         */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         textscriptwidget.h
+ * MODULE:       Text Script Management Widgets
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the TextScriptItemWidget and TextScriptWidget classes
+ *               which provide a UI for managing and displaying AngelScript files.
+ *               The item widget represents a single script with play/pause controls.
+ *               The main widget displays a list of scripts, supports context menu
+ *               operations (rename, remove, edit), and emits signals to run/pause
+ *               scripts, rename/remove script files, and open the script editor.
+ *
+ * REQUIREMENTS: REQ-SCRIPTWIDGET-010  Script list widget
+ *               REQ-SCRIPTWIDGET-011  Script item widget with play/pause buttons
+ *               REQ-SCRIPTWIDGET-012  Load script files from directory
+ *               REQ-SCRIPTWIDGET-013  Context menu: rename, remove, edit script
+ *               REQ-SCRIPTWIDGET-014  Add new script button
+ *               REQ-SCRIPTWIDGET-015  Signals for running, pausing, renaming,
+ *                                     removing scripts
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-SCRIPTWIDGET-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef TEXTSCRIPTWIDGET_H
 #define TEXTSCRIPTWIDGET_H

@@ -1,12 +1,27 @@
 
-/* ========================================================================= */
-/* File: weapon.h                                                            */
-/* Purpose: Base class for all weapon types.                                 */
-/*          Follows the same pattern as sensor.h / Sensor base class.        */
-/*          Subclasses (Missile, Bomb, Torpedo, Artillery, Rocket,           */
-/*          Flare, Chaff) live in WeaponTypes/ and override launch() and     */
-/* ========================================================================= */
-
+// =============================================================================
+// FILE:        weapon.h
+// MODULE:      Tactical Simulation Ordnance Systems
+// PROJECT:     Tactical Display/Simulation Framework (TDF)
+// ORGANISATION: Oxygen 2 Innovation (O2I)
+// STANDARD:    RTCA DO-178C / ED-12C, DAL B (Guidelines applied)
+//
+// DESCRIPTION:  Defines the Weapon abstract base class. This module serves as
+//               the foundation for all ordnance types (Missiles, Bombs, etc.),
+//               managing targeting logic, flight monitoring, and detonation
+//               parameters within the tactical simulation.
+//
+// AUTHOR:       Waris
+// REVIEWED BY:  [Reviewer Name], [Review Date]
+//
+// CHANGE HISTORY:
+//   Rev 1  Sep 2025  Initial implementation for TDF project.
+//   Rev 2  Dec 2025  Integrated WeaponTarget and flight check timers.
+//   Rev 3  Mar 2026  Added support for dynamic target platform tracking.
+//   Rev 4  Apr 2026  Aligned with DO-178C documentation standards for O2I.
+//
+// COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+// =============================================================================
 #ifndef WEAPON_H
 #define WEAPON_H
 

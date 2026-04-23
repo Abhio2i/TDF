@@ -1,10 +1,33 @@
-
-/* ========================================================================= */
-/* File: additemdialog.cpp                                                  */
-/* Purpose: Implementation of dialog for adding items with components       */
-/*          COMPLETE FILE WITH SEARCHABLE ENTITY SELECTION                  */
-/*          Written by Arti Rajpoot                                         */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         additemdialog.cpp
+ * MODULE:       Add Item Dialog
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the AddItemDialog class which provides a modal
+ *               dialog for adding new items (entities or folders) with
+ *               configurable properties and components. Supports entity/folder
+ *               creation, sensor/IFF/radio/weapon component configuration,
+ *               scenario parameters (range, speed, turn radius, trajectory),
+ *               profile selection, and entity component inheritance. The dialog
+ *               adapts its UI based on dialog type (Entity/Folder) and mode
+ *               (Normal, ComponentSensor, ComponentIFF, ComponentRadio,
+ *               ComponentWeapon). Includes searchable entity selection with
+ *               autocompletion, city data loading from JSON, and comprehensive
+ *               input validation.
+ *
+ * REQUIREMENTS: Implements REQ-DIALOG-010 through REQ-DIALOG-018
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-DIALOG-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "additemdialog.h"
 #include "additemdialog-styles.h"
@@ -54,10 +77,9 @@ QMap<QString, QPointF> indianCities = {
 
 // %%% String Utility Functions %%%
 
-/* Convert mangled C++ type name to readable component name */
+
 QString demangleComponentName(const std::string& mangledName) {
     QString name = QString::fromStdString(mangledName);
-    // Remove leading digits
     while (!name.isEmpty() && name[0].isDigit()) {
         name.remove(0, 1);
     }
@@ -577,7 +599,7 @@ void AddItemDialog::setupUI(DialogType type)
          specificType == "Formation")) {
         shouldShowEntitySelection = true;
     }
-    // NEW: Also show entity selection for component addition (Sensor, IFF, Radio, Weapon)
+    // Also show entity selection for component addition (Sensor, IFF, Radio, Weapon)
     if (!isDatabaseEditor && isForComponentAdd) {
         shouldShowEntitySelection = true;
     }
@@ -646,7 +668,7 @@ void AddItemDialog::setupUI(DialogType type)
                             }
                             populateComponentsFromEntity(selectedEntityId, profileName);
 
-                            // NEW: For sensor components, set the sensor type combo box from the selected entity
+                            //  For sensor components, set the sensor type combo box from the selected entity
                             if (isForSensor && sensorTypeComboBox) {
                                 Hierarchy* lib = m_hierarchy;
                                 if (lib) {
@@ -697,9 +719,7 @@ void AddItemDialog::setupUI(DialogType type)
         else if (isComponentWeaponAdd) placeholderText = "Select Weapon";
         profileComboBox->addItem(placeholderText);
         profileComboBox->setCurrentIndex(0);
-        // Style placeholder item
         profileComboBox->setItemData(0, QColor(Qt::gray), Qt::TextColorRole);
-        // Load appropriate profiles
         if (isComponentSensorAdd) {
             populateSensorProfiles();
         } else if (isComponentIFFAdd) {
@@ -908,7 +928,6 @@ void AddItemDialog::setupUI(DialogType type)
                               specificType == "SpecialZone" || specificType == "FixedPoints" ||
                               specificType == "Entity"));
     if (createComponents) {
-
         QGroupBox *componentsGroup = new QGroupBox("Components", this);
         componentsGroup->setStyleSheet(AddItemDialogStyles::GroupBox);
         componentsGroup->setVisible(false);
@@ -1030,7 +1049,6 @@ void AddItemDialog::setupUI(DialogType type)
         QVBoxLayout *dialogLayout = new QVBoxLayout(this);
         dialogLayout->addWidget(scrollArea);
         setLayout(dialogLayout);
-        // Set window title
         QString windowTitle;
         if (specificType == "Platform" || specificType.isEmpty()) {
             windowTitle = "Add Entity";
@@ -1468,8 +1486,6 @@ bool AddItemDialog::validateInputs()
         return false;
     }
 
-    // For component modes, if profileComboBox is visible (old style), validate it
-    // But currently profileComboBox is hidden for component modes, so this block may not run.
     if (profileComboBox && profileComboBox->isVisible()) {
         if (profileComboBox->currentIndex() == 0) {
             QString componentType;

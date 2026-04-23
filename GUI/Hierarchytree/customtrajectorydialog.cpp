@@ -1,8 +1,29 @@
-/* ========================================================================= */
-/* File: customtrajectorydialog.cpp                                          */
-/* Purpose: Implements dialog for configuring custom trajectory parameters  */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         customtrajectorydialog.cpp
+ * MODULE:       Custom Trajectory Configuration Dialog
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the CustomTrajectoryDialog class which provides a
+ *               modal dialog for configuring custom trajectory parameters.
+ *               Supports waypoint count, shape selection (line, circle, oval),
+ *               geometric dimensions (length, radius, major/minor axis),
+ *               orientation, start/circle points, altitude constraints,
+ *               speed constraints, and curve type. UI dynamically updates
+ *               based on shape selection and checkbox states.
+ *
+ * REQUIREMENTS: Implements REQ-TRAJ-010 through REQ-TRAJ-018
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-TRAJ-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "customtrajectorydialog.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -214,11 +235,6 @@ void CustomTrajectoryDialog::setupUI()
     connect(altitudeCheckBox, &QCheckBox::stateChanged,
             this, &CustomTrajectoryDialog::onAltitudeCheckboxChanged);
     mainLayout->addWidget(altitudeGroupBox);
-
-
-
-
-
     QDialogButtonBox *buttonBox = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
@@ -229,22 +245,13 @@ void CustomTrajectoryDialog::setupUI()
 void CustomTrajectoryDialog::onShapeChanged(int index)
 {
     QString shape = shapesComboBox->itemText(index);
-
-
     bool showLine = (shape == "Line" || shape == "Zigzag" || shape == "Rectangle");
     lineGroupBox->setVisible(showLine);
-
-
     bool showCircle = (shape == "Circle" || shape == "Spiral");
     circleGroupBox->setVisible(showCircle);
-
-
     bool showOval = (shape == "Oval");
     ovalGroupBox->setVisible(showOval);
-
-
     if (shape == "Line") {
-
         lineGroupBox->setTitle("Line Parameters");
     } else if (shape == "Zigzag") {
         lineGroupBox->setTitle("Zigzag Parameters");
@@ -255,8 +262,6 @@ void CustomTrajectoryDialog::onShapeChanged(int index)
     } else if (shape == "Spiral") {
         ovalGroupBox->setTitle("Spiral Parameters");
     }
-
-
     QTimer::singleShot(10, this, [this]() {
         adjustSize();
 

@@ -1,8 +1,38 @@
-/* ========================================================================= */
-/* File: hierarchyconnector.h                                               */
-/* Purpose: Defines connector for hierarchy and UI components               */
-// Written by   : Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         hierarchyconnector.h
+ * MODULE:       Hierarchy UI Connector
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the HierarchyConnector class, a singleton that
+ *               provides connectivity between the core Hierarchy data model
+ *               and UI components (HierarchyTree, TacticalDisplay, Inspector,
+ *               QMainWindow). It manages signal/slot connections, file
+ *               operations (new/open/save), copy/paste, library data
+ *               initialisation, dummy data generation, recent projects,
+ *               and feedback data collection.
+ *
+ * REQUIREMENTS: REQ-CONN-010  Singleton connector for hierarchy-UI integration
+ *               REQ-CONN-011  Connect hierarchy signals to tree view and displays
+ *               REQ-CONN-012  Connect library hierarchy signals to library tree
+ *               REQ-CONN-013  File operations (new, open, save) via main window
+ *               REQ-CONN-014  Initialise dummy data for testing
+ *               REQ-CONN-015  Initialise library data from profiles
+ *               REQ-CONN-016  Recent projects management (add, get, clear)
+ *               REQ-CONN-017  Generate feedback data as JSON
+ *               REQ-CONN-018  Load XML files into hierarchy
+ *               REQ-CONN-019  Copy/paste support between hierarchies
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-CONN-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef HIERARCHYCONNECTOR_H
 #define HIERARCHYCONNECTOR_H

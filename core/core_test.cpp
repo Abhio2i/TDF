@@ -32,7 +32,13 @@ extern void scenarioConfig_test();
 extern void console_test();
 extern void frame_test();
 
-extern void aesaRadar_test();
+extern void aesaRadarBridge_test();
+extern void radarAntenna_test();
+extern void radarModel_test();
+extern void radarScheduler_test();
+extern void radarSignalLibrary_test();
+extern void radarSignalProcessor_test();
+extern void radarTracker_test();
 
 extern int testsPassed;
 extern int testsFailed;
@@ -175,7 +181,37 @@ Core_Test::Core_Test() {
     totaltestsFailed += testsFailed;
     totaltests += tests;
 
-    aesaRadar_test();
+    aesaRadarBridge_test();
+    totaltestsPassed += testsPassed;
+    totaltestsFailed += testsFailed;
+    totaltests += tests;
+
+    radarAntenna_test();
+    totaltestsPassed += testsPassed;
+    totaltestsFailed += testsFailed;
+    totaltests += tests;
+
+    radarModel_test();
+    totaltestsPassed += testsPassed;
+    totaltestsFailed += testsFailed;
+    totaltests += tests;
+
+    radarScheduler_test();
+    totaltestsPassed += testsPassed;
+    totaltestsFailed += testsFailed;
+    totaltests += tests;
+
+    radarSignalLibrary_test();
+    totaltestsPassed += testsPassed;
+    totaltestsFailed += testsFailed;
+    totaltests += tests;
+
+    radarSignalProcessor_test();
+    totaltestsPassed += testsPassed;
+    totaltestsFailed += testsFailed;
+    totaltests += tests;
+
+    radarTracker_test();
     totaltestsPassed += testsPassed;
     totaltestsFailed += testsFailed;
     totaltests += tests;

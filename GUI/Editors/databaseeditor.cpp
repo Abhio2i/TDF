@@ -1,11 +1,32 @@
-/* ========================================================================= */
-/* File: databaseeditor.cpp                                                 */
-/* Purpose: Implements database editor with hierarchy and inspector views    */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         databaseeditor.cpp
+ * MODULE:       Database Editor Main Window
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the DatabaseEditor class which serves as the main
+ *               window for the database editor application. It manages the
+ *               hierarchy tree view, inspector panels, console view, menu bar,
+ *               tool bars, dock widgets, status bar, and scenario data.
+ *               Supports loading/saving JSON files, tracking unsaved changes,
+ *               managing multiple inspector tabs, resetting layout, and
+ *               displaying profile/application information.
+ *
+ * REQUIREMENTS: Implements REQ-EDITOR-010 through REQ-EDITOR-023
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-EDITOR-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "databaseeditor.h"                        // For database editor class
-#include "GUI/Feedback/projectinformation.h"                // For feedback window
+#include "GUI/Feedback/projectinformation.h"    // For feedback window
 #include "GUI/Console/consoleview.h"              // For console view
 #include "GUI/Menubars/menubar.h"                 // For menu bar
 #include "GUI/Toolbars/standardtoolbar.h"         // For standard toolbar
@@ -129,7 +150,6 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
         connect(menuBar, &MenuBar::applicationTriggered, this, &DatabaseEditor::showApplicationDialog);
         connect(menuBar, &MenuBar::exitTriggered, qApp, &QApplication::quit);
     }
-    // runUnitTestsOnce();
 
 }
 // %%% Enhanced Dock Setup %%%
@@ -913,8 +933,6 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
     scrollArea->setWidget(container);
     scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-
-    // **YAHAN STYLING ADD KARO** - Dark background ke liye
     scrollArea->setStyleSheet(
         "QScrollArea {"
         "    background-color: #0F2636;"

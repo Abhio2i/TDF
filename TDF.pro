@@ -375,6 +375,12 @@ SOURCES += \
     core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/radarsignallibrary_aesa.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/radarsignalprocessor_aesa.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/radartracker_aesa.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test-aesa/Radartracker_aesa_test.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test-aesa/radarantenna_aesa_test.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test-aesa/radarmodel_aesa_test.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test-aesa/radarscheduler_test.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test-aesa/radarsignallibrary_aesa_test.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test-aesa/radarsignalprocessor_aesa_test.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/aissensor.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/csm.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/eo.cpp \
@@ -1212,6 +1218,7 @@ HEADERS += \
     core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/radarsignallibrary_aesa.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/radarsignalprocessor_aesa.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/radartracker_aesa.h \
+    core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test-aesa/issst_test_framework.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/aissensor.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/csm.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/eo.h \

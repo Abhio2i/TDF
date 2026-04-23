@@ -1,8 +1,28 @@
-/* ========================================================================= */
-/* File: RADIODisplay.cpp                                                    */
-/* Purpose: Implements Radio display for communication detection             */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         RADIODisplay.cpp
+ * MODULE:       Radio Communication Display
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the RADIODisplay class which provides a widget for
+ *               visualising radio communication links and detected radio
+ *               emissions. It displays radio targets in a polar (radar‑like)
+ *               format with configurable range, rings, ticks, and hover
+ *               detection. Integrates with Hierarchy and Radio/Platform
+ *               entities for real‑time tracking and display updates.
+ *
+ * REQUIREMENTS: Implements REQ-RADIO-010 through REQ-RADIO-017
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-RADIO-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "radiodisplay.h"                          // For RADIO display class
 #include "core/Hierarchy/Utils/entityutils.h"      // For entity utilities
@@ -29,9 +49,17 @@ RADIODisplay::RADIODisplay(QWidget *parent)
     // Enable mouse tracking for hover effects
     setMouseTracking(true);
     setSizePolicy(policy);
-
-    // Set padding for display borders
     padding = 40;
+    radioDropdown = new QComboBox(this);
+    radioDropdown->setStyleSheet(
+        "QComboBox { background-color: #001a00; color: #00ff00; "
+        "border: 1px solid #00ff00; font-size: 10px; padding: 2px; }"
+        "QComboBox QAbstractItemView { background-color: #001a00; "
+        "color: #00ff00; selection-background-color: #003300; }"
+        );
+    radioDropdown->hide(); // Pehle chhupa do, entity select hone par dikhao
+    connect(radioDropdown, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &RADIODisplay::onRadioSelected);
 }
 
 // %%% Size Management %%%
@@ -82,9 +110,6 @@ void RADIODisplay::mouseMoveEvent(QMouseEvent *event)
     double minDistance = 20.0;
     int i=0;
     for (const Radio::RadioTarget &t : radio->targets) {
-        // const Radio::RadioTarget &t = targets[i];
-
-        // Calculate target position on screen
         double per = t.radius / range;
         if (per < 0.0) per = 0.0;
         if (per > 1.0) per = 1.0;
@@ -144,17 +169,22 @@ void RADIODisplay::selectEntity(Entity* entit)
 
     // Select first valid Radio from entity
     radio = nullptr;
+    radiolist.clear();
     for (auto const& pair :  *entity->radios->radios) {
         Radio* r = pair.second;
         if (r) {
-            radio = r;
+            if(radio==nullptr){
+                radio = r;
+            }
+            radiolist.append(r);
             setWindowTitle("RADIO Display (" + QString::fromStdString(entity->Name) + ")");
-            break;
+
         }
     }
 
     // Reset hover state when entity changes
     hoveredTargetIndex = -1;
+    updateDropdown();
     update();
 }
 
@@ -164,9 +194,12 @@ void RADIODisplay::RemoveEntity(QString ID)
     if (id == ID) {
         entity = nullptr;
         radio = nullptr;
+            radiolist.clear();
         setWindowTitle("RADIO Display");
         // Reset hover state
         hoveredTargetIndex = -1;
+        if (radioDropdown) radioDropdown->hide();
+
     }
 }
 
@@ -429,4 +462,55 @@ void RADIODisplay::drawTopMarker(QPainter &p, const QPoint &center, int outerRad
     p.setPen(radarGreen);
     p.drawText(tx, ty, txt);
     p.restore();
+}
+void RADIODisplay::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    if (radioDropdown) {
+        int dropW = 120;
+        int dropH = 22;
+        radioDropdown->setGeometry(width() - dropW - padding, 4, dropW, dropH);
+    }
+}
+void RADIODisplay::updateDropdown()
+{
+    if (!radioDropdown) return;
+
+    QSignalBlocker blocker(radioDropdown);
+    radioDropdown->clear();
+
+    if (radiolist.isEmpty()) {
+        radioDropdown->hide();
+        return;
+    }
+
+    for (int i = 0; i < radiolist.size(); ++i) {
+        Radio* r = radiolist[i];
+        QString name = r ? QString::fromStdString(r->Name) : QString("Radio %1").arg(i + 1);
+        if (name.trimmed().isEmpty())
+            name = QString("Radio %1").arg(i + 1);
+        radioDropdown->addItem(name);
+    }
+
+    int currentIdx = radiolist.indexOf(radio);
+    if (currentIdx >= 0)
+        radioDropdown->setCurrentIndex(currentIdx);
+
+    if (radiolist.size() > 1)
+        radioDropdown->show();
+    else
+        radioDropdown->hide();
+
+    int dropW = 120;
+    int dropH = 22;
+    // Green border ke UPAR
+    radioDropdown->setGeometry(width() - dropW - padding, 4, dropW, dropH);
+}void RADIODisplay::onRadioSelected(int index)
+{
+    if (index < 0 || index >= radiolist.size()) return;
+    radio = radiolist[index];
+    hoveredTargetIndex = -1;
+    if (radio)
+        setRange(radio->Range);
+    update();
 }

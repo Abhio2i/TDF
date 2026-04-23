@@ -1,10 +1,41 @@
-/* ========================================================================= */
-/* File: inspector.h                                                        */
-/* Purpose: Inspector panel for viewing and editing hierarchical data       */
-// Written by   : Arti Rajpoot
-/* ========================================================================= */
-
-
+/* =============================================================================
+ * FILE:         inspector.h
+ * MODULE:       Inspector Panel
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the Inspector class (a QDockWidget) which provides a
+ *               comprehensive panel for viewing and editing hierarchical data
+ *               (entities, components, parameters). It displays data in a table
+ *               with support for various value types: boolean, number, string,
+ *               array, object, sections with expand/collapse, custom parameters,
+ *               and specialised templates (color, image, geocoords, option,
+ *               vector). Includes clipboard operations (copy/paste), locking,
+ *               trajectory waypoint editing, and integration with Hierarchy.
+ *
+ * REQUIREMENTS: REQ-INSPECTOR-010  Display hierarchical data in table format
+ *               REQ-INSPECTOR-011  Support boolean, numeric, string, array,
+ *                                  object value editing
+ *               REQ-INSPECTOR-012  Expandable/collapsible sections
+ *               REQ-INSPECTOR-013  Custom parameter add/remove
+ *               REQ-INSPECTOR-014  Copy/paste component data
+ *               REQ-INSPECTOR-015  Lock inspector to prevent edits
+ *               REQ-INSPECTOR-016  Trajectory waypoint display and update
+ *               REQ-INSPECTOR-017  Value changed signal with delta JSON
+ *               REQ-INSPECTOR-018  Integration with ColorTemplate, ImageTemplate,
+ *                                  GeocordsTemplate, OptionTemplate, VectorTemplate
+ *               REQ-INSPECTOR-019  Mouse wheel value adjustment in line edits
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-INSPECTOR-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #ifndef INSPECTOR_H
 #define INSPECTOR_H
 
@@ -23,7 +54,7 @@
 #else
 class Hierarchy;
 #endif
-#include "qboxlayout.h"                           // For layout management
+#include "qboxlayout.h"
 
 // %%% Forward Declarations %%%
 class ColorTemplate;
@@ -83,7 +114,7 @@ public:
     QString getMainID() const { return mainID; }
     QString getName() const { return Name; }
     QString getConnectedID() const { return ConnectedID; }
-   // void runUnitTestsOnce();
+    // void runUnitTestsOnce();
 public slots:
     // %%% Data Initialization %%%
     /* Initialize inspector with specific data */
@@ -119,7 +150,7 @@ signals:
                           QString parameterType, bool add);
     /* Signal trajectory waypoints modification */
     void trajectoryWaypointsChanged(QString entityId, QJsonArray waypoints);
-void resetComponentRequested(const QString& entityID, const QString& componentName);
+    void resetComponentRequested(const QString& entityID, const QString& componentName);
 private slots:
     // %%% Clipboard Operations %%%
     /* Copy current component data */
@@ -134,6 +165,8 @@ private slots:
     void handleAddParameter();
     /* Handle remove parameter action */
     void handleRemoveParameter();
+    void showAdditionalParamContextMenu(const QPoint &pos);
+
 
 private:
     // %%% UI Component Members %%%
@@ -243,6 +276,15 @@ private:
         if (s.isEmpty()) return s;
         return s[0].toUpper() + s.mid(1);
     }
+
+
+    // %%% Custom Parameter Section Tracking %%%
+    QPushButton  *addButton                = nullptr;
+    int           m_additionalParamsHeaderRow = -1;
+    QJsonObject rebuildAdditionalParameters() const;
+void emitFullAdditionalParametersUpdate();
+
+
 };
 
 #endif // INSPECTOR_H

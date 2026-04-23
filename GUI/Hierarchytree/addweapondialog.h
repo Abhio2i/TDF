@@ -1,3 +1,4 @@
+/* Written by   : Waris ali                                            */
 #ifndef ADDWEAPONDIALOG_H
 #define ADDWEAPONDIALOG_H
 
@@ -53,7 +54,7 @@ private:
     QLineEdit*          m_searchEdit     = nullptr;
     QCompleter*         m_completer      = nullptr;
     QString             m_selectedEntityId;
-    QMap<QString, QVariantList> m_entityMap;   // displayName → {id, profileName}
+    QMap<QString, QVariantList> m_entityMap;
 
     void buildSearchSection(QVBoxLayout* root);
     void populateWeaponEntities();

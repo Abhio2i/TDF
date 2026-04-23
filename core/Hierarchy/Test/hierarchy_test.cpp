@@ -539,7 +539,7 @@ void test_SubComponent() {
 
         //Test addSubComponent Function
         //correct values
-        h->addSubComponent(QString::fromStdString(entity->sensors->ID),ComponentType::SensorProfile,"radar","Generic");
+        h->addSubComponent(QString::fromStdString(entity->sensors->ID),"radar","Generic");
         Sensor *sensor = nullptr;
         for (auto& it : *entity->sensors->sensors) {
             if(it.second->Name == "radar"){
@@ -552,7 +552,7 @@ void test_SubComponent() {
 
         //null values
         try{
-            h->addSubComponent(nullptr,ComponentType::SensorProfile,"radar");
+            h->addSubComponent(nullptr,"radar");
             ASSERT_TRUE(true, "(null Values) addSubComponent Function not crashed ");
         }catch(...){
             ASSERT_FALSE(true, "(null Values) addSubComponent Function crashed");
@@ -560,7 +560,7 @@ void test_SubComponent() {
 
         //Wrong values
         try{
-            h->addSubComponent("wrong",ComponentType::SensorProfile,"radar");
+            h->addSubComponent("wrong","radar");
             ASSERT_TRUE(true, "(wrong Values) addSubComponent Function not crashed ");
         }catch(...){
             ASSERT_FALSE(true, "(wrong Values) addSubComponent Function crashed");

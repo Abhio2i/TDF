@@ -1,9 +1,32 @@
-/* ========================================================================= */
-/* File: main.cpp                                                            */
-/* Purpose: Application entry point - initializes QApplication, applies dark */
-/*          theme, installs message handler, and shows main window           */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         main.cpp
+ * MODULE:       Application Entry Point
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Application entry point – initialises QApplication, registers
+ *               custom meta‑types, applies a dark theme stylesheet, installs
+ *               a custom message handler for debug/log output, initialises the
+ *               TDF (Tool Data Folder) structure, creates and shows the main
+ *               window, and enters the Qt event loop.
+ *
+ * REQUIREMENTS: REQ-MAIN-030  Application initialisation
+ *               REQ-MAIN-031  Register custom meta‑types for Qt signals/slots
+ *               REQ-MAIN-032  Apply global dark theme stylesheet
+ *               REQ-MAIN-033  Install custom message handler for logging
+ *               REQ-MAIN-034  Initialise TDF folder structure at startup
+ *               REQ-MAIN-035  Show main window and start event loop
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-MAIN-002
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "GUI/mainwindow.h"
 #include <QApplication>
 #include "core/Debug/console.h"

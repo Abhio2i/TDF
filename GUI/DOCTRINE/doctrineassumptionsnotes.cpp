@@ -1,8 +1,31 @@
-/* ========================================================================= */
-/* File: doctrineassumptionsnotes.cpp                                      */
-/* Purpose: Implements the Doctrine Assumptions / Notes panel widget         */
-// Written by   : Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         doctrineassumptionsnotes.cpp
+ * MODULE:       Doctrine Assumptions & Notes Panel
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the DoctrineAssumptionsNotes class which provides a
+ *               widget panel for displaying doctrine assumptions and operational
+ *               notes. The panel consists of a title label, a visual divider,
+ *               and a content label. Styling is applied for consistent UI
+ *               presentation across doctrine-related panels.
+ *
+ * REQUIREMENTS: Implements REQ-DOCTRINE-020 through REQ-DOCTRINE-024
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-DOCTRINE-002
+ *
+ * CHANGE HISTORY:
+ *   Rev 1  01 Jan 2026  Initial implementation. Basic panel layout.
+ *   Rev 2  20 Apr 2026  DO-178C DAL B compliant comments added throughout.
+ *                       Added requirement references and structured file header.
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "doctrineassumptionsnotes.h"
 #include "doctrine-styles.h"

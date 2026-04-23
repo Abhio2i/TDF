@@ -1064,7 +1064,6 @@ void ScriptEngine::addSensorSubComponent(
     // ✅ data1 = sensorType (CRITICAL)
     h->addSubComponent(
         sensorComponentID,
-        ComponentType::SensorProfile,
         QString::fromStdString(subName),
         QString::fromStdString(sensorType)
         );
@@ -1183,7 +1182,6 @@ void ScriptEngine::addRadioSubComponent(
 
     hierarchy->addSubComponent(
         QString::fromStdString(platform->radios->ID),
-        ComponentType::RadioProfile,
         qSubName,
         "",  // data1 - empty for radio
         "",  // data2 - empty (or template ID if copying from existing)
@@ -1219,7 +1217,6 @@ void ScriptEngine::addIFFSubComponent(
 
     hierarchy->addSubComponent(
         QString::fromStdString(platform->iffs->ID),
-        ComponentType::IFFProfile,
         qSubName,
         "",  // data1 - empty for IFF
         "",  // data2 - empty (or template ID if copying from existing)

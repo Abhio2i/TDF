@@ -1,7 +1,29 @@
-/* ========================================================================= */
-/* File: tacticaldisplay.cpp                                              */
-/* Purpose: Implements tactical display with map and 3D scene integration   */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         tacticaldisplay.cpp
+ * MODULE:       Tactical Display Widget
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the TacticalDisplay class which provides a widget for
+ *               tactical situation visualisation. It integrates a 2D canvas
+ *               (CanvasWidget) and an optional 3D scene (Scene3DWidget) via a
+ *               stacked widget, along with GIS map layers, scale bar, and
+ *               coordinate system selection. Supports adding/removing meshes,
+ *               selecting meshes, setting map layers, adding custom tile layers,
+ *               zooming, and handling coordinate system changes.
+ *
+ * REQUIREMENTS: Implements REQ-TACTICAL-010 through REQ-TACTICAL-017
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-TACTICAL-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "tacticaldisplay.h"                       // For tactical display class
 #include <QVBoxLayout>                             // For vertical layout
@@ -68,15 +90,15 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
 
     coordLayout->addWidget(overlayLabel);
     coordWidget->setFixedSize(160, 50);
-    coordWidget->setGeometry(20, 20, 160, 50);  // Top-left position
+    coordWidget->setGeometry(20, 20, 160, 50);
     coordWidget->raise();
 
     // Create scale bar widget (TOP-RIGHT)
     scaleBar = new ScaleBar(mapWidget);
-    scaleBar->setGeometry(mapWidget->width() - 200, 20, 180, 40);  // Top-right position
+    scaleBar->setGeometry(mapWidget->width() - 200, 20, 180, 40);
     scaleBar->raise();
 
-    // ✅ FIXED: Coordinate display signal connection
+    // Coordinate display signal connection
     connect(mapWidget, &GISlib::mouseCords, this, [=](double lat, double lon, const QString& crsId) {
         QString text;
 
@@ -143,11 +165,7 @@ void TacticalDisplay::updateScaleBar()
         // This formula will need adjustment based on your actual map scale
         double baseScale = 156543.03392; // meters per pixel at zoom 0 (equator)
         double metersPerPixel = baseScale / std::pow(2, currentZoom);
-
-        // Latitude adjustment - get from map center if available
         double currentLatitude = 0.0; // Default
-        // If your GISlib has getCenterLatitude() method, use it:
-        // currentLatitude = mapWidget->getCenterLatitude();
 
         double latRad = currentLatitude * M_PI / 180.0;
         metersPerPixel *= std::cos(latRad);
@@ -160,8 +178,6 @@ void TacticalDisplay::updateScaleBar()
     }
 }
 
-// Add this to your resize event or override resizeEvent if needed
-// This ensures scale bar stays in top-right corner when window is resized
 void TacticalDisplay::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);

@@ -1,17 +1,45 @@
 
-
-/* ========================================================================= */
-/* File: IFFDisplay.h                                                        */
-/* Purpose: Defines widget for IFF (Identification Friend or Foe) display    */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
-
+/* =============================================================================
+ * FILE:         IFFDisplay.h
+ * MODULE:       IFF (Identification Friend or Foe) Display
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the IFFDisplay class which provides a widget for
+ *               visualising Identification Friend or Foe (IFF) interrogation
+ *               responses. It displays detected IFF responders in a polar
+ *               (radar‑like) format with configurable range, rings, ticks,
+ *               and hover detection. Supports display of responder ID, name,
+ *               mode, code, and status. Integrates with Hierarchy and IFF/
+ *               Platform entities for real‑time tracking.
+ *
+ * REQUIREMENTS: REQ-IFF-010  IFF visualisation widget
+ *               REQ-IFF-011  Display IFF targets with distance, angle, mode,
+ *                            code, responder ID/name, and status
+ *               REQ-IFF-012  Configurable range and ring count
+ *               REQ-IFF-013  Draw radar rings, ticks, labels, centre mark
+ *               REQ-IFF-014  Mouse hover detection over targets
+ *               REQ-IFF-015  Integration with Hierarchy and IFF entities
+ *               REQ-IFF-016  Update display on entity selection and removal
+ *               REQ-IFF-017  Maintain aspect ratio (16:9)
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-IFF-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #ifndef IFFDISPLAY_H
 #define IFFDISPLAY_H
 
 #include "core/Hierarchy/EntityProfiles/iff.h"
 #include "core/Hierarchy/hierarchy.h"
 #include <QWidget>
+#include <QComboBox>
 #include <QVector>
 
 // %%% IFF Target Structure %%%
@@ -45,17 +73,19 @@ public:
 
     // IFF instance
     IFF* iff = nullptr;
+    QVector<IFF*> ifflist;
     // Entity platform
     Platform* entity = nullptr;
-
+private slots:
+    void onIFFSelected(int index);
 protected:
     void paintEvent(QPaintEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private:
     // %%% Display Properties %%%
-    // int range = 5000; // meters
     const double ASPECT_RATIO = 16.0/9.0;
     int padding = 18;
     int ringCount = 3;
@@ -68,6 +98,8 @@ private:
     QPoint mousePos;
     int hoveredTargetIndex = -1;
     QVector<IFF::IFFTarget> targets;
+    QComboBox* iffDropdown = nullptr;
+    void updateDropdown();
 
     // %%% Drawing Methods %%%
     void drawBackground(QPainter &p);

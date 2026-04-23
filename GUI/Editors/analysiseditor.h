@@ -1,9 +1,43 @@
+/* =============================================================================
+ * FILE:         analysiseditor.h
+ * MODULE:       Analysis Editor / Multi-Team Analytics Dashboard
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the AnalysisEditor class which provides a fully dynamic,
+ *               multi-team analytics dashboard. It supports loading scenario
+ *               JSON files, running analysis (success probability, losses,
+ *               detection/weapon effectiveness), comparing scenarios, exporting
+ *               results, and displaying interactive charts (engagement timeline,
+ *               success probability, losses vs engagements). The editor maintains
+ *               separate metrics, timelines, and loss data per team, with a
+ *               tabbed interface (Analysis / Reports) and dynamic team selectors.
+ *
+ * REQUIREMENTS: REQ-ANALYSIS-010  Load scenario JSON file
+ *               REQ-ANALYSIS-011  Parse multi-team analysis data
+ *               REQ-ANALYSIS-012  Run analysis and compute metrics
+ *               REQ-ANALYSIS-013  Display engagement timeline charts
+ *               REQ-ANALYSIS-014  Display success probability chart
+ *               REQ-ANALYSIS-015  Display losses vs engagements chart
+ *               REQ-ANALYSIS-016  Compare scenarios
+ *               REQ-ANALYSIS-017  Export results to file
+ *               REQ-ANALYSIS-018  Switch between Analysis and Reports tabs
+ *               REQ-ANALYSIS-019  Per-team metrics panel with dynamic rebuild
+ *               REQ-ANALYSIS-020  Team selector for detailed view
+ *               REQ-ANALYSIS-021  Combined timeline with team filtering
+ *               REQ-ANALYSIS-022  Unsaved changes tracking
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-ANALYSIS-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
-/* ========================================================================= */
-/* File: analysiseditor.h                                                    */
-/* Purpose: Fully dynamic multi-team analytics.                              */
-/* Written by: Arti Rajpoot                                                  */
-/* ========================================================================= */
 #ifndef ANALYSISEDITOR_H
 #define ANALYSISEDITOR_H
 

@@ -1,9 +1,29 @@
- /*========================================================================= */
-/* File: customresizableoverlaydock.cpp                                      */
-/* Purpose: Implements a resizable overlay dock with custom title bar       */
-/*          and lock button functionality                                    */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         customresizableoverlaydock.cpp
+ * MODULE:       Custom Resizable Overlay Dock
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the CustomResizableOverlayDock class which extends
+ *               QDockWidget with resize handles (left/right), lock functionality
+ *               to fix position/size, and overlay capability. Supports moving,
+ *               resizing via mouse drag, lock toggling, and emits signals on
+ *               move, resize, and lock state changes. The implementation includes
+ *               a custom title bar with a lock button and close button, edge
+ *               detection for resizing, cursor updates, and event filtering.
+ *
+ * REQUIREMENTS: Implements REQ-DOCK-010 through REQ-DOCK-016
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-DOCK-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "customresizableoverlaydock.h"
 #include <QCursor>
 #include <QPainter>
@@ -22,11 +42,8 @@ CustomResizableOverlayDock::CustomResizableOverlayDock(const QString &title, QWi
     setAttribute(Qt::WA_TranslucentBackground, false);
     setStyleSheet("QDockWidget { background-color: #252525; }"
                   "QDockWidget::title { background-color: #333; color: white; }");
-
     setMouseTracking(true);
     setAttribute(Qt::WA_Hover, true);
-
-
     installEventFilter(this);
     setupTitleBar(title);
 }
@@ -76,7 +93,6 @@ void CustomResizableOverlayDock::mouseMoveEvent(QMouseEvent *event)
         QPoint posInParent = parentWidget()
                                  ? parentWidget()->mapFromGlobal(globalPos)
                                  : globalPos;
-
         if (resizeEdge.testFlag(Qt::TopEdge)) {
             int oldBottom = rect.bottom();
             int newTop    = posInParent.y();
@@ -94,7 +110,6 @@ void CustomResizableOverlayDock::mouseMoveEvent(QMouseEvent *event)
         } else if (resizeEdge.testFlag(Qt::RightEdge)) {
             rect.setRight(posInParent.x());
         }
-
         setGeometry(rect);
         event->accept();
     }
@@ -108,7 +123,6 @@ void CustomResizableOverlayDock::mouseMoveEvent(QMouseEvent *event)
         event->accept();
     }
 }
-
 // ─── Mouse Release ───────────────────────────────────────────────────────────
 void CustomResizableOverlayDock::mouseReleaseEvent(QMouseEvent *event)
 {
@@ -132,7 +146,6 @@ Qt::Edges CustomResizableOverlayDock::getResizeEdge(const QPoint &pos) const
     if (pos.x() >= r.width()  - resizeMargin - 1) edges |= Qt::RightEdge;
     if (pos.y() <= resizeMargin)                  edges |= Qt::TopEdge;
     if (pos.y() >= r.height() - resizeMargin - 1) edges |= Qt::BottomEdge;
-
     return edges;
 }
 
@@ -141,20 +154,16 @@ void CustomResizableOverlayDock::updateCursor(const QPoint &pos)
 {
     Qt::Edges edge = getResizeEdge(pos);
     Qt::CursorShape shape = Qt::ArrowCursor;
-
     if (edge.testFlag(Qt::LeftEdge) || edge.testFlag(Qt::RightEdge))
         shape = Qt::SizeHorCursor;
     else if (edge.testFlag(Qt::TopEdge) || edge.testFlag(Qt::BottomEdge))
         shape = Qt::SizeVerCursor;
-
     this->setCursor(shape);
-
     if (QWidget *tb = titleBarWidget()) {
         tb->setCursor(shape);
         for (QWidget *child : tb->findChildren<QWidget*>())
             child->setCursor(shape);
     }
-
     if (QWidget *w = widget()) {
         w->setCursor(shape);
         for (QWidget *child : w->findChildren<QWidget*>())
@@ -167,7 +176,6 @@ bool CustomResizableOverlayDock::eventFilter(QObject *watched, QEvent *event)
 {
     if (event->type() == QEvent::MouseMove || event->type() == QEvent::HoverMove) {
         QPoint localPos = this->mapFromGlobal(QCursor::pos());
-
         if (this->rect().contains(localPos)) {
             updateCursor(localPos);
             if (resizing) return true;
@@ -183,6 +191,7 @@ void CustomResizableOverlayDock::moveEvent(QMoveEvent *event)
 {
     emit moved(event->oldPos(), event->pos());
     QDockWidget::moveEvent(event);
+
 }
 
 void CustomResizableOverlayDock::resizeEvent(QResizeEvent *event)
@@ -216,18 +225,15 @@ void CustomResizableOverlayDock::setupTitleBar(const QString &title)
     QWidget *titleBar = new QWidget(this);
     titleBar->setObjectName("customTitleBar");
     titleBar->setStyleSheet("background-color: #1A3A4F;");
-
     QHBoxLayout *layout = new QHBoxLayout(titleBar);
     layout->setContentsMargins(8, 2, 4, 2);
     layout->setSpacing(4);
-
     QLabel *titleLabel = new QLabel(title, titleBar);
     titleLabel->setObjectName("dockTitleLabel");
     titleLabel->setStyleSheet(
         "color: white; font-weight: bold; font-size: 12px; background: transparent;");
     layout->addWidget(titleLabel);
     layout->addStretch();
-
     m_lockButton = new QToolButton(titleBar);
     m_lockButton->setText("🔓");
     m_lockButton->setToolTip("Lock sensor view to current entity");
@@ -255,7 +261,6 @@ void CustomResizableOverlayDock::setupTitleBar(const QString &title)
         "QToolButton:hover { background: #c0392b; border-radius: 3px; color: white; }");
     connect(closeButton, &QToolButton::clicked, this, &QDockWidget::close);
     layout->addWidget(closeButton);
-
     titleBar->setLayout(layout);
     setTitleBarWidget(titleBar);
 
@@ -312,4 +317,5 @@ void CustomResizableOverlayDock::setLocked(bool locked)
     }
     emit lockToggled(m_locked);
 }
+
 

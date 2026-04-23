@@ -1,9 +1,37 @@
-
-/* ========================================================================= */
-/* File: designtoolbar.h                                                    */
-/* Purpose: Defines toolbar for design and map interaction                    */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         designtoolbar.h
+ * MODULE:       Design Toolbar
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the DesignToolBar class which provides a toolbar for
+ *               design and map interaction. Includes actions for view, move,
+ *               rotate, scale, zoom, grid control, snapping, measure distance,
+ *               map layer management (preset, custom, GeoJSON), coordinate
+ *               system selection, tooltip options, and trajectory editing.
+ *               Also declares StayOpenMenu, a custom QMenu that stays open
+ *               when an action is clicked.
+ *
+ * REQUIREMENTS: REQ-DESIGNTOOLBAR-010  Design toolbar with transform modes
+ *               REQ-DESIGNTOOLBAR-011  Zoom in/out actions
+ *               REQ-DESIGNTOOLBAR-012  Grid visibility, snapping, plane toggles
+ *               REQ-DESIGNTOOLBAR-013  Measure distance action
+ *               REQ-DESIGNTOOLBAR-014  Map layer selection and custom map addition
+ *               REQ-DESIGNTOOLBAR-015  GeoJSON import and layer toggling
+ *               REQ-DESIGNTOOLBAR-016  Coordinate system selection
+ *               REQ-DESIGNTOOLBAR-017  Tooltip options configuration
+ *               REQ-DESIGNTOOLBAR-018  Add/edit trajectory actions
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-DESIGNTOOLBAR-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef DESIGNTOOLBAR_H
 #define DESIGNTOOLBAR_H
@@ -117,8 +145,6 @@ signals:
     void layerSelectTriggered();
     // Signal measure distance triggered
     void measureDistanceTriggered();
-    // Signal database triggered (commented)
-    // void databaseTriggered();
     // Signal grid plane X toggle
     void gridPlaneXToggled(bool);
     // Signal grid plane Y toggle
@@ -209,12 +235,8 @@ private:
     QAction *gridToggleAction;
     // Snapping toggle action
     QAction *snappingToggleAction;
-    // Layer selection action
-    // QAction *layerSelectAction;
     // Measure distance action
     QAction *measureDistanceAction;
-    // Database action (commented)
-    // QAction *databaseAction;
     // Grid plane X action
     QAction *gridPlaneXAction;
     // Grid plane Y action

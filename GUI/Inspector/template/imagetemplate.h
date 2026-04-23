@@ -1,9 +1,32 @@
-
-/* ========================================================================= */
-/* File: imagetemplate.h                                                    */
-/* Purpose: Defines widget for managing image templates                      */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         imagetemplate.h
+ * MODULE:       Image Template Manager
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the ImageTemplate class which provides a widget for
+ *               managing image templates. It interfaces with the Inspector
+ *               panel to set up image cells in a table, maintain connected
+ *               entity IDs, template names, and emit value changes when an
+ *               image is modified. Supports larger row heights and image
+ *               thumbnails.
+ *
+ * REQUIREMENTS: REQ-IMAGE-010  Image template management widget
+ *               REQ-IMAGE-011  Setup image cell in table widget
+ *               REQ-IMAGE-012  Maintain connected ID and template name
+ *               REQ-IMAGE-013  Signal valueChanged on image modification
+ *               REQ-IMAGE-014  Support configurable row height and image size
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-IMAGE-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef IMAGETEMPLATE_H
 #define IMAGETEMPLATE_H

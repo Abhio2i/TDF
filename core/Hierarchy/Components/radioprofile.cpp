@@ -63,6 +63,9 @@ QJsonObject RadioProfile::toJson() const {
         }
     }
     obj["radios"] = radioObj;
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
     return obj;
 }
 
@@ -100,6 +103,10 @@ void RadioProfile::fromJson(const QJsonObject& obj) {
             }
         }
     }
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
+    }
+
     //Console::log("Collider::fromJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
 }
 void RadioProfile::renameSubComponent(std::string id, QString newName) {

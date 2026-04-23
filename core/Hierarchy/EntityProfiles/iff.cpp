@@ -1,3 +1,8 @@
+/**
+ * @file iff.cpp
+ * @brief Implementation of the IFF (Identification Friend or Foe) entity.
+ */
+
 #include "iff.h"
 #include <core/Hierarchy/hierarchy.h>
 #include <core/Debug/console.h>
@@ -14,10 +19,12 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-
 const float RAD2DEG = 180.0f / M_PI;
-// std::unordered_set<std::string> IFF::iffSeen;
 
+/**
+ * @brief Constructs an IFF entity.
+ * @param h Pointer to the parent Hierarchy.
+ */
 IFF::IFF(Hierarchy* h) : Entity(h) {
     type = Constants::EntityType::IFF;
     std::shared_ptr<Parameter> par = std::make_shared<Parameter>();
@@ -27,28 +34,53 @@ IFF::IFF(Hierarchy* h) : Entity(h) {
     parameters["iff_param"] = par;
 }
 
+/**
+ * @brief Emits signals to notify the hierarchy that this IFF has been added.
+ */
 void IFF::spawn() {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
 }
 
-std::vector<std::string>IFF:: getSupportedComponents() {
+/**
+ * @brief Returns an empty list – IFF does not support child components.
+ * @return Empty vector.
+ */
+std::vector<std::string> IFF::getSupportedComponents() {
     return std::vector<std::string>{};
 }
 
+/**
+ * @brief Adds a component – not supported for IFF.
+ * @param name Component name (ignored).
+ */
 void IFF::addComponent(std::string name) {
     Console::error("IFF does not support components: " + name);
 }
 
+/**
+ * @brief Removes a component – not supported for IFF.
+ * @param name Component name (ignored).
+ */
 void IFF::removeComponent(std::string name) {
     Console::error("IFF does not support components: " + name);
 }
 
+/**
+ * @brief Retrieves component JSON – not supported.
+ * @param name Component name.
+ * @return Empty JSON object.
+ */
 QJsonObject IFF::getComponent(std::string name) {
     Console::error("IFF does not support components: " + name);
     return QJsonObject();
 }
 
+/**
+ * @brief Updates the IFF entity from JSON data (only basic fields and IFF-specific parameters).
+ * @param name Component name (unused).
+ * @param obj JSON object containing update data.
+ */
 void IFF::updateComponent(QString name, const QJsonObject& obj) {
     Console::error(name.toStdString() + ": IFF does not support components");
 
@@ -62,28 +94,6 @@ void IFF::updateComponent(QString name, const QJsonObject& obj) {
     if (obj.contains("parent_id"))
         parentID = obj["parent_id"].toString().toStdString();
 
-    // Update parameters
-    if (obj.contains("parameters")) {
-        QJsonObject parObj = obj["parameters"].toObject();
-        if (parObj.contains("value")) {
-            QJsonObject paramMap = parObj["value"].toObject();
-            for (const QString& key : paramMap.keys()) {
-                QJsonObject paramObj = paramMap[key].toObject();
-
-                auto it = parameters.find(key.toStdString());
-                if (it != parameters.end()) {
-                    // Existing parameter → update
-                    it->second->fromJson(paramObj);
-                } else {
-                    // New parameter → create and insert
-                    std::shared_ptr<Parameter> param = std::make_shared<Parameter>();
-                    param->fromJson(paramObj);
-                    parameters[key.toStdString()] = param;
-                }
-            }
-        }
-    }
-
     // Update IFF-specific fields
     if (obj.contains("transponder")) {
         transponder = obj["transponder"].toBool();
@@ -94,7 +104,6 @@ void IFF::updateComponent(QString name, const QJsonObject& obj) {
                  << QString::fromStdString(Name)
                  << "| Keys are:" << obj.keys();
     }
-
 
     if (obj.contains("emittingRange"))
         emittingRange = static_cast<float>(obj["emittingRange"].toDouble());
@@ -141,7 +150,10 @@ void IFF::updateComponent(QString name, const QJsonObject& obj) {
         lastInterrogationTime = obj["lastInterrogationTime"].toString().toStdString();
 }
 
-
+/**
+ * @brief Serializes the IFF entity to JSON.
+ * @return QJsonObject containing IFF parameters.
+ */
 QJsonObject IFF::toJson() const {
     QJsonObject obj;
     obj["name"] = QString::fromStdString(Name);
@@ -150,22 +162,6 @@ QJsonObject IFF::toJson() const {
     obj["parent_id"] = QString::fromStdString(parentID);
     obj["active"] = Active;
 
-    // Serialize parameters
-    QJsonObject paramMap;
-    for (const auto& [key, param] : parameters) {
-        if (param) {
-            paramMap[QString::fromStdString(key)] = param->toJson();
-        }
-    }
-    QJsonObject parObj;
-    parObj["type"] = "parameter";
-    parObj["value"] = paramMap;
-    obj["parameters"] = parObj;
-
-    // Serialize IFF attributes
-    // obj["transponder"] = transponder;
-    // obj["emittingRange"] = emittingRange;
-    // obj["emittingFrequency"] = emittingFrequency;
     QJsonObject defaultObj;
     defaultObj["type"] = "Section";
     defaultObj["transponder"] = transponder;
@@ -174,36 +170,17 @@ QJsonObject IFF::toJson() const {
     defaultObj["code"] = toParm(code,"code");
     obj["default"] = defaultObj;
 
-    // obj["disType"] = QString::fromStdString(disType);
-    // obj["disName"] = QString::fromStdString(disName);
-    // obj["operationalMode"] = operationalModeToString(operationalMode);
-    // QJsonObject modeConfigObj;
-    // modeConfigObj["mode1"] = QString::fromStdString(modeConfiguration.mode1);
-    // modeConfigObj["mode2"] = QString::fromStdString(modeConfiguration.mode2);
-    // modeConfigObj["mode3A"] = QString::fromStdString(modeConfiguration.mode3A);
-    // modeConfigObj["mode4"] = QString::fromStdString(modeConfiguration.mode4);
-    // modeConfigObj["modeC"] = QString::fromStdString(modeConfiguration.modeC);
-    // obj["modeConfiguration"] = modeConfigObj;
-    // obj["codeSystem"] = codeSystemToString(codeSystem);
-    // obj["encryptionType"] = encryptionTypeToString(encryptionType);
-    // obj["spoofable"] = spoofable;
-    // obj["responseDelay"] = responseDelay;
-    // obj["lastInterrogationTime"] = QString::fromStdString(lastInterrogationTime);
-    // --- Serialize message history ---
-    // QJsonArray messagesArray;
-    // for (const auto& message : messages) {
-    //     QJsonObject msgObj;
-    //     msgObj["timeStamp"] = QString::fromStdString(message.timeStamp);
-    //     msgObj["source"] = QString::fromStdString(message.source);
-    //     msgObj["destination"] = QString::fromStdString(message.destination);
-    //     msgObj["content"] = QString::fromStdString(message.content);
-    //     messagesArray.append(msgObj);
-    // }
-    // obj["messages"] = messagesArray;
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
 
     return obj;
 }
 
+/**
+ * @brief Deserializes the IFF entity from JSON.
+ * @param obj JSON object containing IFF data.
+ */
 void IFF::fromJson(const QJsonObject& obj) {
     if (obj.contains("name"))
         Name = obj["name"].toString().toStdString();
@@ -246,104 +223,34 @@ void IFF::fromJson(const QJsonObject& obj) {
             code = valueFromParm(defaultObj["code"].toObject());
     }
 
-    // if (obj.contains("transponder")) {
-    //     transponder = obj["transponder"].toBool();
-    //     qDebug() << "[IFF] Updated transponder to" << transponder
-    //              << "for:" << QString::fromStdString(Name);
-    // } else {
-    //     qDebug() << "[IFF] No 'transponder' key in JSON for:"
-    //              << QString::fromStdString(Name)
-    //              << "| Keys are:" << obj.keys();
-    // }
-
-
-    // if (obj.contains("emittingRange"))
-    //     emittingRange = static_cast<float>(obj["emittingRange"].toDouble());
-
-    // if (obj.contains("emittingFrequency"))
-    //     emittingFrequency = static_cast<float>(obj["emittingFrequency"].toDouble());
-
-    // if (obj.contains("disType"))
-    //     disType = obj["disType"].toString().toStdString();
-
-    // if (obj.contains("disName"))
-    //     disName = obj["disName"].toString().toStdString();
-
-    // if (obj.contains("operationalMode"))
-    //     operationalMode = stringToOperationalMode(obj["operationalMode"].toString());
-
-    // if (obj.contains("modeConfiguration") && obj["modeConfiguration"].isObject()) {
-    //     QJsonObject modeConfigObj = obj["modeConfiguration"].toObject();
-    //     if (modeConfigObj.contains("mode1"))
-    //         modeConfiguration.mode1 = modeConfigObj["mode1"].toString().toStdString();
-    //     if (modeConfigObj.contains("mode2"))
-    //         modeConfiguration.mode2 = modeConfigObj["mode2"].toString().toStdString();
-    //     if (modeConfigObj.contains("mode3A"))
-    //         modeConfiguration.mode3A = modeConfigObj["mode3A"].toString().toStdString();
-    //     if (modeConfigObj.contains("mode4"))
-    //         modeConfiguration.mode4 = modeConfigObj["mode4"].toString().toStdString();
-    //     if (modeConfigObj.contains("modeC"))
-    //         modeConfiguration.modeC = modeConfigObj["modeC"].toString().toStdString();
-    // }
-
-    // if (obj.contains("codeSystem"))
-    //     codeSystem = stringToCodeSystem(obj["codeSystem"].toString());
-
-    // if (obj.contains("encryptionType"))
-    //     encryptionType = stringToEncryptionType(obj["encryptionType"].toString());
-
-    // if (obj.contains("spoofable"))
-    //     spoofable = obj["spoofable"].toBool();
-
-    // if (obj.contains("responseDelay"))
-    //     responseDelay = static_cast<float>(obj["responseDelay"].toDouble());
-
-    // if (obj.contains("lastInterrogationTime"))
-    //     lastInterrogationTime = obj["lastInterrogationTime"].toString().toStdString();
-
-    // // --- Deserialize message history ---
-    // if (obj.contains("messages") && obj["messages"].isArray()) {
-    //     QJsonArray messagesArray = obj["messages"].toArray();
-    //     messages.clear();
-    //     for (const auto& msgVal : messagesArray) {
-    //         QJsonObject msgObj = msgVal.toObject();
-    //         Message msg;
-    //         msg.timeStamp = msgObj["timeStamp"].toString().toStdString();
-    //         msg.source = msgObj["source"].toString().toStdString();
-    //         msg.destination = msgObj["destination"].toString().toStdString();
-    //         msg.content = msgObj["content"].toString().toStdString();
-    //         messages.push_back(msg);
-    //     }
-    // }
-
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
+    }
 }
 
-
+/**
+ * @brief Performs IFF scan to detect other IFF transponders within range.
+ */
 void IFF::scan(){
     if(!Active)return;
-    // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
     if(!parentEntity) return;
     Transform* source = (root->Platforms)[parentEntity->ID]->transform;
-     if(!source) return;
-    // C# foreach (Transform tr in targets) -> C++ range-based for loop
+    if(!source) return;
+
     for (auto& [key, entity] : root->Iffs)
     {
         if(!entity || !entity->parentEntity) continue;
         auto it = root->Platforms.find(entity->parentEntity->ID);
         if (it != root->Platforms.end()) {
             Platform* platform = it->second;
-            // Aapka aage ka logic yahan aaye
-            // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
             if(platform->ID == parentEntity->ID || !platform || !platform->transform) continue;
             QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
-            //float distance = localPos.length();
             float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
 
-                        // horizontal angle (Y axis) : x vs z
+            // horizontal angle (Y axis) : x vs z
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
-            if (entity->Active&&metredis<emittingRange && entity->emittingFrequency==emittingFrequency) // .position() is assumed
+            if (entity->Active && metredis < emittingRange && entity->emittingFrequency == emittingFrequency)
             {
-                //qDebug()<< "detect";
                 if (detects.count(platform) == 0)
                 {
                     detects.insert(platform);
@@ -381,8 +288,11 @@ void IFF::scan(){
     }
 }
 
-
-
+/**
+ * @brief Converts OperationalMode enum to string.
+ * @param om Operational mode.
+ * @return String representation.
+ */
 QString IFF::operationalModeToString(OperationalMode om) const {
     switch (om) {
     case OperationalMode::Active: return "Active";
@@ -393,6 +303,11 @@ QString IFF::operationalModeToString(OperationalMode om) const {
     }
 }
 
+/**
+ * @brief Converts string to OperationalMode enum.
+ * @param str String representation.
+ * @return Corresponding OperationalMode.
+ */
 IFF::OperationalMode IFF::stringToOperationalMode(const QString& str) const {
     if (str == "Active") return OperationalMode::Active;
     if (str == "Passive") return OperationalMode::Passive;
@@ -400,6 +315,11 @@ IFF::OperationalMode IFF::stringToOperationalMode(const QString& str) const {
     return OperationalMode::Off;
 }
 
+/**
+ * @brief Converts CodeSystem enum to string.
+ * @param cs Code system.
+ * @return String representation.
+ */
 QString IFF::codeSystemToString(CodeSystem cs) const {
     switch (cs) {
     case CodeSystem::NoPulse: return "NoPulse";
@@ -410,6 +330,11 @@ QString IFF::codeSystemToString(CodeSystem cs) const {
     }
 }
 
+/**
+ * @brief Converts string to CodeSystem enum.
+ * @param str String representation.
+ * @return Corresponding CodeSystem.
+ */
 IFF::CodeSystem IFF::stringToCodeSystem(const QString& str) const {
     if (str == "FivePulses") return CodeSystem::FivePulses;
     if (str == "SixPulses") return CodeSystem::SixPulses;
@@ -417,6 +342,11 @@ IFF::CodeSystem IFF::stringToCodeSystem(const QString& str) const {
     return CodeSystem::NoPulse;
 }
 
+/**
+ * @brief Converts EncryptionType enum to string.
+ * @param et Encryption type.
+ * @return String representation.
+ */
 QString IFF::encryptionTypeToString(EncryptionType et) const {
     switch (et) {
     case EncryptionType::None: return "None";
@@ -426,33 +356,41 @@ QString IFF::encryptionTypeToString(EncryptionType et) const {
     }
 }
 
+/**
+ * @brief Converts string to EncryptionType enum.
+ * @param str String representation.
+ * @return Corresponding EncryptionType.
+ */
 IFF::EncryptionType IFF::stringToEncryptionType(const QString& str) const {
     if (str == "NATO") return EncryptionType::NATO;
     if (str == "SecureID") return EncryptionType::SecureID;
     return EncryptionType::None;
 }
 
+/**
+ * @brief Returns current UTC time as ISO string.
+ * @return ISO timestamp.
+ */
 static std::string nowIsoString() {
     return QDateTime::currentDateTimeUtc().toString(Qt::ISODate).toStdString();
 }
+
+/**
+ * @brief Interrogates nearby platforms and processes IFF responses.
+ * @param source Transform component of the interrogating platform.
+ */
 void IFF::interrogateTargets(Transform* source)
 {
-
-    // qWarning() << "IFF::interrogateTargets for:" << QString::fromStdString(Name);
-
     if (!transponder) {
-        // qWarning() << "[IFF] Transponder OFF – interrogation aborted.";
         return;
     }
 
     if (!(operationalMode == OperationalMode::Active || operationalMode == OperationalMode::Simulation)) {
-        // qWarning() << "[IFF] Operational mode prevents interrogation:" << operationalModeToString(operationalMode);
         return;
     }
 
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (!parent) {
-        // qWarning() << "[IFF] ERROR: Parent hierarchy missing.";
         return;
     }
 
@@ -478,7 +416,6 @@ void IFF::interrogateTargets(Transform* source)
     for (int i = iffTargets.size() - 1; i >= 0; --i) {
         IFFTarget &t = iffTargets[i];
         if (!t.entity || !t.entity->transform || !t.entity->transform->matrix) {
-            // qWarning() << "[IFF] Removing invalid target record.";
             localIffSeen.erase(t.responderId);
             iffTargets.removeAt(i);
             continue;
@@ -531,7 +468,6 @@ void IFF::interrogateTargets(Transform* source)
             QJsonObject resp = other->respondToInterrogation(this, distance);
             if (resp.isEmpty()) continue;
 
-           // responsesArray.append(resp);
             responded = true;
 
             std::string uid = resp["responderId"].toString().toStdString();
@@ -566,10 +502,9 @@ void IFF::interrogateTargets(Transform* source)
             }
             else {
                 // =========================
-                // UPDATED EXISTING TARGET (OPTIMIZED + PER-FRAME MOVEMENT)
+                // UPDATED EXISTING TARGET
                 // =========================
                 for (int i = 0; i < iffTargets.size(); ++i) {
-
                     IFFTarget &target = iffTargets[i];
                     if (target.responderId != uid) continue;
 
@@ -598,19 +533,9 @@ void IFF::interrogateTargets(Transform* source)
                         target.mode   = newMode;
                         target.code   = newCode;
 
-                        //QJsonObject obj;
-                        // obj["responderId"]   = QString::fromStdString(target.responderId);
-                        // obj["responderName"] = QString::fromStdString(target.responderName);
-                        // obj["status"]        = (target.status == 1 ? "Friend" : "Foe");
-                        // obj["mode"]          = QString::fromStdString(target.mode);
-                        // obj["code"]          = QString::fromStdString(target.code);
-
                         QJsonArray arr;
-                        //arr.append(obj);
-
                         emit iffContactsUpdated(arr);
                     }
-
                     break;
                 }
             }
@@ -621,6 +546,12 @@ void IFF::interrogateTargets(Transform* source)
         emit iffContactsUpdated(responsesArray);
 }
 
+/**
+ * @brief Responds to an IFF interrogation.
+ * @param interrogator The IFF entity that sent the interrogation.
+ * @param distanceMeters Distance to the interrogator.
+ * @return JSON object containing response data.
+ */
 QJsonObject IFF::respondToInterrogation(IFF* interrogator, float distanceMeters)
 {
     QJsonObject result;
@@ -658,17 +589,6 @@ QJsonObject IFF::respondToInterrogation(IFF* interrogator, float distanceMeters)
         }
     }
 
-    // result["interrogatorId"] = QString::fromStdString(interrogator ? interrogator->ID : std::string(""));
-    // result["interrogatorName"] = QString::fromStdString(interrogator ? interrogator->Name : std::string(""));
-    // result["responderId"] = QString::fromStdString(this->ID);
-    // result["responderName"] = QString::fromStdString(this->Name);
-    // result["mode"] = modeStr;
-    // result["code"] = codeStr;
-    // result["distanceMeters"] = distanceMeters;
-    // result["responseDelayMs"] = responseDelay;
-    // result["status"] = status;
-    // result["timestamp"] = QString::fromStdString(nowIsoString());
-
     lastInterrogationTime = nowIsoString();
 
     // Add message to local history
@@ -683,11 +603,28 @@ QJsonObject IFF::respondToInterrogation(IFF* interrogator, float distanceMeters)
 
     return result;
 }
+
+/**
+ * @brief Returns the number of current IFF targets.
+ * @return Target count.
+ */
 int IFF::getIFFTargetCount() const
 {
-    return targets.size();  // ✅ Changed from iffTargets to targets
+    return targets.size();
 }
 
+/**
+ * @brief Retrieves IFF target data by index.
+ * @param index Target index.
+ * @param outResponderId Output responder ID.
+ * @param outResponderName Output responder name.
+ * @param outMode Output mode.
+ * @param outCode Output code.
+ * @param outDistance Output distance.
+ * @param outAngle Output angle.
+ * @param outStatus Output status (1 = friend, 0 = foe).
+ * @return True if index valid, false otherwise.
+ */
 bool IFF::getIFFTarget(
     int index,
     std::string& outResponderId,
@@ -699,12 +636,11 @@ bool IFF::getIFFTarget(
     int& outStatus
     ) const
 {
-    if (index < 0 || index >= targets.size())  // ✅ Changed from iffTargets to targets
+    if (index < 0 || index >= targets.size())
         return false;
 
-    const IFFTarget& t = targets[index];  // ✅ Changed from iffTargets to targets
+    const IFFTarget& t = targets[index];
 
-    // These fields might be empty/default, but that's okay!
     outResponderId   = t.responderId;
     outResponderName = t.responderName;
     outMode          = t.mode;

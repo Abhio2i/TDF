@@ -1,13 +1,36 @@
 #ifndef CONSOLEVIEW_H
 #define CONSOLEVIEW_H
 
-//============================================================================
-// File        : consoleview.h
-// Description : Header file for ConsoleView class which manages multiple
-//               console tabs (general, error, debug, warning, log) and
-//               provides functionality to append, clear, and save console logs.
-// Written by   : Arti Rajpoot
-//============================================================================
+// =============================================================================
+// FILE:         consoleview.h
+// MODULE:       Console View / Logging UI
+// PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+// ORGANISATION: Oxygen 2 Innovation (O2I).
+// STANDARD:     Qt Coding Standards / ISO 26262 ASIL B (adapted)
+// COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+//
+// DESCRIPTION:  Declares the ConsoleView class which provides a widget containing
+//               multiple QTextEdit consoles (general, error, debug, warning, log)
+//               with control buttons for clearing and saving logs. Supports
+//               coloured timestamped messages and tab switching. Designed to be
+//               embedded in a QDockWidget for flexible UI placement.
+//
+// REQUIREMENTS: REQ-CONSOLE-010  Display general console messages
+//               REQ-CONSOLE-011  Separate error console with distinct styling
+//               REQ-CONSOLE-012  Separate debug console
+//               REQ-CONSOLE-013  Separate warning console
+//               REQ-CONSOLE-014  Separate log console
+//               REQ-CONSOLE-015  Clear currently active console
+//               REQ-CONSOLE-016  Save currently active console to text file
+//               REQ-CONSOLE-017  Timestamp and colour-coded message appending
+//
+// AUTHOR:       Arti Rajpoot
+// REVIEWED BY:  N/A - Initial draft
+//
+//
+// COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+//               Restricted circulation — defence simulation use only.
+// =============================================================================
 
 #include <QWidget>
 #include <QTextEdit>

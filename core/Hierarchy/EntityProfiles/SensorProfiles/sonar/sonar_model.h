@@ -24,6 +24,7 @@ struct SonarTarget
     double      lon;
     float       depth;
     float       targetStrength;
+    std::string id;
 };
 
 struct DetectionResult
@@ -44,10 +45,16 @@ public:
     static float computeTransmissionLoss(float distance,
                                          float absorption);
 
+    // static float computeActiveSNR(float sourceLevel,
+    //                               float transmissionLoss,
+    //                               float targetStrength,
+    //                               float noiseLevel);
+
     static float computeActiveSNR(float sourceLevel,
                                   float transmissionLoss,
                                   float targetStrength,
-                                  float noiseLevel);
+                                  float noiseLevel,
+                                  float DI);
 
     static bool  detectionDecision(float snr,
                                   float threshold);
@@ -59,4 +66,56 @@ public:
 
     static float geoDistance(double lat1, double lon1,
                              double lat2, double lon2);
+
+    static float computeThorpAbsorption(float frequencyKHz);
+
+    static float computeSnellRefraction(float theta1Deg,
+                                        float c1,
+                                        float c2);
+
+    // Snell's Law — ray bending
+    static float computeSnellAngle(float theta1_deg,
+                                   float c1,
+                                   float c2);
+
+    static float applyConvergenceZone(float rangeMeters, float tl);
+
+    static float validateDetectionThreshold(float dt);
+
+    static float computeFOM(float SL,
+                            float NL,
+                            float DI,
+                            float DT);
+
+    static float computeReverbVolume(float c,
+                                     float tau,
+                                     float R,
+                                     float psi);
+
+    static float computeVolumeReverbSNR(float SL,
+                                        float TL,
+                                        float Sv,
+                                        float V);
+
+    static float computeBottomReverbSNR(float SL,
+                                        float TL,
+                                        float Sb,
+                                        float A);
+
+    static float computeDopplerShift(float v,
+                                     float f0,
+                                     float c);
+
+    static float computeVelocityFromDoppler(float deltaF,
+                                            float f0,
+                                            float c);
+
+    static float computeDopplerLoss(float deltaF,
+                                    float T);
+
+    static float computeDopplerFrequency(float f0,
+                                         float v_tx,
+                                         float v_rx,
+                                         float c);
+
 };

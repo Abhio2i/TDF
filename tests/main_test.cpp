@@ -1,9 +1,14 @@
 #include <QApplication>
 #include <QTest>
+#include <QDebug>
+#include <QMetaMethod>
+#include <QMetaObject>
+
+// All test headers (as in original)
 #include "databaseeditortest/test_databaseeditor.h"
 #include "menubartest/test_menubar.h"
 // #include "runtimetoolbartest/test_runtimetoolbar.h"
-#include "applicationdialogtest/applicationdialog_test.h"   // ADD THIS
+#include "applicationdialogtest/applicationdialog_test.h"
 #include "consoleviewtest/consoleview_test.h"
 #include "customdocktest/customdock_test.h"
 #include "designtoolbartest/gui_designtoolbar_test.h"
@@ -39,8 +44,6 @@
 #include "paneltest/esmdisplay_test.h"
 #include "paneltest/csmdisplay_test.h"
 
-
-
 // Stubs for any remaining test functions called from production code
 class RuntimeToolBar;
 class Console;
@@ -48,91 +51,165 @@ void runRuntimeToolBarTests(RuntimeToolBar*, Console*) {}
 void runDesignToolBarTests(void*, void*) {}
 void runMissionEditorTests(void*, void*) {}
 
+// Helper: Count test functions (slots whose name starts with "test")
+int countTestFunctions(const QObject* test) {
+    const QMetaObject* mo = test->metaObject();
+    int count = 0;
+    for (int i = 0; i < mo->methodCount(); ++i) {
+        QMetaMethod method = mo->method(i);
+        if (method.methodType() == QMetaMethod::Slot && method.parameterCount() == 0) {
+            QString name = QString::fromLatin1(method.name());
+            if (name.startsWith("test")) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+// Helper: Run a single test class, accumulate totals
+int runTest(QObject* test, int argc, char* argv[], const char* className,
+            int& totalTests, int& totalFails) {
+    int testCount = countTestFunctions(test);
+    totalTests += testCount;
+    qDebug() << "\n[ RUN      ]" << className << "(" << testCount << " test functions)";
+    int failCount = QTest::qExec(test, argc, argv);
+    totalFails += failCount;
+    qDebug() << "[ COMPLETE ]" << className << "- failures:" << failCount;
+    return failCount;
+}
+
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
-    int status = 0;
 
+    int overallStatus = 0;
+    int overallTotalTests = 0;
+    int overallTotalFails = 0;
+
+    // List all test classes (order as in original)
     TestDatabaseEditor dbTest;
-    status |= QTest::qExec(&dbTest, argc, argv);
+    overallStatus |= runTest(&dbTest, argc, argv, "TestDatabaseEditor", overallTotalTests, overallTotalFails);
 
     TestMenuBar menuTest;
-    status |= QTest::qExec(&menuTest, argc, argv);
+    overallStatus |= runTest(&menuTest, argc, argv, "TestMenuBar", overallTotalTests, overallTotalFails);
 
-    // TestRuntimeToolBar runtimeToolBarTest;
-    // status |= QTest::qExec(&runtimeToolBarTest, argc, argv);
+    // TestRuntimeToolBar runtimeToolBarTest; // commented out in original
+    // overallStatus |= runTest(&runtimeToolBarTest, ...);
 
-    TestApplicationDialog appDialogTest;        // ADD THIS
-    status |= QTest::qExec(&appDialogTest, argc, argv);
+    TestApplicationDialog appDialogTest;
+    overallStatus |= runTest(&appDialogTest, argc, argv, "TestApplicationDialog", overallTotalTests, overallTotalFails);
 
     TestConsoleView consoleViewTest;
-    status |= QTest::qExec(&consoleViewTest, argc, argv);
+    overallStatus |= runTest(&consoleViewTest, argc, argv, "TestConsoleView", overallTotalTests, overallTotalFails);
 
     TestCustomResizableOverlayDock customDockTest;
-    status |= QTest::qExec(&customDockTest, argc, argv);
+    overallStatus |= runTest(&customDockTest, argc, argv, "TestCustomResizableOverlayDock", overallTotalTests, overallTotalFails);
 
     TestDesignToolBar designToolBarTest;
-    status |= QTest::qExec(&designToolBarTest, argc, argv);
+    overallStatus |= runTest(&designToolBarTest, argc, argv, "TestDesignToolBar", overallTotalTests, overallTotalFails);
+
     TestDoctrineParameters doctrineParamsTest;
-    status |= QTest::qExec(&doctrineParamsTest, argc, argv);
+    overallStatus |= runTest(&doctrineParamsTest, argc, argv, "TestDoctrineParameters", overallTotalTests, overallTotalFails);
+
     TestEntityInfoDialog entityInfoTest;
-    status |= QTest::qExec(&entityInfoTest, argc, argv);
+    overallStatus |= runTest(&entityInfoTest, argc, argv, "TestEntityInfoDialog", overallTotalTests, overallTotalFails);
+
     TestFeedbackDialog feedbackTest;
-    status |= QTest::qExec(&feedbackTest, argc, argv);
+    overallStatus |= runTest(&feedbackTest, argc, argv, "TestFeedbackDialog", overallTotalTests, overallTotalFails);
+
     TestGraphWidget graphWidgetTest;
-    status |= QTest::qExec(&graphWidgetTest, argc, argv);
+    overallStatus |= runTest(&graphWidgetTest, argc, argv, "TestGraphWidget", overallTotalTests, overallTotalFails);
+
     TestAddFormationDialog addFormationTest;
-    status |= QTest::qExec(&addFormationTest, argc, argv);
+    overallStatus |= runTest(&addFormationTest, argc, argv, "TestAddFormationDialog", overallTotalTests, overallTotalFails);
+
     TestAddItemDialog addItemTest;
-    status |= QTest::qExec(&addItemTest, argc, argv);
+    overallStatus |= runTest(&addItemTest, argc, argv, "TestAddItemDialog", overallTotalTests, overallTotalFails);
+
     TestContextMenu contextMenuTest;
-    status |= QTest::qExec(&contextMenuTest, argc, argv);
+    overallStatus |= runTest(&contextMenuTest, argc, argv, "TestContextMenu", overallTotalTests, overallTotalFails);
+
     TestHierarchyTree hierarchyTreeTest;
-    status |= QTest::qExec(&hierarchyTreeTest, argc, argv);
+    overallStatus |= runTest(&hierarchyTreeTest, argc, argv, "TestHierarchyTree", overallTotalTests, overallTotalFails);
+
     TestInspector inspectorTest;
-    status |= QTest::qExec(&inspectorTest, argc, argv);
+    overallStatus |= runTest(&inspectorTest, argc, argv, "TestInspector", overallTotalTests, overallTotalFails);
+
     TestLayerPanel layerPanelTest;
-    status |= QTest::qExec(&layerPanelTest, argc, argv);
+    overallStatus |= runTest(&layerPanelTest, argc, argv, "TestLayerPanel", overallTotalTests, overallTotalFails);
+
     TestMainWindow mainWindowTest;
-    status |= QTest::qExec(&mainWindowTest, argc, argv);
+    overallStatus |= runTest(&mainWindowTest, argc, argv, "TestMainWindow", overallTotalTests, overallTotalFails);
+
     TestMeasureDistanceDialog measureDistanceTest;
-    status |= QTest::qExec(&measureDistanceTest, argc, argv);
+    overallStatus |= runTest(&measureDistanceTest, argc, argv, "TestMeasureDistanceDialog", overallTotalTests, overallTotalFails);
+
     TestMissionEditor missionEditorTest;
-    status |= QTest::qExec(&missionEditorTest, argc, argv);
+    overallStatus |= runTest(&missionEditorTest, argc, argv, "TestMissionEditor", overallTotalTests, overallTotalFails);
+
     TestNavigationPage navigationPageTest;
-    status |= QTest::qExec(&navigationPageTest, argc, argv);
+    overallStatus |= runTest(&navigationPageTest, argc, argv, "TestNavigationPage", overallTotalTests, overallTotalFails);
+
     TestProfileInfoDialog profileInfoTest;
-    status |= QTest::qExec(&profileInfoTest, argc, argv);
+    overallStatus |= runTest(&profileInfoTest, argc, argv, "TestProfileInfoDialog", overallTotalTests, overallTotalFails);
+
     TestRecentProjectsManager recentProjectsTest;
-    status |= QTest::qExec(&recentProjectsTest, argc, argv);
+    overallStatus |= runTest(&recentProjectsTest, argc, argv, "TestRecentProjectsManager", overallTotalTests, overallTotalFails);
+
     TestRuntimeToolBar runtimeToolBarTest;
-    status |= QTest::qExec(&runtimeToolBarTest, argc, argv);
-    TestScenarioEditor scenarioEditorTest;
-    status |= QTest::qExec(&scenarioEditorTest, argc, argv);
-    TestSidebarWidget sidebarWidgetTest;
-    status |= QTest::qExec(&sidebarWidgetTest, argc, argv);
-    TestStatusBar statusBarTest;
-    status |= QTest::qExec(&statusBarTest, argc, argv);
-    TestTacticalDisplay tacticalDisplayTest;
-    status |= QTest::qExec(&tacticalDisplayTest, argc, argv);
-    TestTacticalRules tacticalRulesTest;
-    status |= QTest::qExec(&tacticalRulesTest, argc, argv);
-    TestTestScriptDialog testScriptDialogTest;
-    status |= QTest::qExec(&testScriptDialogTest, argc, argv);
-    TestTextScriptWidget textScriptWidgetTest;
-    status |= QTest::qExec(&textScriptWidgetTest, argc, argv);
-    TestTooltipHelper tooltipHelperTest;
-    status |= QTest::qExec(&tooltipHelperTest, argc, argv);
-    TestCanvasWidget canvasWidgetTest;
-    status |= QTest::qExec(&canvasWidgetTest, argc, argv);
+    overallStatus |= runTest(&runtimeToolBarTest, argc, argv, "TestRuntimeToolBar", overallTotalTests, overallTotalFails);
+
     TestRuntimeEditor runtimeEditorTest;
-    status |= QTest::qExec(&runtimeEditorTest, argc, argv);
+    overallStatus |= runTest(&runtimeEditorTest, argc, argv, "TestRuntimeEditor", overallTotalTests, overallTotalFails);
+
+    TestScenarioEditor scenarioEditorTest;
+    overallStatus |= runTest(&scenarioEditorTest, argc, argv, "TestScenarioEditor", overallTotalTests, overallTotalFails);
+
+    TestSidebarWidget sidebarWidgetTest;
+    overallStatus |= runTest(&sidebarWidgetTest, argc, argv, "TestSidebarWidget", overallTotalTests, overallTotalFails);
+
+    TestStatusBar statusBarTest;
+    overallStatus |= runTest(&statusBarTest, argc, argv, "TestStatusBar", overallTotalTests, overallTotalFails);
+
+    TestTacticalDisplay tacticalDisplayTest;
+    overallStatus |= runTest(&tacticalDisplayTest, argc, argv, "TestTacticalDisplay", overallTotalTests, overallTotalFails);
+
+    TestTacticalRules tacticalRulesTest;
+    overallStatus |= runTest(&tacticalRulesTest, argc, argv, "TestTacticalRules", overallTotalTests, overallTotalFails);
+
+    TestTestScriptDialog testScriptDialogTest;
+    overallStatus |= runTest(&testScriptDialogTest, argc, argv, "TestTestScriptDialog", overallTotalTests, overallTotalFails);
+
+    TestTextScriptWidget textScriptWidgetTest;
+    overallStatus |= runTest(&textScriptWidgetTest, argc, argv, "TestTextScriptWidget", overallTotalTests, overallTotalFails);
+
+    TestTooltipHelper tooltipHelperTest;
+    overallStatus |= runTest(&tooltipHelperTest, argc, argv, "TestTooltipHelper", overallTotalTests, overallTotalFails);
+
+    TestCanvasWidget canvasWidgetTest;
+    overallStatus |= runTest(&canvasWidgetTest, argc, argv, "TestCanvasWidget", overallTotalTests, overallTotalFails);
+
     TestIFFDisplay iffDisplayTest;
-    status |= QTest::qExec(&iffDisplayTest, argc, argv);
+    overallStatus |= runTest(&iffDisplayTest, argc, argv, "TestIFFDisplay", overallTotalTests, overallTotalFails);
+
     TestRADIODisplay radioDisplayTest;
-    status |= QTest::qExec(&radioDisplayTest, argc, argv);
+    overallStatus |= runTest(&radioDisplayTest, argc, argv, "TestRADIODisplay", overallTotalTests, overallTotalFails);
+
     TestESMDisplay esmDisplayTest;
-    status |= QTest::qExec(&esmDisplayTest, argc, argv);
+    overallStatus |= runTest(&esmDisplayTest, argc, argv, "TestESMDisplay", overallTotalTests, overallTotalFails);
+
     TestCSMDisplay csmDisplayTest;
-    status |= QTest::qExec(&csmDisplayTest, argc, argv);
-    return status;
+    overallStatus |= runTest(&csmDisplayTest, argc, argv, "TestCSMDisplay", overallTotalTests, overallTotalFails);
+
+    // Calculate pass percentage
+    int passedTests = overallTotalTests - overallTotalFails;
+    double passPercent = (overallTotalTests > 0) ? (passedTests * 100.0 / overallTotalTests) : 0.0;
+
+    qDebug() << "\n========== OVERALL GUI TEST SUMMARY ==========";
+    qDebug() << "Total test functions :" << overallTotalTests;
+    qDebug() << "Passed               :" << passedTests;
+    qDebug() << "Failed               :" << overallTotalFails;
+    qDebug() << "percentage      :" << QString::number(passPercent, 'f', 2) << "%";
+    qDebug() << "===========================================";
+    return overallStatus;
 }

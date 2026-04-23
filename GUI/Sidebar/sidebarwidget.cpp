@@ -1,8 +1,28 @@
-/* ========================================================================= */
-/* File: sidebarwidget.cpp                                                  */
-/* Purpose: Implements sidebar widget with buttons for view selection       */
-//               Written by Arti Rajpoot
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         sidebarwidget.cpp
+ * MODULE:       Sidebar Navigation Widget
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the SidebarWidget class which provides a vertical
+ *               sidebar navigation widget containing buttons for switching
+ *               between different views (e.g., tactical display, sensors,
+ *               hierarchy, etc.). Supports setting an active button, showing/
+ *               hiding the sensors button, and emits a signal when a view
+ *               is selected.
+ *
+ * REQUIREMENTS: Implements REQ-SIDEBAR-010 through REQ-SIDEBAR-014
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-SIDEBAR-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #include "sidebarwidget.h"
 #include "sidebar-styles.h"

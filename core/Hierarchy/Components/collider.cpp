@@ -103,10 +103,10 @@ QJsonObject Collider::toJson() const {
     colliderObj["value"] = colliderTypeToString(collider);
     obj["collider"] = colliderObj;
 
-    // Include custom parameters
-    for (auto it = customParameters.begin(); it != customParameters.end(); ++it) {
-        obj[it.key()] = it.value();
-    }
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
+
 
     //Console::log("Collider::toJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
     //Console::log("Collider::toJson output: " + QString(QJsonDocument(obj).toJson()).toStdString());
@@ -137,12 +137,9 @@ void Collider::fromJson(const QJsonObject& obj) {
             collider = stringToColliderType(colliderObj["value"].toString());
     }
 
-    // Merge custom parameters
-    for (auto it = obj.begin(); it != obj.end(); ++it) {
-        if (it.key() != "active" && it.key() != "radius" && it.key() != "width" &&
-            it.key() != "length" && it.key() != "height" && it.key() != "collider" && it.key() != "dimension") {
-            customParameters[it.key()] = it.value();
-        }
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
+
     //Console::log("Collider::fromJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
 }

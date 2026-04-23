@@ -1,8 +1,45 @@
-/* ========================================================================= */
-/* File: mainwindow.h                                                        */
-/* Purpose: Main application window with multi-editor navigation system      */
-/* Written by: Arti Rajpoot                                                  */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         mainwindow.h
+ * MODULE:       Main Application Window
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the MainWindow class which serves as the main
+ *               application window with a multi‑editor navigation system.
+ *               It manages switching between different editors (DatabaseEditor,
+ *               ScenarioEditor, MissionEditor, RuntimeEditor, AnalysisEditor)
+ *               via a stacked widget and navigation page. Handles unsaved
+ *               changes, file operations (load/save) with TDF subfolder support,
+ *               recent projects, loading overlay, status bar, and application/
+ *               profile information dialogs. Integrates with ScenarioConfig
+ *               for global configuration and RecentProjectsManager for recent
+ *               file lists.
+ *
+ * REQUIREMENTS: REQ-MAIN-010  Main window with multi‑editor navigation
+ *               REQ-MAIN-011  Switch between editors (database, scenario,
+ *                             mission, runtime, analysis)
+ *               REQ-MAIN-012  Stacked widget to hold editor instances
+ *               REQ-MAIN-013  Navigation page for editor selection
+ *               REQ-MAIN-014  Unsaved changes tracking and prompts
+ *               REQ-MAIN-015  File operations: open, save, save as with TDF
+ *                             subfolder management
+ *               REQ-MAIN-016  Recent projects integration
+ *               REQ-MAIN-017  Loading overlay with progress bar
+ *               REQ-MAIN-018  Status bar for messages
+ *               REQ-MAIN-019  Application and profile information dialogs
+ *               REQ-MAIN-020  Singleton instance access
+ *               REQ-MAIN-021  Close event with unsaved changes handling
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-MAIN-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
@@ -69,7 +106,6 @@ private:
     bool handleUnsavedChanges();
     void updateWindowTitleForCurrentEditor();
     void updateWindowTitle(const QString& editorName, bool hasUnsavedChanges);
-    // NavigationPage *navigationPage = nullptr;
     static MainWindow* s_instance;
     MenuBar *mainMenuBar = nullptr;
     // %%% TDF helpers %%%

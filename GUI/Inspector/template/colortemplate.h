@@ -1,10 +1,31 @@
 
-
-/* ========================================================================= */
-/* File: colortemplate.h                                                    */
-/* Purpose: Defines widget for managing color templates                      */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         colortemplate.h
+ * MODULE:       Color Template Manager
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Declares the ColorTemplate class which provides a widget for
+ *               managing color templates. It interfaces with the Inspector
+ *               panel to set up color cells in a table, maintain connected
+ *               entity IDs, template names, and emit value changes when a
+ *               color is modified.
+ *
+ * REQUIREMENTS: REQ-COLOR-010  Color template management widget
+ *               REQ-COLOR-011  Setup color cell in table widget
+ *               REQ-COLOR-012  Maintain connected ID and template name
+ *               REQ-COLOR-013  Signal valueChanged on color modification
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-COLOR-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 
 #ifndef COLORTEMPLATE_H
 #define COLORTEMPLATE_H

@@ -63,6 +63,7 @@ public:
 
     // Public sensor/entity pointers (read by the engine)
     Sensor*   sensor = nullptr;
+        QVector<Sensor*> sensorlist;
     Platform* entity = nullptr;
 
 protected:

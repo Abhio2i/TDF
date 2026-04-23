@@ -121,7 +121,7 @@ void SharedMemoryWrapper::updateDynamicData(SharedComponent comp,SharedStructs::
     entity->dynamicsData.setGroundVelocity(comp.dynamicModel->GroundVelocity);
 
     int i =0;
-    for (auto it = comp.dynamicModel->customParameters.begin(); it != comp.dynamicModel->customParameters.end(); ++it) {
+    for (auto it = comp.dynamicModel->AdditionalParameters.begin(); it != comp.dynamicModel->AdditionalParameters.end(); ++it) {
         SharedStructs::parameter* param = new SharedStructs::parameter();
         param->setName(it.key().toStdString().c_str());
         param->setValue(it.value().toString().toStdString());

@@ -222,6 +222,9 @@ QJsonObject WeaponProfile::toJson() const
     // Each subclass toJson() writes "weaponTypeName" → used in fromJson
 
     obj["weapons"] = weaponObj;
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
     return obj;
 }
 
@@ -284,6 +287,11 @@ void WeaponProfile::fromJson(const QJsonObject& obj)
             emitAutoComponentSignals(parent, weapon);
         }
     }
+
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
+    }
+
 }
 
 // =============================================================================

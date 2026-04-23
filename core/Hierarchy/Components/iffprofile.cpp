@@ -64,6 +64,11 @@ QJsonObject IFFProfile::toJson() const {
         }
     }
     obj["iffs"] = iffObj;
+
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
+
     return obj;
 }
 
@@ -101,6 +106,11 @@ void IFFProfile::fromJson(const QJsonObject& obj) {
             }
         }
     }
+
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
+    }
+
 
     //Console::log("Collider::fromJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
 }

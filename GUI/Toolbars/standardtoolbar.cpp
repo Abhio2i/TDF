@@ -1,5 +1,28 @@
 
-
+/* =============================================================================
+ * FILE:         standardtoolbar.cpp
+ * MODULE:       Standard Toolbar
+ * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
+ * ORGANISATION: Oxygen 2 Innovation (O2I).
+ * STANDARD:     RTCA DO-178C / ED-12C, DAL B
+ * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
+ *
+ * DESCRIPTION:  Implements the StandardToolBar class which provides a toolbar for
+ *               standard editing actions (new, save, cut, copy, paste, undo,
+ *               redo) along with add trajectory and test script actions.
+ *               Integrates with the main application to provide common file
+ *               and edit operations in a consistent toolbar interface.
+ *
+ * REQUIREMENTS: Implements REQ-STDTOOLBAR-010 through REQ-STDTOOLBAR-016
+ *
+ * AUTHOR:       Arti Rajpoot
+ * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-STDTOOLBAR-001
+ *
+ *
+ * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
+ *               Restricted circulation — defence simulation use only.
+ * =============================================================================
+ */
 #include "standardtoolbar.h"
 #include "GUI/Testscript/testscriptdialog.h"
 #include <QIcon>
@@ -25,7 +48,6 @@ StandardToolBar::StandardToolBar(QWidget *parent)
     addSeparator();
     addAction(addTrajectoryAction);
     connect(testScriptAction, &QAction::triggered, this, &StandardToolBar::onTestScriptTriggered);
-    //Console::log("StandardToolBar initialized with addTrajectoryAction and testScriptAction");
 }
 
 void StandardToolBar::createActions()
@@ -44,7 +66,6 @@ void StandardToolBar::createActions()
     if (addTrajectoryAction->icon().isNull()) {
         Console::error("Failed to load trajectory icon from :/icons/images/trajectory.png");
     } else {
-        //Console::log("Trajectory icon loaded successfully");
     }
 
     testScriptAction = new QAction(QIcon(withWhiteBg(":/icons/images/test.png")), tr("Test Script"), this);

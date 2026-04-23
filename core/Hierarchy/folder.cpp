@@ -21,19 +21,23 @@
 #include <core/Hierarchy/hierarchy.h> // Required for type
 #include <core/Utility/uuid.h>
 
+/**
+ * @brief Constructs a Folder and registers it with the global hierarchy.
+ * @param h Pointer to the parent Hierarchy.
+ */
 Folder::Folder(Hierarchy* h) {
     ID = Uuid::generateShortUniqueID();
-    // Register this Folder automatically
-    Hierarchy* hierarchy = h;// Hierarchy::getCurrentContext(); // 💡 We'll create this next
+    Hierarchy* hierarchy = h;
     if (hierarchy) {
         GlobalRegistry::registerFolder(this, hierarchy);
         hierarchy->dictionry[ID] = {};
     }
 }
 
+/**
+ * @brief Destructor – removes all child folders and entities.
+ */
 Folder::~Folder(){
-
-
     // Clean up dynamically allocated folder & entity categories
     while (!Folders.empty()) {
         removeFolder(Folders.begin()->second->ID);
@@ -45,15 +49,24 @@ Folder::~Folder(){
     Console::log("Delete"+Name);
 }
 
+/**
+ * @brief Sets the profile type for this folder (affects entity creation).
+ * @param Type The entity type to associate.
+ */
 void Folder::setProfileType(Constants::EntityType Type){
     type = Type;
 }
 
+/**
+ * @brief Creates and adds a new sub‑folder.
+ * @param folderName Display name of the new folder.
+ * @param iD Optional unique identifier; auto‑generated if empty.
+ * @return Pointer to the newly created Folder, or nullptr on failure.
+ */
 Folder* Folder::addFolder(std::string folderName, std::string iD) {
     if(folderName.empty()){
         return nullptr;
     }
-    // 1. Parent Hierarchy check (Critical for safety)
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (!parent ) {
         Console::error("RunTimeError::" + std::string(__FILE__) + ":" + std::to_string(__LINE__) +
@@ -61,30 +74,22 @@ Folder* Folder::addFolder(std::string folderName, std::string iD) {
         return nullptr;
     }
 
-    // 2. Memory Allocation
     emit parent->status("add");
     Folder* folder = new Folder(parent);
     folder->Name = folderName;
-    folder->parentID = this->ID; // Use current folder's ID as parent
-    folder->setProfileType(this->type); // Inherit type from current folder
+    folder->parentID = this->ID;
+    folder->setProfileType(this->type);
 
-    // 3. ID Assignment (ID empty ho toh Folder constructor wala use hoga)
     if (!iD.empty()) {
         folder->ID = iD;
     }
 
-    // 4. Double Insertion (Syncing current folder and global hierarchy)
-    // Current folder's local map
     this->Folders.insert({folder->ID, folder});
-
-    // Global Hierarchy map
     parent->Folders.insert({folder->ID, folder});
 
-    // 5. Dictionary/Indexing update
-    // Yahan ensure karein ki parentID ki entry exist karti ho
+    // Ensure parentID entry exists in dictionary
     parent->dictionry[folder->parentID].push_back(folder->ID);
 
-    // 6. Signals emit karna
     QString qParentID = QString::fromStdString(folder->parentID);
     QString qFolderID = QString::fromStdString(folder->ID);
     QString qFolderName = QString::fromStdString(folderName);
@@ -95,6 +100,10 @@ Folder* Folder::addFolder(std::string folderName, std::string iD) {
     return folder;
 }
 
+/**
+ * @brief Adds an existing Folder object as a child.
+ * @param folder Pointer to the Folder to add (ownership transferred).
+ */
 void Folder::addFolderWithObject(Folder *folder){
     if(folder == nullptr){
         return;
@@ -102,7 +111,6 @@ void Folder::addFolderWithObject(Folder *folder){
     folder->parentID = ID;
     Folders.insert({folder->ID, folder});
 
-    // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     emit parent->status("add");
     if (parent ) {
@@ -117,10 +125,12 @@ void Folder::addFolderWithObject(Folder *folder){
             std::to_string(__LINE__) +
             "Hierarchy parent or parent->Folders is null!");
     }
-
 }
 
-
+/**
+ * @brief Removes a sub‑folder by its ID.
+ * @param folderID ID of the folder to remove.
+ */
 void Folder::removeFolder(std::string folderID){
     if(folderID.empty()){
         return;
@@ -128,9 +138,8 @@ void Folder::removeFolder(std::string folderID){
     delete Folders[folderID];
     Folders[folderID] = nullptr;
     Folders.erase(folderID);
-    // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-        emit parent->status("remove");
+    emit parent->status("remove");
     if (parent ) {
         parent->Folders.erase(folderID);
         emit parent->folderRemoved(QString::fromStdString(folderID));
@@ -142,58 +151,65 @@ void Folder::removeFolder(std::string folderID){
     }
 }
 
+/**
+ * @brief Creates and adds a new entity to this folder.
+ * @param entityName Display name of the entity.
+ * @param iD Optional unique identifier; auto‑generated if empty.
+ * @param data1 Optional extra data (e.g., sensor subtype).
+ * @return Pointer to the newly created Entity.
+ */
 Entity* Folder::addEntity(std::string entityName, std::string iD,QString data1){
     if(entityName.empty()){
         return nullptr;
     }
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-        emit parent->status("add");
+    emit parent->status("add");
     Entity *entity;
     if(type == Constants::EntityType::Radio){
         entity = new Radio(parent);
     }else
-    if(type == Constants::EntityType::Sensor){
-        if(data1 == "Generic"){
-            entity = new Radar(parent);
-        }else
-            if(data1 == "CSM"){
-                entity = new CSM(parent);
+        if(type == Constants::EntityType::Sensor){
+            if(data1 == "Generic"){
+                entity = new Radar(parent);
             }else
-                if(data1 == "ESM"){
-                    entity = new ESM(parent);
+                if(data1 == "CSM"){
+                    entity = new CSM(parent);
                 }else
-                    if(data1 == "EO"){
-                        entity = new EOSensor(parent);
+                    if(data1 == "ESM"){
+                        entity = new ESM(parent);
                     }else
-                        if(data1 == "Sonar"){
-                            entity = new Sonar(parent);
+                        if(data1 == "EO"){
+                            entity = new EOSensor(parent);
                         }else
-                            if(data1 == "AIS"){
-                                entity = new AISSensor(parent);
+                            if(data1 == "Sonar"){
+                                entity = new Sonar(parent);
                             }else
-                                if(data1 == "ADSB"){
-                                    entity = new ADSBSensor(parent);
+                                if(data1 == "AIS"){
+                                    entity = new AISSensor(parent);
                                 }else
-                                    if(data1 == "AESA"){
-                                        entity = new AESARadar(parent);
-                                    }else{
-                                        entity = new Sensor(parent);
-                                    }
-    }else
-    if(type == Constants::EntityType::FixedPoint){
-        entity = new FixedPoints(parent);
-    }else
-    if(type == Constants::EntityType::Formation){
-        entity = new Formation(parent);
-    }else
-    if(type == Constants::EntityType::SpecialZone){
-        entity = new Specialzone(parent);
-    }else
-    if(type == Constants::EntityType::IFF){
-        entity = new IFF(parent);
-    }else{
-        entity = new Platform(parent);
-    }
+                                    if(data1 == "ADSB"){
+                                        entity = new ADSBSensor(parent);
+                                    }else
+                                        if(data1 == "AESA"){
+                                            entity = new AESARadar(parent);
+                                        }else{
+                                            entity = new Sensor(parent);
+                                        }
+        }else
+            if(type == Constants::EntityType::FixedPoint){
+                entity = new FixedPoints(parent);
+            }else
+                if(type == Constants::EntityType::Formation){
+                    entity = new Formation(parent);
+                }else
+                    if(type == Constants::EntityType::SpecialZone){
+                        entity = new Specialzone(parent);
+                    }else
+                        if(type == Constants::EntityType::IFF){
+                            entity = new IFF(parent);
+                        }else{
+                            entity = new Platform(parent);
+                        }
     entity->Name = entityName;
     entity->parentID = ID;
     entity->type = type;
@@ -202,39 +218,29 @@ Entity* Folder::addEntity(std::string entityName, std::string iD,QString data1){
     }
     Entities.insert({entity->ID, entity});
 
-
-    // Automatically update hierarchy's Folders
-
     if (parent) {
         parent->Entities.insert({entity->ID, entity});
         if(type == Constants::EntityType::Radio){
             parent->Radios.insert({entity->ID, dynamic_cast<Radio*>(entity)});
         }else
-        if(type == Constants::EntityType::Sensor){
-            parent->Sensors.insert({entity->ID, dynamic_cast<Sensor*>(entity)});
-        }else
-        if(type == Constants::EntityType::FixedPoint){
-            parent->FixedPointes.insert({entity->ID, dynamic_cast<FixedPoints*>(entity)});
-        }else
-        if(type == Constants::EntityType::Formation){
-            parent->Formations.insert({entity->ID, dynamic_cast<Formation*>(entity)});
-        }else
-        if(type == Constants::EntityType::SpecialZone){
-            parent->Specialzones.insert({entity->ID, dynamic_cast<Specialzone*>(entity)});
-        }else
-        if(type == Constants::EntityType::IFF){
-            parent->Iffs.insert({entity->ID, dynamic_cast<IFF*>(entity)});
-        }else{
-            parent->Platforms.insert({entity->ID, dynamic_cast<Platform*>(entity)});
-        }
+            if(type == Constants::EntityType::Sensor){
+                parent->Sensors.insert({entity->ID, dynamic_cast<Sensor*>(entity)});
+            }else
+                if(type == Constants::EntityType::FixedPoint){
+                    parent->FixedPointes.insert({entity->ID, dynamic_cast<FixedPoints*>(entity)});
+                }else
+                    if(type == Constants::EntityType::Formation){
+                        parent->Formations.insert({entity->ID, dynamic_cast<Formation*>(entity)});
+                    }else
+                        if(type == Constants::EntityType::SpecialZone){
+                            parent->Specialzones.insert({entity->ID, dynamic_cast<Specialzone*>(entity)});
+                        }else
+                            if(type == Constants::EntityType::IFF){
+                                parent->Iffs.insert({entity->ID, dynamic_cast<IFF*>(entity)});
+                            }else{
+                                parent->Platforms.insert({entity->ID, dynamic_cast<Platform*>(entity)});
+                            }
         entity->spawn();
-        // entity->addComponent("transform");
-        // entity->addComponent("trajectory");
-        // entity->addComponent("rigidbody");
-        // entity->addComponent("dynamicModel");
-        // entity->addComponent("collider");
-        // entity->addComponent("meshRenderer2d");
-
         parent->dictionry[entity->parentID].push_back(entity->ID);
     } else {
         Console::error(
@@ -246,6 +252,10 @@ Entity* Folder::addEntity(std::string entityName, std::string iD,QString data1){
     return entity;
 }
 
+/**
+ * @brief Adds an existing Entity object to this folder.
+ * @param entity Pointer to the Entity to add (ownership transferred).
+ */
 void Folder::addEntityWithObject(Entity *entity){
     if(entity == nullptr){
         return;
@@ -253,47 +263,32 @@ void Folder::addEntityWithObject(Entity *entity){
     entity->parentID = ID;
     Entities.insert({entity->ID, entity});
 
-    // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-        emit parent->status("add");
+    emit parent->status("add");
     if (parent ) {
         parent->Entities.insert({entity->ID, entity});
         if(type == Constants::EntityType::Radio){
             parent->Radios.insert({entity->ID, dynamic_cast<Radio*>(entity)});
         }else
-        if(type == Constants::EntityType::Sensor){
-            parent->Sensors.insert({entity->ID, dynamic_cast<Sensor*>(entity)});
-        }else
-        if(type == Constants::EntityType::FixedPoint){
-            parent->FixedPointes.insert({entity->ID, dynamic_cast<FixedPoints*>(entity)});
-        }else
-        if(type == Constants::EntityType::Formation){
-            parent->Formations.insert({entity->ID, dynamic_cast<Formation*>(entity)});
-        }else
-        if(type == Constants::EntityType::SpecialZone){
-            parent->Specialzones.insert({entity->ID, dynamic_cast<Specialzone*>(entity)});
-        }else
-        if(type == Constants::EntityType::IFF){
-            parent->Iffs.insert({entity->ID, dynamic_cast<IFF*>(entity)});
-        }else{
-            parent->Platforms.insert({entity->ID, dynamic_cast<Platform*>(entity)});
-        }
+            if(type == Constants::EntityType::Sensor){
+                parent->Sensors.insert({entity->ID, dynamic_cast<Sensor*>(entity)});
+            }else
+                if(type == Constants::EntityType::FixedPoint){
+                    parent->FixedPointes.insert({entity->ID, dynamic_cast<FixedPoints*>(entity)});
+                }else
+                    if(type == Constants::EntityType::Formation){
+                        parent->Formations.insert({entity->ID, dynamic_cast<Formation*>(entity)});
+                    }else
+                        if(type == Constants::EntityType::SpecialZone){
+                            parent->Specialzones.insert({entity->ID, dynamic_cast<Specialzone*>(entity)});
+                        }else
+                            if(type == Constants::EntityType::IFF){
+                                parent->Iffs.insert({entity->ID, dynamic_cast<IFF*>(entity)});
+                            }else{
+                                parent->Platforms.insert({entity->ID, dynamic_cast<Platform*>(entity)});
+                            }
         entity->spawn();
-        // entity->addComponent("transform");
-        // entity->addComponent("trajectory");
-        // entity->addComponent("rigidbody");
-        // entity->addComponent("dynamicModel");
-        // entity->addComponent("collider");
-        // entity->addComponent("meshRenderer2d");
-        // emit parent->entityAddedPointer(QString::fromStdString(entity->parentID),entity);
-        // emit parent->meshAdded(QString::fromStdString(entity->ID),QString::fromStdString(entity->Name),entity->transform,entity->meshRenderer2d->Meshes);
-        // emit parent->entityAdded(QString::fromStdString(entity->parentID),QString::fromStdString(entity->ID),QString::fromStdString(entity->Name));
-        // emit parent->componentAdded(QString::fromStdString(entity->ID),"transform");
-        // emit parent->componentAdded(QString::fromStdString(entity->ID),"trajectory");
-        // emit parent->componentAdded(QString::fromStdString(entity->ID),"rigidbody");
-        // emit parent->componentAdded(QString::fromStdString(entity->ID),"dynamicModel");
-        // emit parent->componentAdded(QString::fromStdString(entity->ID),"collider");
-        // emit parent->componentAdded(QString::fromStdString(entity->ID),"meshRenderer2d");
+
         parent->dictionry[entity->parentID].push_back(entity->ID);
     } else {
         Console::error(
@@ -301,41 +296,42 @@ void Folder::addEntityWithObject(Entity *entity){
             std::to_string(__LINE__) +
             "Hierarchy parent or parent->Entities is null!");
     }
-
 }
 
+/**
+ * @brief Removes an entity from this folder by its ID.
+ * @param EntityID ID of the entity to remove.
+ */
 void Folder::removeEntity(std::string EntityID){
-
     if(EntityID.empty()){
         return;
     }
     delete Entities[EntityID];
     Entities.erase(EntityID);
-    // Automatically update hierarchy's Folders
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-        emit parent->status("remove");
+    emit parent->status("remove");
     if (parent ) {
         parent->Entities.erase(EntityID);
         if(type == Constants::EntityType::Radio){
             parent->Radios.erase(EntityID);
         }else
-        if(type == Constants::EntityType::Sensor){
-            parent->Sensors.erase(EntityID);
-        }else
-        if(type == Constants::EntityType::FixedPoint){
-            parent->FixedPointes.erase(EntityID);
-        }else
-        if(type == Constants::EntityType::Formation){
-            parent->Formations.erase(EntityID);
-        }else
-        if(type == Constants::EntityType::SpecialZone){
-            parent->Specialzones.erase(EntityID);
-        }else
-        if(type == Constants::EntityType::IFF){
-            parent->Iffs.erase(EntityID);
-        }else{
-            parent->Platforms.erase(EntityID);
-        }
+            if(type == Constants::EntityType::Sensor){
+                parent->Sensors.erase(EntityID);
+            }else
+                if(type == Constants::EntityType::FixedPoint){
+                    parent->FixedPointes.erase(EntityID);
+                }else
+                    if(type == Constants::EntityType::Formation){
+                        parent->Formations.erase(EntityID);
+                    }else
+                        if(type == Constants::EntityType::SpecialZone){
+                            parent->Specialzones.erase(EntityID);
+                        }else
+                            if(type == Constants::EntityType::IFF){
+                                parent->Iffs.erase(EntityID);
+                            }else{
+                                parent->Platforms.erase(EntityID);
+                            }
         emit parent->entityRemoved(QString::fromStdString(EntityID));
         emit parent->entityRemovedfull(QString::fromStdString(ID),QString::fromStdString(EntityID),false);
     } else {
@@ -346,7 +342,10 @@ void Folder::removeEntity(std::string EntityID){
     }
 }
 
-
+/**
+ * @brief Serializes the folder (including children) to a JSON object.
+ * @return QJsonObject representing the folder's state.
+ */
 QJsonObject Folder::toJson() {
     QJsonObject obj;
     obj["name"] = QString::fromStdString(Name);
@@ -355,7 +354,6 @@ QJsonObject Folder::toJson() {
     obj["parent_id"] = QString::fromStdString(parentID);
     obj["active"] = Active;
 
-    // Serialize Folders
     QJsonObject folderObj;
     for (const auto& [key, folderPtr] : Folders) {
         if (folderPtr) {
@@ -364,7 +362,6 @@ QJsonObject Folder::toJson() {
     }
     obj["folders"] = folderObj;
 
-    // Serialize Entities
     QJsonObject entityObj;
     for (const auto& [key, entityPtr] : Entities) {
         if (entityPtr) {
@@ -385,6 +382,10 @@ QJsonObject Folder::toJson() {
     return obj;
 }
 
+/**
+ * @brief Deserializes the folder from a JSON object.
+ * @param obj JSON object containing folder data.
+ */
 void Folder::fromJson(const QJsonObject& obj)
 {
     if (obj.contains("active"))
@@ -395,7 +396,7 @@ void Folder::fromJson(const QJsonObject& obj)
         ID = obj["id"].toString().toStdString();
     if (obj.contains("parent_id"))
         parentID = obj["parent_id"].toString().toStdString();
-    // 🔸 Deserialize nested folders
+
     if (obj.contains("folders") && obj["folders"].isObject()) {
         QJsonObject foldersObj = obj["folders"].toObject();
         for (const QString& key : foldersObj.keys()) {
@@ -416,7 +417,7 @@ void Folder::fromJson(const QJsonObject& obj)
         if (entityObj.contains("value"))
             type = stringToEntityType(entityObj["value"].toString());
     }
-    // 🔸 Deserialize entities
+
     if (obj.contains("entities") && obj["entities"].isObject()) {
         QJsonObject entitiesObj = obj["entities"].toObject();
         for (const QString& key : entitiesObj.keys()) {
@@ -426,49 +427,49 @@ void Folder::fromJson(const QJsonObject& obj)
             if(type == Constants::EntityType::Radio){
                 entity = new Radio(parent);
             }else
-            if(type == Constants::EntityType::Sensor){
-                QString data1 = entityObj["SensorType"].toString();
-                if(data1 == "Generic"){
-                    entity = new Radar(parent);
-                }else
-                    if(data1 == "CSM"){
-                        entity = new CSM(parent);
+                if(type == Constants::EntityType::Sensor){
+                    QString data1 = entityObj["SensorType"].toString();
+                    if(data1 == "Generic"){
+                        entity = new Radar(parent);
                     }else
-                        if(data1 == "ESM"){
-                            entity = new ESM(parent);
+                        if(data1 == "CSM"){
+                            entity = new CSM(parent);
                         }else
-                            if(data1 == "EO"){
-                                entity = new EOSensor(parent);
+                            if(data1 == "ESM"){
+                                entity = new ESM(parent);
                             }else
-                                if(data1 == "Sonar"){
-                                    entity = new Sonar(parent);
+                                if(data1 == "EO"){
+                                    entity = new EOSensor(parent);
                                 }else
-                                    if(data1 == "AIS"){
-                                        entity = new AISSensor(parent);
+                                    if(data1 == "Sonar"){
+                                        entity = new Sonar(parent);
                                     }else
-                                        if(data1 == "ADSB"){
-                                            entity = new ADSBSensor(parent);
+                                        if(data1 == "AIS"){
+                                            entity = new AISSensor(parent);
                                         }else
-                                            if(data1 == "AESA"){
-                                                entity = new AESARadar(parent);
-                                            }else{
-                                                entity = new Sensor(parent);
-                                            }
-            }else
-            if(type == Constants::EntityType::FixedPoint){
-                entity = new FixedPoints(parent);
-            }else
-            if(type == Constants::EntityType::Formation){
-                entity = new Formation(parent);
-            }else
-            if(type == Constants::EntityType::SpecialZone){
-                entity = new Specialzone(parent);
-            }else
-            if(type == Constants::EntityType::IFF){
-                entity = new IFF(parent);
-            }else{
-                entity = new Platform(parent);
-            }
+                                            if(data1 == "ADSB"){
+                                                entity = new ADSBSensor(parent);
+                                            }else
+                                                if(data1 == "AESA"){
+                                                    entity = new AESARadar(parent);
+                                                }else{
+                                                    entity = new Sensor(parent);
+                                                }
+                }else
+                    if(type == Constants::EntityType::FixedPoint){
+                        entity = new FixedPoints(parent);
+                    }else
+                        if(type == Constants::EntityType::Formation){
+                            entity = new Formation(parent);
+                        }else
+                            if(type == Constants::EntityType::SpecialZone){
+                                entity = new Specialzone(parent);
+                            }else
+                                if(type == Constants::EntityType::IFF){
+                                    entity = new IFF(parent);
+                                }else{
+                                    entity = new Platform(parent);
+                                }
             entity->type = type;
             entity->Name = entityObj["name"].toString().toStdString();
             entity->ID = entityObj["id"].toString().toStdString();
@@ -478,5 +479,4 @@ void Folder::fromJson(const QJsonObject& obj)
             }
         }
     }
-
 }
