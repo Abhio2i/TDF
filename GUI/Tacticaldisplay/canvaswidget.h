@@ -21,7 +21,6 @@
 #include <GUI/Tacticaldisplay/Gis/layerpanel.h>
 // #include <GUI/Tacticaldisplay/entityinfodialog.h>
 class EntityContextMenu;
-
 class EntityInfoDialog;
 // Forward declarations
 class QDialog;
@@ -91,6 +90,7 @@ public:
     double getMetersPerPixel() const;
     CanvasWidget(QWidget *parent = nullptr);
     GISlib* gislib;
+
 
     /* Public members section */
     std::unordered_map<std::string, MeshEntry> Meshes;
@@ -169,7 +169,9 @@ public:
     void centerOnEntityWithZoom(const QString& entityId, int zoomLevel);
     double calculateTrajectoryCompletionTime(const MeshEntry& entry) const;
     // static void runUnitTestsOnce();
-
+    // canvaswidget.h mein public section mein add karo:
+    void loadImportedLayerFeaturesToMeshes(const QString& filePath,
+                                           const QString& layerName);
 public slots:
     void ReInit();
     // GIS event forwarding slots
@@ -187,6 +189,9 @@ public slots:
     // GeoJSON functionality
     void importGeoJsonLayer(const QString &filePath);  // Import GeoJSON layer
     void onGeoJsonLayerToggled(const QString &layerName, bool visible);  // Toggle GeoJSON layer visibility
+    void centerOnShape(const QString& shapeId);   // new
+    void resetEntityInfoDialog();  // ← add karo
+
 
 private slots:
     void onMeasurementTypeChanged(bool isEll);  // Handle measurement type change (ellipsoidal vs planar)
@@ -201,13 +206,18 @@ private:
     void updateHoverTooltip();
     QString m_hoveredEntityId;
     QTimer m_tooltipTimer;
-
     LayerPanel* m_layerPanel = nullptr;
+    QString m_highlightedShapeId;   // shape to draw selection outline for
+    // private members mein add karo
+    MeshEntry* m_copiedShape = nullptr;  // clipboard for shape copy
+
+
+
 
 public slots:
-
     void showEntityInfo(const QString& entityId);
     void hideEntityInfo();
+    void importLayer(const QString& filePath);
     // void setTooltipOptions(const QSet<QString>& options);
 public:
     // Drag and drop event handlers
@@ -232,10 +242,13 @@ public:
 
     void setLayerPanel(LayerPanel* panel);
     LayerPanel* getLayerPanel() const { return m_layerPanel; }
-        bool isDrawingTrajectory = false;  // Currently drawing trajectory
-          bool showImage = true;
-              bool showFPS = true;     // Show FPS counter
+    bool isDrawingTrajectory = false;  // Currently drawing trajectory
+    bool showImage = true;
+    bool showFPS = true;     // Show FPS counter
     bool showTrajectories = true;
+    QMap<QString, QString> geoJsonLayerFilePaths;
+    void copySelectedShape();
+    void pasteShape();
 private:
     // Drawing methods for different canvas elements
     void drawGridLines(QPainter& painter);  // Draw grid lines
@@ -246,6 +259,7 @@ private:
     void drawSelectionOutline(QPainter& painter);  // Draw selection outline
     void drawCollision(QPainter& painter,std::string id , MeshEntry entry);
     void drawImage(QPainter& painter,std::string id , MeshEntry entry);  // Draw entity images
+    void drawFormation(QPainter& painter,std::string id , MeshEntry entry);
     void drawTrajectory(QPainter& painter,const std::string& id , MeshEntry& entry);  // Draw trajectory paths
     void drawTrail(QPainter& painter,std::string id , MeshEntry entry);  // Draw trajectory paths
     void drawMesh(QPainter& painter);  // Draw mesh geometries
@@ -341,9 +355,7 @@ private:
 
     // Helper function to check if click is on empty canvas (no entities/shapes/bitmaps)
     bool isClickOnEmptyCanvas(const QPoint& pos);
-
     QSet<QString> activeTooltipOptions;
-
     bool shouldDrawShape(const QString& shapeId) const;
 
 protected:
@@ -369,10 +381,9 @@ signals:
     void pointsUpdated(const QList<QPointF>& points);  // Measurement points updated
     void requestAddEntityAtPosition(double longitude, double latitude);
     void entitySelectedOnCanvas(QString entityId);
+    void shapeSelectedFromCanvas(const QString& shapeId);
 
 private:
-
-
     // Internal state variables
     bool selectEntity;  // Entity selection flag
     QTimer *updateTimer;  // Timer for periodic updates

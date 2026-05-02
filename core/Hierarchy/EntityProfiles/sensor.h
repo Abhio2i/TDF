@@ -190,6 +190,8 @@ public:
     float beamWidth = 0.0f; // degrees
     float antennaGain = 0.0f; // dBi
     float maxDetectionAngle = 60.0f; // degrees
+    float minAzimuth = -60.0f;
+    float maxAzimuth = 60.0f;
     float range = 100.0f; // km or meters
     // float ewrange = 100.0f; // km or meters
     float refreshRate = 0.0f; // Hz

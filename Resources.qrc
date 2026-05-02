@@ -97,6 +97,8 @@
         <file>images/identification.png</file>
         <file>images/bio-weapon.png</file>
         <file>images/radio.png</file>
+        <file>images/TestScript.png</file>
+        <file>images/library.png</file>
     </qresource>
     <qresource prefix="/texture">
         <file>images/Texture/bball.png</file>
@@ -479,6 +481,7 @@
         <file>images/sea/KolkataclassP15A.png</file>
         <file>images/sea/INSVikrant.png</file>
         <file>images/sea/VisakhapatnamclassP15B.png</file>
+        <file>images/sea/sonobuoy.png</file>
     </qresource>
     <qresource prefix="/new/prefix2">
         <file>DB/Aircraft.db</file>

@@ -16,6 +16,10 @@ Flare::Flare(Hierarchy* h) : Weapon(h)
 void Flare::launch()                        { /* eject + ignite cartridge */ }
 bool Flare::canEngage(Platform* /*target*/) { return false; /* defensive only */ }
 
+void Flare::Update(){
+
+}
+
 QString Flare::dispensingModeToString() const {
     switch (dispensingMode) {
     case DispensingMode::Single: return "Single";

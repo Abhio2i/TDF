@@ -85,16 +85,16 @@ MenuBar::MenuBar(QWidget *parent)
     deleteAction = new QAction("Delete", this);
 
     // Create feedback menu
-    feedbackMenu = addMenu("About");
-    feedbackMenu->setStyleSheet(MenuBarStyles::Menu);
-    feedbackAction = new QAction("Open About Page", this);
-    feedbackMenu->addAction(feedbackAction);
-
     profileAction = addAction("Performance");
     profileAction->setMenuRole(QAction::NoRole);
 
     applicationAction = addAction("Settings");
     applicationAction->setMenuRole(QAction::NoRole);
+
+    feedbackMenu = addMenu("About");
+    feedbackMenu->setStyleSheet(MenuBarStyles::Menu);
+    feedbackAction = new QAction("Open About Page", this);
+    feedbackMenu->addAction(feedbackAction);
 
     // Connect actions to signals
     connect(loadXmlAction, &QAction::triggered, this, &MenuBar::loadXmlTriggered);

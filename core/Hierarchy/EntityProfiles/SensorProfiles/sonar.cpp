@@ -5,6 +5,7 @@
 #include "core/Hierarchy/hierarchy.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar/sonar_model.h"
 #include "core/Hierarchy/Components/dynamicmodel.h"
+#include <cstdlib>
 
 Sonar::Sonar(Hierarchy* h) : Sensor(h) {
     subType = SubType::Sonar;
@@ -144,9 +145,6 @@ void Sonar::scan()
             continue;
         }
 
-        // apply on strength
-        // float finalStrength = target.targetStrength * dirFactor;
-
         float travelTime  = (2.0f * distance) / m_soundSpeed;
         float arrivalTime = simTime + travelTime;
 
@@ -203,7 +201,6 @@ void Sonar::processEchoQueue(float simTime)
         //input.noiseLevel         = m_noiseLevel;
         // input.detectionThreshold = m_threshold;
         input.detectionThreshold = SonarModel::validateDetectionThreshold(m_threshold);
-        float dt = input.detectionThreshold;
         input.absorption =SonarModel::computeThorpAbsorption(frequency);
         input.targetStrength     = it->targetStrength;
 
@@ -234,11 +231,87 @@ void Sonar::processEchoQueue(float simTime)
             it->targetLon
             );
 
+        float relBearing = baseBearing - source->getHeading();
+
+        // normalize
+        while (relBearing > 180.0f) relBearing -= 360.0f;
+        while (relBearing < -180.0f) relBearing += 360.0f;
+
+        // LOS projection
+        float losFactor = cos(relBearing * M_PI / 180.0f);
+
         float depth1 = 0.0f;              // sonar (surface)
         float depth2 = it->targetDepth;     // target ka depth
 
         float c1 = m_activeSonar.getSoundSpeedAtDepth(depth1);
         float c2 = m_activeSonar.getSoundSpeedAtDepth(depth2);
+
+        // float PRI = m_pingInterval;  // already present in sonar
+
+        float PRI = (2.0f * range * 1000.0f) / c1;
+
+        float maxRange = SonarModel::computeMaxUnambiguousRange(
+            c1,
+            PRI
+            );
+
+        if (newDistance > maxRange)
+        {
+            qDebug() << "[AMBIGUOUS] Ignored target at"
+                     << newDistance << ">" << maxRange;
+
+            it = m_echoQueue.erase(it);
+            continue;
+        }
+
+        qDebug() << "[MAX RANGE]"
+                 << "PRI:" << PRI
+                 << "MaxRange:" << maxRange;
+
+        // 🔹 Doppler Loss
+        float pulseDuration = 0.005f; // 10 ms
+
+        float rangeRes = SonarModel::computeRangeResolution(
+            c1,
+            pulseDuration
+            );
+
+        float f0 = frequency * 1000.0f;
+
+        // wavelength
+        float lambda = c1 / f0;
+
+        // array length (assume ya config se lo)
+        float arrayLength = 1.0f;  // meters (later config)
+
+        // bearing resolution (radians)
+        float bearingRes = SonarModel::computeBearingResolution(
+            lambda,
+            arrayLength
+            );
+
+        // degrees me convert (UI friendly)
+        float bearingResDeg = bearingRes * 180.0f / M_PI;
+
+        qDebug() << "[BEARING RES]"
+                 << "lambda:" << lambda
+                 << "L:" << arrayLength
+                 << "rad:" << bearingRes
+                 << "deg:" << bearingResDeg;
+
+        float vmax = SonarModel::computeMaxUnambiguousSpeed(lambda, PRI);
+
+        qDebug() << "[MAX SPEED]"
+                 << "lambda:" << lambda
+                 << "PRI:" << PRI
+                 << "vmax(m/s):" << vmax
+                 << "vmax(kts):" << vmax * 1.94384f;
+
+
+        // qDebug() << "[RANGE RES]"
+        //          << "c:" << c1
+        //          << "tau:" << pulseDuration
+        //          << "Resolution(m):" << rangeRes;
 
         // qDebug() << "[SNELL DEBUG]"
         //          << "depth1:" << depth1
@@ -266,8 +339,17 @@ void Sonar::processEchoQueue(float simTime)
             input.sourceLevel, tl,
             effectiveTS, input.noiseLevel,  DI);
 
-        // 🔹 SELF SPEED
-        //  float selfSpeed = model->velocity.length();
+        float nPulses = 10.0f;  // ya config se lo (ping accumulation)
+
+        float integrationGain =
+            SonarModel::computeIncoherentIntegrationGain(nPulses);
+
+        // SNR boost
+        snr += integrationGain;
+
+        qDebug() << "[INTEGRATION]"
+                 << "Pulses:" << nPulses
+                 << "Gain(dB):" << integrationGain;
 
         // 🔹 TARGET SPEED (ID se)
         auto itPlatform = root->Platforms.find(it->targetId);
@@ -298,23 +380,44 @@ void Sonar::processEchoQueue(float simTime)
             targetSpeed = targetModel->moveSpeed / 3.6f;
         }
 
-        float relativeSpeed = targetSpeed - selfSpeed;
+        // transmitter = target, receiver = self sonar
+        // target velocity projected towards sonar
+        float v_tx = targetSpeed * losFactor;
 
-        // 🔹 RELATIVE SPEED
-        relativeSpeed = std::clamp(relativeSpeed, -15.0f, 15.0f);
+        // receiver velocity projected towards target (opposite direction)
+        float v_rx = -selfSpeed * losFactor;
 
-        // 🔹 Doppler Shift
-        float doppler = SonarModel::computeDopplerShift(
-            relativeSpeed,
-            frequency * 1000.0f,
+        float relVel = v_tx + v_rx;
+
+        // optional clamp (realistic limits)
+        v_tx = std::clamp(v_tx, -15.0f, 15.0f);
+        v_rx = std::clamp(v_rx, -15.0f, 15.0f);
+
+        if (fabs(v_tx) > vmax)
+        {
+            qDebug() << "[ALIASING] TX speed exceeded:" << v_tx << ">" << vmax;
+            v_tx = std::copysign(vmax, v_tx);
+        }
+
+        if (fabs(v_rx) > vmax)
+        {
+            qDebug() << "[ALIASING] RX speed exceeded:" << v_rx << ">" << vmax;
+            v_rx = std::copysign(vmax, v_rx);
+        }
+
+        // compute echo frequency
+        float f_echo = SonarModel::computeDopplerFrequency(
+            f0,
+            v_tx,
+            v_rx,
             c1
             );
 
-        // 🔹 Doppler Loss
-        float pulseDuration = 0.005f; // 10 ms
+        // Δf (optional — for logging / loss)
+        float deltaF = f_echo - f0;
 
         float dopplerLoss = SonarModel::computeDopplerLoss(
-            doppler,
+            deltaF,
             pulseDuration
             );
 
@@ -327,8 +430,9 @@ void Sonar::processEchoQueue(float simTime)
         qDebug() << "[DOPPLER]"
                  << "target:" << targetSpeed
                  << "self:" << selfSpeed
-                 << "rel:" << relativeSpeed
-                 << "Hz:" << doppler
+                 << "f0:" << f0
+                 << "f_echo:" << f_echo
+                 << "deltaF:" << deltaF
                  << "loss:" << dopplerLoss;
 
         float theta = azimuth * M_PI/180.0f;
@@ -349,11 +453,23 @@ void Sonar::processEchoQueue(float simTime)
 
         float effectiveSNR = std::min({snr, SNR_vol, SNR_bot});
 
-        qDebug() << "[REVERB DEBUG]"
-                 << "SNR:" << snr
-                 << "VOL:" << SNR_vol
-                 << "BOT:" << SNR_bot
-                 << "EFF:" << effectiveSNR;
+        float dt = input.detectionThreshold;
+        float pfa = SonarModel::computeFalseAlarmProbability(dt);
+        float pd = SonarModel::computeProbabilityOfDetection(effectiveSNR, pfa);
+
+        float requiredSNR = SonarModel::computeRequiredSNR(pd, pfa);
+
+
+        qDebug() << "Pd:" << pd
+                 << "Pfa:" << pfa
+                 << "Required SNR:" << requiredSNR
+                 << "Actual SNR:" << effectiveSNR;
+
+        // qDebug() << "[REVERB DEBUG]"
+        //          << "SNR:" << snr
+        //          << "VOL:" << SNR_vol
+        //          << "BOT:" << SNR_bot
+        //          << "EFF:" << effectiveSNR;
 
         float FOM = SonarModel::computeFOM(
             input.sourceLevel,
@@ -376,13 +492,27 @@ void Sonar::processEchoQueue(float simTime)
         result.bearing  = newBearing;
         result.category = it->category;
 
-        if (effectiveSNR >= dt)
+        // 🔹 Pfa calculate
+        //float pfa = SonarModel::computeFalseAlarmProbability(dt);
+
+        // 🔹 random value
+        float randVal = rand() / (float)RAND_MAX;
+
+        // 🔹 detection conditions
+        bool realDetection  = (randVal < pd);   // probabilistic detection
+        bool falseDetection = (randVal < pfa);
+
+        if (realDetection || falseDetection)
         {
             result.detected     = true;
             result.signalExcess = effectiveSNR - dt;
             result.confidence   = SonarModel::computeConfidence(
                 result.signalExcess);
-            result.reason       = "DETECTED";
+
+            if (realDetection)
+                result.reason = "DETECTED";
+            else
+                result.reason = "FALSE ALARM";
 
             Target t;
             t.radius = newDistance;
@@ -390,19 +520,39 @@ void Sonar::processEchoQueue(float simTime)
             this->targets.push_back(t);
             anyDetected = true;
 
-            // ← lastResults me add karo — clear nahi
-            // m_lastResults.push_back(result);
-
-
+            // duplicate check
             bool exists = false;
 
             for (auto& r : m_lastResults)
             {
-                if (r.name == result.name)
+                float distDiff = fabs(r.distance - newDistance);
+                float bearingDiff = fabs(r.bearing - newBearing);
+
+                if (bearingDiff > 180.0f)
+                    bearingDiff = 360.0f - bearingDiff;
+
+                if (distDiff < rangeRes &&
+                    bearingDiff < bearingResDeg)
                 {
                     exists = true;
                     break;
                 }
+            }
+
+            float safeDistance = 500.0f; // meters (configurable)
+
+            bool warning = SonarModel::computeObstacleWarning(
+                newDistance,
+                safeDistance,
+                relVel,
+                result.detected
+                );
+
+            if (warning)
+            {
+                qDebug() << "[WARNING] Obstacle closing!"
+                         << "Dist:" << newDistance
+                         << "RelVel:" << relVel;
             }
 
             if (!exists)
@@ -410,11 +560,15 @@ void Sonar::processEchoQueue(float simTime)
                 m_lastResults.push_back(result);
             }
 
-            // qDebug() << "ECHO RECEIVED:"
-            //          << QString::fromStdString(it->targetName)
-            //          << "t=" << simTime
-            //          << "dist:" << (int)newDistance
-            //          << "bearing:" << newBearing;
+            // 🔹 DEBUG
+            qDebug() << "[PD + PFA]"
+                     << "SNR:" << effectiveSNR
+                     << "DT:" << dt
+                     << "Pfa:" << pfa
+                     << "Pd:" << pd
+                     << "Rand:" << randVal
+                     << "Real:" << realDetection
+                     << "False:" << falseDetection;
         }
         else
         {
@@ -556,7 +710,7 @@ float Sonar::computeDirectionalFactor(float absoluteBearing,
         return 1.0f - (t * 0.5f);   // 1 → 0.5
     }
 
-    //  BACK-CORNER (120–160°) → weak but visible
+    //  BACK-CORNER (120–160°) → weak but visible (correct slope)
     if (absAngle <= 160.0f)
     {
         float t = (absAngle - 120.0f) / 40.0f;
@@ -569,8 +723,7 @@ float Sonar::computeDirectionalFactor(float absoluteBearing,
     // return 1.0f - (t * 0.7f);              // 1.0 to 0.3
 
     //  EXTREME BACK (160–180°) → almost zero (smooth)
-    float t = (absAngle - 160.0f) / 20.0f;
-    return 0.05f * (1.0f - t);  // 0.05 → 0
+    return 0.05f;
 }
 
 QJsonObject Sonar::toJson() const {

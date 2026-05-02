@@ -109,6 +109,16 @@ QJsonObject Trajectory::toJson() const {
     obj["type"] = "component";
     obj["currentWaypoint"] = current;
 
+    QJsonObject followruleObj;
+    followruleObj["type"] = "option";
+
+    QJsonArray followruleArray;
+    for (const std::string& opt : followRuleNames)
+        followruleArray.append(QString::fromStdString(opt));
+    followruleObj["options"] = followruleArray;
+    followruleObj["value"] = QString::fromStdString(followRuleNames[rule]);
+    obj["Rule"] = followruleObj;
+
     int i = 0;
     for (const Waypoints* waypoint : Trajectories) {
         if (waypoint) {
@@ -120,6 +130,7 @@ QJsonObject Trajectory::toJson() const {
             waypointObj["Altitude"] = toParm(waypoint->position->y,"ft");
             waypointObj["Speed"] = toParm(waypoint->speed,"km/h");
             waypointObj["ActivateSensor"] = waypoint->sensor;
+            waypointObj["dropWeapon"] = waypoint->dropWeapon;
             waypointObj["MakeForamation"] = waypoint->formation;
             obj["waypoint_"+QString::number(i)] = waypointObj;
         }
@@ -141,6 +152,21 @@ void Trajectory::fromJson(const QJsonObject& obj) {
         Active = obj["active"].toBool();
     if(obj.contains("currentWaypoint"))
         current = obj["currentWaypoint"].toInt();
+
+    if (obj.contains("Rule") && obj["Rule"].isObject()) {
+        QJsonObject followruleObj = obj["Rule"].toObject();
+        if (followruleObj.contains("value")){
+            for (int i = 0; i < 3; i++) {
+                if (followRuleNames[i] == followruleObj["value"].toString().toStdString()) {
+                    rule = (FollowRule)i;
+                }
+            }
+            if(rule != FollowRule::Reverse){
+                reverse = false;
+            }
+        }
+    }
+
     if (obj.contains("waypoint_1")) {
         // Collect all waypoint keys
         QStringList waypointKeys;
@@ -181,6 +207,8 @@ void Trajectory::fromJson(const QJsonObject& obj) {
                     wp->speed = valueFromParm(waypointObj["Speed"].toObject());
                 if (waypointObj.contains("ActivateSensor") && waypointObj["ActivateSensor"].isBool())
                     wp->sensor = waypointObj["ActivateSensor"].toBool();
+                if (waypointObj.contains("dropWeapon") && waypointObj["dropWeapon"].isBool())
+                    wp->dropWeapon = waypointObj["dropWeapon"].toBool();
                 if (waypointObj.contains("MakeForamation") && waypointObj["MakeForamation"].isBool())
                     wp->formation = waypointObj["MakeForamation"].toBool();
             }

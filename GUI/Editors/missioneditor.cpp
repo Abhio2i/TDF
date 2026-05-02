@@ -69,8 +69,6 @@ MissionEditor::MissionEditor(QWidget *parent)
     // %%% UI Setup %%%
     setupEnhancedDockWidgets();
     setupToolBars();
-
-
     // %%% Core Data Setup %%%
     scenario = new Scenario();
     scenario->hierarchy->isDatabase = true;
@@ -434,26 +432,21 @@ void MissionEditor::loadRecentProject(const QString& filePath)
     }
     QByteArray data = file.readAll();
     file.close();
-
     QJsonParseError err;
     QJsonDocument doc = QJsonDocument::fromJson(data, &err);
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
         QMessageBox::warning(this, "Error", "Invalid mission file format");
         return;
     }
-
     QJsonObject obj = doc.object();
-
     if (obj.contains("doctrine") && doctrinePanel)
         doctrinePanel->loadFromJson(obj["doctrine"].toObject());
-
     if (obj.contains("tactical") && tacticalPanel)
         tacticalPanel->loadBothTeamsFromJson(obj["tactical"].toObject());
-
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
     RecentProjectsManager::instance()->addToRecentProjects(
-        filePath, RecentProjectsManager::MissionEditor);
+    filePath, RecentProjectsManager::MissionEditor);
 
 }
 // %%% Recent Projects Menu %%%
@@ -523,7 +516,6 @@ void MissionEditor::onTreeItemSelected(QVariantMap data)
         if (!doctrineData.isEmpty() && doctrinePanel) {
             doctrinePanel->loadFromJson(doctrineData);
         }
-
         if (doctrineDock && !doctrineDock->isVisible()) {
             addDockWidget(Qt::RightDockWidgetArea, doctrineDock);
             doctrineDock->show();

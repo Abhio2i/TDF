@@ -298,6 +298,8 @@ public:
     // REQ-AESA-020.
     double getCurrentDutyCycle() const { return radarCore_.getOutput().currentDutyCycle; }
 
+    QJsonObject AdditionalParameters;   //!< User-defined extension parameters
+
     // =========================================================================
     // ENGINE TICK
     // =========================================================================

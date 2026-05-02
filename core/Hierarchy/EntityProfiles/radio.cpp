@@ -14,8 +14,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-
-
 const float RAD2DEG = 180.0f / M_PI;
 radio::PropagationModel* Radio::model = nullptr;
 std::vector<std::byte> bytesFromText(const std::string& text) {
@@ -88,9 +86,7 @@ Radio::Radio(Hierarchy* h) : Entity(h) {
     if(model == nullptr){
        model = radio::createPropagationModelRaw(model_cfg);
     }
-
         lib_radio = radio::createRadiolibRaw();
-
         radio::RadioConfig cfg;
         cfg.id = "";
         cfg.parent_platform_name = "PLATFORM_1";
@@ -117,7 +113,6 @@ Radio::Radio(Hierarchy* h) : Entity(h) {
         cfg.propagation.enable_scan_beam = true;
         cfg.propagation.enable_scan_timing = false;
         cfg.propagation.enable_doppler = true;
-
         // Environmental toggles + values
         cfg.propagation.enable_environmental_attenuation = true;
         cfg.propagation.temperature_c = 20.0;
@@ -136,10 +131,10 @@ Radio::Radio(Hierarchy* h) : Entity(h) {
         cfg.propagation.enable_sea_attenuation = true;
         cfg.propagation.sea_attenuation_db_per_km = 0.003;
         cfg.comms_mode = radio::CommsMode::LINE_OF_SIGHT;
-        cfg.min_freq_hz = 118.5e6;//
-        cfg.max_freq_hz = 138.5e6;//
-        cfg.frequency_hz = 128.5e6;//
-        cfg.bandwidth_hz = 25e3;//
+        cfg.min_freq_hz = 118.5e6;
+        cfg.max_freq_hz = 138.5e6;
+        cfg.frequency_hz = 128.5e6;
+        cfg.bandwidth_hz = 25e3;
         cfg.tx_power_dbm = 40.0;//m
         cfg.antenna.gain_dbi = 2.0;//m
         cfg.receiver.sensitivity_dbm = -101.0;//m

@@ -39,7 +39,6 @@ Feedback::Feedback(QWidget *parent)
 {
     // Apply dark theme to dialog
     setStyleSheet(ProjectInformationStyles::Dialog);
-
     setWindowTitle("Project Information");
     setFixedSize(500, 280);
     setModal(true);
@@ -67,10 +66,8 @@ Feedback::Feedback(QWidget *parent)
     projectNameLabel->setFont(projectFont);
     projectNameLabel->setStyleSheet(ProjectInformationStyles::ProjectNameLabel);
     projectNameLabel->setWordWrap(true);
-
     nameLayout->addWidget(nameTitleLabel);
     nameLayout->addWidget(projectNameLabel, 1);
-
     mainLayout->addLayout(nameLayout);
 
     // Add separator line
@@ -91,7 +88,7 @@ Feedback::Feedback(QWidget *parent)
     versionTitleLabel->setStyleSheet(ProjectInformationStyles::TitleLabel);
     versionTitleLabel->setMinimumWidth(80);
 
-    QLabel *versionLabel = new QLabel("4.0.21");
+    QLabel *versionLabel = new QLabel("4.0.67");
     QFont versionFont;
     versionFont.setPointSize(11);
     versionFont.setBold(true);
@@ -108,6 +105,5 @@ Feedback::Feedback(QWidget *parent)
     okButton->setStyleSheet(ProjectInformationStyles::OkButton);
     connect(okButton, &QPushButton::clicked, this, &QDialog::accept);
     mainLayout->addWidget(okButton, 0, Qt::AlignCenter);
-
 }
 

@@ -51,8 +51,6 @@
 #include "core/Hierarchy/EntityProfiles/weapons/flare.h"
 #include "core/Hierarchy/EntityProfiles/weapons/chaff.h"
 
-
-
 static Weapon* createWeapon(const QString& typeName, Hierarchy* h)
 {
     if (typeName == "Bomb")      return new Bomb(h);
@@ -93,7 +91,6 @@ void ContextMenu::setupMenu(QTreeWidgetItem *item)
     } else {
         type = storedData["type"].toString();
     }
-    // HIDE context menu for ALL component items
     if (type == "component") {
         return;
     }
@@ -161,8 +158,6 @@ void ContextMenu::setupProfileMenu(const QVariantMap &data)
                                 : "Add Entity";
 
     QAction *addEntity     = addAction(QIcon(":/icons/images/add.png"), addEntityText);
-    QAction *deleteProfile = addAction(QIcon(":/icons/images/delete.png"),"Delete Profile");
-
     // ── Add Folder ────────────────────────────────────────────────────────
     connect(addFolder, &QAction::triggered, this, [=]() {
         QInputDialog dialog(this);
@@ -170,6 +165,7 @@ void ContextMenu::setupProfileMenu(const QVariantMap &data)
         dialog.setWindowTitle("Add Folder");
         dialog.setLabelText("Enter Folder Name:");
         dialog.setTextValue("New Folder");
+
         if (dialog.exec() == QDialog::Accepted) {
             QString folderName = dialog.textValue();
             if (!folderName.trimmed().isEmpty()) {
@@ -320,16 +316,16 @@ void ContextMenu::setupProfileMenu(const QVariantMap &data)
         }
     });
 
-    // ── Delete Profile ────────────────────────────────────────────────────
-    connect(deleteProfile, &QAction::triggered, this, [=]() {
-        QMessageBox msgBox(this);
-        msgBox.setStyleSheet(ContextMenuStyles::MessageBox);
-        msgBox.setWindowTitle("Delete Profile");
-        msgBox.setText(QString("Are you sure you want to delete profile '%1'?").arg(name));
-        msgBox.setIcon(QMessageBox::Question);
-        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-        if (msgBox.exec() == QMessageBox::Yes) emit removeProfileRequested(ID);
-    });
+    // // ── Delete Profile ────────────────────────────────────────────────────
+    // connect(deleteProfile, &QAction::triggered, this, [=]() {
+    //     QMessageBox msgBox(this);
+    //     msgBox.setStyleSheet(ContextMenuStyles::MessageBox);
+    //     msgBox.setWindowTitle("Delete Profile");
+    //     msgBox.setText(QString("Are you sure you want to delete profile '%1'?").arg(name));
+    //     msgBox.setIcon(QMessageBox::Question);
+    //     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    //     if (msgBox.exec() == QMessageBox::Yes) emit removeProfileRequested(ID);
+    // });
 
     // ── Paste ─────────────────────────────────────────────────────────────
     connect(paste, &QAction::triggered, this, [=]() {
@@ -395,7 +391,6 @@ void ContextMenu::setupFolderMenu(const QVariantMap &data)
     profileLabelMap["Formation"]   = "Add Formation";
     profileLabelMap["FixedPoints"] = "Add Fixed Point";
     profileLabelMap["SpecialZone"] = "Add Special Zone";
-
     QString addEntityLabel = profileLabelMap.contains(parentProfileType)
                                  ? profileLabelMap[parentProfileType]
                                  : "Add Entity";
@@ -458,7 +453,6 @@ void ContextMenu::setupFolderMenu(const QVariantMap &data)
             if (dlg.exec() != QDialog::Accepted) return;
             QString weaponName = dlg.weaponName().trimmed();
             if (weaponName.isEmpty()) return;
-
             QString typeName = dlg.weaponTypeStr();
             Weapon* weapon = createWeapon(typeName, correctHierarchy);
             weapon->Name     = weaponName.toStdString();
@@ -543,12 +537,12 @@ void ContextMenu::setupFolderMenu(const QVariantMap &data)
         }
     });
 }
+
 void ContextMenu::setupEntityMenu(const QVariantMap &data)
 {
     QString ID       = data["ID"].toString();
     QString parentID = data["parentId"].toString();
     QString name     = data["name"].toString();
-
 
     bool isPlatformEntity = false;
     QTreeWidget* treeWidget = nullptr;
@@ -569,7 +563,6 @@ void ContextMenu::setupEntityMenu(const QVariantMap &data)
                         isPlatformEntity = true;
                     }
                 }
-
                 else if (pType == "folder") {
                     QString grandParentID = pData["parentId"].toString();
                     QTreeWidgetItemIterator git(treeWidget);
@@ -592,11 +585,8 @@ void ContextMenu::setupEntityMenu(const QVariantMap &data)
             ++it;
         }
     }
-
     QAction *rename      = addAction(QIcon(":/icons/images/rename.png"), "Rename");
     QAction *copy        = addAction(QIcon(":/icons/images/copy.png"),   "Copy");
-
-
     QAction *setActive   = nullptr;
     QAction *setInactive = nullptr;
     QMenu *addComponentMenu = nullptr;
@@ -626,20 +616,30 @@ void ContextMenu::setupEntityMenu(const QVariantMap &data)
             });
         }
 
-        setCategoryMenu = addMenu(QIcon(":/icons/images/set.png"), "Set Category");
-        setCategoryMenu->setStyleSheet(styleSheet());
-        const QStringList categories = {"Aircraft", "Helicopter", "Ship", "Submarine", "Tank"};
-        for (const QString& category : categories) {
-            QAction *categoryAction = setCategoryMenu->addAction(category);
-            connect(categoryAction, &QAction::triggered, this, [=]() {
-                emit setCategoryToEntityRequested(data, category);
-            });
+        QString editorCtx = "";
+        MainWindow* mw = MainWindow::instance();
+        if (mw) {
+            QWidget *cur = mw->stackedWidget->currentWidget();
+            if      (cur == mw->databaseEditor) editorCtx = "database";
+            else if (cur == mw->scenarioEditor) editorCtx = "scenario";
+            else if (cur == mw->runtimeEditor)  editorCtx = "runtime";
+        }
+
+        if (editorCtx == "database") {
+            setCategoryMenu = addMenu(QIcon(":/icons/images/set.png"), "Set Category");
+            setCategoryMenu->setStyleSheet(styleSheet());
+            const QStringList categories = {"Aircraft", "Helicopter", "Ship", "Submarine", "Tank"};
+            for (const QString& category : categories) {
+                QAction *categoryAction = setCategoryMenu->addAction(category);
+                connect(categoryAction, &QAction::triggered, this, [=]() {
+                    emit setCategoryToEntityRequested(data, category);
+                });
+            }
         }
     }
-
     QAction *deleteEntity = addAction(QIcon(":/icons/images/delete.png"), "Delete Entity");
 
-    // ── Connects ──────────────────────────────────────────────────────────
+    // ── Connects for standard actions ──────────────────────────────────────
     connect(rename, &QAction::triggered, this, [=]() mutable {
         QInputDialog dialog(this);
         dialog.setStyleSheet(ContextMenuStyles::InputDialog);
@@ -673,6 +673,21 @@ void ContextMenu::setupEntityMenu(const QVariantMap &data)
         connect(addSensor,   &QAction::triggered, this, [=]() { emit addSensorToEntityRequested(data); });
         connect(addIFF,      &QAction::triggered, this, [=]() { emit addIFFToEntityRequested(data); });
         connect(addRadio,    &QAction::triggered, this, [=]() { emit addRadioToEntityRequested(data); });
+    }
+
+    //  Formation "Select with Entity" action ─────────────────────────
+    if (m_hierarchy) {
+        auto it = m_hierarchy->Entities.find(ID.toStdString());
+        if (it != m_hierarchy->Entities.end()) {
+            Formation* formation = dynamic_cast<Formation*>(it->second);
+            if (formation) {
+                addSeparator();
+                QAction* selectWithEntityAction = addAction("Select with Entity");
+                connect(selectWithEntityAction, &QAction::triggered, this, [this, ID]() {
+                    emit selectFormationWithEntityRequested(ID);
+                });
+            }
+        }
     }
 }
 // %%% Component Menu %%%
@@ -725,7 +740,6 @@ void ContextMenu::setupComponentMenu(const QVariantMap &data)
         return;
     }
 
-    // ── Radio, Sensor, IFF — existing logic unchanged ─────────────────────
     QStringList specialComponents = {"radios", "sensors", "iffs"};
     if (specialComponents.contains(name.toLower())) {
         QAction *addComponent = addAction("Add");
@@ -754,6 +768,8 @@ void ContextMenu::setupComponentMenu(const QVariantMap &data)
                                            sensorType, profileId);
             }
         });
-    }
-}
 
+    }
+
+
+}

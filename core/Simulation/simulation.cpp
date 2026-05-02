@@ -183,8 +183,8 @@ void Simulation::startf() {
         // }
         if (comp.base && comp.base->type == Constants::EntityType::Weapon) {
             Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
-                    if (weapon && weapon->isLaunched && !weapon->isDead)
-                        weapon->resumeFlightMonitor();
+                    // if (weapon && weapon->isLaunched && !weapon->isDead)
+                    //     // weapon->resumeFlightMonitor();
         }
     }
 
@@ -201,8 +201,8 @@ void Simulation::pausef() {
     for (auto& [id, comp] : physicsComponent) {
         if (comp.base && comp.base->type == Constants::EntityType::Weapon) {
             Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
-                if (weapon && weapon->isLaunched && !weapon->isDead)
-                    weapon->pauseFlightMonitor();
+                // if (weapon && weapon->isLaunched && !weapon->isDead)
+                    // weapon->pauseFlightMonitor();
         }
     }
 
@@ -221,8 +221,8 @@ void Simulation::stop() {
     // Stop all weapon flight monitors cleanly
     for (auto& [id, comp] : physicsComponent) {
         if (comp.base && comp.base->type == Constants::EntityType::Weapon) {
-            Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
-            if (weapon) weapon->stopFlightMonitor();
+            // Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
+            // if (weapon) weapon->stopFlightMonitor();
         }
     }
 
@@ -518,7 +518,7 @@ void Simulation::entityRemoved(QString ID) {
         if (physIt->second.base &&
             physIt->second.base->type == Constants::EntityType::Weapon) {
             Weapon* weapon = dynamic_cast<Weapon*>(physIt->second.base);
-            if (weapon) weapon->stopFlightMonitor();
+            // if (weapon) weapon->stopFlightMonitor();
         }
         physicsComponent.erase(physIt);
     }
@@ -584,7 +584,7 @@ void Simulation::enqueueTransformUpdate(const TransformUpdate& msg)//by Aman
 */
 
 void Simulation::updateDynamics(float dt,PhysicsComponent *comp){
-    if(comp->dynamicModel->trajectory->Trajectories.size()<2 || comp->platform->fuel<=0.5f) return;
+    if(comp->dynamicModel->followEntity || comp->dynamicModel->trajectory->Trajectories.size()<2 || comp->platform->fuel<=0.5f) return;
     comp->aircraft->MaxAcceleration = comp->dynamicModel->Acceleration;
     comp->aircraft->MaxDecceleration = comp->dynamicModel->Decceleration;
     comp->aircraft->CeilingHeight = comp->dynamicModel->maxAltitude / 3.281f;
@@ -614,7 +614,7 @@ void Simulation::updateDynamics(float dt,PhysicsComponent *comp){
                                              comp->dynamicModel->parentEntity->category == Entity::Category::Submarine ||
                                              comp->dynamicModel->parentEntity->category == Entity::Category::Tank ))
     {
-        target.y = 0;
+        target.y = target.y>0?0:target.y;
     }
     //float tgtSpd = comp.dynamicModel->trajectory->getTargetWaypoint()->speed;
     FlatXYZ targt = geoToFlatXYZ(target.x,target.z,target.y);
@@ -628,7 +628,7 @@ void Simulation::updateDynamics(float dt,PhysicsComponent *comp){
 
     }else{
         comp->aircraft->TargetPosition.x = targt.x * 1000.f;
-        comp->aircraft->TargetPosition.y = targt.y / 3.281f;
+        comp->aircraft->TargetPosition.y = comp->dynamicModel->Altitude / 3.281f;
         comp->aircraft->TargetPosition.z = targt.z * 1000.f;
     }
 
@@ -646,9 +646,30 @@ void Simulation::updateDynamics(float dt,PhysicsComponent *comp){
     comp->transform->matrix->setRotation(QQuaternion::fromEulerAngles(QVector3D(rot.x,rot.y,rot.z)));
     comp->dynamicModel->currentSpeed =  comp->aircraft->Velocity.Magnitude()*3.6f;
     comp->dynamicModel->currentAltitude = comp->aircraft->Altitude/1000.0f;
-    if (comp->transform && comp->transform->geocord)
+    if (comp->transform && comp->transform->geocord){
         comp->transform->geocord->altitude =
             static_cast<double>(comp->aircraft->Altitude) * 3.28084;
+    }
+
+    comp->dynamicModel->pitch = comp->aircraft->Pitch;
+    comp->dynamicModel->roll = comp->aircraft->Roll;
+    comp->dynamicModel->yaw = comp->aircraft->Yaw;
+
+    comp->dynamicModel->Pitchrate = comp->aircraft->currentPitchRate;
+    comp->dynamicModel->Rollrate = comp->aircraft->Rollrate;
+    comp->dynamicModel->Yawrate = comp->aircraft->yawRate;
+
+    comp->dynamicModel->DriftAngle = comp->aircraft->DriftAngle;
+    comp->dynamicModel->TrueHeading = comp->aircraft->TrueHeading;
+    comp->dynamicModel->TrueAirSpeed = comp->aircraft->TrueAirSpeed * 3.6f;
+    comp->dynamicModel->NorthVelocity = comp->aircraft->NorthVelocity;
+    comp->dynamicModel->EastVelocity = comp->aircraft->EastVelocity;
+    comp->dynamicModel->VerticalVelocity = comp->aircraft->VerticalVelocity;
+    comp->dynamicModel->GroundVelocity = comp->aircraft->GroundVelocity * 3.6f;
+    comp->dynamicModel->localVelocity = QVector3D(comp->aircraft->localVelocity.x * 3.6f,
+                                                  comp->aircraft->localVelocity.y * 3.6f,
+                                                  comp->aircraft->localVelocity.z * 3.6f);
+
 
 }
 
@@ -712,8 +733,8 @@ void Simulation::calculatePhysics() {
             opt = simMin<num && num< simMax;
         }
         if(comp.base->type == Constants::EntityType::Weapon) {
-            Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
-            if (weapon&&weapon->isLaunched&&!weapon->isDead) weapon->missileUpdate(dt);
+            // Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
+            // if (weapon&&weapon->isLaunched&&!weapon->isDead) weapon->missileUpdate(dt);
         }
         if (comp.platform && opt){
             QElapsedTimer timer;

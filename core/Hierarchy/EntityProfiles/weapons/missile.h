@@ -34,13 +34,14 @@ public:
     bool  isLocked             = false;
     bool  isActive             = false;
 
+
     // ── Overrides (same pattern as ESM::scan()) ───────────────────────────────
     void        launch()                              override;  // flight behaviour
     void        updateGuidance()                      override;
     bool        canEngage(Platform *target)           override;
     QJsonObject toJson()                        const override;
     void        fromJson(const QJsonObject&)          override;
-
+    void Update() override;
     // ── Flight system (5 functions, all override base empty stubs) ───────────
     void      missileStart()                 override;
     void      checkFlightState()             override;

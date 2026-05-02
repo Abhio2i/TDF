@@ -121,6 +121,8 @@ private:
     QLabel*       m_loadingLabel   = nullptr;
     QProgressBar* m_loadingBar     = nullptr;
     void onDatabaseSettingsChanged(bool enabled, const QString& path);
+    bool m_wasSimulationRunning = false;  // save se pehle state track karne ke liye
+    void pauseSimulationIfRunning();
 
 };
 

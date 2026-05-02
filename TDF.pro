@@ -79,6 +79,7 @@ SOURCES += \
     GUI/Panel/radardisplay.cpp \
     GUI/Panel/radiodisplay.cpp \
     GUI/Panel/sonardisplay.cpp \
+    GUI/Panel/sonobuoypanel.cpp \
     GUI/Settings/applicationdialog.cpp \
     GUI/Sidebar/sidebarwidget.cpp \
     GUI/Tacticaldisplay/Gis/custommapdialog.cpp \
@@ -418,6 +419,7 @@ SOURCES += \
     core/Hierarchy/EntityProfiles/weapons/flare.cpp \
     core/Hierarchy/EntityProfiles/weapons/missile.cpp \
     core/Hierarchy/EntityProfiles/weapons/rocket.cpp \
+    core/Hierarchy/EntityProfiles/weapons/sonobuoy.cpp \
     core/Hierarchy/EntityProfiles/weapons/torpedo.cpp \
     core/Hierarchy/Struct/action.cpp \
     core/Hierarchy/Struct/color.cpp \
@@ -761,6 +763,7 @@ HEADERS += \
     GUI/Panel/radardisplay.h \
     GUI/Panel/radiodisplay.h \
     GUI/Panel/sonardisplay.h \
+    GUI/Panel/sonobuoypanel.h \
     GUI/Settings/applicationdialog-styles.h \
     GUI/Settings/applicationdialog.h \
     GUI/Sidebar/sidebar-styles.h \
@@ -1254,6 +1257,7 @@ HEADERS += \
     core/Hierarchy/EntityProfiles/weapons/flare.h \
     core/Hierarchy/EntityProfiles/weapons/missile.h \
     core/Hierarchy/EntityProfiles/weapons/rocket.h \
+    core/Hierarchy/EntityProfiles/weapons/sonobuoy.h \
     core/Hierarchy/EntityProfiles/weapons/torpedo.h \
     core/Hierarchy/Struct/action.h \
     core/Hierarchy/Struct/color.h \

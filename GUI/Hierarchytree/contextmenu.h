@@ -72,6 +72,8 @@ public:
     // %%% Multi-Select Support %%%
     QList<QVariantMap> m_copiedItems;
     // static void runUnitTestsOnce();
+  // we'll modify this to add formation action
+
 
 signals:
     // %%% Folder Operations Signals %%%
@@ -126,6 +128,7 @@ signals:
     void addSensorToEntityRequested(QVariantMap entityData);
     void addTeamToEntityRequested(QVariantMap entityData, QString team);
     void setCategoryToEntityRequested(QVariantMap data, QString category);
+    void selectFormationWithEntityRequested(const QString& formationId);
 
 
 private:

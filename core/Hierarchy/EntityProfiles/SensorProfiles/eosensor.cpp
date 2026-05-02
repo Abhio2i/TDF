@@ -348,6 +348,11 @@ QJsonObject EOSensor::toJson() const {
     // defaultObj["max distance"] = toParm(range,"km",0,    500);
     // defaultObj["threshold"] = toParm(range,"%", 0.000000000, 1.000000000);
     obj["default"] = defaultObj;
+
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
+
     return obj;
 }
 
@@ -374,6 +379,10 @@ void EOSensor::fromJson(const QJsonObject& obj) {
         //     azimuth = valueFromParm(defaultObj["max distance"].toObject());
         // if (defaultObj.contains("threshold"))
         //     azimuth = valueFromParm(defaultObj["threshold"].toObject());
+    }
+
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
 }
 /*------------    Custom Debugger Start    ------------*/

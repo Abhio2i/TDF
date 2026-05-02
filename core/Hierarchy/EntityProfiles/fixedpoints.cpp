@@ -59,7 +59,6 @@ QJsonObject FixedPoints::toJson() const {
     QJsonArray optionsArray;
     for (const QString& opt : entityTypeOptions())
         optionsArray.append(opt);
-
     entityObj["options"] = optionsArray;
     entityObj["value"] = entityTypeToString(type);
     obj["type"] = entityObj;
@@ -96,7 +95,7 @@ void FixedPoints::fromJson(const QJsonObject& obj) {
         collider->fromJson(obj["collider"].toObject());
     }
 
-    if (obj.contains("bitmap") && obj["bitmap"].isObject()) { // Correct key
+    if (obj.contains("bitmap") && obj["bitmap"].isObject()) {
         if (!meshRenderer2d) addComponent("bitmap");
         meshRenderer2d->fromJson(obj["bitmap"].toObject());
     }

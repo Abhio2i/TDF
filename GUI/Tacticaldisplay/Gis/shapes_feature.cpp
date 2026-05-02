@@ -509,6 +509,7 @@ void ShapesFeature::drawLine(const QPointF& geoPos, bool finalize) {
         }
 
         m_canvas->tempMeshes.push_back(entry);
+        addShapeToActiveLayer(shapeId, "Line");
 
         // Clear CanvasWidget's temporary data
         for (Vector* v : m_canvas->tempLineVertices) {
@@ -584,6 +585,7 @@ void ShapesFeature::drawPolygon(const QPointF& geoPos, bool finalize) {
         }
 
         m_canvas->tempMeshes.push_back(entry);
+        addShapeToActiveLayer(shapeId, "Polygon");
 
         // Clear CanvasWidget's temporary data
         for (Vector* v : m_canvas->tempPolygonVertices) {

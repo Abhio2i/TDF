@@ -67,6 +67,7 @@ public:
     // Invalidate cached display range (called when config changes externally)
     // ------------------------------------------------------------------
     void markDisplayRangeDirty() { displayRangeDirty_ = true; }
+    QJsonObject AdditionalParameters;   //!< User-defined extension parameters
 
 private:
     // ------------------------------------------------------------------

@@ -43,6 +43,7 @@ class RadioProfile: public QObject, public Component
     Q_OBJECT
 public:
     RadioProfile(Hierarchy* h);
+    ~RadioProfile();
     ComponentType Typo() const override { return ComponentType::RadioProfile; }
 
     // =========================================================================

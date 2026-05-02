@@ -68,7 +68,6 @@ class MissionEditor : public QMainWindow
 public:
     explicit MissionEditor(QWidget *parent = nullptr);
     ~MissionEditor();
-
     QString lastSavedFilePath;
     void markUnsavedChanges();
     void clearUnsavedChanges();
@@ -80,7 +79,6 @@ public:
     TacticalRules               *tacticalPanel = nullptr;
     DoctrineAssumptionsNotes    *assumptionsPanel = nullptr;
     DoctrineAreaDefinition      *areaDefinitionPanel = nullptr;
-
     // GUI Test helper methods
     bool isHierarchyDockVisible() const;
     bool isDoctrineDockVisible() const;

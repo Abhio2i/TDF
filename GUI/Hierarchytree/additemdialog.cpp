@@ -69,12 +69,8 @@
 #include "Setup.h"
 #include <QMessageBox>
 
-
-
 QMap<QString, QPointF> indianCities = {
-
 };
-
 // %%% String Utility Functions %%%
 
 
@@ -102,12 +98,10 @@ QString demangleComponentName(const std::string& mangledName) {
 /* Convert string to camelCase format */
 QString toCamelCase(const QString& input) {
     if (input.isEmpty()) return input;
-
     QString result = input;
     if (!result.isEmpty()) {
         result[0] = result[0].toLower();
     }
-
     for (int i = 1; i < result.size(); ++i) {
         if (result[i] == 'D' && i > 0 && result[i-1].isDigit()) {
             result[i] = result[i].toLower();
@@ -119,7 +113,6 @@ QString toCamelCase(const QString& input) {
             result[i] = result[i].toLower();
         }
     }
-
     return result;
 }
 
@@ -164,31 +157,23 @@ AddItemDialog::AddItemDialog(DialogType type,
     m_hierarchy(hierarchy),
     m_editorContext(editorContext)
 {
-    // Apply dark theme to dialog
     setStyleSheet(AddItemDialogStyles::Dialog);
-
     QString cityJsonPath = TDFManager::instance()->getCityJsonPath();
     QFile file(cityJsonPath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         return;
     }
-
     QByteArray jsonData = file.readAll();
     file.close();
-
     QJsonParseError parseError;
     QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData, &parseError);
-
     if (parseError.error != QJsonParseError::NoError) {
         return;
     }
-
     if (jsonDoc.isObject()) {
         QJsonObject jsonObj = jsonDoc.object();
-
         if (jsonObj.contains("indian_cities") && jsonObj["indian_cities"].isArray()) {
             QJsonArray indian_cities = jsonObj["indian_cities"].toArray();
-
             indianCities.clear();
             for (const QJsonValue &value : indian_cities) {
                 QJsonObject cityObj = value.toObject();
@@ -216,7 +201,6 @@ QHBoxLayout* AddItemDialog::createMinMaxSpinBoxPair(const QString& label,
                                                     QString unit)
 {
     QHBoxLayout *layout = new QHBoxLayout();
-
     QLabel *labelWidget = new QLabel(label + ":", this);
     labelWidget->setStyleSheet("color: white;");
     layout->addWidget(labelWidget);
@@ -483,8 +467,8 @@ void AddItemDialog::onScCheckBoxStateChanged(int state)
     }
 }
 
-void AddItemDialog::populateEntityProfiles(const QString &profileTypeFilter)
-{
+void AddItemDialog::populateEntityProfiles(const QString &profileTypeFilter,
+                                           const QString &categoryFilter){
     if (!entitySearchLineEdit) {
         return;
     }
@@ -519,15 +503,39 @@ void AddItemDialog::populateEntityProfiles(const QString &profileTypeFilter)
         if (!includeThisProfile) continue;
         for (const auto& [entityId, entity] : profile->Entities)
         {
-            if (!entity) continue;
-            QString eName = QString::fromStdString(entity->Name).trimmed();
-            if (eName.isEmpty()) continue;
-            QString displayName = eName + " (" + profileName + ")";
-            entityNames.append(displayName);
-            entityMap.insert(displayName, QVariantList{QString::fromStdString(entityId), profileName});
-        }
+                    if (!entity) continue;
+                    QString eName = QString::fromStdString(entity->Name).trimmed();
+                    if (eName.isEmpty()) continue;
+                    QString displayName;
+                    if (profileName == "Platform") {
+                        QString categoryValue = QString::fromStdString(
+                            entity->CategoryNames[static_cast<int>(entity->category)]
+                            );
+                        if (!categoryFilter.isEmpty() && categoryFilter != "All") {
+                            if (categoryValue != categoryFilter) continue;
+                        }
+                        displayName = eName + " (" + categoryValue + ")";
+                    }
+                    else if (profileName == "Sensor") {
+                        QString subType = "";
+                        auto it = m_hierarchy->Sensors.find(entityId);
+                        if (it != m_hierarchy->Sensors.end() && it->second) {
+                            subType = it->second->subTypeToString(it->second->subType);
+                        }
+                        if (!categoryFilter.isEmpty() && categoryFilter != "All") {
+                            if (subType != categoryFilter) continue;
+                        }
+                        displayName = subType.isEmpty() ? eName : eName + " (" + subType + ")";
+                    } else {
+                        displayName = eName;
+                    }
 
-        // Also check folders within the profile
+                    if (!entityMap.contains(displayName)) {
+                        entityNames.append(displayName);
+                        entityMap.insert(displayName, QVariantList{QString::fromStdString(entityId), profileName});
+                    }
+                }
+
         for (const auto& [folderId, folder] : profile->Folders)
         {
             if (!folder) continue;
@@ -536,9 +544,32 @@ void AddItemDialog::populateEntityProfiles(const QString &profileTypeFilter)
                 if (!entity) continue;
                 QString eName = QString::fromStdString(entity->Name).trimmed();
                 if (eName.isEmpty()) continue;
-                QString displayName = eName + " (" + profileName + ")";
-                entityNames.append(displayName);
-                entityMap.insert(displayName, QVariantList{QString::fromStdString(entityId), profileName});
+                QString displayName;
+                if (profileName == "Platform") {
+                    QString categoryValue = QString::fromStdString(
+                        entity->CategoryNames[static_cast<int>(entity->category)]
+                        );
+                    if (!categoryFilter.isEmpty() && categoryFilter != "All") {
+                        if (categoryValue != categoryFilter) continue;
+                    }
+                    displayName = eName + " (" + categoryValue + ")";
+                } else if (profileName == "Sensor") {
+                    QString subType = "";
+                    auto it = m_hierarchy->Sensors.find(entityId);
+                    if (it != m_hierarchy->Sensors.end() && it->second) {
+                        subType = it->second->subTypeToString(it->second->subType);
+                    }
+                    if (!categoryFilter.isEmpty() && categoryFilter != "All") {
+                        if (subType != categoryFilter) continue;
+                    }
+                    displayName = subType.isEmpty() ? eName : eName + " (" + subType + ")";
+                } else {
+                    displayName = eName;
+                }
+                if (!entityMap.contains(displayName)) {
+                    entityNames.append(displayName);
+                    entityMap.insert(displayName, QVariantList{QString::fromStdString(entityId), profileName});
+                }
             }
         }
     }
@@ -555,7 +586,6 @@ void AddItemDialog::setupUI(DialogType type)
 {
     if (this->window()) {
     }
-
     QWidget* currentWidget = this->parentWidget();
     int level = 0;
     while (currentWidget) {
@@ -564,14 +594,11 @@ void AddItemDialog::setupUI(DialogType type)
         currentWidget = currentWidget->parentWidget();
         level++;
     }
-
     QWidget *mainWidget = new QWidget(this);
     mainWidget->setStyleSheet("background-color: #0F2636;");
-
     QVBoxLayout *mainLayout = new QVBoxLayout(mainWidget);
     mainLayout->setSpacing(10);
     mainLayout->setContentsMargins(15, 15, 15, 15);
-
     QString itemType = (type == EntityType) ? "Entity" : "Folder";
     bool isDatabaseEditor = false;
     if (!m_editorContext.isEmpty()) {
@@ -579,7 +606,6 @@ void AddItemDialog::setupUI(DialogType type)
     } else {
         isDatabaseEditor = detectDatabaseEditorFromWindow();
     }
-
     // Determine dialog mode and type
     bool isProfileSensorAdd = (specificType == "Sensor");
     bool isComponentSensorAdd = (m_dialogMode == ComponentSensorMode) || (specificType == "sensors");
@@ -588,9 +614,7 @@ void AddItemDialog::setupUI(DialogType type)
     bool isComponentWeaponAdd = (m_dialogMode == ComponentWeaponMode) || (specificType == "weapons");
     bool isForComponentAdd = isComponentSensorAdd || isComponentIFFAdd || isComponentRadioAdd || isComponentWeaponAdd;
     bool isForSensor = isProfileSensorAdd || isComponentSensorAdd;
-
     bool shouldShowEntitySelection = false;
-    // Original case: adding entity from library
     if (!isDatabaseEditor && type == EntityType && !isForComponentAdd &&
         (specificType.isEmpty() || specificType == "Platform" ||
          specificType == "SpecialZone" || specificType == "FixedPoints" ||
@@ -599,12 +623,47 @@ void AddItemDialog::setupUI(DialogType type)
          specificType == "Formation")) {
         shouldShowEntitySelection = true;
     }
-    // Also show entity selection for component addition (Sensor, IFF, Radio, Weapon)
     if (!isDatabaseEditor && isForComponentAdd) {
         shouldShowEntitySelection = true;
     }
-
     if (shouldShowEntitySelection && m_hierarchy) {
+    if (!isDatabaseEditor && isForSensor) {
+            QHBoxLayout *addNewBtnLayout = new QHBoxLayout();
+            addNewBtnLayout->addStretch();
+
+            m_addNewBtn = new QPushButton("✚  Add New", this);
+            m_addNewBtn->setCheckable(true);
+            m_addNewBtn->setChecked(false);
+            m_addNewBtn->setFixedHeight(28);
+            m_addNewBtn->setCursor(Qt::PointingHandCursor);
+            m_addNewBtn->setStyleSheet(
+                "QPushButton {"
+                "  background-color: #1565C0;"
+                "  color: white;"
+                "  border: none;"
+                "  border-radius: 4px;"
+                "  padding: 4px 14px;"
+                "  font-size: 12px;"
+                "  font-weight: bold;"
+                "}"
+                "QPushButton:hover  { background-color: #1976D2; }"
+                "QPushButton:checked {"
+                "  background-color: #424242;"
+                "  color: #90CAF9;"
+                "}"
+                "QPushButton:checked:hover { background-color: #616161; }"
+                );
+
+            addNewBtnLayout->addWidget(m_addNewBtn);
+            mainLayout->addLayout(addNewBtnLayout);
+        }
+
+        // ── Entity-search section wrapped in a container ──
+        m_entitySearchContainer = new QWidget(this);
+        QVBoxLayout *containerLayout = new QVBoxLayout(m_entitySearchContainer);
+        containerLayout->setContentsMargins(0, 0, 0, 0);
+        containerLayout->setSpacing(6);
+
         QHBoxLayout *entitySelectLayout = new QHBoxLayout();
         QVBoxLayout *searchLayout = new QVBoxLayout();
 
@@ -612,9 +671,43 @@ void AddItemDialog::setupUI(DialogType type)
         searchLabel->setStyleSheet("color: white; font-weight: bold;");
         searchLayout->addWidget(searchLabel);
 
+        QHBoxLayout *searchRowLayout = new QHBoxLayout();
+
         entitySearchLineEdit = new QLineEdit(this);
         entitySearchLineEdit->setPlaceholderText("Type to search entities...");
-        entitySearchLineEdit->setMinimumWidth(300);
+        entitySearchLineEdit->setMinimumWidth(200);
+        searchRowLayout->addWidget(entitySearchLineEdit);
+
+        QComboBox *categoryFilterComboBox = nullptr;
+        if (m_profileContext == "Platform") {
+            categoryFilterComboBox = new QComboBox(this);
+            categoryFilterComboBox->addItems({"All", "Aircraft", "Helicopter", "Ship", "Tank", "Submarine"});
+            categoryFilterComboBox->setCurrentText("All");
+            categoryFilterComboBox->setFixedWidth(70);
+            categoryFilterComboBox->setStyleSheet(
+                "QComboBox { color: white; background-color: #1A3652; border: 1px solid #27446d; padding: 4px; }"
+                "QComboBox::drop-down { border: none; width: 20px; }"
+                "QComboBox QAbstractItemView { background-color: #1A3652; color: white; selection-background-color: #27446d; }");
+            searchRowLayout->addWidget(categoryFilterComboBox);
+        } else if (m_profileContext == "Sensor") {
+            categoryFilterComboBox = new QComboBox(this);
+            categoryFilterComboBox->addItems({"All", "Generic", "CSM", "ESM", "EO", "Sonar", "AIS", "ADSB", "AESA"});
+            categoryFilterComboBox->setCurrentText("All");
+            categoryFilterComboBox->setFixedWidth(70);
+            categoryFilterComboBox->setStyleSheet(
+                "QComboBox { color: white; background-color: #1A3652; "
+                "border: 1px solid #27446d; padding: 4px; }"
+                "QComboBox::drop-down { border: none; width: 20px; }"
+                "QComboBox::down-arrow { image: url(:/icons/images/down.png); "
+                "width: 16px; height: 16px; }"
+                "QComboBox QAbstractItemView { background-color: #1A3652; "
+                "color: white; selection-background-color: #27446d; }");
+            searchRowLayout->addWidget(categoryFilterComboBox);
+        }
+
+        searchLayout->addLayout(searchRowLayout);
+        entitySelectLayout->addLayout(searchLayout);
+        containerLayout->addLayout(entitySelectLayout);
 
         entityCompleter = new QCompleter(this);
         entityCompleter->setCaseSensitivity(Qt::CaseInsensitive);
@@ -630,26 +723,37 @@ void AddItemDialog::setupUI(DialogType type)
         showAllAction->setIcon(QApplication::style()->standardIcon(QStyle::SP_ArrowDown));
         entitySearchLineEdit->addAction(showAllAction, QLineEdit::TrailingPosition);
 
+        QStringListModel *completerModel = new QStringListModel(this);
+        entityCompleter->setModel(completerModel);
+        entitySearchLineEdit->setCompleter(entityCompleter);
+
+        populateEntityProfiles("");
+
+        if (categoryFilterComboBox) {
+            connect(categoryFilterComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                    this, [=](int) {
+                        QString selectedCategory = categoryFilterComboBox->currentText();
+                        populateEntityProfiles(m_profileContext, selectedCategory);
+                        entitySearchLineEdit->clear();
+                        selectedEntityId.clear();
+                        entityCompleter->complete();
+                    });
+        }
+
         connect(showAllAction, &QAction::triggered, this, [=]() {
             if (entityCompleter) {
                 QString currentFilter = profileFilterComboBox ?
                                             profileFilterComboBox->currentText() : "";
+                QString currentCategory = categoryFilterComboBox ?
+                                              categoryFilterComboBox->currentText() : "All";
                 if (currentFilter == "All Profiles") {
-                    populateEntityProfiles("");
+                    populateEntityProfiles("", currentCategory);
                 } else {
-                    populateEntityProfiles(currentFilter);
+                    populateEntityProfiles(currentFilter, currentCategory);
                 }
                 entityCompleter->complete();
             }
         });
-
-        QStringListModel *completerModel = new QStringListModel(this);
-        entityCompleter->setModel(completerModel);
-        entitySearchLineEdit->setCompleter(entityCompleter);
-        searchLayout->addWidget(entitySearchLineEdit);
-        entitySelectLayout->addLayout(searchLayout);
-        mainLayout->addLayout(entitySelectLayout);
-        populateEntityProfiles("");
 
         connect(entityCompleter, QOverload<const QString &>::of(&QCompleter::activated),
                 this, [=](const QString &text) {
@@ -660,15 +764,12 @@ void AddItemDialog::setupUI(DialogType type)
                             QString profileName = entityData[1].toString();
                             QString entityName = text;
                             int parenIndex = entityName.indexOf(" (");
-                            if (parenIndex != -1) {
-                                entityName = entityName.left(parenIndex);
-                            }
-                            if (nameLineEdit) {
-                                nameLineEdit->setText(entityName);
-                            }
+                            if (parenIndex != -1) entityName = entityName.left(parenIndex);
+                            if (nameLineEdit) nameLineEdit->setText(entityName);
+                            entitySearchLineEdit->setText(text);
+                            entitySearchLineEdit->setCursorPosition(0);
                             populateComponentsFromEntity(selectedEntityId, profileName);
 
-                            //  For sensor components, set the sensor type combo box from the selected entity
                             if (isForSensor && sensorTypeComboBox) {
                                 Hierarchy* lib = m_hierarchy;
                                 if (lib) {
@@ -680,32 +781,83 @@ void AddItemDialog::setupUI(DialogType type)
                                         if (idx >= 0) sensorTypeComboBox->setCurrentIndex(idx);
                                     }
                                 }
+                                if (!isDatabaseEditor) {
+                                    sensorTypeComboBox->setEnabled(false);
+                                    sensorTypeComboBox->setToolTip("Type automatically set from selected sensor");
+                                }
                             }
                         }
                     }
                 });
-
         auto showCompleterPopup = [=]() {
             if (entityCompleter && entitySearchLineEdit->text().isEmpty()) {
                 entitySearchLineEdit->clear();
                 selectedEntityId.clear();
                 QString currentFilter = profileFilterComboBox ?
                                             profileFilterComboBox->currentText() : "";
+                QString currentCategory = "All";
+                if (categoryFilterComboBox) currentCategory = categoryFilterComboBox->currentText();
                 if (currentFilter == "All Profiles") {
-                    populateEntityProfiles("");
+                    populateEntityProfiles("", currentCategory);
                 } else {
-                    populateEntityProfiles(currentFilter);
+                    populateEntityProfiles(currentFilter, currentCategory);
                 }
                 entityCompleter->complete();
             }
         };
+
         connect(entitySearchLineEdit, &QLineEdit::cursorPositionChanged, this, [=](int oldPos, int newPos) {
-            Q_UNUSED(oldPos);
-            Q_UNUSED(newPos);
-            if (!entitySearchLineEdit->hasFocus()) {
-                showCompleterPopup();
+            Q_UNUSED(oldPos); Q_UNUSED(newPos);
+            if (!entitySearchLineEdit->hasFocus()) showCompleterPopup();
+        });
+
+        connect(entitySearchLineEdit, &QLineEdit::textChanged, this, [=](const QString& text) {
+            if (text.isEmpty()) {
+                selectedEntityId.clear();
+                if (sensorTypeComboBox) {
+                    sensorTypeComboBox->setEnabled(true);
+                    sensorTypeComboBox->setToolTip("");
+                    sensorTypeComboBox->setCurrentText("Generic");
+                }
             }
         });
+
+        mainLayout->addWidget(m_entitySearchContainer);
+
+        if (m_addNewBtn) {
+            connect(m_addNewBtn, &QPushButton::toggled, this, [=](bool checked) {
+                m_addNewMode = checked;
+                m_entitySearchContainer->setVisible(!checked);
+                if (m_sensorTypeContainer) {
+                    m_sensorTypeContainer->setVisible(isDatabaseEditor ? true : checked);
+                }
+
+                m_addNewBtn->setText(checked ? "← Search Library" : "✚  Add New");
+
+                if (checked) {
+                    selectedEntityId.clear();
+                    if (entitySearchLineEdit) {
+                        entitySearchLineEdit->clear();
+                        entitySearchLineEdit->setCompleter(nullptr);
+                        if (entityCompleter && entityCompleter->popup())
+                            entityCompleter->popup()->hide();
+                    }
+                    if (nameLineEdit)     nameLineEdit->setText("Sensor");
+                    if (sensorTypeComboBox) {
+                        sensorTypeComboBox->setEnabled(true);
+                        sensorTypeComboBox->setToolTip("");
+                        sensorTypeComboBox->setCurrentText("Generic");
+                    }
+                } else {
+                    if (entitySearchLineEdit) {
+                        entitySearchLineEdit->clear();
+                        entitySearchLineEdit->setCompleter(entityCompleter);
+                    }
+                    selectedEntityId.clear();
+                    if (nameLineEdit) nameLineEdit->setText("Sensor");
+                }
+            });
+        }
     }
 
     if (isForComponentAdd) {
@@ -743,7 +895,6 @@ void AddItemDialog::setupUI(DialogType type)
     if (specificType.isEmpty() || specificType == "Platform" || specificType == "Entity") {
         nameLabelText = "Entity Name:";
     } else {
-        // For specific types like Sensor, Weapon, etc.
         QMap<QString, QString> typeDisplayMap;
         typeDisplayMap["sensor"] = "Sensor";
         typeDisplayMap["weapon"] = "Weapon";
@@ -763,7 +914,6 @@ void AddItemDialog::setupUI(DialogType type)
     nameLabel->setStyleSheet("color: white; font-weight: bold;");
     nameLayout->addWidget(nameLabel);
     nameLineEdit = new QLineEdit(this);
-    // Set default name based on profile type
     QString defaultName;
     QMap<QString, QString> defaultNameMap;
     defaultNameMap["sensor"] = "Sensor";
@@ -800,10 +950,10 @@ void AddItemDialog::setupUI(DialogType type)
     nameLineEdit->setStyleSheet("color: white; background-color: #1A3652; border: 1px solid #27446d;");
     nameLayout->addWidget(nameLineEdit);
     mainLayout->addLayout(nameLayout);
-
-    // Sensor type selection for sensor dialogs
     if (isForSensor) {
-        QHBoxLayout *sensorTypeLayout = new QHBoxLayout();
+        m_sensorTypeContainer = new QWidget(this);
+        QHBoxLayout *sensorTypeLayout = new QHBoxLayout(m_sensorTypeContainer);
+        sensorTypeLayout->setContentsMargins(0, 0, 0, 0);
         QLabel *sensorLabel = new QLabel("Sensor Type:", this);
         sensorLabel->setStyleSheet("color: white;");
         sensorTypeLayout->addWidget(sensorLabel);
@@ -813,7 +963,12 @@ void AddItemDialog::setupUI(DialogType type)
         sensorTypeComboBox->setStyleSheet("color: white;");
         sensorTypeLayout->addWidget(sensorTypeComboBox);
         sensorTypeLayout->addStretch();
-        mainLayout->addLayout(sensorTypeLayout);
+        if (isDatabaseEditor) {
+            m_sensorTypeContainer->setVisible(true);
+        } else {
+            m_sensorTypeContainer->setVisible(false);
+        }
+        mainLayout->addWidget(m_sensorTypeContainer);
     }
     bool shouldShowNumberField = false;
     QStringList showNumberForTypes = {"Platform", "SpecialZone", "FixedPoints", "Entity", ""};
@@ -859,7 +1014,6 @@ void AddItemDialog::setupUI(DialogType type)
                 }
                 countLabel = displayType + " Count:";
             }
-            // Set placeholder text based on count label
             if (countLabel.contains("Platform")) {
                 placeholderText = "Enter number of Entity (default: 1)";
             } else if (countLabel.contains("Sensor")) {
@@ -968,9 +1122,7 @@ void AddItemDialog::setupUI(DialogType type)
             delete entity;
         }
     }
-
     mainLayout->addStretch();
-
     // Dialog buttons
     QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok |
                                                            QDialogButtonBox::Cancel, this);
@@ -992,7 +1144,6 @@ void AddItemDialog::setupUI(DialogType type)
                            isComponentSensorAdd ||
                            isComponentIFFAdd ||
                            isComponentRadioAdd);
-
     if (isSimpleDialog) {
         QVBoxLayout *dialogLayout = new QVBoxLayout(this);
         dialogLayout->addWidget(mainWidget);
@@ -1027,17 +1178,17 @@ void AddItemDialog::setupUI(DialogType type)
             windowTitle = "Add Entity";
         }
         if (isComponentSensorAdd || isComponentIFFAdd || isComponentRadioAdd || isComponentWeaponAdd) {
-            setFixedSize(350, 300);
+            setMinimumSize(350, 250); resize(350, 300);
         } else if (isProfileSensorAdd) {
-            setFixedSize(350, 260);
+            setMinimumSize(350, 200); resize(350, 260);
         } else if (specificType == "Sensor") {
-            setFixedSize(320, 220);
+            setMinimumSize(420, 180); resize(320, 220);
         } else if (specificType == "Weapon" || specificType == "Formation" ||
                    specificType == "IFF" || specificType == "Radio" ||
                    specificType == "FixedPoint") {
-            setFixedSize(350, 220);
+            setMinimumSize(350, 180); resize(350, 220);
         } else {
-            setFixedSize(350, 220);
+            setMinimumSize(350, 180); resize(350, 220);
         }
         setWindowTitle(windowTitle);
     } else {
@@ -1050,25 +1201,26 @@ void AddItemDialog::setupUI(DialogType type)
         dialogLayout->addWidget(scrollArea);
         setLayout(dialogLayout);
         QString windowTitle;
+
         if (specificType == "Platform" || specificType.isEmpty()) {
             windowTitle = "Add Entity";
             if (isDatabaseEditor) {
-                setFixedSize(500, 550);
+                setMinimumSize(500, 400); resize(500, 550);
             } else {
-                setFixedSize(500, 700);
+                setMinimumSize(500, 400); resize(500, 700);
             }
         } else if (specificType == "SpecialZone") {
             windowTitle = "Add Special Zone";
-            setFixedSize(500, 550);
+            setMinimumSize(500, 400); resize(500, 550);
         } else if (specificType == "FixedPoints") {
             windowTitle = "Add Fixed Point";
-            setFixedSize(500, 550);
+            setMinimumSize(500, 400); resize(500, 550);
         } else if (specificType == "Weapon") {
             windowTitle = "Add Weapon";
-            setFixedSize(450, 320);
+            setMinimumSize(450, 280); resize(450, 320);
         } else {
             windowTitle = "Add Entity";
-            setFixedSize(450, 450);
+            setMinimumSize(450, 350); resize(450, 450);
         }
         setWindowTitle(windowTitle);
         scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
@@ -1104,10 +1256,7 @@ void AddItemDialog::populateComponentsFromEntity(const QString& entityId, const 
 {
     Q_UNUSED(profileName);
     selectedEntityId = entityId;
-
     entityComponents.clear();
-
-    // Check all available checkboxes
     for (auto it = componentCheckboxes.begin(); it != componentCheckboxes.end(); ++it) {
         QString compName = it.key();
         if (compName == "transform" && it.value()->isEnabled()) {
@@ -1115,10 +1264,9 @@ void AddItemDialog::populateComponentsFromEntity(const QString& entityId, const 
         } else if (compName != "transform") {
             it.value()->setChecked(true);
         }
-
         entityComponents[compName] = true;
     }
-    entityComponents["_fromLibrary"] = true;
+    entityComponents["_FromDB"] = true;
     entityComponents["_sourceEntityId"] = entityId;
 }
 
@@ -1128,7 +1276,6 @@ QVariantMap AddItemDialog::getEntityComponents() const
     if (!selectedEntityId.isEmpty() && !entityComponents.isEmpty()) {
         return entityComponents;
     }
-    // Otherwise, return manually selected checkboxes
     QVariantMap components;
     for (auto it = componentCheckboxes.begin(); it != componentCheckboxes.end(); ++it) {
         components.insert(it.key(), it.value()->isChecked());
@@ -1140,7 +1287,6 @@ QString AddItemDialog::getSelectedEntityId() const
 {
     return selectedEntityId;
 }
-
 /* Get selected components map */
 QVariantMap AddItemDialog::getComponents() const {
     QVariantMap components;
@@ -1149,12 +1295,10 @@ QVariantMap AddItemDialog::getComponents() const {
     }
     return components;
 }
-
 /* Get selected sensor type */
 QString AddItemDialog::getSensorType() const {
     return sensorTypeComboBox ? sensorTypeComboBox->currentText() : "Generic";
 }
-
 /* Get selected profile ID */
 QString AddItemDialog::getProfileId() const {
     // If the user selected an entity from the search, use its ID as the profile ID
@@ -1211,7 +1355,6 @@ void AddItemDialog::populateProfiles(const QString& profileType)
             for (auto it = profileEntities.begin(); it != profileEntities.end(); ++it) {
                 profileComboBox->addItem(it.key(), it.value());
             }
-
             return;
         }
     }
@@ -1248,6 +1391,11 @@ void AddItemDialog::clearEntitySelection()
     entityComponents.clear();
     if (entitySearchLineEdit) {
         entitySearchLineEdit->clear();
+    }
+    if (sensorTypeComboBox) {
+        sensorTypeComboBox->setEnabled(true);
+        sensorTypeComboBox->setToolTip("");
+        sensorTypeComboBox->setCurrentText("Generic");
     }
     if (nameLineEdit) {
         // Reset to default name based on type
@@ -1360,7 +1508,6 @@ bool AddItemDialog::detectDatabaseEditorFromWindow()
         }
         parent = parent->parentWidget();
     }
-    // Also check the dialog's own window
     if (this->window()) {
         QString windowTitle = this->window()->windowTitle();
         if (windowTitle.contains("Database Editor", Qt::CaseInsensitive)) {
@@ -1374,7 +1521,6 @@ bool AddItemDialog::eventFilter(QObject *watched, QEvent *event)
 {
     if (watched == entityCompleter->popup() && event->type() == QEvent::Show) {
         if (entityCompleter->completionCount() == 0) {
-            // Always populate with current context
             populateEntityProfiles(m_profileContext);
         }
     }
@@ -1426,11 +1572,10 @@ QString AddItemDialog::determineProfileContext(const QString& specificType,
     else if (lowerType == "formation") {
         return "Formation";
     }
-    return ""; // Empty means show all
+    return "";
 }
 
 // %%% Validation Methods %%%
-
 bool AddItemDialog::validateInputs()
 {
     bool isDatabaseEditor = false;
@@ -1440,21 +1585,39 @@ bool AddItemDialog::validateInputs()
         isDatabaseEditor = detectDatabaseEditorFromWindow();
     }
 
-    // Determine if this is a component addition dialog (Sensor, IFF, Radio, Weapon)
     bool isComponentSensorAdd = (m_dialogMode == ComponentSensorMode) || (specificType == "sensors");
-    bool isComponentIFFAdd = (m_dialogMode == ComponentIFFMode) || (specificType == "iffs");
-    bool isComponentRadioAdd = (m_dialogMode == ComponentRadioMode) || (specificType == "radios");
+    bool isComponentIFFAdd    = (m_dialogMode == ComponentIFFMode)    || (specificType == "iffs");
+    bool isComponentRadioAdd  = (m_dialogMode == ComponentRadioMode)  || (specificType == "radios");
     bool isComponentWeaponAdd = (m_dialogMode == ComponentWeaponMode) || (specificType == "weapons");
-    bool isForComponentAdd = isComponentSensorAdd || isComponentIFFAdd || isComponentRadioAdd || isComponentWeaponAdd;
+    bool isForComponentAdd    = isComponentSensorAdd || isComponentIFFAdd ||
+                             isComponentRadioAdd  || isComponentWeaponAdd;
 
-    // For component modes, entity selection is OPTIONAL
+    bool isForSensor = (specificType == "Sensor") || isComponentSensorAdd;
+
+    if (isForSensor && !isDatabaseEditor && !m_addNewMode) {
+        if (!entitySearchLineEdit ||
+            entitySearchLineEdit->text().trimmed().isEmpty() ||
+            selectedEntityId.isEmpty())
+        {
+            QMessageBox msgBox(this);
+            msgBox.setStyleSheet(AddItemDialogStyles::MessageBox);
+            msgBox.setWindowTitle("Sensor Selection Required");
+            msgBox.setText("Please select a Sensor from the Database before proceeding.\n\n"
+                           "Use the search field to find and select a sensor,\n"
+                           "or click '✚ Add New' to create a new one.");
+            msgBox.setIcon(QMessageBox::Warning);
+            msgBox.exec();
+            if (entitySearchLineEdit) entitySearchLineEdit->setFocus();
+            return false;
+        }
+    }
+
     bool isEntitySelectionRequired = false;
-    if (!isDatabaseEditor && entitySearchLineEdit && !isForComponentAdd) {
-        // Original behavior: entity selection required for adding full entities from library
+    if (!isDatabaseEditor && entitySearchLineEdit && !isForComponentAdd && !isForSensor) {
         isEntitySelectionRequired = entitySearchLineEdit->isVisible();
     }
 
-    if (isEntitySelectionRequired) {
+    if (isEntitySelectionRequired && !m_addNewMode) {
         QString searchText = entitySearchLineEdit->text().trimmed();
         if (searchText.isEmpty() || selectedEntityId.isEmpty()) {
             QMessageBox msgBox(this);
@@ -1464,14 +1627,10 @@ bool AddItemDialog::validateInputs()
                            "Use the search field to find and select an entity.");
             msgBox.setIcon(QMessageBox::Warning);
             msgBox.exec();
-            if (entitySearchLineEdit) {
-                entitySearchLineEdit->setFocus();
-            }
+            if (entitySearchLineEdit) entitySearchLineEdit->setFocus();
             return false;
         }
     }
-
-    // Validate name field
     QString name = getName();
     if (name.isEmpty()) {
         QMessageBox msgBox(this);
@@ -1480,9 +1639,7 @@ bool AddItemDialog::validateInputs()
         msgBox.setText("Please enter a valid name.");
         msgBox.setIcon(QMessageBox::Warning);
         msgBox.exec();
-        if (nameLineEdit) {
-            nameLineEdit->setFocus();
-        }
+        if (nameLineEdit) nameLineEdit->setFocus();
         return false;
     }
 
@@ -1492,7 +1649,6 @@ bool AddItemDialog::validateInputs()
             if (m_dialogMode == ComponentSensorMode) componentType = "Sensor";
             else if (m_dialogMode == ComponentIFFMode) componentType = "IFF";
             else if (m_dialogMode == ComponentRadioMode) componentType = "Radio";
-
             QMessageBox msgBox(this);
             msgBox.setStyleSheet(AddItemDialogStyles::MessageBox);
             msgBox.setWindowTitle("Selection Required");

@@ -13,7 +13,9 @@ Torpedo::Torpedo(Hierarchy* h) : Weapon(h)
     maxRange       = 50000.0f;
     detonationType = DetonationType::Proximity;
 }
+void Torpedo::Update(){
 
+}
 void Torpedo::launch()         { startFlightMonitor(); }
 void Torpedo::updateGuidance() { /* TODO: acoustic proportional nav */ }
 void Torpedo::scan()           { /* TODO: active acoustic ping */ }

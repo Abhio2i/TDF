@@ -86,6 +86,7 @@ public:
     QDomElement getDom(QString filePath);
     Hierarchy* library = nullptr;
 
+
 public slots:
     void loadToLibrary(QMainWindow* parent);
 private:

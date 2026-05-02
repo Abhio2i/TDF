@@ -76,8 +76,6 @@ RuntimeToolBar::RuntimeToolBar(QWidget *parent) : QToolBar(parent)
 
 
 }
-
-
 void RuntimeToolBar::Init(){
     elapsedSeconds = 0;
     currentState = STOPPED;
@@ -118,7 +116,7 @@ void RuntimeToolBar::createActions()
         }
     });
 
-    // Pause Action — kept for signal compatibility, NOT added to toolbar
+    // Pause Action — kept for signal compatibility
     pauseAction = new QAction(QIcon(withWhiteBg(":/icons/images/pause.png")), tr("Pause"), this);
     pauseAction->setCheckable(true);
     pauseAction->setVisible(false);
@@ -458,15 +456,12 @@ void RuntimeToolBar::setSimulationState(SimulationState state)
     currentState = state;
     updateStatusDisplay();
     emit simulationStateChanged(state);
-
-    // Control timers based on state
     if (state == RUNNING) {
         if (!timer->isActive()) {
             timer->start(1000);
         }
         blinkTimer->start(500);
         simulationStatusLabel->setVisible(true);
-        // Icon pause wala — simulation chal raha hai
         startAction->setIcon(QIcon(withWhiteBg(":/icons/images/pause.png")));
         startAction->setText(tr("Pause"));
         startAction->setChecked(true);

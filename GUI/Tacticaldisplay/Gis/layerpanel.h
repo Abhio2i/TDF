@@ -28,25 +28,22 @@ struct MeshEntry;
 
 // %%% Raster Layer Data Structure %%%
 struct RasterLayer {
-    QString  name;          // Display name (layer panel label)
-    QString  filePath;      // Absolute path to the image file
-
+    QString  name;
+    QString  filePath;
+    QString shapeId;
     mutable int nativeHeight = 0;
-
     QPixmap  pixmap;
-
     mutable QPixmap displayPixmap;
     mutable int     lastRenderZoom   = -1;
     mutable int     lastCanvasWidth  = -1;
     mutable int     lastCanvasHeight = -1;
-
     double   minLon = 0.0;
     double   minLat = 0.0;
     double   maxLon = 0.0;
     double   maxLat = 0.0;
-
     bool     visible = true;
     double   opacity = 1.0;
+
 };
 
 // %%% Class Definition %%%
@@ -57,10 +54,11 @@ class LayerPanel : public QDockWidget
 
 public:
     // Initialize layer panel
+
     explicit LayerPanel(QWidget *parent = nullptr);
     // Clean up resources
     ~LayerPanel();
-// static void runUnitTestsOnce();
+    // static void runUnitTestsOnce();
     // Get tree widget
     QTreeWidget* getTreeWidget() const { return layerTree; }
 
@@ -131,6 +129,9 @@ public:
 
     // script use by amjad
     void addLayerFromScript(const QString& name);
+    QString generateFriendlyShapeName(const QString& shapeId, const QString& shapeType) const;
+     void selectRasterInPanel(const QString& shapeId);
+    void setSuppressCenter(bool suppress) { m_suppressCenter = suppress; }
 
 signals:
     // Emitted when active layer changes
@@ -156,10 +157,13 @@ signals:
     // Emitted when a raster layer is added or its visibility changes
     // (canvas connects to this to trigger a repaint)
     void rasterLayerChanged();
-
+    void geoJsonLayerRemoved(const QString& layerName);
+    void shapeClicked(const QString& shapeId);
 protected:
     // Intercepts double-click on layer name labels for inline rename
     bool eventFilter(QObject* obj, QEvent* event) override;
+public slots:
+    void updateRasterLayerFromShape(const QString& shapeId);
 
 private slots:
     // Show context menu on right-click
@@ -180,15 +184,14 @@ private slots:
     void applyLayerRename(const QString& oldName, const QString& newName, bool isRaster);
     // Handle layer selection change
     void onLayerSelectionChanged();
-
     // Handle visibility toggle clicked
     void onVisibilityToggleClicked(const QString& layerName);
-
     // Rename a shape item (triggered from context menu)
     void renameShape(const QString& shapeId);
-
+    void onShapeItemClicked(QTreeWidgetItem* item, int column);
 private:
     // %%% UI Components %%%
+    bool m_suppressCenter = false;
     QTreeWidget *layerTree = nullptr;
     CanvasWidget *m_canvasWidget = nullptr;
     QMenu *contextMenu = nullptr;
@@ -290,9 +293,10 @@ private:
                             const QString& filePath,
                             const QString& layerName,
                             int shapeType);
-
     QString createCSVLine(const MeshEntry& entry);
     QString createWKTGeometry(const MeshEntry& entry);
+    QMap<QString, QString> shapeToRasterLayer;
+    void removeRasterLayer(const QString& layerName);
 };
 
 #endif // LAYERPANEL_H

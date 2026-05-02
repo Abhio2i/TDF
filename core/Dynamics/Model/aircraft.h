@@ -167,12 +167,23 @@ public:
     float RequirePitch = 0;     //!< Calculated target pitch for navigation
     float Pitch = 0;            //!< Applied pitch rotation (deg)
     float Roll = 0;             //!< Visual bank angle based on turn (deg)
+    float Yaw = 0;
     float Altitude = 0;         //!< Current altitude (m, Y-coordinate)
     float currentClimbRate = 0; //!< Vertical velocity component (m/s)
     float currentPitchRate = 0; //!< Current pitch rate (deg/s)
+    float Rollrate = 0;         //!< Roll rate (deg/s)
     float yawRate = 0;          //!< Current yaw rate (deg/s)
     float speed = 0;            //!< Current speed (m/s)
     float Thrust = 0;           //!< Calculated force based on acceleration (N)
+
+    float DriftAngle = 0;       //!< Sideslip/drift angle (deg)
+    float TrueHeading = 0;      //!< True heading (deg)
+    float TrueAirSpeed = 0;     //!< True airspeed (m/s)
+    float NorthVelocity = 0;    //!< North component of velocity (m/s)
+    float EastVelocity = 0;     //!< East component of velocity (m/s)
+    float VerticalVelocity = 0; //!< Vertical velocity (m/s)
+    float GroundVelocity = 0;   //!< Ground speed (m/s)
+
 
     vec3 Velocity;              //!< World space velocity (m/s)
     vec3 localVelocity;         //!< Velocity relative to aircraft orientation

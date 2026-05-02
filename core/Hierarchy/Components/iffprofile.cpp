@@ -7,6 +7,14 @@ IFFProfile::IFFProfile(Hierarchy* h):Component(h) {
     iffs =  new std::unordered_map<std::string, IFF*>();
 }
 
+IFFProfile::~IFFProfile(){
+    while (!iffs->empty()) {
+        removeSubComponent(iffs->begin()->second->ID);
+    }
+    delete iffs;
+    iffs = nullptr;
+}
+
 void IFFProfile::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     IFF* iff = new IFF(parent);

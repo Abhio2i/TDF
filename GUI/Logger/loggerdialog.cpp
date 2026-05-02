@@ -23,8 +23,6 @@ LoggerDialog::LoggerDialog(QWidget *parent, Recorder* recorderParam)
     setAttribute(Qt::WA_DeleteOnClose);
     recordingsDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/recordings";
     setMinimumSize(400, 550);
-
-    //For Assigning value the Recording Information Start
     loggerStatusModeString[Recorder::S_RECORDING_MODE] = "Recording Mode";
     loggerStatusModeString[Recorder::S_RECORDING] = "Recording";
     loggerStatusModeString[Recorder::S_RECORDING_PAUSED] = "Paused";

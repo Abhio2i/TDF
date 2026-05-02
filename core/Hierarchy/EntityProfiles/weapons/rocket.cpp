@@ -16,6 +16,9 @@ Rocket::Rocket(Hierarchy* h) : Weapon(h)
 
 void Rocket::launch()      { /* fire salvoCount rounds */ }
 void Rocket::flyToTarget() { /* TODO: fin-stabilised unguided arc */ }
+void Rocket::Update(){
+
+}
 
 QString Rocket::warheadTypeToString() const {
     switch (warheadVariant) {

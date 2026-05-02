@@ -102,7 +102,7 @@ public:
     // Get measure distance action
     QAction* getMeasureDistanceAction() const { return measureDistanceAction; }
     // GeoJSON import action
-    QAction *importGeoJsonAction;
+    // QAction *importGeoJsonAction;
     // GeoJSON layers action
     QAction *geoJsonLayersAction;
     QAction *coordinateSystemAction;
@@ -196,7 +196,8 @@ signals:
     // Signal preset layer selection
     void presetLayerSelected(const QString &preset);
     // Signal GeoJSON import triggered
-    void importGeoJsonTriggered(const QString &filePath);
+    // void importGeoJsonTriggered(const QString &filePath);
+        void importLayerTriggered(const QString& filePath);
     // Signal GeoJSON layer toggle
     void geoJsonLayerToggled(const QString &layerName, bool visible);
     // Signal search coordinates triggered
@@ -214,12 +215,14 @@ public slots:
 
 private slots:
     // Handle GeoJSON import
-    void importGeoJson();
+    // void importGeoJson();
     // Handle adding a base layer to selected layers
     void onAddBaseLayerToSelected(const QString& layerId);
     // Update the map layers menu display
     void updateMapLayersMenu();
-
+private slots:
+    // void importGeoJson();   // Remove this
+    void importLayer();        // Add this
 private:
     // %%% UI Components %%%
     QAction *addTrajectoryAction;
@@ -263,6 +266,7 @@ private:
     QList<LayerInformationDialog::MapLayerInfo> mapLayers;
     // Load JSON action
     QAction* loadJsonAction;
+      QAction* importLayerAction;
     // Save JSON action
     QAction* saveJsonAction;
     // Edit trajectory action

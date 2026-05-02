@@ -43,6 +43,7 @@ class IFFProfile: public QObject, public Component
     Q_OBJECT
 public:
     IFFProfile(Hierarchy* h);
+    ~IFFProfile();
     ComponentType Typo() const override { return ComponentType::IFFProfile; }
 
     // =========================================================================

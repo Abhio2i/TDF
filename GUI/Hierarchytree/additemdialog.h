@@ -140,9 +140,12 @@ public:
     bool isScEnabled() const { return isScenarioconfigEnabled(); }
     /* Legacy method name for scenario range */
     int getRange() const { return getScRange(); }
-    void populateEntityProfiles(const QString &profileTypeFilter = "");
+    // void populateEntityProfiles(const QString &profileTypeFilter = "");
+    void populateEntityProfiles(const QString &profileTypeFilter = "",
+                                const QString &categoryFilter = "All");
     QString getSelectedTeam() const;
     QString getNewComponentType() const;
+    bool isNewSensorRequested() const { return m_createNewSensor; }
 
 
 private slots:
@@ -226,8 +229,14 @@ private:
     QString determineProfileContext(const QString& specificType,
                                     DialogMode dialogMode,
                                     const QString& editorContext);
-   QComboBox *teamSelectComboBox = nullptr;
-       QComboBox* m_newTypeCombo;
+    QComboBox *teamSelectComboBox = nullptr;
+    QComboBox* m_newTypeCombo;
+    bool m_createNewSensor = false;
+    bool        m_addNewMode            = false;
+    QWidget*    m_entitySearchContainer = nullptr;
+    QPushButton* m_addNewBtn            = nullptr;
+    QWidget* m_sensorTypeContainer = nullptr;
+
 
 };
 

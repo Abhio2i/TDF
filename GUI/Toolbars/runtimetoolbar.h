@@ -83,6 +83,7 @@ public:
        QJsonObject m_initialSnapshot;
       QJsonObject getSnapshot() const { return m_initialSnapshot; }
         bool eventFilter(QObject *obj, QEvent *event) override;
+      SimulationState getSimulationState() const { return currentState; }
     // Next step action
 private slots:
     void timingActionTriggered() {
@@ -130,6 +131,7 @@ private:
     SimulationState currentState;
     bool blinkState;
     void updateStatusDisplay();
+
 };
 
 #endif // RUNTIMETOOLBAR_H

@@ -38,6 +38,7 @@
 #include <QTextStream>                             // For file text streaming
 #include <QCoreApplication>                        // For application paths
 #include "core/Debug/console.h"                    // For console logging
+#include <QLineEdit>
 
 
 // %%% TextScriptItemWidget Constructor %%%
@@ -100,42 +101,68 @@ void TextScriptItemWidget::setActiveButton(const QString &state)
 TextScriptWidget::TextScriptWidget(QWidget *parent)
     : QWidget(parent)
 {
-    // Set up main layout
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(5);
 
-    QHBoxLayout *buttonLayout = new QHBoxLayout();
-    buttonLayout->setContentsMargins(0, 0, 0, 0);
+    // ── TOP ROW: Search bar + Add Script button ──
+    QHBoxLayout *topLayout = new QHBoxLayout();
+    topLayout->setContentsMargins(4, 4, 4, 0);
+    topLayout->setSpacing(6);
 
-    addScriptButton = new QPushButton(QIcon(":/icons/images/add.png"), tr("Add Script"), this);
+    // Search bar
+    searchBar = new QLineEdit(this);
+    searchBar->setPlaceholderText("Search scripts...");
+    searchBar->setClearButtonEnabled(true);
+    searchBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    searchBar->setFixedHeight(30);
+    searchBar->setStyleSheet(
+        "QLineEdit {"
+        "   background-color: #1A3652;"
+        "   color: white;"
+        "   border: 1px solid #27446d;"
+        "   border-radius: 4px;"
+        "   padding: 4px 8px;"
+        "   font-size: 12px;"
+        "}"
+        "QLineEdit:focus {"
+        "   border: 1px solid #00BFFF;"
+        "}"
+        );
+    topLayout->addWidget(searchBar);
+    addScriptButton = new QPushButton(this);
+    addScriptButton->setIcon(QIcon(":/icons/images/add.png"));
+    addScriptButton->setText("Add Script");
+    addScriptButton->setToolTip("Add Script");
+    addScriptButton->setFixedHeight(30);
+    addScriptButton->setIconSize(QSize(16, 16));
+    addScriptButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     addScriptButton->setStyleSheet(
         "QPushButton {"
-        "   border: 2px solid #27446d;"
-        "   background-color: #0F2636;"
-        "   padding: 8px 12px;"
-        "   color: white;"
-        "   font-weight: bold;"
+        "   border: 1px solid #27446d;"
+        "   background-color: #1A3652;"
         "   border-radius: 4px;"
-        "   text-align: left;"
+        "   color: white;"
+        "   font-size: 12px;"
+        "   padding: 4px 10px 4px 6px;"
         "}"
         "QPushButton:hover {"
-        "   background-color: #1A3652;"
-        "   border: 2px solid #27446d;"
-        "}");
+        "   background-color: #00BFFF;"
+        "   color: #0F2636;"
+        "   border: 1px solid #00BFFF;"
+        "}"
+        );
+    topLayout->addWidget(addScriptButton);
 
-    // Make button expand to full width
-    addScriptButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    buttonLayout->addWidget(addScriptButton);
-    layout->addLayout(buttonLayout);
+    layout->addLayout(topLayout);
+
+    // File list
     fileListWidget = new QListWidget(this);
     fileListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     fileListWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     fileListWidget->setSelectionMode(QAbstractItemView::SingleSelection);
     fileListWidget->setUniformItemSizes(true);
     fileListWidget->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-
-    // StyleSheet for full line selection
     fileListWidget->setStyleSheet(
         "QListWidget {"
         "   background-color: #0F2636;"
@@ -160,21 +187,25 @@ TextScriptWidget::TextScriptWidget(QWidget *parent)
         "}"
         "QListWidget::item:selected:hover {"
         "   background-color: #1A3652;"
-        "}");
-
+        "}"
+        );
     layout->addWidget(fileListWidget);
 
-    // Connect signals
+    // Signals
     connect(fileListWidget, &QListWidget::customContextMenuRequested,
             this, &TextScriptWidget::handleCustomContextMenu);
     connect(addScriptButton, &QPushButton::clicked,
             this, &TextScriptWidget::handleAddScriptButtonClicked);
 
+    // Search bar connection
+    connect(searchBar, &QLineEdit::textChanged, this, [=](const QString &text) {
+        filterScripts(text);
+    });
+
     // Load script files
     QString projectDir = QCoreApplication::applicationDirPath() + "/../..";
     QString testScriptPath = QDir(projectDir).absoluteFilePath("Testscript");
     loadScriptFiles(testScriptPath);
-
 }
 // %%% Script File Management %%%
 /* Load script files from directory */
@@ -186,38 +217,29 @@ void TextScriptWidget::loadScriptFiles(const QString &directoryPath)
         return;
     }
 
-    // Filter for .as files
     dir.setNameFilters(QStringList() << "*.as");
     dir.setFilter(QDir::Files | QDir::NoDotAndDotDot);
     QFileInfoList fileList = dir.entryInfoList();
+
+    // ← Full list save karo for filtering
+    allFiles = fileList;
+
+    fileListWidget->clear();
+    fileStatus.clear();
+    activeButtonState.clear();
 
     if (fileList.isEmpty()) {
         fileListWidget->addItem("No .as files found in directory");
         return;
     }
 
-    // Clear existing items and status
-    fileListWidget->clear();
-    fileStatus.clear();
-    activeButtonState.clear();
     for (const QFileInfo &fileInfo : fileList) {
-        QString filePath = fileInfo.absoluteFilePath();
-        QListWidgetItem *item = new QListWidgetItem(fileListWidget);
-        item->setData(Qt::UserRole, filePath);
-        item->setSizeHint(QSize(fileListWidget->width(), 32));
-        TextScriptItemWidget *itemWidget = new TextScriptItemWidget(
-            fileInfo.fileName(), filePath, fileListWidget);
-        fileListWidget->setItemWidget(item, itemWidget);
-        connect(itemWidget, &TextScriptItemWidget::playClicked,
-                this, &TextScriptWidget::handlePlayClicked);
-        connect(itemWidget, &TextScriptItemWidget::pauseClicked,
-                this, &TextScriptWidget::handlePauseClicked);
-        fileStatus[filePath] = "none";
-        activeButtonState[filePath] = "none";
-        updateStatusIcon(item, "none");
+        addFileToList(fileInfo);
     }
-}
-/* Update status icon for script item */
+
+    // Search bar clear hone par reset
+    if (searchBar) searchBar->clear();
+}/* Update status icon for script item */
 void TextScriptWidget::updateStatusIcon(QListWidgetItem *item, const QString &status)
 {
     QString iconPath;
@@ -235,7 +257,7 @@ void TextScriptWidget::updateStatusIcon(QListWidgetItem *item, const QString &st
         item->setToolTip("Status: Error");
     } else {
         item->setIcon(QIcon());
-        item->setToolTip("Status: Not run");
+        // item->setToolTip("Status: Not run");
     }
 
     // Force item to update
@@ -386,3 +408,39 @@ void TextScriptWidget::handleEditAction()
     window->show();
 }
 
+void TextScriptWidget::addFileToList(const QFileInfo &fileInfo)
+{
+    QString filePath = fileInfo.absoluteFilePath();
+    QListWidgetItem *item = new QListWidgetItem(fileListWidget);
+    item->setData(Qt::UserRole, filePath);
+    item->setSizeHint(QSize(fileListWidget->width(), 32));
+
+    TextScriptItemWidget *itemWidget = new TextScriptItemWidget(
+        fileInfo.fileName(), filePath, fileListWidget);
+
+    fileListWidget->setItemWidget(item, itemWidget);
+
+    connect(itemWidget, &TextScriptItemWidget::playClicked,
+            this, &TextScriptWidget::handlePlayClicked);
+    connect(itemWidget, &TextScriptItemWidget::pauseClicked,
+            this, &TextScriptWidget::handlePauseClicked);
+
+    fileStatus[filePath] = "none";
+    activeButtonState[filePath] = "none";
+    updateStatusIcon(item, "none");
+}
+void TextScriptWidget::filterScripts(const QString &text)
+{
+    fileListWidget->clear();
+
+    for (const QFileInfo &fileInfo : allFiles) {
+        if (text.isEmpty() ||
+            fileInfo.fileName().contains(text, Qt::CaseInsensitive)) {
+            addFileToList(fileInfo);
+        }
+    }
+
+    if (fileListWidget->count() == 0 && !text.isEmpty()) {
+        fileListWidget->addItem("No scripts match: " + text);
+    }
+}

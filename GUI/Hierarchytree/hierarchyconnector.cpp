@@ -43,6 +43,7 @@
 #include "core/Hierarchy/EntityProfiles/weapon.h"  // For Weapon type (weapon attach)
 #include "core/Hierarchy/EntityProfiles/weapons/bomb.h"
 #include "core/Hierarchy/EntityProfiles/weapons/missile.h"
+#include "core/Hierarchy/EntityProfiles/weapons/sonobuoy.h"
 #include "core/Hierarchy/EntityProfiles/weapons/torpedo.h"
 #include "core/Hierarchy/EntityProfiles/weapons/artillery.h"
 #include "core/Hierarchy/EntityProfiles/weapons/rocket.h"
@@ -59,6 +60,7 @@
 #include <GUI/Settings/applicationdialog.h>
 #include "Setup.h"
 #include "GUI/Hierarchytree/addweapondialog.h"
+#include "GUI/Tacticaldisplay/entityinfodialog.h"
 // %%% Static Instance %%%
 /* Singleton instance */
 HierarchyConnector* HierarchyConnector::m_instance = nullptr;
@@ -104,6 +106,7 @@ QString HierarchyConnector::getLastSavedFilePath(QMainWindow* parent)
 static Weapon* createWeapon(const QString& typeName, Hierarchy* h)
 {
     if (typeName == "Bomb")      return new Bomb(h);
+    if (typeName == "Sonobuoy")  return new Sonobuoy(h);
     if (typeName == "Torpedo")   return new Torpedo(h);
     if (typeName == "Artillery") return new Artillery(h);
     if (typeName == "Rocket")    return new Rocket(h);
@@ -241,12 +244,19 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                     float head       = heading;
                     float headOffset = 360 / waypointcount;
 
+                    if(platform->category == Entity::Category::Submarine){
+                        Altitude = 0;
+                    }
                     if (waypointcount > 1) {
                         Waypoints* newWaypoint = new Waypoints();
                         newWaypoint->position  = new Vector(lat, Altitude, lon);
                         newWaypoint->speed     = speed;
                         platform->trajectory->addTrajectory(newWaypoint);
                     }
+                    if(platform->category == Entity::Category::Submarine){
+                        Altitude  -= AltitudeOffset;;
+                    }
+
 
                     for (int i = 0; i < waypointcount; i++) {
                         auto [latAtRadius, lonAtRadius] = calculateNewLatLong(lat, lon, head, waypointoffsetlength);
@@ -255,7 +265,13 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                         newWaypoint->speed     = speed;
                         platform->trajectory->addTrajectory(newWaypoint);
                         speed    += speedOffset;
-                        Altitude += AltitudeOffset;
+                        if(platform->category == Entity::Category::Submarine){
+                            Altitude -= AltitudeOffset;
+                            Altitude = Altitude>0?0:Altitude;
+                        }else{
+                            Altitude += AltitudeOffset;
+                        }
+
 
                         if (dialog && trajectoryType == "Zigzag") {
                             lat = latAtRadius + (QRandomGenerator::global()->generateDouble() - 0.5) * 0.1;
@@ -599,7 +615,11 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                     Platform* platform = dynamic_cast<Platform*>(it->second);
                     if (!platform) continue;
-
+                    int i = 1;
+                    if(dlg.weaponType()==Weapon::WeaponType::Sonobuoy && dlg.m_count){
+                        i = dlg.m_count->value();
+                    }
+                    for(int k =0;k<i;k++){
                     Weapon* weapon       = createWeapon(typeName, hierarchy);
                     weapon->Name         = weaponName.toStdString();
                     weapon->parentEntity = platform;
@@ -613,6 +633,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                         platform->weapons          = weapProfile;
                     }
                     if (!platform->weapons || !platform->weapons->weapons) { delete weapon; continue; }
+
 
                     if (!selectedId.isEmpty() && dbHierarchy) {
                         auto dbIt = dbHierarchy->Weapons.find(selectedId.toStdString());
@@ -650,6 +671,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                         else continue;
                         emit hierarchy->componentAdded(weaponQID,
                                                        QString::fromStdString(compID), QString::fromStdString(compName));
+                    }
+
                     }
                 }
             });
@@ -945,6 +968,11 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
     // ── Tactical Display ─────────────────────────────────────────────────
     if (tactical) {
         connect(hierarchy, &Hierarchy::entityRemoved, tactical, &TacticalDisplay::removeMesh);
+        connect(hierarchy, &Hierarchy::entityRemoved, this, [=](const QString& entityId) {
+            if (tactical->canvas && tactical->canvas->entityInfoDialog) {
+                tactical->canvas->entityInfoDialog->onEntityInvalidated(entityId);
+            }
+        });
     }
 
     // ── Inspector ────────────────────────────────────────────────────────
@@ -983,6 +1011,30 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                                          "Need at least 2 entities to create a formation.");
                     return;
                 }
+                float max = 0;
+                float min = 10000;
+                for (const auto& entity : selectedEntities) {
+                    std::string id = entity["ID"].toString().toStdString();
+                    auto it = hierarchy->Platforms.find(id);
+                    if (it != hierarchy->Platforms.end()) {
+                        if(it->second->dynamicModel ){
+                            max = it->second->dynamicModel->maxSpeed>max?it->second->dynamicModel->maxSpeed:max;
+                            min = it->second->dynamicModel->maxSpeed<min?it->second->dynamicModel->maxSpeed:min;
+                            if((max-min) > 500){
+                                QMessageBox::warning(nullptr, "Cannot Create Formation",
+                                                     "entities Speed too unmachable");
+                                return;
+                            }
+                            if(it->second->dynamicModel->formation || it->second->dynamicModel->followEntity){
+                                QMessageBox::warning(nullptr, "Cannot Create Formation",
+                                                     "entities already part of Formation");
+
+                                return;
+                            }
+                        }
+                    }
+                }
+
                 AddFormationDialog dialog(selectedEntities, nullptr);
                 if (dialog.exec() != QDialog::Accepted) return;
 
@@ -1051,6 +1103,8 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                     motherJson["entity"] = entityRef;
                     formation->updateComponent("mothership", motherJson);
                     formation->mothership->entity = motherEntity;
+                    Platform* p = dynamic_cast<Platform*>(motherEntity);
+                    p->dynamicModel->formation = formation;
                 }
 
                 formation->formationCreate();
@@ -1113,14 +1167,11 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
     connect(library, &Hierarchy::profileAdded, libTree, &HierarchyTree::profileAdded);
     connect(library, &Hierarchy::folderAdded, libTree, &HierarchyTree::folderAdded);
     connect(library, &Hierarchy::entityAdded, libTree, &HierarchyTree::entityAdded);
-
     connect(library, &Hierarchy::componentAdded, libTree, &HierarchyTree::componentAdded);
     connect(library, &Hierarchy::subComponentAdded, libTree, &HierarchyTree::subComponentAdded);
     connect(library, &Hierarchy::profileRemoved, libTree, &HierarchyTree::profileRemoved);
     connect(library, &Hierarchy::folderRemoved, libTree, &HierarchyTree::folderRemoved);
     connect(library, &Hierarchy::entityRemoved, libTree, &HierarchyTree::entityRemoved);
-
-    // Connect tree view context menu to library
     connect(libTree->getContextMenu(), &ContextMenu::addProfileRequested,
             library, &Hierarchy::addProfileCategaory);
     connect(libTree->getContextMenu(), &ContextMenu::removeProfileRequested,
@@ -1129,7 +1180,6 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
             library, &Hierarchy::addFolder);
     connect(libTree->getContextMenu(), &ContextMenu::removeFolderRequested,
             library, &Hierarchy::removeFolder);
-
     // Connect add entity action
     connect(libTree->getContextMenu(), &ContextMenu::addEntityRequested, this,
             [=](QString parentId, QString entityName, bool isProfileParent, QVariantMap components) {
@@ -1142,7 +1192,7 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
                             addedComponents.insert(component);
                             emit library->componentAdded(QString::fromStdString(newEntity->ID), "ID", component);
                         } catch (const std::exception& e) {
-                            // Component addition failed
+
                         }
                     }
                 }
@@ -1198,12 +1248,10 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
                 if (!copySource) {
                     return;
                 }
-
                 QString type = copydata["type"].toString();
                 QString id = copydata["ID"].toString();
                 QString targetType = targetData["type"].toString();
                 QString targetId = targetData["ID"].toString();
-
                 if (type != "entity") {
                     return;
                 }
@@ -1232,13 +1280,11 @@ void HierarchyConnector::connectLibrarySignals(Hierarchy* library, HierarchyTree
                     copydata.clear();
                     copySource = nullptr;
                 } catch (const std::exception& e) {
-                    // Paste operation failed
                 }
             });
     // Handle drag-and-drop (currently disabled)
     connect(libTree, &HierarchyTree::itemDropped, this, [=](QVariantMap sourceData, QVariantMap targetData) {
         return;
-
     });
 }
 
@@ -1247,7 +1293,6 @@ void HierarchyConnector::initializeLibraryData(Hierarchy* library)
     if (!library) {
         return;
     }
-
     // Always add default profile categories (structure hamesha chahiye)
     ProfileCategaory* platform = library->addProfileCategaory("Platform");
     if (platform) platform->setProfileType(Constants::EntityType::Platform);
@@ -1278,7 +1323,6 @@ void HierarchyConnector::initializeLibraryData(Hierarchy* library)
         return;
     }
 
-    // Database enabled — Aircraft.db se full data load karo
     QString aircraftDbPath = TDFManager::instance()->getAircraftDbPath();
     QFile jsonFile(aircraftDbPath);
 
@@ -1305,7 +1349,6 @@ void HierarchyConnector::initializeLibraryData(Hierarchy* library)
         qWarning() << "[HierarchyConnector] Could not open aircraft DB file:" << aircraftDbPath;
     }
 
-    // Fallback — Aircraft.db nahi mila to Platform > Air > FighterJet add karo
     qWarning() << "Using fallback default library data";
     if (platform) {
         Folder* air = platform->addFolder("Air");
@@ -1358,10 +1401,7 @@ void HierarchyConnector::initializeDummyData(Hierarchy* hierarchy)
             Folder* fold = platform->addFolder("aircraft");
             QJsonArray aircraft_list = jsonObj["aircraft_list"].toArray();
             for (const QJsonValue &value : aircraft_list) {
-                // 1. Value ko Object mein convert karein
                 QJsonObject entity = value.toObject();
-
-                // 2. Individual data nikalein
                 QString name = entity["name"].toString();
                 QString category = entity["category"].toString();
                 fold->addEntity(name.toStdString());
@@ -1372,10 +1412,7 @@ void HierarchyConnector::initializeDummyData(Hierarchy* hierarchy)
             Folder* fold = platform->addFolder("ground");
             QJsonArray ground_entities_list = jsonObj["ground_entities_list"].toArray();
             for (const QJsonValue &value : ground_entities_list) {
-                // 1. Value ko Object mein convert karein
                 QJsonObject entity = value.toObject();
-
-                // 2. Individual data nikalein
                 QString name = entity["name"].toString();
                 QString category = entity["category"].toString();
                 fold->addEntity(name.toStdString());
@@ -1435,19 +1472,14 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
 
     // Helper function to create scenario instance copy
     auto createScenarioInstanceCopy = [](const QString& runtimeFilePath, const QJsonObject& data) -> bool {
-        // Check if this is a .rn file
         QFileInfo runtimeFileInfo(runtimeFilePath);
         if (runtimeFileInfo.suffix().toLower() != "rn") {
             return false;
         }
-
-        // Create paths for scenario instance
         QString homeDir = QDir::homePath();
         QString tdfPath = homeDir + "/TDF";
         QString scenarioPath = tdfPath + "/Scenario";
         QString instanceFolderPath = scenarioPath + "/Scerioinstance";
-
-        // Create scenario instance folder if it doesn't exist
         QDir dir;
         if (!dir.exists(scenarioPath)) {
             dir.mkpath(scenarioPath);
@@ -1455,12 +1487,8 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
         if (!dir.exists(instanceFolderPath)) {
             dir.mkpath(instanceFolderPath);
         }
-
-        // Create scenario instance file name
         QString runtimeFileName = runtimeFileInfo.completeBaseName();
         QString scenarioFileName;
-
-        // Check if filename starts with "Scenario_" or "Runtime_"
         if (runtimeFileName.startsWith("Scenario_")) {
             scenarioFileName = "Instance_" + runtimeFileName + ".sc";
         } else if (runtimeFileName.startsWith("Runtime_")) {
@@ -1468,10 +1496,7 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
         } else {
             scenarioFileName = "Instance_Scenario_" + runtimeFileName + ".sc";
         }
-
         QString scenarioFilePath = instanceFolderPath + "/" + scenarioFileName;
-
-        // Save the copy with .sc extension
         QFile scenarioFile(scenarioFilePath);
         if (scenarioFile.open(QIODevice::WriteOnly)) {
             QJsonDocument doc(data);
@@ -1479,7 +1504,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
             scenarioFile.close();
             return true;
         }
-
         return false;
     };
 
@@ -1488,15 +1512,11 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
     QAction* openRuntimeInstanceAction = menuBar->getOpenRuntimeInstanceAction();
     QAction* saveAction = menuBar->getSaveAction();
     QAction* sameSaveAction = menuBar->getSameSaveAction();
-
-
     connect(openRuntimeInstanceAction, &QAction::triggered, this, [=]() {
         QString homeDir = QDir::homePath();
         QString tdfPath = homeDir + "/TDF";
         QString scenarioPath = tdfPath + "/Scenario";
         QString instanceFolderPath = scenarioPath + "/Scerioinstance";
-
-        // Check if Scerioinstance folder exists
         QDir instanceDir(instanceFolderPath);
         if (!instanceDir.exists()) {
             QMessageBox::information(parent, "Folder Not Found",
@@ -1504,20 +1524,15 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
                                          "\n\nPlease save a runtime file first to create the folder.");
             return;
         }
-
-        // Get list of .sc files in the instance folder
         QStringList filters;
         filters << "*.sc";
         instanceDir.setNameFilters(filters);
         QStringList scFiles = instanceDir.entryList(QDir::Files);
-
         if (scFiles.isEmpty()) {
             QMessageBox::information(parent, "No Files Found",
                                      "No .sc files found in Scerioinstance folder.");
             return;
         }
-
-        // Show file selection dialog
         QString filePath = QFileDialog::getOpenFileName(
             parent,
             "Open Runtime Instance File",
@@ -1528,8 +1543,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
         if (filePath.isEmpty()) {
             return;
         }
-
-        // Load the selected file in appropriate editor
         if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(parent)) {
             rtEditor->loadFromJsonFile(filePath);
             RecentProjectsManager::instance()->addToRecentProjects(filePath,
@@ -1542,17 +1555,12 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
                                                                    RecentProjectsManager::ScenarioEditor);
         }
     });
-
-    // Load action - Each editor should only show relevant files
     connect(loadAction, &QAction::triggered, this, [=]() {
         QString filter;
         QString dialogTitle;
         QString startPath = ensureTDFFolder();
-
-        // Set appropriate filters for each editor type
         if (editorType == RecentProjectsManager::RuntimeEditor) {
             dialogTitle = "Open Runtime/Scenario File";
-
             filter = "Runtime & Scenario Files (*.rn *.sc);;Runtime Files (*.rn);;Scenario Files (*.sc);;All Files (*)";
         } else if (editorType == RecentProjectsManager::ScenarioEditor) {
             dialogTitle = "Open Scenario File";
@@ -1561,7 +1569,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
             dialogTitle = "Open Database File";
             filter = "Database Files (*.db);;JSON Files (*.json);;All Files (*)";
         }
-
         QString filePath = QFileDialog::getOpenFileName(parent, dialogTitle,
                                                         startPath,
                                                         filter);
@@ -1581,13 +1588,10 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
             }
         }
     });
-
-    // Load to Library action - This should show database files only
     connect(loadToLibraryAction, &QAction::triggered, this, [=]() {
         QString homeDir = QDir::homePath();
         QString tdfPath = homeDir + "/TDF";
         QString databasePath = tdfPath + "/Database";
-
         QDir dir;
         if (!dir.exists(tdfPath)) {
             dir.mkpath(tdfPath);
@@ -1595,32 +1599,26 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
         if (!dir.exists(databasePath)) {
             dir.mkpath(databasePath);
         }
-
         QString filePath = QFileDialog::getOpenFileName(
             parent,
             "Load Database File to Library",
             databasePath,
             "Database Files (*.db);;JSON Files (*.json);;All Files (*.*)"
             );
-
         if (filePath.isEmpty()) {
             return;
         }
-
         QFile file(filePath);
         if (!file.open(QIODevice::ReadOnly)) {
             return;
         }
-
         QByteArray data = file.readAll();
         file.close();
-
         QJsonParseError err;
         QJsonDocument doc = QJsonDocument::fromJson(data, &err);
         if (err.error != QJsonParseError::NoError || !doc.isObject()) {
             return;
         }
-
         QJsonObject obj = doc.object();
         if (obj.contains("hierarchy")) {
             QJsonObject hier = obj["hierarchy"].toObject();
@@ -1637,12 +1635,10 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
                     re->libTreeView->setLibraryFileName(filePath);
                 }
             }
-
             RecentProjectsManager::instance()->addToRecentProjects(filePath,
                                                                    RecentProjectsManager::LibraryData);
         }
     });
-
     // Save As action
     connect(saveAction, &QAction::triggered, this, [=]() {
         QString filter;
@@ -1657,7 +1653,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
             cleanName.remove(datePattern);
             return cleanName.isEmpty() ? baseName : cleanName;
         };
-
         if (editorType == RecentProjectsManager::RuntimeEditor) {
             dialogTitle = "Save Runtime File";
             filter = "Runtime Files (*.rn);;All Files (*.*)";
@@ -1707,7 +1702,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
                 defaultFileName = "Scenario_" + currentDate + ".sc";
             }
         }
-
         QString filePath = QFileDialog::getSaveFileName(parent, dialogTitle,
                                                         startPath + "/" + defaultFileName,
                                                         filter);
@@ -1715,7 +1709,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
             // Get current file extension
             QFileInfo fileInfo(filePath);
             QString currentExtension = fileInfo.suffix().toLower();
-
             // Auto-add extension if missing
             if (currentExtension.isEmpty()) {
                 if (editorType == RecentProjectsManager::RuntimeEditor) {
@@ -1726,7 +1719,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
                     filePath += ".sc";
                 }
             }
-
             // Prepare JSON data for saving
             QJsonObject obj;
             obj["hierarchy"] = hierarchy->toJson();
@@ -1735,7 +1727,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
             } else {
                 obj["tactical"] = QJsonObject();
             }
-
             // Save the primary file
             QFile file(filePath);
             if (file.open(QIODevice::WriteOnly)) {
@@ -1743,7 +1734,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
                 file.write(doc.toJson(QJsonDocument::Indented));
                 file.close();
                 RecentProjectsManager::instance()->addToRecentProjects(filePath, editorType);
-
                 // For Runtime Editor files (.rn), create scenario instance copy
                 if (editorType == RecentProjectsManager::RuntimeEditor) {
                     bool copyCreated = createScenarioInstanceCopy(filePath, obj);
@@ -1753,7 +1743,6 @@ void HierarchyConnector::setupFileOperations(QMainWindow* parent, Hierarchy* hie
                         qWarning() << "Failed to create scenario instance copy";
                     }
                 }
-
                 // Set last saved path in appropriate editor
                 if (DatabaseEditor* dbEditor = qobject_cast<DatabaseEditor*>(parent)) {
                     dbEditor->lastSavedFilePath = filePath;
@@ -1914,13 +1903,9 @@ void HierarchyConnector::loadToLibrary(QMainWindow* parent)
         QMessageBox::critical(parent, "Error", "No hierarchy data in file");
         return;
     }
-
     QJsonObject hier = obj["hierarchy"].toObject();
-
-
     try {
         targetLibrary->fromJson(hier);
-
         // Update UI
         if (targetLibTreeView) {
             targetLibTreeView->setLibraryFileName(filePath);
@@ -1929,9 +1914,6 @@ void HierarchyConnector::loadToLibrary(QMainWindow* parent)
         }
         RecentProjectsManager::instance()->addToRecentProjects(filePath,
                                                                RecentProjectsManager::LibraryData);
-
-        qDebug() << "[HierarchyConnector] Library loaded successfully from:" << filePath;
-
     } catch (const std::exception& e) {
         QMessageBox::critical(parent, "Error",
                               QString("Failed to load library: %1").arg(e.what()));
@@ -1942,21 +1924,16 @@ void HierarchyConnector::loadToLibrary(QMainWindow* parent)
 void HierarchyConnector::addToRecentProjects(const QString& filePath)
 {
     if (filePath.isEmpty()) return;
-
     QSettings settings;
     QStringList recentProjects = settings.value("recentProjects").toStringList();
-
     // Remove if already exists
     recentProjects.removeAll(filePath);
-
     // Add to beginning
     recentProjects.prepend(filePath);
-
     // Keep only last 10 projects
     while (recentProjects.size() > 10) {
         recentProjects.removeLast();
     }
-
     settings.setValue("recentProjects", recentProjects);
 }
 
@@ -1988,9 +1965,7 @@ void HierarchyConnector::openXmlFile(Hierarchy* hierarchy,QString fullPath)
     if (hierarchy) {
         QDomElement root = getDom(fullPath);
         QFileInfo fileInfo(fullPath);
-
         QString folderPath = fileInfo.absolutePath();
-
         QDomNodeList profiles = root.elementsByTagName("Profile_Instance");
         ProfileCategaory *profile = nullptr;
         for (const auto& [key, profilePtr] : hierarchy->ProfileCategories) {
@@ -2006,23 +1981,17 @@ void HierarchyConnector::openXmlFile(Hierarchy* hierarchy,QString fullPath)
             if (!el.isNull()) {
                 QString name = el.attribute("Name");
                 QString path = el.text();
-
-
                 Entity* entity = profile->addEntity(name.toStdString());
                 entity->fromJson(QJsonObject());
                 QCoreApplication::processEvents();
                 Platform* plf = dynamic_cast<Platform*>(entity);
-
                 QDomElement platform = getDom(folderPath+"/"+path);
                 QDomNodeList comp = platform.childNodes();
                 for (int j = 0; j < comp.count(); ++j) {
-
                     QDomElement fieldElement = comp.at(j).toElement();
                     if (!fieldElement.isNull()) {
                         QDomElement compName = fieldElement.elementsByTagName("Name").at(0).toElement();
-
                         if(compName.text().contains("dynamic") && plf->dynamicModel){
-
                             QDomNodeList valueName = compName.parentNode().toElement().elementsByTagName("Name");
                             for (int k = 0; k < valueName.count(); ++k) {
                                 QDomElement Name = valueName.at(k).toElement();

@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/test_radarmodel.dir/test_radarmodel.cpp.o -o test_radarmodel  -Wl,-rpath,/home/o2i/Qt/5.15.2/gcc_64/lib libaesa_radar_lib.a /home/o2i/Qt/5.15.2/gcc_64/lib/libQt5Core.so.5.15.2 /usr/lib/x86_64-linux-gnu/libgtest_main.a /usr/lib/x86_64-linux-gnu/libgtest.a 

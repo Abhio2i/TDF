@@ -919,7 +919,7 @@ QJsonObject AESARadar::toJson() const
     obj["id"]         = QString::fromStdString(ID);
     obj["name"]       = QString::fromStdString(Name);
     obj["Active"]     = Active;
-    obj["SensorType"] = "AESARadar";
+    obj["SensorType"] = "AESA";
 
     // ---- Array section (AESA-specific T/R module parameters) ----------------
     QJsonObject array;
@@ -1000,7 +1000,7 @@ QJsonObject AESARadar::toJson() const
     detection["systemTemperature_K"] = toParm(cfg.systemTemperature_K, "K",    0.0f, 1000.0f, "System noise temperature");
     detection["noiseFigure_dB"]      = toParm(cfg.noiseFigure_dB,      "dB",   0.0f,   30.0f, "Receiver noise figure");
     detection["targetPfa"]           = toParm(cfg.targetPfa,           "",     0.0f,    1.0f, "False alarm probability");
-    detection["minDetectableRange"]  = toParm(cfg.minDetectableRange,  "m",    0.0f, 1000.0f, "Min detectable range");
+    detection["minDetectableRange"]  = toParm(cfg.minDetectableRange,  "m",    0.0f, 1000.0f, "Min detectable range-not editabale");
     detection["seaState"]            = toParm(cfg.seaState,            "",     0.0f,    9.0f, "Sea state");
     detection["landClutter"]         = toParm(cfg.landClutter,         "",     0.0f,    1.0f, "Land clutter factor");
     detection["targetCategory"]      = static_cast<int>(cfg.targetCategory);
@@ -1031,11 +1031,11 @@ QJsonObject AESARadar::toJson() const
     propagation["type"]              = "Section";
     propagation["earthRadiusFactor"] = toParm(cfg.earthRadiusFactor,          "",      1.0f,    2.0f, "Earth radius factor");
     propagation["atmosphericFactor"] = toParm(cfg.atmosphericFactor,          "",      0.0f,    2.0f, "Atmospheric refraction");
-    propagation["temperature_C"]     = toParm(cfg.atmosphere.temperature_C,   "°C",  -60.0f,   60.0f, "Ambient temperature");
-    propagation["humidity_pct"]      = toParm(cfg.atmosphere.humidity_pct,    "%",     0.0f,  100.0f, "Relative humidity");
-    propagation["pressure_hPa"]      = toParm(cfg.atmosphere.pressure_hPa,    "hPa", 800.0f, 1100.0f, "Atmospheric pressure");
-    propagation["rainRate_mmph"]     = toParm(cfg.atmosphere.rainRate_mmph,   "mm/h",  0.0f,  200.0f, "Rain rate");
-    propagation["fogVisibility_m"]   = toParm(cfg.atmosphere.fogVisibility_m, "m",     0.0f, 10000.0f, "Fog visibility");
+    //propagation["temperature_C"]     = toParm(cfg.atmosphere.temperature_C,   "°C",  -60.0f,   60.0f, "Ambient temperature");
+    //propagation["humidity_pct"]      = toParm(cfg.atmosphere.humidity_pct,    "%",     0.0f,  100.0f, "Relative humidity");
+    //propagation["pressure_hPa"]      = toParm(cfg.atmosphere.pressure_hPa,    "hPa", 800.0f, 1100.0f, "Atmospheric pressure");
+    //propagation["rainRate_mmph"]     = toParm(cfg.atmosphere.rainRate_mmph,   "mm/h",  0.0f,  200.0f, "Rain rate");
+    // propagation["fogVisibility_m"]   = toParm(cfg.atmosphere.fogVisibility_m, "m",     0.0f, 10000.0f, "Fog visibility");
     obj["propagation"] = propagation;
 
     // ---- Noise section ------------------------------------------------------
@@ -1048,13 +1048,13 @@ QJsonObject AESARadar::toJson() const
     obj["noise"] = noise;
 
     // ---- IFF section (FIX-04) -----------------------------------------------
-    QJsonObject iff;
-    iff["type"]              = "Section";
-    iff["interrogationMode"] = static_cast<int>(cfg.interrogationMode);
-    QJsonArray squawks;
-    for (uint32_t sq : cfg.friendlySquawks) squawks.append(static_cast<int>(sq));
-    iff["friendlySquawks"]   = squawks;
-    obj["iff"] = iff;
+    // QJsonObject iff;
+    // iff["type"]              = "Section";
+    // iff["interrogationMode"] = static_cast<int>(cfg.interrogationMode);
+    // QJsonArray squawks;
+    // for (uint32_t sq : cfg.friendlySquawks) squawks.append(static_cast<int>(sq));
+    // iff["friendlySquawks"]   = squawks;
+    // obj["iff"] = iff;
 
     // ---- Null steering section ----------------------------------------------
     QJsonObject nullSteering;
@@ -1067,6 +1067,11 @@ QJsonObject AESARadar::toJson() const
 
     // ---- Mode ---------------------------------------------------------------
     obj["mode"] = static_cast<int>(cfg.mode);
+
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
+
 
     return obj;
 }
@@ -1118,6 +1123,8 @@ void AESARadar::fromJson(const QJsonObject& obj)
         if (s.contains("searchDwellTime"))   cfg.searchDwellTime_ms      = valueFromParm(s["searchDwellTime"].toObject());
         if (s.contains("trackDwellTime"))    cfg.trackDwellTime_ms       = valueFromParm(s["trackDwellTime"].toObject());
         if (s.contains("fcDwellTime"))       cfg.fireControlDwellTime_ms = valueFromParm(s["fcDwellTime"].toObject());
+        minAzimuth = cfg.minAzimuth;
+        maxAzimuth = cfg.maxAzimuth;
     }
 
     // ---- Waveform section ---------------------------------------------------
@@ -1181,7 +1188,7 @@ void AESARadar::fromJson(const QJsonObject& obj)
         QJsonObject p = obj["platform"].toObject();
         if (p.contains("radarHeight"))        cfg.radarHeight        = valueFromParm(p["radarHeight"].toObject());
         if (p.contains("platformSpeed_m_s"))  cfg.platformSpeed_m_s  = valueFromParm(p["platformSpeed_m_s"].toObject());
-        if (p.contains("minDetectableRange")) cfg.minDetectableRange = valueFromParm(p["minDetectableRange"].toObject());
+        // if (p.contains("minDetectableRange")) cfg.minDetectableRange = valueFromParm(p["minDetectableRange"].toObject());
     }
 
     // ---- Tracking section ---------------------------------------------------
@@ -1203,11 +1210,11 @@ void AESARadar::fromJson(const QJsonObject& obj)
         QJsonObject p = obj["propagation"].toObject();
         if (p.contains("earthRadiusFactor")) cfg.earthRadiusFactor            = valueFromParm(p["earthRadiusFactor"].toObject());
         if (p.contains("atmosphericFactor")) cfg.atmosphericFactor            = valueFromParm(p["atmosphericFactor"].toObject());
-        if (p.contains("temperature_C"))     cfg.atmosphere.temperature_C     = valueFromParm(p["temperature_C"].toObject());
-        if (p.contains("humidity_pct"))      cfg.atmosphere.humidity_pct      = valueFromParm(p["humidity_pct"].toObject());
-        if (p.contains("pressure_hPa"))      cfg.atmosphere.pressure_hPa      = valueFromParm(p["pressure_hPa"].toObject());
-        if (p.contains("rainRate_mmph"))     cfg.atmosphere.rainRate_mmph     = valueFromParm(p["rainRate_mmph"].toObject());
-        if (p.contains("fogVisibility_m"))   cfg.atmosphere.fogVisibility_m   = valueFromParm(p["fogVisibility_m"].toObject());
+        // if (p.contains("temperature_C"))     cfg.atmosphere.temperature_C     = valueFromParm(p["temperature_C"].toObject());
+        // if (p.contains("humidity_pct"))      cfg.atmosphere.humidity_pct      = valueFromParm(p["humidity_pct"].toObject());
+        // if (p.contains("pressure_hPa"))      cfg.atmosphere.pressure_hPa      = valueFromParm(p["pressure_hPa"].toObject());
+        // if (p.contains("rainRate_mmph"))     cfg.atmosphere.rainRate_mmph     = valueFromParm(p["rainRate_mmph"].toObject());
+        //if (p.contains("fogVisibility_m"))   cfg.atmosphere.fogVisibility_m   = valueFromParm(p["fogVisibility_m"].toObject());
     }
 
     // ---- Noise section ------------------------------------------------------
@@ -1242,6 +1249,10 @@ void AESARadar::fromJson(const QJsonObject& obj)
         if (n.contains("azimuth_deg"))   cfg.nullSteering.azimuth_deg   = valueFromParm(n["azimuth_deg"].toObject());
         if (n.contains("elevation_deg")) cfg.nullSteering.elevation_deg = valueFromParm(n["elevation_deg"].toObject());
         if (n.contains("nullDepth_dB"))  cfg.nullSteering.nullDepth_dB  = valueFromParm(n["nullDepth_dB"].toObject());
+    }
+
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
 
     // ---- Mode ---------------------------------------------------------------

@@ -284,6 +284,21 @@ QVector3D Transform::inverseTransformVector(const QVector3D& worldVec) {
 }
 
 /**
+ * @brief Transforms a point from local space to world space.
+ * @param localPos Position in local coordinates.
+ * @return Position in world coordinates.
+ */
+QVector3D Transform::transformPoint(const QVector3D& localPos) {
+    // 1. Pehle rotation apply karein
+    QVector3D rotated = matrix->rotation().rotatedVector(localPos);
+
+    // 2. Phir world translation add karein
+    QVector3D worldPos = rotated + matrix->translation();
+
+    return worldPos;
+}
+
+/**
  * @brief Transforms a point (position) from world space to local space (translation + rotation).
  * @param worldPos Position in world coordinates.
  * @return Position in local coordinates.
@@ -293,6 +308,7 @@ QVector3D Transform::inverseTransformPoint(const QVector3D& worldPos) {
     QVector3D final = matrix->rotation().inverted().rotatedVector(relativePosition);
     return final;
 }
+
 
 /**
  * @brief Rotates the transform so that its forward vector points toward the target (2D look-at, ignoring vertical).
@@ -470,19 +486,33 @@ void Transform::fromJson(const QJsonObject &obj) {
     // if (obj.contains("id")) ID = obj["id"].toString().toStdString();
     if (obj.contains("active")) Active = obj["active"].toBool();
 
+    bool cordchange = false;
+    bool rotchange = false;
     if (obj.contains("geocord") && obj["geocord"].isObject()){
+        Geocords geo;
+        geo.fromJson(geocord->toJson());
         geocord->fromJson(obj["geocord"].toObject());
-        // setGeoCord(geocord->latitude,geocord->longitude,geocord->altitude,geocord->Heading);
+        if(geo.latitude != geocord->latitude ||
+           geo.longitude != geocord->longitude ||
+           geo.altitude != geocord->altitude ||
+           geo.Heading != geocord->Heading
+            ){
+            cordchange = true;
+        }
+        if(geo.Heading != geocord->Heading){
+            rotchange = true;
+        }
+        setGeoCord(geocord->latitude,geocord->longitude,geocord->altitude,geocord->Heading);
     }
     if (obj.contains("position") && obj["position"].isObject())
     {   Vector* v = new Vector();
         v->fromJson(obj["position"].toObject());
-        setTranslation(QVector3D(v->x,v->y,v->z));
+        if(!cordchange)setTranslation(QVector3D(v->x,v->y,v->z));
     }
     if (obj.contains("rotation") && obj["rotation"].isObject())
     {   Vector* v = new Vector();
         v->fromJson(obj["rotation"].toObject());
-        setFromEulerAngles(QVector3D(v->x,v->y,v->z));
+        if(!rotchange)setFromEulerAngles(QVector3D(v->x,v->y,v->z));
     }
     if (obj.contains("size") && obj["size"].isObject())
     {   Vector* v = new Vector();

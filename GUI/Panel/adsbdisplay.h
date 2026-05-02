@@ -2,6 +2,8 @@
 #define ADSBDISPLAY_H
 
 #include "core/Hierarchy/Components/sensorprofile.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/adsbsensor.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/aissensor.h"
 #include "qwidget.h"
 #include <core/Debug/profiler.h>
 class ADSBDisplay: public QWidget
@@ -23,10 +25,11 @@ public:
     // Remove entity by ID
     void RemoveEntity(QString ID);
     // Update radar display
+
     void updateRadar();
     // Sensor instance
-    Sensor* sensor = nullptr;
-    QVector<Sensor*> sensorlist;
+    ADSBSensor* sensor = nullptr;
+    QVector<ADSBSensor*> sensorlist;
     // Entity platform
     Platform* entity = nullptr;
 

@@ -22,6 +22,11 @@ QString Chaff::chaffModeToString() const {
 void Chaff::setChaffModeFromString(const QString& s) {
     chaffMode = (s == "Saturation") ? ChaffMode::Saturation : ChaffMode::Seduction;
 }
+
+void Chaff::Update(){
+
+}
+
 QString Chaff::dispensingModeToString() const {
     switch (dispensingMode) {
     case DispensingMode::Single: return "Single";

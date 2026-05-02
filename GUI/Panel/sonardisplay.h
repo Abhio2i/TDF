@@ -76,7 +76,7 @@ private:
 
     qint64 m_pingIntervalMs = 10000;
 
-     Simulation* simulation = nullptr;
+    Simulation* simulation = nullptr;
 
 
     qint64 lastUpdateTime = 0;
@@ -94,13 +94,13 @@ private:
     void drawBackground(QPainter &p);
     void drawSonarRing(QPainter &p, QPoint center, int radius);
     void drawDegreeMarkings(QPainter &p, QPoint center, int radius);
-    void drawBeamCone(QPainter &p, QPoint center, int radius);   // ← NEW
-    void drawHeadingLine(QPainter &p, QPoint center, int radius); // ← NEW
+    void drawBeamCone(QPainter &p, QPoint center, int radius);
+    void drawHeadingLine(QPainter &p, QPoint center, int radius);
     void drawCenterDot(QPainter &p, QPoint center);
     void drawSweep(QPainter &p, QPoint center, int radius);
-    void drawSweepTrail(QPainter &p, QPoint center, int radius);  // ← NEW
+    void drawSweepTrail(QPainter &p, QPoint center, int radius);
     void drawContacts(QPainter &p, QPoint center, int radius);
-    void drawContactLabels(QPainter &p, QPoint center, int radius); // ← NEW
+    void drawContactLabels(QPainter &p, QPoint center, int radius);
     void drawRangeButtons(QPainter &p);
 
     void updateHeadingFromEntity();

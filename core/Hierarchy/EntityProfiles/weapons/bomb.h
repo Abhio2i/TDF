@@ -99,7 +99,7 @@ public:
     void bombEnd();                    // impact: blast sprite → detonated signal
     void checkDetonation() override;   // fuse check at end of bombUpdate
     void flyToTarget()     override;   // no-op unguided
-
+    void Update() override;
     // Only ONE Weapon virtual override — redirects timer tick to bombUpdate.
     // missileStart / missileUpdate / missileEnd are NOT overridden on Bomb.
     void checkFlightState() override;

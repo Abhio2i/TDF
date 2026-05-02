@@ -48,10 +48,9 @@ int AISDisplay::heightForWidth(int width) const
 /* Handle mouse move events for hover detection */
 void AISDisplay::mouseMoveEvent(QMouseEvent *event)
 {
-    return;
     lastMousePos = event->pos();
 
-    if (sensor->ewtargets.isEmpty()) {
+    if (sensor->detect.isEmpty()) {
         hoveredTargetIndex = -1;
         update();
         return;
@@ -68,7 +67,7 @@ void AISDisplay::mouseMoveEvent(QMouseEvent *event)
     double minDistance = 20.0; // Pixel threshold for hover detection
 
     int i=0;
-    for (const Target &t : sensor->ewtargets) {
+    for (const AISVesselData &t : sensor->detect) {
 
         // Calculate target position on screen
         double per = t.radius / range;
@@ -119,7 +118,7 @@ void AISDisplay::selectEntity(Entity* entit)
     Platform* platform = dynamic_cast<Platform*>(entit);
     if (!platform) {
         Console::error("Entity is not a Platform");
-        setWindowTitle("CSM Display (No Platform)");
+        setWindowTitle("AIS Display (No Platform)");
         update();
         return;
     }
@@ -133,10 +132,14 @@ void AISDisplay::selectEntity(Entity* entit)
     for (auto const& pair :  *entity->sensors->sensors) {
         Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::AIS) {
-            if(sensor == nullptr){
-                sensor = s;
+            AISSensor* sono = dynamic_cast<AISSensor*>(s);
+            if(sono){
+
+                if(sensor == nullptr){
+                    sensor = sono;
+                }
+                sensorlist.append(sono);
             }
-            sensorlist.append(s);
             setWindowTitle("AIS Display (" + QString::fromStdString(entity->Name) + ")");
 
         }
@@ -167,7 +170,7 @@ void AISDisplay::updateRadar()
 {
     if (entity && sensor) {
         setRange(sensor->range);
-        // targets = sensor->ewtargets;
+        // targets = sensor->detect;
         update();
     } else {
         // Reset targets if no entity/sensor
@@ -200,9 +203,9 @@ void AISDisplay::paintEvent(QPaintEvent * /*event*/)
     drawCenterMark(p, center);
     drawTopMarker(p, center, outerRadius);
     if(!sensor)return;
-    if ( !sensor->ewtargets.isEmpty()) {
+    if ( !sensor->detect.isEmpty()) {
         int i=0;
-        for (const Target &t : sensor->ewtargets) {
+        for (const AISVesselData &t : sensor->detect) {
             // const Target &t = targets[i];
 
             // FIX: Manual bound check
@@ -217,17 +220,50 @@ void AISDisplay::paintEvent(QPaintEvent * /*event*/)
             int ty = center.y() + int(r * sin(theta));
 
             // Draw dotted line from center to target
-            p.setPen(QPen(radarGreen, 1, Qt::DotLine));
-            p.drawLine(center, QPoint(tx, ty));
+            // p.setPen(QPen(radarGreen, 1, Qt::DotLine));
+            // p.drawLine(center, QPoint(tx, ty));
 
-            // Draw target dot - blue normally, red if hovered
+            // // Draw target dot - blue normally, red if hovered
+            // if (i == hoveredTargetIndex) {
+            //     p.setBrush(Qt::red);
+            // } else {
+            //     p.setBrush(Qt::blue);
+            // }
+            // p.setPen(Qt::NoPen);
+            // p.drawEllipse(QPointF(tx, ty), 4, 4);
+            // Draw dotted line from center to target
+            // p.setPen(QPen(radarGreen, 1, Qt::DotLine));
+            // p.drawLine(center, QPoint(tx, ty));
+
+                // --- Ship Shape Drawing ---
+            p.save(); // Coordinate system save karein
+            p.translate(tx, ty); // Painter ko ship ki position par le jayein
+            p.rotate(t.angle); // Ship ko uske original angle par rotate karein
+
+            // Hover color set karein
             if (i == hoveredTargetIndex) {
                 p.setBrush(Qt::red);
             } else {
                 p.setBrush(Qt::blue);
             }
-            p.setPen(Qt::NoPen);
-            p.drawEllipse(QPointF(tx, ty), 4, 4);
+            p.setPen(QPen(Qt::white, 1)); // Outline ke liye
+
+            // Ship ka polygon (simple triangle ya pentagon)
+            QPolygon ship;
+            ship << QPoint(0, -12)   // Bow (Front Point)
+                 << QPoint(5, -4)    // Front-Right
+                 << QPoint(5, 10)    // Back-Right (Stern)
+                 << QPoint(-5, 10)   // Back-Left (Stern)
+                 << QPoint(-5, -4);  // Front-Left
+
+            p.drawPolygon(ship);
+                p.restore(); // Coordinate system restore karein
+
+            // --- Hover Labels ---
+            if (i == hoveredTargetIndex) {
+                p.setPen(QPen(Qt::yellow, 1));
+                // ... baki text drawing code[cite: 2]
+            }
 
             // Draw labels ONLY if this target is hovered
             if (i == hoveredTargetIndex) {
@@ -239,15 +275,35 @@ void AISDisplay::paintEvent(QPaintEvent * /*event*/)
                 Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
                 QString targetName = targetPlatform ? QString::fromStdString(targetPlatform->Name) : "Unknown";
 
-                // Show angle, distance, and name for hovered target
-                QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
-                QString distText = QString("D:%1km").arg(t.radius, 0, 'f', 1);
-                QString nameText = QString("N:%1").arg(targetName);
+                // 1. Strings prepare karein (Formatting)
+                QString angleText = QString("Angle: %1°").arg(angleDeg, 0, 'f', 1);
+                QString distText  = QString("Dist: %1km").arg(t.radius, 0, 'f', 1);
+                QString nameText  = QString("Name: %1").arg(t.name);
+                QString mmsiText  = QString("MMSI: %1").arg(t.mmsi);
+                QString imoText   = QString("IMO: %1").arg(t.imo_number);
+                QString speedText = QString("SOG: %1 kn").arg(t.sog, 0, 'f', 1);
+                QString cogText   = QString("COG: %1°").arg(t.cog, 0, 'f', 1);
+                QString posText   = QString("Pos: %1, %2").arg(t.pos.latitude, 0, 'f', 4).arg(t.pos.longitude, 0, 'f', 4);
+                QString dimText   = QString("Dim: %1m x %2m").arg(t.dims.length).arg(t.dims.beam);
+                QString destText  = QString("Dest: %1").arg(t.destination);
+                QString etaText   = QString("ETA: %1/%2 %3:%4").arg(t.eta.day).arg(t.eta.month).arg(t.eta.hour).arg(t.eta.minute);
 
-                // Draw text at target position (offset slightly)
-                p.drawText(tx + 6, ty - 6, angleText);
-                p.drawText(tx + 6, ty + 12, distText);
-                p.drawText(tx + 6, ty + 30, nameText);
+                // 2. Draw Text (Y-axis offset badhate rahein)
+                int xOff = tx + 10; // X-axis offset
+                int yOff = ty - 10; // Shuruati Y position
+                int step = 15;      // Line spacing (pixel mein)
+
+                p.drawText(xOff, yOff,          nameText);
+                p.drawText(xOff, yOff += step,  mmsiText);
+                p.drawText(xOff, yOff += step,  imoText);
+                p.drawText(xOff, yOff += step,  angleText);
+                p.drawText(xOff, yOff += step,  distText);
+                p.drawText(xOff, yOff += step,  posText);
+                p.drawText(xOff, yOff += step,  speedText);
+                p.drawText(xOff, yOff += step,  cogText);
+                p.drawText(xOff, yOff += step,  dimText);
+                p.drawText(xOff, yOff += step,  destText);
+                p.drawText(xOff, yOff += step,  etaText);
             }
             i++;
         }

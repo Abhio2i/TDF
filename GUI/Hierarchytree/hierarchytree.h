@@ -178,6 +178,11 @@ signals:
     void addIFFToEntitiesRequested(QList<QVariantMap> entities);
     void addRadioToEntitiesRequested(QList<QVariantMap> entities);
     void setCategoryToEntitiesRequested(QList<QVariantMap> entities, QString category);
+      void selectFormationWithEntityRequested(const QString& formationId);
+    void formationSelectWithEntity(const QString& formationId);
+      void entityRemovedNotify(const QString& entityId);
+
+
 
 protected:
     // %%% Event Handlers %%%
@@ -219,6 +224,8 @@ private:
     bool itemMatchesSearch(QTreeWidgetItem* item, const QString& searchText);
     // Check if item belongs to profile
     bool itemBelongsToProfile(QTreeWidgetItem* item, const QString& profileName);
+    void removeDescendantsFromMap(QTreeWidgetItem* item);
+
 };
 
 #endif // HIERARCHYTREE_H

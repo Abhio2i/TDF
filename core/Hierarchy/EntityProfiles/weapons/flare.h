@@ -19,7 +19,7 @@ public:
     float ejectionVelocity     = 15.0f;
     float ejectionAngle        = 45.0f;
     float ejectionSpread       = 10.0f;
-
+    void Update() override;
     enum class DispensingMode { Single, Burst, Salvo, Auto };
     DispensingMode dispensingMode  = DispensingMode::Burst;
     int   burstCount               = 2;

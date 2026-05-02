@@ -58,6 +58,8 @@
 #include <QPushButton>
 #include <QVariantMap>
 #include <QTableWidget>
+#include <QPointer>
+
 
 class CanvasWidget;
 
@@ -81,7 +83,9 @@ signals:
     /* Signal to request external updates */
     void update();
     void speedAltitudeUpdated(const QString& entityId, float speed, float altitude);
-
+public slots:
+    void onEntityInvalidated(const QString& entityId);
+     void onHierarchyReset();   // ← ADD THIS
 private slots:
     // %%% Action Slots %%%
     /* Handle close button click */
@@ -158,7 +162,12 @@ private:
     QCheckBox *showDetectionCheckBox = nullptr;
     Formation* findFormationForEntity(Entity* entity);
     void displayFormationInfo(Formation* formation, Entity* currentEntity, QVBoxLayout* layout);
-
+    QPointer<QDialog> m_weaponsDialog;
+    QPointer<QDialog> m_sensorsDialog;
+    QPointer<QDialog> m_radiosDialog;
+    QPointer<QDialog> m_iffDialog;
+    QPointer<QDialog> m_formationDialog;
+     Entity* m_trackedEntity = nullptr;
 };
 
 #endif // ENTITYINFODIALOG_H

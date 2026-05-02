@@ -5,12 +5,18 @@ const float RAD2DEG = 180.0f / M_PI;
 ESM::ESM(Hierarchy* h) : Sensor(h) {
     subType = SubType::ESM;
     azimuth = 360;
+    // if(h){
+    //     connect(h,&Hierarchy::broadCast,[](Hierarchy::BroadcastMsg msg){
+
+    //     }
+    // );
 }
 
 void ESM::scan(){
     if(!Active)return;
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
     if(!parentEntity) return;
+    detect.clear();
     Transform* source = root->Platforms[parentEntity->ID]->transform;
     if(!source) return;
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
@@ -32,22 +38,22 @@ void ESM::scan(){
             //Radar side
             QVector3D radarlocalpos = platform->transform->inverseTransformPoint(source->matrix->translation());
 
-            if (entity->Active && detectCheck(localPos,metredis) && entity->detectCheck(radarlocalpos,metredis,2) && entity->frequency==frequency) // .position() is assumed
+            if (entity->Active && (range*1000.f) > metredis/*detectCheck(localPos,metredis) && entity->detectCheck(radarlocalpos,metredis,2) && entity->frequency==frequency*/) // .position() is assumed
             {
                 //qDebug()<< "detect";
                 if (ewdetects.count(platform) == 0)
                 {
                     ewdetects.insert(platform);
-                    Target target;
+                    ESMTarget target;
                     target.entity = platform;
                     target.angle = yAngle;
                     target.radius = metredis;
-                    ewtargets.append(target);
+                    detect.append(target);
                 }else{
-                    for (int i = 0; i < ewtargets.size(); ++i) {
-                        if (ewtargets.at(i).entity == platform) {
-                            ewtargets[i].angle = yAngle;
-                            ewtargets[i].radius = metredis;
+                    for (int i = 0; i < detect.size(); ++i) {
+                        if (detect.at(i).entity == platform) {
+                            detect[i].angle = yAngle;
+                            detect[i].radius = metredis;
                             break;
                         }
                     }
@@ -57,9 +63,9 @@ void ESM::scan(){
             {
                 if (ewdetects.count(platform) > 0)
                 {
-                    for (int i = 0; i < ewtargets.size(); ++i) {
-                        if (ewtargets.at(i).entity == platform) {
-                            ewtargets.removeAt(i);
+                    for (int i = 0; i < detect.size(); ++i) {
+                        if (detect.at(i).entity == platform) {
+                            detect.removeAt(i);
                             break;
                         }
                     }
@@ -82,6 +88,11 @@ QJsonObject ESM::toJson() const {
     defaultObj["frequency"] = toParm(frequency,"Ghz", 0.1, 100);
     defaultObj["azimuth"] = toParm(azimuth,"deg", 0,   360);
     obj["default"] = defaultObj;
+
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
+
     return obj;
 }
 
@@ -101,5 +112,9 @@ void ESM::fromJson(const QJsonObject& obj) {
 
         if (defaultObj.contains("azimuth"))
             azimuth = valueFromParm(defaultObj["azimuth"].toObject());
+    }
+
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
 }

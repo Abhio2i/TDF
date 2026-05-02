@@ -59,8 +59,18 @@ DynamicModel::DynamicModel():Component(nullptr) {
     follow = true;
     moveSpeed = 800;
     AdditionalParameters = QJsonObject(); // Initialize
+
 }
 
+DynamicModel::~DynamicModel(){
+    if(formation){
+        formation->clear();
+    }
+
+    if(formationPosition){
+        formationPosition->entity = nullptr;
+    }
+}
 /**
  * @brief Initializes the dynamic model, setting start time and default values.
  */
@@ -83,6 +93,13 @@ void DynamicModel::init(){
  */
 void DynamicModel::start(){
     angdeg = transform->toEulerAngles().y();
+    if(moveSpeed <minSpeed){
+        moveSpeed = minSpeed;
+    }
+    if(moveSpeed > maxSpeed){
+        moveSpeed = maxSpeed;
+    }
+
 }
 
 /**
@@ -122,6 +139,18 @@ void DynamicModel::FollowTrajectory() {
         DynamicModel* mModel = mPlatform ? mPlatform->dynamicModel : nullptr;
 
         if (mTransform && mModel && mPlatform->trajectory->getTargetWaypoint()&&mPlatform->trajectory->getTargetWaypoint()->formation) {
+            // Vector offset = *formationPosition->Offset;
+            // QVector3D real = mTransform->transformPoint(QVector3D(offset.x*30.f,offset.y,offset.z*30.f));
+            // GeoPos cord = flatXYZToGeo(real.x(),real.y(),real.z());
+
+            // transform->lookAt(real);
+            // float speed = (mModel->currentSpeed/3600.f)*0.97f;
+            // QVector3D pos = transform->translation();
+            // pos += transform->forward()* speed * delta;
+
+            // transform->setTranslation(pos);
+
+            if(mModel->currentSpeed<10)return;
             // --- 2. TURN DETECTION & COMMITMENT SYSTEM ---
             float leaderHeading = mTransform->matrix->rotation().toEulerAngles().y();
             float myHeading = transform->matrix->rotation().toEulerAngles().y();
@@ -267,9 +296,26 @@ void DynamicModel::FollowTrajectory() {
             QVector3D steering = (desiredVel - velocity) * dampingFactor;
             velocity += (steering / mass) * delta;
 
+
+
+
+            // // Hard velocity clamp to prevent overshoot
+            // if (velocity.length()*1000 > maxSpeed/3.6f) {
+            //     velocity = velocity.normalized() * (maxSpeed/3600.f);
+            // }
+
             // Hard velocity clamp to prevent overshoot
             if (velocity.length() > maxSpeedMS) {
                 velocity = velocity.normalized() * maxSpeedMS;
+            }
+
+            if(velocity.length()>1.f){
+                velocity =  velocity.normalized() * 1.f;
+            }
+
+            currentSpeed = velocity.length()*3600.0f;
+            if(currentSpeed>maxSpeed){
+                currentSpeed = maxSpeed;
             }
 
             // Update horizontal position
@@ -309,6 +355,9 @@ void DynamicModel::FollowTrajectory() {
     FlatXYZ targt = geoToFlatXYZ(target.x,target.z,target.y);
     QVector3D target_qvec(targt.x, targt.y, targt.z);
     QVector2D tar(target_qvec.x(),target_qvec.z());
+    // if(target_qvec.y() != Altitude){
+    //     Altitude = target_qvec.y();
+    // }
 
     float movespd = (moveSpeed/3600.0f);//km/h to km/s
 
@@ -318,7 +367,6 @@ void DynamicModel::FollowTrajectory() {
         transform->trailData.erase(transform->trailData.begin());
     }
     // ////////////////////////////////////////////////////
-    // //*transform->position = Vector::Lerp(*tran7sform->position, *trajectory->Trajectories[trajectory->current]->position, moveSpeed * 0.1);
     current.setZ(transform->getLatitude());
     current.setX(transform->getLongitude());
     float metredis = distanceBetween(trajectory->Trajectories[trajectory->current]->position->x,
@@ -339,14 +387,27 @@ void DynamicModel::FollowTrajectory() {
         }else{
             trajectory->current += 1;
             // //qDebug()<<"time :"<<time;
-            if(trajectory->current >= trajectory->Trajectories.size()){
+            if(trajectory->rule == Trajectory::FollowRule::Stop&& trajectory->current >= trajectory->Trajectories.size()){
                 endTime = time;
                 moveSpeed = 0;
                 Altitude = 0;
+                return;
             }
-            trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? 0: trajectory->current;
-            if(tgtSpd > 0){
-                moveSpeed = tgtSpd;
+            if(trajectory->rule == Trajectory::FollowRule::Reverse && trajectory->current >= trajectory->Trajectories.size()){
+                trajectory->reverse = true;
+                trajectory->current = trajectory->current-1;
+            }else{
+                trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? 0: trajectory->current;
+            }
+            if(tgtSpd > 0 || parentEntity->category == Entity::Category::Submarine){
+                Vector target = *trajectory->getTargetWaypoint()->position;
+                float tgtSpd = trajectory->getTargetWaypoint()->speed;
+                tgtSpd = tgtSpd>maxSpeed?maxSpeed:tgtSpd;
+                FlatXYZ targt = geoToFlatXYZ(target.x,target.z,target.y);
+                QVector3D target_qvec(targt.x, targt.y, targt.z);
+                if(tgtSpd > 0){
+                    moveSpeed = tgtSpd;
+                }
                 if(moveSpeed <minSpeed){
                     moveSpeed = minSpeed;
                 }
@@ -356,12 +417,12 @@ void DynamicModel::FollowTrajectory() {
                 if(Altitude>maxAltitude){
                     Altitude = maxAltitude;
                 }
-                if(Altitude<0){
-                    Altitude = 0;
-                }
+                // if(Altitude<0){
+                //     Altitude = 0;
+                // }
                 //movespd = (tgtSpd/3600.0f);//km/h to km/s
-                moveSpeed = tgtSpd;
-                if(target_qvec.y() > 0){
+
+                if(target_qvec.y() > 0 || parentEntity->category == Entity::Category::Submarine){
                     //alt = target_qvec.y() * FTtoKM;
                     Altitude = target_qvec.y();
                 }
@@ -375,10 +436,11 @@ void DynamicModel::FollowTrajectory() {
                          parentEntity->category == Entity::Category::Submarine ||
                          parentEntity->category == Entity::Category::Tank ))
     {
-        Altitude = 0;
-        moveSpeed = moveSpeed > 60?60:moveSpeed;
+        moveSpeed = moveSpeed > 500?500:moveSpeed;
     }
-
+    if(parentEntity->category == Entity::Category::Submarine){
+        Altitude  = Altitude>0?0:Altitude;
+    }
 }
 
 /**
@@ -473,14 +535,35 @@ QJsonObject DynamicModel::toJson() const {
     maximumObj["minSpeed"] = toParm(minSpeed,"Km/h",0,300);
     maximumObj["maxSpeed"] = toParm(maxSpeed,"Km/h",100,2000);
     maximumObj["moveSpeed"] = toParm(moveSpeed,"Km/h",0,2000);
-    maximumObj["Acceleration"] = toParm(Acceleration,"m/s^2",100,500,"i am Accerlation");
+    maximumObj["Acceleration"] = toParm(Acceleration,"m/s^2",10,500,"i am Accerlation");
     maximumObj["Decceleration"] = toParm(Decceleration,"m/s^2",50,    400);
     // maximumObj["turnRadius"] = toParm(turnRadius,"m");
-    maximumObj["turnRate"] = toParm(turnRate,"deg/s",5,30);
-    maximumObj["MaxAltitude"] = toParm(maxAltitude,"ft",10,60000);
-    maximumObj["Altitude"] = toParm(Altitude,"ft",10,60000);
-    maximumObj["climbRate"] = toParm(climbRate,"ft/min",0,      10000);
-    maximumObj["diveRate"] = toParm(diveRate,"ft/min",0,      10000);
+    if(parentEntity->category == Entity::Category::Submarine){
+        maximumObj["turnRate"] = toParm(turnRate,"deg/s",5,15);
+    }else{
+        maximumObj["turnRate"] = toParm(turnRate,"deg/s",5,30);
+    }
+
+    if(parentEntity->category == Entity::Category::Submarine){
+        maximumObj["MaxDepth"] = toParm(maxAltitude,"ft",0,-2000);
+    }else{
+        maximumObj["MaxAltitude"] = toParm(maxAltitude,"ft",10,60000);
+    }
+
+
+    if(parentEntity->category == Entity::Category::Submarine)
+        maximumObj["Depth"] = toParm(Altitude,"ft",-2000,0);
+    else
+        maximumObj["Altitude"] = toParm(Altitude,"ft",10,60000);
+
+    if(parentEntity->category == Entity::Category::Submarine){
+        maximumObj["climbRate"] = toParm(climbRate,"ft/min",0,      100);
+        maximumObj["diveRate"] = toParm(diveRate,"ft/min",0,      100);
+    }else{
+        maximumObj["climbRate"] = toParm(climbRate,"ft/min",0,      10000);
+        maximumObj["diveRate"] = toParm(diveRate,"ft/min",0,      10000);
+    }
+
     obj["maximums"] = maximumObj;
 
     QJsonObject responsesObj;
@@ -554,10 +637,21 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
             turnRadius = valueFromParm(maximumObj["turnRadius"].toObject());
         if (maximumObj.contains("turnRate") && maximumObj["turnRate"].isObject())
             turnRate = valueFromParm(maximumObj["turnRate"].toObject());
-        if (maximumObj.contains("MaxAltitude") && maximumObj["MaxAltitude"].isObject())
-            maxAltitude = valueFromParm(maximumObj["MaxAltitude"].toObject());
-        if (maximumObj.contains("Altitude") && maximumObj["Altitude"].isObject())
-            Altitude = valueFromParm(maximumObj["Altitude"].toObject());
+        if(parentEntity->category == Entity::Category::Submarine){
+            if (maximumObj.contains("MaxDepth") && maximumObj["MaxAltitude"].isObject())
+                maxAltitude = valueFromParm(maximumObj["MaxAltitude"].toObject());
+        }else{
+            if (maximumObj.contains("MaxAltitude") && maximumObj["MaxAltitude"].isObject())
+                maxAltitude = valueFromParm(maximumObj["MaxAltitude"].toObject());
+        }
+        if(parentEntity->category == Entity::Category::Submarine){
+            if (maximumObj.contains("Depth") && maximumObj["Depth"].isObject())
+                Altitude = valueFromParm(maximumObj["Depth"].toObject());
+        }else{
+            if (maximumObj.contains("Altitude") && maximumObj["Altitude"].isObject())
+                Altitude = valueFromParm(maximumObj["Altitude"].toObject());
+        }
+
         if (maximumObj.contains("climbRate") && maximumObj["climbRate"].isObject())
             climbRate = valueFromParm(maximumObj["climbRate"].toObject());
         if (maximumObj.contains("diveRate") && maximumObj["diveRate"].isObject())

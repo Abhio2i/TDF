@@ -540,10 +540,23 @@ void SonarDisplay::updateHeadingFromEntity()
 {
     if (!entity) return;
 
-    QJsonObject transformJson = entity->getComponent("transform");
+    QJsonObject transformJson;
+    try
+    {
+        transformJson = entity->getComponent("transform");
+    }
+    catch (...)
+    {
+        entity = nullptr;
+        return;
+    }
+
+    //QJsonObject transformJson = entity->getComponent("transform");
     if (transformJson.isEmpty()) return;
 
     QJsonObject geo = transformJson["geocord"].toObject();
+    if (!geo.contains("heading"))
+        return;
 
     // IMPORTANT
     m_heading = geo["heading"].toDouble();

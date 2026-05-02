@@ -161,12 +161,12 @@ void AISSensor::scan(){
 
     std::vector<rf::RfScanHit> rf_hits = ownship.rfDevice().scan();
 
-    ewtargets.clear();
+    detect.clear();
     if (!rf_hits.empty()) {
         std::cout << " Physical RF Hits:\n";
         for (const auto& h : rf_hits) {
 
-            Target target;
+            AISVesselData target;
             try {
                 if ((root->Platforms)[h.id]) {
                     target.entity = (root->Platforms)[h.id];
@@ -179,7 +179,7 @@ void AISSensor::scan(){
             }
             target.angle = h.azimuth_deg;//-((h.azimuth_deg+h)+180.f);
             target.radius = h.distance_m/1000.f;
-            ewtargets.append(target);
+            detect.append(target);
 
             // std::cout << "  ID=" << h.id
             //           << " Dist=" << h.distance_m
@@ -316,6 +316,11 @@ QJsonObject AISSensor::toJson() const {
     // Env["wind_attenuation_db_per_km_per_mps"] = toParm(cfg.propagation.wind_attenuation_db_per_km_per_mps,"db/km");
     // Env["sea_attenuation_db_per_km"] = toParm(cfg.propagation.sea_attenuation_db_per_km,"db/km");
     obj["Environmental"] = Env;
+
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
+
 
     // ownship.configureRf(own_rf);
     return obj;
@@ -509,6 +514,10 @@ void AISSensor::fromJson(const QJsonObject& obj) {
     }
 
     ownship.configureRf(own_rf);
+
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
+    }
 
     if (rf_id.empty()) {
         rf_id = ID;

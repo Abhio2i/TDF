@@ -41,6 +41,9 @@ bool SonarModel::detectionDecision(float snr, float threshold)
 float SonarModel::computeBearing(double fromLat, double fromLon,
                                  double toLat,   double toLon)
 {
+    if (fromLat == toLat && fromLon == toLon)
+        return 0.0f;
+
     // Forward azimuth formula
     double lat1 = fromLat * PI / 180.0;
     double lat2 = toLat   * PI / 180.0;
@@ -58,6 +61,9 @@ float SonarModel::computeBearing(double fromLat, double fromLon,
 
 float SonarModel::computeConfidence(float signalExcess)
 {
+    if (std::isnan(signalExcess))
+        return 0.0f;
+
     // signalExcess <= 0  → no confidence
     // signalExcess >= 40 → full confidence
     if (signalExcess <= 0.0f)  return 0.0f;
@@ -69,16 +75,33 @@ float SonarModel::computeConfidence(float signalExcess)
 float SonarModel::geoDistance(double lat1, double lon1,
                               double lat2, double lon2)
 {
+    // clamp inputs
+    lat1 = std::clamp(lat1, -90.0, 90.0);
+    lat2 = std::clamp(lat2, -90.0, 90.0);
+    lon1 = std::clamp(lon1, -180.0, 180.0);
+    lon2 = std::clamp(lon2, -180.0, 180.0);
+
+    // same point
+    if (lat1 == lat2 && lon1 == lon2)
+        return 0.0f;
+
     static constexpr double R = 6371000.0;
+
     double dLat = (lat2 - lat1) * PI / 180.0;
     double dLon = (lon2 - lon1) * PI / 180.0;
 
+    double phi1 = lat1 * PI / 180.0;
+    double phi2 = lat2 * PI / 180.0;
+
     double a = std::sin(dLat/2) * std::sin(dLat/2)
-               + std::cos(lat1 * PI/180.0)
-                     * std::cos(lat2 * PI/180.0)
+               + std::cos(phi1)
+                     * std::cos(phi2)
                      * std::sin(dLon/2) * std::sin(dLon/2);
 
+    a = std::clamp(a, 0.0, 1.0); // precision safety
+
     double c = 2.0 * std::atan2(std::sqrt(a), std::sqrt(1.0 - a));
+
     return static_cast<float>(R * c);
 }
 
@@ -369,4 +392,207 @@ float SonarModel::computeDopplerFrequency(float f0,
         return f0;
 
     return f0 * ((c + v_rx) / denom);
+}
+
+float SonarModel::computeFalseAlarmProbability(float DT)
+{
+    // NaN case
+    if (std::isnan(DT))
+    {
+        qDebug() << "[PFA] NaN → default 0.01";
+        return 0.01f;
+    }
+
+    // Negative DT
+    if (DT < 0.0f)
+    {
+        float val = exp(-DT);   // exp(+ve)
+        return std::min(val, 1.0f);  // clamp
+    }
+
+    // Normal case
+    float pfa = exp(-DT);
+
+    // Clamp safety
+    if (pfa > 1.0f) pfa = 1.0f;
+    if (pfa < 0.0f) pfa = 0.0f;
+
+    return pfa;
+}
+
+float SonarModel::computeProbabilityOfDetection(float SNR, float Pfa)
+{
+    // NaN handling
+    if (std::isnan(SNR))
+    {
+        qDebug() << "[Pd] SNR NaN → return 0";
+        return 0.0f;
+    }
+
+    if (std::isnan(Pfa))
+    {
+        qDebug() << "[Pd] Pfa NaN → default 1e-6";
+        Pfa = 1e-6f;
+    }
+
+    // Clamp Pfa
+    Pfa = std::clamp(Pfa, 1e-9f, 1.0f);
+
+    // Special case
+    if (Pfa >= 1.0f)
+        return 1.0f;
+
+    // Convert Pfa → threshold
+    float T = -log(Pfa);
+
+    // Logistic steepness (tuneable)
+    float k = 0.6f;
+
+    float Pd = 1.0f / (1.0f + exp(-k * (SNR - T)));
+
+    // Clamp safety
+    Pd = std::clamp(Pd, 0.0f, 1.0f);
+
+    return Pd;
+}
+
+float SonarModel::computeRequiredSNR(float Pd, float Pfa)
+{
+    // NaN handling
+    if (std::isnan(Pd) || std::isnan(Pfa))
+    {
+        qDebug() << "[SNR] NaN input → return 0";
+        return 0.0f;
+    }
+
+    // Clamp Pd
+    Pd = std::clamp(Pd, 0.000001f, 0.999999f);
+
+    // Clamp Pfa
+    Pfa = std::clamp(Pfa, 1e-9f, 1.0f);
+
+    // Special case
+    if (Pfa >= 1.0f)
+        return 0.0f;
+
+    // Threshold from Pfa
+    float T = -log(Pfa);
+
+    // Same k as Pd function
+    float k = 0.6f;
+
+    // Inverse logistic
+    float snr = T + (1.0f / k) * log(Pd / (1.0f - Pd));
+
+    return snr;
+}
+
+float SonarModel::computeIncoherentIntegrationGain(float n)
+{
+    // NaN
+    if (std::isnan(n))
+        return 0.0f;
+
+    // negative → absolute
+    n = std::abs(n);
+
+    // zero case
+    if (n <= 0.0f)
+        return 0.0f;
+
+    // optional: round
+    int pulses = static_cast<int>(n);
+
+    if (pulses <= 1)
+        return 0.0f;
+
+    float gain = 5.0f * log10(pulses);
+
+    return gain;
+}
+
+float SonarModel::computeRangeResolution(float c, float tau)
+{
+    // NaN
+    if (std::isnan(c) || std::isnan(tau))
+        return 0.0f;
+
+    // negative tau → absolute
+    tau = std::abs(tau);
+
+    // zero cases
+    if (tau == 0.0f || c <= 0.0f)
+        return 0.0f;
+
+    return (c * tau) / 2.0f;
+}
+
+
+float SonarModel::computeBearingResolution(float lambda, float L)
+{
+    // NaN
+    if (std::isnan(lambda) || std::isnan(L))
+        return 0.0f;
+
+    // absolute L
+    L = std::abs(L);
+
+    // zero cases
+    if (L <= 0.0f)
+        return 0.0f;
+
+    if (lambda <= 0.0f)
+        return 0.0f;
+
+    return lambda / L;  // radians
+}
+
+float SonarModel::computeMaxUnambiguousRange(float c, float PRI)
+{
+    // NaN
+    if (std::isnan(c) || std::isnan(PRI))
+        return 0.0f;
+
+    // negative PRI → absolute
+    PRI = std::abs(PRI);
+
+    // zero cases
+    if (PRI <= 0.0f || c <= 0.0f)
+        return 0.0f;
+
+    return (c * PRI) / 2.0f;
+}
+
+float SonarModel::computeMaxUnambiguousSpeed(float lambda, float PRI)
+{
+    if (std::isnan(lambda) || std::isnan(PRI))
+        return 0.0f;
+
+    lambda = std::abs(lambda);
+    PRI    = std::abs(PRI);
+
+    if (lambda <= 0.0f || PRI <= 0.0f)
+        return 0.0f;
+
+    return lambda / (4.0f * PRI);
+}
+
+bool SonarModel::computeObstacleWarning(
+    float distance,
+    float safeDistance,
+    float relativeVelocity,
+    bool detected)
+{
+    if (!detected)
+        return false;
+
+    // negative → closing
+    if (relativeVelocity >= 0.0f)
+        return false;
+
+    // safe boundary included
+    if (distance <= safeDistance)
+        return true;
+
+    return false;
 }

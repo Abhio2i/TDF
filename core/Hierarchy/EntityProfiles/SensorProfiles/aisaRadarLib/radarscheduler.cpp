@@ -499,8 +499,14 @@ void RadarScheduler::buildSearchGrid(const RadarConfig& cfg)
     {
         // Inner loop: azimuth from left of FoV to right.
         // LOOP_BOUND_TOLERANCE prevents dropping the rightmost column. REQ-AESA-010.
+        // In full 360° mode cap upper bound at +179.9 to avoid scheduling
+        // ±180° as two separate beams at the same physical direction. REQ-AESA-010.
+        double azMax = (cfg.maxAzimuth >= 180.0f && cfg.minAzimuth <= -180.0f)
+                           ? 179.9
+                           : static_cast<double>(cfg.maxAzimuth);
+
         for (double az = static_cast<double>(cfg.minAzimuth);
-             az <= static_cast<double>(cfg.maxAzimuth) + LOOP_BOUND_TOLERANCE;
+             az <= azMax + LOOP_BOUND_TOLERANCE;
              az += azStep)
         {
             BeamRequest r;

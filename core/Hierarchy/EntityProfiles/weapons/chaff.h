@@ -37,7 +37,7 @@ public:
     bool        canEngage(Platform *target)           override;
     QJsonObject toJson()                        const override;
     void        fromJson(const QJsonObject&)          override;
-
+    void Update() override;
     QString chaffModeToString()              const;
     QString dispensingModeToString()         const;
     void    setChaffModeFromString     (const QString&);

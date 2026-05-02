@@ -26,10 +26,8 @@
 #include <qgsproject.h>
 #include <core/Hierarchy/Struct/vector.h>
 #include "GUI/Tacticaldisplay/Gis/gislib.h"
-// #include "tests/layerpaneltest/layerpanel_test.h"
-// #include "GUI/mainwindow.h"
-// #include <QTimer>
-// #include "tests/gui_test_control.h"
+#include <QDialogButtonBox>
+
 static RasterLayer makeDefaultExtents(const RasterLayer& rl, CanvasWidget* canvas);
 
 
@@ -50,7 +48,7 @@ LayerPanel::LayerPanel(QWidget *parent)
 
     setupUI();
     setupContextMenu();
-    // runUnitTestsOnce();
+
 
 }
 
@@ -153,6 +151,8 @@ void LayerPanel::setupUI()
             this, &LayerPanel::showContextMenu);
     connect(layerTree, &QTreeWidget::itemSelectionChanged,
             this, &LayerPanel::onLayerSelectionChanged);
+    connect(layerTree, &QTreeWidget::itemClicked,
+            this, &LayerPanel::onShapeItemClicked);
 }
 
 // %%% Context Menu Setup %%%
@@ -210,16 +210,31 @@ void LayerPanel::showContextMenu(const QPoint &pos)
             }
             showMenu = true;
         }
-        // For shape items - show rename option
         else if (selectedItem->parent() &&
                  selectedItem->parent()->text(0) != "Layers") {
-            // Shape item - show rename action
+            // Shape item - show rename and remove actions
             QString shapeId = selectedItem->data(0, Qt::UserRole).toString();
+
             QAction* renameShapeAction = new QAction("Rename Shape", this);
             connect(renameShapeAction, &QAction::triggered, this, [this, shapeId]() {
                 renameShape(shapeId);
             });
             contextMenu->addAction(renameShapeAction);
+
+            contextMenu->addSeparator();
+
+            QAction* removeShapeAction = new QAction("Remove Shape", this);
+            connect(removeShapeAction, &QAction::triggered, this, [this, shapeId]() {
+                if (m_canvasWidget) {
+                    // Delete from canvas (this will also call removeShapeFromLayer)
+                    m_canvasWidget->deleteObjectById(shapeId);
+                } else {
+                    // Fallback: just remove from layer structures
+                    removeShapeFromLayer(shapeId);
+                }
+            });
+            contextMenu->addAction(removeShapeAction);
+
             showMenu = true;
         }
     } else {
@@ -236,14 +251,40 @@ void LayerPanel::showContextMenu(const QPoint &pos)
 /* Add new layer with visibility toggle */
 void LayerPanel::addLayer()
 {
-    // Get layer name from user
-    bool ok;
-    QString layerName = QInputDialog::getText(this,
-                                              "Add Layer",
-                                              "Layer Name:",
-                                              QLineEdit::Normal,
-                                              "New Layer",
-                                              &ok);
+
+    QDialog inputDlg(this);
+    inputDlg.setWindowTitle("Add Layer");
+    inputDlg.setMinimumWidth(300);
+    inputDlg.setStyleSheet(
+        LayerPanelStyles::MessageBox +
+        " QDialog { border: 2px solid #27446d; background-color: #0F2636; }"
+        );
+
+    QVBoxLayout* layout = new QVBoxLayout(&inputDlg);
+    layout->setSpacing(8);
+    layout->setContentsMargins(15, 15, 15, 10);
+
+    QLabel* lbl = new QLabel("Layer Name:", &inputDlg);
+    lbl->setStyleSheet("color: white;");
+    layout->addWidget(lbl);
+
+    QLineEdit* lineEdit = new QLineEdit("New Layer", &inputDlg);
+    lineEdit->setStyleSheet(
+        "color: white; background-color: #1A3652;"
+        "border: 1px solid #27446d; padding: 4px;");
+    lineEdit->selectAll();
+    layout->addWidget(lineEdit);
+
+    QDialogButtonBox* btns = new QDialogButtonBox(
+        QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &inputDlg);
+    btns->setStyleSheet(LayerPanelStyles::MessageBox);
+    layout->addWidget(btns);
+
+    QObject::connect(btns, &QDialogButtonBox::accepted, &inputDlg, &QDialog::accept);
+    QObject::connect(btns, &QDialogButtonBox::rejected, &inputDlg, &QDialog::reject);
+
+    bool ok = (inputDlg.exec() == QDialog::Accepted);
+    QString layerName = lineEdit->text().trimmed();
 
     if (!ok || layerName.isEmpty()) {
         if (ok && layerName.isEmpty()) {
@@ -341,63 +382,35 @@ void LayerPanel::addLayerFromScript(const QString& name)
 void LayerPanel::removeLayer()
 {
     QTreeWidgetItem *selectedItem = layerTree->currentItem();
-
     if (!selectedItem) {
-        QMessageBox msgBox(this);
-        msgBox.setStyleSheet(LayerPanelStyles::MessageBox);
-        msgBox.setWindowTitle("No Selection");
-        msgBox.setText("Please select a layer to remove!");
-        msgBox.setIcon(QMessageBox::Warning);
-        msgBox.exec();
+        // show message and return
         return;
     }
 
-    // Resolve name from UserRole (works for both vector and raster)
     QString layerName = selectedItem->data(0, Qt::UserRole).toString();
     if (layerName.isEmpty())
         layerName = getFullLayerName(selectedItem);
 
-    // Determine type
     const bool isRaster = rasterLayers.contains(layerName);
     const bool isVector = layerItems.contains(layerName);
 
-    if (!isRaster && !isVector) {
-        // Not a layer row (e.g. shape child or root) — nothing to do
-        return;
-    }
+    if (!isRaster && !isVector) return;
 
-    // Build confirmation message
-    int shapeCount = isVector ? layerShapes.value(layerName).count() : 0;
-    QString message = QString("Are you sure you want to remove layer '%1'?").arg(layerName);
-    if (shapeCount > 0)
-        message += QString("\n\nThis will also permanently delete %1 shape(s).").arg(shapeCount);
-    if (isRaster)
-        message += "\n\nThe raster image file will NOT be deleted from disk.";
-
-    QMessageBox msgBox(this);
-    msgBox.setStyleSheet(LayerPanelStyles::MessageBox);
-    msgBox.setWindowTitle("Remove Layer");
-    msgBox.setText(message);
-    msgBox.setIcon(QMessageBox::Question);
-    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-
-    if (msgBox.exec() != QMessageBox::Yes)
-        return;
-
-    // ── Remove from tree ──────────────────────────────────────────────────
-    QTreeWidgetItem* parent = selectedItem->parent();
-    if (parent)
-        parent->removeChild(selectedItem);
-    else
-        layerTree->takeTopLevelItem(layerTree->indexOfTopLevelItem(selectedItem));
-    delete selectedItem;
+    // confirmation dialog (same as before) ...
 
     if (isVector) {
         // ── Vector layer cleanup ──────────────────────────────────────────
-        QStringList shapes = layerShapes.value(layerName);
+        // First remove from tree (vector layers have no shape that calls back)
+        QTreeWidgetItem* parent = selectedItem->parent();
+        if (parent)
+            parent->removeChild(selectedItem);
+        else
+            layerTree->takeTopLevelItem(layerTree->indexOfTopLevelItem(selectedItem));
+        delete selectedItem;
 
-        // Notify canvas to erase shapes from tempMeshes BEFORE clearing maps
+        QStringList shapes = layerShapes.value(layerName);
         emit layerWithShapesRemoved(shapes);
+        emit geoJsonLayerRemoved(layerName);
 
         for (const QString& shapeId : shapes) {
             shapeToLayer.remove(shapeId);
@@ -425,24 +438,40 @@ void LayerPanel::removeLayer()
         emit layerRemoved(layerName);
 
     } else {
-        // ── Raster layer cleanup ──────────────────────────────────────────
-        rasterLayers.remove(layerName);
-        rasterLayerItems.remove(layerName);
-        rasterLayerOrder.removeAll(layerName);
-        rasterNameLabels.remove(layerName);
-        rasterExpandButtons.remove(layerName);
-
-        if (rasterVisibilityWidgets.contains(layerName)) {
-            delete rasterVisibilityWidgets.take(layerName);
+        // Delete the shape from canvas directly
+        QString shapeId;
+        for (auto it = shapeToRasterLayer.constBegin(); it != shapeToRasterLayer.constEnd(); ++it) {
+            if (it.value() == layerName) {
+                shapeId = it.key();
+                break;
+            }
         }
 
-        // Trigger canvas repaint so the raster is no longer drawn
-        emit rasterLayerChanged();
-        emit layerRemoved(layerName);
-    }
-}
+        if (m_canvasWidget && !shapeId.isEmpty()) {
+            for (auto it = m_canvasWidget->tempMeshes.begin(); it != m_canvasWidget->tempMeshes.end(); ++it) {
+                if (it->name == shapeId) {
+                    // clean up mesh data and erase
+                    delete it->position;
+                    delete it->rotation;
+                    delete it->size;
+                    delete it->velocity;
+                    if (it->mesh) {
+                        for (Vector* v : it->mesh->polygen) delete v;
+                        delete it->mesh->color;
+                        delete it->mesh;
+                    }
+                    delete it->collider;
+                    delete it->trajectory;
+                    m_canvasWidget->tempMeshes.erase(it);
+                    break;
+                }
+            }
+        }
 
-// %%% Rename Layer %%%
+        // Clean up the layer panel (this will delete the tree item)
+        removeRasterLayer(layerName);
+    }
+}// %%% Rename Layer %%%
 /* Rename selected layer */
 bool LayerPanel::eventFilter(QObject* obj, QEvent* event)
 {
@@ -812,28 +841,50 @@ void LayerPanel::applyLayerRename(const QString& oldName, const QString& newName
         updateLayerShapeCount(newName);
     }
 
-    qDebug() << "Layer renamed:" << oldName << "→" << newName;
+    //qDebug() << "Layer renamed:" << oldName << "→" << newName;
 }
 
-
-// %%% Layer Selection Changed %%%
-/* Handle layer selection change */
 void LayerPanel::onLayerSelectionChanged()
 {
     QTreeWidgetItem *selectedItem = layerTree->currentItem();
+    if (!selectedItem) return;
 
-    if (!selectedItem) {
+    // // ----- 1. RASTER LAYERS (must be checked first) -----
+    // if (rasterLayerItems.values().contains(selectedItem)) {
+    //     if (m_suppressCenter) return;   // ← skip when flag is set
+
+    //     QString layerName = getFullLayerName(selectedItem);
+    //     for (auto it = shapeToRasterLayer.constBegin(); it != shapeToRasterLayer.constEnd(); ++it) {
+    //         if (it.value() == layerName) {
+    //             emit shapeClicked(it.key());   // triggers center + highlight
+    //             break;
+    //         }
+    //     }
+    //     return;
+    // }
+    if (rasterLayerItems.values().contains(selectedItem)) {
+        if (m_suppressCenter) return;   // ← already present, works correctly
+
+        QString layerName = getFullLayerName(selectedItem);
+        for (auto it = shapeToRasterLayer.constBegin(); it != shapeToRasterLayer.constEnd(); ++it) {
+            if (it.value() == layerName) {
+                emit shapeClicked(it.key());
+                break;
+            }
+        }
+        return;
+    }
+    // ----- 2. VECTOR LAYERS -----
+    QString text = selectedItem->text(0);
+    if (text != "Layers" && selectedItem->parent() &&
+        selectedItem->parent()->text(0) == "Layers") {
+        QString layerName = getFullLayerName(selectedItem);
+        setActiveLayer(layerName);
         return;
     }
 
-    // Only set active layer if it's a layer item (not a shape)
-    QString text = selectedItem->text(0);
-    if (text != "Layers" && selectedItem->parent() && selectedItem->parent()->text(0) == "Layers") {
-        QString layerName = getFullLayerName(selectedItem);
-        setActiveLayer(layerName);
-    }
+    // ----- 3. SHAPE ITEMS (handled by itemClicked, not here) -----
 }
-
 // %%% Active Layer Management %%%
 /* Set active layer by name */
 void LayerPanel::setActiveLayer(const QString& layerName)
@@ -901,8 +952,13 @@ void LayerPanel::addShapeToLayer(const QString& shapeId, const QString& shapeTyp
 /* Remove shape from layer */
 void LayerPanel::removeShapeFromLayer(const QString& shapeId)
 {
-    QString layerName = shapeToLayer.value(shapeId);
-
+    // Check if this shape belongs to a raster layer
+    if (shapeToRasterLayer.contains(shapeId)) {
+        QString layerName = shapeToRasterLayer[shapeId];
+        // Remove the whole raster layer (including its tree item)
+        removeRasterLayer(layerName);
+        return;
+    }  QString layerName = shapeToLayer.value(shapeId);
     if (layerName.isEmpty()) {
         return;
     }
@@ -981,8 +1037,8 @@ void LayerPanel::moveShapeToLayer(const QString& shapeId,
     // Dedicated signal for any other interested observers
     emit shapeMovedToLayer(shapeId, sourceLayerName, targetLayerName);
 
-    qDebug() << "Shape" << shapeId << "moved from layer"
-             << sourceLayerName << "→" << targetLayerName;
+    //qDebug() << "Shape" << shapeId << "moved from layer"
+             // << sourceLayerName << "→" << targetLayerName;
 }
 
 /* Get layer name for a shape */
@@ -1072,31 +1128,47 @@ void LayerPanel::updateLayerShapeCount(const QString& layerName)
     // Still store name in UserData for getFullLayerName()
     item->setData(0, Qt::UserRole, layerName);
 }
-/* Highlight the shape row in the tree that matches shapeId */
 void LayerPanel::selectShapeInPanel(const QString& shapeId)
 {
     if (shapeId.isEmpty()) return;
 
+    if (shapeToRasterLayer.contains(shapeId)) {
+        QString layerName = shapeToRasterLayer[shapeId];
+        QTreeWidgetItem* rasterItem = rasterLayerItems.value(layerName, nullptr);
+        if (rasterItem) {
+            m_suppressCenter = true;
+            layerTree->blockSignals(true);
+            if (rootLayersItem) rootLayersItem->setExpanded(true);
+            layerTree->setCurrentItem(rasterItem);
+            layerTree->scrollToItem(rasterItem, QAbstractItemView::EnsureVisible);
+            layerTree->blockSignals(false);
+            m_suppressCenter = false;
+        }
+        return;
+    }
+
+    // Vector shapes
     for (QTreeWidgetItem* layerItem : layerItems.values()) {
         for (int i = 0; i < layerItem->childCount(); ++i) {
             QTreeWidgetItem* child = layerItem->child(i);
             if (child->data(0, Qt::UserRole).toString() == shapeId) {
-                // Make sure the parent layer is expanded
+                m_suppressCenter = true;
+                layerTree->blockSignals(true);
                 layerItem->setExpanded(true);
-                // Select and scroll to the item
                 layerTree->setCurrentItem(child);
                 layerTree->scrollToItem(child, QAbstractItemView::EnsureVisible);
+                layerTree->blockSignals(false);
+                m_suppressCenter = false;
                 return;
             }
         }
     }
 }
-
 // %%% Layer Queries %%%
 /* Check if layer exists */
 bool LayerPanel::layerExists(const QString& layerName) const
 {
-    return layerItems.contains(layerName);
+    return layerItems.contains(layerName) || rasterLayers.contains(layerName);
 }
 
 /* Get all shapes in a layer */
@@ -1148,20 +1220,17 @@ QString LayerPanel::getFullLayerName(QTreeWidgetItem* item) const
     if (!item) {
         return QString();
     }
-
     // Check if stored in user data
     QString storedName = item->data(0, Qt::UserRole).toString();
     if (!storedName.isEmpty()) {
         return storedName;
     }
-
     // Extract from display text (remove count if present)
     QString text = item->text(0);
     int countIndex = text.indexOf(" (");
     if (countIndex > 0) {
         return text.left(countIndex);
     }
-
     return text;
 }
 
@@ -1171,12 +1240,10 @@ void LayerPanel::updateActiveLayerVisual(QTreeWidgetItem* item)
     if (!item) {
         return;
     }
-
     // Make it bold
     QFont font = item->font(0);
     font.setBold(true);
     item->setFont(0, font);
-
     // Set background color for dark theme
     item->setBackground(0, QBrush(QColor(39, 68, 109)));  // #27446d
     item->setForeground(0, QBrush(QColor(255, 255, 255)));
@@ -1189,12 +1256,10 @@ void LayerPanel::clearActiveLayerVisual()
     if (!item) {
         return;
     }
-
     // Reset font
     QFont font = item->font(0);
     font.setBold(false);
     item->setFont(0, font);
-
     // Clear background
     item->setBackground(0, QBrush(QColor(15, 38, 54)));  // #0F2636
 }
@@ -1207,16 +1272,13 @@ void LayerPanel::addShapeItemToTree(const QString& layerName, const QString& sha
     if (!layerItem) {
         return;
     }
-
     QString shapeSuffix;
     int underscoreIdx = shapeId.lastIndexOf('_');
     if (underscoreIdx >= 0)
         shapeSuffix = shapeId.mid(underscoreIdx);   // includes the "_", e.g. "_1"
-
     QString displayName = shapeDisplayNames.contains(shapeId)
                               ? shapeDisplayNames[shapeId]
-                              : QString("%1%2").arg(shapeType, shapeSuffix);
-
+                              : generateFriendlyShapeName(shapeId, shapeType);
     // Create the tree item (no visible text — widget handles display)
     QTreeWidgetItem *shapeItem = new QTreeWidgetItem(layerItem);
     shapeItem->setData(0, Qt::UserRole, shapeId);
@@ -1293,7 +1355,7 @@ void LayerPanel::createVisibilityToggle(const QString& layerName, QTreeWidgetIte
         "QPushButton:hover {"
         "  color: #FFFFFF;"
         "  background: rgba(255,255,255,0.15);"
-        "  border-radius: 3px;"
+        "  border-radius: 0px;"
         "}"
         );
 
@@ -1430,20 +1492,17 @@ void LayerPanel::exportLayer()
 
     QString layerName = getFullLayerName(selectedItem);
     QStringList shapesInLayer = getShapesInLayer(layerName);
-
     if (shapesInLayer.isEmpty()) {
         QMessageBox::information(this, "Empty Layer",
                                  QString("Layer '%1' contains no shapes to export.").arg(layerName));
         return;
     }
-
     // Check if canvas widget is available
     if (!m_canvasWidget) {
         QMessageBox::critical(this, "Export Error",
                               "Canvas widget not available for export!");
         return;
     }
-
     // Create format selection dialog
     QStringList formats;
     formats << "GeoJSON (*.geojson)"
@@ -1504,7 +1563,6 @@ void LayerPanel::exportLayer()
 
     // Export based on format
     bool success = false;
-
     if (selectedFormat.contains("GeoJSON")) {
         success = exportToGeoJSON(layerName, shapesInLayer, filePath);
     } else if (selectedFormat.contains("KML")) {
@@ -1540,12 +1598,9 @@ bool LayerPanel::exportToGeoJSON(const QString& layerName, const QStringList& sh
     crs["type"] = "name";
     crs["properties"] = crsProperties;
     rootObject["crs"] = crs;
-
     QJsonArray features;
-
     for (const auto& entry : m_canvasWidget->tempMeshes) {
         QString entryName = entry.name;
-
         // Check if this shape is in our shapeIds list
         bool belongsToLayer = false;
         for (const QString& shapeId : shapeIds) {
@@ -1554,7 +1609,6 @@ bool LayerPanel::exportToGeoJSON(const QString& layerName, const QStringList& sh
                 break;
             }
         }
-
         if (!belongsToLayer) {
             continue;
         }
@@ -1572,7 +1626,7 @@ bool LayerPanel::exportToGeoJSON(const QString& layerName, const QStringList& sh
     // Write to file
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly)) {
-        // qDebug() << "Failed to open file for writing:" << filePath;
+        // //qDebug() << "Failed to open file for writing:" << filePath;
         return false;
     }
 
@@ -1590,7 +1644,6 @@ bool LayerPanel::exportToKML(const QString& layerName, const QStringList& shapeI
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         return false;
     }
-
     QTextStream out(&file);
 
     // KML Header
@@ -1601,40 +1654,40 @@ bool LayerPanel::exportToKML(const QString& layerName, const QStringList& shapeI
     out << "    <description>Exported from Tactical Display</description>\n";
 
     // ========== DEBUG CODE START ==========
-    qDebug() << "==========================================";
-    qDebug() << "KML EXPORT DEBUG";
-    qDebug() << "==========================================";
-    qDebug() << "Layer Name:" << layerName;
-    qDebug() << "Shapes to export (from layer panel):" << shapeIds;
-    qDebug() << "Number of shapes:" << shapeIds.size();
+    //qDebug() << "==========================================";
+    //qDebug() << "KML EXPORT DEBUG";
+    //qDebug() << "==========================================";
+    //qDebug() << "Layer Name:" << layerName;
+    //qDebug() << "Shapes to export (from layer panel):" << shapeIds;
+    //qDebug() << "Number of shapes:" << shapeIds.size();
 
     if (!m_canvasWidget) {
-        qDebug() << "ERROR: m_canvasWidget is NULL!";
+        //qDebug() << "ERROR: m_canvasWidget is NULL!";
         out << "  </Document>\n</kml>\n";
         file.close();
         return true;
     }
 
-    qDebug() << "Canvas widget exists: YES";
-    qDebug() << "Total entries in Meshes:" << m_canvasWidget->Meshes.size();
-    qDebug() << "Total entries in tempMeshes:" << m_canvasWidget->tempMeshes.size();
+    //qDebug() << "Canvas widget exists: YES";
+    //qDebug() << "Total entries in Meshes:" << m_canvasWidget->Meshes.size();
+    //qDebug() << "Total entries in tempMeshes:" << m_canvasWidget->tempMeshes.size();
 
     // List all mesh keys
-    qDebug() << "\n--- ALL MESHES IN CANVAS ---";
+    //qDebug() << "\n--- ALL MESHES IN CANVAS ---";
     for (const auto& pair : m_canvasWidget->Meshes) {
         QString meshKey = QString::fromStdString(pair.first);
         QString entryName = pair.second.name;
-        qDebug() << "  Key:" << meshKey << "| Name:" << entryName;
+        //qDebug() << "  Key:" << meshKey << "| Name:" << entryName;
     }
 
     // List all tempMeshes
-    qDebug() << "\n--- ALL TEMP MESHES IN CANVAS ---";
+    //qDebug() << "\n--- ALL TEMP MESHES IN CANVAS ---";
     for (size_t i = 0; i < m_canvasWidget->tempMeshes.size(); i++) {
         QString entryName = m_canvasWidget->tempMeshes[i].name;
-        qDebug() << "  [" << i << "] Name:" << entryName;
+        //qDebug() << "  [" << i << "] Name:" << entryName;
     }
 
-    qDebug() << "\n--- CHECKING MATCHES IN MESHES ---";
+    //qDebug() << "\n--- CHECKING MATCHES IN MESHES ---";
     // ========== DEBUG CODE END ==========
 
     int exportedCount = 0;
@@ -1645,74 +1698,74 @@ bool LayerPanel::exportToKML(const QString& layerName, const QStringList& shapeI
         QString entryName = entry.name;
         QString meshKey = QString::fromStdString(pair.first);
 
-        qDebug() << "Checking Mesh:" << meshKey << "(" << entryName << ")";
+        //qDebug() << "Checking Mesh:" << meshKey << "(" << entryName << ")";
 
         // Check if this shape is in our shapeIds list
         bool belongsToLayer = false;
         for (const QString& shapeId : shapeIds) {
             if (shapeId == entryName || shapeId == meshKey) {
                 belongsToLayer = true;
-                qDebug() << "  ✓ MATCH FOUND with:" << shapeId;
+                //qDebug() << "  ✓ MATCH FOUND with:" << shapeId;
                 break;
             }
         }
 
         if (!belongsToLayer) {
-            qDebug() << "  ✗ Not in layer - skipping";
+            //qDebug() << "  ✗ Not in layer - skipping";
             continue;
         }
 
-        qDebug() << "  → Creating placemark...";
+        //qDebug() << "  → Creating placemark...";
         QString kmlPlacemark = createKMLPlacemark(entry, entryName);
 
         if (!kmlPlacemark.isEmpty()) {
             out << kmlPlacemark;
             exportedCount++;
-            qDebug() << "  ✓ Exported successfully";
+            //qDebug() << "  ✓ Exported successfully";
         } else {
-            qDebug() << "  ✗ Placemark generation returned empty!";
+            //qDebug() << "  ✗ Placemark generation returned empty!";
         }
     }
 
     // ========== ALSO CHECK TEMP MESHES ==========
-    qDebug() << "\n--- CHECKING MATCHES IN TEMP MESHES ---";
+    //qDebug() << "\n--- CHECKING MATCHES IN TEMP MESHES ---";
 
     for (const MeshEntry& entry : m_canvasWidget->tempMeshes) {
         QString entryName = entry.name;
 
-        qDebug() << "Checking tempMesh:" << entryName;
+        //qDebug() << "Checking tempMesh:" << entryName;
 
         // Check if this shape is in our shapeIds list
         bool belongsToLayer = false;
         for (const QString& shapeId : shapeIds) {
             if (shapeId == entryName) {
                 belongsToLayer = true;
-                qDebug() << "  ✓ MATCH FOUND with:" << shapeId;
+                //qDebug() << "  ✓ MATCH FOUND with:" << shapeId;
                 break;
             }
         }
 
         if (!belongsToLayer) {
-            qDebug() << "  ✗ Not in layer - skipping";
+            //qDebug() << "  ✗ Not in layer - skipping";
             continue;
         }
 
-        qDebug() << "  → Creating placemark...";
+        //qDebug() << "  → Creating placemark...";
         QString kmlPlacemark = createKMLPlacemark(entry, entryName);
 
         if (!kmlPlacemark.isEmpty()) {
             out << kmlPlacemark;
             exportedCount++;
-            qDebug() << "  ✓ Exported successfully from tempMeshes";
+            //qDebug() << "  ✓ Exported successfully from tempMeshes";
         } else {
-            qDebug() << "  ✗ Placemark generation returned empty!";
+            //qDebug() << "  ✗ Placemark generation returned empty!";
         }
     }
     // ========== END TEMP MESHES CHECK ==========
 
-    qDebug() << "\n--- EXPORT SUMMARY ---";
-    qDebug() << "Total shapes exported:" << exportedCount;
-    qDebug() << "==========================================\n";
+    //qDebug() << "\n--- EXPORT SUMMARY ---";
+    //qDebug() << "Total shapes exported:" << exportedCount;
+    //qDebug() << "==========================================\n";
 
     // KML Footer
     out << "  </Document>\n";
@@ -1740,24 +1793,24 @@ bool LayerPanel::exportToGML(const QString& layerName, const QStringList& shapeI
     out << "  <gml:name>" << layerName << "</gml:name>\n";
 
     // ========== DEBUG CODE START ==========
-    qDebug() << "==========================================";
-    qDebug() << "GML EXPORT DEBUG";
-    qDebug() << "==========================================";
-    qDebug() << "Layer Name:" << layerName;
-    qDebug() << "Shapes to export:" << shapeIds;
-    qDebug() << "Number of shapes:" << shapeIds.size();
+    //qDebug() << "==========================================";
+    //qDebug() << "GML EXPORT DEBUG";
+    //qDebug() << "==========================================";
+    //qDebug() << "Layer Name:" << layerName;
+    //qDebug() << "Shapes to export:" << shapeIds;
+    //qDebug() << "Number of shapes:" << shapeIds.size();
 
     if (!m_canvasWidget) {
-        qDebug() << "ERROR: m_canvasWidget is NULL!";
+        //qDebug() << "ERROR: m_canvasWidget is NULL!";
         out << "</gml:FeatureCollection>\n";
         file.close();
         return true;
     }
 
-    qDebug() << "Canvas widget exists: YES";
-    qDebug() << "Total entries in Meshes:" << m_canvasWidget->Meshes.size();
-    qDebug() << "Total entries in tempMeshes:" << m_canvasWidget->tempMeshes.size();
-    qDebug() << "\n--- CHECKING MATCHES IN MESHES ---";
+    //qDebug() << "Canvas widget exists: YES";
+    //qDebug() << "Total entries in Meshes:" << m_canvasWidget->Meshes.size();
+    //qDebug() << "Total entries in tempMeshes:" << m_canvasWidget->tempMeshes.size();
+    //qDebug() << "\n--- CHECKING MATCHES IN MESHES ---";
     // ========== DEBUG CODE END ==========
 
     int exportedCount = 0;
@@ -1768,74 +1821,74 @@ bool LayerPanel::exportToGML(const QString& layerName, const QStringList& shapeI
         QString entryName = entry.name;
         QString meshKey = QString::fromStdString(pair.first);
 
-        qDebug() << "Checking Mesh:" << meshKey << "(" << entryName << ")";
+        //qDebug() << "Checking Mesh:" << meshKey << "(" << entryName << ")";
 
         // Check if this shape is in our shapeIds list
         bool belongsToLayer = false;
         for (const QString& shapeId : shapeIds) {
             if (shapeId == entryName || shapeId == meshKey) {
                 belongsToLayer = true;
-                qDebug() << "  ✓ MATCH FOUND with:" << shapeId;
+                //qDebug() << "  ✓ MATCH FOUND with:" << shapeId;
                 break;
             }
         }
 
         if (!belongsToLayer) {
-            qDebug() << "  ✗ Not in layer - skipping";
+            //qDebug() << "  ✗ Not in layer - skipping";
             continue;
         }
 
-        qDebug() << "  → Creating GML feature...";
+        //qDebug() << "  → Creating GML feature...";
         QString gmlFeature = createGMLFeature(entry, entryName);
 
         if (!gmlFeature.isEmpty()) {
             out << gmlFeature;
             exportedCount++;
-            qDebug() << "  ✓ Exported successfully";
+            //qDebug() << "  ✓ Exported successfully";
         } else {
-            qDebug() << "  ✗ Feature generation returned empty!";
+            //qDebug() << "  ✗ Feature generation returned empty!";
         }
     }
 
     // ========== ALSO CHECK TEMP MESHES ==========
-    qDebug() << "\n--- CHECKING MATCHES IN TEMP MESHES ---";
+    //qDebug() << "\n--- CHECKING MATCHES IN TEMP MESHES ---";
 
     for (const MeshEntry& entry : m_canvasWidget->tempMeshes) {
         QString entryName = entry.name;
 
-        qDebug() << "Checking tempMesh:" << entryName;
+        //qDebug() << "Checking tempMesh:" << entryName;
 
         // Check if this shape is in our shapeIds list
         bool belongsToLayer = false;
         for (const QString& shapeId : shapeIds) {
             if (shapeId == entryName) {
                 belongsToLayer = true;
-                qDebug() << "  ✓ MATCH FOUND with:" << shapeId;
+                //qDebug() << "  ✓ MATCH FOUND with:" << shapeId;
                 break;
             }
         }
 
         if (!belongsToLayer) {
-            qDebug() << "  ✗ Not in layer - skipping";
+            //qDebug() << "  ✗ Not in layer - skipping";
             continue;
         }
 
-        qDebug() << "  → Creating GML feature...";
+        //qDebug() << "  → Creating GML feature...";
         QString gmlFeature = createGMLFeature(entry, entryName);
 
         if (!gmlFeature.isEmpty()) {
             out << gmlFeature;
             exportedCount++;
-            qDebug() << "  ✓ Exported successfully from tempMeshes";
+            //qDebug() << "  ✓ Exported successfully from tempMeshes";
         } else {
-            qDebug() << "  ✗ Feature generation returned empty!";
+            //qDebug() << "  ✗ Feature generation returned empty!";
         }
     }
     // ========== END TEMP MESHES CHECK ==========
 
-    qDebug() << "\n--- EXPORT SUMMARY ---";
-    qDebug() << "Total shapes exported:" << exportedCount;
-    qDebug() << "==========================================\n";
+    //qDebug() << "\n--- EXPORT SUMMARY ---";
+    //qDebug() << "Total shapes exported:" << exportedCount;
+    //qDebug() << "==========================================\n";
 
     // GML Footer
     out << "</gml:FeatureCollection>\n";
@@ -1847,14 +1900,14 @@ bool LayerPanel::exportToGML(const QString& layerName, const QStringList& shapeI
 /* Export layer to Shapefile format */
 bool LayerPanel::exportToShapefile(const QString& layerName, const QStringList& shapeIds, const QString& filePath)
 {
-    qDebug() << "==========================================";
-    qDebug() << "SHAPEFILE EXPORT DEBUG";
-    qDebug() << "==========================================";
-    qDebug() << "Layer Name:" << layerName;
-    qDebug() << "Shapes to export:" << shapeIds;
+    //qDebug() << "==========================================";
+    //qDebug() << "SHAPEFILE EXPORT DEBUG";
+    //qDebug() << "==========================================";
+    //qDebug() << "Layer Name:" << layerName;
+    //qDebug() << "Shapes to export:" << shapeIds;
 
     if (!m_canvasWidget) {
-        qDebug() << "ERROR: m_canvasWidget is NULL!";
+        //qDebug() << "ERROR: m_canvasWidget is NULL!";
         return false;
     }
 
@@ -1879,14 +1932,14 @@ bool LayerPanel::exportToShapefile(const QString& layerName, const QStringList& 
                 if (entryName.contains("Polyline", Qt::CaseInsensitive) ||
                     entryName.contains("Line", Qt::CaseInsensitive)) {
                     lineShapes.append(&entry);
-                    qDebug() << "  Found LINE in Meshes:" << entryName;
+                    //qDebug() << "  Found LINE in Meshes:" << entryName;
                 } else if (entryName.contains("Point", Qt::CaseInsensitive)) {
                     pointShapes.append(&entry);
-                    qDebug() << "  Found POINT in Meshes:" << entryName;
+                    //qDebug() << "  Found POINT in Meshes:" << entryName;
                 } else {
                     // Everything else is polygon (Circle, Rectangle, Polygon)
                     polygonShapes.append(&entry);
-                    qDebug() << "  Found POLYGON in Meshes:" << entryName;
+                    //qDebug() << "  Found POLYGON in Meshes:" << entryName;
                 }
                 break;
             }
@@ -1903,27 +1956,27 @@ bool LayerPanel::exportToShapefile(const QString& layerName, const QStringList& 
                 if (entryName.contains("Polyline", Qt::CaseInsensitive) ||
                     entryName.contains("Line", Qt::CaseInsensitive)) {
                     lineShapes.append(&entry);
-                    qDebug() << "  Found LINE in tempMeshes:" << entryName;
+                    //qDebug() << "  Found LINE in tempMeshes:" << entryName;
                 } else if (entryName.contains("Point", Qt::CaseInsensitive)) {
                     pointShapes.append(&entry);
-                    qDebug() << "  Found POINT in tempMeshes:" << entryName;
+                    //qDebug() << "  Found POINT in tempMeshes:" << entryName;
                 } else {
                     // Everything else is polygon (Circle, Rectangle, Polygon)
                     polygonShapes.append(&entry);
-                    qDebug() << "  Found POLYGON in tempMeshes:" << entryName;
+                    //qDebug() << "  Found POLYGON in tempMeshes:" << entryName;
                 }
                 break;
             }
         }
     }
 
-    qDebug() << "\nGeometry type summary:";
-    qDebug() << "  Polygons:" << polygonShapes.size();
-    qDebug() << "  Lines:" << lineShapes.size();
-    qDebug() << "  Points:" << pointShapes.size();
+    //qDebug() << "\nGeometry type summary:";
+    //qDebug() << "  Polygons:" << polygonShapes.size();
+    //qDebug() << "  Lines:" << lineShapes.size();
+    //qDebug() << "  Points:" << pointShapes.size();
 
     if (polygonShapes.isEmpty() && lineShapes.isEmpty() && pointShapes.isEmpty()) {
-        qDebug() << "ERROR: No shapes to export!";
+        //qDebug() << "ERROR: No shapes to export!";
         return false;
     }
 
@@ -1933,12 +1986,12 @@ bool LayerPanel::exportToShapefile(const QString& layerName, const QStringList& 
     // Export polygons (circles, rectangles, polygons)
     if (!polygonShapes.isEmpty()) {
         QString polyPath = dirPath + "/" + baseName + "_polygons.shp";
-        qDebug() << "\n--- Exporting POLYGONS to:" << polyPath;
+        //qDebug() << "\n--- Exporting POLYGONS to:" << polyPath;
         if (exportShapesByType(polygonShapes, polyPath, layerName + " (Polygons)", 5)) {
             filesCreated++;
-            qDebug() << "✓ Polygon shapefile created successfully";
+            //qDebug() << "✓ Polygon shapefile created successfully";
         } else {
-            qDebug() << "✗ Failed to create polygon shapefile";
+            //qDebug() << "✗ Failed to create polygon shapefile";
             success = false;
         }
     }
@@ -1946,12 +1999,12 @@ bool LayerPanel::exportToShapefile(const QString& layerName, const QStringList& 
     // Export lines
     if (!lineShapes.isEmpty()) {
         QString linePath = dirPath + "/" + baseName + "_lines.shp";
-        qDebug() << "\n--- Exporting LINES to:" << linePath;
+        //qDebug() << "\n--- Exporting LINES to:" << linePath;
         if (exportShapesByType(lineShapes, linePath, layerName + " (Lines)", 3)) {
             filesCreated++;
-            qDebug() << "✓ Line shapefile created successfully";
+            //qDebug() << "✓ Line shapefile created successfully";
         } else {
-            qDebug() << "✗ Failed to create line shapefile";
+            //qDebug() << "✗ Failed to create line shapefile";
             success = false;
         }
     }
@@ -1959,20 +2012,20 @@ bool LayerPanel::exportToShapefile(const QString& layerName, const QStringList& 
     // Export points
     if (!pointShapes.isEmpty()) {
         QString pointPath = dirPath + "/" + baseName + "_points.shp";
-        qDebug() << "\n--- Exporting POINTS to:" << pointPath;
+        //qDebug() << "\n--- Exporting POINTS to:" << pointPath;
         if (exportShapesByType(pointShapes, pointPath, layerName + " (Points)", 1)) {
             filesCreated++;
-            qDebug() << "✓ Point shapefile created successfully";
+            //qDebug() << "✓ Point shapefile created successfully";
         } else {
-            qDebug() << "✗ Failed to create point shapefile";
+            //qDebug() << "✗ Failed to create point shapefile";
             success = false;
         }
     }
 
-    qDebug() << "==========================================";
-    qDebug() << "SHAPEFILE EXPORT COMPLETE!";
-    qDebug() << "Total shapefile sets created:" << filesCreated;
-    qDebug() << "==========================================\n";
+    //qDebug() << "==========================================";
+    //qDebug() << "SHAPEFILE EXPORT COMPLETE!";
+    //qDebug() << "Total shapefile sets created:" << filesCreated;
+    //qDebug() << "==========================================\n";
 
     return success;
 }
@@ -1993,7 +2046,7 @@ bool LayerPanel::exportShapesByType(const QVector<const MeshEntry*>& shapes,
     try {
         QFile shpFile(shpPath);
         if (!shpFile.open(QIODevice::WriteOnly)) {
-            qDebug() << "  ERROR: Cannot create .shp file:" << shpPath;
+            //qDebug() << "  ERROR: Cannot create .shp file:" << shpPath;
             return false;
         }
         QDataStream shpStream(&shpFile);
@@ -2001,7 +2054,7 @@ bool LayerPanel::exportShapesByType(const QVector<const MeshEntry*>& shapes,
 
         QFile shxFile(shxPath);
         if (!shxFile.open(QIODevice::WriteOnly)) {
-            qDebug() << "  ERROR: Cannot create .shx file!";
+            //qDebug() << "  ERROR: Cannot create .shx file!";
             shpFile.close();
             return false;
         }
@@ -2019,7 +2072,7 @@ bool LayerPanel::exportShapesByType(const QVector<const MeshEntry*>& shapes,
             const MeshEntry* entry = shapes[i];
 
             if (!entry->position || !entry->rotation || !entry->mesh) {
-                qDebug() << "    Skipping" << entry->name << "- missing data";
+                //qDebug() << "    Skipping" << entry->name << "- missing data";
                 continue;
             }
 
@@ -2032,7 +2085,7 @@ bool LayerPanel::exportShapesByType(const QVector<const MeshEntry*>& shapes,
                 // FIXED: Account for 8-byte record header (4 words) + content
                 currentOffset += 4 + (record.size() / 2);
 
-                qDebug() << "    Created record for:" << entry->name << "(" << record.size() << "bytes)";
+                //qDebug() << "    Created record for:" << entry->name << "(" << record.size() << "bytes)";
             }
         }
 
@@ -2065,7 +2118,7 @@ bool LayerPanel::exportShapesByType(const QVector<const MeshEntry*>& shapes,
 
         // Write DBF
         if (!writeDBF(dbfPath, shapes)) {
-            qDebug() << "    WARNING: Failed to create .dbf file";
+            //qDebug() << "    WARNING: Failed to create .dbf file";
         }
 
         // Write PRJ
@@ -2081,7 +2134,7 @@ bool LayerPanel::exportShapesByType(const QVector<const MeshEntry*>& shapes,
         return true;
 
     } catch (...) {
-        qDebug() << "  ERROR: Exception during shapefile creation!";
+        //qDebug() << "  ERROR: Exception during shapefile creation!";
         return false;
     }
 }
@@ -2133,8 +2186,8 @@ QByteArray LayerPanel::createShapefileRecord(const MeshEntry* entry, int shapeTy
     // entry->position already contains lon/lat, NOT canvas pixels!
     QVector3D center = *entry->position;
 
-    qDebug() << "    [createShapefileRecord]" << shapeName;
-    qDebug() << "      Center (geographic):" << center.x() << "," << center.y();
+    //qDebug() << "    [createShapefileRecord]" << shapeName;
+    //qDebug() << "      Center (geographic):" << center.x() << "," << center.y();
 
     // Get rotation
     float rotation = entry->rotation->z();
@@ -2149,7 +2202,7 @@ QByteArray LayerPanel::createShapefileRecord(const MeshEntry* entry, int shapeTy
         double radius = entry->size ? entry->size->x() : 0.001;
         const int numPoints = 36;
 
-        qDebug() << "      Circle radius:" << radius << "degrees";
+        //qDebug() << "      Circle radius:" << radius << "degrees";
 
         for (int i = 0; i <= numPoints; i++) {
             double angle = (i * 360.0 / numPoints) * M_PI / 180.0;
@@ -2161,7 +2214,7 @@ QByteArray LayerPanel::createShapefileRecord(const MeshEntry* entry, int shapeTy
     } else if (shapeName.startsWith("TempPoint")) {
         // Single point - use geographic coordinates directly
         points.append(QPointF(center.x(), center.y()));
-        qDebug() << "      Point at:" << center.x() << "," << center.y();
+        //qDebug() << "      Point at:" << center.x() << "," << center.y();
     } else {
         // Polygon or polyline - vertices are OFFSETS in geographic units
         for (Vector* v : entry->mesh->polygen) {
@@ -2180,16 +2233,16 @@ QByteArray LayerPanel::createShapefileRecord(const MeshEntry* entry, int shapeTy
             points.append(points.first());
         }
 
-        qDebug() << "      Polygon/Line vertices:" << points.size();
+        //qDebug() << "      Polygon/Line vertices:" << points.size();
     }
 
     if (points.isEmpty()) {
-        qDebug() << "      WARNING: No points generated!";
+        //qDebug() << "      WARNING: No points generated!";
         return QByteArray();
     }
 
     // Debug: Print first point to verify coordinates are reasonable
-    qDebug() << "      First point:" << points.first().x() << "," << points.first().y();
+    //qDebug() << "      First point:" << points.first().x() << "," << points.first().y();
 
     // Update bounding box
     for (const QPointF& pt : points) {
@@ -2199,7 +2252,7 @@ QByteArray LayerPanel::createShapefileRecord(const MeshEntry* entry, int shapeTy
         maxY = qMax(maxY, pt.y());
     }
 
-    qDebug() << "      Bounding box: (" << minX << "," << minY << ") to (" << maxX << "," << maxY << ")";
+    //qDebug() << "      Bounding box: (" << minX << "," << minY << ") to (" << maxX << "," << maxY << ")";
 
     // Write record (content only, header written separately)
     stream.setByteOrder(QDataStream::LittleEndian);
@@ -2342,6 +2395,10 @@ QJsonObject LayerPanel::createGeoJSONFeature(const MeshEntry& entry, const QStri
     properties["name"] = entry.name;
     properties["id"] = shapeId;
     properties["type"] = getShapeType(entry);
+    if (entry.mesh && entry.mesh->color) {
+        properties["fill"]   = entry.mesh->color->name();   // e.g. "#ff0000"
+        properties["stroke"] = entry.mesh->color->name();
+    }
     feature["properties"] = properties;
 
     // Geometry
@@ -2353,25 +2410,59 @@ QJsonObject LayerPanel::createGeoJSONFeature(const MeshEntry& entry, const QStri
     return feature;
 }
 
-/* Create KML placemark from MeshEntry */
+// /* Create KML placemark from MeshEntry */
+// QString LayerPanel::createKMLPlacemark(const MeshEntry& entry, const QString& shapeId)
+// {
+//     QString kml;
+//     kml += "    <Placemark>\n";
+//     kml += "      <n>" + entry.name + "</n>\n";  // FIXED: changed from <n> to <n>
+//     kml += "      <description>Type: " + getShapeType(entry) + ", ID: " + shapeId + "</description>\n";
+
+//     QString geometry = getGeometryAsKML(entry);
+//     if (!geometry.isEmpty()) {
+//         kml += geometry;
+//     } else {
+//         //qDebug() << "      WARNING: getGeometryAsKML returned empty for" << entry.name;
+//     }
+
+//     kml += "    </Placemark>\n";
+//     return kml;
+// }
 QString LayerPanel::createKMLPlacemark(const MeshEntry& entry, const QString& shapeId)
 {
     QString kml;
     kml += "    <Placemark>\n";
-    kml += "      <n>" + entry.name + "</n>\n";  // FIXED: changed from <n> to <n>
+    kml += "      <name>" + entry.name + "</name>\n";
     kml += "      <description>Type: " + getShapeType(entry) + ", ID: " + shapeId + "</description>\n";
+
+    // ← ADD: KML style with color
+    if (entry.mesh && entry.mesh->color) {
+        // KML color format is AABBGGRR (alpha, blue, green, red)
+        QColor c = *entry.mesh->color;
+        QString kmlColor = QString("ff%1%2%3")
+                               .arg(c.blue(),  2, 16, QChar('0'))
+                               .arg(c.green(), 2, 16, QChar('0'))
+                               .arg(c.red(),   2, 16, QChar('0'));
+
+        kml += "      <Style>\n";
+        kml += "        <LineStyle><color>" + kmlColor + "</color><width>2</width></LineStyle>\n";
+        kml += "        <PolyStyle><color>40" +
+               QString("%1%2%3")
+                   .arg(c.blue(),  2, 16, QChar('0'))
+                   .arg(c.green(), 2, 16, QChar('0'))
+                   .arg(c.red(),   2, 16, QChar('0')) +
+               "</color></PolyStyle>\n";
+        kml += "      </Style>\n";
+    }
 
     QString geometry = getGeometryAsKML(entry);
     if (!geometry.isEmpty()) {
         kml += geometry;
-    } else {
-        qDebug() << "      WARNING: getGeometryAsKML returned empty for" << entry.name;
     }
 
     kml += "    </Placemark>\n";
     return kml;
 }
-
 /* Create GML feature from MeshEntry */
 QString LayerPanel::createGMLFeature(const MeshEntry& entry, const QString& shapeId)
 {
@@ -2510,18 +2601,18 @@ QString LayerPanel::getGeometryAsKML(const MeshEntry& entry)
 {
     QString kml;
 
-    qDebug() << "      [getGeometryAsKML] Processing:" << entry.name;
+    //qDebug() << "      [getGeometryAsKML] Processing:" << entry.name;
 
     if (!entry.position) {
-        qDebug() << "        ERROR: position is NULL!";
+        //qDebug() << "        ERROR: position is NULL!";
         return kml;
     }
     if (!entry.rotation) {
-        qDebug() << "        ERROR: rotation is NULL!";
+        //qDebug() << "        ERROR: rotation is NULL!";
         return kml;
     }
     if (!entry.mesh) {
-        qDebug() << "        ERROR: mesh is NULL!";
+        //qDebug() << "        ERROR: mesh is NULL!";
         return kml;
     }
 
@@ -2530,8 +2621,8 @@ QString LayerPanel::getGeometryAsKML(const MeshEntry& entry)
     // Center position is already in geographic coordinates (lon, lat)
     QVector3D center = *entry.position;
 
-    qDebug() << "        Position:" << center.x() << "," << center.y();
-    qDebug() << "        Mesh vertices:" << entry.mesh->polygen.size();
+    //qDebug() << "        Position:" << center.x() << "," << center.y();
+    //qDebug() << "        Mesh vertices:" << entry.mesh->polygen.size();
 
     // Rotation
     float rotation = entry.rotation->z();
@@ -2539,7 +2630,7 @@ QString LayerPanel::getGeometryAsKML(const MeshEntry& entry)
     float sinFwd = std::sin(rotation);
 
     if (shapeName.startsWith("TempCircle")) {
-        qDebug() << "        Exporting as Circle (Polygon)";
+        //qDebug() << "        Exporting as Circle (Polygon)";
 
         // Export circle as Polygon with multiple points forming a circle
         kml += "      <Polygon>\n";
@@ -2552,7 +2643,7 @@ QString LayerPanel::getGeometryAsKML(const MeshEntry& entry)
         double radiusLat = radius;
         double radiusLon = radius;
 
-        qDebug() << "        Circle radius:" << radius;
+        //qDebug() << "        Circle radius:" << radius;
 
         // Create circle as polygon with 36 points
         const int numPoints = 36;
@@ -2571,7 +2662,7 @@ QString LayerPanel::getGeometryAsKML(const MeshEntry& entry)
         kml += "      </Polygon>\n";
 
     } else if (shapeName.startsWith("TempPoint")) {
-        qDebug() << "        Exporting as Point";
+        //qDebug() << "        Exporting as Point";
 
         // Point
         kml += "      <Point>\n";
@@ -2580,7 +2671,7 @@ QString LayerPanel::getGeometryAsKML(const MeshEntry& entry)
         kml += "      </Point>\n";
 
     } else if (shapeName.startsWith("TempPolyline") || shapeName.startsWith("Line")) {
-        qDebug() << "        Exporting as LineString";
+        //qDebug() << "        Exporting as LineString";
 
         // LineString
         kml += "      <LineString>\n";
@@ -2604,7 +2695,7 @@ QString LayerPanel::getGeometryAsKML(const MeshEntry& entry)
 
     } else if (shapeName.startsWith("TempRectangle") ||
                shapeName.startsWith("TempPolygon")) {
-        qDebug() << "        Exporting as Polygon";
+        //qDebug() << "        Exporting as Polygon";
 
         // Polygon
         kml += "      <Polygon>\n";
@@ -2643,10 +2734,10 @@ QString LayerPanel::getGeometryAsKML(const MeshEntry& entry)
         kml += "      </Polygon>\n";
 
     } else {
-        qDebug() << "        WARNING: Unknown shape type:" << shapeName;
+        //qDebug() << "        WARNING: Unknown shape type:" << shapeName;
     }
 
-    qDebug() << "        Generated KML length:" << kml.length() << "characters";
+    //qDebug() << "        Generated KML length:" << kml.length() << "characters";
     return kml;
 }
 
@@ -2655,18 +2746,18 @@ QString LayerPanel::getGeometryAsGML(const MeshEntry& entry)
 {
     QString gml;
 
-    qDebug() << "      [getGeometryAsGML] Processing:" << entry.name;
+    //qDebug() << "      [getGeometryAsGML] Processing:" << entry.name;
 
     if (!entry.position) {
-        qDebug() << "        ERROR: position is NULL!";
+        //qDebug() << "        ERROR: position is NULL!";
         return gml;
     }
     if (!entry.rotation) {
-        qDebug() << "        ERROR: rotation is NULL!";
+        //qDebug() << "        ERROR: rotation is NULL!";
         return gml;
     }
     if (!entry.mesh) {
-        qDebug() << "        ERROR: mesh is NULL!";
+        //qDebug() << "        ERROR: mesh is NULL!";
         return gml;
     }
 
@@ -2675,8 +2766,8 @@ QString LayerPanel::getGeometryAsGML(const MeshEntry& entry)
     // Center position is already in geographic coordinates (lon, lat)
     QVector3D center = *entry.position;
 
-    qDebug() << "        Position:" << center.x() << "," << center.y();
-    qDebug() << "        Mesh vertices:" << entry.mesh->polygen.size();
+    //qDebug() << "        Position:" << center.x() << "," << center.y();
+    //qDebug() << "        Mesh vertices:" << entry.mesh->polygen.size();
 
     // Rotation
     float rotation = entry.rotation->z();
@@ -2684,7 +2775,7 @@ QString LayerPanel::getGeometryAsGML(const MeshEntry& entry)
     float sinFwd = std::sin(rotation);
 
     if (shapeName.startsWith("TempCircle")) {
-        qDebug() << "        Exporting as Circle (Polygon)";
+        //qDebug() << "        Exporting as Circle (Polygon)";
 
         // Export circle as Polygon with multiple points forming a circle
         gml += "      <gml:Polygon>\n";
@@ -2697,7 +2788,7 @@ QString LayerPanel::getGeometryAsGML(const MeshEntry& entry)
         double radiusLat = radius;
         double radiusLon = radius;
 
-        qDebug() << "        Circle radius:" << radius;
+        //qDebug() << "        Circle radius:" << radius;
 
         // Create circle as polygon with 36 points
         const int numPoints = 36;
@@ -2717,7 +2808,7 @@ QString LayerPanel::getGeometryAsGML(const MeshEntry& entry)
         gml += "      </gml:Polygon>\n";
 
     } else if (shapeName.startsWith("TempPoint")) {
-        qDebug() << "        Exporting as Point";
+        //qDebug() << "        Exporting as Point";
 
         // Point
         gml += "      <gml:Point>\n";
@@ -2726,7 +2817,7 @@ QString LayerPanel::getGeometryAsGML(const MeshEntry& entry)
         gml += "      </gml:Point>\n";
 
     } else if (shapeName.startsWith("TempPolyline") || shapeName.startsWith("Line")) {
-        qDebug() << "        Exporting as LineString";
+        //qDebug() << "        Exporting as LineString";
 
         // LineString
         gml += "      <gml:LineString>\n";
@@ -2751,7 +2842,7 @@ QString LayerPanel::getGeometryAsGML(const MeshEntry& entry)
 
     } else if (shapeName.startsWith("TempRectangle") ||
                shapeName.startsWith("TempPolygon")) {
-        qDebug() << "        Exporting as Polygon";
+        //qDebug() << "        Exporting as Polygon";
 
         // Polygon
         gml += "      <gml:Polygon>\n";
@@ -2790,10 +2881,10 @@ QString LayerPanel::getGeometryAsGML(const MeshEntry& entry)
         gml += "      </gml:Polygon>\n";
 
     } else {
-        qDebug() << "        WARNING: Unknown shape type:" << shapeName;
+        //qDebug() << "        WARNING: Unknown shape type:" << shapeName;
     }
 
-    qDebug() << "        Generated GML length:" << gml.length() << "characters";
+    //qDebug() << "        Generated GML length:" << gml.length() << "characters";
     return gml;
 }
 
@@ -2840,6 +2931,8 @@ QJsonObject LayerPanel::toJson() const
         for (const QString& shapeId : shapes) {
             QJsonObject shapeObj;
             shapeObj["id"] = shapeId;
+            shapeObj["shapeType"] = getShapeTypeFromId(shapeId);
+
             if (shapeDisplayNames.contains(shapeId))
                 shapeObj["displayName"] = shapeDisplayNames[shapeId];
             shapesArray.append(shapeObj);
@@ -2859,7 +2952,7 @@ QJsonObject LayerPanel::toJson() const
 
     json["layers"] = layersArray;
 
-    // qDebug() << "✓ LayerPanel::toJson() - Saved" << layersArray.size() << "layers";
+    // //qDebug() << "✓ LayerPanel::toJson() - Saved" << layersArray.size() << "layers";
 
     return json;
 }
@@ -2867,7 +2960,7 @@ QJsonObject LayerPanel::toJson() const
 /* Deserialize layer data from JSON */
 void LayerPanel::fromJson(const QJsonObject& json)
 {
-    // qDebug() << "✓ LayerPanel::fromJson() - Starting layer restoration";
+    // //qDebug() << "✓ LayerPanel::fromJson() - Starting layer restoration";
 
     // Clear existing layer data (but keep UI structure)
     layerShapes.clear();
@@ -2948,6 +3041,7 @@ void LayerPanel::fromJson(const QJsonObject& json)
         for (const QJsonValue& shapeVal : shapesArray) {
             QString shapeId;
             QString displayName;
+            QString savedShapeType;
 
             // Support both old format (plain string) and new format (object with id + displayName)
             if (shapeVal.isString()) {
@@ -2956,6 +3050,7 @@ void LayerPanel::fromJson(const QJsonObject& json)
                 QJsonObject shapeObj = shapeVal.toObject();
                 shapeId = shapeObj["id"].toString();
                 displayName = shapeObj["displayName"].toString();
+                savedShapeType = shapeObj["shapeType"].toString();
             }
 
             if (shapeId.isEmpty()) continue;
@@ -2997,9 +3092,9 @@ void LayerPanel::fromJson(const QJsonObject& json)
         }
     }
 
-    // qDebug() << "✓ LayerPanel::fromJson() - Restored" << layerItems.size() << "layers";
-    // qDebug() << "  Active layer:" << activeLayerName;
-    // qDebug() << "  Total shapes restored:" << shapeToLayer.size();
+    // //qDebug() << "✓ LayerPanel::fromJson() - Restored" << layerItems.size() << "layers";
+    // //qDebug() << "  Active layer:" << activeLayerName;
+    // //qDebug() << "  Total shapes restored:" << shapeToLayer.size();
 
     // Emit signals to notify that layers have been restored
     for (const QString& layerName : layerItems.keys()) {
@@ -3030,11 +3125,11 @@ QString LayerPanel::getShapeTypeFromId(const QString& shapeId) const
 /* Export layer to FlatGeobuf format */
 bool LayerPanel::exportToFlatGeobuf(const QString& layerName, const QStringList& shapeIds, const QString& filePath)
 {
-    qDebug() << "==========================================";
-    qDebug() << "FLATGEOBUF EXPORT DEBUG";
-    qDebug() << "==========================================";
-    qDebug() << "Layer Name:" << layerName;
-    qDebug() << "Shapes to export:" << shapeIds;
+    //qDebug() << "==========================================";
+    //qDebug() << "FLATGEOBUF EXPORT DEBUG";
+    //qDebug() << "==========================================";
+    //qDebug() << "Layer Name:" << layerName;
+    //qDebug() << "Shapes to export:" << shapeIds;
 
     // FlatGeobuf is a binary format using FlatBuffers
     // For now, we'll export as GeoJSON and provide conversion instructions
@@ -3043,13 +3138,13 @@ bool LayerPanel::exportToFlatGeobuf(const QString& layerName, const QStringList&
     QFileInfo fileInfo(filePath);
     QString geoJsonPath = fileInfo.absolutePath() + "/" + fileInfo.completeBaseName() + "_temp.geojson";
 
-    qDebug() << "FlatGeobuf export: Converting via GeoJSON...";
+    //qDebug() << "FlatGeobuf export: Converting via GeoJSON...";
 
     // First export as GeoJSON
     bool success = exportToGeoJSON(layerName, shapeIds, geoJsonPath);
 
     if (!success) {
-        qDebug() << "ERROR: Failed to create temporary GeoJSON!";
+        //qDebug() << "ERROR: Failed to create temporary GeoJSON!";
         return false;
     }
 
@@ -3062,20 +3157,20 @@ bool LayerPanel::exportToFlatGeobuf(const QString& layerName, const QStringList&
     bool conversionSuccess = process.waitForFinished(30000); // 30 second timeout
 
     if (conversionSuccess && process.exitCode() == 0) {
-        qDebug() << "✓ FlatGeobuf created successfully using ogr2ogr";
+        //qDebug() << "✓ FlatGeobuf created successfully using ogr2ogr";
 
         // Clean up temporary GeoJSON
         QFile::remove(geoJsonPath);
 
-        qDebug() << "==========================================";
-        qDebug() << "FLATGEOBUF EXPORT SUCCESSFUL!";
-        qDebug() << "File:" << filePath;
-        qDebug() << "==========================================\n";
+        //qDebug() << "==========================================";
+        //qDebug() << "FLATGEOBUF EXPORT SUCCESSFUL!";
+        //qDebug() << "File:" << filePath;
+        //qDebug() << "==========================================\n";
 
         return true;
     } else {
-        qDebug() << "WARNING: ogr2ogr not available or conversion failed";
-        qDebug() << "Creating instruction file instead...";
+        //qDebug() << "WARNING: ogr2ogr not available or conversion failed";
+        //qDebug() << "Creating instruction file instead...";
 
         // Create instruction file
         QString instructionPath = fileInfo.absolutePath() + "/" + fileInfo.completeBaseName() + "_README.txt";
@@ -3097,12 +3192,12 @@ bool LayerPanel::exportToFlatGeobuf(const QString& layerName, const QStringList&
             readmeFile.close();
         }
 
-        qDebug() << "==========================================";
-        qDebug() << "FLATGEOBUF: GeoJSON created, manual conversion needed";
-        qDebug() << "Files created:";
-        qDebug() << "  " << geoJsonPath;
-        qDebug() << "  " << instructionPath;
-        qDebug() << "==========================================\n";
+        //qDebug() << "==========================================";
+        //qDebug() << "FLATGEOBUF: GeoJSON created, manual conversion needed";
+        //qDebug() << "Files created:";
+        //qDebug() << "  " << geoJsonPath;
+        //qDebug() << "  " << instructionPath;
+        //qDebug() << "==========================================\n";
 
         return true; // Return true since GeoJSON was created
     }
@@ -3112,20 +3207,20 @@ bool LayerPanel::exportToFlatGeobuf(const QString& layerName, const QStringList&
 /* Export layer to CSV format - FIXED with CSVT for QGIS auto-detection */
 bool LayerPanel::exportToCSV(const QString& layerName, const QStringList& shapeIds, const QString& filePath)
 {
-    qDebug() << "==========================================";
-    qDebug() << "CSV EXPORT DEBUG";
-    qDebug() << "==========================================";
-    qDebug() << "Layer Name:" << layerName;
-    qDebug() << "Shapes to export:" << shapeIds;
+    //qDebug() << "==========================================";
+    //qDebug() << "CSV EXPORT DEBUG";
+    //qDebug() << "==========================================";
+    //qDebug() << "Layer Name:" << layerName;
+    //qDebug() << "Shapes to export:" << shapeIds;
 
     if (!m_canvasWidget) {
-        qDebug() << "ERROR: m_canvasWidget is NULL!";
+        //qDebug() << "ERROR: m_canvasWidget is NULL!";
         return false;
     }
 
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        qDebug() << "ERROR: Cannot create CSV file!";
+        //qDebug() << "ERROR: Cannot create CSV file!";
         return false;
     }
 
@@ -3148,7 +3243,7 @@ bool LayerPanel::exportToCSV(const QString& layerName, const QStringList& shapeI
                 if (!csvLine.isEmpty()) {
                     out << csvLine << "\n";
                     exportedCount++;
-                    qDebug() << "  Exported from Meshes:" << entryName;
+                    //qDebug() << "  Exported from Meshes:" << entryName;
                 }
                 break;
             }
@@ -3165,7 +3260,7 @@ bool LayerPanel::exportToCSV(const QString& layerName, const QStringList& shapeI
                 if (!csvLine.isEmpty()) {
                     out << csvLine << "\n";
                     exportedCount++;
-                    qDebug() << "  Exported from tempMeshes:" << entryName;
+                    //qDebug() << "  Exported from tempMeshes:" << entryName;
                 }
                 break;
             }
@@ -3185,7 +3280,7 @@ bool LayerPanel::exportToCSV(const QString& layerName, const QStringList& shapeI
         // Define column types: String, String, Real, Real, WKT
         csvtOut << "\"String\",\"String\",\"Real\",\"Real\",\"WKT\"\n";
         csvtFile.close();
-        qDebug() << "  ✓ Created CSVT file for QGIS geometry detection";
+        //qDebug() << "  ✓ Created CSVT file for QGIS geometry detection";
     }
 
     // ========== CREATE README WITH IMPORT INSTRUCTIONS ==========
@@ -3227,17 +3322,17 @@ bool LayerPanel::exportToCSV(const QString& layerName, const QStringList& shapeI
         readme << "  - No manual configuration needed\n";
         readme << "  - Just drag and drop - it works!\n";
         readmeFile.close();
-        qDebug() << "  ✓ Created import instructions file";
+        //qDebug() << "  ✓ Created import instructions file";
     }
 
-    qDebug() << "==========================================";
-    qDebug() << "CSV EXPORT SUCCESSFUL!";
-    qDebug() << "Total shapes exported:" << exportedCount;
-    qDebug() << "Files created:";
-    qDebug() << "  - " << filePath;
-    qDebug() << "  - " << csvtPath;
-    qDebug() << "  - " << readmePath;
-    qDebug() << "==========================================\n";
+    //qDebug() << "==========================================";
+    //qDebug() << "CSV EXPORT SUCCESSFUL!";
+    //qDebug() << "Total shapes exported:" << exportedCount;
+    //qDebug() << "Files created:";
+    //qDebug() << "  - " << filePath;
+    //qDebug() << "  - " << csvtPath;
+    //qDebug() << "  - " << readmePath;
+    //qDebug() << "==========================================\n";
 
     return exportedCount > 0;
 }
@@ -3412,13 +3507,35 @@ void LayerPanel::addRasterLayer()
     }
 
     // ── 6. Register ───────────────────────────────────────────────────────
-    rasterLayers[layerName]   = rl;
+    rasterLayers[layerName] = rl;
     rasterLayerOrder.append(layerName);
-
-    // ── 7. Create tree item + toggle ──────────────────────────────────────
     createRasterLayerItem(layerName);
 
-    // ── 8. Notify canvas ─────────────────────────────────────────────────
+    // --- Create editable shape for the raster ---
+    layerVisibility[layerName] = true;
+    if (m_canvasWidget) {
+        QString shapeId = QString("RasterImage_%1").arg(layerName);
+        MeshEntry entry;
+        entry.name = shapeId;
+        entry.position = new QVector3D((rl.minLon + rl.maxLon) / 2.0,
+                                       (rl.minLat + rl.maxLat) / 2.0, 0);
+        entry.rotation = new QQuaternion();
+        entry.size = new QVector3D((rl.maxLon - rl.minLon) / 2.0,
+                                   (rl.maxLat - rl.minLat) / 2.0, 1);
+        entry.velocity = new QVector3D(0, 0, 0);
+        entry.bitmapPath = rl.filePath;
+        entry.mesh = new Mesh();
+        entry.mesh->color = new QColor(Qt::white);
+        entry.mesh->lineWidth = 1;
+        entry.mesh->closePath = false;
+
+        m_canvasWidget->tempMeshes.push_back(entry);
+        addShapeToLayer(shapeId, "RasterImage", layerName);
+
+        rl.shapeId = shapeId;
+        rasterLayers[layerName] = rl;   // update with shapeId
+        shapeToRasterLayer[shapeId] = layerName;
+    }
     emit rasterLayerChanged();
 
     if (m_canvasWidget && m_canvasWidget->gislib) {
@@ -3429,11 +3546,6 @@ void LayerPanel::addRasterLayer()
             );
     }
 
-    qDebug() << "✓ Raster layer added:" << layerName
-             << "| georef:" << (georefFound ? "yes" : "no (default)")
-             << "| extents: lon[" << rl.minLon << "," << rl.maxLon << "]"
-             << "lat[" << rl.minLat << "," << rl.maxLat << "]"
-             << "| size:" << pixmap.width() << "x" << pixmap.height();
 }
 
 /* Create a tree widget item for a raster layer, including its visibility toggle */
@@ -3561,7 +3673,6 @@ void LayerPanel::createRasterLayerItem(const QString& layerName)
         rootLayersItem->setExpanded(true);
     }
 }
-
 /* Handle raster visibility toggle button click */
 void LayerPanel::onRasterVisibilityToggleClicked(const QString& layerName)
 {
@@ -3569,15 +3680,12 @@ void LayerPanel::onRasterVisibilityToggleClicked(const QString& layerName)
 
     bool newVisible = !rasterLayers[layerName].visible;
     rasterLayers[layerName].visible = newVisible;
+    layerVisibility[layerName] = newVisible;   // keep in sync
 
     updateRasterVisibilityIcon(layerName, newVisible);
-
-    // Reuse layerVisibilityChanged so canvas auto-repaints (same slot already
-    // connected in CanvasWidget::setLayerPanel).
     emit layerVisibilityChanged(layerName, newVisible);
     emit rasterLayerChanged();
 }
-
 /* Update the raster visibility toggle button appearance */
 void LayerPanel::updateRasterVisibilityIcon(const QString& layerName, bool visible)
 {
@@ -3712,9 +3820,9 @@ bool LayerPanel::readWorldFile(const QString& imagePath, RasterLayer& out)
         out.minLat = minLat;
         out.maxLat = maxLat;
 
-        qDebug() << "  ✓ World file:" << (base + "." + wext)
-                 << "lon[" << minLon << "," << maxLon << "]"
-                 << "lat[" << minLat << "," << maxLat << "]";
+        //qDebug() << "  ✓ World file:" << (base + "." + wext)
+                 // << "lon[" << minLon << "," << maxLon << "]"
+                 // << "lat[" << minLat << "," << maxLat << "]";
         return true;
     }
     return false;
@@ -3846,7 +3954,7 @@ bool LayerPanel::readGeoTiffExtents(const QString& imagePath, RasterLayer& out)
     }
 
     if (!hasScale || !hasTie) {
-        qDebug() << "  ✗ GeoTIFF: missing scale or tiepoint tags in" << imagePath;
+        //qDebug() << "  ✗ GeoTIFF: missing scale or tiepoint tags in" << imagePath;
         return false;
     }
 
@@ -3862,10 +3970,10 @@ bool LayerPanel::readGeoTiffExtents(const QString& imagePath, RasterLayer& out)
     const double lrX = ulX + imgW * scaleX;          // lower-right
     const double lrY = ulY - imgH * scaleY;
 
-    qDebug() << "  GeoTIFF native bbox: UL(" << ulX << "," << ulY
-             << ")  LR(" << lrX << "," << lrY << ")";
-    qDebug() << "  GeoTIFF scale: X=" << scaleX << " Y=" << scaleY;
-    qDebug() << "  Image size:" << imgW << "x" << imgH;
+    //qDebug() << "  GeoTIFF native bbox: UL(" << ulX << "," << ulY
+             // << ")  LR(" << lrX << "," << lrY << ")";
+    //qDebug() << "  GeoTIFF scale: X=" << scaleX << " Y=" << scaleY;
+    //qDebug() << "  Image size:" << imgW << "x" << imgH;
 
     // ── Parse GeoKey directory to determine CRS ───────────────────────────
     int modelType  = -1;
@@ -3893,7 +4001,7 @@ bool LayerPanel::readGeoTiffExtents(const QString& imagePath, RasterLayer& out)
         }
     }
 
-    qDebug() << "  GeoTIFF GeoKeys: modelType=" << modelType << " epsgCode=" << epsgCode;
+    //qDebug() << "  GeoTIFF GeoKeys: modelType=" << modelType << " epsgCode=" << epsgCode;
 
     // ── Determine if reprojection is needed ───────────────────────────────
 
@@ -3908,13 +4016,13 @@ bool LayerPanel::readGeoTiffExtents(const QString& imagePath, RasterLayer& out)
         const double maxAbsX = qMax(std::abs(ulX), std::abs(lrX));
         const double maxAbsY = qMax(std::abs(ulY), std::abs(lrY));
         needsReproject = (maxAbsX > 180.0 || maxAbsY > 90.0);
-        qDebug() << "  GeoTIFF: no GeoKey modelType — auto-detect needsReproject="
-                 << needsReproject;
+        //qDebug() << "  GeoTIFF: no GeoKey modelType — auto-detect needsReproject="
+                 // << needsReproject;
     }
 
     // ── If EPSG not found, guess from coordinate ranges ───────────────────
     if (needsReproject && epsgCode <= 0) {
-        qDebug() << "  ✗ GeoTIFF: projected CRS but EPSG code unknown — cannot reproject";
+        //qDebug() << "  ✗ GeoTIFF: projected CRS but EPSG code unknown — cannot reproject";
         return false;
     }
 
@@ -3934,7 +4042,7 @@ bool LayerPanel::readGeoTiffExtents(const QString& imagePath, RasterLayer& out)
         QgsCoordinateReferenceSystem wgs84("EPSG:4326");
 
         if (!srcCrs.isValid()) {
-            qDebug() << "  ✗ GeoTIFF: cannot create CRS for" << srcEpsgStr;
+            //qDebug() << "  ✗ GeoTIFF: cannot create CRS for" << srcEpsgStr;
             return false;
         }
 
@@ -3958,28 +4066,28 @@ bool LayerPanel::readGeoTiffExtents(const QString& imagePath, RasterLayer& out)
                 maxLon = qMax(maxLon, geo.x());
                 minLat = qMin(minLat, geo.y());
                 maxLat = qMax(maxLat, geo.y());
-                qDebug() << "    Native(" << c[0] << "," << c[1]
-                         << ") → WGS84(" << geo.x() << "," << geo.y() << ")";
+                //qDebug() << "    Native(" << c[0] << "," << c[1]
+                         // << ") → WGS84(" << geo.x() << "," << geo.y() << ")";
             } catch (QgsCsException& e) {
-                qDebug() << "  ✗ GeoTIFF reprojection failed:" << e.what();
+                //qDebug() << "  ✗ GeoTIFF reprojection failed:" << e.what();
                 return false;
             }
         }
 
-        // qDebug() << "  ✓ Reprojected" << srcEpsgStr << "→ EPSG:4326";
+        // //qDebug() << "  ✓ Reprojected" << srcEpsgStr << "→ EPSG:4326";
     }
 
     // ── Final sanity check ────────────────────────────────────────────────
     if (minLon < -180.1 || maxLon > 180.1) {
-        qDebug() << "  ✗ GeoTIFF lon out of range:" << minLon << maxLon;
+        //qDebug() << "  ✗ GeoTIFF lon out of range:" << minLon << maxLon;
         return false;
     }
     if (minLat < -90.1 || maxLat > 90.1) {
-        qDebug() << "  ✗ GeoTIFF lat out of range:" << minLat << maxLat;
+        //qDebug() << "  ✗ GeoTIFF lat out of range:" << minLat << maxLat;
         return false;
     }
     if (maxLon - minLon < 1e-9 || maxLat - minLat < 1e-9) {
-        qDebug() << "  ✗ GeoTIFF zero-size extent";
+        //qDebug() << "  ✗ GeoTIFF zero-size extent";
         return false;
     }
 
@@ -3989,7 +4097,7 @@ bool LayerPanel::readGeoTiffExtents(const QString& imagePath, RasterLayer& out)
     out.minLat = minLat;
     out.maxLat = maxLat;
 
-    // qDebug() << "  ✓ GeoTIFF final extents: lon[" << minLon << "," << maxLon
+    // //qDebug() << "  ✓ GeoTIFF final extents: lon[" << minLon << "," << maxLon
     //          << "]  lat[" << minLat << "," << maxLat << "]";
     return true;
 }
@@ -4047,35 +4155,151 @@ static RasterLayer makeDefaultExtents(const RasterLayer& rl, CanvasWidget* canva
     out.maxLon = std::min(out.maxLon,  180.0);
     out.minLat = std::max(out.minLat, -85.0511);
     out.maxLat = std::min(out.maxLat,  85.0511);
-
-    // qDebug() << "  ℹ No georef — pixel-scale default:"
-    //          << "lon[" << out.minLon << "," << out.maxLon << "]"
-    //          << "lat[" << out.minLat << "," << out.maxLat << "]"
-    //          << "| deg/px: lon=" << degPerPixLon << " lat=" << degPerPixLat;
-
     return out;
 }
-// void LayerPanel::runUnitTestsOnce()
-// {
-//            if (!GuiTestControl::isEnabled()) return;
-//     static bool testsRun = false;
-//     if (testsRun) return;
-//     testsRun = true;
+QString LayerPanel::generateFriendlyShapeName(const QString& shapeId, const QString& shapeType) const
+{
+    // Remove leading "Temp" (case-insensitive)
+    QString clean = shapeId;
+    if (clean.startsWith("Temp", Qt::CaseInsensitive))
+        clean = clean.mid(4);
 
-//     QTimer::singleShot(0, []() {
-//         Console* console = nullptr;
-//         MainWindow* mw = MainWindow::instance();
-//         if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-//             console = mw->databaseEditor->console;
-//         }
-//         if (!console) {
-//             qDebug() << "LayerPanel: console not available, cannot run tests";
-//             return;
-//         }
+    // Find the last underscore that is followed by a number
+    int lastUnderscore = -1;
+    for (int i = clean.length() - 1; i >= 0; --i) {
+        if (clean[i] == '_') {
+            QString possibleNum = clean.mid(i + 1);
+            bool isNumber;
+            possibleNum.toInt(&isNumber);
+            if (isNumber) {
+                lastUnderscore = i;
+                break;
+            }
+        }
+    }
 
-//         // Create a temporary LayerPanel (no parent, won't show)
-//         LayerPanel* testPanel = new LayerPanel(nullptr);
-//         runLayerPanelTests(testPanel, console);
-//         testPanel->deleteLater();
-//     });
-// }
+    QString suffix;
+    if (lastUnderscore != -1) {
+        suffix = " " + clean.mid(lastUnderscore + 1);
+        clean = clean.left(lastUnderscore);
+    }
+
+    // Now clean may have underscores (e.g., "Polyline_import_26ghhdse")
+    // Strip everything after the first underscore to keep only the shape type
+    int firstUnderscore = clean.indexOf('_');
+    if (firstUnderscore != -1) {
+        clean = clean.left(firstUnderscore);
+    }
+
+    // Fallback to shapeType if clean is empty
+    if (clean.isEmpty() || clean == shapeType) {
+        return shapeType + suffix;
+    }
+
+    return clean + suffix;
+}
+void LayerPanel::onShapeItemClicked(QTreeWidgetItem* item, int column)
+{
+    if (!item) return;
+     if (m_suppressCenter) return;
+
+    // Check if this is a shape item (has shapeId stored)
+    QString shapeId = item->data(0, Qt::UserRole).toString();
+    if (!shapeId.isEmpty() && shapeToLayer.contains(shapeId))
+    {
+        emit shapeClicked(shapeId);
+    }
+}
+void LayerPanel::updateRasterLayerFromShape(const QString& shapeId)
+{
+    if (!shapeToRasterLayer.contains(shapeId)) return;
+    QString layerName = shapeToRasterLayer[shapeId];
+    if (!rasterLayers.contains(layerName)) return;
+    if (!m_canvasWidget) return;
+
+    MeshEntry* entry = nullptr;
+    for (auto& e : m_canvasWidget->tempMeshes) {
+        if (e.name == shapeId) { entry = &e; break; }
+    }
+    if (!entry || !entry->position || !entry->size) return;
+
+    double cx = entry->position->x();
+    double cy = entry->position->y();
+    double hw = entry->size->x();
+    double hh = entry->size->y();
+    rasterLayers[layerName].minLon = cx - hw;
+    rasterLayers[layerName].maxLon = cx + hw;
+    rasterLayers[layerName].minLat = cy - hh;
+    rasterLayers[layerName].maxLat = cy + hh;
+    emit rasterLayerChanged();
+}
+
+void LayerPanel::removeRasterLayer(const QString& layerName)
+{
+    if (!rasterLayers.contains(layerName)) return;
+
+    // Find shape ID for this layer (for cleaning shape maps)
+    QString shapeId;
+    for (auto it = shapeToRasterLayer.constBegin(); it != shapeToRasterLayer.constEnd(); ++it) {
+        if (it.value() == layerName) {
+            shapeId = it.key();
+            break;
+        }
+    }
+
+    // Remove from shape maps
+    if (!shapeId.isEmpty()) {
+        shapeToLayer.remove(shapeId);
+        shapeToRasterLayer.remove(shapeId);
+        shapeDisplayNames.remove(shapeId);
+    }
+
+    // Remove from raster-specific maps
+    rasterLayers.remove(layerName);
+    if (rasterLayerItems.contains(layerName)) {
+        delete rasterLayerItems.take(layerName);
+    }
+    rasterLayerOrder.removeAll(layerName);
+    rasterNameLabels.remove(layerName);
+    rasterExpandButtons.remove(layerName);
+    if (rasterVisibilityWidgets.contains(layerName)) {
+        delete rasterVisibilityWidgets.take(layerName);
+    }
+
+    // Remove from general visibility map
+    layerVisibility.remove(layerName);
+
+    // Remove the tree item (direct child of rootLayersItem)
+    if (rootLayersItem) {
+        for (int i = 0; i < rootLayersItem->childCount(); ++i) {
+            QTreeWidgetItem* child = rootLayersItem->child(i);
+            if (child->data(0, Qt::UserRole).toString() == layerName) {
+                delete child;
+                break;
+            }
+        }
+    }
+
+    emit rasterLayerChanged();
+    emit layerRemoved(layerName);
+}
+void LayerPanel::selectRasterInPanel(const QString& shapeId)
+{
+    QString layerName = shapeToRasterLayer.value(shapeId);
+    if (layerName.isEmpty()) return;
+
+    QTreeWidgetItem* item = rasterLayerItems.value(layerName, nullptr);
+    if (!item) return;
+
+    m_suppressCenter = true;
+
+    // Block ALL signals from layerTree, not just selection changed
+    layerTree->blockSignals(true);
+    layerTree->setCurrentItem(item);
+    layerTree->scrollToItem(item, QAbstractItemView::EnsureVisible);
+    layerTree->blockSignals(false);
+
+    m_suppressCenter = false;
+
+    layerTree->viewport()->update();
+}

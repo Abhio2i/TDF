@@ -209,7 +209,11 @@ public:
     // =========================================================================
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
-
+    int _lastcurrent = 0;
+    float time = 0;
+    bool autoDrop = false;
+    float dropInterval = 10;//s
+    float dropTime =0;
 public slots:
     void start();
     void reset();

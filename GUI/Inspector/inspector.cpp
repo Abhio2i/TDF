@@ -281,7 +281,7 @@ void Inspector::setupUI()
         setTitleBarWidget(titleBarWidget);
     }
 
-    tableWidget = new QTableWidget(5, 2, this);
+   tableWidget = new QTableWidget(0, 2, this);
     if (!tableWidget) {
         delete layout;
         delete container;
@@ -297,7 +297,7 @@ void Inspector::setupUI()
     tableWidget->setAlternatingRowColors(true);
     tableWidget->setShowGrid(false);
     tableWidget->setFrameShape(QFrame::NoFrame);
-    tableWidget->verticalHeader()->setDefaultSectionSize(30);
+    tableWidget->verticalHeader()->setDefaultSectionSize(24);
     tableWidget->viewport()->setStyleSheet("background-color: #0F2636; border: none;");
 
     // ── Right-click context menu for AdditionalParameters rows ────────────
@@ -336,8 +336,7 @@ void Inspector::setupUI()
     addButton->setFixedSize(40, 25);
     addButton->setStyleSheet(InspectorStyles::AddButton);
     addButton->setToolTip("Add new parameter to AdditionalParameters");
-    addButton->setVisible(false);   // hidden by default; shown only when section exists
-
+    addButton->setVisible(false);
     buttonLayout->addSpacerItem(spacer);
     if (!safeAddWidget(buttonLayout, addButton, "setupUI - addButton to buttonLayout")) {
         delete addButton;
@@ -351,31 +350,21 @@ void Inspector::setupUI()
     buttonLayout->setSpacing(10);
     buttonLayout->setContentsMargins(10, 5, 10, 5);
     layout->addLayout(buttonLayout);
-
     setWidget(container);
-
     connect(tableWidget, &QTableWidget::cellChanged, this, [this](int r, int col) {
         if (col != 1 || !rowToKeyPath.contains(r)) return;
-
         QString keyPath = rowToKeyPath[r];
-
-        // Sirf AdditionalParameters ke andar ke parameters ke liye special handling
         if (keyPath.startsWith("AdditionalParameters.")) {
             QJsonObject delta;
             delta["_id"] = mainID;
             delta["AdditionalParameters"] = rebuildAdditionalParameters();
-
-            qDebug() << "AdditionalParameters FULL UPDATE sent:"
-                     << QJsonDocument(delta).toJson(QJsonDocument::Compact);
-
             emit valueChanged(ConnectedID, Name, delta);
             return;
         }
 
-        // Normal parameters (non-AdditionalParameters) — purana simple logic chalega
+        // Normal parameters (non-AdditionalParameters)
         QString newValue = tableWidget->item(r, 1) ? tableWidget->item(r, 1)->text() : "";
         QStringList parts = keyPath.split(".");
-
         QJsonObject delta;
         if (parts.size() == 1) {
             delta[parts[0]] = newValue;
@@ -439,7 +428,6 @@ void Inspector::addParameterRow(const QString &parameterName, int row)
     tableWidget->setRowCount(row + 1);
     rowToKeyPath[row] = parameterName;
     customParameterKeys.insert(parameterName);
-
     QTableWidgetItem *keyItem = new QTableWidgetItem(parameterName);
     if (keyItem) {
         keyItem->setFlags(Qt::ItemIsEnabled);
@@ -453,31 +441,24 @@ void Inspector::addParameterRow(const QString &parameterName, int row)
 /* Insert a new parameter exclusively inside the AdditionalParameters section */
 void Inspector::handleAddParameter()
 {
-    // Guard: button must only be reachable when the section exists
     if (m_additionalParamsHeaderRow == -1 || !sectionInfo.contains("AdditionalParameters")) {
         return;
     }
-
     CustomParameterDialog dialog(this);
     if (dialog.exec() != QDialog::Accepted) {
         return;
     }
-
     const QString parameterName  = dialog.getParameterName();
     const QString parameterType  = dialog.getParameterType();
     const QString parameterValue = dialog.getParameterValue();
-
     if (parameterName.isEmpty()) {
         return;
     }
-
     // ── Determine insertion row ───────────────────────────────────────────
     SectionInfo &secInfo   = sectionInfo["AdditionalParameters"];
     const int    insertRow = m_additionalParamsHeaderRow + secInfo.parameterCount + 1;
-
     tableWidget->blockSignals(true);
     tableWidget->insertRow(insertRow);
-
     // ── Shift rowToKeyPath and sectionRows for all rows >= insertRow ──────
     {
         QMap<int, QString> newRowToKeyPath;
@@ -491,7 +472,6 @@ void Inspector::handleAddParameter()
             newSectionRows[it.key() < insertRow ? it.key() : it.key() + 1] = it.value();
         }
         sectionRows = newSectionRows;
-
         // Section header rows that come after insertRow also shift
         for (auto it = sectionInfo.begin(); it != sectionInfo.end(); ++it) {
             if (it.value().headerRow >= insertRow) {
@@ -506,7 +486,6 @@ void Inspector::handleAddParameter()
     rowToKeyPath[insertRow] = fullKey;
     sectionRows[insertRow]  = "AdditionalParameters";
     secInfo.parameterCount++;
-
     // ── Column-0 label (indented like other section child rows) ───────────
     QTableWidgetItem *keyItem = new QTableWidgetItem("    " + parameterName);
     if (keyItem) {
@@ -515,11 +494,8 @@ void Inspector::handleAddParameter()
         keyItem->setForeground(Qt::black);
         tableWidget->setItem(insertRow, 0, keyItem);
     }
-
     // ── Column-1 value widget ─────────────────────────────────────────────
-
     QJsonValue  newParamValue;
-
     if (parameterType == "string") {
         setupStringCell(insertRow, fullKey, parameterValue);
         newParamValue = parameterValue;
@@ -586,40 +562,28 @@ void Inspector::handleAddParameter()
         newParamValue = spriteObj;
         tableWidget->setRowHeight(insertRow, ImageTemplate::ROW_HEIGHT);
     }
-
     tableWidget->blockSignals(false);
     tableWidget->viewport()->update();
-
     QJsonObject allAdditionalParams;
-
     {
         const SectionInfo &sec = sectionInfo["AdditionalParameters"];
         const int startRow = sec.headerRow + 1;
         const int endRow   = sec.headerRow + sec.parameterCount;
-
         for (int r = startRow; r <= endRow; ++r) {
             const QString kp = rowToKeyPath.value(r);
             if (!kp.startsWith("AdditionalParameters.")) continue;
-
             const QString pName = kp.section('.', 1);
-
             if (r == insertRow) {
-
                 allAdditionalParams[pName] = newParamValue;
                 continue;
             }
-
             // ── Existing rows ─────────────────────────────────────────────
             QWidget *w = tableWidget->cellWidget(r, 1);
             if (!w) {
-                // No widget — fallback to table item
                 QTableWidgetItem *ti = tableWidget->item(r, 1);
                 if (ti) allAdditionalParams[pName] = ti->text();
                 continue;
             }
-
-            // ✅ FIX: pehle direct cast try karo (setupStringCell/setupNumberCell
-            //         directly QLineEdit set karta hai, wrapper mein nahi)
             QLineEdit *directLE = qobject_cast<QLineEdit*>(w);
             if (directLE) {
                 bool isNum = false;
@@ -628,8 +592,6 @@ void Inspector::handleAddParameter()
                                                    : QJsonValue(directLE->text());
                 continue;
             }
-
-            // Wrapped widget ke andar dhundo (setupBooleanCell wrapper use karta hai)
             QLineEdit *childLE = w->findChild<QLineEdit*>();
             if (childLE) {
                 bool isNum = false;
@@ -638,28 +600,18 @@ void Inspector::handleAddParameter()
                                                    : QJsonValue(childLE->text());
                 continue;
             }
-
-            // QCheckBox (boolean) — wrapped in QWidget
             QCheckBox *cb = w->findChild<QCheckBox*>();
             if (cb) {
                 allAdditionalParams[pName] = cb->isChecked();
                 continue;
             }
-
-            // Fallback
             QTableWidgetItem *ti = tableWidget->item(r, 1);
             if (ti) allAdditionalParams[pName] = ti->text();
         }
     }
-
-    // ── Delta emit karo — poora AdditionalParameters section ─────────────
     QJsonObject delta;
     delta["_id"]                  = mainID;
     delta["AdditionalParameters"] = allAdditionalParams;
-
-    qDebug() << "=== DELTA BEING SENT ===";
-    qDebug() << QJsonDocument(delta).toJson(QJsonDocument::Compact);
-
     emit parameterChanged(ConnectedID, Name,
                           "AdditionalParameters." + parameterName,
                           parameterType, true);
@@ -672,32 +624,26 @@ void Inspector::setupBooleanCell(int row, const QString &fullKey, bool value)
     if (!checkboxWidget) {
         return;
     }
-
     QCheckBox *checkBox = new QCheckBox();
     if (!checkBox) {
         delete checkboxWidget;
         return;
     }
-
     checkBox->setChecked(value);
     checkBox->setStyleSheet(InspectorStyles::CheckBox);
-
     QHBoxLayout *layout = new QHBoxLayout(checkboxWidget);
     if (!layout) {
         delete checkBox;
         delete checkboxWidget;
         return;
     }
-
     if (!safeAddWidget(layout, checkBox, "setupBooleanCell - checkBox to layout")) {
         delete checkBox;
         delete checkboxWidget;
         return;
     }
-
     layout->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     layout->setContentsMargins(5, 0, 0, 0);
-
     connect(checkBox, &QCheckBox::toggled, this, [=](bool checked) {
         if (fullKey.startsWith("AdditionalParameters.")) {
             qDebug() << "[BooleanCell] Change in" << fullKey << "checked:" << checked;
@@ -714,7 +660,6 @@ void Inspector::setupBooleanCell(int row, const QString &fullKey, bool value)
             emit valueChanged(ConnectedID, Name, delta);
         }
     });
-
     tableWidget->setRowHeight(row, 30);
     tableWidget->setCellWidget(row, 1, checkboxWidget);
 }
@@ -727,30 +672,24 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
         return;
     }
     arrayWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
     QPushButton *dropdownButton = new QPushButton("▼", this);
     if (!dropdownButton) {
         delete arrayWidget;
         return;
     }
-
     dropdownButton->setStyleSheet(InspectorStyles::DropdownButton);
     dropdownButton->setFixedSize(30, 25);
     dropdownButton->setCheckable(true);
-
     QListWidget *listWidget = new QListWidget();
     if (!listWidget) {
         delete dropdownButton;
         delete arrayWidget;
         return;
     }
-
     listWidget->setProperty("row", row);
     listWidget->viewport()->installEventFilter(this);
-
     int fixedListHeight = 200;
     m_itemHeight = 30;
-
     if (fullKey == "trajectories") {
         listWidget->setAcceptDrops(false);
         listWidget->setFixedHeight(fixedListHeight);
@@ -764,20 +703,15 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
         int listHeight = qMin(array.size(), maxVisibleItems) * m_itemHeight + 10;
         listWidget->setMaximumHeight(listHeight);
     }
-
     listWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     listWidget->setVisible(false);
     listWidget->setStyleSheet(InspectorStyles::ListWidget);
-
     int itemsPerView = fixedListHeight / m_itemHeight;
     listWidget->setProperty("itemsPerView", itemsPerView);
-
-    // Add items with special background for first and last waypoints
     for (int i = 0; i < array.size(); i++) {
         const QJsonValue &val = array[i];
         QJsonObject obj = val.toObject();
         QString displayText;
-
         if (fullKey == "entity" || obj["type"].toString() == "reference") {
             QString name = obj["name"].toString();
             displayText = capitalizeFirstLetter(name) +
@@ -801,7 +735,6 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
                 }
             }
         }
-
         QListWidgetItem *item = new QListWidgetItem(displayText);
         item->setData(Qt::UserRole, obj.toVariantMap());
         item->setFlags(item->flags() | Qt::ItemIsEditable);
@@ -816,10 +749,8 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
         delete arrayWidget;
         return;
     }
-
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
-
     QWidget *topRowWidget = new QWidget(arrayWidget);
     if (!topRowWidget) {
         delete mainLayout;
@@ -838,10 +769,8 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
         delete arrayWidget;
         return;
     }
-
     topRowLayout->setContentsMargins(0, 0, 0, 0);
     topRowLayout->setSpacing(5);
-
     if (!safeAddWidget(topRowLayout, dropdownButton, "setupArrayCell - dropdownButton to topRowLayout")) {
         delete topRowLayout;
         delete topRowWidget;
@@ -851,9 +780,7 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
         delete arrayWidget;
         return;
     }
-
     topRowLayout->addStretch();
-
     if (!safeAddWidget(mainLayout, topRowWidget, "setupArrayCell - topRowWidget to mainLayout")) {
         delete topRowLayout;
         delete topRowWidget;
@@ -863,7 +790,6 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
         delete arrayWidget;
         return;
     }
-
     if (!safeAddWidget(mainLayout, listWidget, "setupArrayCell - listWidget to mainLayout")) {
         delete topRowLayout;
         delete topRowWidget;
@@ -873,7 +799,6 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
         delete arrayWidget;
         return;
     }
-
     QWidget *buttonWidget = nullptr;
     QPushButton *removeBtn = nullptr;
     QPushButton *addBtn = nullptr;
@@ -900,7 +825,6 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
             emit trajectoryWaypointsChanged(ConnectedID, delta[fullKey].toArray());
         }
     };
-
     connect(dropdownButton, &QPushButton::clicked, this, [=]() {
         bool isVisible = !listWidget->isVisible();
         listWidget->setVisible(isVisible);
@@ -927,7 +851,6 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
             tableWidget->setRowHeight(row, 30);
         }
     });
-
     if (fullKey != "entity" && removeBtn) {
         connect(removeBtn, &QPushButton::clicked, this, [=]() {
             QListWidgetItem *item = listWidget->currentItem();
@@ -947,7 +870,6 @@ void Inspector::setupArrayCell(int row, const QString &fullKey, const QJsonArray
             }
         });
     }
-
     connect(listWidget, &QListWidget::itemChanged, this, [=](QListWidgetItem *item) {
         if (fullKey != "trajectories") return;
         QString newText = item->text();
@@ -1002,15 +924,10 @@ void Inspector::setupStringCell(int row, const QString &fullKey, const QString &
     tableWidget->setCellWidget(row, 1, lineEdit);
     connect(lineEdit, &QLineEdit::editingFinished, this, [=]() {
         QString newValue = lineEdit->text();
-
-        // ✅ If this cell belongs to AdditionalParameters, emit full object
         if (fullKey.startsWith("AdditionalParameters.")) {
-            qDebug() << "[StringCell] Change detected in" << fullKey << "new value:" << newValue;
             emitFullAdditionalParametersUpdate();
             return;
         }
-
-        // Otherwise, normal delta for non‑AdditionalParameters fields
         QJsonObject delta;
         if (fullKey.contains(".")) {
             QStringList parts = fullKey.split(".");
@@ -1027,20 +944,15 @@ void Inspector::setupNumberCell(int row, const QString &fullKey, double value)
 {
     WheelableLineEdit *lineEdit = new WheelableLineEdit();
     if (!lineEdit) return;
-
     lineEdit->setText(formatNumberForUI(value));
     QDoubleValidator *validator = new QDoubleValidator(lineEdit);
     validator->setNotation(QDoubleValidator::StandardNotation);
     validator->setDecimals(4);
     lineEdit->setValidator(validator);
-
     tableWidget->setRowHeight(row, 30);
     tableWidget->setCellWidget(row, 1, lineEdit);
-
-    // ─── MODIFIED LAMBDA ─────────────────────────────────────────
     connect(lineEdit, &QLineEdit::editingFinished, this, [=]() {
         if (fullKey.startsWith("AdditionalParameters.")) {
-            qDebug() << "[NumberCell] Change in" << fullKey << "value:" << lineEdit->text();
             emitFullAdditionalParametersUpdate();
         } else {
             QJsonObject delta;
@@ -1225,19 +1137,15 @@ bool Inspector::eventFilter(QObject *watched, QEvent *event)
 // init
 void Inspector::init(QString ID, QString name, QJsonObject object)
 {
-    // Block signals during initialization
     if (tableWidget) {
         tableWidget->blockSignals(true);
     }
-
-    // Clear previous state FIRST
     rowToKeyPath.clear();
     customParameterKeys.clear();
     sectionInfo.clear();
     sectionRows.clear();
     currentlyExpandedButton = nullptr;
     ConnectedID = ID;
-    // Normalize component name
     QString newName = name.toLower();
     if (name.compare("Trajectories", Qt::CaseInsensitive) == 0) {
         newName = QString("trajectory");
@@ -1248,8 +1156,6 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
     } else if (name.compare("crossSection", Qt::CaseInsensitive) == 0) {
         newName = QString("crossSection");
     }
-
-    // FIX: Set column resize mode - key=30% (Interactive), value=70% (Stretch)
     if (tableWidget) {
         if (newName == "sensors" || newName == "iffs" || newName == "radios") {
             tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
@@ -1259,8 +1165,6 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
             tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
         }
     }
-
-    // Determine component ID
     QString currentComponentId = "";
     if (object.contains("type") && object["type"].toString().toLower() == "subcomponent") {
         if (object.contains("id")) {
@@ -1292,32 +1196,25 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
             }
         }
     }
-
     mainID = currentComponentId;
     Name = newName;
-    // Handle multi-component containers (sensors, iffs, radios)
     if (Name == "sensors" || Name == "iffs" || Name == "radios") {
-
         handleMultiComponentContainer(ID, name, object);
         return;
     }
-    // Update title
     if (titleLabel) {
         titleLabel->setText(name);
     }
-    // Clear and reset table
     if (tableWidget) {
         tableWidget->clearContents();
         tableWidget->setRowCount(0);
     }
-    // Load component data if empty
     if ((Name == QString("trajectory") || Name == QString("dynamicModel") ||
          Name == QString("meshRenderer2d") || Name == QString("collider")) &&
         object.isEmpty() && hierarchy) {
         QString dataType = Name;
         object = hierarchy->getComponentData(ID, dataType);
     }
-    // Calculate row count
     int rowCount = 0;
     for (const QString &key : object.keys()) {
         QJsonValue value = object[key];
@@ -1349,8 +1246,6 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
     if (tableWidget) {
         tableWidget->setRowCount(rowCount);
     }
-
-    // Add rows
     int row = 0;
     for (const QString &key : object.keys()) {
         row = addSimpleRow(row, key, object[key]);
@@ -1360,7 +1255,6 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
             customParameterKeys.insert(key);
         }
     }
-
     if (tableWidget) {
         if (m_initialComponentData.isEmpty()) {
             m_initialComponentData = object;
@@ -1375,9 +1269,9 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
         if (addButton) {
             addButton->setVisible(m_additionalParamsHeaderRow != -1);
         }
+        tableWidget->setRowCount(row);
         tableWidget->blockSignals(false);
-        tableWidget->resizeRowsToContents();
-        // Re-apply column width after resizeRowsToContents (it can reset columns)
+        // Re-apply column widths
         tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
         tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
         if (tableWidget->rowCount() > 0) {
@@ -1513,7 +1407,6 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
                     subKeyItem->setForeground(Qt::black);
                     tableWidget->setItem(currentRow, 0, subKeyItem);
                 }
-
                 setupStringCell(currentRow, fullKey, obj.value(subKey).toString());
                 currentRow++;
             }
@@ -1579,7 +1472,6 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
     else {
         setupValueCell(row, key, value);
     }
-
     return row + 1;
 }
 // setupValueCell
@@ -1656,7 +1548,6 @@ void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJ
     if (!valueWidget) {
         return;
     }
-
     QVBoxLayout *layout = new QVBoxLayout(valueWidget);
     if (!layout) {
         delete valueWidget;
@@ -1665,7 +1556,6 @@ void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJ
     layout->setContentsMargins(0, 0, 0, 0);
     for (const QString &subKey : obj.keys()) {
         if (subKey == "type") continue;
-
         QHBoxLayout *subLayout = new QHBoxLayout();
         if (!subLayout) {
             continue;
@@ -1679,7 +1569,6 @@ void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJ
         safeAddWidget(subLayout, label, "setupGenericObjectCell - label to subLayout");
         QJsonValue subValue = obj[subKey];
         bool isModulationField = fullKey.contains("modulation", Qt::CaseInsensitive);
-
         if (isModulationField && subValue.isString()) {
             QLineEdit *edit = new QLineEdit();
             if (!edit) {
@@ -1690,14 +1579,12 @@ void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJ
             edit->setText(subValue.toString());
             edit->setStyleSheet(InspectorStyles::LineEdit);
             edit->setObjectName(subKey);
-
             if (!safeAddWidget(subLayout, edit, "setupGenericObjectCell - edit to subLayout")) {
                 delete edit;
                 delete subLayout;
                 delete label;
                 continue;
             }
-
             layout->addLayout(subLayout);
             connect(edit, &QLineEdit::editingFinished, this, [=]() {
                 QJsonObject delta;
@@ -1719,16 +1606,13 @@ void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJ
             validator->setDecimals(4);
             edit->setValidator(validator);
             edit->setObjectName(subKey);
-
             if (!safeAddWidget(subLayout, edit, "setupGenericObjectCell - edit to subLayout")) {
                 delete edit;
                 delete subLayout;
                 delete label;
                 continue;
             }
-
             layout->addLayout(subLayout);
-
             connect(edit, &QLineEdit::editingFinished, this, [=]() {
                 QJsonObject delta;
                 delta["_id"] = mainID;
@@ -1748,7 +1632,6 @@ void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJ
             QHBoxLayout *checkboxLayout = new QHBoxLayout();
             checkboxLayout->addWidget(checkBox);
             checkboxLayout->addStretch();
-
             if (!safeAddWidget(subLayout, checkBox, "setupGenericObjectCell - checkBox to subLayout")) {
                 delete checkBox;
                 delete subLayout;
@@ -1773,16 +1656,13 @@ void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJ
             edit->setText(subValue.toString());
             edit->setStyleSheet(InspectorStyles::LineEdit);
             edit->setObjectName(subKey);
-
             if (!safeAddWidget(subLayout, edit, "setupGenericObjectCell - edit to subLayout")) {
                 delete edit;
                 delete subLayout;
                 delete label;
                 continue;
             }
-
             layout->addLayout(subLayout);
-
             connect(edit, &QLineEdit::editingFinished, this, [=]() {
                 QJsonObject delta;
                 delta["_id"] = mainID;
@@ -1791,7 +1671,6 @@ void Inspector::setupGenericObjectCell(int row, const QString &fullKey, const QJ
             });
         }
     }
-
     tableWidget->setRowHeight(row, 30 * obj.size());
     tableWidget->setCellWidget(row, 1, valueWidget);
 }
@@ -1805,12 +1684,10 @@ void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
             break;
         }
     }
-
     if (trajRow == -1) {
         tableWidget->setRowCount(tableWidget->rowCount() + 1);
         trajRow = tableWidget->rowCount() - 1;
         rowToKeyPath[trajRow] = "trajectories";
-
         QTableWidgetItem *keyItem = new QTableWidgetItem("trajectories");
         if (keyItem) {
             keyItem->setFlags(Qt::ItemIsEnabled);
@@ -1818,31 +1695,24 @@ void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
             keyItem->setForeground(Qt::black);
             tableWidget->setItem(trajRow, 0, keyItem);
         }
-
         setupArrayCell(trajRow, "trajectories", QJsonArray());
     }
-
     QWidget *arrayWidget = tableWidget->cellWidget(trajRow, 1);
     if (!arrayWidget) {
         setupArrayCell(trajRow, "trajectories", QJsonArray());
         arrayWidget = tableWidget->cellWidget(trajRow, 1);
     }
-
     if (!arrayWidget) return;
-
     QListWidget *listWidget = arrayWidget->findChild<QListWidget*>();
     if (!listWidget) return;
-
     if (ConnectedID != entityId || Name != "trajectory") {
         ConnectedID = entityId;
         Name = "trajectory";
         if (titleLabel) {
             titleLabel->setText("Trajectories");
         }
-
         QJsonObject trajData = hierarchy ? hierarchy->getComponentData(entityId, "trajectory") : QJsonObject();
         init(entityId, "Trajectories", trajData);
-
         trajRow = -1;
         for (int r = 0; r < tableWidget->rowCount(); ++r) {
             if (rowToKeyPath[r] == "trajectories") {
@@ -1850,39 +1720,30 @@ void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
                 break;
             }
         }
-
         if (trajRow == -1) return;
         arrayWidget = tableWidget->cellWidget(trajRow, 1);
         listWidget = arrayWidget->findChild<QListWidget*>();
         if (!listWidget) return;
     }
-
     listWidget->clear();
-
     int itemHeight = m_itemHeight > 0 ? m_itemHeight : 30;
-
     for (int i = 0; i < waypoints.size(); i++) {
         const QJsonValue &val = waypoints[i];
         QJsonObject obj = val.toObject();
         if (!obj.contains("position")) continue;
-
         QJsonObject pos = obj["position"].toObject();
         double speed = obj.value("speed").toDouble(800.0);
-
         QString displayText = QString("Lat: %1, Alt: %2, Lon: %3, Speed: %4 Km/h")
                                   .arg(formatNumberForUI(pos["x"].toDouble()))
                                   .arg(formatNumberForUI(pos["y"].toDouble()))
                                   .arg(formatNumberForUI(pos["z"].toDouble()))
                                   .arg(formatNumberForUI(speed));
-
         QListWidgetItem *item = new QListWidgetItem(displayText);
         item->setData(Qt::UserRole, obj.toVariantMap());
         item->setFlags(item->flags() | Qt::ItemIsEditable);
         item->setSizeHint(QSize(0, itemHeight));
-
         listWidget->addItem(item);
     }
-
     if (waypoints.isEmpty() && hierarchy) {
         QJsonObject trajData = hierarchy->getComponentData(ConnectedID, "trajectory");
         if (!trajData.isEmpty() && trajData.contains("trajectories")) {
@@ -1891,26 +1752,21 @@ void Inspector::updateTrajectory(QString entityId, QJsonArray waypoints)
                 const QJsonValue &val = array[i];
                 QJsonObject obj = val.toObject();
                 if (!obj.contains("position")) continue;
-
                 QJsonObject pos = obj["position"].toObject();
                 double speed = obj.value("speed").toDouble(800.0);
-
                 QString displayText = QString("Lat: %1, Alt: %2, Lon: %3, Speed: %4 Km/h")
                                           .arg(formatNumberForUI(pos["x"].toDouble()))
                                           .arg(formatNumberForUI(pos["y"].toDouble()))
                                           .arg(formatNumberForUI(pos["z"].toDouble()))
                                           .arg(formatNumberForUI(speed));
-
                 QListWidgetItem *item = new QListWidgetItem(displayText);
                 item->setData(Qt::UserRole, obj.toVariantMap());
                 item->setFlags(item->flags() | Qt::ItemIsEditable);
                 item->setSizeHint(QSize(0, itemHeight));
-
                 listWidget->addItem(item);
             }
         }
     }
-
     tableWidget->viewport()->update();
 }
 // capitalizeFirstLetter
@@ -1920,17 +1776,13 @@ static QString capitalizeFirstLetter(const QString &str)
     return str[0].toUpper() + str.mid(1);
 }
 
-
-
 void Inspector::setupUnitParameterCell(int row, const QString &fullKey, const QJsonObject &paramObj)
 {
-    // ── Key label tooltip (column 0 ONLY) ────────────────────────────────
     if (QTableWidgetItem *keyItem = tableWidget->item(row, 0)) {
         QString desc     = paramObj["description"].toString();
         double  minVal   = paramObj["min"].toDouble(0.0);
         double  maxVal   = paramObj["max"].toDouble(0.0);
         bool    hasRange = !(qFuzzyIsNull(minVal) && qFuzzyIsNull(maxVal));
-
         QString tooltip;
         if (!desc.isEmpty())
             tooltip += desc;
@@ -1957,35 +1809,26 @@ void Inspector::setupUnitParameterCell(int row, const QString &fullKey, const QJ
     WheelableLineEdit *valueEdit = new WheelableLineEdit();
     QString initialValue = formatNumberForUI(paramObj["value"].toDouble());
     valueEdit->setText(initialValue);
-    // NO setToolTip on valueEdit
     QDoubleValidator *validator = new QDoubleValidator(valueEdit);
     validator->setNotation(QDoubleValidator::StandardNotation);
     validator->setDecimals(6);
     valueEdit->setValidator(validator);
     valueEdit->setFixedHeight(30);
     valueEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-
     const QString originalStyle = valueEdit->styleSheet();
-
-
-
     QString unit = paramObj["unit"].toString();
     QLabel *unitLabel = new QLabel(unit);
     unitLabel->setStyleSheet(InspectorStyles::UnitParamLabel);
     unitLabel->setFixedHeight(30);
-    unitLabel->setFixedWidth(60);  // consistent fixed width for all units
+    unitLabel->setFixedWidth(60);
     unitLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-
     layout->addWidget(valueEdit);
     layout->addWidget(unitLabel);
-
     tableWidget->setRowHeight(row, 30);
     tableWidget->setCellWidget(row, 1, unitWidget);
-
     // ── Shared state ──────────────────────────────────────────────────────
     auto lastGoodValue = std::make_shared<QString>(initialValue);
     auto inErrorState  = std::make_shared<bool>(false);
-
     double  captMin  = paramObj["min"].toDouble(0.0);
     double  captMax  = paramObj["max"].toDouble(0.0);
     bool    hasRange = !(qFuzzyIsNull(captMin) && qFuzzyIsNull(captMax));
@@ -1994,9 +1837,7 @@ void Inspector::setupUnitParameterCell(int row, const QString &fullKey, const QJ
     // ── editingFinished ───────────────────────────────────────────────────
     connect(valueEdit, &QLineEdit::editingFinished, this, [=]() {
         double enteredVal = valueEdit->text().toDouble();
-
         if (hasRange && (enteredVal < captMin || enteredVal > captMax)) {
-            // Enter error state — override style with red
             *inErrorState = true;
             valueEdit->setStyleSheet(
                 "QLineEdit { border: 1px solid #e74c3c; background-color: #2d0a0a; "
@@ -2017,7 +1858,6 @@ void Inspector::setupUnitParameterCell(int row, const QString &fullKey, const QJ
         if (wasInError) {
             valueEdit->setStyleSheet(originalStyle);
         }
-
         QJsonObject delta;
         QJsonObject updatedParam = paramObj;
         updatedParam["value"] = enteredVal;
@@ -2030,8 +1870,6 @@ void Inspector::setupUnitParameterCell(int row, const QString &fullKey, const QJ
         delta["_id"] = mainID;
         emit valueChanged(ConnectedID, Name, delta);
     });
-
-    // ── FocusOut: revert to last good value if still in error ────────────
     class FocusWatcher : public QObject {
     public:
         std::shared_ptr<QString> lastGood;
@@ -2978,44 +2816,33 @@ bool Inspector::isLocked() const
     return m_locked;
 }
 
-// %%% AdditionalParameters Right-Click Context Menu %%%
-/* Show Remove option for parameters that live inside AdditionalParameters */
 void Inspector::showAdditionalParamContextMenu(const QPoint &pos)
 {
     if (!tableWidget) {
         return;
     }
-
     const int row = tableWidget->rowAt(pos.y());
     if (row < 0) {
         return;
     }
-
-    // Only act on rows that belong to AdditionalParameters
     if (!sectionRows.contains(row) ||
         sectionRows[row].compare("AdditionalParameters", Qt::CaseInsensitive) != 0) {
         return;
     }
-
-    // Extract the bare parameter name from "AdditionalParameters.paramName"
     const QString fullKey   = rowToKeyPath.value(row);
     const QStringList parts = fullKey.split(".");
     if (parts.size() < 2) {
         return;
     }
     const QString paramName = parts.last();
-
     QMenu menu(this);
     QAction *removeAction = menu.addAction(
         QIcon::fromTheme("list-remove"), QString("Remove \"%1\"").arg(paramName));
     removeAction->setToolTip("Delete this parameter from AdditionalParameters");
-
     const QAction *selected = menu.exec(tableWidget->viewport()->mapToGlobal(pos));
     if (selected != removeAction) {
         return;
     }
-
-    // ── Remove row from table ─────────────────────────────────────────────
     tableWidget->blockSignals(true);
     tableWidget->removeRow(row);
 
@@ -3026,14 +2853,13 @@ void Inspector::showAdditionalParamContextMenu(const QPoint &pos)
             newRowToKeyPath[it.key() < row ? it.key() : it.key() - 1] = it.value();
         }
         rowToKeyPath = newRowToKeyPath;
-
         QMap<int, QString> newSectionRows;
         for (auto it = sectionRows.constBegin(); it != sectionRows.constEnd(); ++it) {
             if (it.key() == row) continue;
             newSectionRows[it.key() < row ? it.key() : it.key() - 1] = it.value();
         }
-        sectionRows = newSectionRows;
 
+        sectionRows = newSectionRows;
         for (auto it = sectionInfo.begin(); it != sectionInfo.end(); ++it) {
             if (it.value().headerRow > row) {
                 it.value().headerRow--;
@@ -3045,32 +2871,25 @@ void Inspector::showAdditionalParamContextMenu(const QPoint &pos)
                 qMax(0, sectionInfo["AdditionalParameters"].parameterCount - 1);
             m_additionalParamsHeaderRow = sectionInfo["AdditionalParameters"].headerRow;
         }
-    }
 
+    }
     tableWidget->blockSignals(false);
     tableWidget->viewport()->update();
-
     QJsonObject allAdditionalParams;
-
     if (sectionInfo.contains("AdditionalParameters")) {
         const SectionInfo &sec = sectionInfo["AdditionalParameters"];
         const int startRow = sec.headerRow + 1;
         const int endRow   = sec.headerRow + sec.parameterCount;
-
         for (int r = startRow; r <= endRow; ++r) {
             const QString kp = rowToKeyPath.value(r);
             if (!kp.startsWith("AdditionalParameters.")) continue;
-
             const QString pName = kp.section('.', 1);
             QWidget *w = tableWidget->cellWidget(r, 1);
-
             if (!w) {
                 QTableWidgetItem *ti = tableWidget->item(r, 1);
                 if (ti) allAdditionalParams[pName] = ti->text();
                 continue;
             }
-
-            // Direct cast pehle (string/number)
             QLineEdit *directLE = qobject_cast<QLineEdit*>(w);
             if (directLE) {
                 bool isNum = false;
@@ -3079,8 +2898,6 @@ void Inspector::showAdditionalParamContextMenu(const QPoint &pos)
                                                    : QJsonValue(directLE->text());
                 continue;
             }
-
-            // Wrapped QLineEdit
             QLineEdit *childLE = w->findChild<QLineEdit*>();
             if (childLE) {
                 bool isNum = false;
@@ -3089,28 +2906,23 @@ void Inspector::showAdditionalParamContextMenu(const QPoint &pos)
                                                    : QJsonValue(childLE->text());
                 continue;
             }
-
-            // Boolean checkbox
             QCheckBox *cb = w->findChild<QCheckBox*>();
             if (cb) {
                 allAdditionalParams[pName] = cb->isChecked();
                 continue;
             }
-
             QTableWidgetItem *ti = tableWidget->item(r, 1);
             if (ti) allAdditionalParams[pName] = ti->text();
         }
     }
-
     QJsonObject delta;
     delta["_id"]                  = mainID;
     delta["AdditionalParameters"] = allAdditionalParams;
-
     emit parameterChanged(ConnectedID, Name,
                           "AdditionalParameters." + paramName, "", false);
     emit valueChanged(ConnectedID, Name, delta);
 }
-// inspector.cpp mein implement
+
 QJsonObject Inspector::rebuildAdditionalParameters() const
 {
     QJsonObject allAdditionalParams;
@@ -3118,66 +2930,48 @@ QJsonObject Inspector::rebuildAdditionalParameters() const
     if (!sectionInfo.contains("AdditionalParameters")) {
         return allAdditionalParams;
     }
-
     const SectionInfo &sec = sectionInfo["AdditionalParameters"];
     const int startRow = sec.headerRow + 1;
     const int endRow   = sec.headerRow + sec.parameterCount;
-
     for (int r = startRow; r <= endRow; ++r) {
         const QString kp = rowToKeyPath.value(r);
         if (!kp.startsWith("AdditionalParameters.")) continue;
-
         const QString pName = kp.section('.', 1);
-
         QWidget *w = tableWidget->cellWidget(r, 1);
         if (!w) {
-            // Fallback to item
             if (QTableWidgetItem *ti = tableWidget->item(r, 1)) {
                 allAdditionalParams[pName] = ti->text();
             }
             continue;
         }
-
-        // Direct QLineEdit (string/number cells)
         if (QLineEdit *le = qobject_cast<QLineEdit*>(w)) {
             bool isNum = false;
             double d = le->text().toDouble(&isNum);
             allAdditionalParams[pName] = isNum ? QJsonValue(d) : QJsonValue(le->text());
             continue;
         }
-
-        // Child QLineEdit (wrapped cases)
         if (QLineEdit *childLE = w->findChild<QLineEdit*>()) {
             bool isNum = false;
             double d = childLE->text().toDouble(&isNum);
             allAdditionalParams[pName] = isNum ? QJsonValue(d) : QJsonValue(childLE->text());
             continue;
         }
-
-        // Boolean checkbox
         if (QCheckBox *cb = w->findChild<QCheckBox*>()) {
             allAdditionalParams[pName] = cb->isChecked();
             continue;
         }
 
     }
-
     return allAdditionalParams;
 }
 void Inspector::emitFullAdditionalParametersUpdate()
 {
     if (m_additionalParamsHeaderRow == -1) {
-        qDebug() << "[AdditionalParameters] No section found, skipping full update";
         return;
     }
-
     QJsonObject allParams = rebuildAdditionalParameters();
     QJsonObject delta;
     delta["_id"] = mainID;
     delta["AdditionalParameters"] = allParams;
-
-    // qDebug() << "[AdditionalParameters] Emitting FULL update with" << allParams.keys().size() << "parameters:";
-    // qDebug() << QJsonDocument(delta).toJson(QJsonDocument::Indented);
-
     emit valueChanged(ConnectedID, Name, delta);
 }

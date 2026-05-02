@@ -19,7 +19,7 @@ public:
     float launchAngle      = 45.0f;
     float dragCoefficient  = 0.295f;
     bool  spinStabilised   = true;
-
+    void Update() override;
     enum class ShellType { HE, HEAT, HESH, Illumination, Smoke, Cluster, Excalibur, DPICM };
     ShellType shellType = ShellType::HE;
 

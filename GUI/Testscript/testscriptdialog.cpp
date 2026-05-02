@@ -117,7 +117,7 @@ TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString
                  ", editMode: " + std::string(editMode ? "true" : "false"));
     Console::log("Qt Version: " + std::string(qVersion()));
     // Configure window
-    setWindowTitle(tr("Test Script Dialog"));
+    setWindowTitle(tr("Test Script"));
     setMinimumSize(600, 400);
     setWindowFlags(Qt::Window);
     setStyleSheet("TestScriptDialog { background-color: #1E1E1E; }");

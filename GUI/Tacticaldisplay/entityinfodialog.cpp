@@ -56,8 +56,11 @@ EntityInfoDialog::EntityInfoDialog(QWidget *parent)
 void EntityInfoDialog::setupUI()
 {
     setWindowTitle("Entity Information");
-    setFixedSize(500, 600);
-    setWindowFlags(Qt::Dialog | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
+    // setFixedSize(500, 600);
+    // setWindowFlags(Qt::Dialog | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
+    setMinimumSize(400, 500);
+    resize(500, 600);
+    setWindowFlags(Qt::Dialog | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint | Qt::WindowMaximizeButtonHint);
 
     setStyleSheet(EntityInfoDialogStyles::Dialog);
 
@@ -87,11 +90,9 @@ void EntityInfoDialog::setupUI()
     scrollArea->setWidget(scrollWidget);
     closeButton = new QPushButton("Close");
     closeButton->setStyleSheet(EntityInfoDialogStyles::CloseButton);
-
     mainLayout->addWidget(titleLabel);
     mainLayout->addWidget(scrollArea);
     mainLayout->addWidget(closeButton);
-
     connect(closeButton, &QPushButton::clicked, this, &EntityInfoDialog::onCloseClicked);
 }
 void EntityInfoDialog::createAttributeSection()
@@ -120,7 +121,6 @@ void EntityInfoDialog::createPositionSection()
     positionLabel->setMinimumHeight(35);
     scrollLayout->addWidget(positionLabel);
 }
-
 void EntityInfoDialog::createSpeedAltTableSection()
 {
     speedAltTable = new QTableWidget(2, 3);
@@ -131,6 +131,13 @@ void EntityInfoDialog::createSpeedAltTableSection()
                                    QAbstractItemView::DoubleClicked |
                                    QAbstractItemView::EditKeyPressed |
                                    QAbstractItemView::SelectedClicked);
+
+    // --- Increase row height from 40 to 52 ---
+    const int rowHeight = 52;
+    speedAltTable->verticalHeader()->setDefaultSectionSize(rowHeight);
+    speedAltTable->verticalHeader()->setMinimumSectionSize(rowHeight);
+
+    // Setup items (unchanged)
     speedAltTable->setItem(0, 0, new QTableWidgetItem("Speed"));
     speedAltTable->item(0, 0)->setForeground(Qt::white);
 
@@ -153,27 +160,31 @@ void EntityInfoDialog::createSpeedAltTableSection()
     speedAltTable->item(1, 2)->setFlags(speedAltTable->item(1, 2)->flags() | Qt::ItemIsEditable);
     speedAltTable->item(1, 2)->setForeground(Qt::white);
 
-    int rowHeight = 40;
+    // --- Recalculate fixed height using the new rowHeight ---
     int headerHeight = speedAltTable->horizontalHeader()->height();
     speedAltTable->setFixedHeight((2 * rowHeight) + headerHeight + 5);
 
     speedAltTable->horizontalHeader()->setStretchLastSection(true);
     speedAltTable->setColumnWidth(0, 100);
 
-    connect(speedAltTable, &QTableWidget::cellChanged, this, &EntityInfoDialog::onSpeedAltCellChanged);
-
+    // --- Modified connection: scroll to the cell before editing ---
     connect(speedAltTable, &QTableWidget::cellPressed, this, [=](int row, int column) {
         if (column == 2) {
             QTimer::singleShot(0, this, [=]() {
-                if (speedAltTable->item(row, column)) {
-                    speedAltTable->editItem(speedAltTable->item(row, column));
+                QTableWidgetItem *item = speedAltTable->item(row, column);
+                if (item) {
+                    // Ensure the cell is fully visible before editing
+                    speedAltTable->scrollToItem(item, QAbstractItemView::EnsureVisible);
+                    speedAltTable->editItem(item);
                 }
             });
         }
     });
 
+    connect(speedAltTable, &QTableWidget::cellChanged, this, &EntityInfoDialog::onSpeedAltCellChanged);
     scrollLayout->addWidget(speedAltTable);
 }
+
 
 void EntityInfoDialog::createEquipmentSection()
 {
@@ -268,27 +279,30 @@ void EntityInfoDialog::createOptionsSection()
 // Entity Data Management Methods
 // ========================================================================= //
 
-void EntityInfoDialog::setEntityInfo(const QString& entityId, const QString& entityName, MeshEntry* info)
+void EntityInfoDialog::setEntityInfo(const QString& entityId,
+                                     const QString& entityName,
+                                     MeshEntry* info)
 {
-    if (!info) {
+    entryInfo       = nullptr;
+    m_trackedEntity = nullptr;
+    currentEntityId.clear();
+
+    if (!info || !info->entity || !info->entity->Active) {
         clearInfo();
         hide();
         return;
     }
-    if (!info->entity) {
+
+    if (!GlobalRegistry::entityToHierarchyMap.count(info->entity)) {
         clearInfo();
         hide();
         return;
     }
-    if (!info->entity->Active) {
-        clearInfo();
-        hide();
-        return;
-    }
-    currentEntityId = entityId;
+    currentEntityId   = entityId;
     currentEntityName = entityName;
-    entryInfo = info;
-    // Set title
+    entryInfo         = info;
+    m_trackedEntity   = info->entity;
+
     if (!currentEntityName.isEmpty()) {
         titleLabel->setText("Name: " + currentEntityName);
     } else {
@@ -306,24 +320,27 @@ void EntityInfoDialog::setEntityInfo(const QString& entityId, const QString& ent
 
 void EntityInfoDialog::updateEntityInfo()
 {
-    if (currentEntityId.isEmpty() || !entryInfo) {
-        if (isVisible()) {
-            close();
-        }
+    if (currentEntityId.isEmpty() || !entryInfo || !m_trackedEntity) {
+        if (isVisible()) hide();
+        return;
+    }
+
+    if (!GlobalRegistry::entityToHierarchyMap.count(m_trackedEntity)) {
+        entryInfo       = nullptr;
+        m_trackedEntity = nullptr;
+        currentEntityId.clear();
+        clearInfo();
+        if (isVisible()) hide();
         return;
     }
 
     if (!entryInfo->entity || !entryInfo->entity->Active) {
-        if (isVisible()) {
-            close();
-        }
+        if (isVisible()) hide();
         return;
     }
 
     if (!entryInfo->coreTransform) {
-        if (isVisible()) {
-            close();
-        }
+        if (isVisible()) hide();
         return;
     }
 
@@ -358,9 +375,7 @@ void EntityInfoDialog::updateEntityInfo()
                                  (damages < 50.0f) ? QColor("#e67e22") :
                                  QColor("#e74c3c");
         attributeTable->item(3, 1)->setForeground(damageColor);
-        // attributeTable->item(3, 1)->setText("0 %");
         attributeTable->item(4, 1)->setText("Not Embarked");
-        // ── Fuel row (index 5) ──────────────────────────────────────────
         Platform* plt = entryInfo->platform ?
                             dynamic_cast<Platform*>(entryInfo->platform) : nullptr;
         if (plt) {
@@ -374,7 +389,6 @@ void EntityInfoDialog::updateEntityInfo()
                                    (fuelPct > 20.0f) ? QColor("#e67e22") :
                                    QColor("#e74c3c");
             attributeTable->item(5, 1)->setForeground(fuelColor);
-            // ── Weapons row (index 6) ────────────────────────────────────
             int weaponCount = 0;
             if (plt->weapons && plt->weapons->weapons) {
                 weaponCount = static_cast<int>(plt->weapons->weapons->size());
@@ -431,6 +445,7 @@ void EntityInfoDialog::updateEntityInfo()
             Platform* mothership = dynamic_cast<Platform*>(dynModel->followEntity);
             if (mothership && mothership->dynamicModel) {
                 currentSpeed    = mothership->dynamicModel->currentSpeed;
+                currentSpeed = dynModel->currentSpeed;
                 currentAltitude = mothership->dynamicModel->currentAltitude * KMtoFT;
             }
         }
@@ -489,473 +504,493 @@ void EntityInfoDialog::onCloseClicked()
     hide();
 }
 
-
 void EntityInfoDialog::onWeaponsClicked()
 {
-    if (!currentEntityId.isEmpty() && entryInfo && entryInfo->platform) {
-        Platform* plt = dynamic_cast<Platform*>(entryInfo->platform);
-        if (!plt) {
-            QMessageBox::information(this, "Weapons", "No platform data available.");
-            return;
+    if (currentEntityId.isEmpty() || !entryInfo || !entryInfo->platform) {
+        QMessageBox::information(this, "Weapons", "No platform data available.");
+        return;
+    }
+
+    if (!m_weaponsDialog.isNull() && m_weaponsDialog->isVisible()) {
+        m_weaponsDialog->raise();
+        m_weaponsDialog->activateWindow();
+        return;
+    }
+
+    Platform* plt = dynamic_cast<Platform*>(entryInfo->platform);
+    if (!plt) {
+        QMessageBox::information(this, "Weapons", "No platform data available.");
+        return;
+    }
+
+    QDialog *weaponsDialog = new QDialog(this);
+    m_weaponsDialog = weaponsDialog;
+    weaponsDialog->setWindowTitle("Weapons - " + currentEntityName);
+    weaponsDialog->setMinimumSize(600, 400);
+    weaponsDialog->setMaximumSize(700, 500);
+    weaponsDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
+    weaponsDialog->setAttribute(Qt::WA_DeleteOnClose);
+
+    QVBoxLayout *layout = new QVBoxLayout(weaponsDialog);
+    layout->setSpacing(8);
+    layout->setContentsMargins(10, 10, 10, 10);
+
+    QLabel *titleLabel = new QLabel("Weapon Systems");
+    titleLabel->setStyleSheet("font-size: 14px; color: white; font-weight: bold;");
+    layout->addWidget(titleLabel);
+
+    QTableWidget *weaponsTable = new QTableWidget();
+    weaponsTable->setColumnCount(7);
+    weaponsTable->setHorizontalHeaderLabels(
+        QStringList() << "Name" << "Type" << "Max Range" << "Max Speed"
+                      << "Blast Radius" << "Status" << "Launched");
+    weaponsTable->verticalHeader()->setVisible(false);
+    weaponsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    weaponsTable->setStyleSheet(EntityInfoDialogStyles::SubDialogTable);
+    weaponsTable->horizontalHeader()->setStretchLastSection(true);
+    weaponsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+   auto fillTable = [=]() {
+        if (!plt->weapons || !plt->weapons->weapons) return;
+        weaponsTable->setRowCount(0);
+        int row = 0;
+        for (const auto& [id, weapon] : *plt->weapons->weapons) {
+            if (!weapon) continue;
+            weaponsTable->insertRow(row);
+
+            auto* nameItem = new QTableWidgetItem(QString::fromStdString(weapon->Name));
+            nameItem->setForeground(Qt::white);
+            weaponsTable->setItem(row, 0, nameItem);
+
+            auto* typeItem = new QTableWidgetItem(weapon->weaponTypeName());
+            typeItem->setForeground(QColor("#00BFFF"));
+            weaponsTable->setItem(row, 1, typeItem);
+
+            auto* rangeItem = new QTableWidgetItem(
+                QString("%1 km").arg(weapon->maxRange / 1000.0f, 0, 'f', 1));
+            rangeItem->setForeground(Qt::white);
+            weaponsTable->setItem(row, 2, rangeItem);
+
+            auto* speedItem = new QTableWidgetItem(
+                QString("%1 km/h").arg(weapon->maxVelocity * 3.6f, 0, 'f', 0));
+            speedItem->setForeground(Qt::white);
+            weaponsTable->setItem(row, 3, speedItem);
+
+            auto* blastItem = new QTableWidgetItem(
+                QString("%1 m").arg(weapon->blastRadius, 0, 'f', 0));
+            blastItem->setForeground(Qt::white);
+            weaponsTable->setItem(row, 4, blastItem);
+
+            QString statusStr = weapon->armed ? "Armed" :
+                                    weapon->safed ? "Safed" : "Inactive";
+            auto* statusItem = new QTableWidgetItem(statusStr);
+            statusItem->setForeground(weapon->armed  ? QColor("#e74c3c") :
+                                          weapon->safed  ? QColor("#27ae60") :
+                                          QColor("#e67e22"));
+            weaponsTable->setItem(row, 5, statusItem);
+
+            QString launchedStr = weapon->isLaunched ? "Yes" : "No";
+            auto* launchedItem = new QTableWidgetItem(launchedStr);
+            launchedItem->setForeground(weapon->isLaunched ? QColor("#e74c3c") :
+                                            QColor("#27ae60"));
+            weaponsTable->setItem(row, 6, launchedItem);
+
+            row++;
         }
 
-        QDialog *weaponsDialog = new QDialog(this);
-        weaponsDialog->setWindowTitle("Weapons - " + currentEntityName);
-        weaponsDialog->setMinimumSize(600, 400);
-        weaponsDialog->setMaximumSize(700, 500);
-        weaponsDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
+        if (row == 0) {
+            weaponsTable->setRowCount(1);
+            weaponsTable->setColumnCount(1);
+            weaponsTable->setHorizontalHeaderLabels(QStringList() << "Info");
+            auto* noItem = new QTableWidgetItem("No weapons available");
+            noItem->setForeground(Qt::white);
+            weaponsTable->setItem(0, 0, noItem);
+        }
+    };
 
-        QVBoxLayout *layout = new QVBoxLayout(weaponsDialog);
-        layout->setSpacing(8);
-        layout->setContentsMargins(10, 10, 10, 10);
+    fillTable();
 
-        QLabel *titleLabel = new QLabel("Weapon Systems");
-        titleLabel->setStyleSheet("font-size: 14px; color: white; font-weight: bold;");
-        layout->addWidget(titleLabel);
+    weaponsTable->setColumnWidth(0, 100);
+    weaponsTable->setColumnWidth(1, 80);
+    weaponsTable->setColumnWidth(2, 80);
+    weaponsTable->setColumnWidth(3, 90);
+    weaponsTable->setColumnWidth(4, 90);
+    weaponsTable->setColumnWidth(5, 70);
+    layout->addWidget(weaponsTable);
 
-        QTableWidget *weaponsTable = new QTableWidget();
-        weaponsTable->setColumnCount(7);
-        weaponsTable->setHorizontalHeaderLabels(
-            QStringList() << "Name" << "Type" << "Max Range" << "Max Speed"
-                          << "Blast Radius" << "Status" << "Launched");
-        weaponsTable->verticalHeader()->setVisible(false);
-        weaponsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-        weaponsTable->setStyleSheet(EntityInfoDialogStyles::SubDialogTable);
-        weaponsTable->horizontalHeader()->setStretchLastSection(true);
-        weaponsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-
-        // Fill data + live update
-        auto fillTable = [=]() {
-            if (!plt->weapons || !plt->weapons->weapons) return;
-            weaponsTable->setRowCount(0);
-            int row = 0;
-            for (const auto& [id, weapon] : *plt->weapons->weapons) {
-                if (!weapon) continue;
-                weaponsTable->insertRow(row);
-
-                // Name
-                auto* nameItem = new QTableWidgetItem(QString::fromStdString(weapon->Name));
-                nameItem->setForeground(Qt::white);
-                weaponsTable->setItem(row, 0, nameItem);
-
-                // Type
-                auto* typeItem = new QTableWidgetItem(weapon->weaponTypeName());
-                typeItem->setForeground(QColor("#00BFFF"));
-                weaponsTable->setItem(row, 1, typeItem);
-
-                // Max Range
-                auto* rangeItem = new QTableWidgetItem(
-                    QString("%1 km").arg(weapon->maxRange / 1000.0f, 0, 'f', 1));
-                rangeItem->setForeground(Qt::white);
-                weaponsTable->setItem(row, 2, rangeItem);
-
-                // Max Speed
-                auto* speedItem = new QTableWidgetItem(
-                    QString("%1 km/h").arg(weapon->maxVelocity * 3.6f, 0, 'f', 0));
-                speedItem->setForeground(Qt::white);
-                weaponsTable->setItem(row, 3, speedItem);
-
-                // Blast Radius
-                auto* blastItem = new QTableWidgetItem(
-                    QString("%1 m").arg(weapon->blastRadius, 0, 'f', 0));
-                blastItem->setForeground(Qt::white);
-                weaponsTable->setItem(row, 4, blastItem);
-
-                // Status (armed/safed)
-                QString statusStr = weapon->armed ? "Armed" :
-                                        weapon->safed ? "Safed" : "Inactive";
-                auto* statusItem = new QTableWidgetItem(statusStr);
-                statusItem->setForeground(weapon->armed  ? QColor("#e74c3c") :
-                                              weapon->safed  ? QColor("#27ae60") :
-                                              QColor("#e67e22"));
-                weaponsTable->setItem(row, 5, statusItem);
-
-                // Launched
-                QString launchedStr = weapon->isLaunched ? "Yes" : "No";
-                auto* launchedItem = new QTableWidgetItem(launchedStr);
-                launchedItem->setForeground(weapon->isLaunched ? QColor("#e74c3c") :
-                                                QColor("#27ae60"));
-                weaponsTable->setItem(row, 6, launchedItem);
-
-                row++;
-            }
-
-            if (row == 0) {
-                weaponsTable->setRowCount(1);
-                weaponsTable->setColumnCount(1);
-                weaponsTable->setHorizontalHeaderLabels(QStringList() << "Info");
-                auto* noItem = new QTableWidgetItem("No weapons available");
-                noItem->setForeground(Qt::white);
-                weaponsTable->setItem(0, 0, noItem);
-            }
-        };
-
+    QTimer *updateTimer = new QTimer(weaponsDialog);
+    connect(updateTimer, &QTimer::timeout, [=]() {
         fillTable();
+    });
+    updateTimer->start(500);
 
-        weaponsTable->setColumnWidth(0, 100);
-        weaponsTable->setColumnWidth(1, 80);
-        weaponsTable->setColumnWidth(2, 80);
-        weaponsTable->setColumnWidth(3, 90);
-        weaponsTable->setColumnWidth(4, 90);
-        weaponsTable->setColumnWidth(5, 70);
-        layout->addWidget(weaponsTable);
+    QLabel *summaryLabel = new QLabel();
+    summaryLabel->setStyleSheet("color: #B0B0B0; font-size: 11px;");
+    layout->addWidget(summaryLabel);
 
-        // Live update timer
-        QTimer *updateTimer = new QTimer(weaponsDialog);
-        connect(updateTimer, &QTimer::timeout, [=]() {
-            fillTable();
-        });
-        updateTimer->start(500);
+    connect(updateTimer, &QTimer::timeout, [=]() {
+        if (!plt->weapons || !plt->weapons->weapons) return;
+        int total    = static_cast<int>(plt->weapons->weapons->size());
+        int launched = 0;
+        int armed    = 0;
+        for (const auto& [id, w] : *plt->weapons->weapons) {
+            if (w && w->isLaunched) launched++;
+            if (w && w->armed)      armed++;
+        }
+        summaryLabel->setText(
+            QString("Total: %1  |  Armed: %2  |  Launched: %3  |  Remaining: %4")
+                .arg(total).arg(armed).arg(launched).arg(total - launched));
+    });
 
-        // Summary label
-        QLabel *summaryLabel = new QLabel();
-        summaryLabel->setStyleSheet("color: #B0B0B0; font-size: 11px;");
-        layout->addWidget(summaryLabel);
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->addStretch();
+    QPushButton *closeButton = new QPushButton("Close");
+    closeButton->setStyleSheet(EntityInfoDialogStyles::SubDialogButton);
+    connect(closeButton, &QPushButton::clicked, [=]() {
+        updateTimer->stop();
+        weaponsDialog->close();
+    });
+    buttonLayout->addWidget(closeButton);
+    layout->addLayout(buttonLayout);
 
-        connect(updateTimer, &QTimer::timeout, [=]() {
-            if (!plt->weapons || !plt->weapons->weapons) return;
-            int total    = static_cast<int>(plt->weapons->weapons->size());
-            int launched = 0;
-            int armed    = 0;
-            for (const auto& [id, w] : *plt->weapons->weapons) {
-                if (w && w->isLaunched) launched++;
-                if (w && w->armed)      armed++;
-            }
-            summaryLabel->setText(
-                QString("Total: %1  |  Armed: %2  |  Launched: %3  |  Remaining: %4")
-                    .arg(total).arg(armed).arg(launched).arg(total - launched));
-        });
-
-        // Close button
-        QHBoxLayout *buttonLayout = new QHBoxLayout();
-        buttonLayout->addStretch();
-        QPushButton *closeButton = new QPushButton("Close");
-        closeButton->setStyleSheet(EntityInfoDialogStyles::SubDialogButton);
-        connect(closeButton, &QPushButton::clicked, [=]() {
-            updateTimer->stop();
-            weaponsDialog->close();
-        });
-        buttonLayout->addWidget(closeButton);
-        layout->addLayout(buttonLayout);
-
-        weaponsDialog->show();
-        weaponsDialog->setAttribute(Qt::WA_DeleteOnClose);
-
-    } else {
-        QMessageBox::information(this, "Weapons", "No entity selected.");
-    }
+    weaponsDialog->show();
 }
+
 void EntityInfoDialog::onSensorsClicked()
 {
-    if(!currentEntityId.isEmpty() && entryInfo && entryInfo->platform) {
-        QDialog *sensorsDialog = new QDialog(this);
-        sensorsDialog->setWindowTitle("Sensors - " + currentEntityId);
-        sensorsDialog->setMinimumSize(450, 300);
-        sensorsDialog->setMaximumSize(500, 400);
-        sensorsDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
-
-        QVBoxLayout *layout = new QVBoxLayout(sensorsDialog);
-        layout->setSpacing(8);
-        layout->setContentsMargins(10, 10, 10, 10);
-
-        QLabel *titleLabel = new QLabel("Sensor Systems");
-        titleLabel->setProperty("class", "title");
-        titleLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.title { font-size: 14px; color: white; font-weight: bold; }");
-        layout->addWidget(titleLabel);
-
-        QTableWidget *sensorsTable = new QTableWidget();
-        sensorsTable->setColumnCount(4);
-        sensorsTable->setHorizontalHeaderLabels(QStringList() << "Name" << "Type" << "Range" << "FOV");
-        sensorsTable->verticalHeader()->setVisible(false);
-        sensorsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-        sensorsTable->setStyleSheet(EntityInfoDialogStyles::SubDialogTable);
-
-        QTimer *sensorsUpdateTimer = new QTimer(sensorsDialog);
-        connect(sensorsUpdateTimer, &QTimer::timeout, [=]() {
-            updateSensorsTable(sensorsTable, entryInfo->platform);
-        });
-        sensorsUpdateTimer->start(100);
-
-        updateSensorsTable(sensorsTable, entryInfo->platform);
-
-        sensorsTable->setColumnWidth(0, 120);
-        sensorsTable->setColumnWidth(1, 80);
-        sensorsTable->setColumnWidth(2, 80);
-        sensorsTable->setColumnWidth(3, 60);
-        layout->addWidget(sensorsTable);
-
-        QLabel *summaryLabel = new QLabel();
-        summaryLabel->setProperty("class", "summary");
-        summaryLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.summary { color: #B0B0B0; font-size: 11px; }");
-        layout->addWidget(summaryLabel);
-
-        connect(sensorsUpdateTimer, &QTimer::timeout, [=]() {
-            int total = 0;
-            if(Platform* platform = dynamic_cast<Platform*>(entryInfo->platform)) {
-                if(platform->sensors && platform->sensors->sensors) {
-                    total = platform->sensors->sensors->size();
-                }
-            }
-            summaryLabel->setText(QString("Total: %1 sensors").arg(total));
-        });
-
-        QHBoxLayout *buttonLayout = new QHBoxLayout();
-        buttonLayout->addStretch();
-        QPushButton *closeButton = new QPushButton("Close");
-        closeButton->setStyleSheet(EntityInfoDialogStyles::SubDialogButton);
-        connect(closeButton, &QPushButton::clicked, [=]() {
-            sensorsUpdateTimer->stop();
-            sensorsDialog->close();
-        });
-        buttonLayout->addWidget(closeButton);
-        layout->addLayout(buttonLayout);
-
-        sensorsDialog->show();
-        sensorsDialog->setAttribute(Qt::WA_DeleteOnClose);
-    } else {
+    if (currentEntityId.isEmpty() || !entryInfo || !entryInfo->platform) {
         QMessageBox::information(this, "Sensors", "No platform data available.");
+        return;
     }
+
+    if (!m_sensorsDialog.isNull() && m_sensorsDialog->isVisible()) {
+        m_sensorsDialog->raise();
+        m_sensorsDialog->activateWindow();
+        return;
+    }
+
+    QDialog *sensorsDialog = new QDialog(this);
+    m_sensorsDialog = sensorsDialog;
+    sensorsDialog->setWindowTitle("Sensors - " + currentEntityId);
+    sensorsDialog->setMinimumSize(450, 300);
+    sensorsDialog->setMaximumSize(500, 400);
+    sensorsDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
+    sensorsDialog->setAttribute(Qt::WA_DeleteOnClose);
+
+    QVBoxLayout *layout = new QVBoxLayout(sensorsDialog);
+    layout->setSpacing(8);
+    layout->setContentsMargins(10, 10, 10, 10);
+
+    QLabel *titleLabel = new QLabel("Sensor Systems");
+    titleLabel->setProperty("class", "title");
+    titleLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.title { font-size: 14px; color: white; font-weight: bold; }");
+    layout->addWidget(titleLabel);
+
+    QTableWidget *sensorsTable = new QTableWidget();
+    sensorsTable->setColumnCount(4);
+    sensorsTable->setHorizontalHeaderLabels(QStringList() << "Name" << "Type" << "Range" << "FOV");
+    sensorsTable->verticalHeader()->setVisible(false);
+    sensorsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    sensorsTable->setStyleSheet(EntityInfoDialogStyles::SubDialogTable);
+
+    QTimer *sensorsUpdateTimer = new QTimer(sensorsDialog);
+    connect(sensorsUpdateTimer, &QTimer::timeout, [=]() {
+        updateSensorsTable(sensorsTable, entryInfo->platform);
+    });
+    sensorsUpdateTimer->start(100);
+
+    updateSensorsTable(sensorsTable, entryInfo->platform);
+
+    sensorsTable->setColumnWidth(0, 120);
+    sensorsTable->setColumnWidth(1, 80);
+    sensorsTable->setColumnWidth(2, 80);
+    sensorsTable->setColumnWidth(3, 60);
+    layout->addWidget(sensorsTable);
+
+    QLabel *summaryLabel = new QLabel();
+    summaryLabel->setProperty("class", "summary");
+    summaryLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.summary { color: #B0B0B0; font-size: 11px; }");
+    layout->addWidget(summaryLabel);
+
+    connect(sensorsUpdateTimer, &QTimer::timeout, [=]() {
+        int total = 0;
+        if(Platform* platform = dynamic_cast<Platform*>(entryInfo->platform)) {
+            if(platform->sensors && platform->sensors->sensors) {
+                total = platform->sensors->sensors->size();
+            }
+        }
+        summaryLabel->setText(QString("Total: %1 sensors").arg(total));
+    });
+
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->addStretch();
+    QPushButton *closeButton = new QPushButton("Close");
+    closeButton->setStyleSheet(EntityInfoDialogStyles::SubDialogButton);
+    connect(closeButton, &QPushButton::clicked, [=]() {
+        sensorsUpdateTimer->stop();
+        sensorsDialog->close();
+    });
+    buttonLayout->addWidget(closeButton);
+    layout->addLayout(buttonLayout);
+
+    sensorsDialog->show();
 }
 
 void EntityInfoDialog::onRadiosClicked()
 {
-    if(!currentEntityId.isEmpty() && entryInfo && entryInfo->entity) {
-        QDialog *radiosDialog = new QDialog(this);
-        radiosDialog->setWindowTitle("Radios - " + currentEntityId);
-        radiosDialog->setMinimumSize(300, 300);
-        radiosDialog->setMaximumSize(400, 400);
-        radiosDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
+    if (currentEntityId.isEmpty() || !entryInfo || !entryInfo->entity) {
+        QMessageBox::information(this, "Radios", "No entity selected.");
+        return;
+    }
 
-        QVBoxLayout *layout = new QVBoxLayout(radiosDialog);
-        layout->setSpacing(8);
-        layout->setContentsMargins(10, 10, 10, 10);
+    if (!m_radiosDialog.isNull() && m_radiosDialog->isVisible()) {
+        m_radiosDialog->raise();
+        m_radiosDialog->activateWindow();
+        return;
+    }
 
-        QLabel *titleLabel = new QLabel("Radio Communication Systems");
-        titleLabel->setProperty("class", "title");
-        titleLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.title { font-size: 14px; color: white; font-weight: bold; }");
-        layout->addWidget(titleLabel);
+    QDialog *radiosDialog = new QDialog(this);
+    m_radiosDialog = radiosDialog;
+    radiosDialog->setWindowTitle("Radios - " + currentEntityId);
+    radiosDialog->setMinimumSize(300, 300);
+    radiosDialog->setMaximumSize(400, 400);
+    radiosDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
+    radiosDialog->setAttribute(Qt::WA_DeleteOnClose);
 
-        QTableWidget *radiosTable = new QTableWidget();
-        radiosTable->setColumnCount(2);
-        radiosTable->setHorizontalHeaderLabels(QStringList() << "Name" << "Range");
-        radiosTable->verticalHeader()->setVisible(false);
-        radiosTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-        radiosTable->setStyleSheet(EntityInfoDialogStyles::SubDialogTable);
+    QVBoxLayout *layout = new QVBoxLayout(radiosDialog);
+    layout->setSpacing(8);
+    layout->setContentsMargins(10, 10, 10, 10);
 
-        QTimer *radiosUpdateTimer = new QTimer(radiosDialog);
-        connect(radiosUpdateTimer, &QTimer::timeout, [=]() {
-            if(entryInfo->platform && entryInfo->platform->radios && entryInfo->platform->radios->radios) {
-                radiosTable->setRowCount(0);
-                int row = 0;
-                for (auto pair : *entryInfo->platform->radios->radios) {
-                    if(Radio* radio = pair.second) {
-                        radiosTable->insertRow(row);
-                        radiosTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(radio->Name)));
-                        radiosTable->setItem(row, 1, new QTableWidgetItem(
-                                                         radio->Range > 0 ? QString("%1 km").arg(radio->Range, 0, 'f', 1) : "N/A"));
-                        row++;
-                    }
-                }
-                if(row == 0) {
-                    radiosTable->setRowCount(1);
-                    radiosTable->setItem(0, 0, new QTableWidgetItem("No radios"));
-                    radiosTable->setItem(0, 1, new QTableWidgetItem(""));
+    QLabel *titleLabel = new QLabel("Radio Communication Systems");
+    titleLabel->setProperty("class", "title");
+    titleLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.title { font-size: 14px; color: white; font-weight: bold; }");
+    layout->addWidget(titleLabel);
+
+    QTableWidget *radiosTable = new QTableWidget();
+    radiosTable->setColumnCount(2);
+    radiosTable->setHorizontalHeaderLabels(QStringList() << "Name" << "Range");
+    radiosTable->verticalHeader()->setVisible(false);
+    radiosTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    radiosTable->setStyleSheet(EntityInfoDialogStyles::SubDialogTable);
+
+    QTimer *radiosUpdateTimer = new QTimer(radiosDialog);
+    connect(radiosUpdateTimer, &QTimer::timeout, [=]() {
+        if(entryInfo->platform && entryInfo->platform->radios && entryInfo->platform->radios->radios) {
+            radiosTable->setRowCount(0);
+            int row = 0;
+            for (auto pair : *entryInfo->platform->radios->radios) {
+                if(Radio* radio = pair.second) {
+                    radiosTable->insertRow(row);
+                    radiosTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(radio->Name)));
+                    radiosTable->setItem(row, 1, new QTableWidgetItem(
+                                                     radio->Range > 0 ? QString("%1 km").arg(radio->Range, 0, 'f', 1) : "N/A"));
+                    row++;
                 }
             }
-        });
-        radiosUpdateTimer->start(100);
+            if(row == 0) {
+                radiosTable->setRowCount(1);
+                radiosTable->setItem(0, 0, new QTableWidgetItem("No radios"));
+                radiosTable->setItem(0, 1, new QTableWidgetItem(""));
+            }
+        }
+    });
+    radiosUpdateTimer->start(100);
 
-        radiosTable->setColumnWidth(0, 120);
-        radiosTable->setColumnWidth(1, 80);
-        layout->addWidget(radiosTable);
+    radiosTable->setColumnWidth(0, 120);
+    radiosTable->setColumnWidth(1, 80);
+    layout->addWidget(radiosTable);
 
-        QLabel *summaryLabel = new QLabel();
-        summaryLabel->setProperty("class", "summary");
-        summaryLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.summary { color: #B0B0B0; font-size: 11px; }");
-        layout->addWidget(summaryLabel);
+    QLabel *summaryLabel = new QLabel();
+    summaryLabel->setProperty("class", "summary");
+    summaryLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.summary { color: #B0B0B0; font-size: 11px; }");
+    layout->addWidget(summaryLabel);
 
-        connect(radiosUpdateTimer, &QTimer::timeout, [=]() {
-            int total = entryInfo->platform && entryInfo->platform->radios ?
-                            entryInfo->platform->radios->radios->size() : 0;
-            summaryLabel->setText(QString("Total: %1 radios").arg(total));
-        });
+    connect(radiosUpdateTimer, &QTimer::timeout, [=]() {
+        int total = entryInfo->platform && entryInfo->platform->radios ?
+                        entryInfo->platform->radios->radios->size() : 0;
+        summaryLabel->setText(QString("Total: %1 radios").arg(total));
+    });
 
-        QHBoxLayout *buttonLayout = new QHBoxLayout();
-        buttonLayout->addStretch();
-        QPushButton *closeButton = new QPushButton("Close");
-        closeButton->setStyleSheet(EntityInfoDialogStyles::SubDialogButton);
-        connect(closeButton, &QPushButton::clicked, [=]() {
-            radiosUpdateTimer->stop();
-            radiosDialog->close();
-        });
-        buttonLayout->addWidget(closeButton);
-        layout->addLayout(buttonLayout);
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->addStretch();
+    QPushButton *closeButton = new QPushButton("Close");
+    closeButton->setStyleSheet(EntityInfoDialogStyles::SubDialogButton);
+    connect(closeButton, &QPushButton::clicked, [=]() {
+        radiosUpdateTimer->stop();
+        radiosDialog->close();
+    });
+    buttonLayout->addWidget(closeButton);
+    layout->addLayout(buttonLayout);
 
-        radiosDialog->show();
-        radiosDialog->setAttribute(Qt::WA_DeleteOnClose);
-    } else {
-        QMessageBox::information(this, "Radios", "No entity selected.");
-    }
+    radiosDialog->show();
 }
 
 void EntityInfoDialog::onIFFClicked()
 {
-    if(!currentEntityId.isEmpty() && entryInfo && entryInfo->entity) {
-        QDialog *iffDialog = new QDialog(this);
-        iffDialog->setWindowTitle("IFF Systems - " + currentEntityId);
-        iffDialog->setMinimumSize(450, 300);
-        iffDialog->setMaximumSize(500, 400);
-        iffDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
-
-        QVBoxLayout *layout = new QVBoxLayout(iffDialog);
-        layout->setSpacing(8);
-        layout->setContentsMargins(10, 10, 10, 10);
-
-        QLabel *titleLabel = new QLabel("IFF (Identification Friend or Foe) Systems");
-        titleLabel->setProperty("class", "title");
-        titleLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.title { font-size: 14px; color: white; font-weight: bold; }");
-        layout->addWidget(titleLabel);
-
-        QTableWidget *iffTable = new QTableWidget();
-        iffTable->setColumnCount(3);
-        iffTable->setHorizontalHeaderLabels(QStringList() << "Name" << "Mode" << "Range");
-        iffTable->verticalHeader()->setVisible(false);
-        iffTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-        iffTable->setStyleSheet(EntityInfoDialogStyles::SubDialogTable);
-        QTimer *iffUpdateTimer = new QTimer(iffDialog);
-        connect(iffUpdateTimer, &QTimer::timeout, [=]() {
-            if(entryInfo->platform && entryInfo->platform->iffs && entryInfo->platform->iffs->iffs) {
-                iffTable->setRowCount(0);
-                int row = 0;
-                for (auto pair : *entryInfo->platform->iffs->iffs) {
-                    if(IFF* iff = pair.second) {
-                        iffTable->insertRow(row);
-                        iffTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(iff->Name)));
-
-                        QString modeStr = "Unknown";
-                        switch(iff->operationalMode) {
-                        case IFF::OperationalMode::Active: modeStr = "Active"; break;
-                        case IFF::OperationalMode::Passive: modeStr = "Passive"; break;
-                        case IFF::OperationalMode::Off: modeStr = "Off"; break;
-                        case IFF::OperationalMode::Simulation: modeStr = "Simulation"; break;
-                        default: modeStr = "Unknown"; break;
-                        }
-                        iffTable->setItem(row, 1, new QTableWidgetItem(modeStr));
-
-                        iffTable->setItem(row, 2, new QTableWidgetItem(
-                                                      QString("%1 km").arg(iff->emittingRange, 0, 'f', 1)));
-                        row++;
-                    }
-                }
-                if(row == 0) {
-                    iffTable->setRowCount(1);
-                    iffTable->setItem(0, 0, new QTableWidgetItem("No IFF systems"));
-                    iffTable->setItem(0, 1, new QTableWidgetItem(""));
-                    iffTable->setItem(0, 2, new QTableWidgetItem(""));
-                }
-            }
-        });
-        iffUpdateTimer->start(100);
-
-        iffTable->setColumnWidth(0, 120);
-        iffTable->setColumnWidth(1, 80);
-        iffTable->setColumnWidth(2, 80);
-        layout->addWidget(iffTable);
-
-        QLabel *summaryLabel = new QLabel();
-        summaryLabel->setProperty("class", "summary");
-        summaryLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.summary { color: #B0B0B0; font-size: 11px; }");
-        layout->addWidget(summaryLabel);
-
-        connect(iffUpdateTimer, &QTimer::timeout, [=]() {
-            int total = 0, active = 0;
-            if(entryInfo && entryInfo->entity) {
-                total = entryInfo->entity->iffList.size();
-                for (IFF* iff : entryInfo->entity->iffList) {
-                    if(iff->operationalMode != IFF::OperationalMode::Off) active++;
-                }
-            }
-            summaryLabel->setText(QString("Total: %1 IFF systems | Active: %2").arg(total).arg(active));
-        });
-
-        QHBoxLayout *buttonLayout = new QHBoxLayout();
-        buttonLayout->addStretch();
-        QPushButton *closeButton = new QPushButton("Close");
-        closeButton->setStyleSheet(EntityInfoDialogStyles::SubDialogButton);
-        connect(closeButton, &QPushButton::clicked, [=]() {
-            iffUpdateTimer->stop();
-            iffDialog->close();
-        });
-
-        buttonLayout->addWidget(closeButton);
-        layout->addLayout(buttonLayout);
-        iffDialog->show();
-        iffDialog->setAttribute(Qt::WA_DeleteOnClose);
-    } else {
+    if (currentEntityId.isEmpty() || !entryInfo || !entryInfo->entity) {
         QMessageBox::information(this, "IFF", "No entity selected.");
+        return;
     }
-}
 
-// by WARIS
-void EntityInfoDialog::onFormationClicked()
-{
-    if(!currentEntityId.isEmpty() && entryInfo && entryInfo->platform) {
-        QDialog *formationDialog = new QDialog(this);
-        formationDialog->setWindowTitle("Formation - " + currentEntityId);
-        formationDialog->setMinimumSize(500, 400);
-        formationDialog->setMaximumSize(600, 500);
-        formationDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
+    if (!m_iffDialog.isNull() && m_iffDialog->isVisible()) {
+        m_iffDialog->raise();
+        m_iffDialog->activateWindow();
+        return;
+    }
 
-        QVBoxLayout *layout = new QVBoxLayout(formationDialog);
-        layout->setSpacing(8);
-        layout->setContentsMargins(10, 10, 10, 10);
+    QDialog *iffDialog = new QDialog(this);
+    m_iffDialog = iffDialog;
+    iffDialog->setWindowTitle("IFF Systems - " + currentEntityId);
+    iffDialog->setMinimumSize(450, 300);
+    iffDialog->setMaximumSize(500, 400);
+    iffDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
+    iffDialog->setAttribute(Qt::WA_DeleteOnClose);
 
-        QLabel *titleLabel = new QLabel("Formation Information");
-        titleLabel->setProperty("class", "title");
-        titleLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.title { font-size: 16px; color: white; font-weight: bold; padding-bottom: 10px; }");
-        layout->addWidget(titleLabel);
+    QVBoxLayout *layout = new QVBoxLayout(iffDialog);
+    layout->setSpacing(8);
+    layout->setContentsMargins(10, 10, 10, 10);
 
-        Formation* formation = findFormationForEntity(entryInfo->platform);
+    QLabel *titleLabel = new QLabel("IFF (Identification Friend or Foe) Systems");
+    titleLabel->setProperty("class", "title");
+    titleLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.title { font-size: 14px; color: white; font-weight: bold; }");
+    layout->addWidget(titleLabel);
 
-        if (formation) {
-            displayFormationInfo(formation, entryInfo->platform, layout);
-        } else {
-            Formation* thisFormation = dynamic_cast<Formation*>(entryInfo->platform);
-            if (thisFormation) {
-                displayFormationInfo(thisFormation, entryInfo->platform, layout);
-                QLabel *noteLabel = new QLabel("Note: This is the Formation entity that manages the formation.");
-                noteLabel->setProperty("class", "note");
-                noteLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.note { color: #F1C40F; background-color: #1A3652; padding: 8px; border: 1px solid #F1C40F; border-radius: 3px; font-size: 11px; }");
-                layout->addWidget(noteLabel);
-            } else {
+    QTableWidget *iffTable = new QTableWidget();
+    iffTable->setColumnCount(3);
+    iffTable->setHorizontalHeaderLabels(QStringList() << "Name" << "Mode" << "Range");
+    iffTable->verticalHeader()->setVisible(false);
+    iffTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    iffTable->setStyleSheet(EntityInfoDialogStyles::SubDialogTable);
 
-                QLabel *noFormationLabel = new QLabel(
-                    "This entity is not part of any formation.\n\n");
-                noFormationLabel->setAlignment(Qt::AlignCenter);
-                noFormationLabel->setStyleSheet(EntityInfoDialogStyles::NoDataLabel);
-                noFormationLabel->setWordWrap(true);
-                layout->addWidget(noFormationLabel);
+    QTimer *iffUpdateTimer = new QTimer(iffDialog);
+    connect(iffUpdateTimer, &QTimer::timeout, [=]() {
+        if(entryInfo->platform && entryInfo->platform->iffs && entryInfo->platform->iffs->iffs) {
+            iffTable->setRowCount(0);
+            int row = 0;
+            for (auto pair : *entryInfo->platform->iffs->iffs) {
+                if(IFF* iff = pair.second) {
+                    iffTable->insertRow(row);
+                    iffTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(iff->Name)));
+
+                    QString modeStr = "Unknown";
+                    switch(iff->operationalMode) {
+                    case IFF::OperationalMode::Active: modeStr = "Active"; break;
+                    case IFF::OperationalMode::Passive: modeStr = "Passive"; break;
+                    case IFF::OperationalMode::Off: modeStr = "Off"; break;
+                    case IFF::OperationalMode::Simulation: modeStr = "Simulation"; break;
+                    default: modeStr = "Unknown"; break;
+                    }
+                    iffTable->setItem(row, 1, new QTableWidgetItem(modeStr));
+
+                    iffTable->setItem(row, 2, new QTableWidgetItem(
+                                                  QString("%1 km").arg(iff->emittingRange, 0, 'f', 1)));
+                    row++;
+                }
+            }
+            if(row == 0) {
+                iffTable->setRowCount(1);
+                iffTable->setItem(0, 0, new QTableWidgetItem("No IFF systems"));
+                iffTable->setItem(0, 1, new QTableWidgetItem(""));
+                iffTable->setItem(0, 2, new QTableWidgetItem(""));
             }
         }
+    });
+    iffUpdateTimer->start(100);
 
-        // Close button
-        QHBoxLayout *buttonLayout = new QHBoxLayout();
-        buttonLayout->addStretch();
-        QPushButton *closeButton = new QPushButton("Close");
-        closeButton->setStyleSheet(EntityInfoDialogStyles::SubDialogButton);
-        connect(closeButton, &QPushButton::clicked, [=]() {
-            formationDialog->close();
-        });
-        buttonLayout->addWidget(closeButton);
-        layout->addLayout(buttonLayout);
+    iffTable->setColumnWidth(0, 120);
+    iffTable->setColumnWidth(1, 80);
+    iffTable->setColumnWidth(2, 80);
+    layout->addWidget(iffTable);
 
-        formationDialog->show();
-        formationDialog->setAttribute(Qt::WA_DeleteOnClose);
-    } else {
-        QMessageBox::information(this, "Formation", "No entity selected or entity data missing.");
-    }
+    QLabel *summaryLabel = new QLabel();
+    summaryLabel->setProperty("class", "summary");
+    summaryLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.summary { color: #B0B0B0; font-size: 11px; }");
+    layout->addWidget(summaryLabel);
+
+    connect(iffUpdateTimer, &QTimer::timeout, [=]() {
+        int total = 0, active = 0;
+        if(entryInfo && entryInfo->entity) {
+            total = entryInfo->entity->iffList.size();
+            for (IFF* iff : entryInfo->entity->iffList) {
+                if(iff->operationalMode != IFF::OperationalMode::Off) active++;
+            }
+        }
+        summaryLabel->setText(QString("Total: %1 IFF systems | Active: %2").arg(total).arg(active));
+    });
+
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->addStretch();
+    QPushButton *closeButton = new QPushButton("Close");
+    closeButton->setStyleSheet(EntityInfoDialogStyles::SubDialogButton);
+    connect(closeButton, &QPushButton::clicked, [=]() {
+        iffUpdateTimer->stop();
+        iffDialog->close();
+    });
+    buttonLayout->addWidget(closeButton);
+    layout->addLayout(buttonLayout);
+
+    iffDialog->show();
 }
+// by WARIS
 
+void EntityInfoDialog::onFormationClicked()
+{
+    if (currentEntityId.isEmpty() || !entryInfo || !entryInfo->platform) {
+        QMessageBox::information(this, "Formation", "No entity selected or entity data missing.");
+        return;
+    }
+    if (!m_formationDialog.isNull() && m_formationDialog->isVisible()) {
+        m_formationDialog->raise();
+        m_formationDialog->activateWindow();
+        return;
+    }
+    QDialog *formationDialog = new QDialog(this);
+    m_formationDialog = formationDialog;
+    formationDialog->setWindowTitle("Formation - " + currentEntityId);
+    formationDialog->setMinimumSize(500, 400);
+    formationDialog->setMaximumSize(600, 500);
+    formationDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
+    formationDialog->setAttribute(Qt::WA_DeleteOnClose);
+    QVBoxLayout *layout = new QVBoxLayout(formationDialog);
+    layout->setSpacing(8);
+    layout->setContentsMargins(10, 10, 10, 10);
+    QLabel *titleLabel = new QLabel("Formation Information");
+    titleLabel->setProperty("class", "title");
+    titleLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.title { font-size: 16px; color: white; font-weight: bold; padding-bottom: 10px; }");
+    layout->addWidget(titleLabel);
+    Formation* formation = findFormationForEntity(entryInfo->platform);
+    if (formation) {
+        displayFormationInfo(formation, entryInfo->platform, layout);
+    } else {
+        Formation* thisFormation = dynamic_cast<Formation*>(entryInfo->platform);
+        if (thisFormation) {
+            displayFormationInfo(thisFormation, entryInfo->platform, layout);
+            QLabel *noteLabel = new QLabel("Note: This is the Formation entity that manages the formation.");
+            noteLabel->setProperty("class", "note");
+            noteLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.note { color: #F1C40F; background-color: #1A3652; padding: 8px; border: 1px solid #F1C40F; border-radius: 3px; font-size: 11px; }");
+            layout->addWidget(noteLabel);
+        } else {
+            QLabel *noFormationLabel = new QLabel(
+                "This entity is not part of any formation.\n\n");
+            noFormationLabel->setAlignment(Qt::AlignCenter);
+            noFormationLabel->setStyleSheet(EntityInfoDialogStyles::NoDataLabel);
+            noFormationLabel->setWordWrap(true);
+            layout->addWidget(noFormationLabel);
+        }
+    }
+
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->addStretch();
+    QPushButton *closeButton = new QPushButton("Close");
+    closeButton->setStyleSheet(EntityInfoDialogStyles::SubDialogButton);
+    connect(closeButton, &QPushButton::clicked, [=]() {
+        formationDialog->close();
+    });
+    buttonLayout->addWidget(closeButton);
+    layout->addLayout(buttonLayout);
+
+    formationDialog->show();
+}
 // by WARIS
 // Add this helper function implementation
 Formation* EntityInfoDialog::findFormationForEntity(Entity* entity)
@@ -1081,7 +1116,7 @@ void EntityInfoDialog::displayFormationInfo(Formation* formation, Entity* curren
             for (int col = 0; col < 3; col++) {
                 QTableWidgetItem *item = formationTable->item(row, col);
                 if (item) {
-                    item->setBackground(QColor(45, 75, 105)); // Dark orange for mothership
+                    item->setBackground(QColor(45, 75, 105));
                     item->setToolTip("Current Entity (Mothership)");
                 }
             }
@@ -1125,7 +1160,7 @@ void EntityInfoDialog::displayFormationInfo(Formation* formation, Entity* curren
                     for (int col = 0; col < 3; col++) {
                         QTableWidgetItem *item = formationTable->item(row, col);
                         if (item) {
-                            item->setBackground(QColor(35, 65, 95)); // Dark blue for ally
+                            item->setBackground(QColor(35, 65, 95));
                             item->setToolTip("Current Entity (Ally)");
                         }
                     }
@@ -1166,6 +1201,9 @@ void EntityInfoDialog::updateSensorsTable(QTableWidget* sensorsTable, Entity* pl
                 case Sensor::SubType::CSM: typeStr = "CSM"; break;
                 case Sensor::SubType::ESM: typeStr = "ESM"; break;
                 case Sensor::SubType::AESA: typeStr = "AESA"; break;
+                case Sensor::SubType::AIS: typeStr = "AIS"; break;
+                case Sensor::SubType::ADSB: typeStr = "ADSB"; break;
+
                 default: typeStr = "Other"; break;
                 }
                 sensorsTable->setItem(row, 1, new QTableWidgetItem(typeStr));
@@ -1260,3 +1298,21 @@ void EntityInfoDialog::onSpeedAltCellChanged(int row, int column)
     }
 }
 
+// entityinfodialog.cpp
+void EntityInfoDialog::onEntityInvalidated(const QString& entityId)
+{
+    if (entityId == currentEntityId || entityId.isEmpty()) {
+        entryInfo = nullptr;
+        currentEntityId.clear();
+        clearInfo();
+        hide();
+    }
+}
+void EntityInfoDialog::onHierarchyReset()
+{
+    entryInfo       = nullptr;
+    m_trackedEntity = nullptr;
+    currentEntityId.clear();
+    clearInfo();
+    if (isVisible()) hide();
+}

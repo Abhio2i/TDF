@@ -166,6 +166,7 @@ private:
     Simulation *simulation;
     ScenarioConfig* m_scenarioConfig;
     void showPanelContextMenu(const QPoint &pos);
+    QToolBar *rightToolBar = nullptr;
 private slots:
     void onRunScriptFileRequested(const QString& filePath);
 

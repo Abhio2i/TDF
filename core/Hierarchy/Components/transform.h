@@ -142,6 +142,8 @@ public:
     QVector3D inverseTransformVector(const QVector3D& worldVec);    //!< World vector to local vector (preserves magnitude)
     QVector3D inverseTransformPoint(const QVector3D& worldPos);     //!< World point to local point
 
+    QVector3D transformPoint(const QVector3D& localPos);
+
     // Component interface overrides
     void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QJsonObject data3 = QJsonObject()) override;
     void removeSubComponent(std::string ID) override;

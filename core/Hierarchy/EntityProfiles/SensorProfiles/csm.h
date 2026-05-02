@@ -14,6 +14,8 @@ public:
     void scan() override;
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& obj) override;
+    QJsonObject AdditionalParameters;   //!< User-defined extension parameters
+
 };
 
 #endif // CSM_H

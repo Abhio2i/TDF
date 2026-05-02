@@ -83,7 +83,7 @@ const QString TableWidget = R"(
         border: none;
         border-bottom: 1px solid #1A3652;
         border-right: none;
-        padding: 4px 2px;
+        padding: 0px 2px;
     }
 
     QTableWidget::item:hover {

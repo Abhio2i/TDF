@@ -36,10 +36,23 @@ QJsonObject toParm(float value, QString unit, float min, float max, QString desc
  * @return The value field, or 0.0f if missing.
  */
 float valueFromParm(const QJsonObject& parm) {
-    if (parm.contains("value")) {
-        return parm["value"].toVariant().toDouble();
+    float min = 0;
+    float max = 0;
+    float value = 0;
+    if(parm.contains("min")){
+        min = parm["min"].toVariant().toDouble();
     }
-    return 0.0f;
+    if(parm.contains("max")){
+        max = parm["max"].toVariant().toDouble();
+    }
+
+    if (parm.contains("value")) {
+        value = parm["value"].toVariant().toDouble();
+        if(min!=max){
+            value = value<min?min:(value>max?max:value);
+        }
+    }
+    return value;
 }
 
 /**

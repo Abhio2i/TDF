@@ -83,6 +83,10 @@ private:
     QComboBox*      m_missileDetonation    = nullptr;
     QDoubleSpinBox* m_missileProximity     = nullptr;
 
+public:
+    // ── Sonobouy widgets ──────────────────────────────────────
+    QDoubleSpinBox* m_count   = nullptr;
+private:
     // ── Bomb widgets ─────────────────────────────────────────
     QDoubleSpinBox* m_bombTotalMass        = nullptr;
     QDoubleSpinBox* m_bombPayloadMass      = nullptr;
@@ -129,6 +133,7 @@ private:
 
     // ── helpers ───────────────────────────────────────────────
     QWidget*    buildMissilePanel();
+    QWidget*    buildSonoBuoyPanel();
     QWidget*    buildBombPanel();
     QWidget*    buildGunPanel();
     QWidget*    buildRocketPanel();

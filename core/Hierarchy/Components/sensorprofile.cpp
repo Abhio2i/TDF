@@ -14,6 +14,16 @@ SensorProfile::SensorProfile(Hierarchy* h):Component(h) {
     sensors =  new std::unordered_map<std::string, Sensor*>();
 }
 
+
+
+SensorProfile::~SensorProfile(){
+    while (!sensors->empty()) {
+        removeSubComponent(sensors->begin()->second->ID);
+    }
+    delete sensors;
+    sensors = nullptr;
+}
+
 void SensorProfile::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if(data1 == "Generic"){
@@ -100,13 +110,13 @@ void SensorProfile::addSubComponent(std::string name, QString data1, QString dat
             QString::fromStdString(name));
     } else if (data1 == "AESA") {
         AESARadar* aesa = new AESARadar(parent);
-        if (!data2.isEmpty()) {
-            std::string id = aesa->ID;
-            QJsonObject obj = (parent->Sensors)[data2.toStdString()]->toJson();
-            aesa->fromJson(obj);
-            aesa->ID = id;
-            aesa->parentID = parentID;
-        }
+        // if (!data2.isEmpty()) {
+        //     std::string id = aesa->ID;
+        //     QJsonObject obj = (parent->Sensors)[data2.toStdString()]->toJson();
+        //     aesa->fromJson(obj);
+        //     aesa->ID = id;
+        //     aesa->parentID = parentID;
+        // }
         aesa->parentEntity = parentEntity;
         aesa->Name = name;
         sensors->insert({aesa->ID, aesa});

@@ -211,9 +211,6 @@ void CustomTrajectoryDialog::setupUI()
     minaltitudeValueLayout->addWidget(minAltitudeSpinBox);
     minaltitudeValueLayout->addStretch();
     altitudeLayout->addLayout(minaltitudeValueLayout);
-
-
-
     QHBoxLayout *maxaltitudeValueLayout = new QHBoxLayout();
     maxaltitudeValueLayout->addWidget(new QLabel("End Altitude:", this));
     maxAltitudeSpinBox = new QDoubleSpinBox(this);
@@ -229,8 +226,6 @@ void CustomTrajectoryDialog::setupUI()
     maxaltitudeValueLayout->addWidget(maxAltitudeSpinBox);
     maxaltitudeValueLayout->addStretch();
     altitudeLayout->addLayout(maxaltitudeValueLayout);
-
-
     altitudeGroupBox->setLayout(altitudeLayout);
     connect(altitudeCheckBox, &QCheckBox::stateChanged,
             this, &CustomTrajectoryDialog::onAltitudeCheckboxChanged);

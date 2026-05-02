@@ -495,8 +495,6 @@ void ApplicationDialog::setupConnections()
 
     connect(okButton,     &QPushButton::clicked, this, &ApplicationDialog::onOkClicked);
     connect(cancelButton, &QPushButton::clicked, this, &ApplicationDialog::onCancelClicked);
-
-    // General tab
     if (developerModeCheckBox)
         connect(developerModeCheckBox, &QCheckBox::stateChanged, this, &ApplicationDialog::validateInputs);
     auto wire = [this](QLineEdit* e) {
@@ -507,25 +505,17 @@ void ApplicationDialog::setupConnections()
     };
     wire(fpsEdit); wire(guiFPSEdit); wire(simulationFPSEdit);
     wire(physicsFPSEdit); wire(imageSizeEdit);
-
-    // Database tab connections
     if (databaseEnabledCheckBox)
         connect(databaseEnabledCheckBox, &QCheckBox::stateChanged,
                 this, &ApplicationDialog::validateInputs);
-
     if (browseDatabaseButton) {
-        // Disconnect any existing connections first
         disconnect(browseDatabaseButton, &QPushButton::clicked, this, nullptr);
-        // Connect to our updated slot
         connect(browseDatabaseButton, &QPushButton::clicked, this, &ApplicationDialog::onBrowseDatabasePath);
     }
-
     if (resetDatabaseButton) {
         disconnect(resetDatabaseButton, &QPushButton::clicked, this, nullptr);
         connect(resetDatabaseButton,  &QPushButton::clicked, this, &ApplicationDialog::onResetDatabasePath);
     }
-
-    // Trigger initial validation so OK enables if fields are already valid
     validateInputs();
 }
 
@@ -541,32 +531,19 @@ void ApplicationDialog::onBrowseDatabasePath()
         );
 
     if (!path.isEmpty() && databasePathEdit) {
-        // Update the path display
         databasePathEdit->setText(path);
-
-        // Automatically enable the checkbox if it's not enabled
         if (databaseEnabledCheckBox && !databaseEnabledCheckBox->isChecked()) {
             databaseEnabledCheckBox->setChecked(true);
         }
-
-        // Save the settings immediately
         bool dbEnabled = databaseEnabledCheckBox->isChecked();
         QString dbPath = path;
 
         setGlobalDatabaseEnabled(dbEnabled);
         setGlobalDatabasePath(dbPath);
-
-        // Update ScenarioConfig
         if (MainWindow::scenarioconfig) {
             MainWindow::scenarioconfig->saveDatabaseSettings(dbEnabled, dbPath);
         }
-
-        // ✅ FIXED: Don't load directly - just emit signal and show message
         emit databaseSettingsChanged(dbEnabled, dbPath);
-
-        qDebug() << "Database selected:" << path;
-
-        // Show a message that database will be loaded when switching editors
 
     }
 }
@@ -581,12 +558,12 @@ void ApplicationDialog::onResetDatabasePath()
 
         // Disable the checkbox (optional - aap chahe to enable bhi rakh sakte hain)
         if (databaseEnabledCheckBox) {
-            databaseEnabledCheckBox->setChecked(true); // Default database enable rahega
+            databaseEnabledCheckBox->setChecked(true);
         }
 
         // Update static members
         setGlobalDatabaseEnabled(true);
-        setGlobalDatabasePath("");  // Empty path means use default Aircraft.db
+        setGlobalDatabasePath("");
 
         // Update ScenarioConfig
         if (MainWindow::scenarioconfig) {
@@ -618,7 +595,7 @@ void ApplicationDialog::onResetDatabasePath()
                     if (err.error == QJsonParseError::NoError && doc.isObject()) {
                         QJsonObject obj = doc.object();
                         if (obj.contains("hierarchy")) {
-                            // ✅ Load default hierarchy
+                            // Load default hierarchy
                             scEditor->library->fromJson(obj["hierarchy"].toObject());
 
                             // Update tree view
@@ -645,7 +622,7 @@ void ApplicationDialog::onResetDatabasePath()
                     if (err.error == QJsonParseError::NoError && doc.isObject()) {
                         QJsonObject obj = doc.object();
                         if (obj.contains("hierarchy")) {
-                            // ✅ Load default hierarchy
+                            //Load default hierarchy
                             rtEditor->library->fromJson(obj["hierarchy"].toObject());
 
                             // Update tree view

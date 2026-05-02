@@ -1,6 +1,7 @@
 #ifndef AISDISPLAY_H
 #define AISDISPLAY_H
 
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/aissensor.h"
 #include "core/Hierarchy/hierarchy.h"
 #include "qwidget.h"
 #include <core/Debug/profiler.h>
@@ -25,9 +26,9 @@ public:
     // Update radar display
     void updateRadar();
     // Sensor instance
-    Sensor* sensor = nullptr;
+    AISSensor* sensor = nullptr;
     // Entity platform
-    QVector<Sensor*> sensorlist;
+    QVector<AISSensor*> sensorlist;
     Platform* entity = nullptr;
 
 protected:

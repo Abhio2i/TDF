@@ -43,6 +43,7 @@ class SensorProfile: public QObject, public Component
     Q_OBJECT
 public:
     SensorProfile(Hierarchy* h);
+    ~SensorProfile();
     ComponentType Typo() const override { return ComponentType::SensorProfile; }
 
     // =========================================================================

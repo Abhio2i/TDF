@@ -273,7 +273,7 @@ constexpr double VEL_COINCIDENCE_GATE = 2.0;
 // -------------------------------------------------------------------------
 
 // Initial range estimate for iterative radar equation solver (metres).
-constexpr double MAX_RANGE_INITIAL_M = 200000.0;
+constexpr double MAX_RANGE_INITIAL_M = 500000.0;
 
 // Max iterations for range solver. REQ-AESA-040.
 constexpr int    MAX_RANGE_ITERATIONS = 20;
@@ -1189,8 +1189,8 @@ double RadarSignalProcessor_AESA::computeCFARThreshold(
     double N     = static_cast<double>(cells.size());
 
     // CA-CFAR multiplier: alpha = N * (Pfa^(-1/N) - 1). REQ-AESA-040.
-    double alpha = N * (std::pow(cfg.targetPfa, -1.0 / N) - 1.0);
-
+    const double safePfa = std::max(cfg.targetPfa, 1e-15);
+    double alpha = N * (std::pow(safePfa, -1.0 / N) - 1.0);
     return (sum / N) * alpha;
 }
 
@@ -1212,7 +1212,7 @@ double RadarSignalProcessor_AESA::computeCFARThresholdRelaxed(
     // Relaxed Pfa: min(PFA_RELAXED_MAX, targetPfa * 100).
     // Higher Pfa = lower threshold = higher sensitivity near clutter notch.
     // REQ-AESA-040.
-    double pfa   = std::min(PFA_RELAXED_MAX, cfg.targetPfa * PFA_RELAXED_SCALE);
+    double pfa   = std::max(1e-15, std::min(PFA_RELAXED_MAX, cfg.targetPfa * PFA_RELAXED_SCALE));
     double alpha = N * (std::pow(pfa, -1.0 / N) - 1.0);
 
     return (sum / N) * alpha;
@@ -1774,32 +1774,75 @@ double RadarSignalProcessor_AESA::computeMaxDetectionRange(
         cfg, static_cast<double>(cfg.searchWaveform.bandwidth_Hz));
 
     // CA-CFAR multiplier with N=16 reference cells. REQ-AESA-040.
+    const double safePfa = std::max(cfg.targetPfa, 1e-15);   // guard against Pfa=0
     double alpha = MAX_RANGE_CFAR_N
-                   * (std::pow(cfg.targetPfa, -1.0 / MAX_RANGE_CFAR_N) - 1.0);
+                   * (std::pow(safePfa, -1.0 / MAX_RANGE_CFAR_N) - 1.0);
 
     double pg = computeModulationProcessingGain(cfg.searchWaveform);
     double ig = static_cast<double>(std::max(1, cfg.searchWaveform.pulsesPerDwell));
 
     // Iterative solver — propagation loss depends on range, so R must be solved
     // iteratively. Converges when |R_new - R_prev| < 10 m. REQ-AESA-040.
-    double R_est  = MAX_RANGE_INITIAL_M;
-    double R_prev = 0.0;
+    // Pre-compute the denominator — it does not depend on range.
+    const double den = std::pow(FOUR_PI, 3.0) * Pn * alpha;
+    if (den <= 0.0)
+        return cfg.minDetectableRange * KM_PER_M * 2.0;
 
+    // BUGFIX (REQ-AESA-040): The original fixed-point iterator oscillates under
+    // heavy rain/fog because computePropagationLoss() collapses to ~0 at large R
+    // (e.g. 150 mm/h rain gives 1900+ dB loss at 200 km), driving R_new to 0,
+    // which then recovers prop to 1 and drives R_new back to 227 km — repeating
+    // for all MAX_RANGE_ITERATIONS and returning the no-rain answer. Replaced
+    // with a bisection solver which is unconditionally stable for any prop curve.
+    //
+    // The solver finds R* such that f(R) = 0, where:
+    //   f(R) = R - ( Pt * prop(R)^2 * G^2 * lam^2 * rcs * pg * ig / den )^0.25
+    // f(R) < 0 means SINR > threshold (can detect further), f(R) > 0 means
+    // SINR < threshold (too far). We bisect [R_lo, R_hi] until width < 10 m.
+
+    // Step 1 — find R_hi: shrink from MAX_RANGE_INITIAL_M until f(R_hi) > 0.
+    // Step 1a — walk R_hi UP until it is above the true detection range.
+    // Fixes the case where no-rain RF range (227 km) exceeds MAX_RANGE_INITIAL_M.
+    double R_lo = static_cast<double>(cfg.minDetectableRange);
+    double R_hi = MAX_RANGE_INITIAL_M;
+    for (int i = 0; i < 16; ++i)
+    {
+        double prop  = computePropagationLoss(R_hi, cfg);
+        double num   = Pt * prop * prop * G * G * lam * lam * rcs * pg * ig;
+        double R_new = (num > 0.0) ? std::pow(num / den, 0.25) : 0.0;
+        if (R_new <= R_hi) break;       // R_hi is above the true range — good
+        R_hi *= 2.0;
+        if (R_hi > 2000000.0) { R_hi = 2000000.0; break; }  // hard cap 2000 km
+    }
+    // Step 1b — walk R_hi DOWN until bracketed from above.
+    // Fixes the case where heavy rain collapses prop to 0 at large R.
+    for (int i = 0; i < 64; ++i)
+    {
+        double prop  = computePropagationLoss(R_hi, cfg);
+        double num   = Pt * prop * prop * G * G * lam * lam * rcs * pg * ig;
+        double R_new = (num > 0.0) ? std::pow(num / den, 0.25) : 0.0;
+        if (R_new <= R_hi) break;       // properly bracketed
+        R_hi *= 0.5;
+        if (R_hi <= R_lo) { R_hi = R_lo; break; }
+    }
+
+    // Step 2 — bisect to MAX_RANGE_CONVERGENCE_M precision. REQ-AESA-040.
     for (int iter = 0; iter < MAX_RANGE_ITERATIONS; ++iter)
     {
-        R_prev = R_est;
+        double R_mid = 0.5 * (R_lo + R_hi);
+        double prop  = computePropagationLoss(R_mid, cfg);
+        double num   = Pt * prop * prop * G * G * lam * lam * rcs * pg * ig;
+        double R_new = (num > 0.0) ? std::pow(num / den, 0.25) : 0.0;
 
-        double prop = computePropagationLoss(R_est, cfg);
-        double num  = Pt * prop * prop * G * G * lam * lam * rcs * pg * ig;
-        double den  = std::pow(FOUR_PI, 3.0) * Pn * alpha;
+        if (R_new > R_mid)
+            R_lo = R_mid;   // SINR above threshold — detection range is further
+        else
+            R_hi = R_mid;   // SINR below threshold — detection range is closer
 
-        if (den <= 0.0) break;
-
-        R_est = std::pow(num / den, 0.25);
-
-        // Convergence check. REQ-AESA-040.
-        if (std::abs(R_est - R_prev) < MAX_RANGE_CONVERGENCE_M) break;
+        if ((R_hi - R_lo) < MAX_RANGE_CONVERGENCE_M) break;
     }
+
+    const double R_est = 0.5 * (R_lo + R_hi);
 
     // Return in km, with a floor of 2x minDetectableRange. REQ-AESA-040.
     return std::max(R_est * KM_PER_M,

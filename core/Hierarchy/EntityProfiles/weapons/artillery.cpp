@@ -19,6 +19,10 @@ void  Artillery::flyToTarget()                         { /* TODO: high-arc balli
 void  Artillery::checkDetonation()                     { /* TODO: fuze logic */ }
 float Artillery::calculateImpactTime(Platform* /*t*/)  { return 0.0f; /* TODO */ }
 
+void Artillery::Update(){
+
+}
+
 QString Artillery::shellTypeToString() const {
     switch (shellType) {
     case ShellType::HE:           return "HE";

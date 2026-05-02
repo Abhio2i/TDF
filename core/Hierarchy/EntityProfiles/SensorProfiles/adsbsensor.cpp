@@ -175,11 +175,11 @@ void ADSBSensor::scan(){
     //           << " | adsb_tracks=" << ownship.getTracks().size()
     //           << "\n";
 
-    ewtargets.clear();
+    detect.clear();
     if (!rf_hits.empty()) {
         std::cout << " Physical RF Hits:\n";
         for (const auto& h : rf_hits) {
-            Target target;
+            ADSBTarget target;
             try {
                 if ((root->Platforms)[h.id]) {
                     target.entity = (root->Platforms)[h.id];
@@ -192,7 +192,7 @@ void ADSBSensor::scan(){
             }
             target.angle = h.azimuth_deg;//-((h.azimuth_deg+h)+180.f);
             target.radius = h.distance_m/1000.f;
-            ewtargets.append(target);
+            detect.append(target);
 
             // std::cout << "  ID=" << h.id
             //           << " Dist=" << h.distance_m
@@ -292,6 +292,10 @@ QJsonObject ADSBSensor::toJson() const {
     // Env["wind_attenuation_db_per_km_per_mps"] = toParm(cfg.propagation.wind_attenuation_db_per_km_per_mps,"db/km");
     // Env["sea_attenuation_db_per_km"] = toParm(cfg.propagation.sea_attenuation_db_per_km,"db/km");
     obj["Environmental"] = Env;
+
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
 
     return obj;
 }
@@ -426,6 +430,9 @@ void ADSBSensor::fromJson(const QJsonObject& obj) {
             own_rf.propagation.wind_speed_mps = valueFromParm(Env["wind_speed_mps"].toObject());
     }
 
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
+    }
     ownship.configureAdsb(cfg);
     ownship.configureRf(own_rf);
 

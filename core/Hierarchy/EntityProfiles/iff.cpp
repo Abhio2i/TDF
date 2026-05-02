@@ -467,9 +467,7 @@ void IFF::interrogateTargets(Transform* source)
 
             QJsonObject resp = other->respondToInterrogation(this, distance);
             if (resp.isEmpty()) continue;
-
             responded = true;
-
             std::string uid = resp["responderId"].toString().toStdString();
 
             // =========================

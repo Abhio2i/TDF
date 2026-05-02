@@ -12,7 +12,7 @@
 #include "qmath.h"
 #include <core/Hierarchy/hierarchy.h>
 #include <core/Debug/console.h>
-
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/aesaradar.h"
 /**
  * @brief Constructs a SpecialZone entity.
  * @param h Pointer to the parent Hierarchy.
@@ -67,6 +67,45 @@ void Specialzone::Update(float delta){
                             r->lib_radio->configure(cfg);
                         }
                     }
+                }
+            }
+
+            // ----------------------------------------------------------------
+            // AESA Radar atmosphere sync. REQ-AESA-071.
+            // Same pattern as radio above — push zone weather into every
+            // AESARadar sensor on this platform so propagation loss and
+            // display range reflect the actual zone conditions.
+            // ----------------------------------------------------------------
+            if(entity->sensors && entity->sensors->sensors->size() > 0){
+                for(auto const& pair : *entity->sensors->sensors){
+                    AESARadar* radar = dynamic_cast<AESARadar*>(pair.second);
+                    if(!radar) continue;
+
+                    aesa::RadarConfig cfg = radar->getRadarConfig();
+
+                    if(distance < collider->CollideRadius){
+                        // Platform is inside the zone — apply zone atmosphere.
+                        cfg.atmosphere.temperature_C   = Temprature;
+                        cfg.atmosphere.humidity_pct    = humidity;
+                        cfg.atmosphere.rainRate_mmph   = rain;
+
+                        // fog in SpecialZone is a percentage (0-100%).
+                        // Convert to metres visibility for the Kunkel fog model:
+                        //   0%   → 0 m    (clear, model inactive)
+                        //   100% → 100 m  (very dense fog)
+                        cfg.atmosphere.fogVisibility_m =
+                            (fog > 0.0f)
+                                ? std::clamp((1.0f - fog / 100.0f) * 10000.0f, 0.0f, 10000.0f)
+                                : 0.0f;
+                    } else {
+                        // Platform has left the zone — restore clear-air defaults.
+                        cfg.atmosphere.temperature_C   = 30.0f;
+                        cfg.atmosphere.humidity_pct    = 30.0f;
+                        cfg.atmosphere.rainRate_mmph   = 0.0f;
+                        cfg.atmosphere.fogVisibility_m = 0.0f;
+                    }
+
+                    radar->setRadarConfig(cfg);
                 }
             }
         }

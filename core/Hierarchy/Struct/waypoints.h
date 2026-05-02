@@ -51,6 +51,7 @@ public:
     double speed = 0;              //!< Desired speed when reaching this waypoint
     bool sensor = true;            //!< Whether to activate sensors at this waypoint
     bool formation = true;         //!< Whether to trigger formation change at this waypoint
+    bool dropWeapon = false;
 
     // Serialization
     QJsonObject toJson() const;    //!< Serialises waypoint to JSON

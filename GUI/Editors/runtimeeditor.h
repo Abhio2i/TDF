@@ -65,6 +65,7 @@
 #include "GUI/Toolbars/designtoolbar.h"           // For design toolbar
 #include "GUI/Toolbars/runtimetoolbar.h"          // For runtime toolbar
 #include "GUI/Toolbars/networktoolbar.h"           // For network toolbar
+#include "Panel/sonobuoypanel.h"
 #include "core/Debug/console.h"                    // For console debugging
 #include "core/Hierarchy/hierarchy.h"             // For hierarchy data structure
 #include "core/structure/runtime.h"               // For runtime data structure
@@ -183,6 +184,8 @@ private:
     CustomResizableOverlayDock *displayDock;
     CustomResizableOverlayDock *loggerDock;
     CustomResizableOverlayDock *layerDock;
+    void openLibraryDialog();
+    void openTestScriptDialog();
 
     // Configure menu bar
     void setupMenuBar();
@@ -221,6 +224,7 @@ private:
     EODisplay *eoDisplayUI;
     AISDisplay *aisDisplayUI;
     ADSBDisplay *adsbDisplayUI;
+    SonoBuoyPanel * sonoBuoyDisplayUI;
     SonarDisplay *sonarDisplayUI;  //  by amjad
     LoggerDialog *loggerDialog;
     QDateTime recordingStartTime;
@@ -231,6 +235,7 @@ private:
     QElapsedTimer m_sonarTimer;
     Entity* m_selectedSonarEntity = nullptr;
     QString m_lastSelectedEntityId;
+    QToolBar *rightToolBar = nullptr;
 
 private:
     qint64 pausedTimeMs = 0;

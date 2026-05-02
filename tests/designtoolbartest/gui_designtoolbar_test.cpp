@@ -60,10 +60,10 @@ void TestDesignToolBar::testPresetLayersActionExists()
     QVERIFY(toolbar->presetLayersAction != nullptr);
 }
 
-void TestDesignToolBar::testImportGeoJsonActionExists()
-{
-    QVERIFY(toolbar->importGeoJsonAction != nullptr);
-}
+// void TestDesignToolBar::testImportGeoJsonActionExists()
+// {
+//     QVERIFY(toolbar->importGeoJsonAction != nullptr);
+// }
 
 void TestDesignToolBar::testGeoJsonLayersActionExists()
 {
@@ -143,7 +143,7 @@ void TestDesignToolBar::testAtLeastOneModeActionChecked()
         toolbar->shapeAction,
         toolbar->bitmapAction,
         toolbar->presetLayersAction,
-        toolbar->importGeoJsonAction,
+        // toolbar->importGeoJsonAction,
         toolbar->geoJsonLayersAction,
         toolbar->coordinateSystemAction
     };

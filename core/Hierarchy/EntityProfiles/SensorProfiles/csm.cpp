@@ -83,6 +83,11 @@ QJsonObject CSM::toJson() const {
     defaultObj["frequency"] = toParm(frequency,"Ghz", 0.1,  100);
     defaultObj["azimuth"] = toParm(azimuth,"deg", 0,    360);
     obj["default"] = defaultObj;
+
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
+
     return obj;
 }
 
@@ -102,5 +107,9 @@ void CSM::fromJson(const QJsonObject& obj) {
 
         if (defaultObj.contains("azimuth"))
             azimuth = valueFromParm(defaultObj["azimuth"].toObject());
+    }
+
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
 }

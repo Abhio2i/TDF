@@ -7,6 +7,15 @@ RadioProfile::RadioProfile(Hierarchy* h):Component(h) {
     radios =  new std::unordered_map<std::string, Radio*>();
 }
 
+RadioProfile::~RadioProfile(){
+    while (!radios->empty()) {
+        removeSubComponent(radios->begin()->second->ID);
+    }
+    delete radios;
+    radios = nullptr;
+}
+
+
 void RadioProfile::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     Radio* radio = new Radio(parent);

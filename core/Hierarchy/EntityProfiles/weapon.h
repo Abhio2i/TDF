@@ -67,7 +67,7 @@ public:
     ~Weapon() override;
 
     // ── WeaponType enum (same role as Sensor::SubType) ────────────────────────
-    enum class WeaponType     { Missile, Bomb, Torpedo, Artillery, Rocket, Flare, Chaff };
+    enum class WeaponType     { Missile, Sonobuoy, Bomb, Torpedo, Artillery, Rocket, Flare, Chaff };
     enum class GuidanceType   { Unguided, SemiActive, FullyActive, PassiveInfrared,
                               CommandGuided, InertialGuidance };
     enum class DetonationType { Impact, Proximity, Timed, Command };
@@ -136,6 +136,8 @@ public:
     std::unordered_set<Platform*> detects;
     QVector<WeaponTarget>         targets;
     Platform *targetEntity = nullptr;
+
+    virtual void Update();
 
     // ── Virtual launch() — same role as Sensor::scan() ───────────────────────
     // weapon.cpp has an empty stub.

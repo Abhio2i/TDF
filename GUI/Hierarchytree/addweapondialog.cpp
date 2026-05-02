@@ -12,6 +12,26 @@
 //  Helpers
 // ──────────────────────────────────────────────────────────────
 static const QString kDialogStyle = R"(
+QDialog {
+    background-color: #0F2636;
+    color: white;
+    border: 2px solid #27446d;
+}
+QLabel {
+    color: white;
+}
+QLineEdit {
+    color: white;
+    background-color: #1A3652;
+    border: 1px solid #27446d;
+    padding: 4px;
+}
+QComboBox {
+    color: white;
+    background-color: #1A3652;
+    border: 1px solid #27446d;
+    padding: 4px;
+}
 QComboBox QAbstractItemView {
     background-color: #0F2636;
     color: #ffffff;
@@ -20,15 +40,80 @@ QComboBox QAbstractItemView {
     border: 1px solid #27446d;
     outline: none;
 }
-
 QComboBox QAbstractItemView::item {
     padding: 4px 8px;
     min-height: 22px;
 }
-
 QComboBox QAbstractItemView::item:hover {
     background-color: #1A3652;
     color: #ffffff;
+}
+QGroupBox {
+    color: white;
+    border: 1px solid #27446d;
+    margin-top: 8px;
+    padding-top: 8px;
+}
+QGroupBox::title {
+    color: white;
+    subcontrol-origin: margin;
+    left: 8px;
+}
+QScrollArea {
+    background-color: #0F2636;
+    border: none;
+}
+QWidget#scrollContents {
+    background-color: #0F2636;
+}
+QDoubleSpinBox, QSpinBox {
+    color: white;
+    background-color: #1A3652;
+    border: 1px solid #27446d;
+    padding: 3px;
+}
+QCheckBox {
+    color: white;
+}
+QPushButton {
+    color: white;
+    background-color: #1A3652;
+    border: 1px solid #27446d;
+    padding: 6px 14px;
+    border-radius: 3px;
+}
+QPushButton:hover {
+    background-color: #27446d;
+}
+QDoubleSpinBox, QSpinBox {
+    color: white;
+    background-color: #1A3652;
+    border: 1px solid #27446d;
+    padding: 3px;
+}
+QDoubleSpinBox::up-button, QSpinBox::up-button {
+    background-color: #27446d;
+    border: 1px solid #4a6fa5;
+    width: 16px;
+}
+QDoubleSpinBox::down-button, QSpinBox::down-button {
+    background-color: #27446d;
+    border: 1px solid #4a6fa5;
+    width: 16px;
+}
+QDoubleSpinBox::up-arrow, QSpinBox::up-arrow {
+    image: url(:/icons/images/up.png);
+    width: 12px;
+    height: 12px;
+}
+QDoubleSpinBox::down-arrow, QSpinBox::down-arrow {
+    image: url(:/icons/images/down.png);
+    width: 12px;
+    height: 12px;
+}
+QDoubleSpinBox::up-button:hover, QSpinBox::up-button:hover,
+QDoubleSpinBox::down-button:hover, QSpinBox::down-button:hover {
+    background-color: #3a5f8a;
 }
 )";
 
@@ -136,7 +221,7 @@ AddWeaponDialog::AddWeaponDialog(QWidget* parent,
     QHBoxLayout* typeRow = new QHBoxLayout();
     QLabel* typeLabel = new QLabel("Weapon Type:");
     typeLabel->setFixedWidth(110);
-    m_typeCombo = makeCombo({"Missile","Bomb","Gun","Rocket","Torpedo","Artillery"});
+    m_typeCombo = makeCombo({"Missile","Sonobuoy","Bomb","Gun","Rocket","Torpedo","Artillery"});
     typeRow->addWidget(typeLabel);
     typeRow->addWidget(m_typeCombo);
     root->addLayout(typeRow);
@@ -150,11 +235,12 @@ AddWeaponDialog::AddWeaponDialog(QWidget* parent,
     // ── Stacked parameter panels ─────────────────────────────
     m_stack = new QStackedWidget();
     m_stack->addWidget(wrapScroll(buildMissilePanel()));    // 0
-    m_stack->addWidget(wrapScroll(buildBombPanel()));       // 1
-    m_stack->addWidget(wrapScroll(buildGunPanel()));        // 2
-    m_stack->addWidget(wrapScroll(buildRocketPanel()));     // 3
-    m_stack->addWidget(wrapScroll(buildTorpedoPanel()));    // 4
-    m_stack->addWidget(wrapScroll(buildArtilleryPanel()));  // 5
+    m_stack->addWidget(wrapScroll(buildSonoBuoyPanel()));    // 1
+    m_stack->addWidget(wrapScroll(buildBombPanel()));       // 2
+    m_stack->addWidget(wrapScroll(buildGunPanel()));        // 3
+    m_stack->addWidget(wrapScroll(buildRocketPanel()));     // 4
+    m_stack->addWidget(wrapScroll(buildTorpedoPanel()));    // 5
+    m_stack->addWidget(wrapScroll(buildArtilleryPanel()));  // 6
     root->addWidget(m_stack, 1);
 
     // ── Buttons ───────────────────────────────────────────────
@@ -181,6 +267,7 @@ void AddWeaponDialog::onTypeChanged(int index)
     // suggest a sensible default name
     if (m_nameEdit->text().isEmpty() ||
         m_nameEdit->text().startsWith("Weapon_") ||
+        m_nameEdit->text().startsWith("Sonobuoy_") ||
         m_nameEdit->text().startsWith("Missile_") ||
         m_nameEdit->text().startsWith("Bomb_") ||
         m_nameEdit->text().startsWith("Gun_") ||
@@ -210,6 +297,7 @@ Weapon::WeaponType AddWeaponDialog::weaponType() const
 {
     static const QMap<QString, Weapon::WeaponType> map = {
                                                           {"Missile",   Weapon::WeaponType::Missile},
+                                                          {"Sonobuoy",   Weapon::WeaponType::Sonobuoy},
                                                           {"Bomb",      Weapon::WeaponType::Bomb},
                                                           {"Gun",       Weapon::WeaponType::Artillery},   // closest enum
                                                           {"Rocket",    Weapon::WeaponType::Rocket},
@@ -333,6 +421,7 @@ void AddWeaponDialog::applyEntityConfig(const QString& entityId)
     // Detect weapon type and switch panel
     static const QMap<Weapon::WeaponType, QString> typeMap = {
                                                               {Weapon::WeaponType::Missile,   "Missile"},
+                                                              {Weapon::WeaponType::Sonobuoy,  "Sonobuoy"},
                                                               {Weapon::WeaponType::Bomb,      "Bomb"},
                                                               {Weapon::WeaponType::Artillery, "Artillery"},
                                                               {Weapon::WeaponType::Rocket,    "Rocket"},
@@ -474,6 +563,25 @@ QWidget* AddWeaponDialog::buildMissilePanel()
     vl->addStretch();
     return w;
 }
+
+// ── 1. SonoBuoy ───────────────────────────────────────────────
+QWidget* AddWeaponDialog::buildSonoBuoyPanel()
+{
+    QWidget* w = new QWidget();
+    QVBoxLayout* vl = new QVBoxLayout(w);
+    vl->setSpacing(10);
+    vl->setContentsMargins(4,4,4,4);
+
+    QFormLayout* gf; QGroupBox* gg = makeGroup("Guidance System", gf);
+    m_count = makeDSpin(0, 50, 10, 0, "");
+    gf->addRow("Count:",   m_count);
+    vl->addWidget(gg);
+
+
+    vl->addStretch();
+    return w;
+}
+
 
 // ── 1. BOMB ──────────────────────────────────────────────────
 QWidget* AddWeaponDialog::buildBombPanel()

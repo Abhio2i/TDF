@@ -417,7 +417,9 @@ Bomb::Bomb(Hierarchy* h) : Weapon(h)
         meshRenderer2d->Sprite->append(":/texture/images/Texture/bomb.png");
     }
 }
+void Bomb::Update(){
 
+}
 // =============================================================================
 // launch()
 // Called by Platform::launchBombs() when aircraft crosses 1000 ft (304.8 m).

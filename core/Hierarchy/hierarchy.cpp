@@ -877,6 +877,7 @@ void Hierarchy::fromJson(const QJsonObject& obj)
     for (const QString& key : tempData.keys()) {
         tempData.remove(key);
     }
+    clear();
     emit Init();
     emit status("load");
     if (obj.contains("file_Version"))

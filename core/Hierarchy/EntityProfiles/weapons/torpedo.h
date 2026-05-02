@@ -14,7 +14,7 @@ public:
 
     GuidanceType   guidanceType   = GuidanceType::SemiActive;
     PropulsionType propulsionType = PropulsionType::LiquidRocket;
-
+    void Update() override;
     enum class HomingMode { Passive, Active, WireGuided, WakeHoming };
     HomingMode homingMode = HomingMode::Active;
     bool  isWireGuided    = false;

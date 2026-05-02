@@ -43,12 +43,26 @@ public:
     Trajectory();
     ComponentType Typo() const override { return ComponentType::Trajectory; }
 
+    enum FollowRule{
+        Stop,
+        Reverse,
+        Short
+    };
+    const std::string followRuleNames[3] = {
+                                              "Stop",
+                                              "Reverse",
+                                              "Short"
+                };
+
     // =========================================================================
     // SECTION: Trajectory State
     // DESCRIPTION: Flags and navigation controls for path following.
     // =========================================================================
     bool Active;                    //!< Whether trajectory following is active
     bool FollowPath;                //!< Whether to actively follow the path
+
+    FollowRule rule = FollowRule::Short;
+
     // std::vector<QJsonObject> array; //!< (Legacy) Not used
     std::vector<Waypoints*> Trajectories; //!< List of waypoints defining the path
     int current = 0;                //!< Index of current waypoint

@@ -34,6 +34,7 @@
 #ifndef ESMDisplay_H
 #define ESMDisplay_H
 
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/esm.h"
 #include "core/Hierarchy/EntityProfiles/sensor.h"  // For sensor profile
 #include "core/Hierarchy/hierarchy.h"             // For hierarchy data structure
 #include <QWidget>                                // For widget base class
@@ -42,10 +43,7 @@
 #include <core/Debug/profiler.h>
 // %%% Data Structures %%%
 /* Structure for electronic warfare target */
-struct ESMTarget {
-    double angle = 0.0;
-    double radius = 0.0;
-};
+
 
 // %%% Class Definition %%%
 /* Widget for electronic warfare visualization */
@@ -74,8 +72,8 @@ public:
     // Update radar display
     void updateRadar();
     // Sensor instance
-    Sensor* sensor = nullptr;
-        QVector<Sensor*> sensorlist;
+    ESM* sensor = nullptr;
+    QVector<ESM*> sensorlist;
     // Entity platform
     Platform* entity = nullptr;
 
@@ -130,8 +128,6 @@ private:
     void drawCenterMark(QPainter &p, const QPoint &center);
     // Draw top marker
     void drawTopMarker(QPainter &p, const QPoint &center, int outerRadius);
-    // Draw target and path
-    void drawTargetAndPath(QPainter &painter);
 };
 
 #endif // ESMDisplay_H

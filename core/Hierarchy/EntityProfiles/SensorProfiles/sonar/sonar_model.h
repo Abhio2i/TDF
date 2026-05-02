@@ -118,4 +118,27 @@ public:
                                          float v_rx,
                                          float c);
 
+    static float computeFalseAlarmProbability(float DT);
+
+    static float computeProbabilityOfDetection(float SNR, float Pfa);
+
+    static float computeRequiredSNR(float Pd, float Pfa);
+
+    static float computeIncoherentIntegrationGain(float n);
+
+    static float computeRangeResolution(float c, float tau);
+
+    static float computeBearingResolution(float lambda, float L);
+
+    static float computeMaxUnambiguousRange(float c, float PRI);
+
+    static float computeMaxUnambiguousSpeed(float lambda, float PRI);
+
+    static bool computeObstacleWarning(
+        float distance,
+        float safeDistance,
+        float relativeVelocity,
+        bool detected
+        );
+
 };

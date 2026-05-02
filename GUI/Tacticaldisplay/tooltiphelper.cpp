@@ -245,9 +245,7 @@ QString TooltipHelper::formatCompactTooltip(const QString& name,
 void TooltipHelper::showTooltip(const QString& tooltipText, QWidget* parent)
 {
     if (tooltipText.isEmpty()) return;
-
     QPoint globalPos = QCursor::pos() + QPoint(15, 15);
-
     if (parent) {
         parent->setStyleSheet(
             "QToolTip {"
@@ -259,7 +257,6 @@ void TooltipHelper::showTooltip(const QString& tooltipText, QWidget* parent)
             "}"
             );
     }
-
     QToolTip::showText(globalPos, tooltipText, parent, QRect());
 }
 
@@ -304,17 +301,13 @@ double TooltipHelper::calculateCompletionTime(const MeshEntry& entry)
     for (size_t i = nearestWaypointIndex; i < entry.trajectory->Trajectories.size() - 1; ++i) {
         Waypoints* wp1 = entry.trajectory->Trajectories[i];
         Waypoints* wp2 = entry.trajectory->Trajectories[i + 1];
-
         QPointF pos1(wp1->position->z, wp1->position->x);
         QPointF pos2(wp2->position->z, wp2->position->x);
-
         double distance = calculateHaversineDistance(pos1, pos2);
         double speedForSegment = (wp1->speed > 0) ? wp1->speed : currentSpeed;
-
         double segmentTime = (distance / speedForSegment) * 3600.0;
         totalTime += segmentTime;
     }
-
     return totalTime;
 }
 
@@ -322,21 +315,16 @@ double TooltipHelper::calculateCompletionTime(const MeshEntry& entry)
 double TooltipHelper::calculateHaversineDistance(const QPointF& pos1, const QPointF& pos2)
 {
     const double R = 6371.0;
-
     double lat1 = pos1.y() * M_PI / 180.0;
     double lon1 = pos1.x() * M_PI / 180.0;
     double lat2 = pos2.y() * M_PI / 180.0;
     double lon2 = pos2.x() * M_PI / 180.0;
-
     double dlat = lat2 - lat1;
     double dlon = lon2 - lon1;
-
     double a = std::sin(dlat/2) * std::sin(dlat/2) +
                std::cos(lat1) * std::cos(lat2) *
                    std::sin(dlon/2) * std::sin(dlon/2);
-
     double c = 2 * std::atan2(std::sqrt(a), std::sqrt(1-a));
-
     return R * c; // Distance in kilometers
 }
 QString TooltipHelper::formatTime(double seconds)
@@ -365,8 +353,6 @@ int TooltipHelper::findNearestUpcomingWaypoint(const MeshEntry& entry, const QPo
     Waypoints* lastWp = entry.trajectory->Trajectories.back();
     QPointF lastWpPos(lastWp->position->z, lastWp->position->x);
     double distToLast = calculateHaversineDistance(currentPos, lastWpPos);
-
-
     if (distToLast < 0.05) {
         return -1;
     }

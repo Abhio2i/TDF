@@ -503,6 +503,11 @@ QJsonObject Radar::toJson() const
     // --- Mode (unchanged) ---
     obj["mode"] = static_cast<int>(cfg.mode);
 
+    QJsonObject AddParameters = AdditionalParameters;
+    AddParameters["type"] = "Section";
+    obj["AdditionalParameters"] = AddParameters;
+
+
     return obj;
 }
 
@@ -544,6 +549,8 @@ void Radar::fromJson(const QJsonObject& obj)
         if (s.contains("scanType"))         cfg.scanType         = static_cast<ScanType>(s["scanType"].toInt());
         if (s.contains("scanDwellTimeMin")) cfg.scanDwellTime[0] = valueFromParm(s["scanDwellTimeMin"].toObject());
         if (s.contains("scanDwellTimeMax")) cfg.scanDwellTime[1] = valueFromParm(s["scanDwellTimeMax"].toObject());
+        minAzimuth = cfg.minAzimuth;
+        maxAzimuth = cfg.maxAzimuth;
     }
 
     // --- Detection (existing fields + targetCategory) ---
@@ -622,6 +629,10 @@ void Radar::fromJson(const QJsonObject& obj)
     // --- Mode (unchanged) ---
     if (obj.contains("mode"))
         cfg.mode = static_cast<RadarMode>(obj["mode"].toInt());
+
+    if(obj.contains("AdditionalParameters")){
+        AdditionalParameters = obj["AdditionalParameters"].toObject();
+    }
 
     radarCore_.setConfig(cfg);
     displayRangeDirty_ = true;

@@ -67,6 +67,7 @@ void OptionTemplate::setupOptionCell(int row, const QString &fullKey, const QJso
         } else {
             delta[fullKey] = optionObj;
         }
+
    delta["_id"] = mainID;
         emit valueChanged(connectedID, name, delta);
     });

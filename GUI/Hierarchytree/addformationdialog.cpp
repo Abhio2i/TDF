@@ -7,9 +7,6 @@
 #include "addformationdialog.h"
 #include <QMessageBox>
 #include <QHBoxLayout>
-
-// #include "tests/gui_test_control.h"
-
 AddFormationDialog::AddFormationDialog(const QList<QVariantMap>& selectedEntities,
                                        QWidget *parent)
     : QDialog(parent)
@@ -18,8 +15,19 @@ AddFormationDialog::AddFormationDialog(const QList<QVariantMap>& selectedEntitie
     setWindowTitle("Create Formation");
     setModal(true);
     setMinimumSize(500, 400);
+    setStyleSheet(
+        "QDialog { background-color: #0F2636; color: white; border: 2px solid #27446d; }"
+        "QLabel { color: white; }"
+        "QLineEdit { color: white; background-color: #1A3652; border: 1px solid #27446d; padding: 4px; }"
+        "QComboBox { color: white; background-color: #1A3652; border: 1px solid #27446d; padding: 4px; }"
+        "QComboBox QAbstractItemView { background-color: #1A3652; color: white; selection-background-color: #27446d; }"
+        "QGroupBox { color: white; border: 1px solid #27446d; margin-top: 8px; padding-top: 8px; }"
+        "QGroupBox::title { color: white; subcontrol-origin: margin; left: 8px; }"
+        "QListWidget { color: white; background-color: #1A3652; border: 1px solid #27446d; }"
+        "QPushButton { color: white; background-color: #1A3652; border: 1px solid #27446d; padding: 6px 14px; border-radius: 3px; }"
+        "QPushButton:hover { background-color: #27446d; }"
+        );
     setupUI();
-    // Calculate and display allies count
     int alliesCount = selectedEntities.size() - 1;
     m_labelAlliesCount->setText(QString::number(alliesCount));
     updateAlliesList();
@@ -132,7 +140,6 @@ void AddFormationDialog::updateAlliesList()
 {
     m_allies.clear();
     m_listWidgetAllies->clear();
-
     QString mothershipId = m_comboBoxMothership->currentData().toString();
     for (int i = 0; i < m_selectedEntities.size(); ++i) {
         QString id = m_selectedEntities[i]["ID"].toString();
@@ -142,10 +149,8 @@ void AddFormationDialog::updateAlliesList()
             m_listWidgetAllies->addItem(name + " (" + id + ")");
         }
     }
-    // Update allies count display
     m_labelAlliesCount->setText(QString::number(m_allies.size()));
 }
-
 void AddFormationDialog::accept()
 {
     if (getFormationName().isEmpty()) {

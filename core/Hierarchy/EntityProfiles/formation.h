@@ -39,6 +39,7 @@ class Formation: public Entity
     Q_OBJECT
 public:
     Formation(Hierarchy* h);
+    ~Formation();
 
     // =========================================================================
     // SECTION: Identity & State
@@ -55,6 +56,8 @@ public:
     // =========================================================================
     void formationCreate();
     void generatePositions(int targetCount);
+    void removeformationPosition(FormationPosition* pos) ;
+    void FormationTypeUpdate();
 
     // =========================================================================
     // SECTION: Virtual Interface Overrides
@@ -77,7 +80,7 @@ public:
     QString formationTypeToString(Constants::FormationType type) const;
     Constants::FormationType stringToFormationType(QString str) const;
     QStringList formationTypeOptions() const;
-
+    void clear();
 private:
     // =========================================================================
     // SECTION: Private Helpers

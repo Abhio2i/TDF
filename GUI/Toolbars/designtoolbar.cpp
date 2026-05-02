@@ -53,11 +53,9 @@
 #include <qgsproject.h>
 
 
-// Icon size constant for toolbar buttons (smaller - 16x16)
 const QSize ICON_SIZE(20, 20);
 
 // Utility function
-// Loads an icon and applies a uniform background for toolbar display
 QPixmap DesignToolBar::withWhiteBg(const QString &iconPath) {
     QPixmap pixmap(iconPath);
     if (pixmap.isNull()) return QPixmap();
@@ -191,7 +189,7 @@ void DesignToolBar::createActions() {
         if (layer.id == "osm") {
             QAction* action = new QAction(layer.name + " (by default)", this);
             action->setCheckable(true);
-            action->setChecked(true);  // Checked by default
+            action->setChecked(true);
             action->setData(layer.id);
 
             mapLayerMenu->addAction(action);
@@ -435,10 +433,9 @@ void DesignToolBar::createActions() {
     });
 
     // Main GeoJSON import action
-    importGeoJsonAction = new QAction(QIcon(withWhiteBg(":/icons/images/qgislayer.png")), tr("Import GeoJSON"), this);
-    importGeoJsonAction->setCheckable(false);
-    connect(importGeoJsonAction, &QAction::triggered, this, &DesignToolBar::importGeoJson);
-
+    importLayerAction = new QAction(QIcon(withWhiteBg(":/icons/images/qgislayer.png")), tr("Import Layer"), this);
+    importLayerAction->setCheckable(false);
+    connect(importLayerAction, &QAction::triggered, this, &DesignToolBar::importLayer);
     // Main GeoJSON layers management action
     geoJsonLayersAction = new QAction(QIcon(withWhiteBg(":/icons/images/geojson-layers.png")), tr("GeoJSON Layers"), this);
     geoJsonLayersAction->setCheckable(true);
@@ -697,7 +694,7 @@ void DesignToolBar::highlightAction(QAction *activeAction) {
         selectCenterAction, layerInfoAction,
         shapeAction, bitmapAction, selectBitmapAction,
         measureDistanceAction, presetLayersAction,
-        importGeoJsonAction, geoJsonLayersAction
+        geoJsonLayersAction
     };
 
     for (QAction *action : actions) {
@@ -747,29 +744,24 @@ void DesignToolBar::setupToolBar()
     // Zoom and info section
     addAction(zoomInAction);
     addAction(zoomOutAction);
-    addAction(layerInfoAction);
+    // addAction(layerInfoAction);
     addAction(selectCenterAction);
 
-    // Coordinate system section
     QToolButton *coordSystemButton = new QToolButton(this);
     coordSystemButton->setDefaultAction(coordinateSystemAction);
     coordSystemButton->setPopupMode(QToolButton::InstantPopup);
     coordSystemButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
     addWidget(coordSystemButton);
-    // addSeparator();
 
-    // Map and data import section
     QToolButton *mapLayerButton = new QToolButton(this);
     mapLayerButton->setDefaultAction(mapSelectLayerAction);
     mapLayerButton->setPopupMode(QToolButton::InstantPopup);
     mapLayerButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
     addWidget(mapLayerButton);
-
-    QToolButton *importGeoJsonButton = new QToolButton(this);
-    importGeoJsonButton->setDefaultAction(importGeoJsonAction);
-    importGeoJsonButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
-    addWidget(importGeoJsonButton);
-
+    QToolButton *importLayerButton = new QToolButton(this);
+    importLayerButton->setDefaultAction(importLayerAction);
+    importLayerButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    addWidget(importLayerButton);
     QToolButton *geoJsonLayersButton = new QToolButton(this);
     geoJsonLayersButton->setDefaultAction(geoJsonLayersAction);
     geoJsonLayersButton->setPopupMode(QToolButton::InstantPopup);
@@ -854,21 +846,19 @@ void DesignToolBar::onMeasureDistanceTriggered() {
     }
 }
 
-// Main GeoJSON import method: Opens file dialog and triggers import
-void DesignToolBar::importGeoJson() {
-    // Open file dialog to select GeoJSON file
-    QString filePath = QFileDialog::getOpenFileName(this,
-                                                    "Import GeoJSON Layer",
-                                                    "",
-                                                    "GeoJSON Files (*.geojson *.json *.geojsonl *.topojson)");
-
-    if (filePath.isEmpty()) {
-        return;
-    }
-    highlightAction(importGeoJsonAction);
-    emit importGeoJsonTriggered(filePath);
+void DesignToolBar::importLayer() {
+    QString filter = "All Supported Formats (*.geojson *.json *.kml *.kmz *.shp *.gml *.fgb *.csv);;"
+                     "GeoJSON (*.geojson *.json);;"
+                     "KML/KMZ (*.kml *.kmz);;"
+                     "Shapefile (*.shp);;"
+                     "GML (*.gml);;"
+                     "FlatGeobuf (*.fgb);;"
+                     "CSV with WKT (*.csv)";
+    QString filePath = QFileDialog::getOpenFileName(this, "Import Layer", "", filter);
+    if (filePath.isEmpty()) return;
+    highlightAction(importLayerAction);
+    emit importLayerTriggered(filePath);
 }
-
 // Main GeoJSON layer addition handler: Updates menu with new layer
 void DesignToolBar::onGeoJsonLayerAdded(const QString &layerName) {
     if (geoJsonLayerActions.contains(layerName)) {

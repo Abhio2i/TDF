@@ -609,11 +609,24 @@ public:
     bool isRuntime = false;
     bool fixedProfiles = true;
 
+    struct BroadcastMsg{
+        std::string track_id;      // Unique ID
+        double latitude;        // WGS84 format
+        double longitude;
+        float altitude;
+        float frequency_mhz;    // Agar ESM data hai
+        uint64_t timestamp;     // Microseconds me
+
+    };
+
+
 signals:
     /**
      * @brief Emitted to initialise the hierarchy after loading.
      */
     void Init();
+
+    void broadCast(BroadcastMsg msg);
 
     /**
      * @brief Emitted with the current JSON representation of the hierarchy.

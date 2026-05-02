@@ -76,6 +76,9 @@ std::vector<std::string> Weapon::getSupportedComponents()
             "bitmap", "dynamicModel", "crossSection" };
 }
 
+void Weapon::Update(){
+
+}
 // =============================================================================
 // addComponent()
 // =============================================================================
@@ -127,7 +130,11 @@ void Weapon::addComponent(std::string name)
             meshRenderer2d = new MeshRenderer2D();
             meshRenderer2d->parentEntity = this;
             meshRenderer2d->Sprite->clear();
-            meshRenderer2d->Sprite->append(":/sea/images/sea/AUV.png");
+            if(weaponType == WeaponType::Sonobuoy){
+                meshRenderer2d->Sprite->append(":/sea/images/sea/sonobuoy.png");
+            }else{
+                meshRenderer2d->Sprite->append(":/sea/images/sea/AUV.png");
+            }
             parent->Components.insert({meshRenderer2d->ID, meshRenderer2d});
             emit parent->componentAdded(QString::fromStdString(ID),
                                         QString::fromStdString(meshRenderer2d->ID), "bitmap");

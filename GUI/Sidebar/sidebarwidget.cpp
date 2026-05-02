@@ -49,24 +49,24 @@ SidebarWidget::SidebarWidget(QWidget *parent)
 
     // Create sidebar buttons with styles from CSS file
     sensorsButton = createSidebarButton("Sensors", "Sensors");
-    QPushButton *libraryButton = createSidebarButton("Library", "Library");
+    // QPushButton *libraryButton = createSidebarButton("Library", "Library");
     QPushButton *inspectorButton = createSidebarButton("Inspector", "Inspector");
-    QPushButton *textScriptButton = createSidebarButton("TestScript", "TextScript");
+    // QPushButton *textScriptButton = createSidebarButton("TestScript", "TextScript");
 
     // Apply specific styles based on button type
-    libraryButton->setProperty("buttonType", "library");
+    // libraryButton->setProperty("buttonType", "library");
     inspectorButton->setProperty("buttonType", "inspector");
-    textScriptButton->setProperty("buttonType", "testscript");
+    // textScriptButton->setProperty("buttonType", "testscript");
 
     // Add buttons to layout and group
     layout->addWidget(sensorsButton);
     buttonGroup->addButton(sensorsButton);
-    layout->addWidget(libraryButton);
-    buttonGroup->addButton(libraryButton);
+    // layout->addWidget(libraryButton);
+    // buttonGroup->addButton(libraryButton);
     layout->addWidget(inspectorButton);
     buttonGroup->addButton(inspectorButton);
-    layout->addWidget(textScriptButton);
-    buttonGroup->addButton(textScriptButton);
+    // layout->addWidget(textScriptButton);
+    // buttonGroup->addButton(textScriptButton);
 
     // Set fixed height
     setFixedHeight(28);

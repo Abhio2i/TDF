@@ -25,6 +25,44 @@ Formation::Formation(Hierarchy* h)
 {
 }
 
+Formation::~Formation(){
+    clear();
+}
+
+void Formation::clear(){
+    if(mothership){
+        if(mothership->entity){
+            Platform* p = dynamic_cast<Platform*>(mothership->entity);
+            if(p->dynamicModel)
+                p->dynamicModel->formation = nullptr;
+        }
+        Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+        emit parent->componentRemoved(QString::fromStdString(ID), QString::fromStdString("mothership"));
+
+        delete mothership;
+        mothership = nullptr;
+    }
+
+    for ( auto& pair : *formationPositions) {
+        if(pair.second && pair.second->entity){
+            Platform* platform = dynamic_cast<Platform*>(pair.second->entity);
+            if (platform && platform->dynamicModel ) {
+                platform->dynamicModel->followEntity = nullptr;
+                platform->dynamicModel->formationPosition = nullptr;
+                platform->dynamicModel->follow = false;
+            }
+            Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+            emit parent->componentRemoved(QString::fromStdString(ID), QString::fromStdString(pair.first));
+
+            delete pair.second;
+            pair.second = nullptr; // Dangling pointer safety
+        }
+    }
+    formationPositions->clear(); // Container ko reset karein
+    delete formationPositions;
+    formationPositions = nullptr;
+}
+
 /**
  * @brief Spawns the formation entity into the hierarchy.
  * Registers the entity and creates the mothership component.
@@ -88,6 +126,21 @@ QJsonObject Formation::toJson() const {
     obj["Formation_Type"] = entityObj;
 
     return obj;
+}
+
+void Formation::removeformationPosition(FormationPosition* pos){
+
+    for (auto& pair : *formationPositions) {
+        if(pair.second == pos){
+            delete pair.second;
+            pair.second = nullptr;
+            formationPositions->erase(pair.first);
+            Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+            emit parent->componentRemoved(QString::fromStdString(ID), QString::fromStdString(pair.first));
+
+            break;
+        }
+    }
 }
 
 /**
@@ -169,15 +222,156 @@ void Formation::fromJson(const QJsonObject& obj) {
     if (obj.contains("Formation_Type") && obj["Formation_Type"].isObject()) {
         QJsonObject typeObj = obj["Formation_Type"].toObject();
         QString typeVal = typeObj["value"].toString();
+        Constants::FormationType last  = formationType;
         formationType = stringToFormationType(typeVal);
-
-        // Only create default formation if we don't have positions loaded from JSON
-        if (!obj.contains("formationPositions") || !obj["formationPositions"].isArray() ||
-            obj["formationPositions"].toArray().isEmpty()) {
-            formationCreate();
+        if(formationType !=last){
+            FormationTypeUpdate();
         }
+        // Only create default formation if we don't have positions loaded from JSON
+        // if (!obj.contains("formationPositions") || !obj["formationPositions"].isArray() ||
+        //     obj["formationPositions"].toArray().isEmpty()) {
+        //     formationCreate();
+        // }
     }
 }
+
+void Formation::FormationTypeUpdate(){
+
+
+    // 2. Dynamic Generation
+    float spacing = 0.5f;
+    int i = 0;
+    for (auto& pair : *formationPositions) {
+        FormationPosition* pos = pair.second;
+        if (!pos || !pos->Offset) continue;
+        pos->Offset->y = 0;
+        // 1. LINE (Horizontal spread)
+        if (formationType == Constants::FormationType::Line) {
+            float side = (i % 2 == 0) ? -1.0f : 1.0f;
+            float multiplier = (i / 2) + 1;
+            pos->Offset->x = side * spacing * multiplier;
+            pos->Offset->z = 0;
+            pos->Offset->z +=2.2f;
+        }
+        // 2. V (Trailing edges)
+        else if (formationType == Constants::FormationType::V) {
+            float side = (i % 2 == 0) ? -1.0f : 1.0f;
+            float multiplier = (i / 2) + 1;
+            pos->Offset->x = side * spacing * multiplier;
+            pos->Offset->z = -spacing * multiplier;
+            pos->Offset->z +=2.3f;
+        }
+        // --- DIAMOND FORMATION (HOLLOW / OUTLINE) ---
+        else if (formationType == Constants::FormationType::Diamond) {
+
+            // Minimum points to form a diamond
+            if (count == 1) {
+                pos->Offset->x = 0;
+                pos->Offset->z = 0;
+                return;
+            }
+            float radius = spacing * (count / 4.0f + 1);
+            // Normalize index to [0, 1)
+            float t = (float)i / (float)count;
+            float x = 0.0f;
+            float z = 0.0f;
+            if (t < 0.25f) {
+                // Top → Right
+                float u = t / 0.25f;
+                x =  u * radius;
+                z = -radius + u * radius;
+            }
+            else if (t < 0.50f) {
+                // Right → Bottom
+                float u = (t - 0.25f) / 0.25f;
+                x =  radius - u * radius;
+                z =  u * radius;
+            }
+            else if (t < 0.75f) {
+                // Bottom → Left
+                float u = (t - 0.50f) / 0.25f;
+                x = -u * radius;
+                z =  radius - u * radius;
+            }
+            else {
+                // Left → Top
+                float u = (t - 0.75f) / 0.25f;
+                x = -radius + u * radius;
+                z = -u * radius;
+            }
+            pos->Offset->x = x;
+            pos->Offset->z = z;
+        }
+        // 5. SQUARE
+        else if (formationType == Constants::FormationType::Square) {
+            int pointsPerSide = std::ceil((float)count / 4.0f);
+            float sideLength = pointsPerSide * spacing;
+            float halfSide = sideLength / 2.0f;
+            int side = i / pointsPerSide;
+            int indexOnSide = i % pointsPerSide;
+            float step = (float)indexOnSide / (float)pointsPerSide * sideLength;
+            float x = 0;
+            float z = 0;
+            switch (side) {
+            case 0: // TOP
+                x = -halfSide + step;
+                z = halfSide;
+                break;
+            case 1: // RIGHT
+                x = halfSide;
+                z = halfSide - step;
+                break;
+            case 2: // BOTTOM
+                x = halfSide - step;
+                z = -halfSide;
+                break;
+            case 3: // LEFT
+                x = -halfSide;
+                z = -halfSide + step;
+                break;
+            }
+            pos->Offset->x = x;
+            pos->Offset->z = z;
+        }
+        // 4. COLUMN (Single file)
+        else if (formationType == Constants::FormationType::Column) {
+            pos->Offset->x = 0;
+            pos->Offset->z = -spacing * (i + 1);
+            pos->Offset->z +=2.1f;
+        }
+        // 5. ECHELON LEFT (Staircase Left)
+        else if (formationType == Constants::FormationType::EchelonLeft) {
+            pos->Offset->x = spacing * (i + 1);
+            pos->Offset->z = -spacing * (i + 1);
+            pos->Offset->z +=2.1f;
+        }
+        // 6. ECHELON RIGHT (Staircase Right)
+        else if (formationType == Constants::FormationType::EchelonRight) {
+            pos->Offset->x = -spacing * (i + 1);
+            pos->Offset->z = -spacing * (i + 1);
+            pos->Offset->z +=2.1f;
+        }
+        // 7. STAGGERED COLUMN (Zig-Zag)
+        else if (formationType == Constants::FormationType::StaggeredColumn) {
+            pos->Offset->x = (i % 2 == 0) ? spacing : -spacing;
+            pos->Offset->z = -spacing * (i + 1);
+            pos->Offset->z +=2.f;
+        }
+        else if (formationType == Constants::FormationType::Wedge) {
+            // Determine side: Even indices (0, 2, 4...) go Left (-1), Odd (1, 3, 5...) go Right (1)
+            float side = (i % 2 == 0) ? -1.0f : 1.0f;
+            int row = (i / 2) + 1;
+            pos->Offset->x = side * spacing * row;
+            pos->Offset->z = -spacing * row;
+            pos->Offset->y = 0;
+            pos->Offset->z +=2.f;
+        }
+
+        i++;
+    }
+
+}
+
 
 /**
  * @brief Dynamically creates formation positions based on the current type and count.
@@ -317,7 +511,9 @@ void Formation::formationCreate() {
             pos->Offset->z = -spacing * row;
             pos->Offset->y = 0;
         }
+        pos->Offset->z +=2.5f;
     }
+
 }
 
 /**

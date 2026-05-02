@@ -116,6 +116,7 @@ public:
     /* Import GeoJSON layer from file path */
     void importGeoJsonLayer(const QString &filePath);
 
+
     /* Add vector layer with name and GeoJSON features */
     void addVectorLayer(const QString &layerName, const QJsonArray &features);
 
@@ -143,6 +144,8 @@ public:
 
     /* Search by geographic coordinates */
     void searchByCoordinates(double latitude, double longitude);
+    void removeVectorLayer(const QString& layerName);
+  void importVectorLayer(const QString& filePath);
 
 protected:
     /*
@@ -341,6 +344,7 @@ public slots:
 
     void fitToBounds(double minLat, double minLon,    // new for autozoom
                      double maxLat, double maxLon, int zoomOffset);
+
 
 protected:
     /*

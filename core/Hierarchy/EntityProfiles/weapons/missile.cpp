@@ -41,6 +41,11 @@ void Missile::launch()
     startFlightMonitor();
 }
 
+void Missile::Update(){
+
+}
+
+
 void Missile::updateGuidance() {}
 
 bool Missile::canEngage(Platform *target)

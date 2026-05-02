@@ -26,7 +26,7 @@ public:
 
     enum class WarheadType { HE, HEAT, Flechette, Illumination, Smoke, WP };
     WarheadType warheadVariant = WarheadType::HE;
-
+    void Update() override;
     int   salvoCount    = 1;
     float salvoInterval = 0.05f;
     int   podCapacity   = 19;

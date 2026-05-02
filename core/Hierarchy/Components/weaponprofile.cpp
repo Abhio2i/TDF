@@ -9,6 +9,7 @@
 #include "core/GlobalRegistry.h"
 #include "core/Hierarchy/EntityProfiles/weapons/missile.h"
 #include "core/Hierarchy/EntityProfiles/weapons/bomb.h"
+#include "core/Hierarchy/EntityProfiles/weapons/sonobuoy.h"
 #include "core/Hierarchy/EntityProfiles/weapons/torpedo.h"
 #include "core/Hierarchy/EntityProfiles/weapons/artillery.h"
 #include "core/Hierarchy/EntityProfiles/weapons/rocket.h"
@@ -50,7 +51,21 @@ void WeaponProfile::addSubComponent(std::string name,
             }
         }
         weapon = m;
-    } else if (data1 == "Bomb") {
+    }else
+    if (data1 == "SunoBuoy") {
+        Sonobuoy* m = new Sonobuoy(parent);
+        if (!data2.isEmpty()) {
+            auto it = parent->Weapons.find(data2.toStdString());
+            if (it != parent->Weapons.end() && it->second) {
+                std::string id = m->ID;
+                m->fromJson(it->second->toJson());
+                m->ID       = id;
+                m->parentID = parentID;
+            }
+        }
+        weapon = m;
+    }
+    else if (data1 == "Bomb") {
         Bomb* b = new Bomb(parent);
         if (!data2.isEmpty()) {
             auto it = parent->Weapons.find(data2.toStdString());
@@ -255,6 +270,8 @@ void WeaponProfile::fromJson(const QJsonObject& obj)
             weapon = (*weapons)[id];
         } else if (type == "Missile") {
             weapon = new Missile(parent);
+        } else if (type == "Sunobuoy") {
+            weapon = new Sonobuoy(parent);
         } else if (type == "Bomb") {
             weapon = new Bomb(parent);
         } else if (type == "Torpedo") {

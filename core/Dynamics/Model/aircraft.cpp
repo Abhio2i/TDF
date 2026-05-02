@@ -4,6 +4,7 @@
  */
 
 #include "aircraft.h"
+#include "qmath.h"
 #include <cmath>
 #include <algorithm>
 
@@ -33,6 +34,7 @@ Aircraft::~Aircraft() {}
  * - Waypoint reach detection
  */
 void Aircraft::FixedUpdate(float delta){
+
     // 1. STATE SYNCHRONIZATION
     _currentHeading = EularAngles.y;
     Altitude = Position.y;
@@ -156,10 +158,51 @@ void Aircraft::FixedUpdate(float delta){
 
     // Update Physics Position
     Position += _moveVelocity;
+    //calculate driftangle
+    float windAngleRad = qDegreesToRadians(qRadiansToDegrees(qAtan2(windVector.x, -windVector.z)) - TrueHeading);
+
+    float sinDrift = (WindIntensity / TrueAirSpeed) * qSin(windAngleRad);
+
+    if (sinDrift > 1.0f) sinDrift = 1.0f;
+    if (sinDrift < -1.0f) sinDrift = -1.0f;
 
     // Update Telemetry
+    DriftAngle = qRadiansToDegrees(qAsin(sinDrift));
     Velocity = _moveVelocity / delta;
-    // localVelocity = transform.InverseTransformDirection(Velocity);
+    TrueAirSpeed = (_moveVelocity / delta).Magnitude();
+    GroundVelocity = WindIntensity+TrueAirSpeed;
+    NorthVelocity = Velocity.x;
+    EastVelocity = Velocity.z;
+    VerticalVelocity = Velocity.y;
+    Roll = Yaw*0.7f;
+    TrueHeading = _currentHeading;
+    Yaw = _currentHeading;
+    // 1. Pehle Global Velocity (Ground Velocity) calculate karein
+    vec3 globalVelocity = _moveVelocity / delta;
+
+    // 2. Relative Velocity calculate karne ke liye
+    // Hamein velocity ko -Heading aur -Pitch se rotate karna hoga
+    float h = _currentHeading * Deg2Rad;
+    float p = Pitch * Deg2Rad;
+
+    // Simple Trigonometry to bring Global Velocity into Body Frame
+    // Note: Isme Roll (Z) ko aksar skip kiya jata hai unless precision zaruri ho
+    float cosH = std::cos(-h);
+    float sinH = std::sin(-h);
+    float cosP = std::cos(-p);
+    float sinP = std::sin(-p);
+
+    // Heading rotation (Y-axis)
+    float tempX = globalVelocity.x * cosH - globalVelocity.z * sinH;
+    float tempZ = globalVelocity.x * sinH + globalVelocity.z * cosH;
+
+    // Pitch rotation (X-axis)
+    float relativeForward = tempZ * cosP - globalVelocity.y * sinP;
+    float relativeVertical = tempZ * sinP + globalVelocity.y * cosP;
+    float relativeSide = tempX;
+
+    localVelocity = vec3(relativeSide, relativeVertical, relativeForward);
+
 
     if (vec3::Distance(Position, TargetPosition) < speed)
     {

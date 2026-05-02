@@ -33,8 +33,6 @@
 #include <QHBoxLayout>                             // For horizontal layout
 #include <qgsproject.h>                            // For QGIS project management
 #include <qgscoordinatetransform.h>                // For coordinate transforms
-
-
 TacticalDisplay::TacticalDisplay(QWidget *parent)
     : QWidget(parent)
 {
@@ -210,7 +208,6 @@ void TacticalDisplay::addMesh(QString ID, MeshData meshData)
     }
 
     entity.dynamicModel = meshData.dynamicmodel;
-    // Add to canvas and update
     canvas->Meshes[ID.toStdString()] = entity;
     canvas->update();
 }
@@ -222,6 +219,9 @@ void TacticalDisplay::removeMesh(QString ID)
     if (canvas->Meshes.find(key) != canvas->Meshes.end()) {
         canvas->Meshes.erase(key);
         canvas->update();
+    }
+    if(key==canvas->selectedEntityId){
+        canvas->selectedEntityId.clear();
     }
 }
 

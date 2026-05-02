@@ -1,4 +1,5 @@
 #include "adsbdisplay.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/adsbsensor.h"
 #include "core/Hierarchy/Utils/entityutils.h"
 #include "qelapsedtimer.h"
 #include <QPainter>                                // For painting operations
@@ -49,10 +50,10 @@ int ADSBDisplay::heightForWidth(int width) const
 /* Handle mouse move events for hover detection */
 void ADSBDisplay::mouseMoveEvent(QMouseEvent *event)
 {
-    return;
+
     lastMousePos = event->pos();
 
-    if (sensor->ewtargets.isEmpty()) {
+    if (sensor->detect.isEmpty()) {
         hoveredTargetIndex = -1;
         update();
         return;
@@ -67,7 +68,7 @@ void ADSBDisplay::mouseMoveEvent(QMouseEvent *event)
     int closestIndex = -1;
     double minDistance = 20.0; // Pixel threshold for hover detection
     int i=0;
-    for (const Target &t : sensor->ewtargets) {
+    for (const ADSBTarget &t : sensor->detect) {
         // Calculate target position on screen
         double per = t.radius / range;
         if (per < 0.0) per = 0.0;
@@ -125,10 +126,14 @@ void ADSBDisplay::selectEntity(Entity* entit)
     for (auto const& pair :  *entity->sensors->sensors) {
         Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::ADSB) {
-            if(sensor == nullptr){
-                sensor = s;
+            ADSBSensor* sono = dynamic_cast<ADSBSensor*>(s);
+            if(sono){
+
+                if(sensor == nullptr){
+                    sensor = sono;
+                }
+                sensorlist.append(sono);
             }
-            sensorlist.append(s);
             setWindowTitle("ADSB Display (" + QString::fromStdString(entity->Name) + ")");
         }
     }
@@ -190,9 +195,9 @@ void ADSBDisplay::paintEvent(QPaintEvent * /*event*/)
     drawCenterMark(p, center);
     drawTopMarker(p, center, outerRadius);
     if(!sensor)return;
-    if ( !sensor->ewtargets.isEmpty()) {
+    if ( !sensor->detect.isEmpty()) {
         int i=0;
-        for (const Target &t : sensor->ewtargets) {
+        for (const ADSBTarget &t : sensor->detect) {
             // const Target &t = targets[i];
 
             // FIX: Manual bound check
@@ -206,18 +211,50 @@ void ADSBDisplay::paintEvent(QPaintEvent * /*event*/)
             int tx = center.x() + int(r * cos(theta));
             int ty = center.y() + int(r * sin(theta));
 
-            // Draw dotted line from center to target
-            p.setPen(QPen(radarGreen, 1, Qt::DotLine));
-            p.drawLine(center, QPoint(tx, ty));
+            // // Draw dotted line from center to target
+            // p.setPen(QPen(radarGreen, 1, Qt::DotLine));
+            // p.drawLine(center, QPoint(tx, ty));
 
-            // Draw target dot - blue normally, red if hovered
+            // // Draw target dot - blue normally, red if hovered
+            // if (i == hoveredTargetIndex) {
+            //     p.setBrush(Qt::red);
+            // } else {
+            //     p.setBrush(Qt::blue);
+            // }
+            // p.setPen(Qt::NoPen);
+            // p.drawEllipse(QPointF(tx, ty), 4, 4);
+
+            // --- Aircraft Shape Drawing ---
+            p.save(); // Current painter state save karein[cite: 2]
+            p.translate(tx, ty); // Painter ko aircraft ke center position par le jayein[cite: 2]
+            p.rotate(t.angle); // Aircraft ko uske heading angle par rotate karein[cite: 2]
+
+            // Hover ke hisaab se color set karein
             if (i == hoveredTargetIndex) {
-                p.setBrush(Qt::red);
+                p.setBrush(Qt::red); // Hover karne par red[cite: 2]
             } else {
-                p.setBrush(Qt::blue);
+                p.setBrush(Qt::blue); // Normally blue[cite: 2]
             }
-            p.setPen(Qt::NoPen);
-            p.drawEllipse(QPointF(tx, ty), 4, 4);
+            p.setPen(QPen(Qt::white, 0.5)); // Patli white outline
+
+            // Aircraft Polygon define karein (origin 0,0 nose ke thoda niche hai)
+            QPolygon aircraft;
+            aircraft << QPoint(0, -12)   // Nose (Top)
+                     << QPoint(1.5, -5)  // Right Fuselage front
+                     << QPoint(12, 0)    // Right Wingtip front
+                     << QPoint(12, 2)    // Right Wingtip back
+                     << QPoint(1.5, 5)   // Right Fuselage back
+                     << QPoint(5, 10)    // Right Tail stabilizer
+                     << QPoint(0, 8)     // Rear center (notch)
+                     << QPoint(-5, 10)   // Left Tail stabilizer
+                     << QPoint(-1.5, 5)  // Left Fuselage back
+                     << QPoint(-12, 2)   // Left Wingtip back
+                     << QPoint(-12, 0)   // Left Wingtip front
+                     << QPoint(-1.5, -5);// Left Fuselage front
+            // Polygon automatically connect back to nose.
+
+            p.drawPolygon(aircraft);// Polygon draw karein
+                p.restore(); // Painter state restore karein[cite: 2]
 
             // Draw labels ONLY if this target is hovered
             if (i == hoveredTargetIndex) {
@@ -229,15 +266,50 @@ void ADSBDisplay::paintEvent(QPaintEvent * /*event*/)
                 Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
                 QString targetName = targetPlatform ? QString::fromStdString(targetPlatform->Name) : "Unknown";
 
-                // Show angle, distance, and name for hovered target
-                QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
-                QString distText = QString("D:%1km").arg(t.radius, 0, 'f', 1);
-                QString nameText = QString("N:%1").arg(targetName);
+                // 1. Pehle saare strings prepare kar lete hain (Formatting)
+                QString angleText = QString("Angle: %1°").arg(t.angle, 0, 'f', 1);
+                QString distText  = QString("Dist: %1km").arg(t.radius, 0, 'f', 1);
+                QString callSign  = QString("CallSign: %1").arg(QString::fromStdString(t.call_sign));
+                QString hexId     = QString("Hex: %1").arg(QString::fromStdString(t.hex_ident));
+                QString flightId  = QString("Flight: %1").arg(QString::fromStdString(t.fligh_Id));
 
-                // Draw text at target position (offset slightly)
-                p.drawText(tx + 6, ty - 6, angleText);
-                p.drawText(tx + 6, ty + 12, distText);
-                p.drawText(tx + 6, ty + 30, nameText);
+                // Dynamic Data
+                QString altText   = QString("ALT: %1 ft").arg(t.altitude);
+                QString gsText    = QString("GS: %1 kt").arg(t.entity->dynamicModel->GroundVelocity);
+                QString trackText = QString("TRK: %1°").arg(t.track);
+                QString climbText = QString("ROC: %1 fpm").arg(t.climb_rate);
+                QString posText   = QString("Pos: %1, %2").arg(t.entity->transform->getLatitude(), 0, 'f', 4).arg(t.entity->transform->getLongitude(), 0, 'f', 4);
+
+                // Status Data
+                QString squawkText = QString("Squawk: %1").arg(QString::fromStdString(t.squawk));
+                QString statusText = QString("Status: %1%2%3")
+                                         .arg(t.alert ? "ALERT " : "")
+                                         .arg(t.emergency ? "EMERGENCY " : "")
+                                         .arg(t.is_on_ground ? "GROUND" : "AIR");
+
+                // 2. Drawing Logic (Y-offset maintain karte hue)
+                int x = tx + 10;   // Target se thoda right
+                int y = ty - 10;   // Starting height
+                int gap = 15;      // Har line ke beech ka gap
+
+                // Text Render Karein
+                p.drawText(x, y,          callSign);
+                p.drawText(x, y += gap,  hexId);
+                p.drawText(x, y += gap,  flightId);
+                p.drawText(x, y += gap,  altText);
+                p.drawText(x, y += gap,  gsText);
+                p.drawText(x, y += gap,  trackText);
+                p.drawText(x, y += gap,  climbText);
+                p.drawText(x, y += gap,  posText);
+                p.drawText(x, y += gap,  angleText);
+                p.drawText(x, y += gap,  distText);
+                p.drawText(x, y += gap,  squawkText);
+
+                // Agar Emergency hai toh red color mein dikha sakte hain
+                if(t.emergency) {
+                    p.setPen(Qt::red);
+                }
+                p.drawText(x, y += gap,  statusText);
             }
             i++;
         }

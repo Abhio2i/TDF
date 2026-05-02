@@ -41,6 +41,7 @@
 #include <QPushButton>                            // For push button widget
 #include <QHBoxLayout>                            // For horizontal layout
 #include <QVBoxLayout>                            // For vertical layout
+#include <QLineEdit>
 
 // %%% TextScriptItemWidget Class %%%
 /* Widget for individual script item */
@@ -102,6 +103,7 @@ private slots:
     void handlePauseClicked(const QString &filePath);
     // Handle add script button click
     void handleAddScriptButtonClicked();
+
 signals:
     void runScriptFile(const QString& filePath);
     void pauseScriptFile(const QString& filePath);
@@ -122,6 +124,10 @@ private:
     QMap<QString, QString> activeButtonState;
     // Add script button
     QPushButton *addScriptButton;
+    void filterScripts(const QString &text);
+    void addFileToList(const QFileInfo &fileInfo);
+    QLineEdit *searchBar;
+    QList<QFileInfo> allFiles;
 };
 
 #endif // TEXTSCRIPTWIDGET_H

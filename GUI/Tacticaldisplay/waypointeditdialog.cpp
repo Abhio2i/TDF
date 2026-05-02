@@ -37,16 +37,17 @@ WaypointEditDialog::WaypointEditDialog(QWidget *parent)
     setupUI();
     setupConnections();
     setWindowTitle("Edit Waypoint");
-    setFixedSize(300, 200);
+    setMinimumSize(300, 200);
+    resize(300, 200);
     setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::WindowCloseButtonHint);
     setModal(true);
+    setStyleSheet("QDialog { background-color: #0F2636; border: 2px solid #27446d; }");
 }
 
 WaypointEditDialog::~WaypointEditDialog()
 {
 
 }
-
 void WaypointEditDialog::setupUI()
 {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
@@ -76,7 +77,7 @@ void WaypointEditDialog::setupUI()
     QHBoxLayout* altLayout = new QHBoxLayout();
     QLabel* altLabel = new QLabel("Altitude:", this);
     altSpinBox = new QDoubleSpinBox(this);
-    altSpinBox->setRange(0.0, 50000.0);
+    altSpinBox->setRange(-2000.0, 50000.0);
     altSpinBox->setDecimals(2);
     altSpinBox->setSingleStep(10.0);
     altSpinBox->setSuffix(" ft");

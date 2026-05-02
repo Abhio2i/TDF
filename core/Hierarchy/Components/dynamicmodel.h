@@ -32,6 +32,7 @@
 
 // Forward declarations
 class Platform;
+class Formation;
 class FormationPosition;
 
 // =============================================================================
@@ -60,6 +61,7 @@ public:
     Q_ENUM(TerrainSurface)
 
     DynamicModel();
+    ~DynamicModel();
     ComponentType Typo() const override { return ComponentType::DynamicModel; }
     void init();
     void start();
@@ -139,7 +141,7 @@ public:
     float EastVelocity = 0;     //!< East component of velocity (m/s)
     float VerticalVelocity = 0; //!< Vertical velocity (m/s)
     float GroundVelocity = 0;   //!< Ground speed (km/h)
-
+    QVector3D localVelocity;
     // =========================================================================
     // SECTION: External Component References
     // DESCRIPTION: Pointers to associated simulation components.
@@ -151,6 +153,7 @@ public:
 
     // Formation flying support
     Platform *followEntity = nullptr;               //!< Entity to follow in formation
+    Formation* formation = nullptr;
     FormationPosition *formationPosition = nullptr; //!< Formation offset data
 
     float lerp(float a, float b, float t);          //!< Linear interpolation helper

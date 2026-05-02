@@ -22,7 +22,7 @@ private slots:
     void testShapeActionExists();
     void testBitmapActionsExist();
     void testPresetLayersActionExists();
-    void testImportGeoJsonActionExists();
+    // void testImportGeoJsonActionExists();
     void testGeoJsonLayersActionExists();
     void testCoordinateSystemActionExists();
     void testMeasureDistanceActionExists();

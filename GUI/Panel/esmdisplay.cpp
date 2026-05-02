@@ -85,10 +85,10 @@ int ESMDisplay::heightForWidth(int width) const
 /* Handle mouse move events for hover detection */
 void ESMDisplay::mouseMoveEvent(QMouseEvent *event)
 {
-        return;
+        // return;
     lastMousePos = event->pos();
 
-    if (sensor->ewtargets.isEmpty()) {
+    if (sensor->detect.isEmpty()) {
         hoveredTargetIndex = -1;
         update();
         return;
@@ -105,7 +105,7 @@ void ESMDisplay::mouseMoveEvent(QMouseEvent *event)
     double minDistance = 20.0;
 
     int i=0;
-    for (const Target &t : sensor->ewtargets) {
+    for (const ESMTarget &t : sensor->detect) {
 
         // Calculate target position on screen
         double per = t.radius / range;
@@ -170,10 +170,15 @@ void ESMDisplay::selectEntity(Entity* entit)
     for (auto const& pair :  *entity->sensors->sensors) {
         Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::ESM) {
-            if(sensor == nullptr){
-                sensor = s;
+
+            ESM* sono = dynamic_cast<ESM*>(s);
+            if(sono){
+
+                if(sensor == nullptr){
+                    sensor = sono;
+                }
+                sensorlist.append(sono);
             }
-            sensorlist.append(s);
             setWindowTitle("ESM Display (" + QString::fromStdString(entity->Name) + ")");
 
         }
@@ -243,9 +248,9 @@ void ESMDisplay::paintEvent(QPaintEvent * /*event*/)
 
     if(!sensor)return;
     // Draw targets with dotted lines and labels
-    if (!sensor->ewtargets.isEmpty()) {
+    if (!sensor->detect.isEmpty()) {
         int i=0;
-        for (const Target &t : sensor->ewtargets) {
+        for (const ESMTarget &t : sensor->detect) {
             // const Target &t = targets[i];
             double per = t.radius / range;
             if (per < 0.0) per = 0.0;
@@ -258,8 +263,8 @@ void ESMDisplay::paintEvent(QPaintEvent * /*event*/)
             int ty = center.y() + int(r * sin(theta));
 
             // Draw dotted line from center to target
-            p.setPen(QPen(radarGreen, 1, Qt::DotLine));
-            p.drawLine(center, QPoint(tx, ty));
+            // p.setPen(QPen(radarGreen, 0, Qt::DotLine));
+            // p.drawLine(center, QPoint(tx, ty));
 
             // Draw target dot - blue normally, red if hovered
             if (i == hoveredTargetIndex) {
@@ -280,17 +285,25 @@ void ESMDisplay::paintEvent(QPaintEvent * /*event*/)
                 // Show angle and distance for hovered target
                 QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
                 QString distText = QString("D:%1").arg(t.radius, 0, 'f', 1);
+                QString emmitterID = QString::fromStdString(t.entity->ID);//, 0, 'f', 1);
+                QString emmittername = QString::fromStdString(t.entity->Name);//QString("D:%1").arg(t.radius, 0, 'f', 1);
+                QString frequency = QString("F:%1 MHz").arg(t.frequency);
+                QString frequencytype = "UHF";
 
                 // Draw text at target position
                 p.drawText(tx + 6, ty - 6, angleText);
                 p.drawText(tx + 6, ty + 12, distText);
+                p.drawText(tx + 6, ty + 30, emmitterID);
+                p.drawText(tx + 6, ty + 48, emmittername);
+                p.drawText(tx + 6, ty + 66, frequency);
+                p.drawText(tx + 6, ty + 84, frequencytype);
 
 
-                Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
-                if (targetPlatform) {
-                    QString nameText = QString::fromStdString(targetPlatform->Name);
-                    p.drawText(tx + 6, ty + 30, nameText);
-                }
+                // Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
+                // if (targetPlatform) {
+                //     QString nameText = QString::fromStdString(targetPlatform->Name);
+                //     p.drawText(tx + 6, ty + 30, nameText);
+                // }
             }
             i++;
         }
@@ -308,43 +321,6 @@ void ESMDisplay::paintEvent(QPaintEvent * /*event*/)
     Profiler::currentFrame->esmdisplay = elapsedMs;
 }
 
-// %%% Drawing Methods %%%
-/* Draw targets and their paths */
-void ESMDisplay::drawTargetAndPath(QPainter &painter)
-{
-    int w = width();
-    int h = height();
-    int centerX = w/2;
-    int centerY = h/2;
-    int outerDiameter = qMin(w - padding*2, h - padding*2);
-    int outerRadius = outerDiameter / 2;
-
-    if (entity && sensor) {
-        // Get entity angle
-        ang = entity->transform->toEulerAngles().y();
-        painter.setBrush(Qt::red);
-
-        for (const Target &target : sensor->esmtargets) {
-            // Calculate target position
-            int panelhigh = outerRadius;
-            float per = target.radius/range;
-            float radius = panelhigh*per;
-            float angle = target.angle;
-            double targetAngle = (angle + 90) * M_PI / 180;
-            double targetRadius = radius;
-            int targetX = centerX + static_cast<int>(targetRadius * cos(targetAngle));
-            int targetY = centerY - static_cast<int>(targetRadius * sin(targetAngle));
-
-            // Draw target point
-            painter.drawEllipse(targetX - 3, targetY - 3, 6, 6);
-
-            // Draw target labels
-            painter.setPen(QPen(Qt::green, 1));
-            painter.drawText(targetX - 20, targetY - 10, QString("%1").arg(angle));
-            painter.drawText(targetX - 20, targetY + 5, QString("%1").arg(radius));
-        }
-    }
-}
 
 /* Draw display background */
 void ESMDisplay::drawBackground(QPainter &p)

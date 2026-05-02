@@ -161,7 +161,25 @@ void RadarAntenna_AESA::pointBeam(double az_deg, double el_deg,
     // beam, which would corrupt the gain calculation.
     // REQ-AESA-011: unreachable beams shall be clamped, not rejected silently.
     // -------------------------------------------------------------------------
-    if (!isReachable(az_deg, el_deg, cfg))
+    // if (!isReachable(az_deg, el_deg, cfg))
+    // {
+    //     // Clamp azimuth to [-maxSteeringAngle, +maxSteeringAngle].
+    //     // Cast to double to avoid float precision loss in clamp comparison.
+    //     double maxAng = static_cast<double>(cfg.maxSteeringAngle_deg);
+    //     az_deg = std::clamp(az_deg, -maxAng, maxAng);
+
+    //     // Clamp elevation to [minElevation, maxElevation] from config.
+    //     // These define the physical FoV of the antenna aperture.
+    //     el_deg = std::clamp(el_deg,
+    //                         static_cast<double>(cfg.minElevation),
+    //                         static_cast<double>(cfg.maxElevation));
+    // }
+    // In full 360° mode (minAzimuth=-180, maxAzimuth=+180) bypass the
+    // physical steering limit — operator has requested omnidirectional
+    // coverage. REQ-AESA-011.
+    bool fullCircle = (cfg.maxAzimuth >= 180.0f && cfg.minAzimuth <= -180.0f);
+
+    if (!fullCircle && !isReachable(az_deg, el_deg, cfg))
     {
         // Clamp azimuth to [-maxSteeringAngle, +maxSteeringAngle].
         // Cast to double to avoid float precision loss in clamp comparison.
@@ -295,16 +313,13 @@ double RadarAntenna_AESA::computeArrayGain(double steeringAngle_deg,
     // REQ-AESA-013: spoilFactor < 1.0 is physically impossible.
     double sf = std::max(1.0, static_cast<double>(spoilFactor));
 
-    // -------------------------------------------------------------------------
-    // Step 3: Element pattern roll-off.
-    // Models the radiation pattern of an individual patch element.
-    // Pattern = cos^1.5(theta) per Mailloux, Phased Array Antenna Handbook,
-    // 2nd Ed, Ch 3. Valid for microstrip patch elements up to 60 deg.
-    // std::max(0.0, cos(theta)) prevents negative values at theta > 90 deg
-    // (physically: element cannot radiate backward). REQ-AESA-012.
-    // -------------------------------------------------------------------------
-    double elementPattern = std::pow(std::max(0.0, std::cos(theta)),
-                                     ELEMENT_PATTERN_EXP);
+
+    // In full 360° mode, allow rear-hemisphere gain (element pattern floor
+    // at GAIN_FLOOR_LINEAR instead of zero). REQ-AESA-012.
+    bool fullCircle = (cfg.maxAzimuth >= 180.0f && cfg.minAzimuth <= -180.0f);
+    double elementPattern = fullCircle
+                                ? std::max(GAIN_FLOOR_LINEAR, std::pow(std::abs(std::cos(theta)), ELEMENT_PATTERN_EXP))
+                                : std::pow(std::max(0.0, std::cos(theta)), ELEMENT_PATTERN_EXP);
 
     // -------------------------------------------------------------------------
     // Step 4: Array factor steering loss.
