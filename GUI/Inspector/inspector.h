@@ -114,6 +114,8 @@ public:
     QString getMainID() const { return mainID; }
     QString getName() const { return Name; }
     QString getConnectedID() const { return ConnectedID; }
+    void setDatabaseEditorMode(bool isDatabaseEditor) { m_isDatabaseEditor = isDatabaseEditor; }
+
     // void runUnitTestsOnce();
 public slots:
     // %%% Data Initialization %%%
@@ -283,6 +285,7 @@ private:
     int           m_additionalParamsHeaderRow = -1;
     QJsonObject rebuildAdditionalParameters() const;
 void emitFullAdditionalParametersUpdate();
+bool m_isDatabaseEditor = false;
 
 
 };

@@ -111,6 +111,7 @@ void Transform::setHeading(float heading){
  * @return Heading in degrees.
  */
 float Transform::getHeading(){
+     if(!geocord) return 0.0f;
     return geocord->Heading;
 }
 
@@ -129,6 +130,7 @@ void Transform::setLatitude(float lat){
  * @brief Returns the current latitude.
  */
 float Transform::getLatitude(){
+     if(!geocord) return 0.0f;
     return geocord->latitude;
 }
 
@@ -146,6 +148,7 @@ void Transform::setLongitude(float lon){
  * @brief Returns the current longitude.
  */
 float Transform::getLongitude(){
+     if(!geocord) return 0.0f;
     return geocord->longitude;
 }
 
@@ -163,6 +166,7 @@ void Transform::setAltitude(float alt){
  * @brief Returns altitude in feet.
  */
 float Transform::getAltitude(){
+    if(!geocord) return 0.0f;
     return geocord->altitude;
 }
 

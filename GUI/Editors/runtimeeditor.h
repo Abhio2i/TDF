@@ -59,6 +59,7 @@
 #include "GUI/Panel/adsbdisplay.h"
 #include "GUI/Panel/aisdisplay.h"
 #include "GUI/Panel/eodisplay.h"
+#include "GUI/Panel/irdisplay.h"
 #include "GUI/Tacticaldisplay/canvaswidget.h"      // For canvas widget
 #include "GUI/Tacticaldisplay/tacticaldisplay.h"   // For tactical display
 #include "GUI/Toolbars/standardtoolbar.h"          // For standard toolbar
@@ -90,6 +91,7 @@
 #include "core/Hierarchy/EntityProfiles/platform.h"
 #include <QElapsedTimer>
 #include "GUI/Panel/aesaradardisplay.h"
+
 // %%% Class Definition %%%
 /* Main window class for the runtime editor */
 class RuntimeEditor : public QMainWindow
@@ -130,6 +132,7 @@ public:
     DesignToolBar *designToolBar;
     void markUnsavedChanges();
     ConsoleView *consoleView;
+    PluginManager* pluginManager = nullptr;
 
 public slots:
     void showProfileInfo();
@@ -162,6 +165,7 @@ private slots:
     void resetLayout();
     void showPanelContextMenu(const QPoint &pos);
     void filterSensorTabsForEntity(const QString &entityId, const QString &category);
+    void setCanvas(CanvasWidget* canvas);
 
 
 signals:
@@ -203,6 +207,7 @@ private:
     HierarchyConnector* m_hierarchyConnector;
     QVariantMap copydata;
     Hierarchy* copyhirarchy = nullptr;
+
     NetworkToolbar *networkToolBar;
     LayerPanel *layerPanel = nullptr;
     MenuBar *menuBar;
@@ -222,6 +227,7 @@ private:
     ESMDisplay *esmDisplayUI;
     CSMDisplay *csmDisplayUI;
     EODisplay *eoDisplayUI;
+    IRDisplay *irDisplayUI;
     AISDisplay *aisDisplayUI;
     ADSBDisplay *adsbDisplayUI;
     SonoBuoyPanel * sonoBuoyDisplayUI;
@@ -236,6 +242,7 @@ private:
     Entity* m_selectedSonarEntity = nullptr;
     QString m_lastSelectedEntityId;
     QToolBar *rightToolBar = nullptr;
+     bool m_loggerDialogPausedSim = false;
 
 private:
     qint64 pausedTimeMs = 0;

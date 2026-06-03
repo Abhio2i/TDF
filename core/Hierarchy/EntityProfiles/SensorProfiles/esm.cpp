@@ -13,65 +13,44 @@ ESM::ESM(Hierarchy* h) : Sensor(h) {
 }
 
 void ESM::scan(){
-    if(!Active)return;
-    // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
+    if(!Active) return;
     if(!parentEntity) return;
-    detect.clear();
-    Transform* source = root->Platforms[parentEntity->ID]->transform;
+    if(!root) return;
+    Transform* source = root->Platforms.count(parentEntity->ID)
+                            ? root->Platforms[parentEntity->ID]->transform
+                            : nullptr;
     if(!source) return;
-    // C# foreach (Transform tr in targets) -> C++ range-based for loop
+    detect.clear();
+    ewdetects.clear();
     for (auto& [key, entity] : root->Sensors)
     {
-        if(!entity || !entity->parentEntity|| !entity->parentEntity->Active) continue;
+        if(!entity) continue;
+        if(!entity->parentEntity) continue;
+        if(!entity->parentEntity->Active) continue;
+        if(entity->subType != Sensor::SubType::Generic) continue;
+        if(!entity->Active) continue;
+        if(entity->parentEntity->ID == parentEntity->ID) continue;
         auto it = root->Platforms.find(entity->parentEntity->ID);
-        if (it != root->Platforms.end()) {
-            Platform* platform = it->second;
-            // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
-            if(platform->ID == parentEntity->ID || !platform || !platform->transform || entity->subType != Sensor::SubType::Generic ) continue;
-            QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
-            //float distance = localPos.length();
-            float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
-
-            // horizontal angle (Y axis) : x vs z
-            float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
-
-            //Radar side
-            QVector3D radarlocalpos = platform->transform->inverseTransformPoint(source->matrix->translation());
-
-            if (entity->Active && (range*1000.f) > metredis/*detectCheck(localPos,metredis) && entity->detectCheck(radarlocalpos,metredis,2) && entity->frequency==frequency*/) // .position() is assumed
-            {
-                //qDebug()<< "detect";
-                if (ewdetects.count(platform) == 0)
-                {
-                    ewdetects.insert(platform);
-                    ESMTarget target;
-                    target.entity = platform;
-                    target.angle = yAngle;
-                    target.radius = metredis;
-                    detect.append(target);
-                }else{
-                    for (int i = 0; i < detect.size(); ++i) {
-                        if (detect.at(i).entity == platform) {
-                            detect[i].angle = yAngle;
-                            detect[i].radius = metredis;
-                            break;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                if (ewdetects.count(platform) > 0)
-                {
-                    for (int i = 0; i < detect.size(); ++i) {
-                        if (detect.at(i).entity == platform) {
-                            detect.removeAt(i);
-                            break;
-                        }
-                    }
-                    ewdetects.erase(platform);
-                }
-            }
+        if(it == root->Platforms.end()) continue;
+        Platform* platform = it->second;
+        if(!platform) continue;
+        if(!platform->transform) continue;
+        float metredis = distanceBetween(
+                             source->getLatitude(),  source->getLongitude(),
+                             platform->transform->getLatitude(), platform->transform->getLongitude()
+                             ) / 1000.0f;
+        float dLon  = platform->transform->getLongitude() - source->getLongitude();
+        float dLat  = platform->transform->getLatitude()  - source->getLatitude();
+        float yAngle = std::atan2(dLon, dLat) * RAD2DEG;
+        bool inRange = (range * 1000.0f) > metredis;
+        if(inRange)
+        {
+            ewdetects.insert(platform);
+            ESMTarget target;
+            target.entity  = platform;
+            target.angle   = yAngle;
+            target.radius  = metredis;
+            detect.append(target);
         }
     }
 }
@@ -88,13 +67,12 @@ QJsonObject ESM::toJson() const {
     defaultObj["frequency"] = toParm(frequency,"Ghz", 0.1, 100);
     defaultObj["azimuth"] = toParm(azimuth,"deg", 0,   360);
     obj["default"] = defaultObj;
-
     QJsonObject AddParameters = AdditionalParameters;
     AddParameters["type"] = "Section";
     obj["AdditionalParameters"] = AddParameters;
-
     return obj;
 }
+
 
 void ESM::fromJson(const QJsonObject& obj) {
     if (obj.contains("id")){
@@ -106,14 +84,11 @@ void ESM::fromJson(const QJsonObject& obj) {
         QJsonObject defaultObj = obj["default"].toObject();
         if (defaultObj.contains("range"))
             range = valueFromParm(defaultObj["range"].toObject());
-
         if (defaultObj.contains("frequency"))
             frequency = valueFromParm(defaultObj["frequency"].toObject());
-
         if (defaultObj.contains("azimuth"))
             azimuth = valueFromParm(defaultObj["azimuth"].toObject());
     }
-
     if(obj.contains("AdditionalParameters")){
         AdditionalParameters = obj["AdditionalParameters"].toObject();
     }

@@ -70,7 +70,7 @@ public:
     // Serialization
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
-
+    void addSensor(Sensor* sensor);
     void renameSubComponent(std::string ID, QString newName) override;
 };
 

@@ -140,6 +140,7 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
     inspectorDocks.append(inspectorDock);
     inspectors.append(inspector);
     inspector->setHierarchy(hierarchy);
+    inspector->setDatabaseEditorMode(true);
     // %%% Menu Bar Setup %%%
     MenuBar* menuBar = qobject_cast<MenuBar*>(this->menuBar());
     if (menuBar) {
@@ -326,6 +327,7 @@ void DatabaseEditor::addInspectorTab()
     newInspectorDock->setWidget(newInspector);
     newInspectorDock->setMinimumWidth(200);
     newInspectorDock->setTitleBarWidget(nullptr);
+    newInspector->setDatabaseEditorMode(true);
     inspectorDocks.append(newInspectorDock);
     inspectors.append(newInspector);
     // %%% Inspector Connections %%%
@@ -599,7 +601,6 @@ void DatabaseEditor::cleanupExtraInspectors()
             }
             inspectorDock->setProperty("AllInspectors", QVariant());
         }
-
         // Reset main inspector state
         if (inspector) {
             inspector->resetState();
@@ -638,7 +639,6 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
             }
         }
     }
-
     // Non-platform entities show simplified view
     if (entityType != "Platform") {
         if (entityIt != hierarchy->Entities.end()) {
@@ -657,7 +657,6 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
         }
         return;
     }
-
     // %%% Platform Entity Grid Layout %%%
     QWidget *container = new QWidget();
     QGridLayout *gridLayout = new QGridLayout(container);
@@ -681,7 +680,7 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
         {"parameters", 150}
     };
 
-    QStringList hiddenComponents = {"collider", "transform", "trajectory", "rigidbody", "entity", "crossSection"};
+    QStringList hiddenComponents = {"collider", "transform", "trajectory", "rigidbody", /*"entity", */"crossSection"};
     QStringList dynamicModelBitmapColumn = {"dynamicModel", "bitmap"};
     QStringList iffRadioColumnComponents = {"iffs", "radios"};
     QStringList group1Components = {"transform", "sensors"};
@@ -863,6 +862,7 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
                 componentData = entityIt->second->toJson();
                 Inspector *entityInspector = new Inspector();
                 entityInspector->setHierarchy(hierarchy);
+                 entityInspector->setDatabaseEditorMode(true);
                 entityInspector->init(entityId, "entity_self", componentData);
 
                 connect(entityInspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
@@ -991,6 +991,7 @@ QWidget* DatabaseEditor::createComponentInspector(
 {
     Inspector *inspector = new Inspector();
     inspector->setHierarchy(hierarchy);
+        inspector->setDatabaseEditorMode(true);
     QString componentName = title.toLower();
     inspector->init(entityId, componentName, data);
     inspector->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -1010,10 +1011,8 @@ QWidget* DatabaseEditor::createComponentInspector(
     frameLayout->setContentsMargins(0, 0, 0, 0);
     frameLayout->setSpacing(1);
     frameLayout->addWidget(inspector);
-
     return frame;
 }
-
 
 /* Create inspector widget with dynamic height for expandable components */
 QWidget* DatabaseEditor::createComponentInspectorWithDynamicHeight(
@@ -1024,6 +1023,7 @@ QWidget* DatabaseEditor::createComponentInspectorWithDynamicHeight(
 {
     Inspector *inspector = new Inspector();
     inspector->setHierarchy(hierarchy);
+    inspector->setDatabaseEditorMode(true);
     QString componentName = title.toLower();
     if (componentName == "entity") {
         componentName = "entity_self";

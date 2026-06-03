@@ -21,8 +21,9 @@
 // =============================================================================
 
 #ifndef PLUGINMANAGER_H
-#define PLUGINMANAGER_H0   // Note: Original guard macro has trailing "0"
+#define PLUGINMANAGER_H   // Note: Original guard macro has trailing "0"
 
+#include "qpluginloader.h"
 #include <qobject.h>
 #include <core/Config/scenarioconfig.h>
 #include <core/Hierarchy/hierarchy.h>
@@ -31,6 +32,14 @@
 #include <core/Render/scenerenderer.h>
 #include <core/Network/networkmanager.h>
 #include <core/Debug/console.h>
+
+// class ScenarioConfig;
+// class Hierarchy;
+// class SessionManager;
+// class Simulation;
+// class SceneRenderer;
+// class NetworkManager;
+// class Console;
 
 // =============================================================================
 // CLASS: PluginManager
@@ -58,10 +67,15 @@ public:
     Console *console;                   //!< Logging console
 
     // Plugin operations
-    void loadPlugin();      //!< Loads a plugin (subsystem)
-    void getPluginList();   //!< Retrieves list of available/loaded plugins
-    void addPlugin();       //!< Adds a new plugin
-    void removePlugin();    //!< Removes an existing plugin
+    bool loadPlugin(std::string path);      //!< Load a plugin (subsystem)
+    bool unloadPlugin(std::string path);      //!< Unload a plugin (subsystem)
+    // void getPluginList();   //!< Retrieves list of available/loaded plugins
+    // void addPlugin();       //!< Adds a new plugin
+    // void removePlugin();    //!< Removes an existing plugin
+
+    std::unordered_map<std::string, QPluginLoader*> pluginList;
+    // Sahi Syntax (Extra '<' hata diya)
+    std::unordered_map<std::string, std::vector<QMetaObject::Connection>> pluginconnection;
 };
 
 #endif // PLUGINMANAGER_H

@@ -155,6 +155,10 @@ void IFFDisplay::selectEntity(Entity* entit)
     // Select first valid IFF
     iff = nullptr;
     ifflist.clear();
+    if (!entity->iffs || !entity->iffs->iffs) {
+        update();
+        return;
+    }
     for (auto const& pair :  *entity->iffs->iffs) {
         IFF* i = pair.second;
         if (i) {

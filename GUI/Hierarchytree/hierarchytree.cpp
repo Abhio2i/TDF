@@ -48,8 +48,6 @@
 #include "qheaderview.h"
 #include "GUI/mainwindow.h"
 
-
-
 HierarchyTree::HierarchyTree(QWidget *parent)
     : QWidget(parent)
 {
@@ -221,9 +219,7 @@ void HierarchyTree::onSearchTextChanged(const QString& text)
 void HierarchyTree::onProfileFilterChanged(int index)
 {
     Q_UNUSED(index);
-
     QString profileFilter = "All Profiles";
-
     if (profileFilterCombo->currentIndex() > 0) {
         profileFilter = profileFilterCombo->currentData(Qt::UserRole).toString();
 
@@ -340,18 +336,19 @@ bool HierarchyTree::itemBelongsToProfile(QTreeWidgetItem* item, const QString& p
 void HierarchyTree::keyPressEvent(QKeyEvent *event)
 {
     if (event->modifiers() & Qt::ControlModifier) {
+        // Ctrl+C: Copy
         if (event->key() == Qt::Key_C) {
-            // Copy
             QList<QVariantMap> selectedEntities = getSelectedEntities();
             if (!selectedEntities.isEmpty()) {
                 copiedItems = selectedEntities;
+                if (contextMenu) contextMenu->m_copiedItems = selectedEntities;
                 emit copyItemsRequested(selectedEntities);
             }
             event->accept();
             return;
         }
+        // Ctrl+V: Paste
         else if (event->key() == Qt::Key_V) {
-            // Paste
             QList<QTreeWidgetItem*> selectedItems = tree->selectedItems();
             if (!selectedItems.isEmpty() && !copiedItems.isEmpty()) {
                 QTreeWidgetItem* targetItem = selectedItems.first();
@@ -362,14 +359,46 @@ void HierarchyTree::keyPressEvent(QKeyEvent *event)
             return;
         }
     }
+    // Delete: Delete selected
     else if (event->key() == Qt::Key_Delete) {
+        QList<QTreeWidgetItem*> selectedItems = tree->selectedItems();
+        if (!selectedItems.isEmpty()) {
+            if (QMessageBox::question(this, "Confirm Delete",
+                                      "Are you sure you want to delete the selected items?",
+                                      QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
+                removeSelectedEntities();
+            }
+        }
+        event->accept();
+        return;
+    }
+    // F2: Rename
+    else if (event->key() == Qt::Key_F2) {
+        QList<QTreeWidgetItem*> selectedItems = tree->selectedItems();
+        if (selectedItems.size() == 1) {
+            QTreeWidgetItem* item = selectedItems.first();
+            QVariantMap data = item->data(0, Qt::UserRole).toMap();
+            QString currentName = data["name"].toString();
+
+            QInputDialog dialog(this);
+            dialog.setWindowTitle("Rename");
+            dialog.setLabelText("Enter New Name:");
+            dialog.setTextValue(currentName);
+            if (dialog.exec() == QDialog::Accepted) {
+                QString newName = dialog.textValue();
+                if (!newName.trimmed().isEmpty()) {
+                    QVariantMap modifiedData = data;
+                    modifiedData["name"] = newName;
+                    emit contextMenu->renameItemRequested(modifiedData);
+                }
+            }
+        }
         event->accept();
         return;
     }
 
     QWidget::keyPressEvent(event);
 }
-
 /* Get tree widget */
 QTreeWidget* HierarchyTree::getTreeWidget()
 {
@@ -439,12 +468,10 @@ void HierarchyTree::componentAdded(QString parentID, QString ID, QString compone
     if (!Items.contains(parentID)) {
         return;
     }
-
     QString displayName = componentName;
     if (!displayName.isEmpty()) {
         displayName[0] = displayName[0].toUpper();
     }
-
     // Create component item
     QTreeWidgetItem *component = new QTreeWidgetItem(Items[parentID]);
     component->setText(0, displayName);
@@ -467,7 +494,6 @@ void HierarchyTree::subComponentAdded(QString parentID, QString ID, QString subC
     if (!Items.contains(parentID)) {
         return;
     }
-
     QString displayName = subComponentName;
     if (!displayName.isEmpty()) {
         displayName[0] = displayName[0].toUpper();
@@ -477,7 +503,6 @@ void HierarchyTree::subComponentAdded(QString parentID, QString ID, QString subC
     subcomponent->setText(0, displayName);
     subcomponent->setIcon(0, QIcon(":/icons/images/subcomponent.png"));
     Items.insert(ID, subcomponent);
-
     // Set item data
     QVariantMap data;
     data["ID"] = ID;
@@ -516,7 +541,6 @@ void HierarchyTree::entityRemoved(QString ID)
         Items.remove(ID);
     }
     emit entityRemovedNotify(ID);
-
 }
 
 /* Remove component from tree */
@@ -717,14 +741,31 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
                 else if (cur == mw->runtimeEditor)  editorCtx = "runtime";
             }
             if (editorCtx == "database") {
-                QMenu *setCategorySubMenu = contextMenu.addMenu(QIcon(":/icons/images/set.png"), "Set Category");
+                QMenu *setCategorySubMenu = contextMenu.addMenu(
+                    QIcon(":/icons/images/set.png"), "Set Category");
                 setCategorySubMenu->setStyleSheet(contextMenu.styleSheet());
-                const QStringList categoriesList = {"Aircraft", "Helicopter", "Ship", "Submarine", "Tank"};
-                for (const QString& category : categoriesList) {
-                    QAction *categoryAction = setCategorySubMenu->addAction(category);
-                    connect(categoryAction, &QAction::triggered, this, [=]() {
-                        emit setCategoryToEntitiesRequested(getSelectedEntities(), category);
-                    });
+
+                QMap<QString, QStringList> categoryMap = {
+                    {"Air",    QStringList{"Aircraft", "Helicopter", "UAV"}},
+                    {"Ground", QStringList{"Tank", "GroundRadar", "Human"}},
+                    {"Marine", QStringList{"Ship", "Frigate", "Submarine"}}
+                };
+
+                for (auto it = categoryMap.begin(); it != categoryMap.end(); ++it) {
+                    const QString category    = it.key();          // ← copy by value
+                    const QStringList subCats = it.value();        // ← copy by value
+
+                    QMenu* subCatMenu = setCategorySubMenu->addMenu(category);
+                    subCatMenu->setStyleSheet(contextMenu.styleSheet());
+
+                    for (const QString& subCat : subCats) {
+                        const QString subCategory = subCat;        // ← copy by value
+                        QAction* subCatAction = subCatMenu->addAction(subCategory);
+                        connect(subCatAction, &QAction::triggered, this, [=]() {
+                            emit setCategoryToEntitiesRequested(
+                                getSelectedEntities(), category, subCategory);
+                        });
+                    }
                 }
             }
         }
@@ -744,7 +785,6 @@ void HierarchyTree::showContextMenu(const QPoint &pos)
                 removeSelectedEntities();
             }
         });
-
         if (allArePlatformEntities) {
             connect(setActiveAction, &QAction::triggered, this, [=]() {
                 emit setEntitiesActiveRequested(getSelectedEntities(), true);
@@ -848,7 +888,6 @@ void HierarchyTree::dragMoveEvent(QDragMoveEvent *event)
     }
     event->ignore();
 }
-
 /* Handle drop event */
 void HierarchyTree::dropEvent(QDropEvent *event)
 {

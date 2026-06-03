@@ -1,1296 +1,1082 @@
-
-
 #include "loggerdialog.h"
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QGroupBox>
 #include <QMenuBar>
-#include <QStatusBar>
-#include <QToolBar>
 #include <QTabWidget>
-#include <QStackedWidget>
+#include <QFrame>
+#include <QTimer>
 #include "core/Recorder/recorder.h"
+#include <QWidgetAction>
 
+// ═══════════════════════════════════════════════════════
+//  Dark stylesheet for the whole dialog
+// ═══════════════════════════════════════════════════════
+static const char* kDarkStyle = R"(
+QMainWindow, QWidget {
+    background-color: #1a2a3a;
+    color: #ccd6e0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 13px;
 
-LoggerDialog::LoggerDialog(QWidget *parent, Recorder* recorderParam)
+}
+QTabWidget::pane  { border: 0px; background: transparent; }
+QTabWidget::tab-bar { alignment: center; }
+QTabBar::tab {
+    background: transparent;
+    color: #7ec8e3;
+    padding: 5px 18px;
+    border: none;
+    border-bottom: 2px solid transparent;
+}
+
+QTabBar::tab:selected {
+    color: #ffffff;
+    border-bottom: 2px solid #3498db;
+}
+
+QTabBar::tab:hover:!selected { color: #aaddee; }
+QToolButton {
+    background: #1e3a4f;
+    border: 1px solid #2c4a5e;
+    border-radius: 5px;
+    padding: 2px;
+}
+QToolButton:hover   { background: #254d66; border-color: #3a7ca5; }
+QToolButton:pressed { background: #1a3348; }
+QToolButton:disabled { background: #162330; border-color: #1e2e3a; opacity: 0.5; }
+QLabel  { color: #90a4ae; padding: 0px; }
+QLabel#statusLabel { font-weight: bold; }
+QCheckBox { color: #90a4ae; }
+QCheckBox::indicator { width:14px; height:14px; border:1px solid #3a5a70; border-radius:3px; background:#162330; }
+QCheckBox::indicator:checked { background:#3498db; border-color:#3498db; }
+QFrame#separator { background: #2c4a5e; }
+)";
+
+// ═══════════════════════════════════════════════════════
+//  Helper: make a tool button
+// ═══════════════════════════════════════════════════════
+QToolButton* LoggerDialog::makeBtn(const QString &iconPath, const QString &tip, int size)
+{
+    QToolButton *b = new QToolButton(this);
+    if (!iconPath.isEmpty()) {
+        b->setIcon(QIcon(iconPath));
+        b->setIconSize(QSize(size-6, size-6));
+    }
+    b->setToolTip(tip);
+    b->setFixedSize(size, size);
+    return b;
+}
+
+// ═══════════════════════════════════════════════════════
+//  Constructor
+// ═══════════════════════════════════════════════════════
+LoggerDialog::LoggerDialog(QWidget *parent, Recorder *recorderParam)
     : QMainWindow(parent), recorder(recorderParam)
 {
-    setWindowTitle(tr("Logger Control"));
+    setWindowTitle(tr("Logger"));
     setAttribute(Qt::WA_DeleteOnClose);
     recordingsDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/recordings";
-    setMinimumSize(400, 550);
-    loggerStatusModeString[Recorder::S_RECORDING_MODE] = "Recording Mode";
-    loggerStatusModeString[Recorder::S_RECORDING] = "Recording";
+    setMinimumSize(320, 480);
+
+    loggerStatusModeString[Recorder::S_RECORDING_MODE]   = "Ready";
+    loggerStatusModeString[Recorder::S_RECORDING]        = "Recording";
     loggerStatusModeString[Recorder::S_RECORDING_PAUSED] = "Paused";
-    loggerStatusModeString[Recorder::S_RECORDING_STOPPED] = "Stopped";
-    loggerStatusModeString[Recorder::S_REPLAY_MODE] = "Replay Mode";
-    loggerStatusModeString[Recorder::S_REPLAY_LOADED] = "Replay Loaded";
-    loggerStatusModeString[Recorder::S_REPLAY_UNLOADED] = "Replay Unloaded";
-    loggerStatusModeString[Recorder::S_REPLAYING] = "Replaying";
-    loggerStatusModeString[Recorder::S_REPLAY_PAUSED] = "Paused";
-    loggerStatusModeString[Recorder::S_REPLAY_STOPPED] = "Stopped";
-    SimulationStatusModeString[Recorder::S_SIMULATION_START] = "Start";
-    SimulationStatusModeString[Recorder::S_SIMULATION_PAUSED]= "Paused";
-    SimulationStatusModeString[Recorder::S_SIMULATION_STOP]  = "Stop";
-    SimulationStatusModeString[Recorder::S_SIMULATION_NA]    = "Not Available";
+    loggerStatusModeString[Recorder::S_RECORDING_STOPPED]= "Stopped";
+    loggerStatusModeString[Recorder::S_REPLAY_MODE]      = "Replay Ready";
+    loggerStatusModeString[Recorder::S_REPLAY_LOADED]    = "Loaded";
+    loggerStatusModeString[Recorder::S_REPLAY_UNLOADED]  = "Unloaded";
+    loggerStatusModeString[Recorder::S_REPLAYING]        = "Replaying";
+    loggerStatusModeString[Recorder::S_REPLAY_PAUSED]    = "Paused";
+    loggerStatusModeString[Recorder::S_REPLAY_STOPPED]   = "Stopped";
 
+    SimulationStatusModeString[Recorder::S_SIMULATION_START]  = "Start";
+    SimulationStatusModeString[Recorder::S_SIMULATION_PAUSED] = "Paused";
+    SimulationStatusModeString[Recorder::S_SIMULATION_STOP]   = "Stop";
+    SimulationStatusModeString[Recorder::S_SIMULATION_NA]     = "Not Available";
 
-    setupMenuBar();
+    setStyleSheet(kDarkStyle);
     setupUi();
-
-    setStyleSheet(R"(
-        QMainWindow {
-            background-color: #f5f6fa;
-            font-family: 'Segoe UI', Arial, sans-serif;
-        }
-        QToolButton {
-            background-color: transparent;
-            border: none;
-            padding: 0px;
-            margin: 0px;
-        }
-        QToolButton:hover {
-            background-color: #e0e0e0;
-            border-radius: 3px;
-        }
-        QPushButton {
-            background-color: #0078d4;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-        QPushButton:hover {
-            background-color: #005ba1;
-        }
-        QPushButton:disabled {
-            background-color: #a0a0a0;
-        }
-        QLabel {
-            font-size: 14px;
-            color: #333333;
-            padding: 5px;
-        }
-        QGroupBox {
-            font-weight: bold;
-            font-size: 14px;
-            border: 1px solid #dcdcdc;
-            border-radius: 4px;
-            margin-top: 10px;
-            padding-top: 10px;
-            background-color: #ffffff;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px 0 5px;
-        }
-        QToolButton#recordingActive {
-            background-color: #e74c3c;
-            color: white;
-        }
-        QToolButton#paused {
-            background-color: #f39c12;
-            color: white;
-        }
-        QToolButton#replayActive {
-            background-color: #27ae60;
-            color: white;
-        }
-        QMenuBar {
-            background-color: #e0e0e0;
-            color: black;
-            font-size: 14px;
-        }
-        QMenuBar::item {
-            background-color: #e0e0e0;
-            color: black;
-            padding: 4px 10px;
-        }
-        QMenuBar::item:selected {
-            background-color: #d0d0d0;
-            color: black;
-        }
-        QMenuBar::item:pressed {
-            background-color: #c0c0c0;
-            color: black;
-        }
-        QMenu {
-            background-color: #e0e0e0;
-            border: 1px solid #c0c0c0;
-            color: black;
-        }
-        QMenu::item {
-            background-color: #e0e0e0;
-            color: black;
-            padding: 5px 20px;
-        }
-        QMenu::item:selected {
-            background-color: #d0d0d0;
-            color: black;
-        }
-        QMenu::item:pressed {
-            background-color: #c0c0c0;
-            color: black;
-        }
-        QTabWidget {
-            border: 0px;
-        }
-        QTabWidget::pane {
-            border: 0px;
-            margin: 0px;
-            padding: 0px;
-            background-color: transparent;
-        }
-        QTabWidget::tab-bar {
-            alignment: center;
-        }
-        QTabBar::tab {
-            background-color: #e0e0e0;
-            border: 1px solid #dcdcdc;
-            padding: 8px 16px;
-            margin: 2px;
-            border-top-left-radius: 4px;
-            border-top-right-radius: 4px;
-        }
-        QTabBar::tab:selected {
-            background-color: #0078d4;
-            color: white;
-        }
-        QTabBar::tab:hover:!selected {
-            background-color: #d0d0d0;
-        }
-    )");
-
 }
 
-void LoggerDialog::setupMenuBar()
-{
-    QMenuBar *menuBar = new QMenuBar(this);
-    setMenuBar(menuBar);
-
-    QMenu *fileMenu = menuBar->addMenu(tr("File"));
-    QAction *loadAction = fileMenu->addAction(tr("Load Recording"));
-
-    // QMenu *toolsMenu = menuBar->addMenu(tr("Tools"));
-    // QAction *settingsAction = toolsMenu->addAction(tr("Settings"));
-
-    // QMenu *helpMenu = menuBar->addMenu(tr("Help"));
-    // QAction *aboutAction = helpMenu->addAction(tr("About"));
-    // QAction *helpAction = helpMenu->addAction(tr("Help"));
-
-    connect(loadAction, &QAction::triggered, this, [this]() {
-        // pauseResumeReplayButton->setEnabled(true);
-        pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
-        pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
-
-        QString selectedFile = QFileDialog::getOpenFileName(
-            this,
-            tr("Open Recording File"),
-            QDir::homePath(),
-            tr("JSON Files (*.json)")
-            );
-
-        if (selectedFile.isEmpty()) return;
-
-        filePath = selectedFile;
-        emit loadRecording(filePath);
-
-        QFileInfo fileInfo(filePath);
-        recordingDateLabel->setText(fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss"));
-        //loggerStatusLabel->setText(tr("Loaded"));
-        loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
-
-        //startReplayButton->setEnabled(true);
-        //previousFrameButton->setEnabled(true);
-        //nextFrameButton->setEnabled(true);
-
-        // qDebug() << "Loading record" << filePath;
-    });
-}
-
+// ═══════════════════════════════════════════════════════
+//  setupUi
+// ═══════════════════════════════════════════════════════
 void LoggerDialog::setupUi()
 {
+    QScrollArea *outerScroll = new QScrollArea(this);
+    outerScroll->setWidgetResizable(true);
+    outerScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    outerScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    outerScroll->setFrameShape(QFrame::NoFrame);
+    outerScroll->setStyleSheet(
+        "QScrollArea          { background:#1a2a3a; border:none; }"
+        "QScrollBar:vertical  { background:#1a2a3a; width:6px; border:none; }"
+        "QScrollBar::handle:vertical { background:#2c4a5e; border-radius:3px; min-height:20px; }"
+        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height:0px; }");
+    setCentralWidget(outerScroll);
+
     centralWidget = new QWidget(this);
-    setCentralWidget(centralWidget);
+    centralWidget->setStyleSheet(
+        "QWidget#outerContainer { border: 2px solid #27446d; border-radius: 2px; }");
+    centralWidget->setObjectName("outerContainer");
+    centralWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    outerScroll->setWidget(centralWidget);
 
-    QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
-    mainLayout->setSpacing(10);
-    mainLayout->setContentsMargins(15, 15, 15, 15);
+    QVBoxLayout *main = new QVBoxLayout(centralWidget);
+    main->setSpacing(8);
+    main->setContentsMargins(10, 8, 10, 10);
 
+    // ── Tab widget ────────────────────────────────────────────────────────
     modeTabWidget = new QTabWidget(this);
-    modeTabWidget->setTabPosition(QTabWidget::North);
     modeTabWidget->setDocumentMode(true);
-    modeTabWidget->setFixedHeight(80);
+    modeTabWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    QWidget *recordingTab = new QWidget();
-    recordingTab->setContentsMargins(0, 0, 0, 0);
-    QVBoxLayout *recordingLayout = new QVBoxLayout(recordingTab);
-    recordingLayout->setContentsMargins(0, 0, 0, 0);
-    recordingLayout->setSpacing(0);
-    recordingLayout->addWidget(createRecordingControls());
+    // ══════════════════════════════════
+    //  RECORDING TAB
+    // ══════════════════════════════════
+    QWidget *recTab = new QWidget();
+    QVBoxLayout *recTabLay = new QVBoxLayout(recTab);
+    recTabLay->setContentsMargins(0, 6, 0, 0);
+    recTabLay->setSpacing(4);
 
-    QWidget *replayTab = new QWidget();
-    replayTab->setContentsMargins(0, 0, 0, 0);
-    QVBoxLayout *replayLayout = new QVBoxLayout(replayTab);
-    replayLayout->setContentsMargins(0, 0, 0, 0);
-    replayLayout->setSpacing(0);
-    replayLayout->addWidget(createReplayControls());
-
-    modeTabWidget->addTab(recordingTab, tr("Recording"));
-    modeTabWidget->addTab(replayTab, tr("Replay"));
-    mainLayout->addWidget(modeTabWidget);
-
-    QHBoxLayout *topLayout = new QHBoxLayout();
-    bookmarkButton = new QToolButton(this);
-    bookmarkButton->setIcon(QIcon(":/icons/images/star.png"));
-    bookmarkButton->setToolTip(tr("Add Bookmark"));
-    bookmarkButton->setFixedSize(28, 28);
-
-    timestampCheckBox = new QCheckBox(tr("Enable Timestamp"), this);
-    timestampCheckBox->setChecked(true);
-
-    topLayout->addWidget(bookmarkButton);
-    topLayout->addWidget(timestampCheckBox);
-    topLayout->addStretch();
-    mainLayout->addLayout(topLayout);
-
-    QGroupBox *infoGroup = new QGroupBox(tr("Recording Information"), this);
-    QFormLayout *formLayout = new QFormLayout(infoGroup);
-
-    recordingDateLabel = new QLabel(tr("No recording"), this);
-    durationLabel = new QLabel(tr("00:00:00"), this);
-    loggerStatusLabel = new QLabel(tr("Stopped"), this);
-    simulationStatusLabel = new QLabel(tr("Not Available"), this);
-
-    recordingDateLabel->setStyleSheet("font-weight: normal; color: #666;");
-    durationLabel->setStyleSheet("font-weight: normal; color: #666;");
-    loggerStatusLabel->setStyleSheet("font-weight: normal; color: #666;");
-    simulationStatusLabel->setStyleSheet("font-weight: normal; color: #666;");
-
-    formLayout->addRow(tr("Recording Date:"), recordingDateLabel);
-    formLayout->addRow(tr("Duration:"), durationLabel);
-    formLayout->addRow(tr("Logger Status:"), loggerStatusLabel);
-    formLayout->addRow(tr("Simulation Status:"), simulationStatusLabel);
-
-    mainLayout->addWidget(infoGroup);
-
-    timelineWidget = new TimelineWidget(this);
-    timelineWidget->setVisible(true);
-    mainLayout->addWidget(timelineWidget);
-
-    mainLayout->addStretch();
-
-
-    connect(modeTabWidget, &QTabWidget::currentChanged, this, [this](int index) {
-
-
-        bool isBusy = (loggerStatus == Recorder::S_RECORDING) ||
-                      (loggerStatus == Recorder::S_REPLAYING);
-
-
-        if (isBusy) {
-
-            QSignalBlocker blocker(modeTabWidget);
-            modeTabWidget->setCurrentIndex(index == 0 ? 1 : 0);
-
-            return;
-        }
-
-        if (index == 0) {
-            switchToRecordingMode();
-        } else {
-            switchToReplayMode();
-        }
-    });
-
-
-    connect(bookmarkButton, &QToolButton::clicked, this, &LoggerDialog::showBookmarkDialog);
-    setupConnections();
-
-}
-
-QWidget* LoggerDialog::createRecordingControls()
-{
-    QWidget *container = new QWidget();
-    container->setContentsMargins(0, 0, 0, 0);
-    QHBoxLayout *controlLayout = new QHBoxLayout(container);
-    controlLayout->setContentsMargins(5, 0, 5, 0);
-    controlLayout->setSpacing(8);
+    // ── Row 1: control buttons ────────────────────────────────────────────
+    QHBoxLayout *recCtrl = new QHBoxLayout();
+    recCtrl->setSpacing(6);
 
     recordButton = new QToolButton(this);
-    recordButton->setIcon(QIcon(":/icons/images/record-button.png"));
+    recordButton->setFixedSize(32, 32);
+    recordButton->setStyleSheet(
+        "QToolButton { background:#c0392b; border-radius:16px; border:none; }"
+        "QToolButton:hover { background:#e74c3c; }"
+        "QToolButton:pressed { background:#962d22; }");
     recordButton->setToolTip(tr("Start Recording"));
-    recordButton->setFixedSize(28, 28);
-    recordButton->setIconSize(QSize(24, 24));
+    QLabel *recDot = new QLabel(recordButton);
+    recDot->setFixedSize(12, 12);
+    recDot->setStyleSheet("background:white; border-radius:6px;");
+    recDot->move(10, 10);
 
-    pauseRecordingButton = new QToolButton(this);
-    pauseRecordingButton->setIcon(QIcon(":/icons/images/pause.png"));
-    pauseRecordingButton->setToolTip(tr("Pause Recording"));
-    pauseRecordingButton->setFixedSize(28, 28);
-    pauseRecordingButton->setIconSize(QSize(24, 24));
-    pauseRecordingButton->setEnabled(false);
+    recPlayPauseButton = makeBtn(":/icons/images/pause.png", tr("Pause Recording"));
+    recPlayPauseButton->setEnabled(false);
 
-
-    stopRecordingButton = new QToolButton(this);
-    stopRecordingButton->setIcon(QIcon(":/icons/images/stop.png"));
-    stopRecordingButton->setToolTip(tr("Stop Recording"));
-    stopRecordingButton->setFixedSize(28, 28);
-    stopRecordingButton->setIconSize(QSize(24, 24));
+    stopRecordingButton = makeBtn(":/icons/images/stop.png", tr("Stop Recording"));
     stopRecordingButton->setEnabled(false);
-    //stopRecordingButton->hide();
 
+    bookmarkButton = makeBtn(":/icons/images/star.png", tr("Add Bookmark"));
+    bookmarkButton->setEnabled(false);
 
-    databaseButton = new QToolButton(this);
-    databaseButton->setIcon(QIcon(":/icons/images/database.png"));
-    databaseButton->setToolTip(tr("Connect to DataBase"));
-    databaseButton->setFixedSize(28, 28);
-    databaseButton->setIconSize(QSize(24, 24));
-    databaseButton->setEnabled(true);
-    databaseButton->hide();
+    recCtrl->addWidget(recordButton);
+    recCtrl->addWidget(recPlayPauseButton);
+    recCtrl->addWidget(stopRecordingButton);
+    recCtrl->addWidget(bookmarkButton);
+    recCtrl->addStretch();
 
-    controlLayout->addWidget(recordButton);
-    controlLayout->addWidget(pauseRecordingButton);
-    controlLayout->addWidget(stopRecordingButton);
-    // controlLayout->addWidget(databaseButton);
-    controlLayout->addStretch();
+    timestampCheckBox = new QCheckBox(tr("Timestamp"), this);
+    timestampCheckBox->setChecked(true);
+    recCtrl->addWidget(timestampCheckBox);
+    recTabLay->addLayout(recCtrl);
 
-    return container;
-}
+    // ── Row 2: Filter dropdown button ─────────────────────────────────────
+    QHBoxLayout* filterRow = new QHBoxLayout();
+    filterRow->setContentsMargins(0, 2, 0, 2);
+    filterRow->setSpacing(4);
 
-QWidget* LoggerDialog::createReplayControls()
-{
-    QWidget *container = new QWidget();
-    container->setContentsMargins(0, 0, 0, 0);
-    QHBoxLayout *controlLayout = new QHBoxLayout(container);
-    controlLayout->setContentsMargins(5, 0, 5, 0);
-    controlLayout->setSpacing(8);
+    m_filterBtn = new QToolButton(this);
+    m_filterBtn->setText(tr("Record Filters ▾"));
+    m_filterBtn->setToolTip(tr("Select what data to record"));
+    m_filterBtn->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_filterBtn->setPopupMode(QToolButton::InstantPopup);
+    m_filterBtn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    m_filterBtn->setStyleSheet(
+        "QToolButton {"
+        "  background:#162330;"
+        "  border:1px solid #2c4a5e;"
+        "  border-radius:4px;"
+        "  color:#7ec8e3;"
+        "  padding:3px 10px;"
+        "  font-size:11px;"
+        "}"
+        "QToolButton:hover  { background:#1e3a4f; border-color:#3a7ca5; }"
+        "QToolButton:pressed{ background:#0f1e2b; }"
+        "QToolButton::menu-indicator { width:0px; }");   // hide default arrow
+    buildFilterMenu();
+    m_filterBtn->setMenu(m_filterMenu);
 
-    startReplayButton = new QToolButton(this);
-    startReplayButton->setIcon(QIcon(":/icons/images/play.png"));
-    startReplayButton->setToolTip(tr("Start Replay"));
-    startReplayButton->setFixedSize(28, 28);
-    startReplayButton->setIconSize(QSize(24, 24));
+    filterRow->addWidget(m_filterBtn);
+    filterRow->addStretch();
+    recTabLay->addLayout(filterRow);
 
-    pauseResumeReplayButton = new QToolButton(this);
-    pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
-    pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
-    pauseResumeReplayButton->setFixedSize(28, 28);
-    pauseResumeReplayButton->setIconSize(QSize(24, 24));
-    pauseResumeReplayButton->setEnabled(false);
+    // backward compat aliases
+    pauseRecordingButton = recPlayPauseButton;
+    databaseButton       = makeBtn("",""); databaseButton->hide();
+    modeTabWidget->addTab(recTab, tr("Recording"));
 
-    previousFrameButton = new QToolButton(this);
-    previousFrameButton->setIcon(QIcon(":/icons/images/back.png"));
-    previousFrameButton->setToolTip(tr("Previous Frame"));
-    previousFrameButton->setFixedSize(28, 28);
-    previousFrameButton->setIconSize(QSize(24, 24));
-    previousFrameButton->setEnabled(false);
+    // ══════════════════════════════════
+    //  REPLAY TAB
+    // ══════════════════════════════════
+    QWidget *repTab = new QWidget();
+    QVBoxLayout *repTabLay = new QVBoxLayout(repTab);
+    repTabLay->setContentsMargins(0, 6, 0, 0);
+    repTabLay->setSpacing(6);
 
-    nextFrameButton = new QToolButton(this);
-    nextFrameButton->setIcon(QIcon(":/icons/images/next-button.png"));
-    nextFrameButton->setToolTip(tr("Next Frame"));
-    nextFrameButton->setFixedSize(28, 28);
-    nextFrameButton->setIconSize(QSize(24, 24));
-    nextFrameButton->setEnabled(false);
+    QHBoxLayout *repCtrl = new QHBoxLayout();
+    repCtrl->setSpacing(6);
 
-    loadRecordingButton = new QToolButton(this);
-    loadRecordingButton->setIcon(QIcon(":/icons/images/loading-arrow.png"));
-    loadRecordingButton->setToolTip(tr("Load Recording"));
-    loadRecordingButton->setFixedSize(28, 28);
-    loadRecordingButton->setIconSize(QSize(24, 24));
+    repPlayPauseButton = makeBtn(":/icons/images/play.png", tr("Load & Play"));
+    repPlayPauseButton->setFixedSize(32,32);
+    repPlayPauseButton->setStyleSheet(
+        "QToolButton{background:#1e3a4f;border:1px solid #27ae60;border-radius:5px;}"
+        "QToolButton:hover{background:#254d66;}"
+        "QToolButton:disabled{border-color:#2c4a5e;}");
 
-    databaseButtonReplay = new QToolButton(this);
-    databaseButtonReplay->setIcon(QIcon(":/icons/images/database.png"));
-    databaseButtonReplay->setToolTip(tr("Connect to DataBase"));
-    databaseButtonReplay->setFixedSize(28, 28);
-    databaseButtonReplay->setIconSize(QSize(24, 24));
-    databaseButtonReplay->setEnabled(true);
+    reloadReplayButton = makeBtn(":/icons/images/loading-arrow.png", tr("Replay Again"));
+    reloadReplayButton->setEnabled(false);
 
-    controlLayout->addWidget(startReplayButton);
-    controlLayout->addWidget(pauseResumeReplayButton);
-    controlLayout->addWidget(previousFrameButton);
-    controlLayout->addWidget(nextFrameButton);
-    controlLayout->addWidget(loadRecordingButton);
-    controlLayout->addWidget(databaseButtonReplay);
-    controlLayout->addStretch();
+    loadNewFileButton = makeBtn(":/icons/images/folder1.png", tr("Load New File"));
+    loadNewFileButton->setFixedSize(28,28);
+    loadNewFileButton->setStyleSheet(
+        "QToolButton{background:#1e3a4f;border:1px solid #3498db;border-radius:5px;}"
+        "QToolButton:hover{background:#254d66;}"
+        "QToolButton:disabled{border-color:#2c4a5e;}");
+    loadNewFileButton->setEnabled(true);
 
-    return container;
-}
+    repCtrl->addWidget(repPlayPauseButton);
+    repCtrl->addWidget(reloadReplayButton);
+    repCtrl->addWidget(loadNewFileButton);
+    repCtrl->addStretch();
 
+    dbStatusLabel = new QLabel(tr("⬤  DB"), this);
+    dbStatusLabel->setStyleSheet("color:#607d8b; font-size:11px;");
+    repCtrl->addWidget(dbStatusLabel);
+    repTabLay->addLayout(repCtrl);
+
+    fileNameLabel = new QLabel(tr("No file loaded"), this);
+    fileNameLabel->setStyleSheet("color:#607d8b; font-size:11px;");
+    repTabLay->addWidget(fileNameLabel);
+
+    startReplayButton       = repPlayPauseButton;
+    pauseResumeReplayButton = repPlayPauseButton;
+    loadRecordingButton     = reloadReplayButton;
+    databaseButtonReplay    = makeBtn("",""); databaseButtonReplay->hide();
+
+    modeTabWidget->addTab(repTab, tr("Replay"));
+    main->addWidget(modeTabWidget);
+
+    // ── Separator ────────────────────────────────────────────────────────
+    QFrame *sep = new QFrame(this);
+    sep->setObjectName("separator");
+    sep->setFrameShape(QFrame::HLine);
+    sep->setFixedHeight(1);
+    main->addWidget(sep);
+
+    // ── Info panel ───────────────────────────────────────────────────────
+    QWidget *infoW = new QWidget(this);
+    QGridLayout *infoGrid = new QGridLayout(infoW);
+    infoGrid->setContentsMargins(0,4,0,4);
+    infoGrid->setSpacing(4);
+
+    auto addRow = [&](int row, const QString &lbl, QLabel *&out) {
+        QLabel *l = new QLabel(lbl, this);
+        l->setStyleSheet("color:#607d8b; font-size:12px;");
+        out = new QLabel("—", this);
+        out->setObjectName("statusLabel");
+        out->setStyleSheet("color:#90a4ae; font-size:12px;");
+        out->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        infoGrid->addWidget(l,   row, 0);
+        infoGrid->addWidget(out, row, 1);
+    };
+
+    recordingDateLabel = new QLabel("", this); recordingDateLabel->hide();
+    addRow(0, tr("Duration"),   durationLabel);
+    addRow(1, tr("Status"),     loggerStatusLabel);
+    // addRow(2, tr("Simulation"), simulationStatusLabel);
+    durationLabel->setText("00:00:00");
+    loggerStatusLabel->setText("Idle");
+    // simulationStatusLabel->setText("Not Available");
+    main->addWidget(infoW);
+
+    QFrame *sep2 = new QFrame(this);
+    sep2->setObjectName("separator");
+    sep2->setFrameShape(QFrame::HLine);
+    sep2->setFixedHeight(1);
+    main->addWidget(sep2);
+
+    // ── Timeline ─────────────────────────────────────────────────────────
+    timelineWidget = new TimelineWidget(this);
+    timelineWidget->setVisible(true);
+    main->addWidget(timelineWidget);
+
+    // ── Bookmark list ────────────────────────────────────────────────────
+    m_bookmarkList   = new BookmarkListWidget(this);
+    m_bookmarkScroll = new QScrollArea(this);
+    m_bookmarkScroll->setWidget(m_bookmarkList);
+    m_bookmarkScroll->setWidgetResizable(true);
+    m_bookmarkScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_bookmarkScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_bookmarkScroll->setFixedHeight(0);
+    m_bookmarkScroll->setVisible(false);
+    m_bookmarkScroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_bookmarkScroll->setStyleSheet(
+        "QScrollArea{background:#0f1e2b;border:none;}"
+        "QScrollBar:vertical{background:#0f1e2b;width:6px;border:none;}"
+        "QScrollBar::handle:vertical{background:#2c4a5e;border-radius:3px;min-height:20px;}"
+        "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{height:0px;}");
+    main->addWidget(m_bookmarkScroll);
+    m_bookmarkList->setScrollArea(m_bookmarkScroll);
+    timelineWidget->setListWidget(m_bookmarkList);
+    main->addStretch();
+
+    // ── Button map ───────────────────────────────────────────────────────
+    loggerButtonMap = {
+        {Recorder_Button,  &recordButton},
+        {Recording_Toggle, &recPlayPauseButton},
+        {Reocrding_Stop,   &stopRecordingButton},
+        {Replay_Start,     &repPlayPauseButton},
+        {Replay_Toggle,    &pauseResumeReplayButton},
+        {Replay_Restart,   &reloadReplayButton}
+    };
+
+    setupConnections();
+}// ═══════════════════════════════════════════════════════
+//  setupConnections
+// ═══════════════════════════════════════════════════════
 void LoggerDialog::setupConnections()
 {
-
+    // ── Tab switch ──
+    connect(modeTabWidget, &QTabWidget::currentChanged, this, [this](int index) {
+        bool busy = (loggerStatus==Recorder::S_RECORDING)||(loggerStatus==Recorder::S_REPLAYING);
+        if (busy) {
+            QSignalBlocker b(modeTabWidget);
+            modeTabWidget->setCurrentIndex(index==0?1:0);
+            return;
+        }
+        index==0 ? switchToRecordingMode() : switchToReplayMode();
+    });
+    // ── Record button ──
     connect(recordButton, &QToolButton::clicked, this, [this]() {
         inspectRecorder();
         recordingStartTime = QDateTime::currentDateTime();
-        // timelineWidget->setRecordingStartTime(recordingStartTime);
-        // timelineWidget->setRecordingDuration(0);
-        // timelineWidget->clearBookmarks();
         recordingDateLabel->setText(recordingStartTime.toString("yyyy-MM-dd hh:mm:ss"));
-        loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
-        if(!saveFile()) return;
+        loggerStatusLabel->setStyleSheet("font-weight:bold; color:#e74c3c;");
+        if (!saveFile()) return;
+        applyFiltersToRecording();
+        if (m_filterBtn) m_filterBtn->setEnabled(false);
         emit recordingStart(*recorder);
         inspectRecorder();
-        timelineWidget->setValues(
-            loggerMode     ,
-            bookmarkDblPtr,
-            durationDblPtr);
+        timelineWidget->setValues(loggerMode, bookmarkDblPtr, durationDblPtr);
         timelineWidget->startUpdateUI();
-        recordButton->setToolTip(tr("Recording..."));
-        recordButton->setObjectName("recordingActive");
-        recordButton->setStyleSheet("");
-        // recordButton->setEnabled(false);
-        // pauseRecordingButton->setEnabled(true);
-        // stopRecordingButton->setEnabled(true);
-
+        recPlayPauseButton->setEnabled(true);
+        stopRecordingButton->setEnabled(true);
+        bookmarkButton->setEnabled(true);
         isRecordingPaused = false;
-        pauseRecordingButton->setIcon(QIcon(":/icons/images/pause.png"));
-        pauseRecordingButton->setToolTip(tr("Pause Recording"));
+        recPlayPauseButton->setIcon(QIcon(":/icons/images/pause.png"));
+        recPlayPauseButton->setToolTip(tr("Pause Recording"));
     });
-
-    connect(pauseRecordingButton, &QToolButton::clicked, this, [this]() {
-
+    // ── Rec pause/resume (single button) ──
+    connect(recPlayPauseButton, &QToolButton::clicked, this, [this]() {
         if (!isRecordingPaused) {
-            //timelineWidget->pauseRecording();
-        } else {
-            //timelineWidget->resumeRecording();
-        }
-        if (!isRecordingPaused) {
-            //loggerStatusLabel->setText(tr("Recording Paused"));
-            loggerStatusLabel->setStyleSheet("font-weight: bold; color: #f39c12;");
-            pauseRecordingButton->setIcon(QIcon(":/icons/images/resume.png"));
-            pauseRecordingButton->setToolTip(tr("Resume Recording"));
+            loggerStatusLabel->setStyleSheet("font-weight:bold; color:#f39c12;");
+            recPlayPauseButton->setIcon(QIcon(":/icons/images/play.png"));
+            recPlayPauseButton->setToolTip(tr("Resume Recording"));
             isRecordingPaused = true;
             emit recordingPause();
             timelineWidget->pause();
         } else {
-            //loggerStatusLabel->setText(tr("Recording"));
-            loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
-            pauseRecordingButton->setIcon(QIcon(":/icons/images/pause.png"));
-            pauseRecordingButton->setToolTip(tr("Pause Recording"));
+            loggerStatusLabel->setStyleSheet("font-weight:bold; color:#e74c3c;");
+            recPlayPauseButton->setIcon(QIcon(":/icons/images/pause.png"));
+            recPlayPauseButton->setToolTip(tr("Pause Recording"));
             isRecordingPaused = false;
             emit recordingResume();
             timelineWidget->resume();
         }
     });
 
+    // ── Stop recording ──
     connect(stopRecordingButton, &QToolButton::clicked, this, [this]() {
-        if (recordingStartTime.isValid()) {
+        if (!recordingStartTime.isValid()) return;
+        emit recordingStop();
+        timelineWidget->stop();
+        recPlayPauseButton->setEnabled(false);
+        stopRecordingButton->setEnabled(false);
+        bookmarkButton->setEnabled(false);
+        loggerStatusLabel->setStyleSheet("color:#607d8b;");
+        recordingStartTime = QDateTime();
+        isRecordingPaused  = false;
+        recPlayPauseButton->setIcon(QIcon(":/icons/images/pause.png"));
+        recPlayPauseButton->setToolTip(tr("Pause Recording"));
+        if (m_filterBtn) m_filterBtn->setEnabled(true);
+        emit dbDisconnectRequested();
+         recordButton->setEnabled(true);
 
-            emit recordingStop();
-            timelineWidget->stop();
+    });
 
-            recordButton->setToolTip(tr("Start Recording"));
-            recordButton->setObjectName("");
-            recordButton->setStyleSheet("");
-
-            //recordButton->setEnabled(true);
-            //pauseRecordingButton->setEnabled(false);
-            //stopRecordingButton->setEnabled(false);
-
-            //loggerStatusLabel->setText(tr("Stopped"));
-            loggerStatusLabel->setStyleSheet("font-weight: normal; color: #666;");
-            //timelineWidget->setRecordingDuration(0);
-            recordingStartTime = QDateTime();
-
-            isRecordingPaused = false;
-            pauseRecordingButton->setIcon(QIcon(":/icons/images/pause.png"));
-            pauseRecordingButton->setToolTip(tr("Pause Recording"));
+    // ── Bookmark ──
+    connect(bookmarkButton, &QToolButton::clicked, this, [this]() {
+        // inline input - no dialog
+        QDialog dlg(this);
+        dlg.setWindowTitle(tr("Bookmark"));
+        dlg.setStyleSheet("background:#1a2a3a; color:#ccd6e0;");
+        QVBoxLayout *lay = new QVBoxLayout(&dlg);
+        QLineEdit *ed = new QLineEdit(&dlg);
+        ed->setPlaceholderText(tr("Note (optional)"));
+        ed->setStyleSheet("background:#0f1e2b; color:#ccd6e0; border:1px solid #2c4a5e; border-radius:4px; padding:4px;");
+        QPushButton *ok = new QPushButton(tr("Add"), &dlg);
+        ok->setStyleSheet("background:#3498db; color:white; border:none; border-radius:4px; padding:6px 16px;");
+        lay->addWidget(ed);
+        lay->addWidget(ok);
+        connect(ok, &QPushButton::clicked, &dlg, [&]{ dlg.accept(); });
+        ed->setFocus();
+        if (dlg.exec() == QDialog::Accepted) {
+            QString note = ed->text().trimmed();
+            if (note.isEmpty()) note = tr("Bookmark");
+            emit bookmarkAdded(note);
         }
     });
-    connect(databaseButton, &QToolButton::clicked,this, [this]() {
-        emit getDBStatusOfRecording(*dbStatusOfRecording);
-    });
-    connect(loadRecordingButton, &QToolButton::clicked, this, [this]() {
-        if(!dbStatusPtr || dbStatusPtr == nullptr){
-            QMessageBox::warning(this, tr("Warning"), tr("DataBase Pointer Not Defined!"));
-            return;
-        }
 
-        switch(*dbStatusPtr){
-        case SQLite::DISCONNECTED:
-            QMessageBox::warning(this, tr("Warning"), tr("DataBase is Disconnected!"));
-            return;
-            break;
-        case SQLite::CONNECTED:
-            qDebug()<<"DataBase is Connected";
-            //QMessageBox::warning(this, tr("Warning"), tr("DataBase is Connected"));
-            break;
-        }
-
-        //pauseResumeReplayButton->setEnabled(true);
-        pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
-        pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
-        emit replayFileLoaded();
-        emit pressPlayAgain();
-        //startReplayButton->setEnabled(true);
-        //previousFrameButton->setEnabled(true);
-        //nextFrameButton->setEnabled(true);
-        // qDebug() << "Recording Replay Again:" << filePath;
+    // ── Timestamp checkbox ──
+    connect(timestampCheckBox, &QCheckBox::stateChanged, this, [this](int st) {
+        bool on = (st == Qt::Checked);
+        emit timestampToggled(on);
+        if (!on) { timelineWidget->setRecordingDuration(0); timelineWidget->clearBookmarks(); }
     });
 
-    connect(startReplayButton, &QToolButton::clicked, this, [this]() {
-        // emit getDBStatus();
-        // if(!dbStatusPtr || dbStatusPtr == nullptr){
-        //     QMessageBox::warning(this, tr("Warning"), tr("DataBase Pointer Not Defined!"));
-        //     return;
-        // }
-        // switch(*dbStatusPtr){
-        // case SQLite::DISCONNECTED:
-        //     QMessageBox::warning(this, tr("Warning"), tr("DataBase is Disconnected!"));
-        //     return;
-        //     break;
-        // case SQLite::CONNECTED:
-        //     qDebug()<<"DataBase is Connected";
-        //     //QMessageBox::warning(this, tr("Warning"), tr("DataBase is Connected"));
-        //     break;
-        // }
-        inspectRecorder();
-        timelineWidget->setValues(
-            loggerMode     ,
-            bookmarkDblPtr,
-            durationDblPtr);
-        emit replayStart();
+    // ── Replay: single play/pause button ──
+    connect(repPlayPauseButton, &QToolButton::clicked, this, [this]() {
+        if (!repPlaying) {
 
-        //loggerStatusLabel->setText(tr("Replaying"));
-        //Enableing buttton Start
-        loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
-        // startReplayButton->setEnabled(false);
-        // pauseResumeReplayButton->setEnabled(true);
-        // previousFrameButton->    setEnabled(true);
-        // nextFrameButton->        setEnabled(true);
-        //Enableing buttton End
-
-        pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
-        pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
-        // qDebug() << "Replay started - file path:" << filePath;
-    });
-
-    connect(pauseResumeReplayButton, &QToolButton::clicked, this, [this]() {
-        //emit toggleReplayPause();   // Call merged replay function
-        if (! (*replayModePtr == Replay::replayModes::PAUSE)) {
-            // UI Updates for Pause
-            //loggerStatusLabel->setText(tr("Replay Paused"));
-            loggerStatusLabel->setStyleSheet("font-weight: bold; color: #f39c12;");
-            pauseResumeReplayButton->setIcon(QIcon(":/icons/images/resume.png"));
-            pauseResumeReplayButton->setToolTip(tr("Resume Replay"));
-            emit replayPause();
+            findFile();
         } else {
-            // UI Updates for Resume
-            //loggerStatusLabel->setText(tr("Replaying"));
-            loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
-            pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
-            pauseResumeReplayButton->setToolTip(tr("Pause Replay"));
-            emit replayResume();
-        }
-    });
-
-    connect(previousFrameButton, &QToolButton::clicked, this, [this]() {
-        emit previousFrame();
-        //qDebug() << "Previous Frame requested";
-    });
-
-    connect(nextFrameButton, &QToolButton::clicked, this, [this]() {
-        emit nextFrame();
-        //qDebug() << "Next Frame requested";
-    });
-
-    connect(timestampCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
-        bool enabled = (state == Qt::Checked);
-        emit timestampToggled(enabled);
-        if (!enabled) {
-            timelineWidget->setRecordingDuration(0);
-            timelineWidget->clearBookmarks();
-        }
-    });
-
-    connect(timelineWidget, &TimelineWidget::bookmarkButtonClicked, this, [this](const QString &note, qint64 timestampMs) {
-        emit bookmarkButtonClicked(note, timestampMs);
-        emit bookmarkClicked(note, timestampMs);
-        // qDebug() << "Bookmark clicked: Note =" << note << ", Timestamp =" << timestampMs << "ms";
-    });
-
-    connect(timelineWidget, &TimelineWidget::getMaxDuration,
-            this, [this](qint64 &maxDuration) {
-        emit getMaxDuration(maxDuration);
-    });
-    connect(timelineWidget, &TimelineWidget::sendClickedTimestamp,
-    this, [this](qint64 clickedTimestamp) {
-        emit sendClickedTimestamp(clickedTimestamp);
-    });
-
-    connect(databaseButtonReplay, &QToolButton::clicked,this, [this]() {
-        findFile();
-        //emit dbConnect();
-    });
-
-    qDebug() << "Logger is setting up";
-}
-
-
-void LoggerDialog::loggerModeChange(Recorder::loggerModes mode)
-{
-    setRecorder();
-
-    modeOfLogger = mode;
-    switch(modeOfLogger){
-    case Recorder::RECORDING:
-        debugString = "RECORDING";
-
-        break;
-    case Recorder::REPLAY:
-        debugString = "REPLAY";
-        recordingDateLabel->setText("No recording");
-
-        break;
-    default:
-        break;
-    }
-    // qDebug()<<"Logger : Logger mode is changed"<<debugString;
-    recorderInfo();
-    emit loggerModeSend(modeOfLogger);
-    if(!timelineWidget){
-        timelineWidget->setValues(
-            loggerMode     ,
-            bookmarkDblPtr,
-            durationDblPtr);
-    }
-    inspectRecorder();
-}
-
-void LoggerDialog::recorderInfo()
-{
-
-
-    int seconds = duration / 1000;
-    int minutes = seconds / 60;
-    int hours = minutes / 60;
-    QString durationText = QString("%1:%2:%3")
-                               .arg(hours, 2, 10, QLatin1Char('0'))
-                               .arg(minutes % 60, 2, 10, QLatin1Char('0'))
-                               .arg(seconds % 60, 2, 10, QLatin1Char('0'));
-
-
-}
-
-
-
-void LoggerDialog::recorderInfoReceive(Recorder::LoggerStatusModes r_loggerStatus)
-{
-    loggerStatus = r_loggerStatus;
-    recorderInfo_Update(loggerStatus);
-    if(loggerStatus == Recorder::S_REPLAY_STOPPED){
-        pauseResumeReplayButton->setIcon(QIcon(":/icons/images/resume.png"));
-        //pauseResumeReplayButton->setEnabled(true);
-        //startReplayButton->setEnabled(false);
-        //:/icons/images/play.png
-        isReplayPaused = true;
-    }
-    if(loggerStatus == Recorder::S_REPLAYING){
-        pauseResumeReplayButton->setIcon(QIcon(":/icons/images/pause.png"));
-        //pauseResumeReplayButton->setEnabled(true);
-        //startReplayButton->setEnabled(false);
-    }
-    if(loggerStatus == Recorder::S_REPLAY_LOADED){
-        //startReplayButton->setEnabled(true);
-        //pauseResumeReplayButton->setEnabled(false);
-    }
-}
-
-void LoggerDialog::recorderInfoReceiveOnce(
-    QDateTime r_recordingStartTime,
-    qint64 r_duration,
-    Recorder::LoggerStatusModes     r_loggerStatus,
-    Recorder::SimulationStatusModes r_simulationStatus)
-{
-    recordingStartTime = r_recordingStartTime;
-    duration           = r_duration          ;
-    loggerStatus       = r_loggerStatus      ;
-    simulationStatus   = r_simulationStatus  ;
-    recorderInfoUpdate(r_recordingStartTime,
-                       r_duration,
-                       r_loggerStatus,
-                       r_simulationStatus);
-    recorderInfo();
-}
-void LoggerDialog::recorderInfoReceiveUsual(
-    qint64    r_duration,
-    Recorder::LoggerStatusModes       r_loggerStatus,
-    Recorder::SimulationStatusModes   r_simulationStatus)
-{
-    duration         = r_duration;
-    loggerStatus     = r_loggerStatus;
-    simulationStatus = r_simulationStatus;
-    recorderInfoUpdateDuration(r_duration);
-    recorderInfoUpdateLoggerStatus(r_loggerStatus);
-    recorderInfoUpdateSimulationStatus(r_simulationStatus);
-    recorderInfo();
-}
-void LoggerDialog::recorderInfoReceiveDuration(qint64 r_duration)
-{
-    duration = r_duration;
-    recorderInfoUpdateDuration(r_duration);
-    recorderInfo();
-}
-
-void LoggerDialog::recorderInfoUpdate(
-    QDateTime r_recordingStartTime,
-    qint64 r_duration,
-    Recorder::LoggerStatusModes r_loggerStatus,
-    Recorder::SimulationStatusModes r_simulationStatus)
-{
-    recorderInfoUpdateRecordingStartTime(r_recordingStartTime);
-    recorderInfoUpdateDuration(r_duration);
-    recorderInfoUpdateLoggerStatus(r_loggerStatus);
-    recorderInfoUpdateSimulationStatus(r_simulationStatus);
-}
-
-void LoggerDialog::recorderInfo_Update(Recorder::LoggerStatusModes r_loggerStatus)
-{
-    loggerStatusLabel->    setText(loggerStatusModeString[r_loggerStatus]);
-    // qDebug()<<"Logger : Recorder Info Update Recording Logger Status";
-}
-
-void LoggerDialog::recorderInfoUpdateRecordingStartTime(
-    QDateTime r_recordingStartTime)
-{
-    recordingDateLabel->setText(r_recordingStartTime.toString("yyyy-MM-dd hh:mm:ss"));
-    // qDebug()<<"Logger : Recorder InfoUpdate Recording Start Time is Called"
-    //         <<"\n\t"<<r_recordingStartTime.toString("hh:mm:ss");
-}
-
-void LoggerDialog::recorderInfoUpdateDuration(
-    qint64 r_duration)
-{
-    updateRecordingDuration(r_duration);
-    // qDebug()<<"Logger : Recorder InfoUpdate Recording Start Time is Called"
-    //          <<"\n\t"<<r_duration;
-}
-void LoggerDialog::updateRecordingDuration(qint64 durationMs)
-{
-    if (timelineWidget) {
-        timelineWidget->setRecordingDuration(durationMs);
-
-        int seconds = durationMs / 1000;
-        int minutes = seconds / 60;
-        int hours = minutes / 60;
-        QString durationText = QString("%1:%2:%3")
-                                   .arg(hours, 2, 10, QLatin1Char('0'))
-                                   .arg(minutes % 60, 2, 10, QLatin1Char('0'))
-                                   .arg(seconds % 60, 2, 10, QLatin1Char('0'));
-        durationLabel->setText(durationText);
-    }
-}
-
-void LoggerDialog::recorderInfoUpdateLoggerStatus(
-    Recorder::LoggerStatusModes r_loggerStatus)
-{
-    loggerStatusLabel->    setText(loggerStatusModeString[r_loggerStatus]);
-    // qDebug()<<"Logger : Recorder Info Update Recording Logger Status";
-}
-
-void LoggerDialog::recorderInfoUpdateSimulationStatus(
-    Recorder::SimulationStatusModes r_simulationStatus)
-{
-    simulationStatusLabel->setText(SimulationStatusModeString[r_simulationStatus]);
-    // qDebug()<<"Logger : Recorder Info Update Recording Simulation Status";
-}
-
-
-void LoggerDialog::showBookmarkDialog()
-{
-    QDialog bookmarkDialog(this);
-    bookmarkDialog.setWindowTitle(tr("Add Bookmark"));
-    bookmarkDialog.setStyleSheet("background-color: #ffffff; font-family: 'Segoe UI', Arial, sans-serif;");
-    QVBoxLayout *dialogLayout = new QVBoxLayout(&bookmarkDialog);
-    QLineEdit *bookmarkEdit = new QLineEdit(&bookmarkDialog);
-    bookmarkEdit->setPlaceholderText(tr("Enter comment"));
-    QPushButton *okButton = new QPushButton(tr("OK"), &bookmarkDialog);
-    okButton->setStyleSheet("background-color: #0078d4; color: white; border: none; border-radius: 4px; padding: 8px 16px; font-size: 14px;");
-    dialogLayout->addWidget(bookmarkEdit);
-    dialogLayout->addWidget(okButton);
-    dialogLayout->addStretch();
-
-    connect(okButton, &QPushButton::clicked, &bookmarkDialog, [this, &bookmarkDialog, bookmarkEdit]() {
-        if (!bookmarkEdit->text().isEmpty()) {
-            QString bookmarkNote = bookmarkEdit->text();
-            emit bookmarkAdded(bookmarkNote);
-
-
-
-            if (timestampCheckBox->isChecked() && recordingStartTime.isValid()) {
-                qint64 timestampMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
-
+            if (!replayModePtr) return;
+            if (*replayModePtr != Replay::replayModes::PAUSE) {
+                loggerStatusLabel->setStyleSheet("font-weight:bold; color:#f39c12;");
+                repPlayPauseButton->setIcon(QIcon(":/icons/images/play.png"));
+                repPlayPauseButton->setToolTip(tr("Resume"));
+                repPlayPauseButton->setStyleSheet(
+                    "QToolButton{background:#1e3a4f;border:1px solid #f39c12;border-radius:5px;}"
+                    "QToolButton:hover{background:#254d66;}");
+                emit replayPause();
+            } else {
+                loggerStatusLabel->setStyleSheet("font-weight:bold; color:#27ae60;");
+                repPlayPauseButton->setIcon(QIcon(":/icons/images/pause.png"));
+                repPlayPauseButton->setToolTip(tr("Pause"));
+                repPlayPauseButton->setStyleSheet(
+                    "QToolButton{background:#1e3a4f;border:1px solid #27ae60;border-radius:5px;}"
+                    "QToolButton:hover{background:#254d66;}");
+                emit replayResume();
             }
-
-            bookmarkDialog.accept();
-        } else {
-            QMessageBox::warning(this, tr("Invalid Input"), tr("Please enter a bookmark comment."));
         }
     });
 
-    bookmarkDialog.exec();
+    // ── Prev / Next frame ──
+    // connect(previousFrameButton, &QToolButton::clicked, this, [this]{ emit previousFrame(); });
+    // connect(nextFrameButton,     &QToolButton::clicked, this, [this]{ emit nextFrame();     });
+    connect(reloadReplayButton, &QToolButton::clicked, this, [this]() {
+        if (!dbStatusPtr || *dbStatusPtr == SQLite::DISCONNECTED) return;
+        repPlaying = false;
+        m_loadedBookmarkTimestamps.clear();
+        timelineWidget->clearBookmarks();
+        emit pressPlayAgain();
+        _startReplay();
+    });
+
+    // ── BookmarkList row click → replay seek ──
+    connect(m_bookmarkList, &BookmarkListWidget::jumpToTimestamp,
+            this, [this](qint64 t) {
+                emit sendClickedTimestamp(t);
+            });
+
+    // ── BookmarkList row click → other listeners ──
+    connect(m_bookmarkList, &BookmarkListWidget::bookmarkClicked,
+            this, [this](const QString &n, qint64 t) {
+                emit bookmarkButtonClicked(n, t);
+                emit bookmarkClicked(n, t);
+            });
+
+    // ── Timeline pin clicks ──
+    connect(timelineWidget, &TimelineWidget::bookmarkButtonClicked,
+            this, [this](const QString &n, qint64 t){
+                emit bookmarkButtonClicked(n, t);
+                emit bookmarkClicked(n, t);
+            });
+    connect(timelineWidget, &TimelineWidget::getMaxDuration,
+            this, [this](qint64 &v){ emit getMaxDuration(v); });
+    connect(timelineWidget, &TimelineWidget::sendClickedTimestamp,
+            this, [this](qint64 t){ emit sendClickedTimestamp(t); });
+    connect(loadNewFileButton, &QToolButton::clicked, this, [this]() {
+        if (repPlaying) {
+            emit replayStop();
+            repPlaying = false;
+            repPlayPauseButton->setIcon(QIcon(":/icons/images/play.png"));
+            repPlayPauseButton->setToolTip(tr("Load & Play"));
+            repPlayPauseButton->setStyleSheet(
+                "QToolButton{background:#1e3a4f;border:1px solid #27ae60;border-radius:5px;}"
+                "QToolButton:hover{background:#254d66;}");
+            // previousFrameButton->setEnabled(false);
+            // nextFrameButton->setEnabled(false);
+            reloadReplayButton->setEnabled(false);
+            loggerStatusLabel->setStyleSheet("color:#607d8b;");
+            loggerStatusLabel->setText("Replay Ready");
+        }
+
+        // Timeline aur bookmarks reset karo
+        m_loadedBookmarkTimestamps.clear();
+        timelineWidget->clearBookmarks();
+        timelineWidget->setRecordingDuration(0);
+        updateRecordingDurationLabel(0);
+        // File unload signal
+        emit replayFileUnloaded();
+        findFile();
+    });
 }
+
+// ═══════════════════════════════════════════════════════
+//  Internal: start replay after file loaded
+// ═══════════════════════════════════════════════════════
+void LoggerDialog::_startReplay()
+{
+    repPlaying = true;
+    inspectRecorder();
+    timelineWidget->setValues(loggerMode, bookmarkDblPtr, durationDblPtr);
+    emit replayStart();
+    loggerStatusLabel->setStyleSheet("font-weight:bold; color:#27ae60;");
+    repPlayPauseButton->setIcon(QIcon(":/icons/images/pause.png"));
+    repPlayPauseButton->setToolTip(tr("Pause"));
+    repPlayPauseButton->setStyleSheet(
+        "QToolButton{background:#1e3a4f;border:1px solid #27ae60;border-radius:5px;}"
+        "QToolButton:hover{background:#254d66;}");
+    // previousFrameButton->setEnabled(true);
+    // nextFrameButton->setEnabled(true);
+    reloadReplayButton->setEnabled(true);
+}
+
+// ═══════════════════════════════════════════════════════
+//  findFile  →  emits getFilePath  →  runtimeeditor
+//           →  DB auto-connect  →  then start replay
+// ═══════════════════════════════════════════════════════
+
+void LoggerDialog::findFile()
+{
+    emit pauseSimulationRequested();
+    QCoreApplication::processEvents();
+    QFileDialog dlg(
+        this,
+        tr("Open Recording File"),
+        QDir::homePath() + "/TDF/Recordings",
+        tr("Database Files (*.db);;All Files (*)")
+        );
+    dlg.setAcceptMode(QFileDialog::AcceptOpen);
+    dlg.setFileMode(QFileDialog::ExistingFile);
+    dlg.setWindowModality(Qt::ApplicationModal);
+    dlg.setWindowFlags(Qt::Dialog
+                       | Qt::WindowTitleHint
+                       | Qt::WindowCloseButtonHint
+                       | Qt::WindowStaysOnTopHint);
+
+    if (parentWidget()) {
+        QRect parentRect = parentWidget()->window()->geometry();
+        dlg.move(parentRect.center() - dlg.rect().center());
+    }
+    dlg.show();
+    dlg.raise();
+    dlg.activateWindow();
+    bool accepted = (dlg.exec() == QDialog::Accepted);
+    emit resumeSimulationRequested();
+    if (!accepted) return;
+
+    QString path = dlg.selectedFiles().value(0);
+    if (path.isEmpty()) return;
+
+    QFileInfo fi(path);
+    fileNameLabel->setText(fi.fileName());
+    fileNameLabel->setStyleSheet("color:#52c78a; font-size:11px;");
+    dbStatusLabel->setText(tr("⬤  DB connecting…"));
+    dbStatusLabel->setStyleSheet("color:#f39c12; font-size:11px;");
+
+    emit getDBStatus();
+    emit getFilePath(path);
+
+    QTimer *checkTimer = new QTimer(this);
+    checkTimer->setInterval(100);
+    int *attempts = new int(0);
+
+    connect(checkTimer, &QTimer::timeout, this, [this, checkTimer, attempts]() {
+        if (!checkTimer) return;
+        (*attempts)++;
+        emit getDBStatus();
+        if (dbStatusPtr && *dbStatusPtr == SQLite::CONNECTED) {
+            checkTimer->stop();
+            checkTimer->deleteLater();
+            delete attempts;
+            if (dbStatusLabel)
+                dbStatusLabel->setText(tr("⬤  DB connected"));
+            if (dbStatusLabel)
+                dbStatusLabel->setStyleSheet("color:#27ae60; font-size:11px;");
+            _startReplay();
+        } else if (*attempts >= 20) {
+            checkTimer->stop();
+            checkTimer->deleteLater();
+            delete attempts;
+            if (dbStatusLabel)
+                dbStatusLabel->setText(tr("⬤  DB error"));
+            if (dbStatusLabel)
+                dbStatusLabel->setStyleSheet("color:#e74c3c; font-size:11px;");
+        }
+    });
+    checkTimer->start();
+}
+// ═══════════════════════════════════════════════════════
+//  saveFile
+// ═══════════════════════════════════════════════════════
+bool LoggerDialog::saveFile()
+{
+    // Simulation pause karo pehle
+    emit pauseSimulationRequested();
+    QCoreApplication::processEvents();
+
+    QFileDialog dlg(
+        this,
+        tr("Create Recording File"),
+        QDir::homePath() + "/TDF/Recordings",
+        tr("SQLite Database (*.db);;All Files (*)")
+        );
+    dlg.setAcceptMode(QFileDialog::AcceptSave);
+    dlg.setDefaultSuffix("db");
+    dlg.setWindowModality(Qt::ApplicationModal);
+    dlg.setWindowFlags(Qt::Dialog
+                       | Qt::WindowTitleHint
+                       | Qt::WindowCloseButtonHint
+                       | Qt::WindowStaysOnTopHint);
+    if (parentWidget()) {
+        QRect parentRect = parentWidget()->window()->geometry();
+        dlg.move(parentRect.center() - dlg.rect().center());
+    }
+    dlg.show();
+    dlg.raise();
+    dlg.activateWindow();
+    bool accepted = (dlg.exec() == QDialog::Accepted);
+    emit resumeSimulationRequested();
+    if (!accepted) return false;
+    QString path = dlg.selectedFiles().value(0);
+    if (path.isEmpty()) return false;
+    if (!path.endsWith(".db", Qt::CaseInsensitive))
+        path += ".db";
+    // TDF/Recordings folder ensure karo
+    QDir dir;
+    dir.mkpath(QDir::homePath() + "/TDF/Recordings");
+    QFile f(path);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) return false;
+    f.close();
+    emit savedFilePath(path);
+    return true;
+}
+
+// ═══════════════════════════════════════════════════════
+//  Mode switches
+// ═══════════════════════════════════════════════════════
 
 void LoggerDialog::switchToRecordingMode()
 {
-
     loggerModeChange(Recorder::RECORDING);
     inspectRecorder();
-
-    timelineWidget->replayMode = false;
+    timelineWidget->replayMode      = false;
     timelineWidget->modeisRecording = true;
-    //timelineWidget->toRunInRecording = true;
-    //loggerStatusLabel->setText(tr("Recording Mode"));
-    loggerStatusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
+    loggerStatusLabel->setStyleSheet("color:#90a4ae;");
+    loggerStatusLabel->setText("Ready");
     timelineWidget->clearBookmarks();
     timelineWidget->setRecordingDuration(0);
     updateRecordingDurationLabel(0);
-
+    repPlaying = false;
     emit requestReplayReset();
-    qDebug() << "Switched to Recording Mode";
-    if(timelineWidget){
-        timelineWidget->setValues(
-            loggerMode     ,
-            bookmarkDblPtr,
-            durationDblPtr);
-    }
+    if (timelineWidget)
+        timelineWidget->setValues(loggerMode, bookmarkDblPtr, durationDblPtr);
 }
 
 void LoggerDialog::switchToReplayMode()
 {
-    //Defining the mode of Logger
-
     loggerModeChange(Recorder::REPLAY);
     inspectRecorder();
-    timelineWidget->replayMode = true;
+    timelineWidget->replayMode      = true;
     timelineWidget->modeisRecording = false;
-    //loggerStatusLabel->setText(tr("Replay Mode"));
-    loggerStatusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
+    loggerStatusLabel->setStyleSheet("color:#90a4ae;");
+    loggerStatusLabel->setText("Replay Ready");
     timelineWidget->clearBookmarks();
     timelineWidget->setRecordingDuration(0);
     updateRecordingDurationLabel(0);
+    repPlaying = false;
     emit requestReplayReset();
-    if(timelineWidget){
-        timelineWidget->setValues(
-            loggerMode    ,
-            bookmarkDblPtr,
-            durationDblPtr);
-    }
-
+    if (timelineWidget)
+        timelineWidget->setValues(loggerMode, bookmarkDblPtr, durationDblPtr);
 }
 
-
-
-void LoggerDialog::updateRecordingsList()
+void LoggerDialog::loggerModeChange(Recorder::loggerModes m)
 {
+    setRecorder();
+    modeOfLogger = m;
+    debugString  = (m == Recorder::RECORDING) ? "RECORDING" : "REPLAY";
+    if (m == Recorder::REPLAY) recordingDateLabel->setText("No recording");
+    recorderInfo();
+    emit loggerModeSend(modeOfLogger);
+    inspectRecorder();
 }
 
-
-void LoggerDialog::updateRecordingDurationLabel(qint64 durationMs)
+// ═══════════════════════════════════════════════════════
+//  Recorder info updates
+// ═══════════════════════════════════════════════════════
+void LoggerDialog::recorderInfo() {}
+void LoggerDialog::recorderInfo_Update(Recorder::LoggerStatusModes s)
 {
-    if (timelineWidget) {
-
-        int seconds = durationMs / 1000;
-        int minutes = seconds / 60;
-        int hours = minutes / 60;
-        QString durationText = QString("%1:%2:%3")
-                                   .arg(hours, 2, 10, QLatin1Char('0'))
-                                   .arg(minutes % 60, 2, 10, QLatin1Char('0'))
-                                   .arg(seconds % 60, 2, 10, QLatin1Char('0'));
-        durationLabel->setText(durationText);
-    }
+    loggerStatusLabel->setText(loggerStatusModeString[s]);
 }
 
-
-
-
-
-
-void LoggerDialog::addBookmarkWithTimestamp(const QString &note, qint64 timestampMs)
+void LoggerDialog::recorderInfoUpdate(QDateTime dt, qint64 dur,
+                                      Recorder::LoggerStatusModes ls, Recorder::SimulationStatusModes ss)
 {
-    if (timestampCheckBox->isChecked()) {
-        timelineWidget->addBookmark(note, timestampMs);
-        // qDebug()<<"****add bookmark****";
-    }
+    recorderInfoUpdateRecordingStartTime(dt);
+    recorderInfoUpdateDuration(dur);
+    recorderInfoUpdateLoggerStatus(ls);
+    // recorderInfoUpdateSimulationStatus(ss);
 }
 
-void LoggerDialog::showBookmarkOnReplay(const QString& note, qint64 timestamp)
+void LoggerDialog::recorderInfoUpdateRecordingStartTime(QDateTime dt)
+{ recordingDateLabel->setText(dt.toString("yyyy-MM-dd hh:mm:ss")); }
+
+void LoggerDialog::recorderInfoUpdateDuration(qint64 dur)
+{ updateRecordingDuration(dur); }
+
+void LoggerDialog::recorderInfoUpdateLoggerStatus(Recorder::LoggerStatusModes s)
+{ loggerStatusLabel->setText(loggerStatusModeString[s]); }
+
+// void LoggerDialog::recorderInfoUpdateSimulationStatus(Recorder::SimulationStatusModes s)
+// { simulationStatusLabel->setText(SimulationStatusModeString[s]); }
+
+void LoggerDialog::recorderInfoReceive(Recorder::LoggerStatusModes s)
 {
-    if (timelineWidget) {
-        timelineWidget->addBookmark(note, timestamp);
+    loggerStatus = s;
+    recorderInfo_Update(s);
+    if (s == Recorder::S_REPLAY_STOPPED) {
+        repPlaying = false;
+        repPlayPauseButton->setIcon(QIcon(":/icons/images/play.png"));
+        repPlayPauseButton->setToolTip(tr("Load & Play"));
+        repPlayPauseButton->setStyleSheet(
+            "QToolButton{background:#1e3a4f;border:1px solid #27ae60;border-radius:5px;}"
+            "QToolButton:hover{background:#254d66;}");
+    }
+    if (s == Recorder::S_REPLAYING) {
+        repPlayPauseButton->setIcon(QIcon(":/icons/images/pause.png"));
+        repPlayPauseButton->setToolTip(tr("Pause"));
     }
 }
 
-
-void LoggerDialog::onReplayBookmarkLoaded(const QString& note, qint64 timestamp)
+void LoggerDialog::recorderInfoReceiveOnce(QDateTime dt, qint64 dur,
+                                           Recorder::LoggerStatusModes ls, Recorder::SimulationStatusModes ss)
 {
-    if (timelineWidget) {
-
-
-        timelineWidget->addBookmark(note, timestamp);
-
-
-    }
+    recordingStartTime=dt; duration=dur; loggerStatus=ls; simulationStatus=ss;
+    recorderInfoUpdate(dt,dur,ls,ss);
+    recorderInfo();
 }
 
-
-void LoggerDialog::setTimelineDuration(qint64 duration)
+void LoggerDialog::recorderInfoReceiveUsual(qint64 dur,
+                                            Recorder::LoggerStatusModes ls, Recorder::SimulationStatusModes ss)
 {
-    if (timelineWidget) {
-        timelineWidget->clearBookmarks();
-        timelineWidget->setRecordingDuration(duration);
-    }
+    duration=dur; loggerStatus=ls; simulationStatus=ss;
+    recorderInfoUpdateDuration(dur);
+    recorderInfoUpdateLoggerStatus(ls);
+    // recorderInfoUpdateSimulationStatus(ss);
 }
 
-void LoggerDialog::updateReplayProgress(qint64 timestamp)
+void LoggerDialog::recorderInfoReceiveDuration(qint64 dur)
+{ duration=dur; recorderInfoUpdateDuration(dur); }
+
+void LoggerDialog::updateRecordingDuration(qint64 ms)
 {
-    if (timelineWidget) {
-        updateRecordingDurationLabel(timestamp);
-        timelineWidget->setCurrentReplayTime(timestamp);
-    }
+    if (!timelineWidget) return;
+    timelineWidget->setRecordingDuration(ms);
+    int s=ms/1000, h=s/3600, m=(s%3600)/60;
+    durationLabel->setText(QString("%1:%2:%3")
+                               .arg(h,2,10,QLatin1Char('0'))
+                               .arg(m,2,10,QLatin1Char('0'))
+                               .arg(s%60,2,10,QLatin1Char('0')));
 }
 
-void LoggerDialog::replayFromBookmark(const QString& note, qint64 timestamp)
+void LoggerDialog::updateRecordingDurationLabel(qint64 ms)
 {
+    int s=ms/1000, h=s/3600, m=(s%3600)/60;
+    durationLabel->setText(QString("%1:%2:%3")
+                               .arg(h,2,10,QLatin1Char('0'))
+                               .arg(m,2,10,QLatin1Char('0'))
+                               .arg(s%60,2,10,QLatin1Char('0')));
 }
-
-
-void LoggerDialog::setC_Duration()
-{
-
-}
-
-bool LoggerDialog::saveFile()
-{
-    QString fullPath = QFileDialog::getSaveFileName(this,
-        tr("Create New File"),
-        "",
-        tr("SQLite .db (*.db);;All Files (*)"));
-
-    if (fullPath.isEmpty()) return false; // User cancelled
-
-    // 2. Ensure the extension is correct if the user didn't type it
-    if (!fullPath.endsWith(".db")) {
-        fullPath += ".db";
-    }
-
-    // 3. Create the actual file on the disk
-    QFile file(fullPath);
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&file);
-        out << "File content goes here.";
-        file.close();
-    }else{
-        return false;
-    }
-
-    // 4. Use QFileInfo to extract details
-    QFileInfo fileInfo(fullPath);
-
-    QString fileName = fileInfo.fileName();      // "my_document.txt"
-    QString baseName = fileInfo.baseName();      // "my_document" (no extension)
-    QString dirPath  = fileInfo.absolutePath();  // "/home/user/Documents"
-
-    qDebug() << "Full Path:" << fullPath;
-    qDebug() << "File Name:" << fileName;
-    qDebug() << "Directory:" << dirPath;
-    emit savedFilePath(fullPath);
-    return true;
-}
-
-void LoggerDialog::findFile()
-{
-    // 1. Open dialog filtered for .db files
-    QString fullPath = QFileDialog::getOpenFileName(
-        this,
-        tr("Open Database File"),
-        "",
-        tr("Database Files (*.db);;All Files (*)")
-        );
-
-    if (fullPath.isEmpty()) {
-        return; // User cancelled
-    }
-
-    // 2. Ensure it has the .db extension
-    if (!fullPath.endsWith(".db", Qt::CaseInsensitive)) {
-        fullPath += ".db";
-    }
-
-    // 3. Extract Name and Path
-    QFileInfo fileInfo(fullPath);
-    QString fileName = fileInfo.fileName();
-    QString dirPath  = fileInfo.absolutePath();
-
-    // qDebug() << "File:" << fileName;
-    // qDebug() << "Path:" << dirPath;
-
-    emit getFilePath(fullPath);
-}
-
-void LoggerDialog::alertViaStr(QString msg)
-{
-    QMessageBox msgBox;
-    msgBox.setText(msg);
-    msgBox.exec();
-}
-
-void LoggerDialog::alertViaEnum(Logger_Error err)
-{
-    QMessageBox msgBox;
-    msgBox.setText(errEnumToString[err]);
-    msgBox.exec();
-}
-
-
-
-
-void LoggerDialog::inspectRecorder()
-{
-    std::string report = "Inpecter Report:\n";
-
-    //Recorder Start
-    if(recorder){
-        report += "\tRecorder Exist\n";
-    }else{
-        report += "\tRecorder Not Exist\n";
-        qDebug()<<report.c_str();
-        return;
-    }
-    //Recorder End
-
-    //Mode Start
-    qDebug()<<"Inside inspect:"<<recorder->modeOfLogger;
-    if(recorder->modeOfLogger == Recorder::loggerModes::RECORDING){
-        report += "\tLogger Mode Exist\n";
-        report += "\tLogger Mode is: ";
-        loggerMode    = recorder->modeOfLogger;
-        loggerModePtr = &recorder->modeOfLogger;
-        report += "Recording\n";
-        report += "\tSet Up Logger Mode Double pointer\n";
-
-        recordingModePtr = &recorder->m_recording->mode;
-        report += "Recording Mode\n";
-        report += "\tSet Up Recording Mode pointer\n";
-        qDebug()<<*recordingModePtr;
-    }else if(recorder->modeOfLogger == Recorder::loggerModes::REPLAY){
-        report += "\tLogger Mode Exist\n";
-        report += "\tLogger Mode is: ";
-        loggerMode    = recorder->modeOfLogger;
-        loggerModePtr = &recorder->modeOfLogger;
-        report += "Replay\n";
-        report += "\tSet Up Logger Mode Double pointer\n";
-
-        replayModePtr = &recorder->m_replay->mode;
-        report += "Replay Mode\n";
-        report += "\tSet Up Replay Mode pointer\n";
-        qDebug()<<*replayModePtr;
-    }
-    else{
-        report += "\tLogger Mode Exist Not Exist\n";
-        qDebug()<<report.c_str();
-        return;
-    }
-
-
-    //Mode End
-
-    if(recorder->durationPtr){
-        report += "\tDuration Exist\n";
-    }else if(recorder->durationPtr == nullptr){
-        report += "\tDuration is Nullptr\n";
-    }else{
-        report += "\tDuration Not Exist\n";
-        qDebug()<<report.c_str();
-        return;
-    }
-
-    if(recorder->durationPtr != nullptr){
-        report += "\tDuration is Have Value: ";
-        durationPtr = recorder->durationPtr;
-        report += qintToTime(*durationPtr);
-        report += "\n";
-    }
-    if(recorder->durationPtr != nullptr){
-        report += "\tDuration Double Pointer is Have Value: ";
-        durationDblPtr = &recorder->durationPtr;
-        report += qintToTime(**durationDblPtr);
-        report += "\n";
-    }
-
-    // Left Right Timer Start
-    if(recorder->leftTimer && recorder->rightTimer){
-        report += "\tLeft & Right Timer Exist\n";
-    }else{
-        report += "\tLeft & Right Timer Not Exist\n";
-        qDebug()<<report.c_str();
-        return;
-    }
-
-    if(recorder->leftTimer != nullptr || recorder->rightTimer != nullptr){
-        leftTimer  = recorder->leftTimer;
-        rightTimer = recorder->rightTimer;
-        report += "\tTimer has Value:-> Left: ";
-        report += qintToTime(*leftTimer);
-        report += " Right: ";
-        report += qintToTime(*rightTimer);
-        report += "\n";
-    }else{
-        report += "\tLeft & Right Timer is Nullptr\n";
-    }
-
-    if(recorder->leftTimer != nullptr || recorder->rightTimer != nullptr){
-        leftTimerDblPtr  = &recorder->leftTimer;
-        rightTimerDblPtr = &recorder->rightTimer;
-        report += "\tSet up Double pointer in Timer has Value:-> Left: ";
-        report += qintToTime(**leftTimerDblPtr);
-        report += " Right: ";
-        report += qintToTime(**leftTimerDblPtr);
-        report += "\n";
-    }else{
-        report += "\tLeft & Right Timer is Nullptr\n";
-    }
-    // Left Right Timer Start
-
-    // Bookmark Start
-    if(recorder->bookmarks){
-        report += "\tBookmark Exist\n";
-    }else{
-        report += "\tBookmark Not Exist\n";
-        qDebug()<<report.c_str();
-        return;
-    }
-
-    if(recorder->bookmarks != nullptr){
-        report += "\tBookmark Has Values:->";
-        bookmarks = recorder->bookmarks;
-        for(auto i = bookmarks->begin(); i != bookmarks->end(); i++){
-            report += " (t:";
-            report += qintToTime(i->second);
-            report += ", m:";
-            report += i->first.toStdString();
-            report += "),";
-        }
-        report += "\n";
-    }else{
-        report += "\tBookmark is Nullptr\n";
-    }
-
-    if(recorder->bookmarks != nullptr){
-        report += "\tSet Up Bookmark Double Pointer Has Values:->";
-        bookmarkDblPtr = &recorder->bookmarks;
-        QList<QPair<QString, qint64>>* tempbookmarks = *bookmarkDblPtr;
-        for(auto i = tempbookmarks->begin(); i != tempbookmarks->end(); i++){
-            report += " (t:";
-            report += qintToTime(i->second);
-            report += ", m:";
-            report += i->first.toStdString();
-            report += "),";
-        }
-        report += "\n";
-    }else{
-        report += "\tBookmark is Nullptr\n";
-    }
-    // Bookmark End
-
-    qDebug()<<report.c_str();
-}
-
-void LoggerDialog::setRecorder()
-{
-    qDebug()<<"Logger Recorder is set";
-    if(recorder == nullptr){
-        emit getRecorder();
-    }
-
-}
-
-void LoggerDialog::toggleButton(
-    Recorder::loggerModes mode,
-    toggleModes toggle)
-{
-    QToolButton* tempBtn = nullptr;
-    QString onButton;
-    switch(mode){
-    case Recorder::RECORDING:
-        tempBtn = pauseRecordingButton;
-        onButton = "Recorder";
-        break;
-    case Recorder::REPLAY:
-        tempBtn = pauseResumeReplayButton;
-        onButton = "Replay";
-        break;
-    }
-    switch(toggle){
-    case togglePlay:
-        tempBtn->setIcon(QIcon(":/icons/images/resume.png"));
-        tempBtn->setToolTip("Resume "+onButton);
-        break;
-    case togglePause:
-        tempBtn->setIcon(QIcon(":/icons/images/pause.png"));
-        tempBtn->setToolTip("Pause "+onButton);
-        break;
-    }
-}
-
-void LoggerDialog::freezeButtonOperation(
-    ButtonNOpsList buttonOperationList)
-{
-    for(auto i = buttonOperationList.begin();
-         i != buttonOperationList.end(); ++i){
-        switch(i->second){
-        case Freeze:
-           (*loggerButtonMap[i->first])->setEnabled(false);
-        break;
-        case Unfreeze:
-           (*loggerButtonMap[i->first])->setEnabled(true);
-        break;
-        }
-    }
-}
-
-
-
-// void LoggerDialog::receiveRecorder(Recorder &r_recoder)
-// {
-//     recorder = &r_recoder;
-// }
 
 void LoggerDialog::updateDuration()
 {
-
-    int seconds = **(durationDblPtr) / 1000;
-    int minutes = seconds / 60;
-    int hours = minutes / 60;
-    QString durationText = QString("%1:%2:%3")
-                               .arg(hours, 2, 10, QLatin1Char('0'))
-                               .arg(minutes % 60, 2, 10, QLatin1Char('0'))
-                               .arg(seconds % 60, 2, 10, QLatin1Char('0'));
-    //qDebug()<<durationText;
-    if(timelineWidget){
-        timelineWidget->updateTimelineWidget();
-    }
-    durationLabel->setText(durationText);
+    if (!durationDblPtr || !*durationDblPtr) return;
+    updateRecordingDuration(**durationDblPtr);
+    if (timelineWidget) timelineWidget->updateTimelineWidget();
 }
 
+// ═══════════════════════════════════════════════════════
+//  Bookmark helpers
+// ═══════════════════════════════════════════════════════
 
-std::string LoggerDialog::qintToTime(qint64 m_duration)
+void LoggerDialog::addBookmarkWithTimestamp(const QString &note, qint64 ts)
 {
-    int seconds = m_duration / 1000;
-    int minutes = seconds / 60;
-    int hours = minutes / 60;
-    QString durationText = QString("%1:%2:%3")
-                               .arg(hours, 2, 10, QLatin1Char('0'))
-                               .arg(minutes % 60, 2, 10, QLatin1Char('0'))
-                               .arg(seconds % 60, 2, 10, QLatin1Char('0'));
-    std::string stdString = durationText.toStdString();
-    return stdString;
+    if (timestampCheckBox && timestampCheckBox->isChecked())
+        timelineWidget->addBookmark(note, ts);
 }
 
+void LoggerDialog::showBookmarkOnReplay(const QString &note, qint64 ts)
+{ if (timelineWidget) timelineWidget->addBookmark(note, ts); }
 
+void LoggerDialog::onReplayBookmarkLoaded(const QString &note, qint64 ts)
+{
+    if (!timelineWidget) return;
+    if (m_loadedBookmarkTimestamps.contains(ts)) return;
+    m_loadedBookmarkTimestamps.insert(ts);
+    timelineWidget->addBookmark(note, ts);
+}
+
+void LoggerDialog::setTimelineDuration(qint64 dur)
+{
+    if (timelineWidget) {
+        timelineWidget->clearBookmarks();
+        timelineWidget->setRecordingDuration(dur);
+    }
+}
+
+void LoggerDialog::updateReplayProgress(qint64 ts)
+{
+    if (timelineWidget) {
+        updateRecordingDurationLabel(ts);
+        timelineWidget->setCurrentReplayTime(ts);
+    }
+}
+
+void LoggerDialog::replayFromBookmark(const QString &, qint64) {}
+void LoggerDialog::setC_Duration() {}
+
+// ═══════════════════════════════════════════════════════
+//  Button freeze/toggle
+// ═══════════════════════════════════════════════════════
+void LoggerDialog::freezeButtonOperation(ButtonNOpsList list)
+{
+    for (auto &p : list) {
+        auto it = loggerButtonMap.find(p.first);
+        if (it == loggerButtonMap.end()) continue;
+        (*it->second)->setEnabled(p.second == Unfreeze);
+    }
+}
+
+void LoggerDialog::toggleButton(Recorder::loggerModes m, toggleModes t)
+{
+    QToolButton *btn = (m==Recorder::RECORDING) ? recPlayPauseButton : repPlayPauseButton;
+    if (!btn) return;
+    if (t == togglePlay) {
+        btn->setIcon(QIcon(":/icons/images/play.png"));
+        btn->setToolTip(m==Recorder::RECORDING ? tr("Resume Recording") : tr("Resume"));
+    } else {
+        btn->setIcon(QIcon(":/icons/images/pause.png"));
+        btn->setToolTip(m==Recorder::RECORDING ? tr("Pause Recording") : tr("Pause"));
+    }
+}
+// ═══════════════════════════════════════════════════════
+//  Alerts
+// ═══════════════════════════════════════════════════════
+void LoggerDialog::alertViaStr(QString msg)
+{
+    // show inline in status instead of popup
+    loggerStatusLabel->setText(msg);
+    loggerStatusLabel->setStyleSheet("color:#e74c3c; font-size:12px;");
+    QTimer::singleShot(3000, this, [this]{
+        loggerStatusLabel->setStyleSheet("color:#90a4ae; font-size:12px;");
+    });
+}
+
+void LoggerDialog::alertViaEnum(Logger_Error err)
+{ alertViaStr(errEnumToString[err]); }
+
+// ═══════════════════════════════════════════════════════
+//  inspectRecorder / setRecorder
+// ═══════════════════════════════════════════════════════
+void LoggerDialog::setRecorder()
+{
+    if (recorder == nullptr) emit getRecorder();
+}
+
+void LoggerDialog::inspectRecorder()
+{
+    if (!recorder) { emit getRecorder(); return; }
+
+    qDebug() << "Inside inspect:" << recorder->modeOfLogger;
+    if (recorder->modeOfLogger == Recorder::RECORDING) {
+        loggerMode    = recorder->modeOfLogger;
+        loggerModePtr = &recorder->modeOfLogger;
+        // recordingModePtr = &recorder->m_recording->mode;
+        recordingModePtr = nullptr;
+    } else if (recorder->modeOfLogger == Recorder::REPLAY) {
+        loggerMode    = recorder->modeOfLogger;
+        loggerModePtr = &recorder->modeOfLogger;
+        replayModePtr = &recorder->m_replay->mode;
+    } else return;
+    if (!recorder->durationPtr) return;
+    durationPtr    = recorder->durationPtr;
+    durationDblPtr = &recorder->durationPtr;
+
+    if (!recorder->leftTimer || !recorder->rightTimer) return;
+    leftTimer       = recorder->leftTimer;
+    rightTimer      = recorder->rightTimer;
+    leftTimerDblPtr  = &recorder->leftTimer;
+    rightTimerDblPtr = &recorder->rightTimer;
+
+    if (!recorder->bookmarks) return;
+    bookmarks      = recorder->bookmarks;
+    bookmarkDblPtr = &recorder->bookmarks;
+}
+std::string LoggerDialog::qintToTime(qint64 ms)
+{
+    int s=ms/1000, h=s/3600, m=(s%3600)/60;
+    return QString("%1:%2:%3")
+        .arg(h,2,10,QLatin1Char('0'))
+        .arg(m,2,10,QLatin1Char('0'))
+        .arg(s%60,2,10,QLatin1Char('0')).toStdString();
+}
+void LoggerDialog::clearLoadedBookmarks()
+{
+    m_loadedBookmarkTimestamps.clear();
+}
+void LoggerDialog::buildFilterMenu()
+{
+    m_filterMenu = new QMenu(this);
+    m_filterMenu->setStyleSheet(
+        "QMenu {"
+        "  background:#0f1e2b;"
+        "  border:1px solid #2c4a5e;"
+        "  padding:4px 2px;"
+        "}"
+        "QMenu::separator {"
+        "  height:1px;"
+        "  background:#2c4a5e;"
+        "  margin:3px 8px;"
+        "}");
+
+    // ── Helper: section header (non-interactive label) ────────────────────
+    auto addHeader = [&](const QString& text) {
+        QLabel* lbl = new QLabel(text, this);
+        lbl->setStyleSheet(
+            "color:#3498db; font-size:10px; font-weight:bold;"
+            "padding:4px 10px 2px 10px; letter-spacing:1px;");
+        QWidgetAction* wa = new QWidgetAction(m_filterMenu);
+        wa->setDefaultWidget(lbl);
+        m_filterMenu->addAction(wa);
+    };
+
+    // ── Helper: checkbox row ─────────────────────────────────────────────
+    auto addCheck = [&](const QString& key, const QString& label, bool indent = false) {
+        QCheckBox* cb = new QCheckBox(
+            (indent ? QString("    ") : QString()) + label, this);
+        cb->setChecked(true);
+        cb->setStyleSheet(
+            "QCheckBox {"
+            "  color:#ccd6e0;"
+            "  padding:3px 10px;"
+            "  font-size:12px;"
+            "  spacing:8px;"
+            "}"
+            "QCheckBox::indicator {"
+            "  width:13px; height:13px;"
+            "  border:1px solid #3a5a70;"
+            "  border-radius:2px;"
+            "  background:#162330;"
+            "}"
+            "QCheckBox::indicator:checked {"
+            "  image: url(:/icons/images/check.png);"
+            "  background: transparent;"
+            "  border-color: #3498db;"
+            "}"
+            "QCheckBox:hover { color:#ffffff; }");
+        m_recordFilters[key] = cb;
+
+        QWidgetAction* wa = new QWidgetAction(m_filterMenu);
+        wa->setDefaultWidget(cb);
+        m_filterMenu->addAction(wa);
+    };
+
+    // ── Entity types ──────────────────────────────────────────────────────
+    // addHeader(tr("ENTITY TYPES"));
+    addCheck("FixedPoints",  tr("Fixed Points"));
+    addCheck("SpecialZone",  tr("Special Zones"));
+    addCheck("Trajectories", tr("Trajectories"));
+    m_filterMenu->addSeparator();
+
+    // ── Sub-systems ───────────────────────────────────────────────────────
+    // addHeader(tr("SUB-SYSTEMS"));
+    addCheck("Radio", tr("Radio"));
+    addCheck("IFF",   tr("IFF"));
+    m_filterMenu->addSeparator();
+
+    // ── Sensors ───────────────────────────────────────────────────────────
+    addHeader(tr("SENSORS"));
+    addCheck("Sensors", tr("All Sensors"));
+    addCheck("Radar",   tr("Radar"),    true);
+    addCheck("AESA",    tr("AESA"),     true);
+    addCheck("CSM",     tr("CSM"),      true);
+    addCheck("ESM",     tr("ESM"),      true);
+    // addCheck("EO",      tr("EO / IR"),  true);
+    addCheck("Sonar",   tr("Sonar"),    true);
+    addCheck("AIS",     tr("AIS"),      true);
+    addCheck("ADSB",    tr("ADSB"),    true);
+
+    // ── "All Sensors" master toggle ───────────────────────────────────────
+    const QStringList sensorKeys = {
+        "Radar","AESA","CSM","ESM","Sonar","AIS","ADSB"
+    };
+    connect(m_recordFilters["Sensors"], &QCheckBox::toggled,
+            this, [this, sensorKeys](bool checked) {
+                for (const QString& k : sensorKeys) {
+                    if (m_recordFilters.contains(k))
+                        m_recordFilters[k]->setChecked(checked);
+                }
+            });
+    // ── When any sub-sensor is unchecked, uncheck master ─────────────────
+    for (const QString& k : sensorKeys) {
+        connect(m_recordFilters[k], &QCheckBox::toggled,
+                this, [this, sensorKeys](bool) {
+                    bool allOn = true;
+                    for (const QString& sk : sensorKeys) {
+                        if (m_recordFilters.contains(sk) &&
+                            !m_recordFilters[sk]->isChecked()) {
+                            allOn = false; break;
+                        }
+                    }
+                    QSignalBlocker blk(m_recordFilters["Sensors"]);
+                    m_recordFilters["Sensors"]->setChecked(allOn);
+                });
+    }
+}
+
+void LoggerDialog::applyFiltersToRecording()
+{
+    if (!recorder || !recorder->m_recording) return;
+    auto* rec = recorder->m_recording;
+    auto flag = [&](const QString& key) -> bool {
+        return m_recordFilters.contains(key)
+                   ? m_recordFilters[key]->isChecked()
+                   : true;
+    };
+    rec->filterTrajectories = flag("Trajectories");
+    rec->filterRadio        = flag("Radio");
+    rec->filterIFF          = flag("IFF");
+    rec->filterFixedPoints  = flag("FixedPoints");
+    rec->filterSpecialZone  = flag("SpecialZone");
+    rec->filterSensors      = flag("Sensors");
+    rec->filterRadar        = flag("Radar");
+    rec->filterAESA         = flag("AESA");
+    rec->filterCSM          = flag("CSM");
+    rec->filterESM          = flag("ESM");
+    // rec->filterEO           = flag("EO");
+    rec->filterSonar        = flag("Sonar");
+    rec->filterAIS          = flag("AIS");
+    rec->filterADSB         = flag("ADSB");
+}

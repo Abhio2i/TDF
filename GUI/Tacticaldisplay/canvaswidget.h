@@ -210,8 +210,29 @@ private:
     QString m_highlightedShapeId;   // shape to draw selection outline for
     // private members mein add karo
     MeshEntry* m_copiedShape = nullptr;  // clipboard for shape copy
+    bool m_renderEnabled = true;
 
+    bool isBoxSelecting = false;
+    QPoint boxStartPos;
+    QPoint boxCurrentPos;
 
+    // Multi Selection (Basic)
+    std::vector<QString> selectedShapeIds;   // Shapes, Bitmaps, Text ke liye
+
+    // Multi Drag
+    bool isMultiDrag = false;
+    QPointF multiDragStartGeo;
+
+    bool isMultiSelecting() const {
+        return !selectedEntityIds.empty() || !selectedShapeIds.empty();
+    }
+
+    // Function Declarations
+    void clearMultiSelection();
+    void performBoxSelection(const QPoint& p1, const QPoint& p2);
+    void moveSelectedItems(const QPointF& deltaGeo);
+    bool isClickOnAnySelectedItem(const QPoint& pos);
+    bool isBoxSelectionMode = false;
 
 
 public slots:
@@ -275,7 +296,8 @@ private:
     void handlePaint(QPaintEvent *event);
 
     void handleShapesMousePress(QMouseEvent *event);
-    void handleBitmapsMousePress(QMouseEvent *event);
+    // void handleBitmapsMousePress(QMouseEvent *event);
+    bool handleBitmapsMousePress(QMouseEvent *event);
     void handleTextMousePress(QMouseEvent *event);  // NEW: Text handling function
 
     void handleShapesMouseMove(QMouseEvent *event);

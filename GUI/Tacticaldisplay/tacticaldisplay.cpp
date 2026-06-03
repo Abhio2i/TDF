@@ -195,7 +195,9 @@ void TacticalDisplay::addMesh(QString ID, MeshData meshData)
     entity.position = new QVector3D(0, 0, 0);
     entity.rotation = new QQuaternion();
     entity.size = new QVector3D(0, 0, 0);
-    entity.mesh = meshData.Meshes[0];
+    //entity.mesh = meshData.Meshes[0];
+    // Fix: std::vector uses .empty()
+    entity.mesh = meshData.Meshes.empty() ? nullptr : meshData.Meshes[0];
     entity.collider = meshData.collider;
     entity.trajectory = meshData.trajectory;
     entity.entity = meshData.entity;
@@ -238,11 +240,11 @@ void TacticalDisplay::selectedMesh(QString ID)
 void TacticalDisplay::setMapLayers(const QStringList& layerNames)
 {
     if (mapWidget) {
-       // qDebug() << "Setting map layers:" << layerNames;
+        // qDebug() << "Setting map layers:" << layerNames;
         mapWidget->setLayers(layerNames);
         mapWidget->update();
     } else {
-       // qDebug() << "Error: mapWidget is null";
+        // qDebug() << "Error: mapWidget is null";
     }
 }
 
@@ -270,7 +272,7 @@ bool TacticalDisplay::eventFilter(QObject *obj, QEvent *event)
 void TacticalDisplay::onCoordinateSystemChanged(const QString& crsId) {
     if (mapWidget) {
         mapWidget->setCoordinateSystem(crsId);
-       // qDebug() << "TacticalDisplay: Forwarded CRS change to GISlib:" << crsId;
+        // qDebug() << "TacticalDisplay: Forwarded CRS change to GISlib:" << crsId;
     }
 }
 

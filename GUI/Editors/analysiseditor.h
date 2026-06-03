@@ -242,7 +242,6 @@ private:
     void refreshMetricLabels();
     void computeAnalysis();
     void markUnsavedChanges();
-
     static QList<double> toDoubleList(const QJsonArray& arr);
     static QList<double> scaleList(QList<double> src, double factor);
     QMap<QString, bool>        m_seriesVisible;

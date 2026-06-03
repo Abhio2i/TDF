@@ -126,7 +126,12 @@ public:
         float range = 0.0f;
         float frequency = 1.0f;
     };
-
+    static void resetModel() {
+        if (model) {
+            delete model;
+            model = nullptr;
+        }
+    }
     std::unordered_set<Platform*> detects;
     QVector<RadioTarget> targets;
 

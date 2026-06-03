@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 
     // --- INLINE DARK THEME CSS ---
     QString globalDarkStyle = R"(
-        /* Poori App ka background */
+
         QWidget {
             background-color: #0F2636;
             color: #E0E0E0;
@@ -97,6 +97,7 @@ int main(int argc, char *argv[])
             background-color: #0A1A26;
         }
     )";
+
     a.setStyleSheet(globalDarkStyle);
     qInstallMessageHandler(customMessageHandler);
     TDFManager::instance()->initializeTDFStructure();

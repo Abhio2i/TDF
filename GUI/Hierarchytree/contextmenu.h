@@ -127,7 +127,7 @@ signals:
     void addWeaponToEntityRequested(QVariantMap entityData);
     void addSensorToEntityRequested(QVariantMap entityData);
     void addTeamToEntityRequested(QVariantMap entityData, QString team);
-    void setCategoryToEntityRequested(QVariantMap data, QString category);
+    void setCategoryToEntityRequested(QVariantMap data, QString category, QString subCategory);
     void selectFormationWithEntityRequested(const QString& formationId);
 
 

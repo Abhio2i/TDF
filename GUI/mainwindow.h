@@ -65,7 +65,7 @@
 #include "GUI/Editors/analysiseditor.h"
 #include <QProgressBar>
 #include <GUI/statusbar.h>
-
+// #include "GUI/plugins/pluginmanagerdialog.h"
 // %%% Class Definition %%%
 class MainWindow : public QMainWindow
 {
@@ -93,7 +93,7 @@ public:
     void hideLoadingOverlay();
     NavigationPage *navigationPage = nullptr;
     StatusBar *m_statusBar = nullptr;
-      QString ensureTDFSubfolder(const QString& subfolderName);
+    QString ensureTDFSubfolder(const QString& subfolderName);
 protected:
     void closeEvent(QCloseEvent *event) override;
 private slots:
@@ -109,7 +109,6 @@ private:
     static MainWindow* s_instance;
     MenuBar *mainMenuBar = nullptr;
     // %%% TDF helpers %%%
-    // QString ensureTDFSubfolder(const QString& subfolderName);
     void loadFileWithTDFSupport(QMainWindow* editor,
                                 RecentProjectsManager::EditorType editorType,
                                 const QString& extension,
@@ -121,9 +120,8 @@ private:
     QLabel*       m_loadingLabel   = nullptr;
     QProgressBar* m_loadingBar     = nullptr;
     void onDatabaseSettingsChanged(bool enabled, const QString& path);
-    bool m_wasSimulationRunning = false;  // save se pehle state track karne ke liye
+    bool m_wasSimulationRunning = false;
     void pauseSimulationIfRunning();
-
 };
 
 #endif // MAINWINDOW_H

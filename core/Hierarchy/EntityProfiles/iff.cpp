@@ -94,15 +94,16 @@ void IFF::updateComponent(QString name, const QJsonObject& obj) {
     if (obj.contains("parent_id"))
         parentID = obj["parent_id"].toString().toStdString();
 
+
     // Update IFF-specific fields
     if (obj.contains("transponder")) {
         transponder = obj["transponder"].toBool();
-        qDebug() << "[IFF] Updated transponder to" << transponder
-                 << "for:" << QString::fromStdString(Name);
+        // qDebug() << "[IFF] Updated transponder to" << transponder
+        //          << "for:" << QString::fromStdString(Name);
     } else {
-        qDebug() << "[IFF] No 'transponder' key in JSON for:"
-                 << QString::fromStdString(Name)
-                 << "| Keys are:" << obj.keys();
+        // qDebug() << "[IFF] No 'transponder' key in JSON for:"
+        //          << QString::fromStdString(Name)
+        //          << "| Keys are:" << obj.keys();
     }
 
     if (obj.contains("emittingRange"))
@@ -154,6 +155,7 @@ void IFF::updateComponent(QString name, const QJsonObject& obj) {
  * @brief Serializes the IFF entity to JSON.
  * @return QJsonObject containing IFF parameters.
  */
+
 QJsonObject IFF::toJson() const {
     QJsonObject obj;
     obj["name"] = QString::fromStdString(Name);
@@ -231,6 +233,62 @@ void IFF::fromJson(const QJsonObject& obj) {
 /**
  * @brief Performs IFF scan to detect other IFF transponders within range.
  */
+// void IFF::scan(){
+//     if(!Active)return;
+//     if(!parentEntity) return;
+//     Transform* source = (root->Platforms)[parentEntity->ID]->transform;
+//     if(!source) return;
+
+//     for (auto& [key, entity] : root->Iffs)
+//     {
+//         if(!entity || !entity->parentEntity) continue;
+//         auto it = root->Platforms.find(entity->parentEntity->ID);
+//         if (it != root->Platforms.end()) {
+//             Platform* platform = it->second;
+//             if(platform->ID == parentEntity->ID || !platform || !platform->transform) continue;
+//             QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
+//             float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
+
+//             // horizontal angle (Y axis) : x vs z
+//             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
+//             if (entity->Active && metredis < emittingRange && entity->emittingFrequency == emittingFrequency)
+//             {
+//                 if (detects.count(platform) == 0)
+//                 {
+//                     detects.insert(platform);
+//                     IFFTarget target;
+//                     target.entity = platform;
+//                     target.angle = yAngle;
+//                     target.ally = entity->code == code;
+//                     target.radius = metredis;
+//                     targets.append(target);
+//                 }else{
+//                     for (int i = 0; i < targets.size(); ++i) {
+//                         if (targets.at(i).entity == platform) {
+//                             targets[i].angle = yAngle;
+//                             targets[i].ally = entity->code == code;
+//                             targets[i].radius = metredis;
+//                             break;
+//                         }
+//                     }
+//                 }
+//             }
+//             else
+//             {
+//                 if (detects.count(platform) > 0)
+//                 {
+//                     for (int i = 0; i < targets.size(); ++i) {
+//                         if (targets.at(i).entity == platform) {
+//                             targets.removeAt(i);
+//                             break;
+//                         }
+//                     }
+//                     detects.erase(platform);
+//                 }
+//             }
+//         }
+//     }
+// }
 void IFF::scan(){
     if(!Active)return;
     if(!parentEntity) return;
@@ -437,13 +495,11 @@ void IFF::interrogateTargets(Transform* source)
         Platform* platform = entity;
         if (!platform || platform == sourcePlatform || platform->iffList.empty()) continue;
         if (!platform->transform || !platform->transform->matrix) continue;
-
         bool anyTransponderOn = false;
         for (IFF* other : platform->iffList) {
             if (other && other->transponder) { anyTransponderOn = true; break; }
         }
         if (!anyTransponderOn) continue;
-
         QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
         float distance = localPos.length();
         float metredis = distanceBetween(
@@ -453,18 +509,14 @@ void IFF::interrogateTargets(Transform* source)
 
         if (distance > range_m)
             continue;
-
         bool responded = false;
-
         for (IFF* other : platform->iffList) {
             if (!other || !other->transponder) continue;
             if (!(other->operationalMode == OperationalMode::Active ||
                   other->operationalMode == OperationalMode::Passive ||
                   other->operationalMode == OperationalMode::Simulation))
                 continue;
-
             if (responded) continue;
-
             QJsonObject resp = other->respondToInterrogation(this, distance);
             if (resp.isEmpty()) continue;
             responded = true;
@@ -525,7 +577,6 @@ void IFF::interrogateTargets(Transform* source)
                         target.mode   != newMode   ||
                         target.code   != newCode;
 
-                    // Only emit UI update if identity changed
                     if (changed) {
                         target.status = newStatus;
                         target.mode   = newMode;
@@ -586,7 +637,6 @@ QJsonObject IFF::respondToInterrogation(IFF* interrogator, float distanceMeters)
             status = "Friend";
         }
     }
-
     lastInterrogationTime = nowIsoString();
 
     // Add message to local history
@@ -598,7 +648,6 @@ QJsonObject IFF::respondToInterrogation(IFF* interrogator, float distanceMeters)
                   ", Mode: " + modeStr.toStdString() +
                   ", Code: " + codeStr.toStdString();
     messages.push_back(msg);
-
     return result;
 }
 

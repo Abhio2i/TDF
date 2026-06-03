@@ -5,24 +5,24 @@
 class EO
 {
 public:
-    EO(const CustomSensor &sensor, const Surrounding &surrounding);
+    EO(const eoSensorPayload &sensor, const Surrounding &surrounding);
     ~EO();
     bool   isSensorSet = false;
-    double detectionThreshold;
-    double sensorGain;
+    float detectionThreshold;
+    float sensorGain;
 
-    double illumination   = 1.0; // day/night factor
-    double glintFactor    = 1.0;  // reflection boost
-    double maxRange;
-    double fov;
+    float illumination   = 1.0; // day/night factor
+    float glintFactor    = 1.0;  // reflection boost
+    float maxRange;
+    float fov;
 
     // NEW ENVIRONMENT FACTORS
     bool   isEnvironmentSet = false;
 
-    double k_atm      = 1.0;  // atmospheric attenuation
-    double k_rain     = 1.0;  // rain/fog attenuation
-    double k_fog      = 1.0;  // Fog
-    double k_humidity = 1.0;  // Humidity
+    float k_atm      = 1.0;  // atmospheric attenuation
+    float k_rain     = 1.0;  // rain/fog attenuation
+    float k_fog      = 1.0;  // Fog
+    float k_humidity = 1.0;  // Humidity
 
 
 
@@ -30,24 +30,24 @@ public:
     std::unordered_map<std::string,bool> entityDetectedList;
 public:
     void detectList(EO_PayLoad eo_payload);
-    double getMaxRange(double maxArea);
+    float getMaxRange(float maxArea);
     void detectBySNR();
     void setEnvironment(const Surrounding &surrounding);
-    void setSensor(const CustomSensor &sensor);
-    double computeSignal(double area,
-                         double distance,
-                         double angleDeg,
-                         double illumination,
-                         double glintFactor ) const;
+    void setSensor(const eoSensorPayload &sensor);
+    float computeSignal(float area,
+                         float distance,
+                         float angleDeg,
+                         float illumination,
+                         float glintFactor ) const;
 
-    bool isDetected(double area,
-                    double distance,
-                    double angleDeg,
-                    double illumination = 1.0,
-                    double glintFactor  = 1.0
+    bool isDetected(float area,
+                    float distance,
+                    float angleDeg,
+                    float illumination = 1.0,
+                    float glintFactor  = 1.0
                     ) const;
-    double getSetThreshold(double distance,double area);
-    double getThreshold()
+    float getSetThreshold(float distance,float area);
+    float getThreshold()
     {
         return detectionThreshold;
     }

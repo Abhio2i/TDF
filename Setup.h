@@ -60,6 +60,11 @@ private:
     void createFolderStructure();
     void copyResourceIfNeeded(const QString& resourcePath, const QString& destPath);
     bool fileExists(const QString& path);
+    void copyJsonIfOutdated(const QString& resourcePath, const QString& destPath);
+    void forceCopyResource(const QString& resourcePath, const QString& destPath);
+    QString readJsonVersion(const QString& path);
+    QVector<int> parseVersion(const QString& versionStr);
+    bool isVersionNewer(const QString& candidate, const QString& existing);
 };
 
 #endif // SETUP_H

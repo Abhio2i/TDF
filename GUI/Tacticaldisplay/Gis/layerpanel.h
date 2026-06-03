@@ -130,8 +130,10 @@ public:
     // script use by amjad
     void addLayerFromScript(const QString& name);
     QString generateFriendlyShapeName(const QString& shapeId, const QString& shapeType) const;
-     void selectRasterInPanel(const QString& shapeId);
+    void selectRasterInPanel(const QString& shapeId);
     void setSuppressCenter(bool suppress) { m_suppressCenter = suppress; }
+    QMap<QString, QTreeWidgetItem*> layerItems;
+    QMap<QString, RasterLayer>      rasterLayers;
 
 signals:
     // Emitted when active layer changes
@@ -164,12 +166,13 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
 public slots:
     void updateRasterLayerFromShape(const QString& shapeId);
+    void addLayer();
 
 private slots:
     // Show context menu on right-click
     void showContextMenu(const QPoint &pos);
     // Add new vector layer under selected layer
-    void addLayer();
+    // void addLayer();
     // Add new raster layer (file dialog → metadata read → add to panel)
     void addRasterLayer();
     // Remove selected layer
@@ -213,7 +216,7 @@ private:
     QString activeLayerName;
     QMap<QString, QStringList>      layerShapes;
     QMap<QString, QString>          shapeToLayer;
-    QMap<QString, QTreeWidgetItem*> layerItems;
+    // QMap<QString, QTreeWidgetItem*> layerItems;
     QMap<QString, bool>             layerVisibility;
     QMap<QString, QWidget*>         visibilityToggleWidgets;
     QMap<QString, QString>          shapeDisplayNames;  // shapeId → custom display name
@@ -222,7 +225,7 @@ private:
     // Ordered list of raster layer names (insertion order = draw order, bottom-to-top)
     QList<QString>                  rasterLayerOrder;
     // Map: raster layer name → RasterLayer data
-    QMap<QString, RasterLayer>      rasterLayers;
+    // QMap<QString, RasterLayer>      rasterLayers;
     // Map: raster layer name → tree widget item
     QMap<QString, QTreeWidgetItem*> rasterLayerItems;
     // Map: raster layer name → visibility toggle widget

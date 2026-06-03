@@ -7,16 +7,16 @@ public:
     // Computes the relative angle between sensor heading and target bearing.
     // All angles in degrees.
     // Returns angle in range [-180, +180]
-    static double computeRelativeAngle(double sensorLatDeg,
-                                       double sensorLonDeg,
-                                       double sensorHeadingDeg,
-                                       double targetLatDeg,
-                                       double targetLonDeg);
+    static float computeRelativeAngle(float sensorLatDeg,
+                                       float sensorLonDeg,
+                                       float sensorHeadingDeg,
+                                       float targetLatDeg,
+                                       float targetLonDeg);
 
 private:
-    static double degToRad(double deg);
-    static double radToDeg(double rad);
-    static double normalizeAngle(double angleDeg);
+    static float degToRad(float deg);
+    static float radToDeg(float rad);
+    static float normalizeAngle(float angleDeg);
 };
 
 #endif // GEORELATIVEANGLE_H

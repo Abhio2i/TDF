@@ -90,7 +90,9 @@ MenuBar::MenuBar(QWidget *parent)
 
     applicationAction = addAction("Settings");
     applicationAction->setMenuRole(QAction::NoRole);
-
+    pluginsAction = addAction("Plugins");
+    pluginsAction->setMenuRole(QAction::NoRole);
+    connect(pluginsAction, &QAction::triggered, this, &MenuBar::pluginsTriggered);
     feedbackMenu = addMenu("About");
     feedbackMenu->setStyleSheet(MenuBarStyles::Menu);
     feedbackAction = new QAction("Open About Page", this);

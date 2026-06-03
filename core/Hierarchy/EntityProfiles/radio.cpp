@@ -84,143 +84,143 @@ Radio::Radio(Hierarchy* h) : Entity(h) {
     model_cfg.sea_attenuation_db_per_km = 0.003;
 
     if(model == nullptr){
-       model = radio::createPropagationModelRaw(model_cfg);
+        model = radio::createPropagationModelRaw(model_cfg);
     }
-        lib_radio = radio::createRadiolibRaw();
-        radio::RadioConfig cfg;
-        cfg.id = "";
-        cfg.parent_platform_name = "PLATFORM_1";
-        cfg.mode = radio::RadioMode::TRANSCEIVER;
-        cfg.use_local_propagation_config = true;
-        cfg.propagation.enable_fspl = true;
-        cfg.propagation.enable_log_distance = false;
-        cfg.propagation.enable_two_ray = false;
-        cfg.propagation.enable_shadowing = false;
-        cfg.propagation.shadowing_sigma_db = 1.5;
-        cfg.propagation.enable_fading = false;
-        cfg.propagation.fading_sigma_db = 1.0;
-        cfg.propagation.enable_polarization_loss = true;
-        cfg.propagation.polarization_mismatch_loss_db = 3.0;
-        cfg.propagation.enable_los_horizon = true;
-        cfg.propagation.enable_comms_mode_losses = true;
-        cfg.propagation.enable_noise_floor = true;
-        cfg.propagation.enable_snr_threshold = true;
-        cfg.propagation.enable_sensitivity = true;
-        cfg.propagation.enable_squelch = true;
-        cfg.propagation.enable_interference = false;
-        cfg.propagation.enable_range_limit = false;
-        cfg.propagation.enable_network_gate_in_scan = true;
-        cfg.propagation.enable_scan_beam = true;
-        cfg.propagation.enable_scan_timing = false;
-        cfg.propagation.enable_doppler = true;
-        // Environmental toggles + values
-        cfg.propagation.enable_environmental_attenuation = true;
-        cfg.propagation.temperature_c = 20.0;
-        cfg.propagation.pressure_hpa = 1005.0;
-        cfg.propagation.humidity_percent = 60.0;
-        cfg.propagation.gas_attenuation_db_per_km_at_1ghz = 0.005;
-        cfg.propagation.gas_attenuation_freq_exponent = 1.0;
-        cfg.propagation.humidity_attenuation_factor_per_percent = 0.002;
-        cfg.propagation.rain_rate_mm_per_hr = 2.5;
-        cfg.propagation.rain_attenuation_db_per_km_per_mmhr = 0.004;
-        cfg.propagation.use_itu_rain_model = true;
-        cfg.propagation.rain_coverage = 0.4;
-        cfg.propagation.rain_rate_sigma_frac = 0.15;
-        cfg.propagation.wind_speed_mps = 25.0;
-        cfg.propagation.wind_attenuation_db_per_km_per_mps = 0.0005;
-        cfg.propagation.enable_sea_attenuation = true;
-        cfg.propagation.sea_attenuation_db_per_km = 0.003;
-        cfg.comms_mode = radio::CommsMode::LINE_OF_SIGHT;
-        cfg.min_freq_hz = 118.5e6;
-        cfg.max_freq_hz = 138.5e6;
-        cfg.frequency_hz = 128.5e6;
-        cfg.bandwidth_hz = 25e3;
-        cfg.tx_power_dbm = 40.0;//m
-        cfg.antenna.gain_dbi = 2.0;//m
-        cfg.receiver.sensitivity_dbm = -101.0;//m
-        cfg.receiver.noise_figure_db = 5.0;//m
-        cfg.receiver.squelch_threshold_db = 3.0;//m
-        cfg.network_id = 1;
+    lib_radio = radio::createRadiolibRaw();
+    radio::RadioConfig cfg;
+    cfg.id = "";
+    cfg.parent_platform_name = "PLATFORM_1";
+    cfg.mode = radio::RadioMode::TRANSCEIVER;
+    cfg.use_local_propagation_config = true;
+    cfg.propagation.enable_fspl = true;
+    cfg.propagation.enable_log_distance = false;
+    cfg.propagation.enable_two_ray = false;
+    cfg.propagation.enable_shadowing = false;
+    cfg.propagation.shadowing_sigma_db = 1.5;
+    cfg.propagation.enable_fading = false;
+    cfg.propagation.fading_sigma_db = 1.0;
+    cfg.propagation.enable_polarization_loss = true;
+    cfg.propagation.polarization_mismatch_loss_db = 3.0;
+    cfg.propagation.enable_los_horizon = true;
+    cfg.propagation.enable_comms_mode_losses = true;
+    cfg.propagation.enable_noise_floor = true;
+    cfg.propagation.enable_snr_threshold = true;
+    cfg.propagation.enable_sensitivity = true;
+    cfg.propagation.enable_squelch = true;
+    cfg.propagation.enable_interference = false;
+    cfg.propagation.enable_range_limit = false;
+    cfg.propagation.enable_network_gate_in_scan = true;
+    cfg.propagation.enable_scan_beam = true;
+    cfg.propagation.enable_scan_timing = false;
+    cfg.propagation.enable_doppler = true;
+    // Environmental toggles + values
+    cfg.propagation.enable_environmental_attenuation = true;
+    cfg.propagation.temperature_c = 20.0;
+    cfg.propagation.pressure_hpa = 1005.0;
+    cfg.propagation.humidity_percent = 60.0;
+    cfg.propagation.gas_attenuation_db_per_km_at_1ghz = 0.005;
+    cfg.propagation.gas_attenuation_freq_exponent = 1.0;
+    cfg.propagation.humidity_attenuation_factor_per_percent = 0.002;
+    cfg.propagation.rain_rate_mm_per_hr = 2.5;
+    cfg.propagation.rain_attenuation_db_per_km_per_mmhr = 0.004;
+    cfg.propagation.use_itu_rain_model = true;
+    cfg.propagation.rain_coverage = 0.4;
+    cfg.propagation.rain_rate_sigma_frac = 0.15;
+    cfg.propagation.wind_speed_mps = 25.0;
+    cfg.propagation.wind_attenuation_db_per_km_per_mps = 0.0005;
+    cfg.propagation.enable_sea_attenuation = true;
+    cfg.propagation.sea_attenuation_db_per_km = 0.003;
+    cfg.comms_mode = radio::CommsMode::LINE_OF_SIGHT;
+    cfg.min_freq_hz = 118.5e6;
+    cfg.max_freq_hz = 138.5e6;
+    cfg.frequency_hz = 128.5e6;
+    cfg.bandwidth_hz = 25e3;
+    cfg.tx_power_dbm = 40.0;//m
+    cfg.antenna.gain_dbi = 2.0;//m
+    cfg.receiver.sensitivity_dbm = -101.0;//m
+    cfg.receiver.noise_figure_db = 5.0;//m
+    cfg.receiver.squelch_threshold_db = 3.0;//m
+    cfg.network_id = 1;
 
-        radio::Position pos;
-        pos.x = 0.0;
-        pos.y = 0.0;
-        pos.altitude = 1000.0;
+    radio::Position pos;
+    pos.x = 0.0;
+    pos.y = 0.0;
+    pos.altitude = 1000.0;
 
-        radio::attachRadioToModel(lib_radio, model, cfg, pos);
-        lib_radio->setPowerOn(true);
+    radio::attachRadioToModel(lib_radio, model, cfg, pos);
+    lib_radio->setPowerOn(true);
 
-        // std::cout << "Radiolib entity created: "
-        //           << lib_radio->getConfiguration().id << "\n";
+    // std::cout << "Radiolib entity created: "
+    //           << lib_radio->getConfiguration().id << "\n";
 
-        // radio::destroyRadiolib(lib_radio);
-        // radio::destroyPropagationModel(model);
+    // radio::destroyRadiolib(lib_radio);
+    // radio::destroyPropagationModel(model);
 
-        // Identity
-        cfg.is_naval = false;//m
-        cfg.rx_bandwidth_hz = 25e3;//m
-        cfg.channel = 1;//m
-      //  cfg.max_range_m = 100000;//
+    // Identity
+    cfg.is_naval = false;//m
+    cfg.rx_bandwidth_hz = 25e3;//m
+    cfg.channel = 1;//m
+    //  cfg.max_range_m = 100000;//
 
-        // TX / waveform
-        //cfg.tx_power_dbm = tx_power_dbm;
-        cfg.power_degradation_db = 1.0;//
-        cfg.tx_duty_cycle = 0.90;//m
-        cfg.modulation_scheme = radio::ModulationScheme::BPSK;
-        cfg.required_snr_override = false;//m
-        cfg.spread_spectrum = radio::SpreadSpectrum::NONE;
-        cfg.processing_gain_db = 0.0;//m
+    // TX / waveform
+    //cfg.tx_power_dbm = tx_power_dbm;
+    cfg.power_degradation_db = 1.0;//
+    cfg.tx_duty_cycle = 0.90;//m
+    cfg.modulation_scheme = radio::ModulationScheme::BPSK;
+    cfg.required_snr_override = false;//m
+    cfg.spread_spectrum = radio::SpreadSpectrum::NONE;
+    cfg.processing_gain_db = 0.0;//m
 
-        // Encryption
-        cfg.encryption_type = radio::EncryptionType::AES;
-        cfg.encryption_key = bytesFromText("0123456789ABCDEF");
-        cfg.encryption_iv = bytesFromText("ABCDEF0123456789");
+    // Encryption
+    cfg.encryption_type = radio::EncryptionType::AES;
+    cfg.encryption_key = bytesFromText("0123456789ABCDEF");
+    cfg.encryption_iv = bytesFromText("ABCDEF0123456789");
 
-        // Antenna / motion
-        cfg.antenna.beamwidth_deg = 360.0;//m
-        cfg.antenna.polarization = radio::Polarization::VERTICAL;
-        cfg.antenna.scan_type = radio::ScanType::FIXED;
-        cfg.heading_deg = 360;//m
-        cfg.velocity_mps = 1;//m
-        lib_radio->setReceiveCallbackWithMeta(
-            [this](const std::vector<std::byte>& data, const radio::ReceiveReport& report) {
-                msgTimeStamp = Simulation::simulationTime;
-                msg = textFromBytes(data);
+    // Antenna / motion
+    cfg.antenna.beamwidth_deg = 360.0;//m
+    cfg.antenna.polarization = radio::Polarization::VERTICAL;
+    cfg.antenna.scan_type = radio::ScanType::FIXED;
+    cfg.heading_deg = 360;//m
+    cfg.velocity_mps = 1;//m
+    lib_radio->setReceiveCallbackWithMeta(
+        [this](const std::vector<std::byte>& data, const radio::ReceiveReport& report) {
+            msgTimeStamp = Simulation::simulationTime;
+            msg = textFromBytes(data);
 
-                qDebug().noquote()
-                    << QString(
-                           "\n[RX_1 callback]\n"
-                           " sender: %1\n"
-                           " msg: %2\n"
-                           " rx_power_dbm: %3\n"
-                           " noise_floor_dbm: %4\n"
-                           " snr_db: %5\n"
-                           " path_loss_db: %6\n"
-                           " rain_attenuation_db: %7\n"
-                           " wind_attenuation_db_per_km: %8\n"
-                           " frequency_match: %9\n"
-                           " los_horizon_distance_m: %10\n"
-                           " polarization_loss_db: %11\n"
-                           " range_ok: %12\n"
-                           " required_snr_threshold_db: %13\n"
-                           " sensitivity_ok: %14\n"
-                           " squelch_ok: %15")
-                           .arg(QString::fromStdString(report.sender_id))
-                           .arg(QString::fromStdString(textFromBytes(data)))
-                           .arg(report.rx_power_dbm)
-                           .arg(report.noise_floor_dbm)
-                           .arg(report.snr_db)
-                           .arg(report.path_loss_db)
-                           .arg(report.rain_attenuation_db)
-                           .arg(report.wind_attenuation_db_per_km)
-                           .arg(report.frequency_match ? "true" : "false")
-                           .arg(report.los_horizon_distance_m)
-                           .arg(report.polarization_loss_db)
-                           .arg(report.range_ok ? "true" : "false")
-                           .arg(report.required_snr_threshold_db)
-                           .arg(report.sensitivity_ok ? "true" : "false")
-                           .arg(report.squelch_ok ? "true" : "false");
-            });
+            qDebug().noquote()
+                << QString(
+                       "\n[RX_1 callback]\n"
+                       " sender: %1\n"
+                       " msg: %2\n"
+                       " rx_power_dbm: %3\n"
+                       " noise_floor_dbm: %4\n"
+                       " snr_db: %5\n"
+                       " path_loss_db: %6\n"
+                       " rain_attenuation_db: %7\n"
+                       " wind_attenuation_db_per_km: %8\n"
+                       " frequency_match: %9\n"
+                       " los_horizon_distance_m: %10\n"
+                       " polarization_loss_db: %11\n"
+                       " range_ok: %12\n"
+                       " required_snr_threshold_db: %13\n"
+                       " sensitivity_ok: %14\n"
+                       " squelch_ok: %15")
+                       .arg(QString::fromStdString(report.sender_id))
+                       .arg(QString::fromStdString(textFromBytes(data)))
+                       .arg(report.rx_power_dbm)
+                       .arg(report.noise_floor_dbm)
+                       .arg(report.snr_db)
+                       .arg(report.path_loss_db)
+                       .arg(report.rain_attenuation_db)
+                       .arg(report.wind_attenuation_db_per_km)
+                       .arg(report.frequency_match ? "true" : "false")
+                       .arg(report.los_horizon_distance_m)
+                       .arg(report.polarization_loss_db)
+                       .arg(report.range_ok ? "true" : "false")
+                       .arg(report.required_snr_threshold_db)
+                       .arg(report.sensitivity_ok ? "true" : "false")
+                       .arg(report.squelch_ok ? "true" : "false");
+        });
 
 }
 
@@ -332,7 +332,8 @@ QJsonObject Radio::toJson() const {
     Transmitter["tx_power_dbm"] = toParm(cfg.tx_power_dbm,"dbm");
     // Transmitter["tx_duty_cycle"] = toParm(cfg.tx_duty_cycle,"");
     Transmitter["is_naval"] = cfg.is_naval;
-    obj["Transmitter"] = Transmitter;
+    if(cfg.mode == radio::RadioMode::TRANSMITTER_ONLY || cfg.mode == radio::RadioMode::TRANSCEIVER)
+        obj["Transmitter"] = Transmitter;
 
     QJsonObject Receiver;
     Receiver["type"] = "Section";
@@ -341,7 +342,8 @@ QJsonObject Radio::toJson() const {
     Receiver["noise_figure_db"] = toParm(cfg.receiver.noise_figure_db,"");
     Receiver["squelch_threshold_db"] = toParm(cfg.receiver.squelch_threshold_db,"");
     Receiver["channel"] = toParm(cfg.channel,"");
-    obj["Receiver"] = Receiver;
+    if(cfg.mode == radio::RadioMode::RECEIVER_ONLY || cfg.mode == radio::RadioMode::TRANSCEIVER)
+        obj["Receiver"] = Receiver;
 
     // QJsonObject Modulation;
     // Modulation["type"] = "Section";
@@ -369,23 +371,19 @@ QJsonObject Radio::toJson() const {
     Env["pressure_hpa"] = toParm(cfg.propagation.pressure_hpa,"hpa");
     Env["humidity_percent"] = toParm(cfg.propagation.humidity_percent,"%");
     //Env["gas_attenuation_db_per_km_at_1ghz"] = toParm(cfg.propagation.gas_attenuation_db_per_km_at_1ghz,"db/km");
-   // Env["gas_attenuation_freq_exponent"] = toParm(cfg.propagation.gas_attenuation_freq_exponent,"");
-   // Env["humidity_attenuation_factor_per_percent"] = toParm(cfg.propagation.humidity_attenuation_factor_per_percent,"%");
+    // Env["gas_attenuation_freq_exponent"] = toParm(cfg.propagation.gas_attenuation_freq_exponent,"");
+    // Env["humidity_attenuation_factor_per_percent"] = toParm(cfg.propagation.humidity_attenuation_factor_per_percent,"%");
     Env["rain_rate_mm_per_hr"] = toParm(cfg.propagation.rain_rate_mm_per_hr,"mm/h");
-  //  Env["rain_attenuation_db_per_km_per_mmhr"] = toParm(cfg.propagation.rain_attenuation_db_per_km_per_mmhr,"db/km/h");
+    //  Env["rain_attenuation_db_per_km_per_mmhr"] = toParm(cfg.propagation.rain_attenuation_db_per_km_per_mmhr,"db/km/h");
     Env["rain_coverage"] = toParm(cfg.propagation.rain_coverage,"%");
-   // Env["rain_rate_sigma_frac"] = toParm(cfg.propagation.rain_rate_sigma_frac,"mm/h");
+    // Env["rain_rate_sigma_frac"] = toParm(cfg.propagation.rain_rate_sigma_frac,"mm/h");
     Env["wind_speed_mps"] = toParm(cfg.propagation.wind_speed_mps,"m/s");
-   // Env["wind_attenuation_db_per_km_per_mps"] = toParm(cfg.propagation.wind_attenuation_db_per_km_per_mps,"db/km");
-   // Env["sea_attenuation_db_per_km"] = toParm(cfg.propagation.sea_attenuation_db_per_km,"db/km");
-    obj["Environmental"] = Env;
-
-
+    // Env["wind_attenuation_db_per_km_per_mps"] = toParm(cfg.propagation.wind_attenuation_db_per_km_per_mps,"db/km");
+    // Env["sea_attenuation_db_per_km"] = toParm(cfg.propagation.sea_attenuation_db_per_km,"db/km");
+    //obj["Environmental"] = Env;
     QJsonObject AddParameters = AdditionalParameters;
     AddParameters["type"] = "Section";
     obj["AdditionalParameters"] = AddParameters;
-
-
     return obj;
 }
 
@@ -538,39 +536,136 @@ void Radio::fromJson(const QJsonObject& obj) {
             cfg.propagation.pressure_hpa = valueFromParm(Env["pressure_hpa"].toObject());
         if (Env.contains("humidity_percent"))
             cfg.propagation.humidity_percent = valueFromParm(Env["humidity_percent"].toObject());
-       // if (Env.contains("gas_attenuation_db_per_km_at_1ghz"))
-           // cfg.propagation.gas_attenuation_db_per_km_at_1ghz = valueFromParm(Env["gas_attenuation_db_per_km_at_1ghz"].toObject());
+        // if (Env.contains("gas_attenuation_db_per_km_at_1ghz"))
+        // cfg.propagation.gas_attenuation_db_per_km_at_1ghz = valueFromParm(Env["gas_attenuation_db_per_km_at_1ghz"].toObject());
         //if (Env.contains("gas_attenuation_freq_exponent"))
         //    cfg.propagation.gas_attenuation_freq_exponent = valueFromParm(Env["gas_attenuation_freq_exponent"].toObject());
         //if (Env.contains("humidity_attenuation_factor_per_percent"))
-          //  cfg.propagation.humidity_attenuation_factor_per_percent = valueFromParm(Env["humidity_attenuation_factor_per_percent"].toObject());
+        //  cfg.propagation.humidity_attenuation_factor_per_percent = valueFromParm(Env["humidity_attenuation_factor_per_percent"].toObject());
         if (Env.contains("rain_rate_mm_per_hr"))
             cfg.propagation.rain_rate_mm_per_hr = valueFromParm(Env["rain_rate_mm_per_hr"].toObject());
         //if (Env.contains("rain_attenuation_db_per_km_per_mmhr"))
-          //  cfg.propagation.rain_attenuation_db_per_km_per_mmhr = valueFromParm(Env["rain_attenuation_db_per_km_per_mmhr"].toObject());
+        //  cfg.propagation.rain_attenuation_db_per_km_per_mmhr = valueFromParm(Env["rain_attenuation_db_per_km_per_mmhr"].toObject());
         if (Env.contains("rain_coverage"))
             cfg.propagation.rain_coverage = valueFromParm(Env["rain_coverage"].toObject());
         //if (Env.contains("rain_rate_sigma_frac"))
-          //  cfg.propagation.rain_rate_sigma_frac = valueFromParm(Env["rain_rate_sigma_frac"].toObject());
+        //  cfg.propagation.rain_rate_sigma_frac = valueFromParm(Env["rain_rate_sigma_frac"].toObject());
         if (Env.contains("wind_speed_mps"))
             cfg.propagation.wind_speed_mps = valueFromParm(Env["wind_speed_mps"].toObject());
         //if (Env.contains("wind_attenuation_db_per_km_per_mps"))
-          //  cfg.propagation.wind_attenuation_db_per_km_per_mps = valueFromParm(Env["wind_attenuation_db_per_km_per_mps"].toObject());
+        //  cfg.propagation.wind_attenuation_db_per_km_per_mps = valueFromParm(Env["wind_attenuation_db_per_km_per_mps"].toObject());
         //if (Env.contains("sea_attenuation_db_per_km"))
-          //  cfg.propagation.sea_attenuation_db_per_km = valueFromParm(Env["sea_attenuation_db_per_km"].toObject());
-
-
+        //  cfg.propagation.sea_attenuation_db_per_km = valueFromParm(Env["sea_attenuation_db_per_km"].toObject());
     }
-
     if(obj.contains("AdditionalParameters")){
         AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
-
     lib_radio->configure(cfg);
 }
 
+// void Radio::scan()
+// {
+//     if ((Simulation::simulationTime - msgTimeStamp) >= 2.50f) {
+//         msg = "";
+//     }
+//     if (!Active) return;
+//     if (!parentEntity) return;
+//     if (!root) return;
 
+//     auto it = root->Platforms.find(parentEntity->ID);
+//     if (it == root->Platforms.end() || !it->second) return;
+//     Transform* source = it->second->transform;
+//     if (!source) return;
 
+//     // Stale cleanup
+//     for(int i = targets.size() - 1; i >= 0; --i){
+//         if(!targets[i].entity || !targets[i].entity->Active){
+//             targets.removeAt(i);
+//         }
+//     }
+
+//     radio::RadioConfig cfg = lib_radio->getConfiguration();
+//     cfg.id          = parentEntity->ID;
+//     lib_radio->setPowerOn(parentEntity->Active);
+//     cfg.heading_deg = source->getHeading();
+//     lib_radio->configure(cfg);
+
+//     // ✅ FIX: geo coordinates use karo
+//     radio::Position pos;
+//     pos.x        = source->getLongitude() * 1000.f;
+//     pos.y        = source->getLatitude()  * 1000.f;
+//     pos.altitude = source->getAltitude()  * 1000.f;
+//     model->updateRadioPosition(lib_radio, pos);
+
+//     for (auto& [pid, platform] : root->Platforms) {
+//         if (!platform || !platform->transform)        continue;
+//         if (!platform->radios)                        continue;
+//         if (!platform->radios->radios)                continue;
+//         if (platform->radios->radios->empty())        continue;
+//         if (pid == parentEntity->ID)                  continue;
+
+//         // ✅ FIX: geo coordinates use karo
+//         radio::Position otherPos;
+//         otherPos.x        = platform->transform->getLongitude() * 1000.f;
+//         otherPos.y        = platform->transform->getLatitude()  * 1000.f;
+//         otherPos.altitude = platform->transform->getAltitude()  * 1000.f;
+
+//         for (auto& [rid, otherRadio] : *platform->radios->radios) {
+//             if (!otherRadio || !otherRadio->lib_radio) continue;
+//             radio::RadioConfig otherCfg = otherRadio->lib_radio->getConfiguration();
+//             otherCfg.id = pid;
+//             otherRadio->lib_radio->configure(otherCfg);
+//             model->updateRadioPosition(otherRadio->lib_radio, otherPos);
+//         }
+//     }
+
+//     std::vector<radio::ScanHit> hits = lib_radio->radiolibscan();
+//     targets.clear();
+
+//     // ✅ FIX: geo se self position
+//     float selfX   = source->getLongitude() * 1000.f;
+//     float selfY   = source->getLatitude()  * 1000.f;
+//     float selfAlt = source->getAltitude()  * 1000.f;
+
+//     for (std::size_t i = 0; i < hits.size(); ++i) {
+//         const radio::ScanHit& hit = hits[i];
+
+//         if (hit.id.empty()) continue;
+//         if (hit.id == parentEntity->ID) continue;
+
+//         auto it2 = root->Platforms.find(hit.id);
+//         if (it2 == root->Platforms.end())          continue;
+//         if (!it2->second)                           continue;
+//         if (!it2->second->radios)                   continue;
+//         if (!it2->second->radios->radios)           continue;
+//         if (it2->second->radios->radios->empty())   continue;
+//         if (!it2->second->transform)                continue;
+//         if (!it2->second->Active)                   continue;
+
+//         if (hit.distance_m <= 0.0f) continue;
+
+//         // ✅ FIX: geo se target position
+//         float tx = it2->second->transform->getLongitude() * 1000.f;
+//         float ty = it2->second->transform->getLatitude()  * 1000.f;
+//         float tz = it2->second->transform->getAltitude()  * 1000.f;
+//         if (tx == 0.0f && ty == 0.0f && tz == 0.0f) continue;
+
+//         float dx = tx - selfX;
+//         float dy = ty - selfY;
+//         float dz = tz - selfAlt;
+//         float actualDist_m = std::sqrt(dx*dx + dy*dy + dz*dz);
+
+//         float rangeLimitMeters = Range * 1000.f;
+//         if (rangeLimitMeters > 0.0f && actualDist_m > rangeLimitMeters) continue;
+//         if (Range > 0.0f && (hit.distance_m / 1000.f) > Range) continue;
+
+//         RadioTarget target;
+//         target.entity = it2->second;
+//         target.angle  = -((hit.azimuth_deg + cfg.heading_deg) + 180.f);
+//         target.radius = hit.distance_m / 1000.f;
+//         targets.append(target);
+//     }
+// }
 void Radio::scan(){
     if((Simulation::simulationTime-msgTimeStamp) >= 2.50f){
         msg = "";
@@ -596,10 +691,7 @@ void Radio::scan(){
     pos.y = source->translation().x()*1000.f;
     pos.altitude = source->translation().y()*1000.f;
     model->updateRadioPosition(lib_radio, pos);
-
     std::vector<radio::ScanHit> hits = lib_radio->radiolibscan();
-
-    // std::cout << "Scan hit count: " << hits.size() << "\n";
     targets.clear();
     for (std::size_t i = 0; i < hits.size(); ++i) {
         const radio::ScanHit& hit = hits[i];
@@ -618,21 +710,7 @@ void Radio::scan(){
         target.radius = hit.distance_m/1000.f;
         targets.append(target);
 
-        // std::cout << "Hit[" << i << "] "
-        //           << "id=" << hit.id
-        //           << " platform=" << hit.target_platform_name
-        //           << " distance_m=" << hit.distance_m
-        //           << " azimuth_deg=" << hit.azimuth_deg
-        //           << " rx_power_dbm=" << hit.rx_power_dbm
-        //           << " noise_floor_dbm=" << hit.noise_floor_dbm
-        //           << " snr_db=" << hit.snr_db
-        //           << " path_loss_db=" << hit.path_loss_db
-        //           << "\n";
     }
-
-
-
-
 }
 int Radio::getRadioTargetCount() const
 {
@@ -650,15 +728,12 @@ bool Radio::getRadioTarget(
 {
     if (index < 0 || index >= targets.size())
         return false;
-
     const RadioTarget& t = targets[index];
-
     outName      = t.name;
     outRadius    = t.radius;
     outAngle     = t.angle;
     outRange     = t.range;
     outFrequency = t.frequency;
-
     return true;
 }
 

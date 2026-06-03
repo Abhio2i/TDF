@@ -244,7 +244,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                     float head       = heading;
                     float headOffset = 360 / waypointcount;
 
-                    if(platform->category == Entity::Category::Submarine){
+                    if(platform->category == Entity::SubMarineCategory::Submarine){
                         Altitude = 0;
                     }
                     if (waypointcount > 1) {
@@ -253,7 +253,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                         newWaypoint->speed     = speed;
                         platform->trajectory->addTrajectory(newWaypoint);
                     }
-                    if(platform->category == Entity::Category::Submarine){
+                    if(platform->category == Entity::SubMarineCategory::Submarine){
                         Altitude  -= AltitudeOffset;;
                     }
 
@@ -265,7 +265,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                         newWaypoint->speed     = speed;
                         platform->trajectory->addTrajectory(newWaypoint);
                         speed    += speedOffset;
-                        if(platform->category == Entity::Category::Submarine){
+                        if(platform->category == Entity::SubMarineCategory::Submarine){
                             Altitude -= AltitudeOffset;
                             Altitude = Altitude>0?0:Altitude;
                         }else{
@@ -800,39 +800,62 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                 }
             });
     // ── Single entity category ────────────────────────────────────────────
+    // Single entity handler (in connectSignals):
     connect(treeView->getContextMenu(), &ContextMenu::setCategoryToEntityRequested,
-            this, [=](QVariantMap entityData, QString category) {
+            this, [=](QVariantMap entityData, QString category, QString subCategory) {
                 QList<QVariantMap> entities;
                 entities.append(entityData);
-                emit treeView->setCategoryToEntitiesRequested(entities, category);
+                emit treeView->setCategoryToEntitiesRequested(entities, category, subCategory);
             });
 
     // ── Bulk: Set Category ────────────────────────────────────────────────
     connect(treeView, &HierarchyTree::setCategoryToEntitiesRequested, this,
-            [=](QList<QVariantMap> entities, QString category) {
+            [=](QList<QVariantMap> entities, QString category, QString subCategory) {
                 for (const QVariantMap& data : entities) {
                     QString entityID = data["ID"].toString();
-                    // if (!hierarchy->Entities) continue;
                     auto it = hierarchy->Entities.find(entityID.toStdString());
                     if (it == hierarchy->Entities.end()) continue;
 
                     QJsonObject entityJson = it->second->toJson();
-                    QJsonObject categoryObj;
 
+                    // Update Category
+                    QJsonObject categoryObj;
                     if (entityJson.contains("Category") && entityJson["Category"].isObject()) {
                         categoryObj = entityJson["Category"].toObject();
                         categoryObj["value"] = category;
                     } else {
                         QJsonArray options;
-                        for (const QString& opt : {"Aircraft","Helicopter","Ship","Submarine","Tank"})
+                        for (const QString& opt : {"Air", "Ground", "Marine"})
                             options.append(opt);
                         categoryObj["type"]    = "option";
                         categoryObj["options"] = options;
                         categoryObj["value"]   = category;
                     }
 
+                    // Update SubCategory options based on category
+                    QJsonObject subCategoryObj;
+                    QMap<QString, QStringList> subCatMap = {
+                        {"Air",    QStringList{"Aircraft", "Helicopter", "UAV"}},
+                        {"Ground", QStringList{"Tank", "GroundRadar", "Human"}},
+                        {"Marine", QStringList{"Ship", "Frigate", "Submarine"}}
+                    };
+
+                    QJsonArray subOptions;
+                    for (const QString& opt : subCatMap.value(category))
+                        subOptions.append(opt);
+
+                    if (entityJson.contains("SubCategory") && entityJson["SubCategory"].isObject()) {
+                        subCategoryObj = entityJson["SubCategory"].toObject();
+                    } else {
+                        subCategoryObj["type"]     = "option";
+                        subCategoryObj["editable"] = false;
+                    }
+                    subCategoryObj["options"] = subOptions;
+                    subCategoryObj["value"]   = subCategory;
+
                     QJsonObject delta;
-                    delta["Category"] = categoryObj;
+                    delta["Category"]    = categoryObj;
+                    delta["SubCategory"] = subCategoryObj;
                     hierarchy->UpdateComponent(entityID, "_self", delta);
                 }
             });

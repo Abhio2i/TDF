@@ -25,6 +25,7 @@
  *               Restricted circulation — defence simulation use only.
  * =============================================================================
  */
+
 #include "analysiseditor.h"
 #include <QDir>
 #include <QFileDialog>
@@ -51,6 +52,7 @@ static void applyDarkChart(QChart* c)
     c->legend()->setBackgroundVisible(false);
     c->setMargins(QMargins(6,6,6,6));
 }
+
 static void styleAx(QValueAxis* ax, const QString& title="")
 {
     ax->setTitleText(title);
@@ -132,15 +134,15 @@ QWidget* AnalysisEditor::buildBottomTabBar()
     QWidget* bar = new QWidget();
     bar->setFixedHeight(44);
     bar->setStyleSheet(
-        QString("background:%1;border-top:2px solid %2;").arg(PANEL_BG,BORDER_COL));
+    QString("background:%1;border-top:2px solid %2;").arg(PANEL_BG,BORDER_COL));
     QHBoxLayout* hl = new QHBoxLayout(bar);
     hl->setContentsMargins(12,6,12,6); hl->setSpacing(8);
     auto makeTab=[&](const QString& label,int idx){
-        QPushButton* b=new QPushButton(label);
-        b->setFixedHeight(30); b->setMinimumWidth(130);
-        b->setCursor(Qt::PointingHandCursor); b->setCheckable(true);
-        connect(b,&QPushButton::clicked,this,[=](){ switchTab(idx); });
-        return b;
+    QPushButton* b=new QPushButton(label);
+    b->setFixedHeight(30); b->setMinimumWidth(130);
+    b->setCursor(Qt::PointingHandCursor); b->setCheckable(true);
+    connect(b,&QPushButton::clicked,this,[=](){ switchTab(idx); });
+    return b;
     };
     m_tabAnalysis = makeTab("📊  Analysis",0);
     m_tabReports  = makeTab("📋  Reports", 1);
@@ -180,7 +182,6 @@ void AnalysisEditor::openScenarioFile()
         this,"Open Scenario / Analysis File",
         QDir::homePath(),"JSON Files (*.json);;All Files (*)");
     if (path.isEmpty()) return;
-
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this,"Error","Cannot open:\n"+path); return;
@@ -195,7 +196,6 @@ void AnalysisEditor::openScenarioFile()
     if (root.contains("hierarchy"))  parseScenarioJson(root);
     else if (root.contains("teams")) parseAnalysisJson(root);
     else                             parseLegacyJson(root);
-
     lastSavedFilePath = path;
     clearUnsavedChanges();
 }
@@ -234,14 +234,12 @@ void AnalysisEditor::parseAnalysisJson(const QJsonObject& root)
             tl.damageTimePoints      = toDoubleList(et.value("damageTimePoints").toArray());
             tl.damage                = toDoubleList(dmgVal.toArray());
         }
-
         LossesData ld;
         QJsonObject lv = t.value("lossesVsEngagement").toObject();
         ld.friendlyLosses = toDoubleList(lv.value("friendlyLosses").toArray());
         ld.enemyLosses    = toDoubleList(lv.value("enemyLosses").toArray());
         for (const auto& c : lv.value("categories").toArray())
             ld.categories << c.toString();
-
         m_teamNames  << key;
         m_teamMetrics[key]   = m;
         m_teamTimelines[key] = tl;
@@ -260,6 +258,7 @@ void AnalysisEditor::parseAnalysisJson(const QJsonObject& root)
                                  .arg(root.value("missionName").toString("N/A"))
                                  .arg(m_teamNames.join(", ")));
 }
+
 /* =========================================================================
    parseScenarioJson  —  reads hierarchy entities, groups by Team value
    ========================================================================= */
@@ -313,7 +312,6 @@ void AnalysisEditor::parseScenarioJson(const QJsonObject& root)
         m_teamColors[team]    = colorForTeam(team, idx);
         idx++;
     }
-
     if (!m_teamNames.isEmpty())
         m_selectedTeam = m_teamNames.first();
     rebuildAllCharts();
@@ -350,18 +348,12 @@ void AnalysisEditor::rebuildAllCharts()
     rebuildRow2Chart();
     rebuildSuccessChart();
     rebuildLossesChart();
-
     /* ── Sync loaded data into ReportsEditor ── */
     if (!m_reportsPage || m_teamNames.isEmpty()) return;
-
     QJsonObject teamsObj;
     for (const QString& team : m_teamNames) {
         QJsonObject t;
-
-        /* color */
         t["color"] = m_teamColors.value(team, QColor("#aaaaaa")).name();
-
-        /* metrics */
         const TeamMetrics& tm = m_teamMetrics[team];
         QJsonObject met;
         met["successProbability"]  = tm.successProbability;
@@ -370,11 +362,9 @@ void AnalysisEditor::rebuildAllCharts()
         met["friendlyLosses"]      = (double)tm.friendlyLosses;
         met["enemyLosses"]         = (double)tm.enemyLosses;
         t["metrics"] = met;
-
         /* engagementTimeline — store as {time: value} objects */
         const TimelineData& tl = m_teamTimelines[team];
         QJsonObject etObj;
-
         auto listToObj = [](const QList<double>& times, const QList<double>& vals) {
             QJsonObject o;
             int n = qMin(times.size(), vals.size());
@@ -382,19 +372,14 @@ void AnalysisEditor::rebuildAllCharts()
                 o[QString::number(times[i], 'f', 2)] = vals[i];
             return o;
         };
-
         etObj["detection"]  = listToObj(tl.timePoints, tl.detection);
-
         QList<double> engT = tl.engagementTimePoints.isEmpty()
                                  ? tl.timePoints : tl.engagementTimePoints;
         etObj["engagement"] = listToObj(engT, tl.engagement);
-
         QList<double> dmgT = tl.damageTimePoints.isEmpty()
                                  ? tl.timePoints : tl.damageTimePoints;
         etObj["damage"]     = listToObj(dmgT, tl.damage);
-
         t["engagementTimeline"] = etObj;
-
         /* lossesVsEngagement */
         const LossesData& ld = m_teamLosses[team];
         QJsonObject lvObj;
@@ -408,7 +393,6 @@ void AnalysisEditor::rebuildAllCharts()
         t["lossesVsEngagement"] = lvObj;
         teamsObj[team] = t;
     }
-
     QJsonObject root;
     root["teams"] = teamsObj;
     m_reportsPage->loadFromJson(root);
@@ -417,6 +401,7 @@ void AnalysisEditor::rebuildAllCharts()
 /* =========================================================================
    Dashboard layout
    ========================================================================= */
+
 QWidget* AnalysisEditor::buildAnalysisDashboard()
 {
     QScrollArea* scroll = new QScrollArea();
@@ -451,11 +436,9 @@ QWidget* AnalysisEditor::buildMissionMetricsPanel()
                 "color:white;font-size:13px;font-weight:bold;margin-top:8px;padding-top:10px;}"
                 "QGroupBox::title{subcontrol-origin:margin;left:10px;padding:0 6px;color:%3;}")
             .arg(PANEL_BG,BORDER_COL,ACCENT_COL));
-
     m_metricsVL = new QVBoxLayout(box);
     m_metricsVL->setSpacing(2); m_metricsVL->setContentsMargins(6,12,6,4);
     m_metricsWidget = box;
-
     /* build initial default (2 teams placeholder) */
     rebuildMetricsPanel();
     return box;
@@ -490,7 +473,6 @@ void AnalysisEditor::rebuildMetricsPanel()
     fields << "successProbability" << "detectionEfficiency" << "weaponEffectiveness";
     int rows = rowLabels.size();
     int cols = 1 + teams.size();   /* col0 = metric label, rest = teams */
-
     QTableWidget* table = new QTableWidget(rows, cols);
     table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     table->setSelectionMode(QAbstractItemView::NoSelection);
@@ -576,11 +558,8 @@ void AnalysisEditor::rebuildMetricsPanel()
     table->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     table->horizontalHeader()->setStretchLastSection(false);
-
     m_metricsVL->addWidget(table, 1);
 }
-
-
 /* =========================================================================
    refreshAllMetricLabels
    ========================================================================= */
@@ -836,16 +815,13 @@ void AnalysisEditor::rebuildCombinedEngagementChart()
     axX->setRange(0, maxX);
     axX->setTickCount(9);
     styleAx(axX, "Time (seconds)");
-
     QValueAxis* axY = new QValueAxis();
     axY->setRange(0, maxY);
     axY->setTickCount(6);
     styleAx(axY, "Engagements");
-
     chart->addAxis(axX, Qt::AlignBottom);
     chart->addAxis(axY, Qt::AlignLeft);
     for (auto* s : chart->series()) { s->attachAxis(axX); s->attachAxis(axY); }
-
     chart->legend()->setVisible(true);
     chart->legend()->setAlignment(Qt::AlignBottom);
 }
@@ -949,10 +925,8 @@ void AnalysisEditor::rebuildTeamSelectorBar()
         delete item;
     }
     m_teamButtons.clear();
-
     QHBoxLayout* hl=qobject_cast<QHBoxLayout*>(old);
     if(!hl) return;
-
     for(const QString& team:m_teamNames){
         QColor col=m_teamColors.value(team,QColor("#aaaaaa"));
         QPushButton* btn=new QPushButton(team);
@@ -1019,9 +993,7 @@ void AnalysisEditor::rebuildRow2Chart()
 
     QColor col = m_teamColors.value(team, QColor("#aaaaaa"));
     chart->setTitle(QString("Timeline — %1").arg(team));
-
     double maxY = 5, maxX = 40;
-
     // Series config — name, color, style, dash pattern
     struct SeriesCfg {
         QString       name;
@@ -1029,7 +1001,6 @@ void AnalysisEditor::rebuildRow2Chart()
         Qt::PenStyle  style;
         QVector<qreal> dash;
     };
-
     QList<SeriesCfg> cfgs = {
                              { "Detection",  QColor("#5599ff"), Qt::SolidLine, {}      },
                              { "Engagement", QColor("#ffaa33"), Qt::SolidLine, {8, 4}  },
@@ -1045,17 +1016,19 @@ void AnalysisEditor::rebuildRow2Chart()
 
             QLineSeries* s = new QLineSeries();
             s->setName("Detection");
+
             QPen pen(cfgs[0].color, 2.5, Qt::SolidLine);
             s->setPen(pen);
+
             int n = qMin(tl.timePoints.size(), tl.detection.size());
             for (int i = 0; i < n; ++i) {
                 s->append(tl.timePoints.at(i), tl.detection.at(i));
                 maxY = qMax(maxY, tl.detection.at(i));
                 maxX = qMax(maxX, tl.timePoints.at(i));
             }
+
             chart->addSeries(s);
         }
-
         // Engagement
         if (m_seriesVisible.value("Engagement", true) && !tl.engagement.isEmpty()) {
             QList<double>& engTimes = tl.engagementTimePoints.isEmpty()
@@ -1083,7 +1056,6 @@ void AnalysisEditor::rebuildRow2Chart()
             QLineSeries* s = new QLineSeries();
             s->setName("Damage");
             QPen pen(cfgs[2].color, 2.5, Qt::SolidLine);
-
             s->setPen(pen);
             int n = qMin(dmgTimes.size(), tl.damage.size());
             for (int i = 0; i < n; ++i) {
@@ -1101,7 +1073,6 @@ void AnalysisEditor::rebuildRow2Chart()
         QList<double> eV  = {2,3,4,5,6,6,7,7,8,8,9};
         QList<double> dmV = {1,2,2,3,3,4,4,5,5,5,6};
         maxX = 512;
-
         struct DummySeries {
             QString        name;
             QList<double>* vals;
@@ -1130,26 +1101,21 @@ void AnalysisEditor::rebuildRow2Chart()
             chart->addSeries(s);
         }
     }
-
     if (chart->series().isEmpty()) {
         maxY = 10; maxX = 40;
     }
     maxY = static_cast<int>(maxY / 5.0 + 1) * 5 + 5;
-
     QValueAxis* axX = new QValueAxis();
     axX->setRange(0, maxX);
     axX->setTickCount(9);
     styleAx(axX, "Time (seconds)");
-
     QValueAxis* axY = new QValueAxis();
     axY->setRange(0, maxY);
     axY->setTickCount(6);
     styleAx(axY, "Count");
-
     chart->addAxis(axX, Qt::AlignBottom);
     chart->addAxis(axY, Qt::AlignLeft);
     for (auto* s : chart->series()) { s->attachAxis(axX); s->attachAxis(axY); }
-
     chart->legend()->setVisible(true);
     chart->legend()->setAlignment(Qt::AlignBottom);
 }
@@ -1252,11 +1218,9 @@ void AnalysisEditor::rebuildLossesChart()
     QChart* chart=m_lossesChart->chart();
     chart->removeAllSeries();
     for(QAbstractAxis* ax:chart->axes()){chart->removeAxis(ax);delete ax;}
-
     QBarSeries* bs=new QBarSeries();
     double maxVal=0;
     QStringList cats;
-
     int idx=0;
     for(const QString& team:m_teamNames){
         LossesData& ld=m_teamLosses[team];
@@ -1322,7 +1286,7 @@ QList<double> AnalysisEditor::scaleList(QList<double> src,double factor)
 
 /* =========================================================================
    Slots
-   ========================================================================= */
+========================================================================= */
 void AnalysisEditor::runAnalysis()    { computeAnalysis(); }
 
 void AnalysisEditor::compareScenarios()

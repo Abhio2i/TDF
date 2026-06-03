@@ -99,6 +99,7 @@
         <file>images/radio.png</file>
         <file>images/TestScript.png</file>
         <file>images/library.png</file>
+        <file>images/folder1.png</file>
     </qresource>
     <qresource prefix="/texture">
         <file>images/Texture/bball.png</file>
@@ -126,6 +127,14 @@
         <file>images/Texture/blast.png</file>
         <file>images/Texture/missile.png</file>
         <file>images/Texture/bomb.png</file>
+        <file>images/Texture/DIS_PIC/fighter_jet.png</file>
+        <file>images/Texture/DIS_PIC/helicopter.png</file>
+        <file>images/Texture/DIS_PIC/uav.png</file>
+        <file>images/Texture/DIS_PIC/tank.png</file>
+        <file>images/Texture/DIS_PIC/ground_radar.png</file>
+        <file>images/Texture/DIS_PIC/ship.png</file>
+        <file>images/Texture/DIS_PIC/frigate.png</file>
+        <file>images/Texture/DIS_PIC/submarine.png</file>
     </qresource>
     <qresource prefix="/model/airplane">
         <file>Model/Airplane/11803_Airplane_body_diff.jpg</file>
@@ -263,6 +272,39 @@
         <file>images/air/B-2_Spirit.png</file>
         <file>images/air/DRDORustom-1.png</file>
         <file>images/air/DassaultRafale.png</file>
+        <file>images/air/EO_IR_img/Air_Bus/Back.png</file>
+        <file>images/air/EO_IR_img/Air_Bus/Bottom.png</file>
+        <file>images/air/EO_IR_img/Air_Bus/Front.png</file>
+        <file>images/air/EO_IR_img/Air_Bus/Left.png</file>
+        <file>images/air/EO_IR_img/Air_Bus/Right.png</file>
+        <file>images/air/EO_IR_img/Air_Bus/Top.png</file>
+        <file>images/air/EO_IR_img/One_Engine/Back.png</file>
+        <file>images/air/EO_IR_img/One_Engine/Bottom.png</file>
+        <file>images/air/EO_IR_img/One_Engine/Front.png</file>
+        <file>images/air/EO_IR_img/One_Engine/Left.png</file>
+        <file>images/air/EO_IR_img/One_Engine/Right.png</file>
+        <file>images/air/EO_IR_img/One_Engine/Top.png</file>
+        <file>images/air/EO_IR_img/Two_Engine/Back.png</file>
+        <file>images/air/EO_IR_img/Two_Engine/Bottom.png</file>
+        <file>images/air/EO_IR_img/Two_Engine/Front.png</file>
+        <file>images/air/EO_IR_img/Two_Engine/Left.png</file>
+        <file>images/air/EO_IR_img/Two_Engine/Right.png</file>
+        <file>images/air/EO_IR_img/Two_Engine/Top.png</file>
+        <file>images/air/MIRAGE2000/MIRAGE_BACK_VIEW.png</file>
+        <file>images/air/MIRAGE2000/MIRAGE_BOTTOM _VIEW .png</file>
+        <file>images/air/MIRAGE2000/MIRAGE_FRONT_VIEW.png</file>
+        <file>images/air/MIRAGE2000/MIRAGE_LEFT_VIEW.png</file>
+        <file>images/air/MIRAGE2000/MIRAGE_RIGHT_VIEW.png</file>
+        <file>images/air/MIRAGE2000/MIRAGE_TOP_VIEW.png</file>
+        <file>images/air/KA-52.png</file>
+        <file>images/air/Orbiter-1k.png</file>
+        <file>images/air/Krunk-UAV.png</file>
+        <file>images/air/HRESH.png</file>
+        <file>images/air/hermes-900.png</file>
+        <file>images/air/hermes-450.png</file>
+        <file>images/air/merlin-hm2.png</file>
+        <file>images/air/Fa-18.png</file>
+        <file>images/air/P-8.png</file>
     </qresource>
     <qresource prefix="/ground">
         <file>images/ground/Adobe_Express.png</file>
@@ -377,6 +419,12 @@
         <file>images/ground/Patriot-Radar-Unit.png</file>
         <file>images/ground/Mobile-Early-Warning.png</file>
         <file>images/ground/Bee-Eye-Radar.png</file>
+        <file>images/ground/BM-21-GRAD.png</file>
+        <file>images/ground/DANA.png</file>
+        <file>images/ground/TOS-1A.png</file>
+        <file>images/ground/Polonez.png</file>
+        <file>images/ground/BTR-82k.png</file>
+        <file>images/ground/BTR-80.png</file>
     </qresource>
     <qresource prefix="/sea">
         <file>images/sea/AUV.png</file>
@@ -434,9 +482,7 @@
         <file>images/sea/ChengKung-classFrigate.png</file>
         <file>images/sea/KeeLung-class.png</file>
         <file>images/sea/Yasen-M.png</file>
-        <file>images/sea/Shondong-removebg-preview.png</file>
         <file>images/sea/GeraldR.Fordclass.png</file>
-        <file>images/sea/Astute-removebg-preview.png</file>
         <file>images/sea/Alvaro_de_Bazan.png</file>
         <file>images/sea/Atagoclass.png</file>
         <file>images/sea/Borei-A.png</file>
@@ -471,7 +517,6 @@
         <file>images/sea/Type055_Renhai.png</file>
         <file>images/sea/Type071.png</file>
         <file>images/sea/Type093A_YUAN.png</file>
-        <file>images/sea/Type094_JIN_-removebg-preview.png</file>
         <file>images/sea/Zumwaltclass.png</file>
         <file>images/sea/Wasp.png</file>
         <file>images/sea/Type218SG.png</file>
@@ -482,8 +527,26 @@
         <file>images/sea/INSVikrant.png</file>
         <file>images/sea/VisakhapatnamclassP15B.png</file>
         <file>images/sea/sonobuoy.png</file>
+        <file>images/sea/Nimitz-class-Aircraft-carrier.png</file>
+        <file>images/sea/IRGC-FAST-ATTACK-MISSILE.png</file>
+        <file>images/sea/indian-owned-ship.png</file>
+        <file>images/sea/indian-flagged-vessel.png</file>
+        <file>images/sea/Houdong-missile-boats.png</file>
+        <file>images/sea/Ghadir-class-submarine.png</file>
+        <file>images/sea/Yuan-destroyer.png</file>
+        <file>images/sea/Virginia-class-submarine.png</file>
+        <file>images/sea/Type-45-destroyer.png</file>
+        <file>images/sea/Rivver-class-submarine.png</file>
+        <file>images/sea/Patrol-boats-marine.png</file>
+        <file>images/sea/Ocean-lily.png</file>
+        <file>images/sea/Shondong.png</file>
+        <file>images/sea/Astute.png</file>
+        <file>images/sea/Type094_JIN.png</file>
     </qresource>
     <qresource prefix="/new/prefix2">
         <file>DB/Aircraft.db</file>
+    </qresource>
+    <qresource prefix="/svg">
+        <file>images/world.svg</file>
     </qresource>
 </RCC>

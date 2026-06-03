@@ -10,7 +10,8 @@ MeshRenderer2D::MeshRenderer2D():Component(nullptr) {
     color = new QColor(Qt::red);
     color2 = std::make_shared<QColor>(Qt::blue);
     Sprite = new std::string(":/texture/images/Texture/fighterjet.png");
-    Texture = new std::string(":/texture/images/Texture/waall.jpg");
+    Texture = new std::string(":/model/airplane/Model/Airplane/11803_Airplane_body_diff.jpg");
+    Model3d = new std::string(":/model/airplane/Model/Airplane/11803_Airplane_v1_l1.obj");
     Mesh *mesh = new Mesh();
     mesh->color = color;
     mesh->Sprite = Sprite;
@@ -59,6 +60,11 @@ QJsonObject MeshRenderer2D::toJson() const {
     textureObj["value"] = QString::fromStdString(*Texture);
     obj["texture"] = textureObj;
 
+    QJsonObject model3dObj;
+    textureObj["type"] = "Section";
+    textureObj["value"] = QString::fromStdString(*Model3d);
+    obj["Model3d"] = textureObj;
+
     QJsonObject AddParameters = AdditionalParameters;
     AddParameters["type"] = "Section";
     obj["AdditionalParameters"] = AddParameters;
@@ -87,6 +93,14 @@ void MeshRenderer2D::fromJson(const QJsonObject& obj) {
         if (textureObj.contains("value"))
             Texture->append(textureObj["value"].toString().toStdString());
     }
+
+    if (obj.contains("Model3d")) {
+        Model3d->clear();
+        QJsonObject model3dObj = obj["Model3d"].toObject();
+        if (model3dObj.contains("value"))
+            Model3d->append(model3dObj["value"].toString().toStdString());
+    }
+
     if (obj.contains("color")) {
         QJsonObject colorObj = obj["color"].toObject();
         if (colorObj.contains("value")) {

@@ -259,7 +259,7 @@ void AESARadarDisplay::repositionButtons()
 {
     int w  = width();
     int bh = AESA_MODEBAR - 4;
-int bw = (w - 2 * AESA_MARGIN) / 5;   // equal width: SURV TWS LOCK AIR/SURF SENSOR
+    int bw = (w - 2 * AESA_MARGIN) / 5;   // equal width: SURV TWS LOCK AIR/SURF SENSOR
     btnSurv    ->setGeometry(AESA_MARGIN,          4, bw, bh);
     btnTWS     ->setGeometry(AESA_MARGIN + bw,     4, bw, bh);
     btnLock    ->setGeometry(AESA_MARGIN + bw * 2, 4, bw, bh);
@@ -563,6 +563,13 @@ void AESARadarDisplay::selectEntity(Entity* ent)
     // Search entity's sensor list for an AESA radar. REQ-AESA-004.
 
     sensorlist.clear();   // clear old list
+    if (sensorDropdown) sensorDropdown->hide();
+
+    if (!entity->sensors || !entity->sensors->sensors) {
+        updateModeButtonStyles();
+        update();
+        return;
+    }
 
     for (auto const& pair : *entity->sensors->sensors)
     {
@@ -625,6 +632,12 @@ void AESARadarDisplay::updateRadar()
 
     // Re-read FoV limits — they may change if config is updated at runtime.
     // REQ-AESA-004.
+    // Validate sensor still exists in the hierarchy before touching it
+    if (entity->sensors->getSensor(sensor->ID) == nullptr)
+    {
+        sensor = nullptr;
+        return;
+    }
     AESARadar* aesa = dynamic_cast<AESARadar*>(sensor);
     if (aesa)
     {
@@ -644,24 +657,54 @@ void AESARadarDisplay::updateRadar()
 // FUNCTION:    AESARadarDisplay::RemoveEntity
 // (Full description in header)
 // =============================================================================
-void AESARadarDisplay::RemoveEntity(QString eid)
-{
-    if (id != eid) return;
+// AFTER:
+// void AESARadarDisplay::RemoveEntity(QString eid)
+// {
+//     if (id != eid) return;
 
-    // Bound entity removed from scene — clear all display state. REQ-AESA-004.
-    entity  = nullptr;
-    sensor  = nullptr;
-    targets.clear();
-    screenTargets.clear();
-    lockedTargetID = 0;
+//     // Disconnect all signals BEFORE nulling — prevents queued signals
+//     // firing on dead pointer after deletion
+//     if (AESARadar* aesa = asAESA())
+//         disconnect(aesa, nullptr, this, nullptr);
+
+//     entity  = nullptr;
+//     sensor  = nullptr;
+//     targets.clear();
+//     screenTargets.clear();
+//     lockedTargetID = 0;
+//     iffMap_.clear();
+//     sensorlist.clear();
+//     if (sensorDropdown) sensorDropdown->hide();
+//     setWindowTitle("AESA Radar Display");
+//     updateModeButtonStyles();
+//     update();
+// }
+void AESARadarDisplay::RemoveEntity(QString ID)
+{
+    if (this->id != ID)
+        return;
+
+    // ── CRITICAL: zero sensor FIRST, before any asAESA() calls ──
+    // The engine has already destroyed the entity; sensor is a
+    // dangling pointer at this point. Do NOT call dynamic_cast on it.
+    // if (AESARadar* aesa = dynamic_cast<AESARadar*>(sensor))
+    //     disconnect(aesa, nullptr, this, nullptr);
+    sensor   = nullptr;
+    entity   = nullptr;
+
+    // Now safe to clear all dependent state
+    this->id           = "";
+    lockedTargetID     = 0;
+    lockedTargetPos    = {};
     iffMap_.clear();
-    sensorlist.clear();
-    if (sensorDropdown) sensorDropdown->hide();
-    setWindowTitle("AESA Radar Display");
-    updateModeButtonStyles();
+    screenTargets.clear();
+    drfmWarnFrames_    = 0;
+    lastDRFMTargetID_  = 0;
+    currentDutyCycle_  = 0.0f;
+
+    updateModeButtonStyles(); // sensor is null → all buttons get S_IDLE safely
     update();
 }
-
 // =============================================================================
 // IFF COLOUR HELPER
 // =============================================================================

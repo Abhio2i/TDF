@@ -4,6 +4,8 @@
 #include "core/Hierarchy/Components/sensorprofile.h"
 #include "core/Hierarchy/EntityProfiles/weapons/sonobuoy.h"
 #include "qcombobox.h"
+#include "qpushbutton.h"
+#include "qsvgrenderer.h"
 #include "qwidget.h"
 #include <QObject>
 #include <core/Debug/profiler.h>
@@ -18,7 +20,7 @@ public:
     // Get size hint
     QSize sizeHint() const override;
     // Get minimum size
-    int range = 100;
+    int range = 25;
     QSize minimumSize() const;
     // Set radar range
     void setRange(float value) { range = value; }
@@ -35,6 +37,15 @@ public:
     QVector<Sonobuoy*> sensorlist;
     // Entity platform
     Platform* entity = nullptr;
+private slots:
+    void onZoomIn();
+    void onZoomOut();
+    void onSensorSelected(int index);
+
+private:
+    QPushButton *zoomInButton;
+    QPushButton *zoomOutButton;
+    double zoomLevel = 100; // Zoom factor store karne ke liye
 
 protected:
     // Handle paint events
@@ -44,8 +55,7 @@ protected:
     // Handle mouse leave
     void leaveEvent(QEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
-private slots:
-    void onSensorSelected(int index);
+
 private:
     // %%% Display Properties %%%
     // Aspect ratio for display
@@ -89,6 +99,8 @@ private:
     void drawTopMarker(QPainter &p, const QPoint &center, int outerRadius);
     // Draw target and path
     void drawTargetAndPath(QPainter &painter);
+private:
+    QSvgRenderer m_svgRenderer;
 };
 
 #endif // SONOBUOYPANEL_H

@@ -26,6 +26,7 @@
 #define HIERARCHY_H
 
 #include <QObject>
+#include <QSet>          // ← ADD THIS
 #include <unordered_map>
 #include "./profilecategaory.h"
 #include "core/Hierarchy/EntityProfiles/fixedpoints.h"
@@ -80,11 +81,19 @@ public:
     std::unordered_map<std::string, IFF*> Iffs;
     std::unordered_map<std::string, Weapon*> Weapons;
 
+    QSet<QString> m_pendingRemoteDISEntityIDs;   // ← ADD THIS
+
     std::unordered_map<std::string, Component*> Components;
     std::unordered_map<std::string, Mesh*> Meshes;
     std::unordered_map<std::string, Mission*> missionList;
     std::unordered_map<std::string, std::string*> EntityPaths;
     std::unordered_map<std::string, std::string*> FolderPaths;
+
+    QStringList* sensorlist = new QStringList({"Generic", "CSM", "ESM", "EO", "IR", "Sonar", "AIS", "ADSB", "AESA" });
+    QStringList getAvailableSensorTypes() const;
+    bool registerNewSensor(std::string name);
+    bool unregisterNewSensor(std::string name);
+
 
 public:
     std::unordered_map<float, float> redengagements;
@@ -173,6 +182,22 @@ signals:
      * @param name New display name.
      */
     void profileRenamed(QString Id, QString name);
+    void sensorAdded(const QString &entityId, const QString &sensorId);
+    void sensorRemoved(const QString &entityId, const QString &sensorId);
+    void sensorUpdated(const QString &sensorId);
+
+    // ADD:
+    void iffAdded     (const QString &entityId, const QString &iffId);
+    void iffRemoved   (const QString &entityId, const QString &iffId);
+    void iffUpdated   (const QString &iffId);
+
+    void radioAdded   (const QString &entityId, const QString &radioId);
+    void radioRemoved (const QString &entityId, const QString &radioId);
+    void radioUpdated (const QString &radioId);
+
+    void weaponAdded  (const QString &entityId, const QString &weaponId);
+    void weaponRemoved(const QString &entityId, const QString &weaponId);
+    void weaponUpdated(const QString &weaponId);
 
     // =========================================================================
     // SECTION: Folder & Entity Management
@@ -330,6 +355,13 @@ signals:
     void entityRemoved(QString ID);
 
     /**
+     * @brief Emitted when a entity is select.
+     * @param ID Entity ID.
+     * @param trajectory Pointer to the Trajectory.
+     */
+    void entiitySelected(const QString &ID);
+
+    /**
      * @brief Emitted when an entity is fully removed (including profile info).
      * @param parentId Parent folder ID.
      * @param ID Entity ID.
@@ -433,6 +465,7 @@ public:
      * @param name Component name.
      * @param delta JSON object of changes.
      */
+
     void UpdateComponent(QString ID, QString name, QJsonObject delta);
 
     /**
@@ -484,6 +517,7 @@ public:
      * @param ID Parent component ID.
      * @param subComponentID Sub‑component ID.
      */
+
     void removeSubComponent(QString ID, QString subComponentID);
 
 signals:
@@ -510,8 +544,6 @@ signals:
      * @param subComponentName Sub‑component name.
      */
     void subComponentRemoved(QString parentID,QString ID, QString subComponentName);
-
-
     // =========================================================================
     // SECTION: Serialization & State Control
     // DESCRIPTION: Conversion to/from JSON and simulation context management.
@@ -616,10 +648,7 @@ public:
         float altitude;
         float frequency_mhz;    // Agar ESM data hai
         uint64_t timestamp;     // Microseconds me
-
     };
-
-
 signals:
     /**
      * @brief Emitted to initialise the hierarchy after loading.

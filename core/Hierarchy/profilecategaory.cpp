@@ -6,6 +6,7 @@
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/aissensor.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/csm.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/eosensor.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/irsensor.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/esm.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/radar.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h"
@@ -182,20 +183,23 @@ Entity* ProfileCategaory::addEntity(std::string entityName, std::string iD, QStr
                         if(data1 == "EO"){
                             entity = new EOSensor(parent);
                         }else
-                            if(data1 == "Sonar"){
-                                entity = new Sonar(parent);
+                            if(data1 == "IR"){
+                                entity = new IRSensor(parent);
                             }else
-                                if(data1 == "AIS"){
-                                    entity = new AISSensor(parent);
+                                if(data1 == "Sonar"){
+                                    entity = new Sonar(parent);
                                 }else
-                                    if(data1 == "ADSB"){
-                                        entity = new ADSBSensor(parent);
+                                    if(data1 == "AIS"){
+                                        entity = new AISSensor(parent);
                                     }else
-                                        if(data1 == "AESA"){
-                                            entity = new AESARadar(parent);
-                                        }else{
-                                            entity = new Sensor(parent);
-                                        }
+                                        if(data1 == "ADSB"){
+                                            entity = new ADSBSensor(parent);
+                                        }else
+                                            if(data1 == "AESA"){
+                                                entity = new AESARadar(parent);
+                                            }else{
+                                                entity = new Sensor(parent);
+                                            }
         }else
             if(type == Constants::EntityType::FixedPoint){
                 entity = new FixedPoints(parent);
@@ -512,20 +516,23 @@ void ProfileCategaory::fromJson(const QJsonObject& obj)
                                 if(data1 == "EO"){
                                     entity = new EOSensor(parent);
                                 }else
-                                    if(data1 == "Sonar"){
-                                        entity = new Sonar(parent);
+                                    if(data1 == "IR"){
+                                        entity = new IRSensor(parent);
                                     }else
-                                        if(data1 == "AIS"){
-                                            entity = new AISSensor(parent);
+                                        if(data1 == "Sonar"){
+                                            entity = new Sonar(parent);
                                         }else
-                                            if(data1 == "ADSB"){
-                                                entity = new ADSBSensor(parent);
+                                            if(data1 == "AIS"){
+                                                entity = new AISSensor(parent);
                                             }else
-                                                if(data1 == "AESA"){
-                                                    entity = new AESARadar(parent);
-                                                }else{
-                                                    entity = new Sensor(parent);
-                                                }
+                                                if(data1 == "ADSB"){
+                                                    entity = new ADSBSensor(parent);
+                                                }else
+                                                    if(data1 == "AESA"){
+                                                        entity = new AESARadar(parent);
+                                                    }else{
+                                                        entity = new Sensor(parent);
+                                                    }
                 }else
                     if(type == Constants::EntityType::FixedPoint){
                         entity = new FixedPoints(parent);

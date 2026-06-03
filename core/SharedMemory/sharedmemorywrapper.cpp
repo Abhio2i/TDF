@@ -40,7 +40,9 @@ void SharedMemoryWrapper::entityAdded(QString /*parentID*/, Entity* entity) {
 
     if (entity->type == Constants::EntityType::Platform) {
         Platform* platform = dynamic_cast<Platform*>(entity);
-
+        // Remote DIS entities have no dynamicModel/trajectory/sensors.
+        // SharedMemory is only for local simulation entities.
+        if (platform->isRemoteDISEntity) return;//by Aman
         SharedComponent component;
         component.name = platform->Name;
         component.base = entity;

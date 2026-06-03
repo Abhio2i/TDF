@@ -7,19 +7,19 @@ public:
     // Returns relative vertical angle (degrees)
     // Positive => target is above sensor pitch
     // Negative => target is below sensor pitch
-    static double computeRelativeElevation(double sensorLatDeg,
-                                           double sensorLonDeg,
-                                           double sensorAltMeters,
-                                           double sensorPitchDeg,
-                                           double targetLatDeg,
-                                           double targetLonDeg,
-                                           double targetAltMeters);
+    static float computeRelativeElevation(float sensorLatDeg,
+                                           float sensorLonDeg,
+                                           float sensorAltMeters,
+                                           float sensorPitchDeg,
+                                           float targetLatDeg,
+                                           float targetLonDeg,
+                                           float targetAltMeters);
 
 private:
-    static double degToRad(double deg);
-    static double radToDeg(double rad);
-    static double distanceMeters(double lat1, double lon1,
-                                 double lat2, double lon2);
+    static float degToRad(float deg);
+    static float radToDeg(float rad);
+    static float distanceMeters(float lat1, float lon1,
+                                 float lat2, float lon2);
 };
 
 #endif

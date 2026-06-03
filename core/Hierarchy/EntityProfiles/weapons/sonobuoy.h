@@ -32,7 +32,7 @@ public:
 
     bool drop = false;
     float time = 0.f;//s
-    float range = 100;//km
+    float range =  30;//km
     float TransmissionRange = 100;//km
     float Depth = 500;//m
     float Life = 2.f;//hours

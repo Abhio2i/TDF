@@ -48,11 +48,21 @@ void Sonobuoy::Update(){
     if(!parentEntity) return;
     Transform* source = transform;
     if(!source) return;
+    if(collider && !detection.empty()){
+        if(collider->CollideRadius>5000){
+            collider->CollideRadius = 5000;
+        }else{
+            collider->CollideRadius = 10000;
+        }
+    }else{
+        collider->CollideRadius = 1000;
+    }
+
     // C# foreach (Transform tr in targets) -> C++ range-based for loop
     for (auto& [key, entity] : root->Platforms)
     {
         if(!entity || !entity->Active) continue;
-        if (entity->category == Entity::Category::Submarine) {
+        if (entity->category == Entity::Category::Marine) {
             Platform* platform = entity;
             // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
             if(platform->ID == parentEntity->ID || !platform || !platform->transform) continue;
@@ -64,7 +74,7 @@ void Sonobuoy::Update(){
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
 
             // qDebug()<<yAngle<<","<<detectCheck(localPos,metredis)<<","<<(fre1 < frequency && fre2> frequency);
-            if (entity->Active && metredis<range*1000.0f)  // .position() is assumed
+            if (entity->Active && metredis<range)  // .position() is assumed
             {
                 //qDebug()<< "detect";
                 if (detects.count(platform) == 0)

@@ -215,7 +215,6 @@ void StatusBar::updateRamUsage()
             ramKB = (pages * pageSize) / 1024L;
         }
     }
-
 #elif defined(Q_OS_WIN)
     PROCESS_MEMORY_COUNTERS pmc;
     if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))

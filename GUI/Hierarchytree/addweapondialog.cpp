@@ -573,7 +573,7 @@ QWidget* AddWeaponDialog::buildSonoBuoyPanel()
     vl->setContentsMargins(4,4,4,4);
 
     QFormLayout* gf; QGroupBox* gg = makeGroup("Guidance System", gf);
-    m_count = makeDSpin(0, 50, 10, 0, "");
+    m_count = makeDSpin(0, 1000, 10, 0, "");
     gf->addRow("Count:",   m_count);
     vl->addWidget(gg);
 

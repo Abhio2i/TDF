@@ -116,11 +116,35 @@ public:
     };
 
     enum Category{
-        Aircraft, Helicopter, Ship, Submarine, Tank
+        Air, Ground, Marine
     };
 
-    const std::string CategoryNames[5] = {
-        "Aircraft", "Helicopter", "Ship", "Submarine", "Tank"
+    const std::string CategoryNames[3] = {
+        "Air", "Ground", "Marine"
+    };
+
+    enum SubAirCategory{
+        Aircraft, Helicopter, UAV
+    };
+
+    const std::string AirCategoryNames[3] = {
+        "Aircraft", "Helicopter", "UAV"
+    };
+
+    enum SubGroundCategory{
+        Tank, GroundRadar, Human
+    };
+
+    const std::string GroundCategoryNames[3] = {
+        "Tank", "GroundRadar", "Human"
+    };
+
+    enum SubMarineCategory{
+        Ship, Frigate, Submarine
+    };
+
+    const std::string MarineCategoryNames[3] = {
+        "Ship", "Frigate", "Submarine"
     };
 
     // =========================================================================
@@ -142,7 +166,11 @@ public:
     // SECTION: State & Metrics
     // DESCRIPTION: Physical status, tactical affiliation, and health variables.
     // =========================================================================
-    Category category = Entity::Category::Aircraft;
+    Category category = Entity::Category::Air;
+    SubAirCategory airCategory = Entity::SubAirCategory::Aircraft;
+    SubGroundCategory groundCategory = Entity::SubGroundCategory::Tank;
+    SubMarineCategory marineCategory = Entity::SubMarineCategory::Ship;
+
     Country country = Entity::Country::INDIA;
     Team team = Entity::Team::GreyTeam;
     double illumination = 1.0;  // day/night factor
@@ -154,6 +182,11 @@ public:
     float detectionCount = 0;
     float weaponcount = 0;
     float hitcount = 0;
+    bool isRemoteDISEntity = false;  // true = owned by remote DIS node, no physics
+
+    // For EO/IR Sensor By Himanshu
+    float surfaceTemp = 40;            // Celsius
+    float specularReflectivity = 0.05;   // 0.0 to 1.0 (e.g., 0.05 for matte paint, 0.9 for glass/polished metal)
 
     // =========================================================================
     // SECTION: Sub-System Management (Radios, Sensors, Weapons)

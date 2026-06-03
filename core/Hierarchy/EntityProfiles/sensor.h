@@ -50,69 +50,77 @@ struct Target{
 
 };
 
+enum EOImageType{
+    Air_Bus,
+    One_Engine,
+    Two_Engine,
+    None,
+};
 
 struct EO_Entity{
     struct Vec2 {
-        double x = 0, y = 0;
+        float x = 0, y = 0;
 
-        Vec2(double x_ = 0, double y_ = 0)
+        Vec2(float x_ = 0, float y_ = 0)
             : x(x_), y(y_) {}
 
         Vec2(const Vec2& _vec2)
             : x(_vec2.x), y(_vec2.y) {}
     };
     struct Vec3 {
-        double x = 0, y = 0, z = 0;
+        float x = 0, y = 0, z = 0;
 
-        Vec3(double x_ = 0, double y_ = 0,double z_ = 0)
+        Vec3(float x_ = 0, float y_ = 0,float z_ = 0)
             : x(x_), y(y_), z(z_) {}
 
         Vec3(const Vec3& _vec3)
             : x(_vec3.x), y(_vec3.y), z(_vec3.z) {}
     };
     std::string name;
+    EOImageType eoImageType;
     Vec2 vec2;
     Vec3 vec3;
-    double relativeHeading;
-    double relativePitch;
-    double size;
+    float relativeHeading;
+    float relativePitch;
+    float size;
     EO_Entity(std::string _name = "",
-              double _size = 0,
-              double _relativeHeading = 0.00f,
-              double _relativePitch = 0.00f,
+              EOImageType _eoImageType = EOImageType::None,
+              float _size = 0,
+              float _relativeHeading = 0.00f,
+              float _relativePitch = 0.00f,
               const Vec2& _vec2 = Vec2(),
               const Vec3& _vec3 = Vec3())
-        : name(_name),vec2(_vec2),vec3(_vec3),relativeHeading (_relativeHeading),
+        : name(_name),eoImageType(_eoImageType),vec2(_vec2),vec3(_vec3),relativeHeading (_relativeHeading),
         relativePitch (_relativePitch), size(_size){}
 
 };
 struct EO_IR_State{
     struct coordinate{
-        double x =0;
-        double y =0;
-        coordinate(double _x,double _y):
-            x(_x),y(_y){};
+        float x =0;
+        float y =0;
+        coordinate(float _x,float _y):
+            x(_x),y(_y){}
     };
     struct dimension{
-        double x = 1;
-        double y = 1;
-        dimension(double _x,double _y):
-            x(_x),y(_y){};
+        float x = 1;
+        float y = 1;
+        dimension(float _x,float _y):
+            x(_x),y(_y){}
         coordinate center(){
             coordinate coord(x/2, y/2);
             return coord;
         }
     };
-    struct vanishingPodouble{
-        double x = 0;
-        double y = 0;
-        vanishingPodouble(double _x,double _y):
-            x(_x),y(_y){};
+    struct vanishingPofloat{
+        float x = 0;
+        float y = 0;
+        vanishingPofloat(float _x,float _y):
+            x(_x),y(_y){}
     };
-    struct horizonMidPodouble{
-        double x = 0;
-        double y = 0;
-        horizonMidPodouble(double _x,double _y):
+    struct horizonMidPofloat{
+        float x = 0;
+        float y = 0;
+        horizonMidPofloat(float _x,float _y):
             x(_x),y(_y){};
     };
 
@@ -121,6 +129,39 @@ struct EO_IR_State{
 
 };
 
+struct PoseGeo {
+    float latitude = 0.0f;  // in degrees
+    float longitude = 0.0f; // in degrees
+    float altitude = 0.0f;  // in meters
+    float rx = 0.0f;        // x rotation (pitch) in degrees
+    float ry = 0.0f;        // y rotation (yaw) in degrees
+    float rz = 0.0f;        // z rotation (roll) in degrees
+};
+
+struct PoseOpenGL {
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+    float rx = 0.0f;
+    float ry = 0.0f;
+    float rz = 0.0f;
+};
+
+
+struct GeoCoord {
+    float latitude;
+    float longitude;
+    float altitude;
+};
+
+struct CartesianCoord {
+    float x = 0.0f; // Right (East)
+    float y = 0.0f; // Up (Altitude)
+    float z = 0.0f; // Back (South)
+    float rx = 0.0f;
+    float ry = 0.0f;
+    float rz = 0.0f;
+};
 
 // =============================================================================
 // CLASS: Sensor
@@ -140,7 +181,7 @@ public:
     // =========================================================================
     enum class Type { Active, Passive };
     enum class Mode { Search, Track, TrackWhileScan, FireControl };
-    enum class SubType { Generic, CSM, ESM,EO,Sonar,AIS, ADSB , AESA };
+    enum class SubType { Generic, CSM, ESM, EO, IR, Sonar,AIS, ADSB , AESA };
     enum class DetectionCapabilities { All, MovingOnly };
     Q_ENUM(DetectionCapabilities);
 
@@ -171,6 +212,33 @@ public:
     // --- Add below Mode enum ---
     SubType subType = SubType::Generic;
     DetectionCapabilities capabilities = DetectionCapabilities::All;
+
+
+
+    /*  EO Resolution */
+
+    enum class Resolutions { FourK = 0, TwoK = 1, TrueHD = 2, HD = 3, };
+    // Size Map
+    //inline static const std::pair<int,int> float;
+    //std::pair<int,int> float
+    std::unordered_map<Resolutions,std::pair<int,int>> resolutionToSize ={
+        {Resolutions::FourK,{3840,2160}},
+        {Resolutions::TwoK,{2048,1080}},
+        {Resolutions::TrueHD,{1920,1080}},
+        {Resolutions::HD,{1280,720}},
+        };
+    //Q_ENUM(Resolutions)
+    inline static const QString ResolutionString[4] =
+        {"4K","2K","True HD","HD",};
+    inline static const QHash<QString, Resolutions> ResolutionStrToEnum ={
+        {"4K",Resolutions::FourK },{"2K",Resolutions::TwoK},
+        {"True HD",Resolutions::TrueHD},{"HD",Resolutions::HD},
+        };
+
+    // Inside your Sensor class definition
+    Resolutions eoirResolution = Resolutions::FourK;
+    Resolutions eoirResolution4k = Resolutions::FourK;
+    std::pair<int,int> eoirResolutionSize = {3840,2160};
 
     // =========================================================================
     // SECTION: Physical & Operational Attributes
@@ -215,6 +283,20 @@ public:
     QVector<Target> esmtargets;
     EO_Entity eoSensor;
     QVector<EO_Entity> eoEntities;
+
+    /*          For EO/IR Sensor By Himanshu */
+    PoseGeo sensorPoseGeo;
+    std::string currentEOSensor;
+    PoseOpenGL currentEOSensorCood;
+    std::string currentIRSensor;
+    PoseOpenGL currentIRSensorCood;
+    std::unordered_map<std::string,std::pair<bool,PoseOpenGL>> EODetectionCood;
+    GeoCoord sensorGeoCoord;
+    std::unordered_map<std::string,std::pair<bool,CartesianCoord>> EODetectionCoord;
+    std::unordered_map<std::string,bool> EODetection;// ID of Entity who is detected by is true or false
+    std::unordered_map<std::string,bool> IRDetection;// ID of Entity who is detected by is true or false
+    /*          For EO/IR Sensor By Himanshu */
+
     // --- Generic Radar Targets ---
     int getTargetCount() const;                  // Number of Generic targets
     Target getTarget(int index) const;           // Get Generic target by index

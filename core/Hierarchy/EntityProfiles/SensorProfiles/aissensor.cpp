@@ -302,17 +302,17 @@ QJsonObject AISSensor::toJson() const {
 
     QJsonObject Env;
     Env["type"] = "Section";
-    Env["temperature_c"] = toParm(own_rf.propagation.temperature_c,"cel");
-    Env["pressure_hpa"] = toParm(own_rf.propagation.pressure_hpa,"hpa");
-    Env["humidity_percent"] = toParm(own_rf.propagation.humidity_percent,"%");
+    Env["temperature_c"] = toParm(own_rf.propagation.temperature_c,"cel",10,100);
+    Env["pressure_hpa"] = toParm(own_rf.propagation.pressure_hpa,"hpa",0,1100);
+    Env["humidity_percent"] = toParm(own_rf.propagation.humidity_percent,"%",0,100);
     //Env["gas_attenuation_db_per_km_at_1ghz"] = toParm(own_rf.propagation.gas_attenuation_db_per_km_at_1ghz,"db/km");
     // Env["gas_attenuation_freq_exponent"] = toParm(own_rf.propagation.gas_attenuation_freq_exponent,"");
     // Env["humidity_attenuation_factor_per_percent"] = toParm(own_rf.propagation.humidity_attenuation_factor_per_percent,"%");
-    Env["rain_rate_mm_per_hr"] = toParm(own_rf.propagation.rain_rate_mm_per_hr,"mm/h");
+    Env["rain_rate_mm_per_hr"] = toParm(own_rf.propagation.rain_rate_mm_per_hr,"mm/h",0,2000);
     //  Env["rain_attenuation_db_per_km_per_mmhr"] = toParm(cfg.propagation.rain_attenuation_db_per_km_per_mmhr,"db/km/h");
-    Env["rain_coverage"] = toParm(own_rf.propagation.rain_coverage,"%");
+    Env["rain_coverage"] = toParm(own_rf.propagation.rain_coverage,"%",0,100);
     // Env["rain_rate_sigma_frac"] = toParm(cfg.propagation.rain_rate_sigma_frac,"mm/h");
-    Env["wind_speed_mps"] = toParm(own_rf.propagation.wind_speed_mps,"m/s");
+    Env["wind_speed_mps"] = toParm(own_rf.propagation.wind_speed_mps,"m/s",0,3600);
     // Env["wind_attenuation_db_per_km_per_mps"] = toParm(cfg.propagation.wind_attenuation_db_per_km_per_mps,"db/km");
     // Env["sea_attenuation_db_per_km"] = toParm(cfg.propagation.sea_attenuation_db_per_km,"db/km");
     obj["Environmental"] = Env;

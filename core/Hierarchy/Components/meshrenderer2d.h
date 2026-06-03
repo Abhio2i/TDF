@@ -49,6 +49,7 @@ public:
     bool Active;                    //!< Whether this renderer is active
     std::string* Sprite;            //!< Path to sprite image (if any)
     std::string* Texture;           //!< Path to texture image (if any)
+    std::string* Model3d;           //!< Path to 3d Model (if any)
 
     // =========================================================================
     // SECTION: Color Properties

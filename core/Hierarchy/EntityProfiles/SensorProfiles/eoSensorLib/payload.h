@@ -18,35 +18,35 @@ enum class InputResult{
 // glintFactor  // reflection boost
 
 struct Surrounding {
-    double k_atm      = 1.0;  // atmospheric attenuation
-    double k_rain     = 1.0;  // rain/fog attenuation %
-    double k_fog      = 1.0;  // Fog     %
-    double k_humidity = 1.0;  // Humidity %
+    float k_atm      = 1.0;  // atmospheric attenuation
+    float k_rain     = 1.0;  // rain/fog attenuation %
+    float k_fog      = 1.0;  // Fog     %
+    float k_humidity = 1.0;  // Humidity %
 };
 struct Coordinate {
-    double latitude = NULL;
-    double longitude= NULL;
-    double altitude = NULL;
+    float latitude = NULL;
+    float longitude= NULL;
+    float altitude = NULL;
 };
 
 struct Axis {
-    double x = NULL, y = NULL, z = NULL;
-    double magnitude() const { return std::sqrt(x*x + y*y + z*z); }
+    float x = NULL, y = NULL, z = NULL;
+    float magnitude() const { return std::sqrt(x*x + y*y + z*z); }
 };
 struct Vec2 {
-    double x, y;
+    float x, y;
 
-    Vec2(double x_=0, double y_=0)
+    Vec2(float x_=0, float y_=0)
         : x(x_), y(y_) {}
 };
 
 struct Vec3 {
-    double x, y, z;
-    Vec3(double x_=0, double y_=0, double z_=0)
+    float x, y, z;
+    Vec3(float x_=0, float y_=0, float z_=0)
         : x(x_), y(y_), z(z_) {}
     // Normalize vector
     Vec3 normalized() const {
-        double mag = std::sqrt(x*x + y*y + z*z);
+        float mag = std::sqrt(x*x + y*y + z*z);
         if (mag == 0) return Vec3(0,0,0);
         return Vec3(x/mag, y/mag, z/mag);
     }
@@ -56,65 +56,65 @@ struct Vec3 {
     }
 
     // Scalar division
-    Vec3 operator/(double s) const {
+    Vec3 operator/(float s) const {
         return {x / s, y / s, z / s};
     }
 
     // Scalar multiplication
-    Vec3 operator*(double s) const {
+    Vec3 operator*(float s) const {
         return {x * s, y * s, z * s};
     }
 
     // Length
-    double length() const {
+    float length() const {
         return sqrt(x*x + y*y + z*z);
     }
 };
 struct EntityDimension {
-    double length = 1.0;
-    double width  = 1.0;
-    double heigth = 1.0;
+    float length = 1.0;
+    float width  = 1.0;
+    float heigth = 1.0;
 };
 
 struct CustomEntity {
     Coordinate coordinate;
     Axis       axis;
-    double heading = NULL;
-    double pitch   = NULL;
-    double illumination  = 1.0;
-    double glintFactor   = 1.0;  // reflection boost
-    double projectedLength = NULL;
-    double projectedWidth  = NULL;
+    float heading = NULL;
+    float pitch   = NULL;
+    float illumination  = 1.0;
+    float glintFactor   = 1.0;  // reflection boost
+    float projectedLength = NULL;
+    float projectedWidth  = NULL;
     std::string color           = "";
     std::string backgroundcolor = "";
-    double frontalSurfaceArea = NULL;
-    double temperature =  NULL;
+    float frontalSurfaceArea = NULL;
+    float temperature =  NULL;
 };
 
 struct Lens{
-    double focalLength = NULL;
-    double distortion  = NULL;
+    float focalLength = NULL;
+    float distortion  = NULL;
 };
-struct CustomSensor{
-    double radius     = NULL;
+struct eoSensorPayload{
+    float radius     = NULL;
 
-    double detectionThreshold  = 0.000000008;
-    double sensorGain = 1.0;
-    double maxRange   = 50000;
-    double fov        = 50;
+    float detectionThreshold  = 0.000000008;
+    float sensorGain = 1.0;
+    float maxRange   = 50000;
+    float fov        = 50;
 
-    // double gridLength = NULL;
-    // double gridWidth  = NULL;
-    // double wavelengthMin = NULL;
-    // double wavelengthMax = NULL;
+    // float gridLength = NULL;
+    // float gridWidth  = NULL;
+    // float wavelengthMin = NULL;
+    // float wavelengthMax = NULL;
 };
 struct EOParameters{
     Lens lens;
-    CustomSensor sensor;
+    eoSensorPayload sensor;
 };
 struct IRParameters{
     Lens lens;
-    CustomSensor sensor;
+    eoSensorPayload sensor;
 };
 using EntityList = std::unordered_map<std::string,CustomEntity>;
 
@@ -127,13 +127,13 @@ struct PayLoad{
 };
 
 struct PreProcessEntity {
-    double distanceBtwUser = NULL;
-    double angleBtwUser    = NULL;
-    double frontalSurfaceArea = NULL;
-    double visibility  =  NULL;//Not Useded
-    double reflection  =  NULL;//Not Useded
-    // double projectedLength = NULL;
-    // double projectedWidth  = NULL;
+    float distanceBtwUser = NULL;
+    float angleBtwUser    = NULL;
+    float frontalSurfaceArea = NULL;
+    float visibility  =  NULL;//Not Useded
+    float reflection  =  NULL;//Not Useded
+    // float projectedLength = NULL;
+    // float projectedWidth  = NULL;
 };
 using PreProcessEntityList = std::unordered_map<std::string,PreProcessEntity>;
 
@@ -152,14 +152,60 @@ struct IR_PayLoad{
 };
 
 struct PostProcessEntity {
-    double distanceBtwUser = NULL;
-    double angleBtwUser    = NULL;
-    double frontalSurfaceArea = NULL;
-    // double projectedLength = NULL;
-    // double projectedWidth  = NULL;
-    // double visibility  =  NULL;
-    // double reflection  =  NULL;
+    float distanceBtwUser = NULL;
+    float angleBtwUser    = NULL;
+    float frontalSurfaceArea = NULL;
+    // float projectedLength = NULL;
+    // float projectedWidth  = NULL;
+    // float visibility  =  NULL;
+    // float reflection  =  NULL;
 };
 
 using PostProcessEntityList = std::unordered_map<std::string,PostProcessEntity>;
+
+
+// ==========================================
+// 1. Parameter Structures
+// ==========================================
+
+struct EOIR_Environment {
+    float relativeHumidity;       // % (0.0 to 100.0)
+    float absoluteHumidity;       // g/m^3
+    float rainfallRate;           // mm/hr
+    float snowfallEquivalent;     // mm/hr
+    float ambientTemp;            // Celsius
+    float backgroundTemp;         // Celsius
+    float aerosolConcentration;   // mg/m^3
+    float baseExtinctionCoeff;    // Base sigma (1/km)
+    float ambientIlluminance;     // lux
+    float solarIrradiance;        // W/m^2 (Crucial for Glint)
+};
+
+struct EOIR_Target {
+    float surfaceTemp;            // Celsius
+    float specularReflectivity;   // 0.0 to 1.0 (e.g., 0.05 for matte paint, 0.9 for glass/polished metal)
+};
+
+struct EOIR_Sensor {
+    float slantRange;             // km
+    float mrtd;                   // Minimum Resolvable Temp Difference (Celsius)
+    float sunPhaseAngle;          // Degrees (0 = perfect alignment for direct reflection into sensor)
+    float saturationLimit;        // Max apparent delta-T before the sensor blooms/blinds (Celsius)
+};
+
+// Updated struct using float for sub-pixel accuracy
+struct ScreenTarget {
+    float x;          // Center X coordinate
+    float y;          // Center Y coordinate
+    float width;      // Bounding box width in pixels
+    float height;     // Bounding box height in pixels
+    bool isOnScreen;  // True if at least partially visible
+};
+
+struct ProjectedExtents {
+    float maxHorizontal;
+    float maxVertical;
+};
+
+
 #endif // PAYLOAD_H

@@ -204,6 +204,8 @@ void Platform::pause(){
 }
 
 void Platform::update(){
+    if (isRemoteDISEntity) return;//by Aman
+
     time =Simulation::simulationTime;
     float fuelconsumption = 0.002*(dynamicModel->currentSpeed/3000.0f);
     fuel -= fuelconsumption;
@@ -278,12 +280,11 @@ void Platform::update(){
                 //qDebug() << "[Platform::update] calling csmScan";
                 QElapsedTimer timer;
                 timer.start();  // Start measuring
-                //s->scan();
+                s->scan();
                 qint64 elapsedMs = timer.elapsed();
                 csmTime +=elapsedMs;
-
             }else
-                if(s->subType == Sensor::SubType::AIS){
+                if(s->subType == Sensor::SubType::IR){
                     //qDebug() << "[Platform::update] calling csmScan";
                     QElapsedTimer timer;
                     timer.start();  // Start measuring
@@ -292,7 +293,7 @@ void Platform::update(){
                     csmTime +=elapsedMs;
 
                 }else
-                    if(s->subType == Sensor::SubType::ADSB){
+                    if(s->subType == Sensor::SubType::AIS){
                         //qDebug() << "[Platform::update] calling csmScan";
                         QElapsedTimer timer;
                         timer.start();  // Start measuring
@@ -301,21 +302,30 @@ void Platform::update(){
                         csmTime +=elapsedMs;
 
                     }else
-                        if(s->subType == Sensor::SubType::ESM){
-                            QElapsedTimer timer;
-                            timer.start();  // Start measuring
-                            //qDebug() << "[Platform::update] calling esmScan";
-                            s->scan();
-                            qint64 elapsedMs = timer.elapsed();
-                            esmTime +=elapsedMs;
-                        }else{
-                            //qDebug() << "[Platform::update] calling scan + ewscan (Generic)";
+                        if(s->subType == Sensor::SubType::ADSB){
+                            //qDebug() << "[Platform::update] calling csmScan";
                             QElapsedTimer timer;
                             timer.start();  // Start measuring
                             s->scan();
                             qint64 elapsedMs = timer.elapsed();
-                            radarTime +=elapsedMs;
-                        }
+                            csmTime +=elapsedMs;
+
+                        }else
+                            if(s->subType == Sensor::SubType::ESM){
+                                QElapsedTimer timer;
+                                timer.start();  // Start measuring
+                                //qDebug() << "[Platform::update] calling esmScan";
+                                s->scan();
+                                qint64 elapsedMs = timer.elapsed();
+                                esmTime +=elapsedMs;
+                            }else{
+                                //qDebug() << "[Platform::update] calling scan + ewscan (Generic)";
+                                QElapsedTimer timer;
+                                timer.start();  // Start measuring
+                                s->scan();
+                                qint64 elapsedMs = timer.elapsed();
+                                radarTime +=elapsedMs;
+                            }
     }
 
     Profiler::currentFrame->CSMTime +=csmTime;
@@ -620,12 +630,17 @@ QJsonObject Platform::toJson() const {
     obj["id"] = QString::fromStdString(ID);
     obj["parent_id"] = QString::fromStdString(parentID);
     obj["active"] = Active;
-    obj["health"] = toParm(Health,"%");
-    obj["dropInterval"] = toParm(dropInterval,"s");
-    obj["fuel"] = toParm(fuel,"%");
+    obj["health"] = toParm(Health,"%",0,100);
+    obj["dropInterval"] = toParm(dropInterval,"s",0,3600);
+    obj["fuel"] = toParm(fuel,"%",0,100);
     // obj["Mission"] = false;
     obj["illumination"] = toParm(illumination,"%",0,100);
     obj["glintFactor"] = toParm(glintFactor,"%",0,100);
+
+    // By Himanshu For EO/IR Sensor
+    obj["surface temp"] = toParm(surfaceTemp,"deg cel",-50,800);
+    obj["specular reflectivity"] = toParm(specularReflectivity,"delta",0,1);
+
     QJsonObject TeamObj;
     TeamObj["type"] = "option";
     QJsonArray TeamoptionsArray;
@@ -637,6 +652,7 @@ QJsonObject Platform::toJson() const {
 
     QJsonObject CountryObj;
     CountryObj["type"] = "option";
+    CountryObj["visible"] = false;
     QJsonArray CountryoptionsArray;
     for (const std::string& opt : CountryNames)
         CountryoptionsArray.append(QString::fromStdString(opt));
@@ -653,17 +669,41 @@ QJsonObject Platform::toJson() const {
     CategoryObj["value"] = QString::fromStdString(CategoryNames[category]);
     obj["Category"] = CategoryObj;
 
-    QJsonObject paramMap;
-    for (const auto& [key, param] : parameters) {
-        if (param) {
-            paramMap[QString::fromStdString(key)] = param->toJson();
-        }
-    }
+    QJsonObject subCategoryObj;
+    subCategoryObj["type"] = "option";
+    subCategoryObj["editable"] = false;
+    QJsonArray subCategoryoptionsArray;
+    if(category == Entity::Category::Air){
+        for (const std::string& opt : AirCategoryNames)
+            subCategoryoptionsArray.append(QString::fromStdString(opt));
+        subCategoryObj["value"] = QString::fromStdString(AirCategoryNames[airCategory]);
+    }else
+        if(category == Entity::Category::Ground){
+            for (const std::string& opt : GroundCategoryNames)
+                subCategoryoptionsArray.append(QString::fromStdString(opt));
+            subCategoryObj["value"] = QString::fromStdString(GroundCategoryNames[groundCategory]);
+        }else
+            if(category == Entity::Category::Marine){
+                for (const std::string& opt : MarineCategoryNames)
+                    subCategoryoptionsArray.append(QString::fromStdString(opt));
+                subCategoryObj["value"] = QString::fromStdString(MarineCategoryNames[marineCategory]);
+            }
+    subCategoryObj["options"] = subCategoryoptionsArray;
 
-    QJsonObject parObj;
-    parObj["type"] = "parameter";
-    parObj["value"] = paramMap;
-    obj["parameters"] = parObj;
+    obj["SubCategory"] = subCategoryObj;
+
+
+    // QJsonObject paramMap;
+    // for (const auto& [key, param] : parameters) {
+    //     if (param) {
+    //         paramMap[QString::fromStdString(key)] = param->toJson();
+    //     }
+    // }
+
+    // QJsonObject parObj;
+    // parObj["type"] = "parameter";
+    // parObj["value"] = paramMap;
+    // obj["parameters"] = parObj;
 
     if (transform) obj["transform"] = transform->toJson();
     if (trajectory) obj["trajectory"] = trajectory->toJson();
@@ -705,9 +745,9 @@ QJsonObject Platform::toJson() const {
     obj["type"] = entityObj;
 
     // Include custom parameters
-    for (auto it = customParameters.begin(); it != customParameters.end(); ++it) {
-        obj[it.key()] = it.value();
-    }
+    // for (auto it = customParameters.begin(); it != customParameters.end(); ++it) {
+    //     obj[it.key()] = it.value();
+    // }
 
     return obj;
 }
@@ -732,6 +772,13 @@ void Platform::fromJson(const QJsonObject& obj) {
         illumination = valueFromParm(obj["illumination"].toObject());
     if (obj.contains("glintFactor"))
         glintFactor = valueFromParm(obj["glintFactor"].toObject());
+
+    // By Himanshu For EO/IR Sensor
+    if (obj.contains("surface temp"))
+        surfaceTemp = valueFromParm(obj["surface temp"].toObject());
+    if (obj.contains("specular reflectivity"))
+        specularReflectivity = valueFromParm(obj["specular reflectivity"].toObject());
+
     if (obj.contains("Mission")){
         bool mission = obj["Mission"].toBool();
         // if(mission){
@@ -762,13 +809,41 @@ void Platform::fromJson(const QJsonObject& obj) {
     if (obj.contains("Category") && obj["Category"].isObject()) {
         QJsonObject CategoryObj = obj["Category"].toObject();
         if (CategoryObj.contains("value")){
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 3 ; i++) {
                 if (CategoryNames[i] == CategoryObj["value"].toString().toStdString()) {
                     category = (Category)i;
                 }
             }
         }
     }
+
+    if (obj.contains("SubCategory") && obj["SubCategory"].isObject()) {
+        QJsonObject subCategoryObj = obj["SubCategory"].toObject();
+        if (subCategoryObj.contains("value")){
+            if(category == Entity::Category::Air){
+                for (int i = 0; i < 3 ; i++) {
+                    if (AirCategoryNames[i] == subCategoryObj["value"].toString().toStdString()) {
+                        airCategory = (SubAirCategory)i;
+                    }
+                }
+            }else
+                if(category == Entity::Category::Ground){
+                    for (int i = 0; i < 3 ; i++) {
+                        if (GroundCategoryNames[i] == subCategoryObj["value"].toString().toStdString()) {
+                            groundCategory = (SubGroundCategory)i;
+                        }
+                    }
+                }else
+                if(category == Entity::Category::Marine){
+                    for (int i = 0; i < 3 ; i++) {
+                        if (MarineCategoryNames[i] == subCategoryObj["value"].toString().toStdString()) {
+                            marineCategory = (SubMarineCategory)i;
+                        }
+                    }
+                }
+        }
+    }
+
     if (obj.contains("type") && obj["type"].isObject()) {
         QJsonObject entityObj = obj["type"].toObject();
         if (entityObj.contains("value"))
@@ -865,45 +940,45 @@ void Platform::fromJson(const QJsonObject& obj) {
         if (!weapons) addComponent("weapons");
     }
 
-    if (obj.contains("parameters")) {
-        QJsonObject parObj = obj["parameters"].toObject();
-        if (parObj.contains("value")) { // Fix: Check "value" instead of "array"
-            QJsonObject paramMap = parObj["value"].toObject();
-            for (const QString& key : paramMap.keys()) {
-                QJsonObject paramObj = paramMap[key].toObject();
-                std::shared_ptr<Parameter> param = std::make_shared<Parameter>();
-                param->fromJson(paramObj);
-                parameters[key.toStdString()] = param;
-            }
-        }
-    }
-    // Merge custom parameters
-    for (auto it = obj.begin(); it != obj.end(); ++it) {
-        if (it.key() != "name" &&
-            it.key() != "id" &&
-            it.key() != "parent_id" &&
-            it.key() != "active" &&
-            it.key() != "parameters" &&
-            it.key() != "type" &&
-            it.key() != "transform" &&
-            it.key() != "trajectory" &&
-            it.key() != "rigidbody" &&
-            it.key() != "dynamicModel" &&
-            it.key() != "crossSection" &&
-            it.key() != "collider" &&
-            it.key() != "meshRenderer2d" &&
-            it.key() != "bitmap" &&
-            it.key() != "radios" &&
-            it.key() != "sensors" &&
-            it.key() != "health" &&
-            it.key() != "fuel" &&
-            it.key() != "iffs" &&
-            it.key() != "weapons" &&
-            it.key() != "Mission" &&
-            it.key() != "parent_id") {
-            customParameters[it.key()] = it.value();
-        }
-    }
+    // if (obj.contains("parameters")) {
+    //     QJsonObject parObj = obj["parameters"].toObject();
+    //     if (parObj.contains("value")) { // Fix: Check "value" instead of "array"
+    //         QJsonObject paramMap = parObj["value"].toObject();
+    //         for (const QString& key : paramMap.keys()) {
+    //             QJsonObject paramObj = paramMap[key].toObject();
+    //             std::shared_ptr<Parameter> param = std::make_shared<Parameter>();
+    //             param->fromJson(paramObj);
+    //             parameters[key.toStdString()] = param;
+    //         }
+    //     }
+    // }
+    // // Merge custom parameters
+    // for (auto it = obj.begin(); it != obj.end(); ++it) {
+    //     if (it.key() != "name" &&
+    //         it.key() != "id" &&
+    //         it.key() != "parent_id" &&
+    //         it.key() != "active" &&
+    //         it.key() != "parameters" &&
+    //         it.key() != "type" &&
+    //         it.key() != "transform" &&
+    //         it.key() != "trajectory" &&
+    //         it.key() != "rigidbody" &&
+    //         it.key() != "dynamicModel" &&
+    //         it.key() != "crossSection" &&
+    //         it.key() != "collider" &&
+    //         it.key() != "meshRenderer2d" &&
+    //         it.key() != "bitmap" &&
+    //         it.key() != "radios" &&
+    //         it.key() != "sensors" &&
+    //         it.key() != "health" &&
+    //         it.key() != "fuel" &&
+    //         it.key() != "iffs" &&
+    //         it.key() != "weapons" &&
+    //         it.key() != "Mission" &&
+    //         it.key() != "parent_id") {
+    //         customParameters[it.key()] = it.value();
+    //     }
+    // }
 
 }
 

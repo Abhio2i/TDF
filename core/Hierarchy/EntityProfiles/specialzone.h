@@ -59,6 +59,19 @@ public:
     float humidity = 30;         // Relative humidity (%)
     float rain = 0;              // Precipitation rate (mm/h)
     float fog = 0;               // Visibility reduction (%)
+    float AtmoshPhericPressure= 0;
+    float AirDensity = 0;
+    float gasAttenuation = 0;
+    float shadowZone = 0;
+
+    // Environment By Himanshu For EO/IR Sensor
+    float absoluteHumidity     = 10.0;  // g/m^3
+    float snowfallEquivalent   = 0.0;   // mm/hr
+    float backgroundTemp       = 20.0 ; // Celsius
+    float aerosolConcentration = 0.05 ; // mg/m^3
+    float baseExtinctionCoeff  = 0.15 ; // Base sigma (1/km)
+    float ambientIlluminance   = 50000; // lux
+    float solarIrradiance      = 800  ; // W/m^2 (Crucial for Glint)
 
     // =========================================================================
     // SECTION: Simulation Logic

@@ -54,11 +54,9 @@ void CustomResizableOverlayDock::setWidget(QWidget *widget)
 {
     QDockWidget::setWidget(widget);
     if (!widget) return;
-
     widget->setMouseTracking(true);
     widget->setAttribute(Qt::WA_Hover, true);
     widget->installEventFilter(this);
-
     for (QWidget *child : widget->findChildren<QWidget*>()) {
         child->setMouseTracking(true);
         child->setAttribute(Qt::WA_Hover, true);

@@ -80,7 +80,9 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     setupEnhancedDockWidgets();
     setupToolBars();
     runtime = new Runtime();
+    networkToolBar->setDISPlugin(runtime->disPlugin);
     hierarchy = runtime->hierarchy;
+    pluginManager = runtime->pluginManager;
     SceneRenderer *renderer = runtime->scenerenderer;
     simulation = runtime->simulation;
     scriptengine = runtime->scriptengine;
@@ -92,7 +94,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     HierarchyConnector::instance()->setHierarchy(hierarchy);
     HierarchyConnector::instance()->setLibrary(library);
     HierarchyConnector::instance()->setLibTreeView(libTreeView);
-
     connect(textScriptView, &TextScriptWidget::runScriptstring,
             runtime->scriptengine, &ScriptEngine::loadAndCompileScript);
     connect(this,&RuntimeEditor::Activated,simulation,&Simulation::ReInit);
@@ -100,7 +101,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(scriptengine, &ScriptEngine::requestSidebarView, this, &RuntimeEditor::triggerSidebarView);
     connect(scriptengine, &ScriptEngine::requestDisplayTab, this, &RuntimeEditor::triggerDisplayTab);
     connect(scriptengine, &ScriptEngine::requestSelectEntity, this, [=](const QString &entityId) {
-        // Select entity in tree (visual highlight)
         treeView->selectEntityById(entityId);
         if (hierarchy->Entities.count(entityId.toStdString())) {
             Entity* entity = hierarchy->Entities[entityId.toStdString()];
@@ -116,9 +116,9 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             if (csmDisplayUI) {
                 csmDisplayUI->selectEntity(entity);
             }
-            if (eoDisplayUI) {
-                eoDisplayUI->selectEntity(entity);
-            }
+            // if (eoDisplayUI) {
+            //     eoDisplayUI->selectEntity(entity);
+            // }
             if (aisDisplayUI) {
                 aisDisplayUI ->selectEntity(entity);
             }
@@ -173,9 +173,12 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     csmDisplayUI = new CSMDisplay(displayTabs);
     csmDisplayUI->setHierarchy(hierarchy);
     displayTabs->addTab(csmDisplayUI, "CSM");
-    eoDisplayUI = new EODisplay(displayTabs);
-    eoDisplayUI->setHierarchy(hierarchy);
-    displayTabs->addTab(eoDisplayUI, "EO");
+    // eoDisplayUI = new EODisplay(displayTabs);
+    // eoDisplayUI->setHierarchy(hierarchy);
+    // displayTabs->addTab(eoDisplayUI, "EO");
+    // irDisplayUI = new IRDisplay(displayTabs);
+    // irDisplayUI->setHierarchy(hierarchy);
+    // displayTabs->addTab(irDisplayUI, "IR");
     aisDisplayUI = new AISDisplay(displayTabs);
     aisDisplayUI->setHierarchy(hierarchy);
     displayTabs->addTab(aisDisplayUI, "AIS");
@@ -203,8 +206,8 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(hierarchy, &Hierarchy::entityRemoved, sonoBuoyDisplayUI, &SonoBuoyPanel::RemoveEntity);
     connect(simulation, &Simulation::Update, csmDisplayUI, &CSMDisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, csmDisplayUI, &CSMDisplay::RemoveEntity);
-    connect(simulation, &Simulation::Update, eoDisplayUI, &EODisplay::updateRadar);
-    connect(hierarchy, &Hierarchy::entityRemoved, eoDisplayUI, &EODisplay::RemoveEntity);
+    // connect(simulation, &Simulation::Update, eoDisplayUI, &EODisplay::updateRadar);
+    // connect(hierarchy, &Hierarchy::entityRemoved, eoDisplayUI, &EODisplay::RemoveEntity);
     connect(simulation, &Simulation::Update, aisDisplayUI, &AISDisplay::updateRadar);
     connect(hierarchy, &Hierarchy::entityRemoved, aisDisplayUI, &AISDisplay::RemoveEntity);
     connect(simulation, &Simulation::Update, adsbDisplayUI, &ADSBDisplay::updateRadar);
@@ -221,7 +224,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(hierarchy, &Hierarchy::entityRemoved,
             aesaRadarDisplayUI, &AESARadarDisplay::RemoveEntity);
     //above by aman
-
     connect(simulation, &Simulation::Update, sonarDisplayUI, &SonarDisplay::updateRadar);  // add by amjad
     connect(simulation, &Simulation::Update,
             sonarDisplayUI, &SonarDisplay::onSimulationUpdate);
@@ -242,12 +244,9 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 int ping     = sonar->getPingInterval();
                 SonarDisplay* ui = sonarDisplayUI;
                 QMetaObject::invokeMethod(ui, [ui, results, ping]() {
-
                     if (!ui) return;
-
                     ui->setPingInterval(ping);
                     ui->updateContacts(results);
-
                 }, Qt::QueuedConnection);
             }
         }
@@ -274,7 +273,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         radarDisplayUI = nullptr;
         iffDisplayUI = nullptr;
         esmDisplayUI = nullptr;
-        eoDisplayUI = nullptr;
+        // eoDisplayUI = nullptr;
         adsbDisplayUI = nullptr;
         csmDisplayUI = nullptr;
         aisDisplayUI = nullptr;
@@ -293,7 +292,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         sonoBuoyDisplayUI = nullptr;
         radarDisplayUI = nullptr;
         esmDisplayUI = nullptr;
-        eoDisplayUI = nullptr;
+        // eoDisplayUI = nullptr;
         adsbDisplayUI = nullptr;
         csmDisplayUI = nullptr;
         aisDisplayUI = nullptr;
@@ -345,6 +344,25 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         simulation->setCanvas(tacticalDisplay->canvas);
         connect(simulation, &Simulation::Render, runtimeToolBar, &RuntimeToolBar::onElapsedTime);
         connect(runtimeToolBar, &RuntimeToolBar::startTriggered, [=]() {
+
+            if(runtime && runtime->recorder){
+                Recorder::LoggerStatusModes status = runtime->recorder->loggerStatus;
+                if(status == Recorder::S_REPLAYING        ||
+                    status == Recorder::S_REPLAY_PAUSED    ||
+                    status == Recorder::S_REPLAY_LOADED    ||
+                    status == Recorder::S_REPLAY_MODE      ||
+                    status == Recorder::S_REPLAY_STOPPED){
+                    simulation->stop();
+                    tacticalDisplay->canvas->editor();
+                    runtimeToolBar->setSimulationState(RuntimeToolBar::STOPPED);
+                    runtimeToolBar->highlightAction(runtimeToolBar->stopAction);
+                    QMessageBox::warning(this, "Warning",
+                                         "Simulation cannot be started in Replay mode!\n"
+                                         );
+                    return;
+                }
+            }
+
             if (runtimeToolBar->getSnapshot().isEmpty()) {
                 QJsonObject currentState = hierarchy->toJson();
                 runtimeToolBar->storeSnapshot(currentState);
@@ -364,14 +382,10 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             tacticalDisplay->canvas->editor();
             if (!runtimeToolBar->m_initialSnapshot.isEmpty()) {
                 tacticalDisplay->canvas->selectedEntityId.clear();
-
-                // ── Invalidate entity info dialog BEFORE fromJson destroys entities ──
                 if (tacticalDisplay && tacticalDisplay->canvas) {
                     tacticalDisplay->canvas->resetEntityInfoDialog();
                 }
-
                 hierarchy->fromJson(runtimeToolBar->m_initialSnapshot);
-
                 if (tacticalDisplay && tacticalDisplay->canvas) {
                     tacticalDisplay->canvas->ReInit();
                 }
@@ -380,7 +394,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 }
             }
         });
-
         connect(simulation, &Simulation::sendMode, this, [=](SimulationStateNS::State state) {
             if (runtimeToolBar) {
                 switch(state) {
@@ -410,8 +423,8 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                     comp.dynamicModel->setMoveSpeed(moveSpeed);
                 }
             }
+
         });
-        networkToolBar->setNetworkManager(networkManager);
     } else {
     }
     connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
@@ -445,7 +458,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             consoleView->appendText(QString::fromStdString(debug));
         }
     });
-
     HierarchyConnector::instance()->connectSignals(hierarchy,library, treeView, tacticalDisplay, inspector);
     HierarchyConnector::instance()->connectLibrarySignals(library, libTreeView);
     HierarchyConnector::instance()->initializeDummyData(hierarchy);
@@ -457,12 +469,12 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         connect(tacticalDisplay->canvas, &CanvasWidget::selectEntitybyCursor,
                 this, [=](const QString& entityId) {
                     m_lastSelectedEntityId = entityId;
+                    emit hierarchy->entiitySelected(m_lastSelectedEntityId);
                     auto it = hierarchy->Entities.find(entityId.toStdString());
                     if (it == hierarchy->Entities.end()) return;
                     Entity* entity = it->second;
                     QString entityName = QString::fromStdString(entity->Name);
                     QString displayName = capitalizeFirstLetter(entityName);
-
                     if (!inspectorDock->isLocked()) {
                         for (Inspector* insp : inspectors) {
                             QJsonObject entityJson = filterEntityJsonForInspector(
@@ -470,7 +482,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                             insp->init(entityId, displayName + "_self", entityJson);
                         }
                     }
-
                     if (!displayDock || !displayDock->isLocked()) {
                         QString category = entity->toJson()["Category"].toObject()["value"].toString();
                         filterSensorTabsForEntity(entityId, category);
@@ -480,7 +491,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                         if (iffDisplayUI)   iffDisplayUI->selectEntity(entity);
                         if (radioDisplayUI) radioDisplayUI->selectEntity(entity);
                         if (csmDisplayUI)   csmDisplayUI->selectEntity(entity);
-                        if (eoDisplayUI)    eoDisplayUI->selectEntity(entity);
+                        // if (eoDisplayUI)    eoDisplayUI->selectEntity(entity);
                         if (aisDisplayUI)   aisDisplayUI->selectEntity(entity);
                         if (adsbDisplayUI)  adsbDisplayUI->selectEntity(entity);
                         if (esmDisplayUI)   esmDisplayUI->selectEntity(entity);
@@ -502,15 +513,12 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         } else {
             type = data["type"].toString();
         }
-
         // ===== FORMATION MULTI-SELECT LOGIC =====
         if (type == "entity") {
         }
-
         QString name = data["name"].toString();
         QString ID = data["parentId"].toString();
         QString displayName = capitalizeFirstLetter(name);
-
         // ===== INSPECTOR UPDATE =====
         if (!inspectorDock->isLocked()) {
             for (Inspector* inspector : inspectors) {
@@ -528,11 +536,12 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                     inspector->init(ID, displayName + "_self", (hierarchy->ProfileCategories)[data["ID"].toString().toStdString()]->toJson());
                 } else if (type == "folder") {
                     inspector->init(ID, displayName + "_self", (hierarchy->Folders)[data["ID"].toString().toStdString()]->toJson());
-                // } else if (type == "entity") {
-                //     m_lastSelectedEntityId = data["ID"].toString();
-                //     inspector->init(data["ID"].toString(), displayName + "_self", (hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
+                    // } else if (type == "entity") {
+                    //     m_lastSelectedEntityId = data["ID"].toString();
+                    //     inspector->init(data["ID"].toString(), displayName + "_self", (hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson());
                 } else if (type == "entity") {
                     m_lastSelectedEntityId = data["ID"].toString();
+                    emit hierarchy->entiitySelected(m_lastSelectedEntityId);
                     QJsonObject entityJson = filterEntityJsonForInspector(
                         (hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson()
                         );
@@ -542,22 +551,19 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 }
             }
         }
-
         // ===== SENSOR DISPLAY UPDATE =====
-        // For entity: update sensors directly
         if (type == "entity") {
             if (!displayDock->isLocked()) {
                 QJsonObject entityJson = (hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson();
                 QString category = entityJson["Category"].toObject()["value"].toString();
                 filterSensorTabsForEntity(data["ID"].toString(), category);
                 if (displayDock) displayDock->setWindowTitle("Sensors - " + displayName);
-
                 if (radarDisplayUI) radarDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
                 if (sonoBuoyDisplayUI) sonoBuoyDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
                 if (iffDisplayUI) iffDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
                 if (radioDisplayUI) radioDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
                 if (csmDisplayUI) csmDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
-                if (eoDisplayUI) eoDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
+                // if (eoDisplayUI) eoDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
                 if (aisDisplayUI) aisDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
                 if (adsbDisplayUI) adsbDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
                 if (esmDisplayUI) esmDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
@@ -565,7 +571,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 if (sonarDisplayUI) sonarDisplayUI->selectEntity((hierarchy->Entities)[data["ID"].toString().toStdString()]);
             }
         }
-        // For component/subcomponent: find parent entity and update sensors (without changing tree selection)
         else if (type == "component" || type == "subcomponent") {
             QString parentEntityId;
             if (type == "component") {
@@ -585,16 +590,14 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                     Entity* entity = hierarchy->Entities[parentEntityId.toStdString()];
                     QString entityDisplayName = capitalizeFirstLetter(QString::fromStdString(entity->Name));
                     QString category = entity->toJson()["Category"].toObject()["value"].toString();
-
                     filterSensorTabsForEntity(parentEntityId, category);
                     if (displayDock) displayDock->setWindowTitle("Sensors - " + entityDisplayName);
-
                     if (radarDisplayUI) radarDisplayUI->selectEntity(entity);
                     if(sonoBuoyDisplayUI) sonoBuoyDisplayUI->selectEntity(entity);
                     if (iffDisplayUI) iffDisplayUI->selectEntity(entity);
                     if (radioDisplayUI) radioDisplayUI->selectEntity(entity);
                     if (csmDisplayUI) csmDisplayUI->selectEntity(entity);
-                    if (eoDisplayUI) eoDisplayUI->selectEntity(entity);
+                    // if (eoDisplayUI) eoDisplayUI->selectEntity(entity);
                     if (aisDisplayUI) aisDisplayUI->selectEntity(entity);
                     if (adsbDisplayUI) adsbDisplayUI->selectEntity(entity);
                     if (esmDisplayUI) esmDisplayUI->selectEntity(entity);
@@ -645,21 +648,17 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                 if (!hierarchy) return;
                 auto it = hierarchy->Entities.find(formationId.toStdString());
                 if (it == hierarchy->Entities.end()) return;
-
                 Formation* formation = dynamic_cast<Formation*>(it->second);
                 if (!formation) return;
-
                 // Collect all entity IDs associated with this formation
                 QList<QString> entityIds;
                 entityIds.append(formationId);
-
                 // Mothership
                 if (formation->mothership && formation->mothership->entity) {
                     QString motherId = QString::fromStdString(formation->mothership->entity->ID);
                     if (motherId != "dummy" && !motherId.isEmpty())
                         entityIds.append(motherId);
                 }
-
                 // Allies
                 if (formation->formationPositions) {
                     for (const auto& pair : *formation->formationPositions) {
@@ -671,7 +670,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                         }
                     }
                 }
-
                 // Select them in the tree view and canvas
                 treeView->selectMultipleEntitiesInTree(entityIds);
                 if (tacticalDisplay && tacticalDisplay->canvas)
@@ -679,7 +677,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             });
     connect(treeView, &HierarchyTree::itemsSelected, this, [=](QList<QVariantMap> dataList) {
         QList<QString> entityIds;
-
         for (const QVariantMap& data : dataList) {
             QString type;
             if (data["type"].type() == QVariant::Map) {
@@ -721,7 +718,19 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(hierarchy, &Hierarchy::subComponentRemoved, this, &RuntimeEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::profileRenamed, this, &RuntimeEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::folderRenamed, this, &RuntimeEditor::markUnsavedChanges);
-    connect(hierarchy, &Hierarchy::entityRenamed, this, &RuntimeEditor::markUnsavedChanges);
+    // ── Entity rename recording ────────────────────────────────────────────
+    connect(hierarchy, &Hierarchy::entityRenamed,
+            this, [this](QString ID, QString newName) {
+                if (runtime && runtime->recording
+                    && runtime->recorder->modeOfLogger == Recorder::RECORDING
+                    && runtime->recorder->loggerStatus  == Recorder::S_RECORDING
+                    && runtime->recording->packet)
+                {
+                    runtime->recording->entityRenamedInBetween(
+                        runtime->recording->packet, ID, newName);
+                }
+            });
+
     //==============================================scriptengine(Raj &Amjad)========================================
     connect(scriptengine, &ScriptEngine::requestSensorScreenshot, this, [=](const QString &filePath) mutable {
         if (!displayTabs) {
@@ -738,7 +747,7 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             return;
         }
 
-        // ✅ CREATE PROPER DIRECTORY PATHS
+        // CREATE PROPER DIRECTORY PATHS
         QString sensorDir = QDir::tempPath() + "/sensor_screenshots";
         QString canvasDir = QDir::tempPath() + "/gis_reports";
         QDir().mkpath(sensorDir);
@@ -746,8 +755,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
 
         QString tabName = displayTabs->tabText(displayTabs->currentIndex());
         QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz");
-
-
         QString sensorPath = sensorDir + "/" + timestamp + "_" + tabName + "_" + QString::number(radarScreenshotCount) + ".png";
         QPixmap sensorScreenshot = currentDisplay->grab();
 
@@ -802,9 +809,31 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             }
         }
     });
-
     //=================================================================================================
     //===================Logger (Himanshu)==========================================
+    // Logger file dialog ke liye simulation pause/resume
+    connect(loggerDialog, &LoggerDialog::pauseSimulationRequested,
+            this, [=]() {
+                if (simulation &&
+                    runtimeToolBar->getSimulationState() == RuntimeToolBar::RUNNING) {
+                    m_loggerDialogPausedSim = true;
+                    simulation->pause();
+                    tacticalDisplay->canvas->editor();
+                    runtimeToolBar->setSimulationState(RuntimeToolBar::PAUSED);
+                } else {
+                    m_loggerDialogPausedSim = false;
+                }
+            });
+
+    connect(loggerDialog, &LoggerDialog::resumeSimulationRequested,
+            this, [=]() {
+                if (m_loggerDialogPausedSim) {
+                    m_loggerDialogPausedSim = false;
+                    simulation->start();
+                    tacticalDisplay->canvas->simulation();
+                    runtimeToolBar->setSimulationState(RuntimeToolBar::RUNNING);
+                }
+            });
     connect(runtimeToolBar, &RuntimeToolBar::loggerTriggered, this, &RuntimeEditor::toggleLoggerDisplay);
     connect(loggerDock, &QDockWidget::visibilityChanged, this, [=](bool visible) {
         if (!visible) {
@@ -818,8 +847,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             }
         }
     });
-
-
     // Logger connections
     connect(loggerDialog, &LoggerDialog::getRecorder, this, [this]{
         loggerDialog->recorder = runtime->recorder;
@@ -828,39 +855,51 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(loggerDialog, &LoggerDialog::loggerModeSend,
             runtime->recorder, &Recorder::loggerModeCheck);
 
-
-    //Recorder Information Connection Start
-    //Logger Update Recorder Information Recorder =>
-    //M
     connect(runtime->recorder, &Recorder::recorderInfoSendOnce,
             loggerDialog, &LoggerDialog::recorderInfoReceiveOnce);
 
     connect(runtime->recorder, &Recorder::recorderInfoSend,
             loggerDialog, &LoggerDialog::recorderInfoReceive);
 
-    // connect(runtime->recorder, &Recorder::recorderInfoSendOnce,
-    //         loggerDialog, &LoggerDialog::recorderInfoReceiveOnce);
 
-    //2nd one for Whole without Date and
     connect(runtime->recorder, &Recorder::recorderInfoSendUsual,
             loggerDialog, &LoggerDialog::recorderInfoReceiveUsual);
 
     //3rd one for Only for
     connect(runtime->recorder, &Recorder::recorderInfoSendDuration,
             loggerDialog, &LoggerDialog::recorderInfoReceiveDuration);
-    //Recorder Information Connection End
 
-
-    // Recorder: Recording Start
-
-    // Recorder: Recording
-    // START
-    // START
     connect(loggerDialog, &LoggerDialog::recordingStart,
             runtime->recorder->m_recording,&Recording::start);
-    // connect(runtime->recorder->m_recording,&Recording::sendRecorder,
-    //         loggerDialog, &LoggerDialog::receiveRecorder);
+    connect(runtime->recorder->m_recording, &Recording::started,
+            this, [this]() {
+                recordingStartTime = QDateTime::currentDateTime();
+                pausedTimeMs = 0;
+            });
 
+    // Clear canvas mesh map before replay starts
+    connect(runtime->replay, &Replay::clearCanvasMeshes, this, [this]() {
+        if (tacticalDisplay && tacticalDisplay->canvas) {
+            tacticalDisplay->canvas->Meshes.clear();
+        }
+    });
+
+    // Update canvas mesh entry with fresh pointers when an entity is recreated
+    connect(runtime->replay, &Replay::entityRecreated, this, [this](const QString& id) {
+        if (!tacticalDisplay || !tacticalDisplay->canvas) return;
+        auto entityIt = hierarchy->Entities.find(id.toStdString());
+        if (entityIt == hierarchy->Entities.end()) return;
+        Platform* platform = dynamic_cast<Platform*>(entityIt->second);
+        if (!platform) return;
+        auto& meshEntry = tacticalDisplay->canvas->Meshes[id.toStdString()];
+        meshEntry.name = QString::fromStdString(platform->Name);
+        meshEntry.entity = platform;
+        meshEntry.platform = platform;
+        meshEntry.coreTransform = platform->transform;
+        if (platform->trajectory)
+            meshEntry.trajectory = platform->trajectory;
+
+    });
     connect(runtime->recorder,&Recorder::sendRecorder, this, [this]{
         loggerDialog->recorder = runtime->recorder;
     });
@@ -868,61 +907,87 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             loggerDialog, &LoggerDialog::updateDuration);
     connect(runtime->recorder->m_replay,&Replay::updateUiDuration,
             loggerDialog, &LoggerDialog::updateDuration);
-    // PAUSE
     connect(loggerDialog, &LoggerDialog::recordingPause, this, [this]() {
-        // Pause engine
         runtime->recorder->getRecording()->pause();
-
-        // Stop UI timer
         if (recordingTimer && recordingTimer->isActive())
             recordingTimer->stop();
-
-        // accumulate elapsed time since last start/resume
         if (recordingStartTime.isValid()) {
             pausedTimeMs += recordingStartTime.msecsTo(QDateTime::currentDateTime());
         }
-
-        // keep recordingStartTime valid? we can invalidate to signal pause state
-        recordingStartTime = QDateTime(); // optional: mark as paused
-
-        // show paused duration
+        recordingStartTime = QDateTime();
         loggerDialog->updateRecordingDuration(pausedTimeMs);
     });
 
     // RESUME
     connect(loggerDialog, &LoggerDialog::recordingResume, this, [this]() {
-        // Resume engine
         runtime->recorder->getRecording()->resume();
-
-        // reset start reference to now; pausedTimeMs already contains past time
         recordingStartTime = QDateTime::currentDateTime();
-
-        // restart UI timer
         if (recordingTimer && !recordingTimer->isActive())
             recordingTimer->start(100);
     });
 
     // STOP
     connect(loggerDialog, &LoggerDialog::recordingStop, this, [this]() {
-        // Stop engine
         runtime->recorder->getRecording()->stop();
-
-        // stop UI timer
         if (recordingTimer && recordingTimer->isActive())
             recordingTimer->stop();
-
-        // reset state
         loggerDialog->updateRecordingDuration(0);
         loggerDialog->getTimelineWidget()->clearBookmarks();
         pausedTimeMs = 0;
         recordingStartTime = QDateTime();
+        if (runtime && runtime->recording) {
+            runtime->recording->entitiesIDIndex.clear();
+            runtime->recording->profileCategoriesIDIndex.clear();
+            runtime->recording->sensorIndexMap.clear();
+            runtime->recording->iffIndexMap.clear();
+            runtime->recording->radioIndexMap.clear();
+            runtime->recording->weaponIndexMap.clear();
+            runtime->recording->maxIndex = 0;
+            runtime->recording->maxProfileIndex = 0;
+            runtime->recording->maxSensorIndex = 0;
+            runtime->recording->maxIffIndex = 0;
+            runtime->recording->maxRadioIndex = 0;
+            runtime->recording->maxWeaponIndex = 0;
+            runtime->recording->meshRenderer2DCRUDSet->clear();
+            runtime->recording->frameIndex = 0;
+        }
     });
+    connect(loggerDialog, &LoggerDialog::replayStart,
+            runtime->recorder->getReplay(), &Replay::start);
+    connect(loggerDialog, &LoggerDialog::replayStart, this, [=]() {
+        // ── ADD: Stop simulation when replay begins ──
+        if (simulation) {
+            simulation->stop();
+            if (tacticalDisplay && tacticalDisplay->canvas)
+                tacticalDisplay->canvas->editor();
+        }
+        if (runtimeToolBar) {
+            runtimeToolBar->setSimulationState(RuntimeToolBar::STOPPED);
+            runtimeToolBar->highlightAction(runtimeToolBar->stopAction);
+        }
+        // existing bookmark code
+        if (runtime && runtime->sqlite) {
+            QList<QPair<QString,qint64>> bms = runtime->sqlite->getBookmarks();
+            runtime->recorder->m_replay->bookmarks = bms;
+            for (auto &bm : bms) {
+                emit runtime->recorder->m_replay->replayBookmark(bm.first, bm.second);
+            }
+        }
+    });
+    connect(runtime->replay, &Replay::setMaxDuration,
+            this, [=](qint64* maxDuration) {
+                if (loggerDialog && loggerDialog->getTimelineWidget()) {
+                    loggerDialog->getTimelineWidget()->maxDurationPtr = maxDuration;
+                    // Previous duration clear karo
+                    loggerDialog->getTimelineWidget()->setRecordingDuration(0);
+                    loggerDialog->updateRecordingDurationLabel(0);
+                }
+            });
     connect(loggerDialog, &LoggerDialog::bookmarkAdded, this, [this](const QString &bookmarkNote) {
         if (!runtime || !runtime->recorder->getRecording()) {
             qWarning() << "Runtime or Recorder not available — cannot save bookmark.";
             return;
         }
-        // compute total time = accumulated paused time + current running segment
         qint64 currentSegmentMs = 0;
         if (recordingStartTime.isValid()) {
             currentSegmentMs = recordingStartTime.msecsTo(QDateTime::currentDateTime());
@@ -931,10 +996,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         runtime->recorder->getRecording()->recordingBookmark(bookmarkNote, timestampMs);
         loggerDialog->addBookmarkWithTimestamp(bookmarkNote, timestampMs);
     });
-    //Recorder: Recording End
-    //Recorder: Replay Start
-    connect(loggerDialog, &LoggerDialog::replayStart,
-            runtime->recorder->getReplay(), &Replay::start);
     connect(loggerDialog, &LoggerDialog::replayPause,
             runtime->recorder->getReplay(), &Replay::pause);
     connect(loggerDialog, &LoggerDialog::replayResume,
@@ -952,11 +1013,41 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     connect(runtime->recorder->getReplay(), &Replay::setReplayDuration,
             loggerDialog, &LoggerDialog::setTimelineDuration);
     connect(loggerDialog, &LoggerDialog::replayFileUnloaded,
-            runtime->recorder->getReplay(), &Replay::fileUnloaded);
+            this, [=]() {
+                if (runtime && runtime->sqlite) {
+                    runtime->sqlite->close();
+                }
+                if (runtime && runtime->replay) {
+                    runtime->replay->fileUnloaded();
+                    runtime->replay->entitiesIndexDetails.clear();
+                    runtime->replay->profileCategoriesIndexDetails.clear();
+                    runtime->replay->entitiesMeshRenderer2DIndex.clear();
+                    runtime->replay->entitiesTrajectoryIndex.clear();
+                    runtime->replay->sensorsIndexMap.clear();
+                    runtime->replay->iffsIndexMap_replay.clear();
+                    runtime->replay->radiosIndexMap_replay.clear();
+                    runtime->replay->weaponsIndexMap_replay.clear();
+                    runtime->replay->sensorsRestored  = false;
+                    runtime->replay->iffsRestored     = false;
+                    runtime->replay->radiosRestored   = false;
+                    runtime->replay->weaponsRestored  = false;
+                    runtime->replay->durationShared   = 0;
+                    runtime->replay->frameIndex       = 0;
+                    runtime->replay->maxDuration      = 0;
+                    runtime->replay->maxFrameIndex    = 0;
+                    runtime->replay->durationLength   = 0;
+                    runtime->replay->bookmarks.clear();
+                }
+                if (loggerDialog) {
+                    loggerDialog->getTimelineWidget()->clearBookmarks();
+                    loggerDialog->getTimelineWidget()->setRecordingDuration(0);
+                    loggerDialog->getTimelineWidget()->maxDurationPtr = nullptr;
+                    loggerDialog->updateRecordingDurationLabel(0);
+
+                }
+            });
     connect(runtime->recorder->getReplay(), &Replay::replayFrameLoaded,
             loggerDialog, &LoggerDialog::updateReplayProgress);
-
-
     connect(loggerDialog, &LoggerDialog::nextFrame, this, [=]() {
         if (runtime && runtime->recorder) {
             runtime->recorder->getReplay()->goToNextFrame();
@@ -981,7 +1072,6 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             runtime->sqlite->dbInit();
         }
     });
-
     connect(loggerDialog, &LoggerDialog::dbConnect, this, [=]() {
         if (runtime && runtime->sqlite) {
             runtime->sqlite->dbConnect();
@@ -989,15 +1079,152 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             // runtime->replay->frameMap    = runtime->sqlite->getFrameMap();
         }
     });
-
     connect(loggerDialog, &LoggerDialog::getDBStatus, this, [=]() {
         if (runtime && runtime->sqlite) {
             loggerDialog->dbStatusPtr = &runtime->sqlite->dbStatus;
         }
     });
+    // Sensor recording connections
+    connect(hierarchy, &Hierarchy::sensorAdded, this, [this](const QString &entityId, const QString &sensorId) {
+        if (runtime && runtime->recording
+            && runtime->recorder->modeOfLogger == Recorder::RECORDING
+            && runtime->recorder->loggerStatus == Recorder::S_RECORDING
+            && runtime->recording->packet)
+        {
+            auto it = hierarchy->Sensors.find(sensorId.toStdString());
+            if (it != hierarchy->Sensors.end()) {
+                runtime->recording->sensorAdded(runtime->recording->packet, sensorId, it->second, CREATE);
+            }
+        }
+    });
+
+    connect(hierarchy, &Hierarchy::sensorRemoved, this, [this](const QString &entityId, const QString &sensorId) {
+        if (runtime && runtime->recording && runtime->recorder->modeOfLogger == Recorder::RECORDING) {
+            runtime->recording->sensorRemoved(runtime->recording->packet, sensorId);
+        }
+    });
+
+    connect(hierarchy, &Hierarchy::sensorUpdated, this, [this](const QString &sensorId) {
+        if (runtime && runtime->recording && runtime->recorder->modeOfLogger == Recorder::RECORDING) {
+            auto it = hierarchy->Sensors.find(sensorId.toStdString());
+            if (it != hierarchy->Sensors.end()) {
+                runtime->recording->sensorUpdated(runtime->recording->packet, sensorId, it->second);
+            }
+        }
+    });
+    connect(hierarchy, &Hierarchy::iffAdded,
+            this, [this](const QString &entityId, const QString &iffId) {
+                if (runtime && runtime->recording
+                    && runtime->recorder->modeOfLogger == Recorder::RECORDING
+                    && runtime->recorder->loggerStatus  == Recorder::S_RECORDING
+                    && runtime->recording->packet)
+                {
+                    auto it = hierarchy->Iffs.find(iffId.toStdString());
+                    if (it != hierarchy->Iffs.end())
+                        runtime->recording->iffAdded(
+                            runtime->recording->packet, iffId, it->second, CREATE);
+                }
+            });
+
+    connect(hierarchy, &Hierarchy::iffRemoved,
+            this, [this](const QString &entityId, const QString &iffId) {
+                if (runtime && runtime->recording
+                    && runtime->recorder->modeOfLogger == Recorder::RECORDING)
+                {
+                    runtime->recording->iffRemoved(
+                        runtime->recording->packet, iffId);
+                }
+            });
+
+    connect(hierarchy, &Hierarchy::iffUpdated,
+            this, [this](const QString &iffId) {
+                if (runtime && runtime->recording
+                    && runtime->recorder->modeOfLogger == Recorder::RECORDING)
+                {
+                    auto it = hierarchy->Iffs.find(iffId.toStdString());
+                    if (it != hierarchy->Iffs.end())
+                        runtime->recording->iffUpdated(
+                            runtime->recording->packet, iffId, it->second);
+                }
+            });
+
+    // ── Radio connections ─────────────────────────────────────────────────────
+
+    connect(hierarchy, &Hierarchy::radioAdded,
+            this, [this](const QString &entityId, const QString &radioId) {
+                if (runtime && runtime->recording
+                    && runtime->recorder->modeOfLogger == Recorder::RECORDING
+                    && runtime->recorder->loggerStatus  == Recorder::S_RECORDING
+                    && runtime->recording->packet)
+                {
+                    auto it = hierarchy->Radios.find(radioId.toStdString());
+                    if (it != hierarchy->Radios.end())
+                        runtime->recording->radioAdded(
+                            runtime->recording->packet, radioId, it->second, CREATE);
+                }
+            });
 
 
+    connect(hierarchy, &Hierarchy::radioRemoved,
+            this, [this](const QString &entityId, const QString &radioId) {
+                if (runtime && runtime->recording
+                    && runtime->recorder->modeOfLogger == Recorder::RECORDING)
+                {
+                    runtime->recording->radioRemoved(
+                        runtime->recording->packet, radioId);
+                }
+            });
 
+
+    connect(hierarchy, &Hierarchy::radioUpdated,
+            this, [this](const QString &radioId) {
+                if (runtime && runtime->recording
+                    && runtime->recorder->modeOfLogger == Recorder::RECORDING)
+                {
+                    auto it = hierarchy->Radios.find(radioId.toStdString());
+                    if (it != hierarchy->Radios.end())
+                        runtime->recording->radioUpdated(
+                            runtime->recording->packet, radioId, it->second);
+                }
+            });
+
+    // ── Weapon connections ────────────────────────────────────────────────────
+
+    connect(hierarchy, &Hierarchy::weaponAdded,
+            this, [this](const QString &entityId, const QString &weaponId) {
+                if (runtime && runtime->recording
+                    && runtime->recorder->modeOfLogger == Recorder::RECORDING
+                    && runtime->recorder->loggerStatus  == Recorder::S_RECORDING
+                    && runtime->recording->packet)
+                {
+                    auto it = hierarchy->Weapons.find(weaponId.toStdString());
+                    if (it != hierarchy->Weapons.end())
+                        runtime->recording->weaponAdded(
+                            runtime->recording->packet, weaponId, it->second, CREATE);
+                }
+            });
+
+    connect(hierarchy, &Hierarchy::weaponRemoved,
+            this, [this](const QString &entityId, const QString &weaponId) {
+                if (runtime && runtime->recording
+                    && runtime->recorder->modeOfLogger == Recorder::RECORDING)
+                {
+                    runtime->recording->weaponRemoved(
+                        runtime->recording->packet, weaponId);
+                }
+            });
+
+    connect(hierarchy, &Hierarchy::weaponUpdated,
+            this, [this](const QString &weaponId) {
+                if (runtime && runtime->recording
+                    && runtime->recorder->modeOfLogger == Recorder::RECORDING)
+                {
+                    auto it = hierarchy->Weapons.find(weaponId.toStdString());
+                    if (it != hierarchy->Weapons.end())
+                        runtime->recording->weaponUpdated(
+                            runtime->recording->packet, weaponId, it->second);
+                }
+            });
 
     connect(runtime->replay, &Replay::getMaxFrameIndexNDuration,
             this, [=](int* maxFrameIndex, qint64* maxDuration){
@@ -1007,53 +1234,68 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                         setFrameIndexNDuration(*maxFrameIndex, *maxDuration);
                 }
             });
+
     connect(runtime->replay, &Replay::getPayLoad,
-            this, [=](PayLoad* payload) {
+            this, [=](QSharedPointer<PayLoad> payload) {
 
                 if (runtime && runtime->sqlite) {
                     runtime->sqlite->setPayLoad(*payload);
                 }
             });
+
     connect(hierarchy, &Hierarchy::profileAdded, this, [this](QString ID, QString profileName){
         if(runtime && runtime->recording && runtime->recorder->modeOfLogger == Recorder::RECORDING){
-            runtime->recording->profileCategoriesUpdate(ID, profileName, Operation::CREATE);
+            if(runtime->recording->packet){
+                runtime->recording->profileCategoriesUpdate(runtime->recording->packet,ID, profileName, Operation::CREATE);
+            }
         }
     });
     connect(hierarchy, &Hierarchy::profileRemoved, this, [this](QString ID){
         if(runtime && runtime->recording && runtime->recorder->modeOfLogger == Recorder::RECORDING){
-            runtime->recording->profileCategoriesDeleted(ID);
+            if(runtime->recording->packet){
+                runtime->recording->profileCategoriesDeleted(runtime->recording->packet,ID);
+            }
         }
     });
+
 
 
     connect(hierarchy, &Hierarchy::entityAdded, this, [this](QString parentID, QString ID, QString entityName){
         if(runtime && runtime->recording && runtime->recorder->modeOfLogger == Recorder::RECORDING){
             /* To Add Entity */
-            runtime->recording->entityAddedInBetween( parentID, ID, entityName);
+            if(runtime->recording->packet){
 
+                runtime->recording->entityAddedInBetween(runtime->recording->packet, parentID, ID, entityName);
 
+            }
         }
     });
     connect(hierarchy, &Hierarchy::meshRenderer2DisAdded, this, [this](const QString &ID, MeshRenderer2D* meshRenderer2D){
         if(runtime && runtime->recording && runtime->recorder->modeOfLogger == Recorder::RECORDING){
             /* To Add Entity */
             //qDebug()<<"Mesh is added "<<ID<<" and "<<entity->ID.c_str();
-            runtime->recording->meshRenderer2DCRUD(ID,meshRenderer2D);
+            if(runtime->recording->packet){
+                runtime->recording->meshRenderer2DCRUD(runtime->recording->packet,ID,meshRenderer2D);
+            }
         }
     });
     connect(hierarchy, &Hierarchy::trajectoryisAdded, this, [this](const QString &ID, Trajectory* trajectory){
         if(runtime && runtime->recording && runtime->recorder->modeOfLogger == Recorder::RECORDING){
             /* To Add Entity */
             //qDebug()<<"Mesh is added "<<ID<<" and "<<entity->ID.c_str();
-            runtime->recording->trajectoryCRUD(ID , trajectory->Trajectories,Operation::CREATE);
+            if(runtime->recording->packet){
+                runtime->recording->trajectoryCRUD(runtime->recording->packet,ID , trajectory->Trajectories,Operation::CREATE);
+            }
         }
     });
     connect(hierarchy, &Hierarchy::entityRemovedfull, this, [this](QString parentId, QString ID, bool Profile){
         if(runtime && runtime->recording && runtime->recorder->modeOfLogger == Recorder::RECORDING){
-            if(runtime->recording->entitiesIDIndex.contains(ID)){
-                runtime->recording->meshRenderer2DCRUD(ID,nullptr,Operation::DELETE);
-                runtime->recording->entityRemovedInBetween(ID);
-                /* To Add Mesh of Entity*/
+            if(runtime->recording->packet){
+                if(runtime->recording->entitiesIDIndex.contains(ID)){
+                    runtime->recording->meshRenderer2DCRUD(runtime->recording->packet,ID,nullptr,Operation::DELETE);
+                    runtime->recording->entityRemovedInBetween(runtime->recording->packet,ID);
+                    /* To Add Mesh of Entity*/
+                }
             }
         }
     });
@@ -1064,14 +1306,14 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                     if(runtime->recorder->loggerStatus == Recorder::S_RECORDING_PAUSED ||
                         runtime->recorder->loggerStatus == Recorder::S_RECORDING){
                         if(Trajectories.size() == 0){
-                            runtime->recording->trajectoryCRUD(entityId,Trajectories,Operation::DELETE);
+                            runtime->recording->trajectoryCRUD(runtime->recording->packet,entityId,Trajectories,Operation::DELETE);
                         }else{
-                            runtime->recording->trajectoryCRUD(entityId,Trajectories,Operation::UPDATE);
+                            runtime->recording->trajectoryCRUD(runtime->recording->packet,entityId,Trajectories,Operation::UPDATE);
                         }
                     }
-
                 }
             });
+
     /**********************************************************
  *                   Logger Start                         *
  **********************************************************/
@@ -1079,6 +1321,14 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     /*                       Alert !!                         */
     connect(runtime->recorder,&Recorder::alertViaStr,
             loggerDialog,&LoggerDialog::alertViaStr);
+
+    // ── Bookmark DB mein save karo ──
+    connect(runtime->recorder->m_recording, &Recording::bookmarkRecorded,
+            this, [=](const QString &note, qint64 ts) {
+                if (runtime && runtime->sqlite) {
+                    runtime->sqlite->saveBookmark(note, ts);
+                }
+            });
 
     /*                    SQLite Connection                   */
     connect(loggerDialog, &LoggerDialog::getDBStatusOfRecording, this,
@@ -1092,6 +1342,16 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             [=](QString path) {
                 if (runtime && runtime->recorder) {
                     runtime->recorder->loadFile(path);
+                }
+            });
+
+    connect(loggerDialog, &LoggerDialog::replayFileLoaded,
+            this, [this]() {
+                if (!runtime || !runtime->sqlite) return;
+                loggerDialog->getTimelineWidget()->clearBookmarks();
+                auto bookmarkList = runtime->sqlite->getBookmarks();
+                for (auto &bm : bookmarkList) {
+                    loggerDialog->onReplayBookmarkLoaded(bm.first, bm.second);
                 }
             });
     connect(loggerDialog, &LoggerDialog::savedFilePath, this,
@@ -1126,21 +1386,82 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
                     runtime->sqlite->receivePayLoad(m_payLoad);
                 }
             });
+    // connect(runtime->replay, &Replay::getPayLoadFromIndex,
+    //         this, [=](PayLoad* payload,int frameIndex) {
+    //             if (runtime && runtime->sqlite) {
+    //                 runtime->sqlite->setPayLoadFromIndex(*payload,frameIndex);
+    //             }
+    //         });
     connect(runtime->replay, &Replay::getPayLoadFromIndex,
-            this, [=](PayLoad* payload,int frameIndex) {
+            this, [=](QSharedPointer<PayLoad> payload,int frameIndex) {
                 if (runtime && runtime->sqlite) {
-                    runtime->sqlite->setPayLoadFromIndex(*payload,frameIndex);
+                    runtime->sqlite->setPayLoadFromIndex(payload,frameIndex);
                 }
             });
-
+    connect(runtime->replay, &Replay::getPayLoadByFrameIndex,
+            this, [=](int frameIndex) {
+                if (runtime && runtime->sqlite) {
+                    runtime->sqlite->receivePayLoadFrameIndex(frameIndex);
+                }
+            });
+    connect(runtime->sqlite, &SQLite::sendPayLoadByFrameIndex,
+            this, [=](PayLoad m_payLoad) {
+                if (runtime && runtime->replay) {
+                    runtime->replay->receivePayLoadFrameIndex(m_payLoad);
+                }
+            });
     connect(runtime->replay, &Replay::render, this, [=](float deltatime){
         if (tacticalDisplay && tacticalDisplay->canvas) {
             tacticalDisplay->canvas->Render(deltatime);
             //runtime->sqlite->showFrameByFrameIndex(s_frameIndex);
         }
     });
-    //=================================================================================================
+    /*---------------- Rec Shared Pointer Write Start --------------*/
 
+    // Connect Creator -> Writer
+    connect(runtime->recording, &Recording::requestProcessing,
+            runtime->sqlite, &SQLite::rec_OnProcessRequested);
+
+    // Connect Writer -> Creator
+    connect(runtime->sqlite, &SQLite::rec_ProcessingFinished,
+            runtime->recording, &Recording::onResultsReady);
+
+    connect(runtime->replay,&Replay::getCanvas,this, &RuntimeEditor::setCanvas);
+
+    if (tacticalDisplay && tacticalDisplay->canvas && tacticalDisplay->mapWidget) {
+        scriptengine->setCanvas(tacticalDisplay->canvas);
+        scriptengine->setGIS(tacticalDisplay->mapWidget);
+        connect(runtime->replay,&Replay::trajectoryUpdated,
+                inspector, [=](QString entityId, QJsonArray waypoints) {
+                    if (inspector->getName() == "trajectory" &&
+                        inspector->getConnectedID() == entityId) {
+                        inspector->updateTrajectory(entityId, waypoints);
+                    }
+                });
+        connect(runtime->replay,&Replay::trajectoryUpdated, this, [=](QString entityId, QJsonArray /*waypoints*/) {
+            auto it = tacticalDisplay->canvas->Meshes.find(entityId.toStdString());
+            if (it != tacticalDisplay->canvas->Meshes.end() && it->second.trajectory) {
+                QJsonObject trajData = it->second.trajectory->toJson();
+                hierarchy->UpdateComponent(entityId, "Trajectory", trajData);
+                treeView->getTreeWidget()->update();
+                markUnsavedChanges();
+            } else {
+            }
+        });
+        connect(inspector, &Inspector::trajectoryWaypointsChanged, tacticalDisplay->canvas, &CanvasWidget::updateWaypointsFromInspector);
+    }
+    connect(runtime->replay,&Replay::selectMesh,tacticalDisplay,&TacticalDisplay::selectedMesh);
+    /*----------------- Rec Shared Pointer Write End  --------------*/
+
+    /*----------------Rep Shared Pointer Write Start --------------*/
+    // Connect Creator -> Writer
+    connect(runtime->replay, &Replay::requestProcessing,
+            runtime->sqlite, &SQLite::rep_OnProcessRequested);
+    // Connect Writer -> Creator
+    connect(runtime->sqlite, &SQLite::rep_ProcessingFinished,
+            runtime->replay, &Replay::onResultsReady);
+    /*-----------------Rep Shared Pointer Write End  --------------*/
+    //=================================================================================================
     // ===== AUTO-CENTER MAP ON ENTITY SELECTION (Waris)================================================
     // When user selects an entity from hierarchy tree, automatically center map on it
     connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
@@ -1154,11 +1475,9 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
         } else {
             type = data["type"].toString();
         }
-
         // Only auto-center for entity selections (not folders, profiles, or components)
         if (type == "entity" && tacticalDisplay && tacticalDisplay->canvas) {
             QString entityId = data["ID"].toString();
-
             // Auto-center the map on the selected entity
             // Using adjustZoom=false to preserve user's current zoom level
             tacticalDisplay->canvas->centerOnEntity(entityId, false);
@@ -1171,10 +1490,8 @@ void RuntimeEditor::setupEnhancedDockWidgets()
 {
     tacticalDisplay = new TacticalDisplay(this);
     setCentralWidget(tacticalDisplay);
-
     // Set main window background
     this->setStyleSheet("QMainWindow { background-color: #0F2636; }");
-
     // --- 1. Helper Lambda with Side Logic ---
     auto setupOverlay = [this](CustomResizableOverlayDock* &dock, QWidget* content, const QString &title, bool isLeftPanel) {
         dock = new CustomResizableOverlayDock(title, this);
@@ -1184,11 +1501,9 @@ void RuntimeEditor::setupEnhancedDockWidgets()
         dock->setWindowFlags(Qt::SubWindow | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
         dock->setMinimumWidth(280);
         dock->setMinimumHeight(300);
-
         QString dockStyleSheet = "CustomResizableOverlayDock { "
                                  "background-color: #0F2636; "
                                  "color: white; ";
-
         if (isLeftPanel) {
             dock->handlePos = CustomResizableOverlayDock::Right;
             dockStyleSheet += "border-right: 4px solid #00BFFF; }";
@@ -1196,14 +1511,11 @@ void RuntimeEditor::setupEnhancedDockWidgets()
             dock->handlePos = CustomResizableOverlayDock::Left;
             dockStyleSheet += "border-left: 4px solid #00BFFF; }";
         }
-
         dockStyleSheet += "CustomResizableOverlayDock::title { "
                           "background-color: #1A3A4F; "
                           "color: white; "
                           "font-weight: bold; }";
-
         dock->setStyleSheet(dockStyleSheet);
-
         if (content) {
             content->setStyleSheet("background-color: #0F2636; color: white;");
         }
@@ -1229,7 +1541,6 @@ void RuntimeEditor::setupEnhancedDockWidgets()
                                "background-color: #1A3A4F; "
                                "color: white; "
                                "font-weight: bold; }");
-
     // --- 3. Right Side Panels (isLeftPanel = false) ---
     inspector = new Inspector(this);
     if (hierarchy) inspector->setHierarchy(hierarchy);
@@ -1245,7 +1556,6 @@ void RuntimeEditor::setupEnhancedDockWidgets()
     textScriptView = new TextScriptWidget(this);
     textScriptView->setStyleSheet("background-color: #0F2636; color: white;");
     setupOverlay(textScriptDock, textScriptView, "TestScript", false);
-
 
     displayDock = new CustomResizableOverlayDock("Sensors", this);
     displayDock->handlePos = CustomResizableOverlayDock::Left;
@@ -1283,9 +1593,13 @@ void RuntimeEditor::setupEnhancedDockWidgets()
     if (hierarchy) csmDisplayUI->setHierarchy(hierarchy);
     displayTabs->addTab(csmDisplayUI, "CSM");
 
-    eoDisplayUI = new EODisplay(displayTabs);
-    if (hierarchy) eoDisplayUI->setHierarchy(hierarchy);
-    displayTabs->addTab(eoDisplayUI, "EO");
+    // eoDisplayUI = new EODisplay(displayTabs);
+    // if (hierarchy) eoDisplayUI->setHierarchy(hierarchy);
+    // displayTabs->addTab(eoDisplayUI, "EO");
+
+    // irDisplayUI = new IRDisplay(displayTabs);
+    // if (hierarchy) irDisplayUI->setHierarchy(hierarchy);
+    // displayTabs->addTab(irDisplayUI, "IR");
 
     aisDisplayUI = new AISDisplay(displayTabs);
     if (hierarchy) aisDisplayUI->setHierarchy(hierarchy);
@@ -1304,7 +1618,6 @@ void RuntimeEditor::setupEnhancedDockWidgets()
     displayTabs->addTab(sonarDisplayUI, "SONAR");
 
     displayTabs->setCurrentIndex(0);
-
     // === + Button for Duplicate Window ===
     QPushButton *dupBtn = new QPushButton("+");
     dupBtn->setFixedSize(22, 22);
@@ -1443,7 +1756,6 @@ void RuntimeEditor::setupEnhancedDockWidgets()
     sidebarDock->raise();
     inspectorDock->raise();
 
-
     connect(sidebar, &SidebarWidget::viewSelected, this, [this](const QString &viewName) {
         inspectorDock->hide();
         libraryDock->hide();
@@ -1474,9 +1786,46 @@ void RuntimeEditor::setupEnhancedDockWidgets()
                     displayDock->setWindowTitle("Sensors");
             }
             target = displayDock;
-        } else if (viewName == "Logger") {
+       /* } else if (viewName == "Logger") {
             target = loggerDock;
-        } else if (viewName == "Console") {
+        }*/
+
+        } else if (viewName == "Logger") {
+            for (QDialog *dlg : findChildren<QDialog*>()) {
+                if (dlg->windowTitle().startsWith("Logger")) {
+                    dlg->raise();
+                    dlg->activateWindow();
+                    return;
+                }
+            }
+            QDialog *loggerDlg = new QDialog(this);
+            loggerDlg->setWindowTitle("Logger");
+            loggerDlg->setAttribute(Qt::WA_DeleteOnClose);
+            loggerDlg->setWindowFlags(Qt::Dialog |
+                                      Qt::WindowTitleHint |
+                                      Qt::WindowCloseButtonHint |
+                                      Qt::WindowMinMaxButtonsHint |
+                                      Qt::WindowStaysOnTopHint);
+            loggerDlg->resize(350, 600);
+
+            QVBoxLayout *layout = new QVBoxLayout(loggerDlg);
+            layout->setContentsMargins(0, 0, 0, 0);
+            loggerDialog->setParent(loggerDlg);
+            layout->addWidget(loggerDialog);
+            loggerDlg->setStyleSheet("QDialog { background-color: #0F2636; color: white; }");
+            connect(loggerDlg, &QDialog::finished, this, [=]() {
+                loggerDialog->setParent(loggerDock);
+                loggerDock->setWidget(loggerDialog);
+                loggerDock->hide();
+            });
+            loggerDlg->show();
+            loggerDlg->raise();
+            return;
+        }
+
+
+
+            else if (viewName == "Console") {
             consoleDock->setVisible(!consoleDock->isVisible());
             if (consoleDock->isVisible()) consoleDock->raise();
             return;
@@ -1489,6 +1838,7 @@ void RuntimeEditor::setupEnhancedDockWidgets()
             target->raise();
         }
     });
+
     // --- CONNECT MOVE/RESIZE SIGNALS ---
     connect(sidebarDock, &CustomResizableOverlayDock::moved, this, [this](QPoint oldPos, QPoint newPos) {
         QPoint delta = newPos - oldPos;
@@ -1539,7 +1889,7 @@ void RuntimeEditor::resizeEvent(QResizeEvent *event)
     int winH = height();
     int panelWidth = 300;
 
-   int rightToolbarWidth = rightToolBar ? rightToolBar->width() : 30;
+    int rightToolbarWidth = rightToolBar ? rightToolBar->width() : 30;
     int rightX = winW - panelWidth - rightToolbarWidth - 5;
     int leftX  = 20;
     int toolbarHeight = runtimeToolBar ? runtimeToolBar->height() : 30;
@@ -1643,34 +1993,55 @@ void RuntimeEditor::toggleRadarDisplay() {
 // Logger
 void RuntimeEditor::toggleLoggerDisplay(bool checked)
 {
-    if (checked && !loggerDock->isVisible()) {
-        // Hide other right-side panels
-        inspectorDock->hide();
-        libraryDock->hide();
-        textScriptDock->hide();
-        // displayDock->hide();
-        QRect sGeo = sidebarDock->geometry();
-        loggerDock->setGeometry(sGeo.x(), sGeo.y() + sGeo.height() + 5,
-                                sGeo.width(), height() - sGeo.y() - sGeo.height() - 150);
-        loggerDock->show();
-        loggerDock->raise();
-        SidebarWidget *sidebar = qobject_cast<SidebarWidget*>(sidebarDock->widget());
-        if (sidebar) {
-            sidebar->setActiveButton("Logger");
+    for (QDialog *dlg : findChildren<QDialog*>()) {
+        if (dlg->windowTitle().startsWith("Logger")) {
+            dlg->raise();
+            dlg->activateWindow();
+            QAction *loggerAction = runtimeToolBar->findChild<QAction*>("loggerAction");
+            if (loggerAction) loggerAction->setChecked(true);
+            SidebarWidget *sidebar = qobject_cast<SidebarWidget*>(sidebarDock->widget());
+            if (sidebar) sidebar->setActiveButton("Logger");
+            return;
         }
-    } else if (!checked && loggerDock->isVisible()) {
+    }
+
+    QDialog *loggerDlg = new QDialog(this);
+    loggerDlg->setWindowTitle("Logger");
+    loggerDlg->setAttribute(Qt::WA_DeleteOnClose);
+    loggerDlg->setWindowFlags(Qt::Dialog |
+                              Qt::WindowTitleHint |
+                              Qt::WindowCloseButtonHint |
+                              Qt::WindowMinMaxButtonsHint |
+                              Qt::WindowStaysOnTopHint);
+    loggerDlg->resize(350, 600);
+
+    QVBoxLayout *layout = new QVBoxLayout(loggerDlg);
+    layout->setContentsMargins(0, 0, 0, 0);
+
+    loggerDialog->setParent(loggerDlg);
+    layout->addWidget(loggerDialog);
+
+    loggerDlg->setStyleSheet("QDialog { background-color: #0F2636; color: white; }");
+
+    connect(loggerDlg, &QDialog::finished, this, [=]() {
+        loggerDialog->setParent(loggerDock);
+        loggerDock->setWidget(loggerDialog);
         loggerDock->hide();
+        QAction *loggerAction = runtimeToolBar->findChild<QAction*>("loggerAction");
+        if (loggerAction) loggerAction->setChecked(false);
         SidebarWidget *sidebar = qobject_cast<SidebarWidget*>(sidebarDock->widget());
-        if (sidebar) {
-            sidebar->setActiveButton("");
-        }
-    }
+        if (sidebar) sidebar->setActiveButton("");
+    });
+
+    loggerDlg->show();
+    loggerDlg->raise();
+
+    SidebarWidget *sidebar = qobject_cast<SidebarWidget*>(sidebarDock->widget());
+    if (sidebar) sidebar->setActiveButton("Logger");
+
     QAction *loggerAction = runtimeToolBar->findChild<QAction*>("loggerAction");
-    if (loggerAction) {
-        loggerAction->setChecked(loggerDock->isVisible());
-    }
-}
-void RuntimeEditor::setupToolBars()
+    if (loggerAction) loggerAction->setChecked(true);
+}void RuntimeEditor::setupToolBars()
 {
     designToolBar = new DesignToolBar(this, m_scenarioConfig);
     addToolBar(Qt::TopToolBarArea, designToolBar);
@@ -1682,7 +2053,7 @@ void RuntimeEditor::setupToolBars()
 
     networkToolBar = new NetworkToolbar(this);
     addToolBar(Qt::TopToolBarArea, networkToolBar);
-    networkToolBar->hide();
+    //networkToolBar->hide();
 
     designToolBar->setMovable(true);
     runtimeToolBar->setMovable(true);
@@ -1711,14 +2082,12 @@ void RuntimeEditor::setupToolBars()
         "}"
         );
     addToolBar(Qt::RightToolBarArea, rightToolBar);
-
     QWidget *spacer = new QWidget();
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     rightToolBar->addWidget(spacer);
-
     QToolButton *libBtn = new QToolButton();
     libBtn->setToolTip("Library");
-   libBtn->setIcon(QIcon(":/icons/images/library.png"));
+    libBtn->setIcon(QIcon(":/icons/images/library.png"));
     libBtn->setToolButtonStyle(Qt::ToolButtonIconOnly);
     libBtn->setFixedSize(20, 20);
     libBtn->setStyleSheet(
@@ -1751,7 +2120,6 @@ void RuntimeEditor::setupToolBars()
             libDialog->resize(350, 600);
             QVBoxLayout *layout = new QVBoxLayout(libDialog);
             layout->setContentsMargins(0, 0, 0, 0);
-
             libTreeView->setParent(libDialog);
             layout->addWidget(libTreeView);
             libDialog->setStyleSheet("QDialog { background-color: #0F2636; color: white; }");
@@ -1763,7 +2131,6 @@ void RuntimeEditor::setupToolBars()
                             libDialog->setWindowTitle("Library - " + fileName);
                         }
                     });
-
             connect(libDialog, &QDialog::finished, this, [=]() {
                 libBtn->setChecked(false);
                 libTreeView->setParent(libraryDock);
@@ -1782,10 +2149,8 @@ void RuntimeEditor::setupToolBars()
     connect(libraryDock, &CustomResizableOverlayDock::visibilityChanged,
             this, [=](bool visible) { libBtn->setChecked(visible); });
     rightToolBar->addWidget(libBtn);
-
     QToolButton *tsBtn = new QToolButton();
     tsBtn->setToolTip("TestScript");
-
     tsBtn->setIcon(QIcon(":/icons/images/TestScript.png"));
     tsBtn->setToolButtonStyle(Qt::ToolButtonIconOnly);
     tsBtn->setFixedSize(20, 20);
@@ -1807,25 +2172,19 @@ void RuntimeEditor::setupToolBars()
                                      Qt::WindowCloseButtonHint |
                                      Qt::WindowMinMaxButtonsHint);
             tsDialog->resize(450, 600);
-
             QVBoxLayout *layout = new QVBoxLayout(tsDialog);
             layout->setContentsMargins(4, 4, 4, 4);
-
             TextScriptWidget *dialogScript = new TextScriptWidget(tsDialog);
             dialogScript->setStyleSheet("background-color: #0F2636; color: white;");
             layout->addWidget(dialogScript);
-
             tsDialog->setStyleSheet("QDialog { background-color: #0F2636; color: white; }");
-
             connect(dialogScript, &TextScriptWidget::runScriptstring,
                     runtime->scriptengine, &ScriptEngine::loadAndCompileScript);
             connect(dialogScript, &TextScriptWidget::runScriptFile,
                     this, &RuntimeEditor::onRunScriptFileRequested);
-
             connect(tsDialog, &QDialog::finished, this, [=]() {
                 tsBtn->setChecked(false);
             });
-
             tsDialog->show();
         } else {
             for (QDialog *dlg : findChildren<QDialog*>()) {
@@ -1911,8 +2270,8 @@ void RuntimeEditor::setupToolBarConnections()
             tacticalDisplay->canvas, &CanvasWidget::onPresetLayerSelected);
     connect(designToolBar, &DesignToolBar::importLayerTriggered,
             tacticalDisplay->getCanvasWidget(), &CanvasWidget::importLayer);
-    connect(tacticalDisplay->canvas, &CanvasWidget::geoJsonLayerAdded,
-            designToolBar, &DesignToolBar::onGeoJsonLayerAdded);
+    // connect(tacticalDisplay->canvas, &CanvasWidget::geoJsonLayerAdded,
+    //         designToolBar, &DesignToolBar::onGeoJsonLayerAdded);
     connect(designToolBar, &DesignToolBar::geoJsonLayerToggled,
             tacticalDisplay->canvas, &CanvasWidget::onGeoJsonLayerToggled);
     connect(designToolBar, &DesignToolBar::bitmapSelected,
@@ -1926,6 +2285,55 @@ void RuntimeEditor::setupToolBarConnections()
     connect(designToolBar, &DesignToolBar::coordinateSystemChanged,
             tacticalDisplay->mapWidget, &GISlib::setCoordinateSystem);
     //===========================================
+    auto isPlatformEntity = [=](const QString& entityId) -> bool {
+        if (entityId.isEmpty() || !hierarchy) return false;
+        auto it = hierarchy->Entities.find(entityId.toStdString());
+        if (it == hierarchy->Entities.end()) return false;
+        Entity* entity = it->second;
+        // Check parent profile name
+        QString parentId = QString::fromStdString(entity->parentID);
+        // Walk up to find the profile
+        // The profile is a ProfileCategory — check its type
+        if (hierarchy->ProfileCategories.count(parentId.toStdString())) {
+            ProfileCategaory* profile = hierarchy->ProfileCategories[parentId.toStdString()];
+            return QString::fromStdString(profile->Name) == "Platform";
+        }
+        // Entity may be inside a folder — walk up one more level
+        if (hierarchy->Folders.count(parentId.toStdString())) {
+            Folder* folder = hierarchy->Folders[parentId.toStdString()];
+            QString grandParentId = QString::fromStdString(folder->parentID);
+            if (hierarchy->ProfileCategories.count(grandParentId.toStdString())) {
+                ProfileCategaory* profile = hierarchy->ProfileCategories[grandParentId.toStdString()];
+                return QString::fromStdString(profile->Name) == "Platform";
+            }
+        }
+        return false;
+    };
+
+    // Connect tree selection → enable/disable trajectory button
+    connect(treeView, &HierarchyTree::itemSelected, designToolBar,
+            [=](QVariantMap data) {
+                QString type;
+                if (data["type"].type() == QVariant::Map) {
+                    QVariantMap td = data["type"].toMap();
+                    if (td.contains("type") && td["type"].toString() == "option")
+                        type = "profile";
+                } else {
+                    type = data["type"].toString();
+                }
+                if (type == "entity") {
+                    designToolBar->setTrajectoryActionEnabled(
+                        isPlatformEntity(data["ID"].toString()));
+                } else {
+                    designToolBar->setTrajectoryActionEnabled(false);
+                }
+            });
+
+    // Connect canvas click → enable/disable trajectory button
+    connect(tacticalDisplay->canvas, &CanvasWidget::selectEntitybyCursor,
+            designToolBar, [=](const QString& entityId) {
+                designToolBar->setTrajectoryActionEnabled(isPlatformEntity(entityId));
+            });
 }
 
 void RuntimeEditor::onItemSelected(QVariantMap data)
@@ -2005,11 +2413,24 @@ void RuntimeEditor::showFeedbackWindow()
 
 void RuntimeEditor::loadFromJsonFile(const QString &filePath)
 {
+    if(runtime && runtime->recorder){
+        Recorder::LoggerStatusModes status = runtime->recorder->loggerStatus;
+
+        if(status == Recorder::S_REPLAYING ||
+            status == Recorder::S_REPLAY_PAUSED){
+            runtime->recorder->getReplay()->stop();
+        }
+
+        runtime->recorder->loggerModeCheck(Recorder::RECORDING);
+
+        if(loggerDialog){
+            loggerDialog->switchToRecordingMode();
+        }
+    }
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "Failed to open JSON file:" << filePath;
         QMessageBox::warning(this, "Error", QString("Failed to open JSON file: %1").arg(filePath));
-        // loadingDialog->deleteLater();
         return;
     }
     QByteArray data = file.readAll();
@@ -2019,13 +2440,11 @@ void RuntimeEditor::loadFromJsonFile(const QString &filePath)
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
         qWarning() << "Failed to parse JSON:" << err.errorString();
         QMessageBox::warning(this, "Error", QString("Failed to parse JSON: %1").arg(err.errorString()));
-        // loadingDialog->deleteLater();
         return;
     }
 
     QJsonObject obj = doc.object();
     if (obj.contains("hierarchy")) {
-        // loadingDialog->setLabelText("Loading...");
         QCoreApplication::processEvents();
         QJsonObject hier = obj["hierarchy"].toObject();
         hierarchy->fromJson(hier);
@@ -2043,7 +2462,6 @@ void RuntimeEditor::loadFromJsonFile(const QString &filePath)
         qWarning() << "JSON file does not contain 'hierarchy' key";
     }
     if (tacticalDisplay && obj.contains("tactical")) {
-        // loadingDialog->setLabelText("Loading...");
         QCoreApplication::processEvents();
         QJsonObject tac = obj["tactical"].toObject();
         tacticalDisplay->canvas->fromJson(tac);
@@ -2053,10 +2471,6 @@ void RuntimeEditor::loadFromJsonFile(const QString &filePath)
 
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
-    // loadingDialog->close();
-    // loadingDialog->deleteLater();
-
-    // updateStatusBar("Project loaded: " + QFileInfo(filePath).fileName());
 }
 void RuntimeEditor::markUnsavedChanges()
 {
@@ -2075,11 +2489,8 @@ void RuntimeEditor::clearUnsavedChanges()
         setWindowTitle("Runtime Editor");
     }
 }
-
-
 void RuntimeEditor::resetLayout()
 {
-
     for (int i = inspectorDocks.size() - 1; i >= 0; --i) {
         QDockWidget* dock = inspectorDocks[i];
         if (dock != inspectorDock) {
@@ -2120,19 +2531,16 @@ void RuntimeEditor::resetLayout()
     addDockWidget(Qt::RightDockWidgetArea, displayDock);
     addDockWidget(Qt::RightDockWidgetArea, loggerDock);
 
-    // Hide additional docks by default
     libraryDock->hide();
     textScriptDock->hide();
     displayDock->hide();
     loggerDock->hide();
 
-    // Recreate initial split configuration
     splitDockWidget(hierarchyDock, tacticalDisplayDock, Qt::Horizontal);
     splitDockWidget(tacticalDisplayDock, sidebarDock, Qt::Horizontal);
     splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
     splitDockWidget(tacticalDisplayDock, consoleDock, Qt::Vertical);
 
-    // Show main docks
     hierarchyDock->show();
     tacticalDisplayDock->show();
     consoleDock->show();
@@ -2182,6 +2590,18 @@ void RuntimeEditor::updateStatusBar(const QString &message) {
 }
 void RuntimeEditor::loadRecentProject(const QString& filePath)
 {
+    if(runtime && runtime->recorder){
+        Recorder::LoggerStatusModes status = runtime->recorder->loggerStatus;
+
+        if(status == Recorder::S_REPLAYING ||
+            status == Recorder::S_REPLAY_PAUSED){
+            runtime->recorder->getReplay()->stop();
+        }
+        runtime->recorder->loggerModeCheck(Recorder::RECORDING);
+        if(loggerDialog){
+            loggerDialog->switchToRecordingMode();
+        }
+    }
     QProgressDialog* loadingDialog = new QProgressDialog(this);
     loadingDialog->setLabelText("Loading...");
     loadingDialog->setCancelButton(nullptr);
@@ -2484,6 +2904,7 @@ void RuntimeEditor::createDuplicateSensorsWindow()
     ESMDisplay    *dupEsm   = new ESMDisplay(dupTabs);    dupEsm->setHierarchy(hierarchy);
     CSMDisplay    *dupCsm   = new CSMDisplay(dupTabs);    dupCsm->setHierarchy(hierarchy);
     EODisplay     *dupEo    = new EODisplay(dupTabs);     dupEo->setHierarchy(hierarchy);
+    IRDisplay     *dupIr    = new IRDisplay(dupTabs);     dupIr->setHierarchy(hierarchy);
     AISDisplay    *dupAis   = new AISDisplay(dupTabs);    dupAis->setHierarchy(hierarchy);
     ADSBDisplay   *dupAdsb  = new ADSBDisplay(dupTabs);   dupAdsb->setHierarchy(hierarchy);
     AESARadarDisplay *dupAesa = new AESARadarDisplay(dupTabs); dupAesa->setHierarchy(hierarchy);
@@ -2496,11 +2917,11 @@ void RuntimeEditor::createDuplicateSensorsWindow()
     dupTabs->addTab(dupEsm,    "ESM");
     dupTabs->addTab(dupCsm,    "CSM");
     dupTabs->addTab(dupEo,     "EO");
+    dupTabs->addTab(dupIr,     "IR");
     dupTabs->addTab(dupAis,    "AIS");
     dupTabs->addTab(dupAdsb,   "ADSB");
     dupTabs->addTab(dupAesa,   "AESA");
     dupTabs->addTab(dupSonar,  "SONAR");
-
     dupDock->setWidget(dupTabs);
 
     // ── Simulation update connections ──
@@ -2510,6 +2931,7 @@ void RuntimeEditor::createDuplicateSensorsWindow()
     connect(simulation, &Simulation::Update, dupEsm,    &ESMDisplay::updateRadar);
     connect(simulation, &Simulation::Update, dupCsm,    &CSMDisplay::updateRadar);
     connect(simulation, &Simulation::Update, dupEo,     &EODisplay::updateRadar);
+    connect(simulation, &Simulation::Update, dupIr,     &IRDisplay::updateRadar);
     connect(simulation, &Simulation::Update, dupAis,    &AISDisplay::updateRadar);
     connect(simulation, &Simulation::Update, dupAdsb,   &ADSBDisplay::updateRadar);
     connect(simulation, &Simulation::Update, dupAesa,   &AESARadarDisplay::updateRadar);
@@ -2522,6 +2944,7 @@ void RuntimeEditor::createDuplicateSensorsWindow()
     connect(hierarchy, &Hierarchy::entityRemoved, dupEsm,    &ESMDisplay::RemoveEntity);
     connect(hierarchy, &Hierarchy::entityRemoved, dupCsm,    &CSMDisplay::RemoveEntity);
     connect(hierarchy, &Hierarchy::entityRemoved, dupEo,     &EODisplay::RemoveEntity);
+    connect(hierarchy, &Hierarchy::entityRemoved, dupIr,     &IRDisplay::RemoveEntity);
     connect(hierarchy, &Hierarchy::entityRemoved, dupAis,    &AISDisplay::RemoveEntity);
     connect(hierarchy, &Hierarchy::entityRemoved, dupAdsb,   &ADSBDisplay::RemoveEntity);
     connect(hierarchy, &Hierarchy::entityRemoved, dupAesa,   &AESARadarDisplay::RemoveEntity);
@@ -2532,28 +2955,19 @@ void RuntimeEditor::createDuplicateSensorsWindow()
     dupSonar->selectEntity(sonarDisplayUI->getSelectedEntity());
     dupSonar->setHeading(sonarDisplayUI->getHeading());
     dupSonar->setPingInterval(sonarDisplayUI->getPingInterval());
-
     connect(simulation, &Simulation::Update, this, [this, dupSonar]() {
-
         if (!hierarchy || !dupSonar) return;
-
         std::vector<DetectionResult> allResults;
-
         for (auto& [id, sensor] : hierarchy->Sensors)
         {
             Sonar *sonar = dynamic_cast<Sonar*>(sensor);
             if (!sonar) continue;
-
             auto r = sonar->getLastResults();
             allResults.insert(allResults.end(), r.begin(), r.end());
         }
-
         QMetaObject::invokeMethod(dupSonar, [dupSonar, allResults]() {
-
             if (!dupSonar) return;
-
             dupSonar->updateContacts(allResults);
-
         }, Qt::QueuedConnection);
     });
 
@@ -2573,7 +2987,7 @@ void RuntimeEditor::createDuplicateSensorsWindow()
         Entity* entity = hierarchy->Entities[entityId.toStdString()];
         static const QMap<QString, QString> sensorTypeToTab = {
             {"Radar", "Radar"}, {"AESA", "AESA"}, {"ESM", "ESM"},
-            {"CSM", "CSM"}, {"EO", "EO"}, {"AIS", "AIS"},
+            {"CSM", "CSM"}, {"EO", "EO"}, {"IR", "IR"}, {"AIS", "AIS"},
             {"ADSB", "ADSB"}, {"Sonar", "SONAR"}
         };
         QStringList attachedTabs;
@@ -2600,14 +3014,13 @@ void RuntimeEditor::createDuplicateSensorsWindow()
         while (dupTabs->count() > 0)
             dupTabs->removeTab(0);
         static const QStringList tabOrder = {
-            "Radar", "IFF", "RADIO", "ESM", "CSM", "EO",
+            "Radar", "IFF", "RADIO", "ESM", "CSM", "EO", "IR",
             "AIS", "ADSB", "AESA", "SONAR"
         };
         int newCurrentIndex = -1;
         for (const QString &tabName : tabOrder) {
             if (!attachedTabs.contains(tabName))
                 continue;
-
             QWidget *widget = nullptr;
             if (tabName == "Radar") widget = dupRadar;
             else if (tabName == "IFF") widget = dupIff;
@@ -2615,35 +3028,29 @@ void RuntimeEditor::createDuplicateSensorsWindow()
             else if (tabName == "ESM") widget = dupEsm;
             else if (tabName == "CSM") widget = dupCsm;
             else if (tabName == "EO") widget = dupEo;
+            else if (tabName == "IR") widget = dupIr;
             else if (tabName == "AIS") widget = dupAis;
             else if (tabName == "ADSB") widget = dupAdsb;
             else if (tabName == "AESA") widget = dupAesa;
             else if (tabName == "SONAR") widget = dupSonar;
-
             if (widget) {
                 int idx = dupTabs->addTab(widget, tabName);
                 if (tabName == currentTabName)
                     newCurrentIndex = idx;
             }
         }
-
         if (newCurrentIndex == -1 && dupTabs->count() > 0)
             newCurrentIndex = 0;
-
         if (newCurrentIndex != -1)
             dupTabs->setCurrentIndex(newCurrentIndex);
-
         // Title update
         QString displayName = capitalizeFirstLetter(
             QString::fromStdString(entity->Name));
         dupDock->setWindowTitle("Sensors - " + displayName);
     };
-
-
     connect(treeView, &HierarchyTree::itemSelected, dupDock,
             [=](QVariantMap data) {
                 if (dupDock->isLocked()) return;
-
                 QString type;
                 if (data["type"].type() == QVariant::Map) {
                     QVariantMap td = data["type"].toMap();
@@ -2652,9 +3059,7 @@ void RuntimeEditor::createDuplicateSensorsWindow()
                 } else {
                     type = data["type"].toString();
                 }
-
                 QString targetEntityId;
-
                 if (type == "entity") {
                     targetEntityId = data["ID"].toString();
                 }
@@ -2681,12 +3086,12 @@ void RuntimeEditor::createDuplicateSensorsWindow()
                 dupEsm->selectEntity(e);
                 dupCsm->selectEntity(e);
                 dupEo->selectEntity(e);
+                dupIr->selectEntity(e);
                 dupAis->selectEntity(e);
                 dupAdsb->selectEntity(e);
                 dupAesa->selectEntity(e);
                 if (dupSonar) dupSonar->selectEntity(e);
             });
-
     // ── Position ──
     QRect sGeo = sidebarDock->geometry();
     dupDock->setGeometry(sGeo.x() - 320,
@@ -2705,26 +3110,27 @@ void RuntimeEditor::createDuplicateSensorsWindow()
             dupEsm->selectEntity(e);
             dupCsm->selectEntity(e);
             dupEo->selectEntity(e);
+            dupIr->selectEntity(e);
             dupAis->selectEntity(e);
             dupAdsb->selectEntity(e);
             dupAesa->selectEntity(e);
         }
     }
+
     auto canvasConn = connect(tacticalDisplay->canvas, &CanvasWidget::selectEntitybyCursor,
                               dupDock, [=](const QString &entityId) {
                                   if (dupDock->isLocked()) return;
                                   auto it = hierarchy->Entities.find(entityId.toStdString());
                                   if (it == hierarchy->Entities.end()) return;
                                   Entity *e = it->second;
-
                                   applyDupFilter(entityId);
-
                                   dupRadar->selectEntity(e);
                                   dupIff->selectEntity(e);
                                   dupRadio->selectEntity(e);
                                   dupEsm->selectEntity(e);
                                   dupCsm->selectEntity(e);
                                   dupEo->selectEntity(e);
+                                  dupIr->selectEntity(e);
                                   dupAis->selectEntity(e);
                                   dupAdsb->selectEntity(e);
                                   dupAesa->selectEntity(e);
@@ -2753,10 +3159,9 @@ void RuntimeEditor::filterSensorTabsForEntity(const QString &entityId, const QSt
         clearAllTabs();
         return;
     }
-
     static const QMap<QString, QString> sensorTypeToTab = {
         {"Radar", "Radar"}, {"AESA", "AESA"}, {"ESM", "ESM"},
-        {"CSM", "CSM"}, {"EO", "EO"}, {"AIS", "AIS"},
+        {"CSM", "CSM"}, {"EO", "EO"}, {"IR", "IR"}, {"AIS", "AIS"},
         {"ADSB", "ADSB"}, {"Sonar", "SONAR"}
     };
 
@@ -2784,7 +3189,7 @@ void RuntimeEditor::filterSensorTabsForEntity(const QString &entityId, const QSt
     while (displayTabs->count() > 0)
         displayTabs->removeTab(0);
     static const QStringList tabOrder = {
-        "Radar", "SonoBuoy" ,"IFF", "RADIO", "ESM", "CSM", "EO", "AIS", "ADSB", "AESA", "SONAR"
+        "Radar", "SonoBuoy" ,"IFF", "RADIO", "ESM", "CSM", "EO", "IR", "AIS", "ADSB", "AESA", "SONAR"
     };
     int newCurrentIndex = -1;
     for (const QString &tabName : tabOrder) {
@@ -2797,7 +3202,8 @@ void RuntimeEditor::filterSensorTabsForEntity(const QString &entityId, const QSt
         else if (tabName == "RADIO") widget = radioDisplayUI;
         else if (tabName == "ESM")   widget = esmDisplayUI;
         else if (tabName == "CSM")   widget = csmDisplayUI;
-        else if (tabName == "EO")    widget = eoDisplayUI;
+        // else if (tabName == "EO")    widget = eoDisplayUI;
+        // else if (tabName == "IR")    widget = irDisplayUI;
         else if (tabName == "AIS")   widget = aisDisplayUI;
         else if (tabName == "ADSB")  widget = adsbDisplayUI;
         else if (tabName == "AESA")  widget = aesaRadarDisplayUI;
@@ -2857,6 +3263,7 @@ void RuntimeEditor::openLibraryDialog()
     });
     libDialog->show();
 }
+
 // ----------------------------------------------------------------------
 // Helper: Open TestScript as a modal dialog
 // ----------------------------------------------------------------------
@@ -2870,7 +3277,6 @@ void RuntimeEditor::openTestScriptDialog()
                              Qt::WindowCloseButtonHint |
                              Qt::WindowMinMaxButtonsHint);
     tsDialog->resize(450, 600);
-
     QVBoxLayout *layout = new QVBoxLayout(tsDialog);
     layout->setContentsMargins(4, 4, 4, 4);
     TextScriptWidget *dialogScript = new TextScriptWidget(tsDialog);
@@ -2882,4 +3288,9 @@ void RuntimeEditor::openTestScriptDialog()
     connect(dialogScript, &TextScriptWidget::runScriptFile,
             this, &RuntimeEditor::onRunScriptFileRequested);
     tsDialog->show();
+}
+
+void RuntimeEditor::setCanvas(CanvasWidget *canvas)
+{
+    canvas = this->canvas;
 }

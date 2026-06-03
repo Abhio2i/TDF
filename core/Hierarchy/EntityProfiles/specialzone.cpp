@@ -13,6 +13,7 @@
 #include <core/Hierarchy/hierarchy.h>
 #include <core/Debug/console.h>
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/aesaradar.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/eosensor.h"
 /**
  * @brief Constructs a SpecialZone entity.
  * @param h Pointer to the parent Hierarchy.
@@ -70,6 +71,34 @@ void Specialzone::Update(float delta){
                 }
             }
 
+            // By Himanshu For EO/IR Sensor
+            if(entity->sensors && entity->sensors->sensors->size() > 0){
+                if(distance < collider->CollideRadius){
+                    for(auto const& pair : *entity->sensors->sensors){
+                        EOSensor* radar = dynamic_cast<EOSensor*>(pair.second);
+                        if(!radar) continue;
+
+                        radar->setEnvironment(
+                            humidity,
+                            absoluteHumidity,
+                            rain,
+                            snowfallEquivalent,
+                            Temprature,
+                            backgroundTemp,
+                            aerosolConcentration,
+                            baseExtinctionCoeff,
+                            ambientIlluminance,
+                            solarIrradiance);
+
+                    }
+                }else{
+                    for(auto const& pair : *entity->sensors->sensors){
+                        EOSensor* radar = dynamic_cast<EOSensor*>(pair.second);
+                        if(!radar) continue;
+                        radar->setEnvironmentToDefault();
+                    }
+                }
+            }
             // ----------------------------------------------------------------
             // AESA Radar atmosphere sync. REQ-AESA-071.
             // Same pattern as radio above — push zone weather into every
@@ -166,17 +195,47 @@ QJsonObject Specialzone::toJson() const {
     obj["parent_id"] = QString::fromStdString(parentID);
     obj["active"] = Active;
 
-    QJsonObject dimensionObj;
-    dimensionObj["type"] = "Section";
-    dimensionObj["direction"] = toParm(direction,"deg");
-    dimensionObj["MinAltitude"] = toParm(MinAltitude,"ft");
-    dimensionObj["MaxAltitude"] = toParm(MaxAltitude,"ft");
-    dimensionObj["Speed"] = toParm(Speed,"km/hr");
-    dimensionObj["Temprature"] = toParm(Temprature,"deg cel");
-    dimensionObj["humidity"] = toParm(humidity,"%");
-    dimensionObj["rain"] = toParm(rain,"mm/h");
-    dimensionObj["fog"] = toParm(fog,"%");
-    obj["dimension"] = dimensionObj;
+    QJsonObject dynamicObj;
+    dynamicObj["type"] = "Section";
+    dynamicObj["windDirection"]         = toParm(direction,"deg",0,360);
+    dynamicObj["WindSpeed"]             = toParm(Speed,"km/hr",0,300);
+    dynamicObj["AtmoshPhericPressure"]  = toParm(AtmoshPhericPressure,"hpa",0,1100);
+    dynamicObj["AirDensity"]            = toParm(AirDensity,"kg/m^3",0,1.5);
+    dynamicObj["Temprature"]            = toParm(Temprature,          "deg cel",-50.0, 50.0); // 20.0
+    dynamicObj["rain"]                  = toParm(rain    ,            "mm/hr",  0,     150 ); // 0.0
+    obj["dynamic"] = dynamicObj;
+
+
+    QJsonObject radiosObj;
+    radiosObj["type"] = "Section";
+    radiosObj["gasAttenuation"]         = toParm(gasAttenuation,"db/km",0,50);
+    radiosObj["shadowZone"]             = toParm(shadowZone,"dB",0,50);
+    obj["radios"] = radiosObj;
+
+
+
+    QJsonObject radarObj;
+    radarObj["type"] = "Section";
+    radarObj["MinAltitude"] = toParm(MinAltitude,"ft",0,1000);
+    radarObj["MaxAltitude"] = toParm(MaxAltitude,"ft",1000,60000);
+
+    /*radarObj["Temprature"] = toParm(Temprature,"deg cel");
+    radarObj["humidity"] = toParm(humidity,"%");
+    radarObj["rain"] = toParm(rain,"mm/h");
+    radarObj["fog"] = toParm(fog,"%");*/
+
+    // By Himanshu For EO/IR Sensor
+    radarObj["fog"]                   = toParm(fog,"%");
+    radarObj["humidity"]              = toParm(humidity,            "%",      0,     100 ); // 50.0
+    radarObj["absolute humidity"]     = toParm(absoluteHumidity,    "g/m^3",  0,     30  ); // 10.0
+    radarObj["snowfall equivalent"]   = toParm(snowfallEquivalent,  "mm/hr",  0,     50  ); // 0.0
+    radarObj["Temprature"]            = toParm(Temprature,          "deg cel",-50.0, 50.0); // 20.0
+    radarObj["background temp"]       = toParm(backgroundTemp,      "deg cel",-50,   70  ); // 20.0
+    radarObj["aerosol concentration"] = toParm(aerosolConcentration,"mg/m^3", 0,     20  ); // 0.05
+    radarObj["base extinction"]       = toParm(baseExtinctionCoeff, "Base sigma (1/km)",0.01, 10); //0.15
+    radarObj["ambient illuminance"]   = toParm(ambientIlluminance,  "lux",    0.0001, 120,000); // 50000
+    radarObj["solar irradiance"]      = toParm(solarIrradiance,     "W/m^2",  0,      1100   ); // 800
+    obj["radar"] = radarObj;
 
     if (transform) obj["transform"] = transform->toJson();
     if (meshRenderer2d) obj["bitmap"] = meshRenderer2d->toJson();
@@ -213,24 +272,59 @@ void Specialzone::fromJson(const QJsonObject& obj) {
             type = stringToEntityType(entityObj["value"].toString());
     }
 
-    if (obj.contains("dimension") && obj["dimension"].isObject()) {
-        QJsonObject dimensionObj = obj["dimension"].toObject();
-        if (dimensionObj.contains("direction") && dimensionObj["direction"].isObject())
-            direction = valueFromParm(dimensionObj["direction"].toObject());
-        if (dimensionObj.contains("MinAltitude") && dimensionObj["MinAltitude"].isObject())
-            MinAltitude = valueFromParm(dimensionObj["MinAltitude"].toObject());
-        if (dimensionObj.contains("MaxAltitude") && dimensionObj["MaxAltitude"].isObject())
-            MaxAltitude = valueFromParm(dimensionObj["MaxAltitude"].toObject());
-        if (dimensionObj.contains("Speed") && dimensionObj["Speed"].isObject())
-            Speed = valueFromParm(dimensionObj["Speed"].toObject());
-        if (dimensionObj.contains("Temprature") && dimensionObj["Temprature"].isObject())
-            Temprature = valueFromParm(dimensionObj["Temprature"].toObject());
-        if (dimensionObj.contains("humidity") && dimensionObj["humidity"].isObject())
-            humidity = valueFromParm(dimensionObj["humidity"].toObject());
-        if (dimensionObj.contains("rain") && dimensionObj["rain"].isObject())
-            rain = valueFromParm(dimensionObj["rain"].toObject());
-        if (dimensionObj.contains("fog") && dimensionObj["fog"].isObject())
-            fog = valueFromParm(dimensionObj["fog"].toObject());
+    if (obj.contains("dynamic") && obj["dynamic"].isObject()) {
+        QJsonObject dynamicObj = obj["dynamic"].toObject();
+        if (dynamicObj.contains("windDirection") && dynamicObj["windDirection"].isObject())
+            direction = valueFromParm(dynamicObj["windDirection"].toObject());
+        if (dynamicObj.contains("WindSpeed") && dynamicObj["WindSpeed"].isObject())
+            Speed = valueFromParm(dynamicObj["WindSpeed"].toObject());
+        if (dynamicObj.contains("AtmoshPhericPressure") && dynamicObj["AtmoshPhericPressure"].isObject())
+            AtmoshPhericPressure = valueFromParm(dynamicObj["AtmoshPhericPressure"].toObject());
+        if (dynamicObj.contains("AirDensity") && dynamicObj["AirDensity"].isObject())
+            AirDensity = valueFromParm(dynamicObj["AirDensity"].toObject());
+        if (dynamicObj.contains("Temprature") && dynamicObj["Temprature"].isObject())
+            Temprature = valueFromParm(dynamicObj["Temprature"].toObject());
+        if (dynamicObj.contains("rain") && dynamicObj["rain"].isObject())
+            rain = valueFromParm(dynamicObj["rain"].toObject());
+
+    }
+
+    if (obj.contains("radar") && obj["radar"].isObject()) {
+        QJsonObject radarObj = obj["radar"].toObject();
+        if (radarObj.contains("MinAltitude") && radarObj["MinAltitude"].isObject())
+            MinAltitude = valueFromParm(radarObj["MinAltitude"].toObject());
+        if (radarObj.contains("MaxAltitude") && radarObj["MaxAltitude"].isObject())
+            MaxAltitude = valueFromParm(radarObj["MaxAltitude"].toObject());
+        /*if (radarObj.contains("Temprature") && radarObj["Temprature"].isObject())
+            Temprature = valueFromParm(radarObj["Temprature"].toObject());
+        if (radarObj.contains("humidity") && radarObj["humidity"].isObject())
+            humidity = valueFromParm(radarObj["humidity"].toObject());
+        if (radarObj.contains("rain") && radarObj["rain"].isObject())
+            rain = valueFromParm(radarObj["rain"].toObject()); */
+        if (radarObj.contains("fog") && radarObj["fog"].isObject())
+            fog = valueFromParm(radarObj["fog"].toObject());
+
+        // By Himanshu For EO/IR Sensor
+        if (radarObj.contains("humidity"    ) && radarObj["humidity"    ].isObject())
+            humidity            = valueFromParm(radarObj["humidity"    ].toObject());
+        if (radarObj.contains("absolute humidity"    ) && radarObj["absolute humidity"    ].isObject())
+            absoluteHumidity    = valueFromParm(radarObj["absolute humidity"    ].toObject());
+        if (radarObj.contains("rain"        ) && radarObj["rain"        ].isObject())
+            rain                = valueFromParm(radarObj["rain"        ].toObject());
+        if (radarObj.contains("snowfall equivalent"  ) && radarObj["snowfall equivalent"  ].isObject())
+            snowfallEquivalent  = valueFromParm(radarObj["snowfall equivalent"  ].toObject());
+        if (radarObj.contains("Temprature"         ) && radarObj["Temprature"         ].isObject())
+            Temprature          = valueFromParm(radarObj["Temprature"         ].toObject());
+        if (radarObj.contains("background temp"      ) && radarObj["background temp"      ].isObject())
+            backgroundTemp      = valueFromParm(radarObj["background temp"      ].toObject());
+        if (radarObj.contains("aerosol concentration") && radarObj["aerosol concentration"].isObject())
+            aerosolConcentration= valueFromParm(radarObj["aerosol concentration"].toObject());
+        if (radarObj.contains("base extinction"      ) && radarObj["base extinction"      ].isObject())
+            baseExtinctionCoeff = valueFromParm(radarObj["base extinction"      ].toObject());
+        if (radarObj.contains("ambient illuminance"  ) && radarObj["ambient illuminance"  ].isObject())
+            ambientIlluminance  = valueFromParm(radarObj["ambient illuminance"  ].toObject());
+        if (radarObj.contains("solar irradiance"     ) && radarObj["solar irradiance"     ].isObject())
+            solarIrradiance     = valueFromParm(radarObj["solar irradiance"     ].toObject());
     }
 
     if (obj.contains("transform") && obj["transform"].isObject()) {

@@ -359,7 +359,6 @@ void ReportsEditor::loadFromJson(const QJsonObject& root)
             if (item->widget()) item->widget()->deleteLater();
             delete item;
         }
-
         for (const QString& team : m_teamNames) {
             const TeamMetrics& tm = m_teamMetrics[team];
             QColor col = m_teamColors.value(team, QColor("#aaaaaa"));
@@ -392,7 +391,6 @@ void ReportsEditor::loadFromJson(const QJsonObject& root)
                       .arg(tm.enemyLosses, 0, 'f', 1));
         }
     }
-
     if (!m_selectedTeam.isEmpty())
         onTeamSelected(m_selectedTeam);
 }
@@ -420,10 +418,8 @@ void ReportsEditor::onTeamSelected(const QString& teamName)
                           "QPushButton:hover{border:2px solid white;}")
                       .arg(col.darker(160).name(), col.name()));
     }
-
     if (!m_teamMetrics.contains(teamName)) return;
     const TeamMetrics& tm = m_teamMetrics[teamName];
-
     auto setCard = [](QLabel* card, const QString& icon, const QString& title,
                       const QString& value, const QString& color) {
         if (!card) return;
@@ -434,7 +430,6 @@ void ReportsEditor::onTeamSelected(const QString& teamName)
                     "<span style='font-size:18px;font-weight:bold;color:%3;'>%4</span>"
                     "</div>").arg(icon, title, color, value));
     };
-
     setCard(m_kpiSuccess,  "🎯", "Mission\nSuccess",
             QString::number((int)tm.successProbability) + " %", "#44cc44");
     setCard(m_kpiFriendly, "🛡", "Friendly\nLosses",

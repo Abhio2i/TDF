@@ -14,21 +14,9 @@
 #include <QCoreApplication>
 #include "core/Hierarchy/hierarchy.h"
 #include "core/Recorder/payload.h"
-//#include "core/Recorder/recorder.h"
+#include <QSharedPointer>
 
 class Hierarchy;
-
-
-// typedef struct{
-//     double longitude  ;
-//     double latitude   ;
-//     double altitude   ;
-//     double heading    ;
-//     float  turn_radius;
-//     float  curr_speed ;
-//     float  climb_rate ;
-// }entity;
-
 class SQLite : public QObject
 {
     Q_OBJECT
@@ -46,21 +34,17 @@ public:
     SQLite *getSQLite();
     void close();
 
-    // Frame API (call this per simulation tick)
 private:
-    // DB lifecycle
     bool open(const QString &dbPath);
     bool exec(const QString &queryStr);
     void applyPragmas();
-
-    // Schema
-    void createTables();
+    // void createTables();
+    bool createTables();
     QSqlDatabase database() const;
 
 private:
     QSqlDatabase m_db;
     Hierarchy*   m_hierarchy;
-    // Write Operation Start
 public:
     void receivePayLoad(PayLoad m_payLoad);
     bool insertFrameMap(int frameIndex, qint64 timestamp);
@@ -69,34 +53,25 @@ public:
         ProfileCategoriesDetailsList m_profileCategoriesDetailsList);
     bool insertProfileCategoriesCRUD(int frameIndex,
         ProfileCategoriesCRUDList m_profileCategoriesCRUDList);
-
-
-
     bool insertEntitiesDetails(int frameIndex,EntitiesDetailsList m_entitiesDetailsList);
     bool insertEntitiesCreated(int frameIndex, EntitiesCreatedList m_entitiesCreatedList);
     bool insertEntitiesUpdated(int frameIndex, EntitiesUpdatedList m_entitiesUpdatedList);
     bool insertEntitiesDeleted(int frameIndex, EntitiesDeletedList m_entitiesDeletedList);
-
     bool insertEntitiesMeshRenderer2DCRUD(int frameIndex,
                                           EntitiesMeshRenderer2DCRUDList m_entitiesMeshRenderer2DCRUDList);
     bool insertEntitiesMeshRenderer2D(int frameIndex,
-                                      EntitiesMeshRenderer2DList m_entitiesMeshRenderer2DList);
+                                   EntitiesMeshRenderer2DList m_entitiesMeshRenderer2DList);
 
     bool insertEntitiesTrajectory(int frameIndex,
                                   EntitiesTrajectoryList m_entitiesTrajectoryList);
     bool insertEntitiesTrajectoryCRUD(int frameIndex,
                                       EntitiesTrajectoryCRUDList m_entitiesTrajectoryCRUDList);
-
-
-    // Write Operation End
-
-    // Read Operation Start
 public:
     void setFrameIndexNDuration(int    &maxFrameIndex,
                                 qint64 &maxDuration);
-    void setPayLoad(PayLoad &payLoad);
+    void setPayLoad(PayLoad &payload);
+    void receivePayLoadFrameIndex(int frameIndex);
     PayLoad createPayLoad();
-    // get Value through SQLite
     void setTimeStamp(const int &frameIndex,qint64 &timestamp);
 
     void setProfileCategoriesDetails(
@@ -122,23 +97,48 @@ public:
     void setEntitiesTrajectoryCRUD(int &frameIndex,
                                    EntitiesTrajectoryCRUDList &entitiesTrajectoryCRUDList);
 
-
-    /*------------    Jump In Between Start    ------------*/
-
     void setPayLoadFromIndex(PayLoad &payLoad,int frameIndex);
+    void setPayLoadFromIndex(QSharedPointer<PayLoad> payload,int frameIndex);
     void setEntitiesDetailsListInBtw(int frameIndex,
+        EntitiesDetailsList &entitiesDetailsList);
+    void setEntitiesDeletedListInBtw(int frameIndex,
         EntitiesDetailsList &entitiesDetailsList);
     void setEntitiesMeshRenderer2DInBtw(int frameIndex,
         EntitiesMeshRenderer2DList &entitiesMeshRenderer2DList);
     void setEntitiesTrajectoryBtw(int &frameIndex,
         EntitiesTrajectoryList &entitiesTrajectoryList);
+    QList<QPair<QString, qint64>> getBookmarks() const;
+    void saveBookmark(const QString &note, qint64 timestamp);
+    // ---- IFF ----
+    bool insertIffDetails (int frameIndex, const IffList     &list);
+    bool insertIffCRUD    (int frameIndex, const IffCRUDList &list);
+    void setIffDetails    (int frameIndex, IffList     &list);
+    void setIffCRUD       (int frameIndex, IffCRUDList &list);
 
-    /*------------     Jump In Between End     ------------*/
+    // ---- Radio ----
+    bool insertRadioDetails (int frameIndex, const RadioList     &list);
+    bool insertRadioCRUD    (int frameIndex, const RadioCRUDList &list);
+    void setRadioDetails    (int frameIndex, RadioList     &list);
+    void setRadioCRUD       (int frameIndex, RadioCRUDList &list);
+
+    // ---- Weapon ----
+    bool insertWeaponDetails (int frameIndex, const WeaponList     &list);
+    bool insertWeaponCRUD    (int frameIndex, const WeaponCRUDList &list);
+    void setWeaponDetails    (int frameIndex, WeaponList     &list);
+    void setWeaponCRUD       (int frameIndex, WeaponCRUDList &list);
+
+
 signals:
     void sendPayLoad(PayLoad m_payLoad);
-    // Read Operation End
-
-
+    void sendPayLoadByFrameIndex(PayLoad m_payLoad);
+public slots:
+    void rec_OnProcessRequested(QSharedPointer<PayLoad> data);
+signals:
+    void rec_ProcessingFinished(QSharedPointer<PayLoad> data);
+public slots:
+    void rep_OnProcessRequested(QSharedPointer<PayLoad> payLoad);
+signals:
+    void rep_ProcessingFinished(QSharedPointer<PayLoad> data);
 public:
     enum Options{
         INIT,
@@ -152,16 +152,15 @@ public:
     }DBStatuses;
     Q_ENUM(DBStatuses);
 
-    //DBStatuses* dbStatusPtr = nullptr;
     DBStatuses dbStatus = DISCONNECTED;
     void sendDBStatus(DBStatuses *dbStatusPtr);
+    bool insertSensorsDetails(int frameIndex, const SensorList &list);
+    bool insertSensorsCRUD(int frameIndex, const SensorCRUDList &list);
+    void setSensorsDetails(int frameIndex, SensorList &list);
+    void setSensorsCRUD(int frameIndex, SensorCRUDList &list);
 
-    /*------------    Custom Debugger Start    ------------*/
 private:
-    /*   General purpose sting For Passing   */
     QString str;
-
-    /*  Custom enum for Selective Debugging  */
 public:
     typedef enum {
         D_NULL            = 0b10000000000000,
@@ -172,69 +171,20 @@ public:
         D_SetPayLoad      = 0b00000100000000,
         D_Trajectory      = 0b00000010000000,
         D_LoadInBetween   = 0b00000001000000,
+        D_FrameIndex      = 0b00000000100000,
+        D_GetPacket       = 0b00000000010000,
     }debugSQLite;
     Q_ENUM(debugSQLite)
 
 private:
-    /*   To Print Above String   */
     void debug(const QString &str,const debugSQLite &currentdebugType = D_JustPrint);
-    /*   Variable which hold the value for
-     *   Custom Debugging    */
-    /*  ===> " USE ME " for debugging   <===*/
+
     int debugList = D_JustPrint
         | D_INIT
-        //| D_GetPayLoad
-        //| D_Trajectory
-        //| D_SetPayLoad
-        | D_LoadInBetween
+        | D_FrameIndex
+        | D_GetPacket
         ;
-    /*   To find the the debugOptions inside
-     *   debugType or not "Helping Function" */
     bool dbgIsAllow(const debugSQLite &currentdebugType);
-
-    /*------------     Custom Debugger End     ------------*/
-
-
-    //public:
-    //    std::unordered_map<int,std::pair<std::string, std::string>> getEntities();
-    //    std::vector<qint64> getFrameMap();
-    //    void insert_entitiesCreation(    const QString &parentID,
-    //                                     const QString &id,
-    //                                     const QString &name,
-    //                                     const qint64  &created);
-    //    void insertEntity(std::string id,std::string name,qint64 created);
-    //    void insertEntityDeletion(std::string id,qint64 deleted);
-    //    void insertFrame(qint64 timestamp);
-    // changeNo    INTEGER PRIMARY KEY AUTOINCREMENT,
-    //     longitude   DOUBLE,
-    //     latitude    DOUBLE,
-    //     altitude    DOUBLE,
-    //     heading     DOUBLE,
-    //     turn_radius FLOAT,
-    //     curr_speed  FLOAT,
-    //     climb_rate  FLOAT,
-    //     frameIndex  INTEGER,
-    //     indexNo     INTEGER,
-    //    std::unordered_map<int , entity> getFrameByFrameIndex(int s_frameIndex);
-    //    void showFrameByFrameIndex(int s_frameIndex);
-
-    // Adjust to your real type
-    //std::unordered_map<std::string, Platform*> *m_Platforms = m_hierarchy->Platforms;
-    //    // Inserts
-    //    void insertEntities();
-
-    //    std::unordered_set<std::string> entities;
-
-    //    void insertFrames(int frameIndex);
-
-    //    // Lookups
-    //    int getIndexNoFromId(const QString &id);
-
-
-    //    std::vector<std::pair<std::string, int>> *Entities();
-    //    // FrameMap(qint64 timestamp);
-    //    // Frames(int frameIndex);
-
 };
 
 #endif // SQLITE_H

@@ -32,8 +32,10 @@
 #include <core/Network/networkmanager.h>
 #include <core/Debug/console.h>
 #include "core/Debug/profiler.h"
+#include "core/Plugins/pluginmanager.h"
 #include "core/Recorder/recorder.h"
 #include "core/ScriptEngine/scriptengine.h"
+#include "core/DISPlugin/DISNetworkPlugin.h"
 
 #include <QThread> // Include QThread
 #include <core/SharedMemory/sharedmemorywrapper.h>  //Shared Memory By Himanshu
@@ -76,6 +78,8 @@ public:
     Replay    *replay;              //!< Replay controller
     SharedMemoryWrapper* sharedWrapper; //!< Shared memory interface (Himanshu)
     SQLite *sqlite;                 //!< SQLite database interface (Himanshu)
+    DISNetworkPlugin* disPlugin = nullptr;
+    PluginManager* pluginManager = nullptr;
 
 signals:
     // No signals defined currently

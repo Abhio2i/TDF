@@ -69,6 +69,7 @@ QJsonObject FixedPoints::toJson() const {
  * @brief Deserializes the FixedPoints entity from JSON.
  * @param obj JSON object containing entity data.
  */
+
 void FixedPoints::fromJson(const QJsonObject& obj) {
     if (obj.contains("active"))
         Active = obj["active"].toBool();
@@ -84,17 +85,14 @@ void FixedPoints::fromJson(const QJsonObject& obj) {
         if (entityObj.contains("value"))
             type = stringToEntityType(entityObj["value"].toString());
     }
-
     if (obj.contains("transform") && obj["transform"].isObject()) {
         if (!transform) addComponent("transform");
         transform->fromJson(obj["transform"].toObject());
     }
-
     if (obj.contains("collider") && obj["collider"].isObject()) {
         if (!collider) addComponent("collider");
         collider->fromJson(obj["collider"].toObject());
     }
-
     if (obj.contains("bitmap") && obj["bitmap"].isObject()) {
         if (!meshRenderer2d) addComponent("bitmap");
         meshRenderer2d->fromJson(obj["bitmap"].toObject());

@@ -167,6 +167,10 @@ void ESMDisplay::selectEntity(Entity* entit)
 
     sensor = nullptr;
         sensorlist.clear();
+    if (!entity->sensors || !entity->sensors->sensors) {
+        update();
+        return;
+    }
     for (auto const& pair :  *entity->sensors->sensors) {
         Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::ESM) {

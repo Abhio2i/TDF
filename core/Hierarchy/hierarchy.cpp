@@ -568,6 +568,7 @@ void Hierarchy::UpdateComponent(QString ID, QString componentName, QJsonObject d
  * @param entityId Entity ID.
  * @param componentName Component name to remove.
  */
+
 void Hierarchy::removeComponent(QString entityId, QString componentName)
 {
     if(entityId.isEmpty() || componentName.isEmpty()){
@@ -649,9 +650,7 @@ void Hierarchy::attchedIff(QString ID, QString name)
     if (Entities.find(ID.toStdString()) == Entities.end()) {
         return;
     }
-
     QString iffProfileId;
-
     bool foundIffProfile = false;
     for (const auto& [key, profilePtr] : ProfileCategories) {
         if (profilePtr->type == Constants::EntityType::IFF) {
@@ -666,7 +665,6 @@ void Hierarchy::attchedIff(QString ID, QString name)
         iffProfileId = QString::fromStdString(iffProfile->ID);
         dictionry[iffProfile->ID] = {iffProfile->ID};
     }
-
     Entity* entity = addEntity(iffProfileId, name, true);
     IFF* iff = dynamic_cast<IFF*>(entity);
     iff->Name = name.toStdString();
@@ -713,9 +711,7 @@ void Hierarchy::attachSensors(QString ID, QString name, QString sensorType)
         delete entity;
         return;
     }
-
     sensor->Name = name.toStdString();
-
     if (sensorType.compare("CSM", Qt::CaseInsensitive) == 0) {
         sensor->subType = Sensor::SubType::CSM;
     }
@@ -725,7 +721,6 @@ void Hierarchy::attachSensors(QString ID, QString name, QString sensorType)
     else {
         sensor->subType = Sensor::SubType::Generic;
     }
-
     (Entities)[ID.toStdString()]->addSensor(sensor);
 }
 
@@ -829,7 +824,6 @@ QJsonObject Hierarchy::toJson()
         profileCategoriesObj[key] = tempData[key].toObject();
     }
     obj["profileCategories"] = profileCategoriesObj;
-
     return obj;
 }
 
@@ -1226,4 +1220,25 @@ void Hierarchy::clear() {
     dictionry.clear();
     EntityPaths.clear();
     FolderPaths.clear();
+}
+QStringList Hierarchy::getAvailableSensorTypes() const
+{
+    return *sensorlist ;//QStringList({"Generic", "CSM", "ESM", "EO", "IR", "Sonar", "AIS", "ADSB", "AESA"});
+}
+bool Hierarchy::registerNewSensor(std::string name){
+    if(sensorlist->contains(QString::fromStdString(name))){
+        return false;
+    }else{
+        sensorlist->append(QString::fromStdString(name));
+        return true;
+    }
+}
+
+bool Hierarchy::unregisterNewSensor(std::string name){
+    if(sensorlist->contains(QString::fromStdString(name))){
+        sensorlist->removeAt(sensorlist->indexOf(QString::fromStdString(name)));
+        return true;
+    }else{
+        return false;
+    }
 }

@@ -5,9 +5,12 @@
 #include "core/Hierarchy/Utils/entityutils.h"
 #include "core/Hierarchy/EntityProfiles/weapon.h"
 #include "GUI/Tacticaldisplay/canvaswidget.h"
+#include "qprogressdialog.h"
 #include <QJsonObject>
 #include <QtMath>
 #include <GUI/mainwindow.h>
+#include "core/Hierarchy/hierarchy.h"
+
 Simulation::Simulation() {
     qRegisterMetaType<SimulationStateNS::State>("SimulationStateNS::State");
     qRegisterMetaType<SimTypeOfUpdates::TypeOfUpdate>("SimTypeOfUpdates::TypeOfUpdate");
@@ -95,7 +98,16 @@ Simulation::~Simulation() {
     //added by Aman to avoid crash during stop
     if (updateTimer) updateTimer->stop();
 }
+//by aman
+void Simulation::registerPlugin(SimulationPlugin* plugin) {
+    if (plugin && !m_plugins.contains(plugin))
+        m_plugins.append(plugin);
+}
 
+void Simulation::unregisterPlugin(SimulationPlugin* plugin) {
+    m_plugins.removeAll(plugin);
+}
+//byaman
 void Simulation::setFps(int value){
     SimulationFrameRate = value;
     PhysicsUpdateFrameRate = value;
@@ -113,7 +125,9 @@ void Simulation::frame() {
         deltaTime = 0.05f;
     }
     lastTime = currentTime;
-    applyPendingNetworkUpdates();//by Aman to apply recived update via network
+    for (SimulationPlugin* plugin : m_plugins)//by aman
+        plugin->applyPendingUpdates();//by Aman to apply recived update via network
+    //applyPendingNetworkUpdates();//by Aman to apply recived update via network
     calculatePhysics();
 
     QJsonObject frameData;
@@ -183,8 +197,8 @@ void Simulation::startf() {
         // }
         if (comp.base && comp.base->type == Constants::EntityType::Weapon) {
             Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
-                    // if (weapon && weapon->isLaunched && !weapon->isDead)
-                    //     // weapon->resumeFlightMonitor();
+            // if (weapon && weapon->isLaunched && !weapon->isDead)
+            //     // weapon->resumeFlightMonitor();
         }
     }
 
@@ -201,8 +215,8 @@ void Simulation::pausef() {
     for (auto& [id, comp] : physicsComponent) {
         if (comp.base && comp.base->type == Constants::EntityType::Weapon) {
             Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
-                // if (weapon && weapon->isLaunched && !weapon->isDead)
-                    // weapon->pauseFlightMonitor();
+            // if (weapon && weapon->isLaunched && !weapon->isDead)
+            // weapon->pauseFlightMonitor();
         }
     }
 
@@ -248,20 +262,48 @@ void Simulation::nextStep() {
 }
 
 void Simulation::timeJump(int newTime){
-    int sec = newTime-simulationTime;
-    sec = sec<0?0:sec;
-    qDebug()<<sec;
-    float fps = 10.0;
-    sec = sec*fps;
-    float n = 0;
-    float dt= 1.0f/fps;
-    for(int i=0;i<sec;i++){
-        // simulationTime +=dt;
+    pausef();
+
+    int secDiff = newTime - simulationTime;
+    if(secDiff <= 0) return;
+
+    float fps = 60.0f;
+    int totalSteps = secDiff * fps;
+    float dt = 1.0f / fps;
+
+    // 1. Progress Dialog setup karein
+    QProgressDialog progress("Processing simulation...", "Cancel", 0, totalSteps, nullptr);
+    progress.setWindowModality(Qt::ApplicationModal); // Screen block karne ke liye
+
+    // 2. Progress Bar ko dhund kar hide kar dein
+    QProgressBar *bar = progress.findChild<QProgressBar *>();
+    if (bar) {
+        // bar->hide();
+    }
+
+    progress.show();
+
+    for(int i = 0; i < totalSteps; i++){
+        // 3. Check karein agar user ne 'Cancel' dabaya hai
+        if (progress.wasCanceled()) {
+            qDebug() << "Simulation cancelled by user.";
+            break;
+        }
+
         deltaTime = dt;
         calculatePhysics();
-        // emit Render(dt);
+
+        // Internally update karein taaki cancel button responsive rahe
+        progress.setValue(i);
+
+        // GUI freezing se bachne ke liye
+        if(i % 5000 == 0) {
+            emit Render(dt);
+            QCoreApplication::processEvents();
+        }
     }
-    qDebug()<<n;
+
+    progress.close();
     emit Render(dt);
 }
 
@@ -341,10 +383,40 @@ void Simulation::handleReplayFrame(const QJsonObject& frame) {
 
 void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
 
-    // ✅ Store current state PEHLE
-    bool wasPlaying = isPlay;
+    // Remote DIS entities — lightweight registration only.
+    // Never pause simulation for remote entities.
+    // They have no physics components — only transform for dead reckoning.
+    if (!entity->isRemoteDISEntity) {
+        Hierarchy* ctx = Hierarchy::getCurrentContext();
+        if (ctx && ctx->m_pendingRemoteDISEntityIDs.contains(
+                QString::fromStdString(entity->ID))) {
+            entity->isRemoteDISEntity = true;
+        }
+    }
+    if (entity->isRemoteDISEntity) {
+        Platform* platform = dynamic_cast<Platform*>(entity);
+        if (platform && platform->transform) {
+            // Guard: don't register twice
+            if (physicsComponent.find(platform->ID) != physicsComponent.end())
+                return;
 
-    // ✅ Pause if running
+            PhysicsComponent component;
+            component.name         = platform->Name;
+            component.base         = entity;
+            component.platform     = platform;
+            component.transform    = platform->transform;
+            component.rigidbody    = nullptr;
+            component.collider     = nullptr;
+            component.dynamicModel = nullptr;
+            component.aircraft     = nullptr;
+            physicsComponent[platform->ID] = component;
+        }
+        emit HierarchyUpdate();
+        return;
+    }
+
+    // Local entities — pause simulation during setup
+    bool wasPlaying = isPlay;
     if (wasPlaying) {
         pausef();
     }
@@ -610,9 +682,9 @@ void Simulation::updateDynamics(float dt,PhysicsComponent *comp){
     comp->aircraft->Forward.z = comp->transform->forward().z();
 
     Vector target = *comp->dynamicModel->trajectory->getTargetWaypoint()->position;
-    if(comp->dynamicModel->parentEntity && (comp->dynamicModel->parentEntity->category == Entity::Category::Ship ||
-                                             comp->dynamicModel->parentEntity->category == Entity::Category::Submarine ||
-                                             comp->dynamicModel->parentEntity->category == Entity::Category::Tank ))
+    if(comp->dynamicModel->parentEntity && (comp->dynamicModel->parentEntity->category == Entity::Category::Marine ||
+                                             comp->dynamicModel->parentEntity->category == Entity::Category::Marine ||
+                                             comp->dynamicModel->parentEntity->category == Entity::Category::Ground ))
     {
         target.y = target.y>0?0:target.y;
     }

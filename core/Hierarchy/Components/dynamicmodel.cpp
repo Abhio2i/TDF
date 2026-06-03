@@ -399,7 +399,7 @@ void DynamicModel::FollowTrajectory() {
             }else{
                 trajectory->current = trajectory->current >= trajectory->Trajectories.size() ? 0: trajectory->current;
             }
-            if(tgtSpd > 0 || parentEntity->category == Entity::Category::Submarine){
+            if(tgtSpd > 0 || parentEntity->category == Entity::Category::Marine){
                 Vector target = *trajectory->getTargetWaypoint()->position;
                 float tgtSpd = trajectory->getTargetWaypoint()->speed;
                 tgtSpd = tgtSpd>maxSpeed?maxSpeed:tgtSpd;
@@ -422,7 +422,7 @@ void DynamicModel::FollowTrajectory() {
                 // }
                 //movespd = (tgtSpd/3600.0f);//km/h to km/s
 
-                if(target_qvec.y() > 0 || parentEntity->category == Entity::Category::Submarine){
+                if(target_qvec.y() > 0 || parentEntity->category == Entity::Category::Marine){
                     //alt = target_qvec.y() * FTtoKM;
                     Altitude = target_qvec.y();
                 }
@@ -432,13 +432,13 @@ void DynamicModel::FollowTrajectory() {
 
     }
 
-    if(parentEntity && (parentEntity->category == Entity::Category::Ship ||
-                         parentEntity->category == Entity::Category::Submarine ||
-                         parentEntity->category == Entity::Category::Tank ))
+    if(parentEntity && (parentEntity->category == Entity::Category::Marine ||
+                         parentEntity->category == Entity::Category::Marine ||
+                         parentEntity->category == Entity::Category::Ground ))
     {
         moveSpeed = moveSpeed > 500?500:moveSpeed;
     }
-    if(parentEntity->category == Entity::Category::Submarine){
+    if(parentEntity->category == Entity::Category::Marine){
         Altitude  = Altitude>0?0:Altitude;
     }
 }
@@ -524,6 +524,7 @@ QJsonObject DynamicModel::getsubComponentData(std::string ID) const{
 QJsonObject DynamicModel::toJson() const {
     QJsonObject obj;
     obj["id"] = QString::fromStdString(ID);
+    obj["Advanced"] = true;
     obj["control"] = control;
     // obj["moveSpeed"] = moveSpeed;
     // obj["turnRadius"] = turnRadius;
@@ -532,31 +533,32 @@ QJsonObject DynamicModel::toJson() const {
 
     QJsonObject maximumObj;
     maximumObj["type"] = "Section";
+     maximumObj["visible"] = true;
     maximumObj["minSpeed"] = toParm(minSpeed,"Km/h",0,300);
     maximumObj["maxSpeed"] = toParm(maxSpeed,"Km/h",100,2000);
     maximumObj["moveSpeed"] = toParm(moveSpeed,"Km/h",0,2000);
     maximumObj["Acceleration"] = toParm(Acceleration,"m/s^2",10,500,"i am Accerlation");
     maximumObj["Decceleration"] = toParm(Decceleration,"m/s^2",50,    400);
     // maximumObj["turnRadius"] = toParm(turnRadius,"m");
-    if(parentEntity->category == Entity::Category::Submarine){
+    if(parentEntity->category == Entity::Category::Marine){
         maximumObj["turnRate"] = toParm(turnRate,"deg/s",5,15);
     }else{
         maximumObj["turnRate"] = toParm(turnRate,"deg/s",5,30);
     }
 
-    if(parentEntity->category == Entity::Category::Submarine){
+    if(parentEntity->category == Entity::Category::Marine){
         maximumObj["MaxDepth"] = toParm(maxAltitude,"ft",0,-2000);
     }else{
         maximumObj["MaxAltitude"] = toParm(maxAltitude,"ft",10,60000);
     }
 
 
-    if(parentEntity->category == Entity::Category::Submarine)
+    if(parentEntity->category == Entity::Category::Marine)
         maximumObj["Depth"] = toParm(Altitude,"ft",-2000,0);
     else
         maximumObj["Altitude"] = toParm(Altitude,"ft",10,60000);
 
-    if(parentEntity->category == Entity::Category::Submarine){
+    if(parentEntity->category == Entity::Category::Marine){
         maximumObj["climbRate"] = toParm(climbRate,"ft/min",0,      100);
         maximumObj["diveRate"] = toParm(diveRate,"ft/min",0,      100);
     }else{
@@ -637,14 +639,14 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
             turnRadius = valueFromParm(maximumObj["turnRadius"].toObject());
         if (maximumObj.contains("turnRate") && maximumObj["turnRate"].isObject())
             turnRate = valueFromParm(maximumObj["turnRate"].toObject());
-        if(parentEntity->category == Entity::Category::Submarine){
+        if(parentEntity->category == Entity::Category::Marine){
             if (maximumObj.contains("MaxDepth") && maximumObj["MaxAltitude"].isObject())
                 maxAltitude = valueFromParm(maximumObj["MaxAltitude"].toObject());
         }else{
             if (maximumObj.contains("MaxAltitude") && maximumObj["MaxAltitude"].isObject())
                 maxAltitude = valueFromParm(maximumObj["MaxAltitude"].toObject());
         }
-        if(parentEntity->category == Entity::Category::Submarine){
+        if(parentEntity->category == Entity::Category::Marine){
             if (maximumObj.contains("Depth") && maximumObj["Depth"].isObject())
                 Altitude = valueFromParm(maximumObj["Depth"].toObject());
         }else{

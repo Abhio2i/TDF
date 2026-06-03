@@ -1,10 +1,12 @@
 #include "sonobuoypanel.h"
+#include "Inspector/inspector.h"
 #include "core/Hierarchy/EntityProfiles/platform.h"
 #include "qevent.h"
 #include "core/Hierarchy/Utils/entityutils.h"
 #include "qelapsedtimer.h"
 #include <QPainter>                                // For painting operations
 #include <QPaintEvent>                             // For paint events
+#include <QSvgRenderer>
 #include <QFont>                                   // For font settings
 #include <QtMath>                                  // For math functions
 #include <QDebug>                                  // For debug output
@@ -31,8 +33,57 @@ SonoBuoyPanel::SonoBuoyPanel(QWidget *parent)
     sensorDropdown->hide();
     connect(sensorDropdown, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &SonoBuoyPanel::onSensorSelected);
+
+    // --- + and - Buttons Configuration ---
+    QString buttonStyle =
+        "QPushButton { background-color: #001a00; color: #00ff00; "
+        "border: 1px solid #00ff00; font-weight: bold; font-size: 16px; "
+        "min-width: 10px; min-height: 10px; max-width: 10px; max-height: 10px; "
+        "border-radius: 4px; }"
+        "QPushButton:hover { background-color: #003300; }"
+        "QPushButton:pressed { background-color: #00ff00; color: black; }";
+
+    zoomInButton = new QPushButton("+", this);
+    zoomInButton->setStyleSheet(buttonStyle);
+
+    zoomOutButton = new QPushButton("-", this);
+    zoomOutButton->setStyleSheet(buttonStyle);
+
+    // --- Layout Management ---
+    // Buttons ko horizontal line me lagane ke liye
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    // buttonLayout->addStretch(); // Buttons ko right side me dhakelne ke liye
+    buttonLayout->addWidget(zoomInButton);
+    buttonLayout->addWidget(zoomOutButton);
+    buttonLayout->addStretch();
+    buttonLayout->setSpacing(5);
+
+    // Main layout pooray widget ke liye
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    mainLayout->addLayout(buttonLayout);
+    mainLayout->addStretch(); // Baaki bacha space niche khali rakhne ke liye
+    mainLayout->setContentsMargins(10, 10, 10, 10); // Corner se thoda gap
+
+    // --- Connect Signals to Slots ---
+    connect(zoomInButton, &QPushButton::clicked, this, &SonoBuoyPanel::onZoomIn);
+    connect(zoomOutButton, &QPushButton::clicked, this, &SonoBuoyPanel::onZoomOut);
+
+    m_svgRenderer.load(QString(":/svg/images/world.svg"));
 }
 
+void SonoBuoyPanel::onZoomOut()
+{
+    zoomLevel *= 2.f; // 10% zoom in
+    if (zoomLevel > 12800.0) zoomLevel = 12800.0; // Max zoom limit
+    this->update(); // Paint event ko call karke map re-render karne ke liye
+}
+
+void SonoBuoyPanel::onZoomIn()
+{
+    zoomLevel /= 2.f; // 10% zoom out
+    if (zoomLevel < 25) zoomLevel = 25; // Min zoom limit
+    this->update();
+}
 
 // %%% Size Management %%%
 /* Provide size hint for widget */
@@ -140,6 +191,13 @@ void SonoBuoyPanel::selectEntity(Entity* entit)
 
     sensor = nullptr;
     sensorlist.clear();
+    // Remote DIS entities have no weapons component
+    if (!entity->weapons || !entity->weapons->weapons) {
+        setWindowTitle("SonoBuoyPanel (" +
+                       QString::fromStdString(entity->Name) + ")");
+        update();
+        return;
+    }
     for (auto const& pair :  *entity->weapons->weapons) {
         Weapon* s = pair.second;
         if (s ) {
@@ -203,14 +261,122 @@ void SonoBuoyPanel::paintEvent(QPaintEvent * /*event*/)
     // Initialize painter
     QPainter p(this);
     //p.setRenderHint(QPainter::Antialiasing);
-
+    QVector3D position = entity->transform->translation();
+    QPointF pos(position.x(),-position.z());
     // Draw display components
     drawBackground(p);
     int w = width();
     int h = height();
+
+    // SVG ka original size lein
+    QSize svgSize = m_svgRenderer.defaultSize();
+    p.fillRect(this->rect(), QColor("#1a2634"));
+
+    float mapwidth = 40075.0164;//20037.5082;//111.31949*180.0f;
+
+    // Widget ke size ke hisab se aspect ratio maintain karte hue rect nikalein
+    // QRect targetRect = this->rect();
+    // float level = mapwidth/zoomLevel;
+    // targetRect.setWidth(targetRect.width()*level);
+    // targetRect.setHeight(targetRect.height()*level);
+    // svgSize.scale(targetRect.size(), Qt::KeepAspectRatio);
+
+    // // Centered bounding box banayein
+    // QRect centerRect(0, 0, svgSize.width(), svgSize.height());
+    // centerRect.moveCenter(this->rect().center());
+    // centerRect.translate((-pos.x()/zoomLevel)*mapwidth, (-pos.y()/zoomLevel)*mapwidth);
+    // // Ab centered rect me render karein
+    // m_svgRenderer.render(&p, centerRect);
+
     int outerDiameter = qMin(w - padding*2, h - padding*2);
     int outerRadius = outerDiameter / 2;
     QPoint center(w / 2, h / 2);
+
+
+    p.setBrush(Qt::yellow);
+    p.setPen(Qt::NoPen);
+    p.drawEllipse(center, 4, 4);
+
+    p.save(); // Current painter state save karein[cite: 2]
+    p.translate(center.x(), center.y()); // Painter ko aircraft ke center position par le jayein[cite: 2]
+    p.rotate(entity->transform->getHeading()); // Aircraft ko uske heading angle par rotate karein[cite: 2]
+
+    p.setBrush(Qt::blue); // Normally blue[cite: 2]
+    p.setPen(QPen(Qt::white, 0.5)); // Patli white outline
+    // Aircraft Polygon define karein (origin 0,0 nose ke thoda niche hai)
+    QPolygon aircraft;
+    aircraft << QPoint(0, -12)   // Nose (Top)
+             << QPoint(1, -5)  // Right Fuselage front
+             << QPoint(12, 0)    // Right Wingtip front
+             << QPoint(12, 2)    // Right Wingtip back
+             << QPoint(1, 5)   // Right Fuselage back
+             << QPoint(5, 10)    // Right Tail stabilizer
+             << QPoint(0, 8)     // Rear center (notch)
+             << QPoint(-5, 10)   // Left Tail stabilizer
+             << QPoint(-1, 5)  // Left Fuselage back
+             << QPoint(-12, 2)   // Left Wingtip back
+             << QPoint(-12, 0)   // Left Wingtip front
+             << QPoint(-1, -5);// Left Fuselage front
+    // Polygon automatically connect back to nose.
+
+    p.drawPolygon(aircraft);// Polygon draw karein
+    p.restore(); // Painter state restore karein[cite: 2]
+    // qDebug()<<w<<","<<zoomLevel;
+    p.setBrush(Qt::green);
+    p.setPen(Qt::NoPen);
+    QVector<std::string> output;
+    for (const Sonobuoy* sensor : sensorlist) {
+        if (sensor) {
+            QVector3D Sposition = sensor->transform->translation();
+            QPointF senpos(Sposition.x(),-Sposition.z());
+            QPointF relPos((senpos.x()-pos.x()),(senpos.y()-pos.y()));
+            relPos.setX(((relPos.x()/zoomLevel)*center.x())+center.x());
+            relPos.setY(((relPos.y()/zoomLevel)*center.x())+center.y());
+            float size = 4;
+            if(sensor->collider->CollideRadius>5000){
+                size = 8.f;
+                p.setBrush(Qt::red);
+            }else{
+                p.setBrush(Qt::green);
+            }
+            p.drawEllipse(relPos, size, size);
+            if (!sensor->detection.isEmpty()) {
+                int i=0;
+                for (const Sonobuoy::SonobuoyOutput &t : sensor->detection) {
+                    if(!output.contains(t.entity->ID)){
+                        output.append(t.entity->ID);
+
+                        QVector3D Subposition = t.entity->transform->translation();
+                        QPointF senpos(Subposition.x(),-Subposition.z());
+                        // QPointF relPos((senpos.x()-pos.x())+center.x(),(senpos.y()-pos.y())+center.y());
+                        QPointF relPos((senpos.x()-pos.x()),(senpos.y()-pos.y()));
+                        relPos.setX(((relPos.x()/zoomLevel)*center.x())+center.x());
+                        relPos.setY(((relPos.y()/zoomLevel)*center.x())+center.y());
+
+                        p.save(); // Coordinate system save karein
+                        p.translate(relPos); // Painter ko ship ki position par le jayein
+                        p.rotate(t.entity->transform->getHeading()); // Ship ko uske original angle par rotate karein
+
+                        p.setBrush(Qt::red);
+                        p.setPen(QPen(Qt::white, 1)); // Outline ke liye
+
+                        // Ship ka polygon (simple triangle ya pentagon)
+                        QPolygon ship;
+                        ship << QPoint(0, -12)   // Bow (Front Point)
+                             << QPoint(5, -4)    // Front-Right
+                             << QPoint(5, 10)    // Back-Right (Stern)
+                             << QPoint(-5, 10)   // Back-Left (Stern)
+                             << QPoint(-5, -4);  // Front-Left
+
+                        p.drawPolygon(ship);
+                        p.restore(); // Coordinate system restore karein
+
+                    }
+                }
+            }
+        }
+    }
+    return;
 
     drawRadarRing(p, center, outerRadius);
     drawConcentricCircles(p, center, outerRadius);
@@ -477,10 +643,10 @@ void SonoBuoyPanel::updateDropdown()
     if (currentIdx >= 0)
         sensorDropdown->setCurrentIndex(currentIdx);
 
-    if (sensorlist.size() > 1)
-        sensorDropdown->show();
-    else
-        sensorDropdown->hide();
+    // if (sensorlist.size() > 1)
+    //     // sensorDropdown->show();
+    // else
+    //     sensorDropdown->hide();
 
     sensorDropdown->setGeometry(width() - 120 - padding, 4, 120, 22);
 }

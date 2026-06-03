@@ -104,9 +104,9 @@ public:
     // GeoJSON import action
     // QAction *importGeoJsonAction;
     // GeoJSON layers action
-    QAction *geoJsonLayersAction;
+    // QAction *geoJsonLayersAction;
     QAction *coordinateSystemAction;
-QAction *layerSelectAction;
+    QAction *layerSelectAction;
 
     // %%% Data Structures %%%
     /* Structure for map layer data */
@@ -121,7 +121,6 @@ QAction *layerSelectAction;
         QString resolution;                       // Layer resolution
         QString type;                             // Layer type
     };
-
     QAction* getAddTrajectoryAction() const { return addTrajectoryAction; }
 
 signals:
@@ -211,7 +210,8 @@ public slots:
     // Handle measure distance triggered
     void onMeasureDistanceTriggered();
     // Handle GeoJSON layer addition
-    void onGeoJsonLayerAdded(const QString &layerName);
+    // void onGeoJsonLayerAdded(const QString &layerName);
+      void setTrajectoryActionEnabled(bool enabled);
 
 private slots:
     // Handle GeoJSON import
@@ -295,7 +295,6 @@ private:
     QMap<QString, QAction*> tooltipFieldActions;
     void updateTooltipOptions();
     ScenarioConfig* scenarioConfig;
-
 };
 
 #endif

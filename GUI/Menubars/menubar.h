@@ -118,7 +118,7 @@ public:
     QAction* getOpenMissionFileAction();
 
     void runMenuBarTests();
-    // void runUnitTestsOnce();
+    QAction* pluginsAction = nullptr;
 
 
 signals:
@@ -174,6 +174,7 @@ signals:
     void loadXmlTriggered();
     void openRuntimeInstanceTriggered();
     void openMissionFileTriggered();
+        void pluginsTriggered();
 
 
 private:

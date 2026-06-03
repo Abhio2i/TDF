@@ -68,14 +68,29 @@ SOURCES += \
     GUI/Menubars/menubar.cpp \
     GUI/Menubars/profileinfodialog.cpp \
     GUI/Navigation/navigationpage.cpp \
+    GUI/Panel/EODisplayLib/eoland.cpp \
+    GUI/Panel/EODisplayLib/eosky.cpp \
+    GUI/Panel/EODisplayLib/eotargets.cpp \
+    GUI/Panel/EODisplayLib/eovisionangle.cpp \
+    GUI/Panel/EODisplayLib/eowether.cpp \
+    GUI/Panel/IRDisplayLib/irland.cpp \
+    GUI/Panel/IRDisplayLib/irsky.cpp \
+    GUI/Panel/IRDisplayLib/irtargets.cpp \
+    GUI/Panel/IRDisplayLib/irvisionangle.cpp \
+    GUI/Panel/IRDisplayLib/irwether.cpp \
     GUI/Panel/adsbdisplay.cpp \
     GUI/Panel/aesaradardisplay.cpp \
     GUI/Panel/aisdisplay.cpp \
     GUI/Panel/csmdisplay.cpp \
     GUI/Panel/eodisplay.cpp \
+    GUI/Panel/eodisplayopengl.cpp \
+    GUI/Panel/eoopengldisplay.cpp \
     GUI/Panel/esmdisplay.cpp \
     GUI/Panel/ewdisplay.cpp \
     GUI/Panel/iffdisplay.cpp \
+    GUI/Panel/irdisplay.cpp \
+    GUI/Panel/irdisplayopengl.cpp \
+    GUI/Panel/iropengldisplay.cpp \
     GUI/Panel/radardisplay.cpp \
     GUI/Panel/radiodisplay.cpp \
     GUI/Panel/sonardisplay.cpp \
@@ -105,6 +120,7 @@ SOURCES += \
     GUI/Toolbars/standardtoolbar.cpp \
     GUI/mainwindow.cpp \
     GUI/measuredistance/measuredistancedialog.cpp \
+    GUI/plugins/pluginmanagerdialog.cpp \
     GUI/scene3dwidget/scene3dwidget.cpp \
     GUI/statusbar.cpp \
     Setup.cpp \
@@ -327,6 +343,22 @@ SOURCES += \
     core/Config/scenarioconfig.cpp \
     core/Config/sessionmanager.cpp \
     core/Config/test/scenarioconfig_test.cpp \
+    core/DISPlugin/DISNetworkPlugin.cpp \
+    core/DISPlugin/bridge/disnetworkbridge.cpp \
+    core/DISPlugin/config/disconfigloader.cpp \
+    core/DISPlugin/core/dismanager.cpp \
+    core/DISPlugin/core/pdudispatcher.cpp \
+    core/DISPlugin/core/pdusender.cpp \
+    core/DISPlugin/core/pduserializer.cpp \
+    core/DISPlugin/handlers/entitystatehandler.cpp \
+    core/DISPlugin/handlers/exercisehandler.cpp \
+    core/DISPlugin/handlers/iffhandler.cpp \
+    core/DISPlugin/handlers/warfarehandlers.cpp \
+    core/DISPlugin/transport/DISTransport.cpp \
+    core/DISPlugin/utils/coordconverter.cpp \
+    core/DISPlugin/utils/deadreckoning.cpp \
+    core/DISPlugin/utils/entityidmapper.cpp \
+    core/DISPlugin/version/pduversionadapter.cpp \
     core/Debug/console.cpp \
     core/Debug/frame.cpp \
     core/Debug/profiler.cpp \
@@ -384,6 +416,7 @@ SOURCES += \
     core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test-aesa/radarsignalprocessor_aesa_test.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/aissensor.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/csm.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/customsensor.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/eo.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/eo_ir.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/eovision.cpp \
@@ -391,6 +424,7 @@ SOURCES += \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/georelativeelevation.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/eosensor.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/esm.cpp \
+    core/Hierarchy/EntityProfiles/SensorProfiles/irsensor.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/radar.cpp \
     # core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.cpp \
     core/Hierarchy/EntityProfiles/SensorProfiles/radarlib/radarantenna.cpp \
@@ -751,15 +785,30 @@ HEADERS += \
     GUI/Menubars/profileinfodialog-styles.h \
     GUI/Menubars/profileinfodialog.h \
     GUI/Navigation/navigationpage.h \
+    GUI/Panel/EODisplayLib/eoland.h \
+    GUI/Panel/EODisplayLib/eosky.h \
+    GUI/Panel/EODisplayLib/eotargets.h \
+    GUI/Panel/EODisplayLib/eovisionangle.h \
+    GUI/Panel/EODisplayLib/eowether.h \
+    GUI/Panel/IRDisplayLib/irland.h \
+    GUI/Panel/IRDisplayLib/irsky.h \
+    GUI/Panel/IRDisplayLib/irtargets.h \
+    GUI/Panel/IRDisplayLib/irvisionangle.h \
+    GUI/Panel/IRDisplayLib/irwether.h \
     GUI/Panel/adsbdisplay.h \
     GUI/Panel/aesaradardisplay.h \
     GUI/Panel/aisdisplay.h \
     GUI/Panel/csmdisplay.h \
     GUI/Panel/displayconstants.h \
     GUI/Panel/eodisplay.h \
+    GUI/Panel/eodisplayopengl.h \
+    GUI/Panel/eoopengldisplay.h \
     GUI/Panel/esmdisplay.h \
     GUI/Panel/ewdisplay.h \
     GUI/Panel/iffdisplay.h \
+    GUI/Panel/irdisplay.h \
+    GUI/Panel/irdisplayopengl.h \
+    GUI/Panel/iropengldisplay.h \
     GUI/Panel/radardisplay.h \
     GUI/Panel/radiodisplay.h \
     GUI/Panel/sonardisplay.h \
@@ -798,6 +847,7 @@ HEADERS += \
     GUI/mainwindow.h \
     GUI/measuredistance/measuredistancedialog-styles.h \
     GUI/measuredistance/measuredistancedialog.h \
+    GUI/plugins/pluginmanagerdialog.h \
     GUI/scene3dwidget/scene3dwidget.h \
     GUI/statusbar.h \
     Setup.h \
@@ -1178,6 +1228,31 @@ HEADERS += \
     core/Components/transform.h \
     core/Config/scenarioconfig.h \
     core/Config/sessionmanager.h \
+    core/DISPlugin/DISNetworkPlugin.h \
+    core/DISPlugin/SimulationPlugin.h \
+    core/DISPlugin/bridge/disnetworkbridge.h \
+    core/DISPlugin/config/disconfigloader.h \
+    core/DISPlugin/core/dismanager.h \
+    core/DISPlugin/core/pdudispatcher.h \
+    core/DISPlugin/core/pdusender.h \
+    core/DISPlugin/core/pduserializer.h \
+    core/DISPlugin/handlers/entitystatehandler.h \
+    core/DISPlugin/handlers/exercisehandler.h \
+    core/DISPlugin/handlers/iffhandler.h \
+    core/DISPlugin/handlers/warfarehandlers.h \
+    core/DISPlugin/interface/DISConfig.h \
+    core/DISPlugin/interface/DISDetonationSnapshot.h \
+    core/DISPlugin/interface/DISEmissionSnapshot.h \
+    core/DISPlugin/interface/DISEntitySnapshot.h \
+    core/DISPlugin/interface/DISExerciseControl.h \
+    core/DISPlugin/interface/DISFireSnapshot.h \
+    core/DISPlugin/interface/DISIFFSnapshot.h \
+    core/DISPlugin/interface/disincomingdata.h \
+    core/DISPlugin/transport/DISTransport.h \
+    core/DISPlugin/utils/coordconverter.h \
+    core/DISPlugin/utils/deadreckoning.h \
+    core/DISPlugin/utils/entityidmapper.h \
+    core/DISPlugin/version/pduversionadapter.h \
     core/Debug/AppException.h \
     core/Debug/ExceptionMacros.h \
     core/Debug/console.h \
@@ -1224,6 +1299,7 @@ HEADERS += \
     core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/test-aesa/issst_test_framework.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/aissensor.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/csm.h \
+    core/Hierarchy/EntityProfiles/SensorProfiles/customsensor.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/eo.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/eo_ir.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/eovision.h \
@@ -1232,6 +1308,7 @@ HEADERS += \
     core/Hierarchy/EntityProfiles/SensorProfiles/eoSensorLib/payload.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/eosensor.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/esm.h \
+    core/Hierarchy/EntityProfiles/SensorProfiles/irsensor.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/radar.h \
     # core/Hierarchy/EntityProfiles/SensorProfiles/radarmodel.h \
     core/Hierarchy/EntityProfiles/SensorProfiles/radarlib/jammingconfig.h \
@@ -1283,6 +1360,8 @@ HEADERS += \
     core/Network/networktransport.h \
     core/Network/profilepdu.h \
     core/Network/transformpdu.h \
+    core/Plugins/Interfaces/HierarchyInterface.h \
+    core/Plugins/Interfaces/SensorInterface.h \
     core/Plugins/pluginmanager.h \
     core/Recorder/payload.h \
     core/Recorder/recorder.h \

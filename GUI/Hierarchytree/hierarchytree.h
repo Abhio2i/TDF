@@ -177,12 +177,10 @@ signals:
     void addTeamToEntitiesRequested(QList<QVariantMap> entities, QString team);
     void addIFFToEntitiesRequested(QList<QVariantMap> entities);
     void addRadioToEntitiesRequested(QList<QVariantMap> entities);
-    void setCategoryToEntitiesRequested(QList<QVariantMap> entities, QString category);
-      void selectFormationWithEntityRequested(const QString& formationId);
+    void setCategoryToEntitiesRequested(QList<QVariantMap> entities, QString category, QString subCategory);
+    void selectFormationWithEntityRequested(const QString& formationId);
     void formationSelectWithEntity(const QString& formationId);
-      void entityRemovedNotify(const QString& entityId);
-
-
+    void entityRemovedNotify(const QString& entityId);
 
 protected:
     // %%% Event Handlers %%%

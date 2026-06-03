@@ -51,22 +51,17 @@
 #include <QHBoxLayout>
 #include <qgsvectorlayer.h>
 #include <qgsproject.h>
-
-
 const QSize ICON_SIZE(20, 20);
 
 // Utility function
 QPixmap DesignToolBar::withWhiteBg(const QString &iconPath) {
     QPixmap pixmap(iconPath);
     if (pixmap.isNull()) return QPixmap();
-
     QPixmap newPixmap(pixmap.size());
     newPixmap.fill(Qt::gray);
-
     QPainter painter(&newPixmap);
     painter.drawPixmap(0, 0, pixmap);
     painter.end();
-
     return newPixmap;
 }
 
@@ -437,11 +432,11 @@ void DesignToolBar::createActions() {
     importLayerAction->setCheckable(false);
     connect(importLayerAction, &QAction::triggered, this, &DesignToolBar::importLayer);
     // Main GeoJSON layers management action
-    geoJsonLayersAction = new QAction(QIcon(withWhiteBg(":/icons/images/geojson-layers.png")), tr("GeoJSON Layers"), this);
-    geoJsonLayersAction->setCheckable(true);
-    StayOpenMenu* geoJsonMenu = new StayOpenMenu(this);
-    geoJsonMenu->setStyleSheet(DesignToolbarStyles::StayOpenMenu);
-    geoJsonLayersAction->setMenu(geoJsonMenu);
+    // geoJsonLayersAction = new QAction(QIcon(withWhiteBg(":/icons/images/geojson-layers.png")), tr("GeoJSON Layers"), this);
+    // geoJsonLayersAction->setCheckable(true);
+    // StayOpenMenu* geoJsonMenu = new StayOpenMenu(this);
+    // geoJsonMenu->setStyleSheet(DesignToolbarStyles::StayOpenMenu);
+    // geoJsonLayersAction->setMenu(geoJsonMenu);
 
     // Main preset layers action
     presetLayersAction = new QAction(QIcon(withWhiteBg(":/icons/images/preset.png")), tr("Preset Layers"), this);
@@ -468,6 +463,7 @@ void DesignToolBar::createActions() {
     // Main trajectory editing actions
     addTrajectoryAction = new QAction(QIcon(withWhiteBg(":/icons/images/trajectory.png")), tr("Add Trajectory"), this);
     addTrajectoryAction->setCheckable(true);
+    addTrajectoryAction->setEnabled(false);
     connect(addTrajectoryAction, &QAction::triggered, this, [=]() {
         highlightAction(addTrajectoryAction);
         emit modeChanged(DrawTrajectory);
@@ -694,7 +690,7 @@ void DesignToolBar::highlightAction(QAction *activeAction) {
         selectCenterAction, layerInfoAction,
         shapeAction, bitmapAction, selectBitmapAction,
         measureDistanceAction, presetLayersAction,
-        geoJsonLayersAction
+        // geoJsonLayersAction
     };
 
     for (QAction *action : actions) {
@@ -762,11 +758,11 @@ void DesignToolBar::setupToolBar()
     importLayerButton->setDefaultAction(importLayerAction);
     importLayerButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
     addWidget(importLayerButton);
-    QToolButton *geoJsonLayersButton = new QToolButton(this);
-    geoJsonLayersButton->setDefaultAction(geoJsonLayersAction);
-    geoJsonLayersButton->setPopupMode(QToolButton::InstantPopup);
-    geoJsonLayersButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
-    addWidget(geoJsonLayersButton);
+    // QToolButton *geoJsonLayersButton = new QToolButton(this);
+    // geoJsonLayersButton->setDefaultAction(geoJsonLayersAction);
+    // geoJsonLayersButton->setPopupMode(QToolButton::InstantPopup);
+    // geoJsonLayersButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    // addWidget(geoJsonLayersButton);
 
     QToolButton *searchPlaceButton = new QToolButton(this);
     searchPlaceButton->setDefaultAction(searchPlaceAction);
@@ -859,20 +855,20 @@ void DesignToolBar::importLayer() {
     highlightAction(importLayerAction);
     emit importLayerTriggered(filePath);
 }
-// Main GeoJSON layer addition handler: Updates menu with new layer
-void DesignToolBar::onGeoJsonLayerAdded(const QString &layerName) {
-    if (geoJsonLayerActions.contains(layerName)) {
-        return;
-    }
-    QAction* action = new QAction(layerName, this);
-    action->setCheckable(true);
-    action->setChecked(true);
-    geoJsonLayersAction->menu()->addAction(action);
-    geoJsonLayerActions[layerName] = action;
-    connect(action, &QAction::triggered, this, [=](bool checked) {
-        emit geoJsonLayerToggled(layerName, checked);
-    });
-}
+// // Main GeoJSON layer addition handler: Updates menu with new layer
+// void DesignToolBar::onGeoJsonLayerAdded(const QString &layerName) {
+//     if (geoJsonLayerActions.contains(layerName)) {
+//         return;
+//     }
+//     QAction* action = new QAction(layerName, this);
+//     action->setCheckable(true);
+//     action->setChecked(true);
+//     geoJsonLayersAction->menu()->addAction(action);
+//     geoJsonLayerActions[layerName] = action;
+//     connect(action, &QAction::triggered, this, [=](bool checked) {
+//         emit geoJsonLayerToggled(layerName, checked);
+//     });
+// }
 
 // Handle adding a base layer to selected layers
 void DesignToolBar::onAddBaseLayerToSelected(const QString& layerId) {
@@ -1040,4 +1036,16 @@ void DesignToolBar::updateTooltipOptions()
         scenarioConfig->saveTooltipFields(activeOptions);
     }
     emit tooltipOptionsChanged(activeOptions);
+}
+void DesignToolBar::setTrajectoryActionEnabled(bool enabled) {
+    if (addTrajectoryAction) {
+        addTrajectoryAction->setEnabled(enabled);
+        // Also update button style visually
+        QWidget* btn = widgetForAction(addTrajectoryAction);
+        if (btn) {
+            btn->setStyleSheet(enabled
+                                   ? DesignToolbarStyles::ToolbarButton
+                                   : DesignToolbarStyles::ToolbarButton + "opacity: 0.4;");
+        }
+    }
 }

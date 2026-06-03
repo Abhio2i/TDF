@@ -1,0 +1,52 @@
+{
+  "_comment": "TDF DIS Network Configuration — STAGE 22.0 Compatible",
+  "_version": "1.0",
+
+  "network": {
+    "_comment": "Match these values to STAGE DIS tab settings",
+    "multicastGroup"  : "239.255.0.1",
+    "port"            : 3000,
+    "interfaceAddress": "",
+    "ttl"             : 1,
+    "receiveBufferSize": 65536,
+    "loopbackEnabled" : true
+  },
+
+  "dis": {
+    "_comment": "Match exerciseID to STAGE DIS Options tab Exercise ID field",
+    "defaultVersion"  : 7,
+    "exerciseID"      : 1,
+    "siteID"          : 1,
+    "applicationID"   : 1,
+    "countryCode"     : 164,
+    "ignoreOtherVersions": false
+  },
+
+  "deadReckoning": {
+    "_comment": "Match to STAGE Thresholds tab",
+    "positionThresholdMeters"  : 1.0,
+    "orientationThresholdDeg"  : 3.0,
+    "heartbeatIntervalSeconds" : 5.0,
+    "defaultAlgorithm"         : "FPW"
+  },
+
+  "peers": {
+    "_comment": "Add DRDO STAGE machine IP here when known",
+    "overrides": []
+  },
+
+  "_stageNotes": [
+    "In STAGE: Tools > DIS/HLA > DIS tab",
+    "  Connection Mode: Multicast",
+    "  Multicast Address: 239.255.0.1",
+    "  Communication Port: 3000",
+    "In STAGE: Options tab",
+    "  Exercise ID: 1  (must match exerciseID above)",
+    "  Site ID: 1      (must match siteID above)",
+    "  Application ID: 2 (STAGE gets 2, TDF gets 1)",
+    "In STAGE: Messages tab",
+    "  Entity State: Send=Yes, Receive=Yes",
+    "  Fire: Send=Yes, Receive=No",
+    "  Detonation: Send=Yes, Receive=Yes"
+  ]
+}

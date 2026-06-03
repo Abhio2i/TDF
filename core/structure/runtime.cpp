@@ -4,8 +4,15 @@
 #include <core/Network/libs/TransformUpdate.h> //for qued connnection
 #include <QMetaType>//by aman
 #include <core/SharedMemory/sharedmemorywrapper.h>
+#include "core/DISPlugin/utils/coordconverter.h"
+#include <iostream>
+#include "core/DISPlugin/DISNetworkPlugin.h"
 Runtime::Runtime() {
     qRegisterMetaType<TransformUpdate>("TransformUpdate");//by Aman
+
+
+
+
 
     // New By Himanshu Start
     // Register the Enum so it can be passed across threads via Signals/Slots
@@ -32,19 +39,71 @@ Runtime::Runtime() {
     // // Start SharedMemory Thread
     // sharedMemoryThread->start();
 
-    sqlite = new SQLite(hierarchy, simulation);//SQLite Memory By Himanshu
 
     scenerenderer = new SceneRenderer();
     simulation = new Simulation();
     scriptengine = new ScriptEngine();
-     scriptengine->setRuntime(this);
+    scriptengine->setRuntime(this);
     networkManager = new NetworkManager();
-     simulation->setNetworkManager(networkManager);
+    simulation->setNetworkManager(networkManager);
 
     console  = Console::internalInstance();
     profiler = new Profiler();
     recorder = new Recorder(hierarchy, simulation);
     simulation->init();
+    sqlite = new SQLite(hierarchy, simulation);//SQLite Memory By Himanshu
+
+    pluginManager = new PluginManager();
+    pluginManager->hierarchy = hierarchy;
+    pluginManager->simulation = simulation;
+    pluginManager->scenerenderer = scenerenderer;
+
+
+    // ── DIS Network Plugin ────────────────────────
+    // DISNetworkPlugin* disPlugin = new DISNetworkPlugin(this);
+    disPlugin = new DISNetworkPlugin(this);
+    disPlugin->attachHierarchy(hierarchy);
+    disPlugin->attachSimulation(simulation);
+    //if (QFile::exists("dis_config.json"))
+    // disPlugin->start("dis_config.json");
+    simulation->registerPlugin(disPlugin);
+
+    // Simulation start → DIS Start/Resume PDU
+    // connect(simulation, &Simulation::Begin,
+    //         disPlugin, &DISNetworkPlugin::onSimulationStarted,
+    //         Qt::QueuedConnection);
+    // connect(simulation, &Simulation::sendMode,
+    //         this, [this](SimulationStateNS::State state) {
+    //             switch (state) {
+    //             case SimulationStateNS::START:
+    //                 disPlugin->onSimulationStarted();
+    //                 break;
+    //             case SimulationStateNS::PAUSE:
+    //                 disPlugin->onSimulationPaused();
+    //                 break;
+    //             case SimulationStateNS::STOP:
+    //                 disPlugin->onSimulationStopped();
+    //                 break;
+    //             default:
+    //                 break;
+    //             }
+    //         },
+    //         Qt::QueuedConnection);
+
+    // Hierarchy entity added → DIS Create Entity PDU
+    connect(hierarchy, &Hierarchy::entityAdded,
+            disPlugin, &DISNetworkPlugin::onEntityAdded,
+            Qt::QueuedConnection);
+    connect(disPlugin, &DISNetworkPlugin::addRemoteDISEntity,
+            hierarchy, &Hierarchy::addEntityViaNetwork,
+            Qt::QueuedConnection);
+    connect(hierarchy, &Hierarchy::entityRemovedfull,
+            disPlugin, &DISNetworkPlugin::onEntityRemoved,
+            Qt::DirectConnection);
+    connect(disPlugin, &DISNetworkPlugin::removeRemoteDISEntity,
+            hierarchy, &Hierarchy::removeEntity,
+            Qt::QueuedConnection);
+
     // simulation->moveToThread(simulationThread);
 
     // QObject::connect(simulationThread, &QThread::started, simulation, &Simulation::init);
@@ -137,12 +196,12 @@ Runtime::Runtime() {
                     //simulation->start();
                 }
             });
-    connect(hierarchy, &Hierarchy::status,this,[this]{
-        if(simulation->isPlay){
-            simulation->pause();
-            QThread::msleep(200);
-        }
-    });
+    // connect(hierarchy, &Hierarchy::status,this,[this]{
+    //     if(simulation->isPlay){
+    //         simulation->pause();
+    //         QThread::msleep(200);
+    //     }
+    // });
 
 
     //Shared Memory
@@ -184,7 +243,7 @@ Runtime::Runtime() {
     });
 
 
-    connect(replay,&Replay::updateScene,scenerenderer,&SceneRenderer::Render);
+    // connect(replay,&Replay::updateScene,scenerenderer,&SceneRenderer::Render);
     connect(replay,&Replay::createProfileCategories,hierarchy,&Hierarchy::addProfileCategaoryWithObject);
     connect(replay,&Replay::deleteProfileCategories,hierarchy,&Hierarchy::removeProfileCategaory);
     connect(replay,&Replay::createEntitiesCreate,hierarchy,&Hierarchy::addEntityViaLogger);

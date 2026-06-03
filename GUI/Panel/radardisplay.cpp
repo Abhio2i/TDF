@@ -344,7 +344,12 @@ void RadarDisplay::selectEntity(Entity* entit)
     sensor = nullptr;
     sensorlist.clear();
     lockedTargetID = 0;
-
+    // Remote DIS entities have no sensors component
+    if (!entity->sensors || !entity->sensors->sensors) {
+        updateModeButtonStyles();
+        update();
+        return;
+    }
     for (auto const& pair : *entity->sensors->sensors) {
         Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::Generic) {

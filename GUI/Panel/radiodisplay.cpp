@@ -170,6 +170,10 @@ void RADIODisplay::selectEntity(Entity* entit)
     // Select first valid Radio from entity
     radio = nullptr;
     radiolist.clear();
+    if (!entity->radios || !entity->radios->radios) {
+        update();
+        return;
+    }
     for (auto const& pair :  *entity->radios->radios) {
         Radio* r = pair.second;
         if (r) {

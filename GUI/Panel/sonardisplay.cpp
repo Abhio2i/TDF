@@ -1,3 +1,23 @@
+// ============================================================
+// sonardisplay.cpp
+//
+// Sonar Presentation Display (PPI)
+//
+// Responsibilities:
+//
+//   • Sonar contact visualization
+//   • Range ring rendering
+//   • Sweep animation
+//   • Beam cone display
+//   • Heading indication
+//   • Contact aging/fading
+//   • Contact labels
+//   • Display range controls
+//
+// This widget acts as the UI layer for the
+// sonar detection system.
+// ============================================================
+
 #include "sonardisplay.h"
 #include <QPainter>
 #include <QtMath>
@@ -38,16 +58,41 @@ void SonarDisplay::setSimulation(Simulation* sim)
 }
 
 void SonarDisplay::setHierarchy(Hierarchy* h) { hierarchy = h; }
-void SonarDisplay::selectEntity(Entity* e)    {
+
+void SonarDisplay::selectEntity(Entity* e)
+{
     entity = e;
+
+    if (e)
+        selectedEntityId =
+            QString::fromStdString(e->ID);
+    else
+        selectedEntityId.clear();
+
     contacts.clear();
     update();
 }
-void SonarDisplay::RemoveEntity(QString)      {}
+
+void SonarDisplay::RemoveEntity(QString id)
+{
+    if(entity &&
+        QString::fromStdString(entity->ID) == id)
+    {
+        entity = nullptr;
+        contacts.clear();
+        update();
+    }
+}
+
 void SonarDisplay::updateRadar()              { update(); }
 
 void SonarDisplay::paintEvent(QPaintEvent *)
 {
+    qDebug()
+    << "[PAINT EVENT]"
+    << "contacts:"
+    << contacts.size();
+
     updateHeadingFromEntity();
 
     QPainter p(this);
@@ -274,14 +319,8 @@ void SonarDisplay::drawContacts(QPainter &p, QPoint center, int radius)
 
     for (auto &c : contacts)
     {
-        // Angle normalize (radians → degrees)
-        double angle = c.angle;
-        if (angle < 6.5)  // radians
-        {
-            angle = angle * 180.0 / M_PI;
-        }
-
-        double theta = qDegreesToRadians(angle - 90);
+        // ── Angle ──
+        double theta   = qDegreesToRadians(c.angle - 90.0);
         double rangeKm = c.range / 1000.0;
         if (rangeKm > maxRange) continue;
 
@@ -289,64 +328,75 @@ void SonarDisplay::drawContacts(QPainter &p, QPoint center, int radius)
         int x = center.x() + r * cos(theta);
         int y = center.y() + r * sin(theta);
 
-        // Age based fade
-        qint64 age   = now - c.timestamp;
-        float  ageRatio   = (float)age / (float)m_pingIntervalMs;
-        int    alpha ;
-
+        // ── Age fade ──
+        qint64 age      = now - c.timestamp;
+        float  ageRatio = (float)age / (float)m_pingIntervalMs;
+        int    alpha;
         if (ageRatio < 0.8f)
-            alpha = 255;                              // solid
+            alpha = 255;
         else
-            alpha = qMax(50, (int)(255 * (1.0f - (ageRatio - 0.8f) / 0.2f)));  // last 20% fade
+            alpha = qMax(30, (int)(255 * (1.0f - (ageRatio - 0.8f) / 0.2f)));
 
-        // Color
-        // Strength based on distance (real feel)
-        double strength = 1.0 - (c.range / (maxRange * 1000.0));
-        strength = std::max(0.0, strength);
+        // ── Intensity from backend ──
+        float intensity  = std::clamp(c.intensity, 0.1f, 1.0f);
+        int   brightness = (int)(intensity * 255);
 
-        // Angle effect (front strong, side weak, back zero)
-        double angleDiff = fabs(c.angle);
-        if (angleDiff > 180) angleDiff = 360 - angleDiff;
+        // ── Dot size — paas/strong = bada, door/weak = chota ──
+        int dotSize  = 3 + (int)(intensity * 4);  // 3-7 px
+        int glowSize = dotSize + 3;
 
-        // baffle zone
-        double angleFactor = 0.0;
-        if (angleDiff <= 60)
-            angleFactor = 1.0;
-        else if (angleDiff <= 120)
-            angleFactor = 1.0 - ((angleDiff - 60) / 60.0) * 0.7;
-        else
-            angleFactor = 0.0;
-
-        // apply
-        strength *= angleFactor;
-
-        // convert to intensity
-        int intensity = std::min(255, (int)(strength * 255));
-
-        // Color based on type
-        QColor dotColor;
-        QColor glowColor;
+        // ── Color by type + intensity ──
+        QColor dotColor, glowColor;
 
         if (c.type == "submarine")
         {
-            dotColor  = QColor(255, intensity / 3, 0, alpha);   // red
-            glowColor = QColor(255, 0, 0, alpha / 3);
+            // Strong → bright red, Weak → dark orange
+            dotColor  = QColor(brightness,
+                              (int)(brightness * 0.2f),
+                              0,
+                              alpha);
+            glowColor = QColor(255, 50, 0,
+                               (int)(alpha * intensity * 0.4f));
         }
         else
         {
-            dotColor  = QColor(255, 255, intensity / 4, alpha); // yellow
-            glowColor = QColor(255, 255, 0, alpha / 3);
+            // Strong → bright yellow, Weak → dim yellow
+            dotColor  = QColor(brightness,
+                              brightness,
+                              (int)(brightness * 0.2f),
+                              alpha);
+            glowColor = QColor(255, 255, 0,
+                               (int)(alpha * intensity * 0.4f));
         }
 
-        // Glow
-        p.setPen(Qt::NoPen);
-        p.setBrush(glowColor);
-        p.drawEllipse(QPoint(x, y), 8, 8);
+        // ── Glow — sirf strong contacts pe ──
+        if (intensity > 0.5f)
+        {
+            p.setPen(Qt::NoPen);
+            p.setBrush(glowColor);
+            p.drawEllipse(QPoint(x, y), glowSize, glowSize);
+        }
 
-        // Dot
+        // ── Main dot ──
+        p.setPen(Qt::NoPen);
         p.setBrush(dotColor);
-        p.drawEllipse(QPoint(x, y), 4, 4);
+        p.drawEllipse(QPoint(x, y), dotSize, dotSize);
+
+        // ── Extra ring — very strong contact ──
+        if (intensity > 0.8f)
+        {
+            QPen ringPen(dotColor);
+            ringPen.setWidth(1);
+            p.setPen(ringPen);
+            p.setBrush(Qt::NoBrush);
+            p.drawEllipse(QPoint(x, y), glowSize + 2, glowSize + 2);
+        }
+
+        qDebug()
+            << "[DRAW CONTACT]"
+            << QString::fromStdString(c.name);
     }
+
 }
 
 // ── NEW: Contact labels ──
@@ -467,7 +517,6 @@ float normalizeRelativeAngle(float bearing, float heading)
 
 void SonarDisplay::updateContacts(const std::vector<DetectionResult>& results)
 {
-
     qDebug() << "[UI UPDATE CONTACTS] incoming:" << results.size();
 
     qint64 now = QDateTime::currentMSecsSinceEpoch();
@@ -501,6 +550,7 @@ void SonarDisplay::updateContacts(const std::vector<DetectionResult>& results)
                 existing.angle     = relAngle;
                 existing.range     = r.distance;
                 existing.timestamp = now;  // ← timestamp refresh
+                existing.intensity = r.intensity;
                 found = true;
                 break;
             }
@@ -515,6 +565,7 @@ void SonarDisplay::updateContacts(const std::vector<DetectionResult>& results)
             c.angle     = relAngle;
             c.range     = r.distance;
             c.name      = r.name;
+            c.intensity = r.intensity;
             c.entity    = nullptr;
             c.timestamp = now;
 
@@ -538,27 +589,33 @@ void SonarDisplay::updateContacts(const std::vector<DetectionResult>& results)
 
 void SonarDisplay::updateHeadingFromEntity()
 {
-    if (!entity) return;
+    if (!entity &&
+        hierarchy &&
+        !selectedEntityId.isEmpty())
+    {
+        auto it =
+            hierarchy->Entities.find(
+                selectedEntityId.toStdString());
 
-    QJsonObject transformJson;
-    try
-    {
-        transformJson = entity->getComponent("transform");
+        if (it != hierarchy->Entities.end())
+            entity = it->second;
     }
-    catch (...)
-    {
-        entity = nullptr;
+
+    if (!entity)
         return;
-    }
 
-    //QJsonObject transformJson = entity->getComponent("transform");
-    if (transformJson.isEmpty()) return;
+    QJsonObject transformJson =
+        entity->getComponent("transform");
 
-    QJsonObject geo = transformJson["geocord"].toObject();
+    if (transformJson.isEmpty())
+        return;
+
+    QJsonObject geo =
+        transformJson["geocord"].toObject();
+
     if (!geo.contains("heading"))
         return;
 
-    // IMPORTANT
     m_heading = geo["heading"].toDouble();
 }
 
@@ -579,5 +636,5 @@ SonarDisplay::~SonarDisplay()
 {
     qDebug() << "SonarDisplay destroyed:" << this;
 
-    disconnect();   // 🔥 sab connections tod dega
+    disconnect();
 }

@@ -10,19 +10,40 @@ SceneRenderer::SceneRenderer() {
 
 void SceneRenderer::entityAdded(QString /*parentID*/, Entity* entity) {
     Platform* platform = dynamic_cast<Platform*>(entity);
+    // if (platform) {
+    //     if (!platform->transform || !platform->collider || !platform->meshRenderer2d) {
+    //         Console::error("Required components missing for entity: " + platform->Name);
+    //         return;
+    //     }
+    //     MeshData meshData;
+    //     meshData.name = QString::fromStdString(platform->Name);
+    //     meshData.transform = platform->transform;
+    //     meshData.collider = platform->collider;
+    //     meshData.trajectory = platform->trajectory;
+    //     meshData.Meshes = platform->meshRenderer2d->Meshes;
+    //     meshData.entity = entity;
+    //     meshData.dynamicmodel = platform->dynamicModel;
+    //     emit addMesh(QString::fromStdString(platform->ID), meshData);
+    // }
     if (platform) {
-        if (!platform->transform || !platform->collider || !platform->meshRenderer2d) {
+        if (!platform->transform || !platform->collider) {
             Console::error("Required components missing for entity: " + platform->Name);
             return;
         }
         MeshData meshData;
-        meshData.name = QString::fromStdString(platform->Name);
-        meshData.transform = platform->transform;
-        meshData.collider = platform->collider;
-        meshData.trajectory = platform->trajectory;
-        meshData.Meshes = platform->meshRenderer2d->Meshes;
-        meshData.entity = entity;
+        meshData.name        = QString::fromStdString(platform->Name);
+        meshData.transform   = platform->transform;
+        meshData.collider    = platform->collider;
+        meshData.trajectory  = platform->trajectory;
+        meshData.entity      = entity;
         meshData.dynamicmodel = platform->dynamicModel;
+
+        if (platform->meshRenderer2d) {
+            meshData.Meshes = platform->meshRenderer2d->Meshes;
+        } else {
+            // Fix: Use {} to initialize an empty std::vector
+            meshData.Meshes = {};
+        }
         emit addMesh(QString::fromStdString(platform->ID), meshData);
     }
     Weapon* weapon = dynamic_cast<Weapon*>(entity);

@@ -1,3 +1,22 @@
+// ============================================================
+// active_sonar.cpp
+//
+// Active sonar implementation.
+//
+// Responsibilities:
+//
+//   • Ping transmission
+//   • Echo reception
+//   • Range estimation
+//   • Beam filtering
+//   • Target detection
+//   • False contact simulation
+//   • Multi-target scanning
+//
+// Used by Sonar sensor as the low-level active
+// acoustic processing engine.
+// ============================================================
+
 #include "active_sonar.h"
 #include <cmath>
 #include <cstdlib>
@@ -15,7 +34,7 @@ ActiveSonar::ActiveSonar()
     , m_beamWidth(60.0f)   //  60° default
     , m_heading(0.0f)      // North default
     , m_pingInterval(3.0f)    //  3 sec default
-    , m_lastPingTime(-999.0f) // pehli ping turant ho
+    , m_lastPingTime(-999.0f) // first ping interval
     , m_falseDetectionRate(0.1f)  //  10% default
     , m_noiseVariance(5.0f)       //  ±5 dB default
     , m_echoReceived(false)
@@ -50,7 +69,7 @@ bool ActiveSonar::sendPing(float currentTime, float targetDepth)
         return false;
 
     m_pingTime     = currentTime;
-    m_lastPingTime = currentTime;  // ← ye update hota hai
+    m_lastPingTime = currentTime;  // ← update
     return true;
 }
 
@@ -90,7 +109,7 @@ DetectionResult ActiveSonar::detect(const SonarInput &input,
     result.signalExcess = 0.0f;
     result.confidence   = 0.0f;
 
-    // Echo nahi aaya
+    // Echo not come
     if (!m_echoReceived)
         return result;
 
@@ -127,7 +146,7 @@ DetectionResult ActiveSonar::detect(const SonarInput &input,
     if (!SonarModel::detectionDecision(snr, input.detectionThreshold))
         return result;
 
-    // Detected — result fill karo
+    // Detected — result fill
     result.detected     = true;
     result.distance     = m_computedDist;
     result.bearing      = SonarModel::computeBearing(
@@ -153,7 +172,7 @@ bool ActiveSonar::isInBeam(float targetBearing) const
     return std::fabs(diff) <= half;
 }
 
-// ── ek ping → sab targets scan ──
+// ── one ping → all targets scan ──
 std::vector<DetectionResult> ActiveSonar::scan(
     const std::vector<SonarTarget> &targets,
     const SonarInput               &input)
@@ -165,7 +184,6 @@ std::vector<DetectionResult> ActiveSonar::scan(
         results.push_back(processSingleTarget(target, input));
 
     // ── False detection check ──
-    // Random probability se ek false contact generate hota hai
     float roll = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
     if (roll < m_falseDetectionRate)
@@ -219,7 +237,7 @@ DetectionResult ActiveSonar::processSingleTarget(
         return result;
     }
 
-    // SNR — target ki apni targetStrength use karo
+    // SNR
     float tl  = SonarModel::computeTransmissionLoss(distance, input.absorption);
 
     // DI from beam width
@@ -254,7 +272,7 @@ DetectionResult ActiveSonar::processSingleTarget(
     return result;
 }
 
-// Interval check — kya ab ping kar sakte hain?
+// Interval check
 bool ActiveSonar::canPing(float currentTime) const
 {
     return (currentTime - m_lastPingTime) >= m_pingInterval;
@@ -262,10 +280,10 @@ bool ActiveSonar::canPing(float currentTime) const
 
 DetectionResult ActiveSonar::generateFalseContact() const
 {
-    // Random distance — beam ke andar kahin bhi
+    // Random distance
     float randDist = 500.0f + static_cast<float>(rand() % static_cast<int>(m_maxRange - 500.0f));
 
-    // Random bearing — beam ke andar
+    // Random bearing
     float half       = m_beamWidth / 2.0f;
     float randOffset = (static_cast<float>(rand()) / RAND_MAX) * m_beamWidth - half;
     float randBearing = std::fmod(m_heading + randOffset + 360.0f, 360.0f);

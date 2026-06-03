@@ -4,6 +4,7 @@
  */
 
 #include "crosssection.h"
+#include "core/Hierarchy/Utils/entityutils.h"
 #include "qjsondocument.h"
 #include "core/Debug/console.h"
 
@@ -49,8 +50,8 @@ float valueFromParms(const QJsonObject& parm) {
 QJsonObject toSection(const CrossSection::data& d, const QString& type) {
     QJsonObject section;
     section["type"] = "Section";
-    section["uniformedValue"] = toParms(d.uniformedValue,"%");
-    section["modulationValue"] = toParms(d.modulationValue,"%");
+    section["uniformedValue"] = toParm(d.uniformedValue,"%",0,100);
+    section["modulationValue"] = toParm(d.modulationValue,"%",0,100);
     // section["dataType"] = type; // Uncomment to store data type identifier
     return section;
 }
@@ -62,9 +63,9 @@ QJsonObject toSection(const CrossSection::data& d, const QString& type) {
  */
 void fromSection(CrossSection::data& d, const QJsonObject& section) {
     if (section.contains("uniformedValue") && section["uniformedValue"].isObject())
-        d.uniformedValue = valueFromParms(section["uniformedValue"].toObject());
+        d.uniformedValue = valueFromParm(section["uniformedValue"].toObject());
     if (section.contains("modulationValue") && section["modulationValue"].isObject())
-        d.modulationValue = valueFromParms(section["modulationValue"].toObject());
+        d.modulationValue = valueFromParm(section["modulationValue"].toObject());
 }
 
 /**

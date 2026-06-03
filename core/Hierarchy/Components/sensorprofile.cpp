@@ -3,7 +3,9 @@
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/adsbsensor.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/aissensor.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/csm.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/customsensor.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/eosensor.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/irsensor.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/esm.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/radar.h"
 #include "core/Hierarchy/hierarchy.h"
@@ -28,10 +30,15 @@ void SensorProfile::addSubComponent(std::string name, QString data1, QString dat
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if(data1 == "Generic"){
         Radar* radar = new Radar(parent);
+        // if(!data2.isEmpty()){
+        //     std::string id = radar->ID;
+        //     radar->fromJson(data3);
+        //     radar->ID = id;
+        //     radar->parentID = parentID;
+        // }
         if(!data2.isEmpty()){
-            std::string id = radar->ID;
             radar->fromJson(data3);
-            radar->ID = id;
+            radar->ID = data2.toStdString();
             radar->parentID = parentID;
         }
         radar->parentEntity = parentEntity;
@@ -39,94 +46,132 @@ void SensorProfile::addSubComponent(std::string name, QString data1, QString dat
         sensors->insert({radar->ID,radar});
         parent->Sensors.insert({radar->ID,radar});
         emit parent->subComponentAdded(QString::fromStdString(ID),QString::fromStdString(radar->ID),QString::fromStdString(name));
+        emit parent->sensorAdded(QString::fromStdString(parentID), QString::fromStdString(radar->ID));
     }else
-    if(data1 == "CSM"){
-        CSM* csm = new CSM(parent);
-        if(!data2.isEmpty()){
-            std::string id = csm->ID;
-            csm->fromJson(data3);
-            csm->ID = id;
-            csm->parentID = parentID;
-        }
-        csm->parentEntity = parentEntity;
-        csm->Name = name;
-        sensors->insert({csm->ID,csm});
-        parent->Sensors.insert({csm->ID,csm});
-        emit parent->subComponentAdded(QString::fromStdString(ID),QString::fromStdString(csm->ID),QString::fromStdString(name));
-    }else
-    if(data1 == "ESM"){
-        ESM* esm = new ESM(parent);
-        if(!data2.isEmpty()){
-            std::string id = esm->ID;
-            esm->fromJson(data3);
-            esm->ID = id;
-            esm->parentID = parentID;
-        }
-        esm->parentEntity = parentEntity;
-        esm->Name = name;
-        sensors->insert({esm->ID,esm});
-        parent->Sensors.insert({esm->ID,esm});
-        emit parent->subComponentAdded(QString::fromStdString(ID),QString::fromStdString(esm->ID),QString::fromStdString(name));
+        if(data1 == "CSM"){
+            CSM* csm = new CSM(parent);
+            if(!data2.isEmpty()){
+                std::string id = csm->ID;
+                csm->fromJson(data3);
+                csm->ID = id;
+                csm->parentID = parentID;
+            }
+            csm->parentEntity = parentEntity;
+            csm->Name = name;
+            sensors->insert({csm->ID,csm});
+            parent->Sensors.insert({csm->ID,csm});
+            emit parent->subComponentAdded(QString::fromStdString(ID),QString::fromStdString(csm->ID),QString::fromStdString(name));
+            emit parent->sensorAdded(QString::fromStdString(parentID), QString::fromStdString(csm->ID));
+        }else
+            if(data1 == "ESM"){
+                ESM* esm = new ESM(parent);
+                if(!data2.isEmpty()){
+                    std::string id = esm->ID;
+                    esm->fromJson(data3);
+                    esm->ID = id;
+                    esm->parentID = parentID;
+                }
+                esm->parentEntity = parentEntity;
+                esm->Name = name;
+                sensors->insert({esm->ID,esm});
+                parent->Sensors.insert({esm->ID,esm});
+                emit parent->subComponentAdded(QString::fromStdString(ID),QString::fromStdString(esm->ID),QString::fromStdString(name));
+                emit parent->sensorAdded(QString::fromStdString(parentID), QString::fromStdString(esm->ID));
 
-    } else if(data1 == "EO"){
-        EOSensor* ais = new EOSensor(parent);
-        ais->parentEntity = parentEntity;
-        ais->Name = name;
-        sensors->insert({ais->ID, ais});
-        parent->Sensors.insert({ais->ID, ais});
-        emit parent->subComponentAdded(
-            QString::fromStdString(ID),
-            QString::fromStdString(ais->ID),
-            QString::fromStdString(name));
-    } else if(data1 == "Sonar"){
-        Sonar* sonar = new Sonar(parent);
-        sonar->parentEntity = parentEntity;
-        sonar->Name = name;
-        sensors->insert({sonar->ID, sonar});
-        parent->Sensors.insert({sonar->ID, sonar});
-        emit parent->subComponentAdded(
-        QString::fromStdString(ID),
-        QString::fromStdString(sonar->ID),
-        QString::fromStdString(name));
-    }else if(data1 == "AIS"){
-        AISSensor* ais = new AISSensor(parent);
-        ais->parentEntity = parentEntity;
-        ais->Name = name;
-        sensors->insert({ais->ID, ais});
-        parent->Sensors.insert({ais->ID, ais});
-        emit parent->subComponentAdded(
-            QString::fromStdString(ID),
-            QString::fromStdString(ais->ID),
-            QString::fromStdString(name));
-    }else if(data1 == "ADSB"){
-        ADSBSensor* ais = new ADSBSensor(parent);
-        ais->parentEntity = parentEntity;
-        ais->Name = name;
-        sensors->insert({ais->ID, ais});
-        parent->Sensors.insert({ais->ID, ais});
-        emit parent->subComponentAdded(
-            QString::fromStdString(ID),
-            QString::fromStdString(ais->ID),
-            QString::fromStdString(name));
-    } else if (data1 == "AESA") {
-        AESARadar* aesa = new AESARadar(parent);
-        // if (!data2.isEmpty()) {
-        //     std::string id = aesa->ID;
-        //     QJsonObject obj = (parent->Sensors)[data2.toStdString()]->toJson();
-        //     aesa->fromJson(obj);
-        //     aesa->ID = id;
-        //     aesa->parentID = parentID;
-        // }
-        aesa->parentEntity = parentEntity;
-        aesa->Name = name;
-        sensors->insert({aesa->ID, aesa});
-        parent->Sensors.insert({aesa->ID, aesa});
-        emit parent->subComponentAdded(
-            QString::fromStdString(ID),
-            QString::fromStdString(aesa->ID),
-            QString::fromStdString(name));
-    }
 
+            } else if(data1 == "EO"){
+                EOSensor* ais = new EOSensor(parent);
+                ais->parentEntity = parentEntity;
+                ais->Name = name;
+                sensors->insert({ais->ID, ais});
+                parent->Sensors.insert({ais->ID, ais});
+                emit parent->subComponentAdded(
+                    QString::fromStdString(ID),
+                    QString::fromStdString(ais->ID),
+                    QString::fromStdString(name));
+                emit parent->sensorAdded(QString::fromStdString(parentID), QString::fromStdString(ais->ID));
+
+            } else if(data1 == "IR"){
+                IRSensor* ais = new IRSensor(parent);
+                ais->parentEntity = parentEntity;
+                ais->Name = name;
+                sensors->insert({ais->ID, ais});
+                parent->Sensors.insert({ais->ID, ais});
+                emit parent->subComponentAdded(
+                    QString::fromStdString(ID),
+                    QString::fromStdString(ais->ID),
+                    QString::fromStdString(name));
+                emit parent->sensorAdded(QString::fromStdString(parentID), QString::fromStdString(ais->ID));
+
+            } else if(data1 == "Sonar"){
+                Sonar* sonar = new Sonar(parent);
+                sonar->parentEntity = parentEntity;
+                sonar->Name = name;
+                sensors->insert({sonar->ID, sonar});
+                parent->Sensors.insert({sonar->ID, sonar});
+                emit parent->subComponentAdded(
+                    QString::fromStdString(ID),
+                    QString::fromStdString(sonar->ID),
+                    QString::fromStdString(name));
+                emit parent->sensorAdded(QString::fromStdString(parentID), QString::fromStdString(sonar->ID));
+
+            }else if(data1 == "AIS"){
+                AISSensor* ais = new AISSensor(parent);
+                ais->parentEntity = parentEntity;
+                ais->Name = name;
+                sensors->insert({ais->ID, ais});
+                parent->Sensors.insert({ais->ID, ais});
+                emit parent->subComponentAdded(
+                    QString::fromStdString(ID),
+                    QString::fromStdString(ais->ID),
+                    QString::fromStdString(name));
+                emit parent->sensorAdded(QString::fromStdString(parentID), QString::fromStdString(ais->ID));
+
+            }else if(data1 == "ADSB"){
+                ADSBSensor* ais = new ADSBSensor(parent);
+                ais->parentEntity = parentEntity;
+                ais->Name = name;
+                sensors->insert({ais->ID, ais});
+                parent->Sensors.insert({ais->ID, ais});
+                emit parent->subComponentAdded(
+                    QString::fromStdString(ID),
+                    QString::fromStdString(ais->ID),
+                    QString::fromStdString(name));
+                emit parent->sensorAdded(QString::fromStdString(parentID), QString::fromStdString(ais->ID));
+
+            } else if (data1 == "AESA") {
+                AESARadar* aesa = new AESARadar(parent);
+                // if (!data2.isEmpty()) {
+                //     std::string id = aesa->ID;
+                //     QJsonObject obj = (parent->Sensors)[data2.toStdString()]->toJson();
+                //     aesa->fromJson(obj);
+                //     aesa->ID = id;
+                //     aesa->parentID = parentID;
+                // }
+                aesa->parentEntity = parentEntity;
+                aesa->Name = name;
+                sensors->insert({aesa->ID, aesa});
+                parent->Sensors.insert({aesa->ID, aesa});
+                emit parent->subComponentAdded(
+                    QString::fromStdString(ID),
+                    QString::fromStdString(aesa->ID),
+                    QString::fromStdString(name));
+                emit parent->sensorAdded(QString::fromStdString(parentID), QString::fromStdString(aesa->ID));
+
+            } else{
+                CustomSensor* sensor = new CustomSensor(parent);
+                sensor->parentEntity = parentEntity;
+                sensor->type = data1;
+                sensor->Name = name;
+                sensors->insert({sensor->ID, sensor});
+                parent->Sensors.insert({sensor->ID, sensor});
+                emit parent->subComponentAdded(
+                    QString::fromStdString(ID),
+                    QString::fromStdString(sensor->ID),
+                    QString::fromStdString(name));
+                emit parent->sensorAdded(QString::fromStdString(parentID), QString::fromStdString(sensor->ID));
+
+            }
 
 }
 
@@ -135,20 +180,32 @@ void SensorProfile::removeSubComponent(std::string ID){
     auto it = sensors->find(ID);
     if (it != sensors->end() && it->second != nullptr) {
         Sensor *sensor = it->second;
-        emit parent->subComponentRemoved(QString::fromStdString(this->ID),QString::fromStdString(ID),QString::fromStdString(sensor->Name));
+
+        // Disconnect all Qt signals FIRST — stops updateRadar() firing on dead pointer
+        QObject* sensorObj = dynamic_cast<QObject*>(sensor);
+        if (sensorObj)
+            QObject::disconnect(sensorObj, nullptr, nullptr, nullptr);
+
+        // Remove from maps before emit
         sensors->erase(sensor->ID);
         parent->Sensors.erase(sensor->ID);
+        emit parent->sensorRemoved(QString::fromStdString(parentID), QString::fromStdString(ID));
+        // Now safe to emit — sensor pointer still valid, signals already cut
+        emit parent->subComponentRemoved(QString::fromStdString(this->ID),QString::fromStdString(ID),QString::fromStdString(sensor->Name));
+
+        // Safe to delete — nothing can call into it anymore
         delete sensor;
         sensor = nullptr;
     }
 }
 
 void SensorProfile::updateSubComponent(std::string ID, const QJsonObject& obj){
+    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this); // << ADD
     auto it = sensors->find(ID);
     if (it != sensors->end() && it->second != nullptr) {
         it->second->fromJson(obj);
+        emit parent->sensorUpdated(QString::fromStdString(ID)); // << ADD
     }
-
 }
 
 QJsonObject SensorProfile::getsubComponentData(std::string ID) const{
@@ -199,6 +256,8 @@ void SensorProfile::fromJson(const QJsonObject& obj) {
                 sensor = new ESM(parent);
             } else if (type == "EO") {
                 sensor = new EOSensor(parent);
+            } else if (type == "IR") {
+                sensor = new IRSensor(parent);
             } else if (type == "Sonar") {
                 sensor = new Sonar(parent);
             } else if (type == "AIS") {
@@ -208,7 +267,7 @@ void SensorProfile::fromJson(const QJsonObject& obj) {
             } else if (type == "AESA" || type == "AESARadar") {
                 sensor = new AESARadar(parent);
             } else {
-                sensor = new Radar(parent);      // default
+                sensor = new CustomSensor(parent);      // default
             }
 
             sensor->parentEntity = parentEntity;
@@ -252,4 +311,27 @@ void SensorProfile::renameSubComponent(std::string id, QString newName) {
             QString::fromStdString(id),
             newName);
     }
+}
+void SensorProfile::addSensor(Sensor* sensor)
+{
+    if (!sensor) return;
+
+    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+
+    // Agar already exist karta hai toh skip
+    if (sensors->count(sensor->ID)) return;
+
+    sensor->parentEntity = parentEntity;
+
+    sensors->insert({sensor->ID, sensor});
+    parent->Sensors.insert({sensor->ID, sensor});
+
+    emit parent->subComponentAdded(
+        QString::fromStdString(ID),
+        QString::fromStdString(sensor->ID),
+        QString::fromStdString(sensor->Name));
+
+    emit parent->sensorAdded(
+        QString::fromStdString(parentID),
+        QString::fromStdString(sensor->ID));
 }

@@ -1,10 +1,14 @@
-/* ========================================================================= */
-/* File: networktoolbar-styles.h                                            */
-/* Purpose: Dark theme styles for NetworkToolbar                            */
-/* Background: #0F2636, Border: #27446d, Text: White, Accent: #0078D4       */
-/* Icon size: 16x16 (smaller)                                               */
-/* Written by   : Arti Rajpoot                                               */
-/* ========================================================================= */
+/* =============================================================================
+ * FILE:         distoolbar-styles.h
+ * MODULE:       DIS Network Toolbar
+ * PROJECT:      Tactical Display Framework (TDF)
+ * ORGANISATION: Oxygen 2 Innovation (O2I)
+ *
+ * DESCRIPTION:  Dark theme styles for DISToolbar
+ *               Matches existing NetworkToolbar theme exactly:
+ *               Background: #0F2636, Border: #27446d, Text: White, Accent: #0078D4
+ * =============================================================================
+ */
 
 #ifndef NETWORKTOOLBAR_STYLES_H
 #define NETWORKTOOLBAR_STYLES_H
@@ -13,12 +17,6 @@
 
 namespace NetworkToolbarStyles {
 
-/* ============================================================================
-   NETWORK TOOLBAR DARK THEME
-   Background: #0F2636, Border: #27446d, Text: White, Accent: #0078D4
-============================================================================ */
-
-/* Main Toolbar */
 const QString Toolbar = R"(
     QToolBar {
         background-color: #0F2636;
@@ -35,34 +33,6 @@ const QString Toolbar = R"(
     }
 )";
 
-/* Toolbar Buttons */
-const QString ToolbarButton = R"(
-    QToolButton {
-        background-color: transparent;
-        color: white;
-        border: none;
-        border-radius: 2px;
-        padding: 4px;
-        min-width: 32px;
-        min-height: 32px;
-    }
-    QToolButton:hover {
-        background-color: #1A3652;
-        border-radius: 2px;
-    }
-    QToolButton:pressed {
-        background-color: #27446d;
-    }
-    QToolButton:checked {
-        background-color: #27446d;
-        border-left: 2px solid #0078D4;
-    }
-    QToolButton:disabled {
-        color: #666666;
-    }
-)";
-
-/* Dialog */
 const QString Dialog = R"(
     QDialog {
         background-color: #0F2636;
@@ -80,151 +50,196 @@ const QString Dialog = R"(
         color: white;
         border: 1px solid #27446d;
         border-radius: 2px;
-        padding: 5px;
+        padding: 4px;
         font-size: 12px;
-        min-height: 20px;
     }
     QLineEdit:focus {
         border: 1px solid #0078D4;
-        background-color: #1E3E5E;
+    }
+    QSpinBox {
+        background-color: #1A3652;
+        color: white;
+        border: 1px solid #27446d;
+        border-radius: 2px;
+        padding: 4px;
+    }
+    QSpinBox:focus {
+        border: 1px solid #0078D4;
     }
     QComboBox {
         background-color: #1A3652;
         color: white;
         border: 1px solid #27446d;
         border-radius: 2px;
-        padding: 5px;
-        font-size: 12px;
-        min-height: 20px;
-    }
-    QComboBox:hover {
-        background-color: #27446d;
-        border-color: #3A5A7A;
+        padding: 4px;
     }
     QComboBox::drop-down {
         border: none;
-        width: 20px;
-        background-color: #1A3652;
-        border-top-right-radius: 2px;
-        border-bottom-right-radius: 2px;
-    }
-    QComboBox::down-arrow {
-        width: 12px;
-        height: 12px;
-        border-left: 4px solid transparent;
-        border-right: 4px solid transparent;
-        border-top: 4px solid white;
     }
     QComboBox QAbstractItemView {
         background-color: #1A3652;
         color: white;
-        border: 1px solid #27446d;
         selection-background-color: #0078D4;
-        selection-color: white;
     }
-    QComboBox QAbstractItemView::item {
-        padding: 5px;
+    QCheckBox {
         color: white;
+        font-size: 12px;
     }
-)";
-
-/* Push Button */
-const QString PushButton = R"(
-    QPushButton {
+    QCheckBox::indicator {
+        width: 14px;
+        height: 14px;
+        border: 1px solid #27446d;
+        border-radius: 2px;
+        background-color: #1A3652;
+    }
+    QCheckBox::indicator:checked {
+        background-color: #0078D4;
+        border: 1px solid #0078D4;
+    }
+    QGroupBox {
+        color: white;
+        border: 1px solid #27446d;
+        border-radius: 3px;
+        margin-top: 8px;
+        padding-top: 8px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 8px;
+        color: #0078D4;
+    }
+    QTabWidget::pane {
+        border: 1px solid #27446d;
+        background-color: #0F2636;
+    }
+    QTabBar::tab {
+        background-color: #1A3652;
+        color: white;
+        padding: 6px 14px;
+        border: 1px solid #27446d;
+        border-bottom: none;
+        font-size: 12px;
+    }
+    QTabBar::tab:selected {
+        background-color: #0F2636;
+        border-top: 2px solid #0078D4;
+        color: #0078D4;
+    }
+    QTabBar::tab:hover {
+        background-color: #27446d;
+    }
+    QTableWidget {
         background-color: #1A3652;
         color: white;
         border: 1px solid #27446d;
-        border-radius: 2px;
-        padding: 5px 12px;
-        font-size: 12px;
-        min-width: 60px;
-        min-height: 24px;
-    }
-    QPushButton:hover {
-        background-color: #27446d;
-        border-color: #3A5A7A;
-    }
-    QPushButton:pressed {
-        background-color: #0078D4;
-    }
-    QPushButton:disabled {
-        background-color: #333333;
-        color: #666666;
-        border: 1px solid #444444;
-    }
-)";
-
-/* Table Widget (for Network Status) */
-const QString TableWidget = R"(
-    QTableWidget {
-        background-color: #0F2636;
-        color: white;
-        border: 1px solid #27446d;
-        gridline-color: #1A3652;
-        font-size: 11px;
-    }
-    QTableWidget::item {
-        padding: 4px;
-        color: white;
-        background-color: #0F2636;
-        border-bottom: 1px solid #1A3652;
+        gridline-color: #27446d;
     }
     QTableWidget::item:selected {
         background-color: #0078D4;
-        color: white;
     }
     QHeaderView::section {
-        background-color: #1A3652;
-        color: white;
-        padding: 5px;
-        border: none;
-        border-bottom: 1px solid #27446d;
-        font-weight: bold;
+        background-color: #0F2636;
+        color: #0078D4;
+        border: 1px solid #27446d;
+        padding: 4px;
         font-size: 11px;
+        font-weight: bold;
+    }
+    QScrollBar:vertical {
+        background-color: #0F2636;
+        width: 8px;
+        border: none;
+    }
+    QScrollBar::handle:vertical {
+        background-color: #27446d;
+        border-radius: 4px;
     }
 )";
 
-/* Message Box */
-const QString MessageBox = R"(
-    QMessageBox {
-        background-color: #0F2636;
-        color: white;
-        border: 2px solid #27446d;
-    }
-    QMessageBox QLabel {
-        color: white;
-        font-size: 12px;
-    }
+const QString ButtonBox = R"(
     QPushButton {
         background-color: #1A3652;
         color: white;
         border: 1px solid #27446d;
-        border-radius: 2px;
-        padding: 5px 15px;
+        border-radius: 3px;
+        padding: 6px 16px;
         font-size: 12px;
         min-width: 80px;
     }
     QPushButton:hover {
         background-color: #27446d;
+        border: 1px solid #0078D4;
+    }
+    QPushButton:pressed {
+        background-color: #0078D4;
+    }
+    QPushButton:disabled {
+        color: #666666;
+        border-color: #444444;
     }
 )";
 
-/* Button Box */
-const QString ButtonBox = R"(
-    QDialogButtonBox {
-        background-color: transparent;
-    }
-    QDialogButtonBox QPushButton {
-        background-color: #1A3652;
+const QString ConnectButton = R"(
+    QPushButton {
+        background-color: #0078D4;
         color: white;
-        border: 1px solid #27446d;
-        border-radius: 2px;
-        padding: 5px 12px;
+        border: none;
+        border-radius: 3px;
+        padding: 6px 16px;
         font-size: 12px;
-        min-width: 60px;
+        font-weight: bold;
+        min-width: 90px;
     }
-    QDialogButtonBox QPushButton:hover {
-        background-color: #27446d;
+    QPushButton:hover {
+        background-color: #006CBE;
+    }
+    QPushButton:pressed {
+        background-color: #005A9E;
+    }
+    QPushButton:disabled {
+        background-color: #444444;
+        color: #888888;
+    }
+)";
+
+const QString DisconnectButton = R"(
+    QPushButton {
+        background-color: #C42B1C;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        padding: 6px 16px;
+        font-size: 12px;
+        font-weight: bold;
+        min-width: 90px;
+    }
+    QPushButton:hover {
+        background-color: #A02318;
+    }
+    QPushButton:pressed {
+        background-color: #8A1E15;
+    }
+    QPushButton:disabled {
+        background-color: #444444;
+        color: #888888;
+    }
+)";
+
+const QString StatusConnected = R"(
+    QLabel {
+        color: #00C853;
+        font-weight: bold;
+        font-size: 12px;
+    }
+)";
+
+const QString StatusDisconnected = R"(
+    QLabel {
+        color: #C42B1C;
+        font-weight: bold;
+        font-size: 12px;
     }
 )";
 

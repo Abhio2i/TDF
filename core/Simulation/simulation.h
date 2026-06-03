@@ -38,6 +38,7 @@
 #include <core/Network/networkmanager.h>
 #include <core/Network/libs/MessageBus.h>
 #include <core/Network/libs/TransformUpdate.h>
+#include "core/DISPlugin//SimulationPlugin.h"
 
 #include "core/Dynamics/Model/aircraft.h"
 #include "simulation_state.h"
@@ -137,7 +138,8 @@ public:
     MessageQueue<TransformUpdate> incomingTransforms; //!< Queue of pending transform updates
     void applyPendingNetworkUpdates();          //!< Processes queued network updates
     void enqueueTransformUpdate(const TransformUpdate& msg); //!< Adds transform update to queue
-
+    void registerPlugin(SimulationPlugin* plugin);
+    void unregisterPlugin(SimulationPlugin* plugin);
     // Set canvas so weapons can display blast effects on detonation
     void setCanvas(CanvasWidget* canvas) { m_canvas = canvas; }
 
@@ -190,6 +192,7 @@ private:
     bool isReplaying = false;           //!< Whether replay is active
     int replayIndex = 0;                //!< Current replay frame index
     QVector<QJsonObject> replayFrames;  //!< Stored replay frames
+    QList<SimulationPlugin*> m_plugins;
 
     int simMin = 0;         //!< Simulation minimum (for time jump)
     int simCount = 50;      //!< Simulation count (for time jump)

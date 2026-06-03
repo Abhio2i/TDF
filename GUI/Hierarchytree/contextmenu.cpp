@@ -624,20 +624,34 @@ void ContextMenu::setupEntityMenu(const QVariantMap &data)
             else if (cur == mw->scenarioEditor) editorCtx = "scenario";
             else if (cur == mw->runtimeEditor)  editorCtx = "runtime";
         }
-
         if (editorCtx == "database") {
             setCategoryMenu = addMenu(QIcon(":/icons/images/set.png"), "Set Category");
             setCategoryMenu->setStyleSheet(styleSheet());
-            const QStringList categories = {"Aircraft", "Helicopter", "Ship", "Submarine", "Tank"};
-            for (const QString& category : categories) {
-                QAction *categoryAction = setCategoryMenu->addAction(category);
-                connect(categoryAction, &QAction::triggered, this, [=]() {
-                    emit setCategoryToEntityRequested(data, category);
-                });
+
+            QMap<QString, QStringList> categoryMap = {
+                {"Air",    QStringList{"Aircraft", "Helicopter", "UAV"}},
+                {"Ground", QStringList{"Tank", "GroundRadar", "Human"}},
+                {"Marine", QStringList{"Ship", "Frigate", "Submarine"}}
+            };
+
+            for (auto it = categoryMap.begin(); it != categoryMap.end(); ++it) {
+                const QString category    = it.key();          // ← copy by value
+                const QStringList subCats = it.value();        // ← copy by value
+
+                QMenu* subCatMenu = setCategoryMenu->addMenu(category);
+                subCatMenu->setStyleSheet(styleSheet());
+
+                for (const QString& subCat : subCats) {
+                    const QString subCategory = subCat;        // ← copy by value
+                    QAction* subCatAction = subCatMenu->addAction(subCategory);
+                    connect(subCatAction, &QAction::triggered, this, [=]() {
+                        emit setCategoryToEntityRequested(data, category, subCategory);
+                    });
+                }
             }
         }
     }
-    QAction *deleteEntity = addAction(QIcon(":/icons/images/delete.png"), "Delete Entity");
+    QAction *deleteEntity = addAction(QIcon(":/icons/images/delete.png"), "Delete");
 
     // ── Connects for standard actions ──────────────────────────────────────
     connect(rename, &QAction::triggered, this, [=]() mutable {
@@ -659,7 +673,7 @@ void ContextMenu::setupEntityMenu(const QVariantMap &data)
     connect(deleteEntity, &QAction::triggered, this, [=]() {
         QMessageBox msgBox(this);
         msgBox.setStyleSheet(ContextMenuStyles::MessageBox);
-        msgBox.setWindowTitle("Delete Entity");
+        msgBox.setWindowTitle("Delete");
         msgBox.setText(QString("Are you sure you want to delete entity '%1'?").arg(name));
         msgBox.setIcon(QMessageBox::Question);
         msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);

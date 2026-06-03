@@ -153,6 +153,61 @@ void LayerPanel::setupUI()
             this, &LayerPanel::onLayerSelectionChanged);
     connect(layerTree, &QTreeWidget::itemClicked,
             this, &LayerPanel::onShapeItemClicked);
+    // ── Shortcut Keys ─────────────────────────────────────────────────────
+    // Delete: Remove selected layer or shape
+    QShortcut* deleteShortcut = new QShortcut(QKeySequence(Qt::Key_Delete), layerTree);
+    deleteShortcut->setContext(Qt::WidgetShortcut);
+    connect(deleteShortcut, &QShortcut::activated, this, [this]() {
+        QTreeWidgetItem* selected = layerTree->currentItem();
+        if (!selected) return;
+
+        // Shape item
+        QString shapeId = selected->data(0, Qt::UserRole).toString();
+        if (!shapeId.isEmpty() && shapeToLayer.contains(shapeId)) {
+            if (m_canvasWidget)
+                m_canvasWidget->deleteObjectById(shapeId);
+            else
+                removeShapeFromLayer(shapeId);
+            return;
+        }
+
+        // Raster layer
+        QString itemData = selected->data(0, Qt::UserRole).toString();
+        if (rasterLayers.contains(itemData)) {
+            removeRasterLayer(itemData);
+            return;
+        }
+
+        // Vector layer
+        if (isLayerItem(selected)) {
+            layerTree->setCurrentItem(selected);
+            removeLayer();
+            return;
+        }
+    });
+
+    // F2: Rename selected layer or shape
+    QShortcut* renameShortcut = new QShortcut(QKeySequence(Qt::Key_F2), layerTree);
+    renameShortcut->setContext(Qt::WidgetShortcut);
+    connect(renameShortcut, &QShortcut::activated, this, [this]() {
+        QTreeWidgetItem* selected = layerTree->currentItem();
+        if (!selected) return;
+
+        // Shape item
+        QString shapeId = selected->data(0, Qt::UserRole).toString();
+        if (!shapeId.isEmpty() && shapeToLayer.contains(shapeId)) {
+            renameShape(shapeId);
+            return;
+        }
+
+        // Vector or Raster layer
+        QString layerName = selected->data(0, Qt::UserRole).toString();
+        if (!layerName.isEmpty() &&
+            (layerItems.contains(layerName) || rasterLayers.contains(layerName))) {
+            renameLayerByName(layerName);
+            return;
+        }
+    });
 }
 
 // %%% Context Menu Setup %%%
@@ -765,35 +820,49 @@ void LayerPanel::applyLayerRename(const QString& oldName, const QString& newName
         rl.name = newName;
         rasterLayers[newName] = rl;
 
-        // Re-key all raster maps
         if (rasterLayerItems.contains(oldName))
             rasterLayerItems[newName] = rasterLayerItems.take(oldName);
         if (rasterVisibilityWidgets.contains(oldName))
             rasterVisibilityWidgets[newName] = rasterVisibilityWidgets.take(oldName);
         if (rasterExpandButtons.contains(oldName))
             rasterExpandButtons[newName] = rasterExpandButtons.take(oldName);
-
-        // Re-key name label map + update displayed text
         if (rasterNameLabels.contains(oldName)) {
             QLabel* lbl = rasterNameLabels.take(oldName);
             lbl->setText(newName);
-            // Update the property used by eventFilter for future double-clicks
             lbl->setProperty("rasterLayerName", newName);
             rasterNameLabels[newName] = lbl;
         }
-
-        // Update layerOrder list
         int idx = rasterLayerOrder.indexOf(oldName);
         if (idx >= 0) rasterLayerOrder[idx] = newName;
-
-        // Update tree item UserRole
         if (rasterLayerItems.contains(newName))
             rasterLayerItems[newName]->setData(0, Qt::UserRole, newName);
-
-        // Update the col0Widget property used by the eventFilter
         if (rasterLayerItems.contains(newName)) {
             QWidget* w = layerTree->itemWidget(rasterLayerItems[newName], 0);
             if (w) w->setProperty("rasterLayerName", newName);
+        }
+
+        // ── FIX: re-key the maps that were missing ─────────────────────
+
+        // 1. layerVisibility: toggle reads/writes by name, must track new name
+        if (layerVisibility.contains(oldName))
+            layerVisibility[newName] = layerVisibility.take(oldName);
+
+        // 2. layerShapes: addShapeToLayer wrote the shapeId under oldName
+        if (layerShapes.contains(oldName))
+            layerShapes[newName] = layerShapes.take(oldName);
+
+        // 3. shapeToLayer: shouldDrawShape() calls getLayerForShape() which
+        //    reads this map — it must return the new name so isLayerVisible()
+        //    looks up the right key
+        for (auto it = shapeToLayer.begin(); it != shapeToLayer.end(); ++it) {
+            if (it.value() == oldName)
+                it.value() = newName;
+        }
+
+        // 4. shapeToRasterLayer: used by removeRasterLayer / selectRasterInPanel
+        for (auto it = shapeToRasterLayer.begin(); it != shapeToRasterLayer.end(); ++it) {
+            if (it.value() == oldName)
+                it.value() = newName;
         }
 
     } else {
@@ -922,33 +991,49 @@ void LayerPanel::addShapeToLayer(const QString& shapeId, const QString& shapeTyp
 {
     QString targetLayer = layerName.isEmpty() ? activeLayerName : layerName;
 
-    if (targetLayer.isEmpty() || !layerExists(targetLayer)) {
-        // No active layer - show message to user
-        QMessageBox msgBox(nullptr);
+    // === ONLY SHOW DIALOG IF NO LAYERS EXIST ===
+    if ((targetLayer.isEmpty() || !layerExists(targetLayer)) &&
+        layerItems.isEmpty() && rasterLayers.isEmpty())
+    {
+        QMessageBox msgBox(this);
         msgBox.setStyleSheet(LayerPanelStyles::MessageBox);
-        msgBox.setWindowTitle("No Active Layer");
-        msgBox.setText("Please create and select a layer before drawing shapes!\n\n"
-                       "Right-click in the Layers Panel and select 'Add Layer'.");
+        msgBox.setWindowTitle("No Layer Found");
+        msgBox.setText("No layers exist!\n\n"
+                       "Please create a layer first to add shapes.");
         msgBox.setIcon(QMessageBox::Warning);
+
+        QPushButton* createBtn = msgBox.addButton("Create New Layer", QMessageBox::AcceptRole);
+        msgBox.addButton("Cancel", QMessageBox::RejectRole);
+
         msgBox.exec();
-        return;
+
+        if (msgBox.clickedButton() == createBtn)
+        {
+            addLayer();   // Open layer creation dialog
+        }
+        return;   // Do NOT create the shape
     }
 
-    // Add to layer's shape list
+    // Fallback: If layers exist but no active layer → use first one
+    if (targetLayer.isEmpty() && !layerItems.isEmpty())
+    {
+        targetLayer = layerItems.firstKey();
+        activeLayerName = targetLayer;
+    }
+
+    // Normal flow
+    if (!layerShapes.contains(targetLayer))
+        layerShapes[targetLayer] = QStringList();
+
     if (!layerShapes[targetLayer].contains(shapeId)) {
         layerShapes[targetLayer].append(shapeId);
     }
 
-    // Add reverse lookup
     shapeToLayer[shapeId] = targetLayer;
 
-    // Add visual representation in tree
     addShapeItemToTree(targetLayer, shapeId, shapeType);
-
-    // Update shape count
     updateLayerShapeCount(targetLayer);
 }
-
 /* Remove shape from layer */
 void LayerPanel::removeShapeFromLayer(const QString& shapeId)
 {
@@ -1038,7 +1123,7 @@ void LayerPanel::moveShapeToLayer(const QString& shapeId,
     emit shapeMovedToLayer(shapeId, sourceLayerName, targetLayerName);
 
     //qDebug() << "Shape" << shapeId << "moved from layer"
-             // << sourceLayerName << "→" << targetLayerName;
+    // << sourceLayerName << "→" << targetLayerName;
 }
 
 /* Get layer name for a shape */
@@ -1506,11 +1591,11 @@ void LayerPanel::exportLayer()
     // Create format selection dialog
     QStringList formats;
     formats << "GeoJSON (*.geojson)"
-            << "KML (*.kml)"
+        /*      << "KML (*.kml)"
             << "GML (*.gml)"
             << "Shapefile (*.shp)"
             << "FlatGeobuf (*.fgb)"
-            << "CSV (*.csv)";
+            << "CSV (*.csv)"*/;
 
     bool ok;
     QString selectedFormat = QInputDialog::getItem(this,
@@ -3821,8 +3906,8 @@ bool LayerPanel::readWorldFile(const QString& imagePath, RasterLayer& out)
         out.maxLat = maxLat;
 
         //qDebug() << "  ✓ World file:" << (base + "." + wext)
-                 // << "lon[" << minLon << "," << maxLon << "]"
-                 // << "lat[" << minLat << "," << maxLat << "]";
+        // << "lon[" << minLon << "," << maxLon << "]"
+        // << "lat[" << minLat << "," << maxLat << "]";
         return true;
     }
     return false;
@@ -3971,7 +4056,7 @@ bool LayerPanel::readGeoTiffExtents(const QString& imagePath, RasterLayer& out)
     const double lrY = ulY - imgH * scaleY;
 
     //qDebug() << "  GeoTIFF native bbox: UL(" << ulX << "," << ulY
-             // << ")  LR(" << lrX << "," << lrY << ")";
+    // << ")  LR(" << lrX << "," << lrY << ")";
     //qDebug() << "  GeoTIFF scale: X=" << scaleX << " Y=" << scaleY;
     //qDebug() << "  Image size:" << imgW << "x" << imgH;
 
@@ -4017,7 +4102,7 @@ bool LayerPanel::readGeoTiffExtents(const QString& imagePath, RasterLayer& out)
         const double maxAbsY = qMax(std::abs(ulY), std::abs(lrY));
         needsReproject = (maxAbsX > 180.0 || maxAbsY > 90.0);
         //qDebug() << "  GeoTIFF: no GeoKey modelType — auto-detect needsReproject="
-                 // << needsReproject;
+        // << needsReproject;
     }
 
     // ── If EPSG not found, guess from coordinate ranges ───────────────────
@@ -4067,7 +4152,7 @@ bool LayerPanel::readGeoTiffExtents(const QString& imagePath, RasterLayer& out)
                 minLat = qMin(minLat, geo.y());
                 maxLat = qMax(maxLat, geo.y());
                 //qDebug() << "    Native(" << c[0] << "," << c[1]
-                         // << ") → WGS84(" << geo.x() << "," << geo.y() << ")";
+                // << ") → WGS84(" << geo.x() << "," << geo.y() << ")";
             } catch (QgsCsException& e) {
                 //qDebug() << "  ✗ GeoTIFF reprojection failed:" << e.what();
                 return false;
@@ -4201,7 +4286,7 @@ QString LayerPanel::generateFriendlyShapeName(const QString& shapeId, const QStr
 void LayerPanel::onShapeItemClicked(QTreeWidgetItem* item, int column)
 {
     if (!item) return;
-     if (m_suppressCenter) return;
+    if (m_suppressCenter) return;
 
     // Check if this is a shape item (has shapeId stored)
     QString shapeId = item->data(0, Qt::UserRole).toString();
@@ -4259,6 +4344,7 @@ void LayerPanel::removeRasterLayer(const QString& layerName)
     if (rasterLayerItems.contains(layerName)) {
         delete rasterLayerItems.take(layerName);
     }
+
     rasterLayerOrder.removeAll(layerName);
     rasterNameLabels.remove(layerName);
     rasterExpandButtons.remove(layerName);
