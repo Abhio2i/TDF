@@ -621,9 +621,12 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                     }
                     for(int k =0;k<i;k++){
                     Weapon* weapon       = createWeapon(typeName, hierarchy);
-                    weapon->Name         = weaponName.toStdString();
+                    weapon->Name         = weaponName.toStdString()+QString::number(k).toStdString();
                     weapon->parentEntity = platform;
                     weapon->ID           = Uuid::generateShortUniqueID();
+                    weapon->parentID     = platform->ID;
+                    weapon->init();
+
 
                     if (!platform->weapons) {
                         WeaponProfile* weapProfile = new WeaponProfile(hierarchy);
@@ -631,6 +634,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                         weapProfile->parentID      = entityID.toStdString();
                         weapProfile->parentEntity  = platform;
                         platform->weapons          = weapProfile;
+
                     }
                     if (!platform->weapons || !platform->weapons->weapons) { delete weapon; continue; }
 
@@ -646,7 +650,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
                         QJsonObject cfg = dlg.configJson();
                         cfg["weaponTypeName"] = typeName;
                         weapon->fromJson(cfg);
-                        weapon->Name = weaponName.toStdString();
+                        weapon->Name = weaponName.toStdString()+QString::number(k).toStdString();
                     }
 
                     weapon->syncComponentsFromWeaponData();
@@ -656,7 +660,7 @@ void HierarchyConnector::connectSignals(Hierarchy* hierarchy, Hierarchy* library
 
                     emit hierarchy->subComponentAdded(
                         QString::fromStdString(platform->weapons->ID),
-                        QString::fromStdString(weapon->ID), weaponName);
+                        QString::fromStdString(weapon->ID), weaponName+QString::number(k));
 
                     QString weaponQID = QString::fromStdString(weapon->ID);
                     for (const std::string& compName : weapon->getSupportedComponents()) {

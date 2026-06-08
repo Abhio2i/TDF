@@ -124,7 +124,6 @@ QString getDefaultName(AddItemDialog::DialogType type) {
 }
 
 // %%% Constructor %%%
-
 AddItemDialog::AddItemDialog(DialogType type,
                              const QString &specificType,
                              DialogMode dialogMode,

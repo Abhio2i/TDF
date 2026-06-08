@@ -98,6 +98,7 @@ public:
     // SECTION: Waypoint Management
     // DESCRIPTION: Operations for querying and modifying the waypoint list.
     // =========================================================================
+    Waypoints* getWaypointByIndex(int current);
     Waypoints* getCurrentWaypoint();                        //!< Returns current waypoint
     Waypoints* getTargetWaypoint();                         //!< Returns next waypoint (target)
     bool removeTrajectory(size_t index);                    //!< Removes waypoint at index

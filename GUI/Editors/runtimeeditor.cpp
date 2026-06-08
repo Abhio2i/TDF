@@ -330,9 +330,14 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             }
         });
         connect(inspector, &Inspector::trajectoryWaypointsChanged, tacticalDisplay->canvas, &CanvasWidget::updateWaypointsFromInspector);
+        connect(inspector, &Inspector::waypointSelected,
+                tacticalDisplay->canvas, [=](const QString& entityId, int wpIndex) {
+                    tacticalDisplay->canvas->onWaypointSelectedFromInspector(wpIndex);
+                });
     }
     connect(renderer, &SceneRenderer::addMesh, tacticalDisplay, &TacticalDisplay::addMesh);
     connect(hierarchy, &Hierarchy::entityRemoved, tacticalDisplay, &TacticalDisplay::removeMesh);
+    connect(renderer, &SceneRenderer::removeMesh, tacticalDisplay, &TacticalDisplay::removeMesh);
 
     if (tacticalDisplay && tacticalDisplay->canvas) {
         connect(renderer, &SceneRenderer::Render, tacticalDisplay->canvas, &CanvasWidget::Render);
@@ -340,6 +345,18 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
     }
     connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
     connect(inspector, &Inspector::valueChanged, this, [=]{ renderer->Render(0.01f); markUnsavedChanges(); });
+    connect(inspector, &Inspector::valueChanged, this,
+            [=](QString entityID, QString componentName, QJsonObject delta) {
+                if (!delta.contains("Category")) return;
+                QTimer::singleShot(50, this, [=]() {
+                    auto it = hierarchy->Entities.find(entityID.toStdString());
+                    if (it == hierarchy->Entities.end()) return;
+                    QJsonObject entityJson = filterEntityJsonForInspector(it->second->toJson());
+                    inspector->init(entityID,
+                                    capitalizeFirstLetter(QString::fromStdString(it->second->Name)) + "_self",
+                                    entityJson);
+                });
+            });
     if (runtimeToolBar && tacticalDisplay && tacticalDisplay->canvas && simulation) {
         simulation->setCanvas(tacticalDisplay->canvas);
         connect(simulation, &Simulation::Render, runtimeToolBar, &RuntimeToolBar::onElapsedTime);
@@ -378,21 +395,60 @@ RuntimeEditor::RuntimeEditor(QWidget *parent)
             simulation->pause();
         });
         connect(runtimeToolBar, &RuntimeToolBar::resetTriggered, this, [=]() {
-            simulation->stop();
-            tacticalDisplay->canvas->editor();
-            if (!runtimeToolBar->m_initialSnapshot.isEmpty()) {
-                tacticalDisplay->canvas->selectedEntityId.clear();
-                if (tacticalDisplay && tacticalDisplay->canvas) {
-                    tacticalDisplay->canvas->resetEntityInfoDialog();
-                }
-                hierarchy->fromJson(runtimeToolBar->m_initialSnapshot);
-                if (tacticalDisplay && tacticalDisplay->canvas) {
-                    tacticalDisplay->canvas->ReInit();
-                }
-                if (treeView && treeView->getTreeWidget()) {
-                    treeView->getTreeWidget()->update();
-                }
+            qDebug() << "=== Runtime Reset Started ===";
+
+            // ── UI block karo - transparent overlay ──
+            QWidget *blocker = new QWidget(this);
+            blocker->setGeometry(0, 0, width(), height());
+            blocker->setStyleSheet("background-color: rgba(0, 0, 0, 120);");
+            blocker->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+            blocker->setCursor(Qt::WaitCursor);
+            blocker->raise();
+            blocker->show();
+
+            // Loading label
+            QLabel *loadingLabel = new QLabel("Resetting...", blocker);
+            loadingLabel->setStyleSheet(
+                "QLabel { color: white; font-size: 16px; font-weight: bold; "
+                "background-color: #1A3652; border: 1px solid #00BFFF; "
+                "border-radius: 6px; padding: 12px 24px; }"
+                );
+            loadingLabel->adjustSize();
+            loadingLabel->move(
+                (blocker->width()  - loadingLabel->width())  / 2,
+                (blocker->height() - loadingLabel->height()) / 2
+                );
+            loadingLabel->show();
+
+            QCoreApplication::processEvents();
+
+            // 1. Stop simulation
+            if (simulation) {
+                simulation->stop();
             }
+
+            // 2. Canvas editor mode
+            if (tacticalDisplay && tacticalDisplay->canvas) {
+                tacticalDisplay->canvas->editor();
+            }
+
+            // 3. Canvas full reset
+            if (tacticalDisplay && tacticalDisplay->canvas) {
+                tacticalDisplay->canvas->fullCanvasReset();
+                tacticalDisplay->canvas->selectedEntityId.clear();
+                tacticalDisplay->canvas->resetEntityInfoDialog();
+                tacticalDisplay->canvas->ReInit();
+            }
+
+            // 4. Snapshot load
+            if (!runtimeToolBar->m_initialSnapshot.isEmpty() && hierarchy) {
+                hierarchy->fromJson(runtimeToolBar->m_initialSnapshot);
+            }
+
+            QCoreApplication::processEvents();
+
+            // ── Overlay hata do ──
+            blocker->deleteLater();
         });
         connect(simulation, &Simulation::sendMode, this, [=](SimulationStateNS::State state) {
             if (runtimeToolBar) {
@@ -1527,6 +1583,7 @@ void RuntimeEditor::setupEnhancedDockWidgets()
     sidebar->setSensorsButtonVisible(true);
     sidebar->setStyleSheet("background-color: #0F2636; color: white;");
     sidebarDock->setWidget(sidebar);
+    sidebarDock->setTitleStripe(true);
     sidebarDock->setFloating(true);
     sidebarDock->setParent(this);
     sidebarDock->setWindowFlags(Qt::SubWindow | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
@@ -3162,7 +3219,7 @@ void RuntimeEditor::filterSensorTabsForEntity(const QString &entityId, const QSt
     static const QMap<QString, QString> sensorTypeToTab = {
         {"Radar", "Radar"}, {"AESA", "AESA"}, {"ESM", "ESM"},
         {"CSM", "CSM"}, {"EO", "EO"}, {"IR", "IR"}, {"AIS", "AIS"},
-        {"ADSB", "ADSB"}, {"Sonar", "SONAR"}
+        {"ADSB", "ADSB"}, {"Sonar", "SONAR"},{"Sunobuoy","Sonobuoy"}
     };
 
     QStringList attachedTabs;
@@ -3175,6 +3232,16 @@ void RuntimeEditor::filterSensorTabsForEntity(const QString &entityId, const QSt
         if (!tab.isEmpty() && !attachedTabs.contains(tab))
             attachedTabs.append(tab);
     }
+
+    sensorsMap = entityJson["weapons"].toObject()["weapons"].toObject();
+    for (const QString &key : sensorsMap.keys()) {
+        QString sType = sensorsMap[key].toObject()["weaponTypeName"].toString();
+        QString tab = sensorTypeToTab.value(sType, "");
+        if (!tab.isEmpty() && !attachedTabs.contains(tab))
+            attachedTabs.append(tab);
+    }
+
+
     if (!entityJson["iffs"].toObject()["iffs"].toObject().isEmpty())
         attachedTabs.append("IFF");
     if (!entityJson["radios"].toObject()["radios"].toObject().isEmpty())
@@ -3189,7 +3256,7 @@ void RuntimeEditor::filterSensorTabsForEntity(const QString &entityId, const QSt
     while (displayTabs->count() > 0)
         displayTabs->removeTab(0);
     static const QStringList tabOrder = {
-        "Radar", "SonoBuoy" ,"IFF", "RADIO", "ESM", "CSM", "EO", "IR", "AIS", "ADSB", "AESA", "SONAR"
+        "Radar", "Sonobuoy" ,"IFF", "RADIO", "ESM", "CSM", "EO", "IR", "AIS", "ADSB", "AESA", "SONAR"
     };
     int newCurrentIndex = -1;
     for (const QString &tabName : tabOrder) {
@@ -3197,7 +3264,7 @@ void RuntimeEditor::filterSensorTabsForEntity(const QString &entityId, const QSt
             continue;
         QWidget *widget = nullptr;
         if      (tabName == "Radar") widget = radarDisplayUI;
-        else if (tabName == "SonoBuoy")   widget = sonoBuoyDisplayUI;
+        else if (tabName == "Sonobuoy")   widget = sonoBuoyDisplayUI;
         else if (tabName == "IFF")   widget = iffDisplayUI;
         else if (tabName == "RADIO") widget = radioDisplayUI;
         else if (tabName == "ESM")   widget = esmDisplayUI;
@@ -3213,7 +3280,7 @@ void RuntimeEditor::filterSensorTabsForEntity(const QString &entityId, const QSt
         if (tabName == currentTabName)
             newCurrentIndex = idx;
     }
-    displayTabs->addTab(sonoBuoyDisplayUI,"Sonobuoy");
+    // displayTabs->addTab(sonoBuoyDisplayUI,"Sonobuoy");
     if (newCurrentIndex == -1 && displayTabs->count() > 0)
         newCurrentIndex = 0;
     if (newCurrentIndex != -1)

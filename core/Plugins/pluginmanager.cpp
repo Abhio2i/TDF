@@ -17,7 +17,6 @@ bool PluginManager::loadPlugin(std::string path){
     if(!path.empty()){
         pluginPath  = QString::fromStdString(path);
     }
-
     // 1. Plugin Load karo
     QPluginLoader* loader = new QPluginLoader(pluginPath);
     bool loaded = loader->load();
@@ -114,19 +113,13 @@ bool PluginManager::loadPlugin(std::string path){
                     }
                     return transformData; // Pure vector ko return kiya
                 });
-
             }
-
             if(simulation){
                 QMetaObject::Connection conn1 = connect(simulation, &Simulation::Render, this, [hierInterface](float delta) {
                     hierInterface->update(delta);
                 });
                 pluginconnection[path].push_back(conn1);
             }
-
-
-
-
         }else
         if(sensorInterface){
             pluginList[path] = loader;

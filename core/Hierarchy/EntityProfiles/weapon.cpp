@@ -30,6 +30,10 @@ Weapon::Weapon(Hierarchy* h) : Entity(h)
     par->value = 0.0f;
     parameters["weapon_param"] = par;
 
+
+}
+
+void Weapon::init(){
     addComponent("transform");
     addComponent("rigidbody");
     addComponent("collider");
@@ -40,7 +44,6 @@ Weapon::Weapon(Hierarchy* h) : Entity(h)
 
     syncComponentsFromWeaponData();
 }
-
 // =============================================================================
 // DESTRUCTOR
 // =============================================================================
@@ -181,21 +184,21 @@ void Weapon::removeComponent(std::string name)
         parent->Components.erase(transform->ID);
         delete transform; transform = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "transform");
-        emit parent->entityMeshRemoved(QString::fromStdString(parentID));
-        emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+        emit parent->entityMeshRemoved(QString::fromStdString(ID));
+        emit parent->entityPhysicsRemoved(QString::fromStdString(ID));
     } else if (name == "rigidbody") {
         if (!rigidbody) return;
         parent->Components.erase(rigidbody->ID);
         delete rigidbody; rigidbody = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "rigidbody");
-        emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+        emit parent->entityPhysicsRemoved(QString::fromStdString(ID));
     } else if (name == "collider") {
         if (!collider) return;
         parent->Components.erase(collider->ID);
         delete collider; collider = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "collider");
-        emit parent->entityMeshRemoved(QString::fromStdString(parentID));
-        emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+        emit parent->entityMeshRemoved(QString::fromStdString(ID));
+        emit parent->entityPhysicsRemoved(QString::fromStdString(ID));
     } else if (name == "trajectory") {
         if (!trajectory) return;
         parent->Components.erase(trajectory->ID);
@@ -206,13 +209,13 @@ void Weapon::removeComponent(std::string name)
         parent->Components.erase(meshRenderer2d->ID);
         delete meshRenderer2d; meshRenderer2d = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "bitmap");
-        emit parent->entityMeshRemoved(QString::fromStdString(parentID));
+        emit parent->entityMeshRemoved(QString::fromStdString(ID));
     } else if (name == "dynamicModel") {
         if (!dynamicModel) return;
         parent->Components.erase(dynamicModel->ID);
         delete dynamicModel; dynamicModel = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "dynamicModel");
-        emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+        emit parent->entityPhysicsRemoved(QString::fromStdString(ID));
     } else if (name == "crossSection") {
         if (!crossSection) return;
         parent->Components.erase(crossSection->ID);

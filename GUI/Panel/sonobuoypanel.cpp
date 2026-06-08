@@ -260,6 +260,7 @@ void SonoBuoyPanel::paintEvent(QPaintEvent * /*event*/)
 
     // Initialize painter
     QPainter p(this);
+    if(!entity) return;
     //p.setRenderHint(QPainter::Antialiasing);
     QVector3D position = entity->transform->translation();
     QPointF pos(position.x(),-position.z());
@@ -292,7 +293,14 @@ void SonoBuoyPanel::paintEvent(QPaintEvent * /*event*/)
     int outerRadius = outerDiameter / 2;
     QPoint center(w / 2, h / 2);
 
-
+    QFont font("Arial", 10, QFont::Bold);
+    p.setFont(font);
+    p.setPen(QColor(0, 255, 0, 255));
+    // Fixed screen coordinates ka upyog karein
+    p.drawText(QPointF(0+20, h-20),QString::number(zoomLevel)+"km");
+    p.drawLine(5, h-10, w-5, h-10);
+    p.drawLine(5, h-20, 5, h-10);
+    p.drawLine(w-5, h-20, w-5, h-10);
     p.setBrush(Qt::yellow);
     p.setPen(Qt::NoPen);
     p.drawEllipse(center, 4, 4);
@@ -326,7 +334,9 @@ void SonoBuoyPanel::paintEvent(QPaintEvent * /*event*/)
     p.setPen(Qt::NoPen);
     QVector<std::string> output;
     for (const Sonobuoy* sensor : sensorlist) {
-        if (sensor) {
+        if(!sensor || !sensor->transform) continue;
+        auto it = entity->weapons->weapons->find(sensor->ID);
+        if (it != entity->weapons->weapons->end() && it->second ) {
             QVector3D Sposition = sensor->transform->translation();
             QPointF senpos(Sposition.x(),-Sposition.z());
             QPointF relPos((senpos.x()-pos.x()),(senpos.y()-pos.y()));
@@ -343,7 +353,7 @@ void SonoBuoyPanel::paintEvent(QPaintEvent * /*event*/)
             if (!sensor->detection.isEmpty()) {
                 int i=0;
                 for (const Sonobuoy::SonobuoyOutput &t : sensor->detection) {
-                    if(!output.contains(t.entity->ID)){
+                    if(t.entity && t.entity->transform && !output.contains(t.entity->ID)){
                         output.append(t.entity->ID);
 
                         QVector3D Subposition = t.entity->transform->translation();

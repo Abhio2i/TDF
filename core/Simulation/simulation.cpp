@@ -266,15 +266,21 @@ void Simulation::timeJump(int newTime){
 
     int secDiff = newTime - simulationTime;
     if(secDiff <= 0) return;
-
+    deltaTime = 0.02f;
+    float speedvar = speed;
+    fastupdate = true;
+    speed = 4;
     float fps = 60.0f;
     int totalSteps = secDiff * fps;
     float dt = 1.0f / fps;
+    totalSteps = (totalSteps/4.0);
 
     // 1. Progress Dialog setup karein
-    QProgressDialog progress("Processing simulation...", "Cancel", 0, totalSteps, nullptr);
+    QProgressDialog progress("Processing simulation...", nullptr, 0, physicsComponent.size(), nullptr);
     progress.setWindowModality(Qt::ApplicationModal); // Screen block karne ke liye
-
+    progress.setCancelButton(nullptr);
+    // --- Yeh line add karein ---
+    progress.setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
     // 2. Progress Bar ko dhund kar hide kar dein
     QProgressBar *bar = progress.findChild<QProgressBar *>();
     if (bar) {
@@ -282,29 +288,54 @@ void Simulation::timeJump(int newTime){
     }
 
     progress.show();
+    int count = 0;
+    for (auto& [id, comp] : physicsComponent) {
+        count++;
+        if(!comp.base->Active) continue;
+        if (!comp.transform) continue;
 
-    for(int i = 0; i < totalSteps; i++){
-        // 3. Check karein agar user ne 'Cancel' dabaya hai
-        if (progress.wasCanceled()) {
-            qDebug() << "Simulation cancelled by user.";
-            break;
+        if(comp.rigidbody){
+            comp.rigidbody->deltaTime = deltaTime;
         }
-
-        deltaTime = dt;
-        calculatePhysics();
-
-        // Internally update karein taaki cancel button responsive rahe
-        progress.setValue(i);
-
-        // GUI freezing se bachne ke liye
-        if(i % 5000 == 0) {
-            emit Render(dt);
-            QCoreApplication::processEvents();
+        //fix:we are keeping dynamic only to server
+        bool isMaster = true;
+        if (networkManager && networkManager->isActive())
+            isMaster = networkManager->isServer();
+        if (isMaster && comp.dynamicModel){
+            comp.dynamicModel->TimeJump(secDiff);
+            comp.dynamicModel->Update(dt);
+            updateDynamics(dt,&comp);
+            progress.setValue(count);
         }
+        comp.transform->sync();
     }
+    simulationTime = newTime;
+
+    // for(int i = 0; i < totalSteps; i++){
+    //     // 3. Check karein agar user ne 'Cancel' dabaya hai
+    //     if (progress.wasCanceled()) {
+    //         qDebug() << "Simulation cancelled by user.";
+    //         break;
+    //     }
+
+    //     deltaTime = dt;
+    //     calculatePhysics();
+
+    //     // Internally update karein taaki cancel button responsive rahe
+    //     progress.setValue(i);
+
+    //     // GUI freezing se bachne ke liye
+    //     if(i % 5000 == 0) {
+    //         emit Render(dt);
+    //         QCoreApplication::processEvents();
+    //     }
+    // }
 
     progress.close();
     emit Render(dt);
+    speed = speedvar;
+    fastupdate = false;
+    startf();
 }
 
 
@@ -560,13 +591,13 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
 
     emit HierarchyUpdate();
 
-    // ✅ LAST ME - Auto-resume if was playing
-    if (wasPlaying) {
-        QTimer::singleShot(50, this, [this]() {
-            startf();
-            Console::log("Simulation auto-resumed after entity addition");
-        });
-    }
+    // // ✅ LAST ME - Auto-resume if was playing
+    // if (wasPlaying) {
+    //     QTimer::singleShot(50, this, [this]() {
+    //         startf();
+    //         Console::log("Simulation auto-resumed after entity addition");
+    //     });
+    // }
 }
 
 void Simulation::entityRemoved(QString ID) {
@@ -656,7 +687,7 @@ void Simulation::enqueueTransformUpdate(const TransformUpdate& msg)//by Aman
 */
 
 void Simulation::updateDynamics(float dt,PhysicsComponent *comp){
-    if(comp->dynamicModel->followEntity || comp->dynamicModel->trajectory->Trajectories.size()<2 || comp->platform->fuel<=0.5f) return;
+    if(comp->dynamicModel->startTime > comp->dynamicModel->time || comp->dynamicModel->followEntity || comp->dynamicModel->trajectory->Trajectories.size()<2 || comp->platform->fuel<=0.5f) return;
     comp->aircraft->MaxAcceleration = comp->dynamicModel->Acceleration;
     comp->aircraft->MaxDecceleration = comp->dynamicModel->Decceleration;
     comp->aircraft->CeilingHeight = comp->dynamicModel->maxAltitude / 3.281f;
@@ -682,12 +713,17 @@ void Simulation::updateDynamics(float dt,PhysicsComponent *comp){
     comp->aircraft->Forward.z = comp->transform->forward().z();
 
     Vector target = *comp->dynamicModel->trajectory->getTargetWaypoint()->position;
+    if(comp->dynamicModel->trajectory->getCurrentWaypoint()){
+        target.y = comp->dynamicModel->trajectory->getCurrentWaypoint()->position->y;
+    }
     if(comp->dynamicModel->parentEntity && (comp->dynamicModel->parentEntity->category == Entity::Category::Marine ||
                                              comp->dynamicModel->parentEntity->category == Entity::Category::Marine ||
                                              comp->dynamicModel->parentEntity->category == Entity::Category::Ground ))
     {
         target.y = target.y>0?0:target.y;
     }
+
+
     //float tgtSpd = comp.dynamicModel->trajectory->getTargetWaypoint()->speed;
     FlatXYZ targt = geoToFlatXYZ(target.x,target.z,target.y);
     if(comp->dynamicModel->followTarget){
@@ -785,7 +821,7 @@ void Simulation::calculatePhysics() {
         }
 
 
-        if(comp.collider){
+        if(comp.collider && !fastupdate){
             comp.collider->Update(dt);
         }
         //fix:we are keeping dynamic only to server
@@ -816,7 +852,7 @@ void Simulation::calculatePhysics() {
             sensorTime +=elapsedMs;
         }
 
-        if(comp.zone){
+        if(comp.zone && !fastupdate){
             comp.zone->Update(dt);
         }
         comp.transform->sync();

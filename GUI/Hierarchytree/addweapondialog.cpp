@@ -211,7 +211,7 @@ AddWeaponDialog::AddWeaponDialog(QWidget* parent,
     QHBoxLayout* nameRow = new QHBoxLayout();
     QLabel* nameLabel = new QLabel("Weapon Name:");
     nameLabel->setFixedWidth(110);
-    m_nameEdit = new QLineEdit("Weapon_1");
+    m_nameEdit = new QLineEdit("Weapon");
     m_nameEdit->setPlaceholderText("Enter weapon name…");
     nameRow->addWidget(nameLabel);
     nameRow->addWidget(m_nameEdit);
@@ -275,7 +275,7 @@ void AddWeaponDialog::onTypeChanged(int index)
         m_nameEdit->text().startsWith("Torpedo_") ||
         m_nameEdit->text().startsWith("Artillery_"))
     {
-        m_nameEdit->setText(m_typeCombo->currentText() + "_1");
+        m_nameEdit->setText(m_typeCombo->currentText() + "_");
     }
 }
 

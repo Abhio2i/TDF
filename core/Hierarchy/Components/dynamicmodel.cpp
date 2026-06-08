@@ -355,6 +355,15 @@ void DynamicModel::FollowTrajectory() {
     FlatXYZ targt = geoToFlatXYZ(target.x,target.z,target.y);
     QVector3D target_qvec(targt.x, targt.y, targt.z);
     QVector2D tar(target_qvec.x(),target_qvec.z());
+
+    QVector3D diff = target_qvec-transform->translation();
+
+    // Standard Heading (Yaw): using atan2(x, z) because forward is Z+
+    float heading = std::atan2(diff.x(), diff.z()) * (180.0f / M_PI);
+    heading = heading-transform->getHeading();
+    heading = heading<0?(-1*heading):heading;
+    // qDebug()<<heading-transform->getHeading();
+
     // if(target_qvec.y() != Altitude){
     //     Altitude = target_qvec.y();
     // }
@@ -373,9 +382,16 @@ void DynamicModel::FollowTrajectory() {
                                      trajectory->Trajectories[trajectory->current]->position->z,
                                      current.z(),
                                      current.x());
+    bool pass = false;
+    if(heading>40){
+        pass = metredis < calculateTurnRadius(currentSpeed,turnRate)*1.5f;
+    }else{
+        pass = metredis < (currentSpeed/3.6f) *2.f;
+    }
+
 
     // //qDebug()<<metredis;
-    if (trajectory->Trajectories.size() > trajectory->current &&  metredis < (currentSpeed/3.6f) *2.f) {
+    if (trajectory->Trajectories.size() > trajectory->current && pass){// metredis < calculateTurnRadius(currentSpeed,turnRate)*1.5f){//(currentSpeed/3.6f) *2.f) {
         if(trajectory->reverse){
             trajectory->current -= 1;
             if(trajectory->current <= 0){
@@ -401,7 +417,7 @@ void DynamicModel::FollowTrajectory() {
             }
             if(tgtSpd > 0 || parentEntity->category == Entity::Category::Marine){
                 Vector target = *trajectory->getTargetWaypoint()->position;
-                float tgtSpd = trajectory->getTargetWaypoint()->speed;
+                //float tgtSpd = trajectory->getTargetWaypoint()->speed;
                 tgtSpd = tgtSpd>maxSpeed?maxSpeed:tgtSpd;
                 FlatXYZ targt = geoToFlatXYZ(target.x,target.z,target.y);
                 QVector3D target_qvec(targt.x, targt.y, targt.z);
@@ -437,11 +453,89 @@ void DynamicModel::FollowTrajectory() {
                          parentEntity->category == Entity::Category::Ground ))
     {
         moveSpeed = moveSpeed > 500?500:moveSpeed;
+    }else{
+        moveSpeed = moveSpeed>maxSpeed?maxSpeed:moveSpeed;
     }
     if(parentEntity->category == Entity::Category::Marine){
         Altitude  = Altitude>0?0:Altitude;
     }
 }
+
+void DynamicModel::TimeJump(int sec){
+
+     if(trajectory->Trajectories.size()<2) return;
+    float time = 0;
+    float dis = 0;
+    float alt = Altitude;
+    float speed = moveSpeed*(5.f/18.f);
+    int waynum = trajectory->current;
+    int leftsec = 0;
+    for(int i = 0;i<100;i++){
+        float metredis = distanceBetween(trajectory->Trajectories[trajectory->current]->position->x,
+                                         trajectory->Trajectories[trajectory->current]->position->z,
+                                         transform->getLatitude(),
+                                         transform->getLongitude());
+        int taketime = metredis/speed;
+        if(taketime+time>sec){
+            leftsec = sec-time;
+            break;
+        }
+        time+=taketime;
+        dis = metredis;
+        Waypoints* wp= trajectory->getCurrentWaypoint();
+        moveSpeed = speed*3.6f;
+        Altitude = alt;
+        if(moveSpeed <minSpeed){
+            moveSpeed = minSpeed;
+        }
+        if(moveSpeed > maxSpeed){
+            moveSpeed = maxSpeed;
+        }
+        if(Altitude>maxAltitude){
+            Altitude = maxAltitude;
+        }
+
+        if(parentEntity && (parentEntity->category == Entity::Category::Marine ||
+                             parentEntity->category == Entity::Category::Marine ||
+                             parentEntity->category == Entity::Category::Ground ))
+        {
+            moveSpeed = moveSpeed > 500?500:moveSpeed;
+        }else{
+            moveSpeed = moveSpeed>maxSpeed?maxSpeed:moveSpeed;
+        }
+        if(parentEntity->category == Entity::Category::Marine){
+            Altitude  = Altitude>0?0:Altitude;
+        }
+        if(wp && moveSpeed>0){
+            speed = moveSpeed*(5.f/18.f);
+        }
+        if(wp && Altitude>0){
+            alt = Altitude;
+        }
+
+        transform->setGeoCord(trajectory->Trajectories[trajectory->current]->position->x,trajectory->Trajectories[trajectory->current]->position->z,Altitude);
+        transform->trailData.push_back(QVector3D(transform->getLatitude(),0,transform->getLongitude()));
+        if( transform->trailData.capacity()>54000){
+            transform->trailData.erase(transform->trailData.begin());
+        }
+        trajectory->current+=1;
+        if(trajectory->current >= trajectory->Trajectories.size()){
+            trajectory->current = 0;
+        }
+        waynum = trajectory->current;
+    }
+    moveSpeed = speed*3.6f;
+    Altitude = alt;
+    transform->lookAt(trajectory->Trajectories[trajectory->current]->position->x,trajectory->Trajectories[trajectory->current]->position->z);
+    float leftDis = (leftsec*speed)/1000.f;
+    float rad = transform->getHeading()*(M_PI /180.0f);
+    float x = leftDis * std::sin(rad);
+    float z = leftDis * std::cos(rad);
+    transform->setTranslation(transform->translation()+QVector3D(x,0,z));
+
+}
+
+
 
 /**
  * @brief Linear interpolation helper.
@@ -728,4 +822,16 @@ void DynamicModel::fromJson(const QJsonObject& obj) {
  */
 void DynamicModel::setMoveSpeed(float speed) {
     //moveSpeed = qBound(1.0f, speed, 10.0f);
+}
+
+double DynamicModel::calculateTurnRadius(double speedKmph, double turnRateDegPerSec) {
+    // Safe check: Agar turn rate 0 hai ya bohot kam hai, toh radius infinite hoga (straight line)
+    if (std::abs(turnRateDegPerSec) < 1e-6) {
+        return 0.0; // Ya fir safely std::numeric_limits<double>::infinity() return karein
+    }
+
+    // Constant expression: (50.0 / PI) approx 15.9154943
+    constexpr double conversionConstant = 50.0 / M_PI;
+
+    return (speedKmph / turnRateDegPerSec) * conversionConstant;
 }

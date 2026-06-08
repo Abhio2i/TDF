@@ -289,6 +289,7 @@ void MainWindow::setupMenuBarConnections()
                 if (rtEditor->tacticalDisplay && rtEditor->tacticalDisplay->canvas) {
                     rtEditor->tacticalDisplay->canvas->fromJson(QJsonObject());
                     rtEditor->tacticalDisplay->canvas->resetEntityInfoDialog();
+                    rtEditor->tacticalDisplay->canvas->fullCanvasReset();
                 }
                 if (LayerPanel* layerPanel = rtEditor->findChild<LayerPanel*>()) {
                     layerPanel->fromJson(QJsonObject());
@@ -495,6 +496,7 @@ void MainWindow::setupMenuBarConnections()
                     if (scenarioconfig) {
                         scenarioconfig->saveDatabaseSettings(enabled, path);
                     }
+
                 });
         dialog.exec();
     });
@@ -546,6 +548,9 @@ void MainWindow::setupMenuBarConnections()
             connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
                     this, [=](const QString& filePath, RecentProjectsManager::EditorType type) {
                         if (type != RecentProjectsManager::LibraryData || filePath.isEmpty()) return;
+                        if (rtEditor->tacticalDisplay && rtEditor->tacticalDisplay->canvas) {
+                            rtEditor->tacticalDisplay->canvas->fullCanvasReset();
+                        }
                         showLoadingOverlay("Loading Database...");
                         QCoreApplication::processEvents();
                         QFile file(filePath);
@@ -593,23 +598,19 @@ void MainWindow::setupMenuBarConnections()
                 return;
             }
         }
-
         PluginManagerDialog *dlg = new PluginManagerDialog(this);
         dlg->setAttribute(Qt::WA_DeleteOnClose);
-
         // Current RuntimeEditor lo
         RuntimeEditor *rtEditor = qobject_cast<RuntimeEditor*>(getCurrentEditor());
-
         connect(dlg, &PluginManagerDialog::pluginInstallRequested,
                 this, [=](int pluginId, const QString &pluginName) {
-                    qDebug() << "[PluginManager] INSTALL | enabled=true |" << pluginName;
+                    // qDebug() << "[PluginManager] INSTALL | enabled=true |" << pluginName;
                     if (rtEditor && rtEditor->pluginManager)
                         rtEditor->pluginManager->loadPlugin(pluginName.toStdString());
                 });
-
         connect(dlg, &PluginManagerDialog::pluginUpdateRequested,
                 this, [=](int pluginId, const QString &pluginName) {
-                    qDebug() << "[PluginManager] UPDATE | enabled=true |" << pluginName;
+                    // qDebug() << "[PluginManager] UPDATE | enabled=true |" << pluginName;
                     if (rtEditor && rtEditor->pluginManager) {
                         rtEditor->pluginManager->unloadPlugin(pluginName.toStdString());
                         rtEditor->pluginManager->loadPlugin(pluginName.toStdString());
@@ -618,22 +619,22 @@ void MainWindow::setupMenuBarConnections()
 
         connect(dlg, &PluginManagerDialog::pluginUninstallRequested,
                 this, [=](int pluginId, const QString &pluginName) {
-                    qDebug() << "[PluginManager] UNINSTALL | enabled=false |" << pluginName;
+                    // qDebug() << "[PluginManager] UNINSTALL | enabled=false |" << pluginName;
                     if (rtEditor && rtEditor->pluginManager)
                         rtEditor->pluginManager->unloadPlugin(pluginName.toStdString());
                 });
 
         connect(dlg, &PluginManagerDialog::pluginRemoveRequested,
                 this, [=](int pluginId, const QString &pluginName) {
-                    qDebug() << "[PluginManager] REMOVE | enabled=false |" << pluginName;
+                    // qDebug() << "[PluginManager] REMOVE | enabled=false |" << pluginName;
                     if (rtEditor && rtEditor->pluginManager)
                         rtEditor->pluginManager->unloadPlugin(pluginName.toStdString());
                 });
 
         connect(dlg, &PluginManagerDialog::pluginAddRequested,
                 this, [=](const PluginInfo &plugin) {
-                    qDebug() << "[PluginManager] ADD | plugin added, waiting for user to install |"
-                             << plugin.filePath;
+                    // qDebug() << "[PluginManager] ADD | plugin added, waiting for user to install |"
+                    //          << plugin.filePath;
                 });
 
         dlg->show();
@@ -684,6 +685,9 @@ void MainWindow::loadFileWithTDFSupport(QMainWindow* editor,
         RecentProjectsManager::instance()->addToRecentProjects(filePath, editorType);
     } else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(editor)) {
         if (m_loadingLabel) { m_loadingLabel->setText("Loading Runtime..."); QCoreApplication::processEvents(); }
+        if (rtEditor->tacticalDisplay && rtEditor->tacticalDisplay->canvas) {
+            rtEditor->tacticalDisplay->canvas->fullCanvasReset();
+        }
         rtEditor->loadFromJsonFile(filePath);
         RecentProjectsManager::instance()->addToRecentProjects(filePath, editorType);
     }
@@ -1196,7 +1200,7 @@ void MainWindow::switchEditor(const QString &editorKey)
             // ── Installed plugins auto-load karo ─────────────────
             for (const PluginInfo &p : PluginManagerDialog::loadSavedPlugins()) {
                 if (p.status == "installed" && !p.filePath.isEmpty()) {
-                    qDebug() << "[PluginManager] AUTO-LOAD | path:" << p.filePath;
+                    // qDebug() << "[PluginManager] AUTO-LOAD | path:" << p.filePath;
                     runtimeEditor->pluginManager->loadPlugin(p.filePath.toStdString());
                 }
             }

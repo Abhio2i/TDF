@@ -203,13 +203,13 @@ void Platform::pause(){
     //taskgroup->pause();
 }
 
-void Platform::update(){
+ void Platform::update(){
     if (isRemoteDISEntity) return;//by Aman
 
     time =Simulation::simulationTime;
     float fuelconsumption = 0.002*(dynamicModel->currentSpeed/3000.0f);
-    fuel -= fuelconsumption;
-    fuel = fuel<0?0:fuel;
+    // fuel -= fuelconsumption;
+    // fuel = fuel<0?0:fuel;
     if(Health <= 0){
         Active = false;
         engaged = false;
@@ -226,17 +226,24 @@ void Platform::update(){
     //     m_bombsReleased = true;   // bombs released — don't check again this flight
     // }
     int cur = trajectory->current;
-
-    if((cur!=_lastcurrent && trajectory->getCurrentWaypoint()&& trajectory->getCurrentWaypoint()->dropWeapon) || (autoDrop && dropTime<time) ){
+    Waypoints* waypoint = trajectory->getCurrentWaypoint();
+    if(cur == 0 && _lastcurrent == trajectory->Trajectories.size()-1){
+        waypoint = trajectory->getWaypointByIndex(_lastcurrent+1);
+    }
+    if((cur!=_lastcurrent && waypoint && waypoint->dropWeapon) || (autoDrop && dropTime<time && dropcount > 0) ){
         autoDrop = false;
+        if(cur!=_lastcurrent && waypoint->dropWeapon){
+            dropcount += waypoint->dropcount;
+        }
         for (auto const& pair :*weapons->weapons) {
             Weapon* s = pair.second;
             if(!s)continue;
             Sonobuoy* sono = dynamic_cast<Sonobuoy*>(s);
-            if(sono && !sono->drop){
+            if(sono && !sono->drop && dropcount>0){
                 autoDrop = true;
                 dropTime = time+dropInterval;
                 sono->dropped();
+                dropcount--;
 
                 break;
             }
@@ -244,8 +251,10 @@ void Platform::update(){
     }
     _lastcurrent = cur;
 
+    if(Simulation::fastupdate) return;
 
     for (auto const& pair :*weapons->weapons) {
+        if(Simulation::fastupdate)continue;
         Weapon* s = pair.second;
         if(!s)continue;
         s->Update();
@@ -260,6 +269,7 @@ void Platform::update(){
     if(!sensors)return;
     Waypoints* wp = trajectory->getCurrentWaypoint();
     for (auto const& pair :*sensors->sensors) {
+        if(Simulation::fastupdate)continue;
         Sensor* s = pair.second;
         if(!s)continue;
         if(wp){
@@ -337,6 +347,7 @@ void Platform::update(){
     timer.start();  // Start measuring
 
     for (auto const& pair : *radios->radios) { // assuming you have a list of radios on this platform
+        if(Simulation::fastupdate)continue;
         Radio* r = pair.second;
         if (r) {
             r->scan();
@@ -348,6 +359,7 @@ void Platform::update(){
 
     timer.start();  // Start measuring
     for (auto const& pair : *iffs->iffs) {
+        if(Simulation::fastupdate)continue;
         IFF* iff = pair.second;
         if (iff) {
             iff->scan();
@@ -357,7 +369,8 @@ void Platform::update(){
     Profiler::currentFrame->IFFTime +=elapsedMs;
 
     timer.start();
-    if (weapons) {
+    if (weapons && !Simulation::fastupdate) {
+
         for (auto const& pair : *weapons->weapons) {
             Weapon* w = pair.second;
             if (w && w->Active) {
@@ -662,6 +675,8 @@ QJsonObject Platform::toJson() const {
 
     QJsonObject CategoryObj;
     CategoryObj["type"] = "option";
+    CategoryObj["refresh"] = true;
+    CategoryObj["editable"] = false;
     QJsonArray CategoryoptionsArray;
     for (const std::string& opt : CategoryNames)
         CategoryoptionsArray.append(QString::fromStdString(opt));
@@ -767,6 +782,8 @@ void Platform::fromJson(const QJsonObject& obj) {
         Health = valueFromParm(obj["health"].toObject());
     if (obj.contains("dropInterval"))
         dropInterval = valueFromParm(obj["dropInterval"].toObject());
+    if (obj.contains("fuel"))
+        fuel = valueFromParm(obj["fuel"].toObject());
 
     if (obj.contains("illumination"))
         illumination = valueFromParm(obj["illumination"].toObject());

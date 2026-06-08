@@ -112,7 +112,7 @@ public:
     float Range = 10.0f;
     float bandwidth;
     float msgTimeStamp = 0;
-    std::string msg = "hello";
+    std::string msg = "";
 
     // =========================================================================
     // SECTION: Tracking Data Structures

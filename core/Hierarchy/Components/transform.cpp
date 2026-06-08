@@ -180,7 +180,10 @@ QVector3D Transform::toEulerAngles() const {
     if(Simulation::isPlay && false){
         return rotationbuffer.toEulerAngles();
     }else{
+        if(matrix)
         return matrix->rotation().toEulerAngles();
+        else
+            return QVector3D(0,0,0);
     }
 }
 
@@ -193,6 +196,7 @@ void Transform::setFromEulerAngles(const QVector3D& eulerAngles) {
         RotUpdate = true;
         rotationbuffer.fromEulerAngles(eulerAngles);
     }else{
+        if(matrix)
         matrix->setRotation(QQuaternion::fromEulerAngles(eulerAngles));
     }
 }
@@ -326,6 +330,17 @@ void Transform::lookAt(const QVector3D& targetWorldPos) {
     this->setHeading(heading);
 }
 
+void Transform::lookAt(float lat, float lon) {
+    FlatXYZ xyz = geoToFlatXYZ(lat,lon,geocord->altitude*FTtoKM);
+    QVector3D diff = QVector3D(xyz.x,xyz.y,xyz.z) - this->translation();
+
+    // Standard Heading (Yaw): using atan2(x, z) because forward is Z+
+    float heading = std::atan2(diff.x(), diff.z()) * (180.0f / M_PI);
+    this->setHeading(heading);
+}
+
+
+
 /**
  * @brief Rotates the transform to face the target in 3D (full orientation).
  * @param targetWorldPos Target position.
@@ -355,6 +370,7 @@ void Transform::setTranslation(const QVector3D& vector) {
         positionbuffer.setZ(vector.z());
     }else
     {
+        if(matrix)
         matrix->setTranslation(vector);
     }
     // //qDebug()<< vector;
@@ -372,6 +388,7 @@ void Transform::addTranslation(const QVector3D& vector) {
         positionbuffer.setZ(positionbuffer.z() + vector.z());
     }else
     {
+        if(matrix)
         matrix->setTranslation(translation()+vector);
     }
 }
@@ -401,6 +418,7 @@ void Transform::setRotation(const QQuaternion& quat) {
         rotationbuffer.setScalar(quat.scalar());
     }else
     {
+        if(matrix)
         matrix->setRotation(quat);
     }
 }
@@ -422,6 +440,7 @@ QQuaternion Transform::rotation() {
  * @param vector Scale (x, y, z).
  */
 void Transform::setScale3D(const QVector3D& vector) {
+    if(matrix)
     matrix->setScale3D(vector);
 }
 
@@ -429,6 +448,7 @@ void Transform::setScale3D(const QVector3D& vector) {
  * @brief Returns the current scale factor.
  */
 QVector3D Transform::scale3D() {
+    if(matrix)
     return matrix->scale3D();
 }
 

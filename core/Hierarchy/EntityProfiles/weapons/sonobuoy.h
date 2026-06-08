@@ -27,10 +27,11 @@ public:
 
     explicit Sonobuoy(Hierarchy* h);
     ~Sonobuoy();
-    WeaponType weaponType = WeaponType::Sonobuoy;
+    // WeaponType weaponType = WeaponType::Sonobuoy;
     QString weaponTypeName() const override { return "Sonobuoy"; }
 
     bool drop = false;
+    float starttime = 0;
     float time = 0.f;//s
     float range =  30;//km
     float TransmissionRange = 100;//km

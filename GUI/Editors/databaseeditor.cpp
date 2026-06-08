@@ -867,7 +867,20 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
 
                 connect(entityInspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
                 connect(entityInspector, &Inspector::valueChanged, this, &DatabaseEditor::markUnsavedChanges);
-
+                connect(entityInspector, &Inspector::valueChanged, this,
+                        [=](QString eID, QString compName, QJsonObject delta) {
+                            if (!delta.contains("Category")) return;
+                            QTimer::singleShot(50, this, [=]() {
+                                auto it = hierarchy->Entities.find(eID.toStdString());
+                                if (it == hierarchy->Entities.end()) return;
+                                QVariantMap data;
+                                data["type"] = "entity";
+                                data["ID"] = eID;
+                                data["name"] = QString::fromStdString(it->second->Name);
+                                data["parentId"] = QString::fromStdString(it->second->parentID);
+                                onTreeItemSelected(data);
+                            });
+                        });
                 entityInspector->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
                 entityInspector->setMinimumWidth(350);
                 entityInspector->setMinimumHeight(minHeight);

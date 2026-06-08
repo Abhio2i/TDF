@@ -26,6 +26,14 @@ WeaponProfile::WeaponProfile(Hierarchy* h) : Component(h)
     weapons = new std::unordered_map<std::string, Weapon*>();
 }
 
+WeaponProfile::~WeaponProfile(){
+    while (!weapons->empty()) {
+        removeSubComponent(weapons->begin()->second->ID);
+    }
+    delete weapons;
+    weapons = nullptr;
+}
+
 // =============================================================================
 // addSubComponent
 // Exact same pattern as SensorProfile::addSubComponent:
@@ -289,9 +297,15 @@ void WeaponProfile::fromJson(const QJsonObject& obj)
         }
 
         weapon->parentEntity = parentEntity;
+        weapon->parentID = parentEntity->ID;
         weapon->Name         = weaponObj["name"].toString().toStdString();
         weapon->ID           = weaponObj["id"].toString().toStdString();
+        weapon->parentEntity = parentEntity;
+        weapon->parentID = parentEntity->ID;
+        weapon->init();
         weapon->fromJson(weaponObj);
+        weapon->parentEntity = parentEntity;
+        weapon->parentID = parentEntity->ID;
 
         if (!exists) {
             weapon->parentID = parentID;

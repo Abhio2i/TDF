@@ -47,7 +47,7 @@ public:
     // SECTION: Version Information
     // DESCRIPTION: Software and file format version strings.
     // =========================================================================
-    static inline QString software_version = "5.0.25"; //!< Current software version
+    static inline QString software_version = "5.0.51"; //!< Current software version
     static inline QString file_Version = "";           //!< Loaded file version (if any)
 
     void toJson();      //!< Serialises configuration to JSON

@@ -115,6 +115,7 @@ public:
     // =========================================================================
     static inline bool isPlay;              //!< Whether simulation is playing
     static inline float simulationTime;     //!< Current simulation time (seconds)
+    static inline bool fastupdate = false;
     bool complete;                          //!< Flag indicating simulation completion
 
     void start();           //!< Starts or resumes simulation

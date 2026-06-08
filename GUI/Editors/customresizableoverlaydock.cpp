@@ -316,4 +316,30 @@ void CustomResizableOverlayDock::setLocked(bool locked)
     emit lockToggled(m_locked);
 }
 
+void CustomResizableOverlayDock::setTitleStripe(bool enabled, const QColor &color)
+{
+    m_stripeEnabled = enabled;
+    m_stripeColor   = color;
 
+    QWidget *tb = titleBarWidget();
+    if (!tb) return;
+
+    // Pehle se existing stripe hato
+    if (QWidget *old = tb->findChild<QWidget*>("titleStripe"))
+        delete old;
+
+    if (!enabled) return;
+
+    QHBoxLayout *layout = qobject_cast<QHBoxLayout*>(tb->layout());
+    if (!layout) return;
+
+    QWidget *stripe = new QWidget(tb);
+    stripe->setObjectName("titleStripe");
+    stripe->setFixedWidth(4);
+    stripe->setStyleSheet(QString("background-color: %1;").arg(color.name()));
+    stripe->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+
+    // Layout ke bilkul start mein insert karo
+    layout->insertWidget(0, stripe);
+    layout->setContentsMargins(0, 0, 4, 0);
+}

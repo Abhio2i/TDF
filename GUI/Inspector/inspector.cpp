@@ -266,7 +266,7 @@ void Inspector::setupUI()
     if (titleBarWidget) {
         setTitleBarWidget(titleBarWidget);
     }
-   tableWidget = new QTableWidget(0, 2, this);
+    tableWidget = new QTableWidget(0, 2, this);
     if (!tableWidget) {
         delete layout;
         delete container;
@@ -349,7 +349,40 @@ void Inspector::setupUI()
         emit valueChanged(ConnectedID, Name, delta);
     });
     connect(addButton, &QPushButton::clicked, this, &Inspector::handleAddParameter);
+    connect(tableWidget, &QTableWidget::cellPressed,
+            this, [this](int row, int col) {
+             if (!sectionRows.contains(row)) return;
+                QString secName = sectionRows[row];
+                if (!secName.startsWith("Waypoint_", Qt::CaseInsensitive)) return;
+                                bool ok = false;
+                int wpNumber = secName.mid(QString("Waypoint_").length()).toInt(&ok);
+                if (!ok || wpNumber < 1) return;
+                int wpIndex = wpNumber - 1;
+                if (!ConnectedID.isEmpty() && wpIndex >= 0) {
+                    emit waypointSelected(ConnectedID, wpIndex);
+                }
+            });
+    connect(tableWidget, &QTableWidget::pressed,
+            this, [this](const QModelIndex& index) {
+                int row = index.row();
+
+                if (!sectionRows.contains(row)) return;
+
+                QString secName = sectionRows[row];
+                if (!secName.startsWith("Waypoint_", Qt::CaseInsensitive)) return;
+
+                bool ok = false;
+                int wpNumber = secName.mid(QString("Waypoint_").length()).toInt(&ok);
+                if (!ok || wpNumber < 1) return;
+
+                int wpIndex = wpNumber - 1;
+
+                if (!ConnectedID.isEmpty() && wpIndex >= 0) {
+                    emit waypointSelected(ConnectedID, wpIndex);
+                }
+            });
 }
+
 /* Create remove button for parameter */
 QPushButton* Inspector::createRemoveButton(const QString &parameterName)
 {
@@ -952,6 +985,15 @@ void Inspector::handleRemoveParameter()
 // EventFilter
 bool Inspector::eventFilter(QObject *watched, QEvent *event)
 {
+    if (event->type() == QEvent::MouseButtonPress) {
+        QLabel *label = qobject_cast<QLabel*>(watched);
+        if (label && label->property("isWaypointLabel").toBool()) {
+            int wpIndex = label->property("waypointIndex").toInt();
+            if (wpIndex >= 0 && !ConnectedID.isEmpty()) {
+                emit waypointSelected(ConnectedID, wpIndex);
+            }
+        }
+    }
     if (event->type() == QEvent::Drop) {
         QDropEvent *dropEvent = static_cast<QDropEvent *>(event);
         QObject *listViewport = watched;
@@ -1202,8 +1244,24 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
             row = addSimpleRow(row, pKey, object[pKey]);
         }
     }
-    for (const QString &key : object.keys()) {
-           if (priorityKeys.contains(key)) continue;
+    QStringList sortedKeys = object.keys();
+    std::sort(sortedKeys.begin(), sortedKeys.end(), [](const QString &a, const QString &b) {
+        auto extractNum = [](const QString &s) -> std::pair<QString, int> {
+            int i = s.length() - 1;
+            while (i >= 0 && s[i].isDigit()) i--;
+            QString prefix = s.left(i + 1);
+            int num = (i + 1 < s.length()) ? s.mid(i + 1).toInt() : -1;
+            return {prefix, num};
+        };
+        auto [pa, na] = extractNum(a);
+        auto [pb, nb] = extractNum(b);
+        if (pa == pb && na != -1 && nb != -1)
+            return na < nb;
+        return a < b;
+    });
+
+    for (const QString &key : sortedKeys) {
+        if (priorityKeys.contains(key)) continue;
         row = addSimpleRow(row, key, object[key]);
         if (Name == "collider" && key != "active" && key != "radius" &&
             key != "width" && key != "length" && key != "height" &&
@@ -1383,6 +1441,14 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
                     paramKeyItem->setFlags(Qt::ItemIsEnabled);
                     paramKeyItem->setBackground(QColor("#ecf0f1"));
                     paramKeyItem->setForeground(Qt::black);
+                    if (sectionKey.startsWith("Waypoint_", Qt::CaseInsensitive) && !ConnectedID.isEmpty()) {
+                        bool ok = false;
+                        int wpNumber = sectionKey.mid(QString("Waypoint_").length()).toInt(&ok);
+                        int wpIndex = ok ? (wpNumber - 1) : -1;
+                        if (wpIndex >= 0) {
+                            paramKeyItem->setData(Qt::UserRole, wpIndex);
+                        }
+                    }
                     tableWidget->setItem(currentRow, 0, paramKeyItem);
                 }
                 QJsonValue paramValue = obj[paramKey];
@@ -1861,7 +1927,7 @@ void Inspector::setupUnitParameterCell(int row, const QString &fullKey, const QJ
                                  .arg(formatNumberForUI(rMax))
                            : "—";
     QLabel *rangeLabel = new QLabel(rangeStr);
-rangeLabel->setStyleSheet(InspectorStyles::UnitParamLabel);
+    rangeLabel->setStyleSheet(InspectorStyles::UnitParamLabel);
     rangeLabel->setFixedHeight(30);
     rangeLabel->setFixedWidth(90);
     rangeLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
@@ -1958,12 +2024,32 @@ QWidget* Inspector::createSectionHeader(const QString &sectionKey, int headerRow
     layout->addWidget(dropdownButton);
     layout->addWidget(sectionLabel);
     layout->addStretch();
+
+    // ── WAYPOINT HIGHLIGHT:
+    if (sectionKey.startsWith("Waypoint_", Qt::CaseInsensitive)) {
+        bool ok = false;
+        int wpNumber = sectionKey.mid(QString("Waypoint_").length()).toInt(&ok);
+        int wpIndex = ok ? (wpNumber - 1) : -1;  // 1-based → 0-based
+        headerWidget->setCursor(Qt::PointingHandCursor);
+        connect(headerWidget, &QWidget::customContextMenuRequested, this, []{});
+        sectionLabel->setCursor(Qt::PointingHandCursor);
+        sectionLabel->installEventFilter(this);
+        sectionLabel->setProperty("waypointIndex", wpIndex);
+        sectionLabel->setProperty("isWaypointLabel", true);
+    }
     connect(dropdownButton, &QPushButton::clicked, this, [=]() {
         toggleSectionExpansion(sectionKey, headerRow, dropdownButton);
+                if (sectionKey.startsWith("Waypoint_", Qt::CaseInsensitive) && !ConnectedID.isEmpty()) {
+            bool ok = false;
+            int wpNumber = sectionKey.mid(QString("Waypoint_").length()).toInt(&ok);
+            int wpIndex = ok ? (wpNumber - 1) : -1;
+            if (wpIndex >= 0) {
+                emit waypointSelected(ConnectedID, wpIndex);
+            }
+        }
     });
     return headerWidget;
 }
-
 // toggleSectionExpansion
 void Inspector::toggleSectionExpansion(const QString &sectionKey, int headerRow, QPushButton *dropdownButton)
 {

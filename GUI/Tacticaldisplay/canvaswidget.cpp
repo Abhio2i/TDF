@@ -334,10 +334,11 @@ void CanvasWidget::setTrajectoryDrawingMode(bool enabled) {
                currentTrajectory.clear();
                for (const Waypoints* wp : it->second.trajectory->Trajectories) {
                    Waypoints* newWaypoint = new Waypoints();
-                   newWaypoint->position = new Vector(wp->position->x, wp->position->y, wp->position->z);
-                   newWaypoint->speed = wp->speed;
-                   newWaypoint->formation = wp->formation;
-                   newWaypoint->sensor = wp->sensor;
+                   newWaypoint->fromJson(wp->toJson());
+                   // newWaypoint->position = new Vector(wp->position->x, wp->position->y, wp->position->z);
+                   // newWaypoint->speed = wp->speed;
+                   // newWaypoint->formation = wp->formation;
+                   // newWaypoint->sensor = wp->sensor;
                    currentTrajectory.push_back(newWaypoint);
                }
            } else {
@@ -358,60 +359,51 @@ void CanvasWidget::setTrajectoryDrawingMode(bool enabled) {
    }
    Refresh();
 }
-void CanvasWidget::saveTrajectory() {
-   //Console::log("saveTrajectory called");
-   if (!isDrawingTrajectory) {
-       return;
-   }
-   if (selectedEntityId.empty()) {
-       return;
-   }
-   auto it = Meshes.find(selectedEntityId);
-   if (it == Meshes.end()) {
-       return;
-   }
-   MeshEntry& entry = it->second;
-   if (!entry.trajectory) {
-       if(entry.platform && entry.platform->trajectory){
-           entry.trajectory = entry.platform->trajectory;
-       }else{
-           entry.trajectory = new Trajectory();
-           entry.trajectory->ID = selectedEntityId;
-       }
-   }
-   if(!entry.trajectory){
-       if(entry.platform && entry.platform->trajectory){
-       }
-   }
-   for (Waypoints* wp : entry.trajectory->Trajectories) {
-       delete wp->position;
-       delete wp;
-   }
-   entry.trajectory->Trajectories.clear();
-   for (Waypoints* waypoint : currentTrajectory) {
-       Waypoints* newWaypoint = new Waypoints();
-       newWaypoint->position = new Vector(waypoint->position->x, waypoint->position->y, waypoint->position->z);
-       newWaypoint->speed = waypoint->speed;
-       newWaypoint->formation = waypoint->formation;
-       newWaypoint->sensor = waypoint->sensor;
-       entry.trajectory->addTrajectory(newWaypoint);
-   }
 
-   entry.trajectory->Active = !currentTrajectory.empty();
-   // Prepare JSON data for emission
-   QJsonArray waypointsArray;
-   for (const Waypoints* wp : entry.trajectory->Trajectories) {
-       QJsonObject wpObj;
-       QJsonObject posObj;
-       posObj["type"] = "vector";
-       posObj["x"] = wp->position->x;
-       posObj["y"] = wp->position->y;
-       posObj["z"] = wp->position->z;
-       wpObj["position"] = posObj;
-       waypointsArray.append(wpObj);
-   }
-   emit trajectoryUpdatedforLogger(QString::fromStdString(selectedEntityId), entry.trajectory->Trajectories);
-   emit trajectoryUpdated(QString::fromStdString(selectedEntityId), waypointsArray);
+
+void CanvasWidget::saveTrajectory()
+{
+    if (!isDrawingTrajectory || selectedEntityId.empty()) {
+        return;
+    }
+    auto it = Meshes.find(selectedEntityId);
+    if (it == Meshes.end()) {
+        return;
+    }
+    MeshEntry& entry = it->second;
+    if (!entry.trajectory) {
+        if (entry.platform && entry.platform->trajectory) {
+            entry.trajectory = entry.platform->trajectory;
+        } else {
+            entry.trajectory = new Trajectory();
+            entry.trajectory->ID = selectedEntityId;
+        }
+    }
+    for (Waypoints* wp : entry.trajectory->Trajectories) {
+        if (wp) {
+            delete wp->position;
+            delete wp;
+        }
+    }
+    entry.trajectory->Trajectories.clear();
+    for (const Waypoints* waypoint : currentTrajectory) {
+        if (!waypoint) continue;
+        Waypoints* newWaypoint = new Waypoints();
+        QJsonObject wpJson = waypoint->toJson();
+        newWaypoint->fromJson(wpJson);
+        entry.trajectory->addTrajectory(newWaypoint);
+    }
+    entry.trajectory->Active = !entry.trajectory->Trajectories.empty();
+    QJsonArray waypointsArray;
+    for (const Waypoints* wp : entry.trajectory->Trajectories) {
+        if (wp) {
+            waypointsArray.append(wp->toJson());
+        }
+    }
+    emit trajectoryUpdatedforLogger(QString::fromStdString(selectedEntityId),
+                                   entry.trajectory->Trajectories);
+    emit trajectoryUpdated(QString::fromStdString(selectedEntityId), waypointsArray);
+    Refresh();
 }
 
 void CanvasWidget::updateWaypointsFromInspector(QString entityId, QJsonArray waypoints) {
@@ -455,10 +447,11 @@ void CanvasWidget::updateWaypointsFromInspector(QString entityId, QJsonArray way
        currentTrajectory.clear();
        for (const Waypoints* wp : entry.trajectory->Trajectories) {
            Waypoints* newWaypoint = new Waypoints();
-           newWaypoint->position = new Vector(wp->position->x, wp->position->y, wp->position->z);
-           newWaypoint->speed = wp->speed;
-           newWaypoint->formation = wp->formation;
-           newWaypoint->sensor = wp->sensor;
+           // newWaypoint->position = new Vector(wp->position->x, wp->position->y, wp->position->z);
+           // newWaypoint->speed = wp->speed;
+           // newWaypoint->formation = wp->formation;
+           // newWaypoint->sensor = wp->sensor;
+           newWaypoint->fromJson(wp->toJson());
            currentTrajectory.push_back(newWaypoint);
        }
        deselectWaypoint();
@@ -591,10 +584,11 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
                    currentTrajectory.clear();
                    for (const Waypoints* wp : entry.trajectory->Trajectories) {
                        Waypoints* newWaypoint = new Waypoints();
-                       newWaypoint->position = new Vector(wp->position->x, wp->position->y, wp->position->z);
-                       newWaypoint->speed = wp->speed;
-                       newWaypoint->formation = wp->formation;
-                       newWaypoint->sensor = wp->sensor;
+                       // newWaypoint->position = new Vector(wp->position->x, wp->position->y, wp->position->z);
+                       // newWaypoint->speed = wp->speed;
+                       // newWaypoint->formation = wp->formation;
+                       // newWaypoint->sensor = wp->sensor;
+                       newWaypoint->fromJson(wp->toJson());
                        currentTrajectory.push_back(newWaypoint);
                    }
                }
@@ -674,7 +668,7 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
 
 
        // Then other handlers
-       handleShapesMousePress(event);
+       // handleShapesMousePress(event);
    }
    if (currentMode == MeasureDistance && event->button() == Qt::LeftButton) {
        QPointF geo = gislib->canvasToGeo(event->pos());
@@ -780,6 +774,8 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
        if (QVector2D(event->pos() - entityPos).length() < 20.0f) {
            if (selectedEntityId != id) {
                selectedEntityId = id;
+               m_highlightedWaypointIndex    = -1;
+                    m_highlightedWaypointEntityId = "";
                emit selectEntitybyCursor(QString::fromStdString(id));
            }
 
@@ -811,6 +807,8 @@ void CanvasWidget::handleMousePress(QMouseEvent *event) {
        selectedEntityId = "";
        selectedEntityIds.clear();
        activeDragAxis = "";
+       m_highlightedWaypointIndex    = -1;
+       m_highlightedWaypointEntityId = "";
        Refresh();
    }
 }
@@ -951,17 +949,60 @@ bool CanvasWidget::handleBitmapsMousePress(QMouseEvent *event) {
     if (currentMode == Translate && !activeRotateId.isEmpty()) {
         const qreal tolerance = 18.0;
         for (auto& entry : tempMeshes) {
-            if (entry.name != activeRotateId || entry.bitmapPath.isEmpty()) continue;
+            if (entry.name != activeRotateId) continue;
+
+            bool isRotatable = !entry.bitmapPath.isEmpty() ||
+                               entry.name.startsWith("TempRectangle") ||
+                               entry.name.startsWith("TempCircle") ||
+                               entry.name.startsWith("TempPolygon") ||
+                               entry.name.startsWith("TempPolyline");
+            if (!isRotatable) continue;
             if (!entry.position || !entry.size) continue;
 
             QPointF center = gislib->geoToCanvas(entry.position->y(), entry.position->x());
-            QPointF sizePoint = gislib->geoToCanvas(
-                entry.position->y() + entry.size->y(),
-                entry.position->x() + entry.size->x()
-            );
-            float w = qAbs(sizePoint.x() - center.x()) * 2;
-            float h = qAbs(sizePoint.y() - center.y()) * 2;
-            QRectF bbox(center.x() - w/2, center.y() - h/2, w, h);
+
+            // ─── FIXED: Shape type ke hisaab se correct bounding box ───
+            QRectF bbox;
+
+            if (entry.name.startsWith("TempCircle")) {
+                QPointF radiusPointGeo(entry.position->x() + entry.size->x(),
+                                       entry.position->y());
+                QPointF radiusPointCanvas = gislib->geoToCanvas(
+                    radiusPointGeo.y(), radiusPointGeo.x());
+                float canvasRadius = QVector2D(radiusPointCanvas - center).length();
+                bbox = QRectF(center.x() - canvasRadius, center.y() - canvasRadius,
+                              canvasRadius * 2, canvasRadius * 2);
+            }
+            else if (entry.name.startsWith("TempPolygon") ||
+                     entry.name.startsWith("TempPolyline")) {
+                // Polygon/Polyline ke liye actual vertex positions se bbox
+                QPolygonF poly;
+                if (entry.mesh && !entry.mesh->polygen.empty()) {
+                    float rotationRad = entry.rotation->z();
+                    float cosFwd = std::cos(rotationRad);
+                    float sinFwd = std::sin(rotationRad);
+                    for (const Vector* v : entry.mesh->polygen) {
+                        float worldX = v->x * cosFwd - v->y * sinFwd;
+                        float worldY = v->x * sinFwd + v->y * cosFwd;
+                        QPointF vGeo(entry.position->x() + worldX,
+                                     entry.position->y() + worldY);
+                        poly << gislib->geoToCanvas(vGeo.y(), vGeo.x());
+                    }
+                }
+                if (poly.isEmpty()) continue;
+                bbox = poly.boundingRect();
+            }
+            else {
+                // Rectangle aur Bitmaps ke liye size-based bbox
+                QPointF sizePoint = gislib->geoToCanvas(
+                    entry.position->y() + entry.size->y(),
+                    entry.position->x() + entry.size->x()
+                );
+                float w = qAbs(sizePoint.x() - center.x()) * 2;
+                float h = qAbs(sizePoint.y() - center.y()) * 2;
+                bbox = QRectF(center.x() - w/2, center.y() - h/2, w, h);
+            }
+
             QPointF handle = bbox.bottomRight() + QPointF(35, 35);
 
             if (QVector2D(event->pos() - handle).length() < tolerance) {
@@ -977,6 +1018,7 @@ bool CanvasWidget::handleBitmapsMousePress(QMouseEvent *event) {
             }
         }
     }
+
 
     // Handle bitmap placement when in PlaceBitmap mode
     if (currentMode == PlaceBitmap && !selectedBitmapType.isEmpty()) {
@@ -2182,218 +2224,186 @@ void CanvasWidget::handleBitmapsMouseMove(QMouseEvent *event) {
 // Written by: Waris
 //============================================================================
 void CanvasWidget::handleShapesMouseMove(QMouseEvent *event) {
-      if (isMultiDrag) return;
-   // First check for shape dragging
-   if (isDraggingShape && !draggingShapeId.isEmpty()) {
-       handleShapeDragging(event);
-       return;
-   }
-   // NEW: Handle shape drag-to-draw preview
-   if (shapesFeature && shapesFeature->isDraggingShape()) {
-       QPointF currentGeoPos = gislib->canvasToGeo(event->pos());
-       shapesFeature->updateDragShape(currentGeoPos);
-       return;
-   }
-   if (currentMode == EditShape && isResizingShape && selectedHandleIndex >= 0 && !editingShapeId.isEmpty()) {
-       for (auto& entry : tempMeshes) {
-           if (entry.name == editingShapeId) {
-               static bool resizeSaved = false;
-               if (!resizeSaved) {
-                   shapesFeature->saveShapeState(editingShapeId, &entry);
-                   resizeSaved = true;
-               }
-               // *** FIX: Circle ke liye alag check — mesh zaruri nahi ***
-                         if (!entry.position || !entry.size) {
-                             return;
-                         }
+    if (isMultiDrag) return;
 
-                         // *** FIX: TempCircle ke liye mesh check SKIP karo ***
-                         if (!entry.name.startsWith("TempCircle") && !entry.mesh) {
-                             return;
-                         }
-               // if (!entry.position || !entry.size || !entry.mesh) {
-               //     return;
-               // }
-               QPointF newPos = event->pos();
-               // Get fixed center position
-               QPointF centerGeo(entry.position->x(), entry.position->y());
-               QPointF centerCanvas = gislib->geoToCanvas(centerGeo.y(), centerGeo.x());
+    // 1. Shape Dragging (Translate Mode only - Whole shape move)
+    if (isDraggingShape && !draggingShapeId.isEmpty() && currentMode == Translate) {
+        handleShapeDragging(event);
+        return;
+    }
 
-               // Get current rotation angle in radians
-               float rotationRad = entry.rotation->z();
+    // 2. Drag-to-draw preview (Circle/Rectangle drawing)
+    if (shapesFeature && shapesFeature->isDraggingShape()) {
+        QPointF currentGeoPos = gislib->canvasToGeo(event->pos());
+        shapesFeature->updateDragShape(currentGeoPos);
+        return;
+    }
 
-               // ==== POLYGON/POLYLINE VERTEX EDITING ====
-               if (entry.name.startsWith("TempPolygon") || entry.name.startsWith("TempPolyline")) {
-                   if (selectedHandleIndex < (int)entry.mesh->polygen.size()) {
-                       Vector* vertex = entry.mesh->polygen[selectedHandleIndex];
-                       if (!vertex) {
-                           return;
-                       }
-                       // Step 1: Convert mouse canvas position to geo coordinates
-                       QPointF mouseGeo = gislib->canvasToGeo(newPos);
+    // 3. EDIT MODE - Vertex / Handle Resizing (Most Important Fix)
+    if (currentMode == EditShape && isResizingShape && selectedHandleIndex >= 0 && !editingShapeId.isEmpty()) {
+        for (auto& entry : tempMeshes) {
+            if (entry.name == editingShapeId) {
+                static bool resizeSaved = false;
+                if (!resizeSaved) {
+                    shapesFeature->saveShapeState(editingShapeId, &entry);
+                    resizeSaved = true;
+                }
 
-                       // Step 2: Calculate offset from shape center (in geo space)
-                       float deltaX = mouseGeo.x() - centerGeo.x();
-                       float deltaY = mouseGeo.y() - centerGeo.y();
+                if (!entry.position || !entry.size) {
+                    return;
+                }
 
-                       // Step 3: Apply INVERSE rotation to transform from world to local space
-                       float cosInv = std::cos(-rotationRad);
-                       float sinInv = std::sin(-rotationRad);
+                QPointF newPos = event->pos();
+                QPointF centerGeo(entry.position->x(), entry.position->y());
+                QPointF centerCanvas = gislib->geoToCanvas(centerGeo.y(), centerGeo.x());
+                float rotationRad = entry.rotation->z();
 
-                       float localX = deltaX * cosInv - deltaY * sinInv;
-                       float localY = deltaX * sinInv + deltaY * cosInv;
+                // ==== POLYGON / POLYLINE VERTEX EDITING ====
+                if (entry.name.startsWith("TempPolygon") || entry.name.startsWith("TempPolyline")) {
+                    if (selectedHandleIndex < (int)entry.mesh->polygen.size()) {
+                        Vector* vertex = entry.mesh->polygen[selectedHandleIndex];
+                        if (!vertex) return;
 
-                       // Step 4: Update vertex in local space
-                       vertex->x = localX;
-                       vertex->y = localY;
-                       // Recalculate ALL handles with CORRECT rotation
-                       resizeHandles.clear();
-                       float cosFwd = std::cos(rotationRad);
-                       float sinFwd = std::sin(rotationRad);
-                       for (Vector* v : entry.mesh->polygen) {
-                           if (!v) continue;
+                        QPointF mouseGeo = gislib->canvasToGeo(newPos);
+                        float deltaX = mouseGeo.x() - centerGeo.x();
+                        float deltaY = mouseGeo.y() - centerGeo.y();
 
-                           // Apply FORWARD rotation to transform from local to world space
-                           float worldX = v->x * cosFwd - v->y * sinFwd;
-                           float worldY = v->x * sinFwd + v->y * cosFwd;
+                        float cosInv = std::cos(-rotationRad);
+                        float sinInv = std::sin(-rotationRad);
 
-                           // Add to center to get absolute geo coordinates
-                           QPointF vGeo(centerGeo.x() + worldX, centerGeo.y() + worldY);
+                        float localX = deltaX * cosInv - deltaY * sinInv;
+                        float localY = deltaX * sinInv + deltaY * cosInv;
 
-                           // Convert to canvas for display
-                           QPointF vCanvas = gislib->geoToCanvas(vGeo.y(), vGeo.x());
-                           resizeHandles.push_back(vCanvas);
-                       }
-                   }
-               }
-               // ==== RECTANGLE RESIZING ====
-               else if (entry.name.startsWith("TempRectangle")) {
-                   // Calculate mouse delta in canvas space
-                   QPointF mouseDelta = newPos - centerCanvas;
-                   // Apply inverse rotation to get local coordinates
-                   float cosInv = std::cos(-rotationRad);
-                   float sinInv = std::sin(-rotationRad);
-                   float localX = mouseDelta.x() * cosInv - mouseDelta.y() * sinInv;
-                   float localY = mouseDelta.x() * sinInv + mouseDelta.y() * cosInv;
-                   // Get scale factors (geo to canvas conversion)
-                   float currentHalfW = entry.size->x() / 2.0f;
-                   float currentHalfH = entry.size->y() / 2.0f;
-                   QPointF refPointGeo(centerGeo.x() + currentHalfW, centerGeo.y() + currentHalfH);
-                   QPointF refPointCanvas = gislib->geoToCanvas(refPointGeo.y(), refPointGeo.x());
-                   float canvasScaleX = std::abs(refPointCanvas.x() - centerCanvas.x()) / currentHalfW;
-                   float canvasScaleY = std::abs(refPointCanvas.y() - centerCanvas.y()) / currentHalfH;
-                   // Calculate new dimensions
-                   float newHalfW = std::abs(localX) / canvasScaleX;
-                   float newHalfH = std::abs(localY) / canvasScaleY;
-                   const float minGeoSize = 0.0001f;
-                   newHalfW = std::max(newHalfW, minGeoSize);
-                   newHalfH = std::max(newHalfH, minGeoSize);
+                        vertex->x = localX;
+                        vertex->y = localY;
 
-                   entry.size->setX(newHalfW * 2.0f);
-                   entry.size->setY(newHalfH * 2.0f);
+                        // Recalculate handles
+                        resizeHandles.clear();
+                        float cosFwd = std::cos(rotationRad);
+                        float sinFwd = std::sin(rotationRad);
+                        for (Vector* v : entry.mesh->polygen) {
+                            if (!v) continue;
+                            float worldX = v->x * cosFwd - v->y * sinFwd;
+                            float worldY = v->x * sinFwd + v->y * cosFwd;
+                            QPointF vGeo(centerGeo.x() + worldX, centerGeo.y() + worldY);
+                            resizeHandles.push_back(gislib->geoToCanvas(vGeo.y(), vGeo.x()));
+                        }
+                    }
+                }
+                // ==== RECTANGLE RESIZING ====
+                else if (entry.name.startsWith("TempRectangle")) {
+                    QPointF mouseDelta = newPos - centerCanvas;
+                    float cosInv = std::cos(-rotationRad);
+                    float sinInv = std::sin(-rotationRad);
+                    float localX = mouseDelta.x() * cosInv - mouseDelta.y() * sinInv;
+                    float localY = mouseDelta.x() * sinInv + mouseDelta.y() * cosInv;
 
-                   // Update vertices in LOCAL space
-                   for (Vector* v : entry.mesh->polygen) delete v;
-                   entry.mesh->polygen.clear();
+                    float currentHalfW = entry.size->x() / 2.0f;
+                    float currentHalfH = entry.size->y() / 2.0f;
 
-                   entry.mesh->polygen = {
-                       new Vector(-newHalfW, newHalfH, 0),   // Top-left
-                       new Vector(newHalfW, newHalfH, 0),    // Top-right
-                       new Vector(newHalfW, -newHalfH, 0),   // Bottom-right
-                       new Vector(-newHalfW, -newHalfH, 0)   // Bottom-left
-                   };
+                    QPointF refPointGeo(centerGeo.x() + currentHalfW, centerGeo.y() + currentHalfH);
+                    QPointF refPointCanvas = gislib->geoToCanvas(refPointGeo.y(), refPointGeo.x());
+                    float canvasScaleX = std::abs(refPointCanvas.x() - centerCanvas.x()) / currentHalfW;
+                    float canvasScaleY = std::abs(refPointCanvas.y() - centerCanvas.y()) / currentHalfH;
 
-                   // Recalculate handles with rotation applied
-                   resizeHandles.clear();
-                   float cosFwd = std::cos(rotationRad);
-                   float sinFwd = std::sin(rotationRad);
+                    float newHalfW = std::abs(localX) / canvasScaleX;
+                    float newHalfH = std::abs(localY) / canvasScaleY;
 
-                   for (Vector* v : entry.mesh->polygen) {
-                       // Transform from local to world space with rotation
-                       float worldX = v->x * cosFwd - v->y * sinFwd;
-                       float worldY = v->x * sinFwd + v->y * cosFwd;
+                    const float minGeoSize = 0.0001f;
+                    newHalfW = std::max(newHalfW, minGeoSize);
+                    newHalfH = std::max(newHalfH, minGeoSize);
 
-                       // Convert to absolute geo coordinates
-                       QPointF vGeo(centerGeo.x() + worldX, centerGeo.y() + worldY);
+                    entry.size->setX(newHalfW * 2.0f);
+                    entry.size->setY(newHalfH * 2.0f);
 
-                       // Convert to canvas and store
-                       resizeHandles.push_back(gislib->geoToCanvas(vGeo.y(), vGeo.x()));
-                   }
-               }
-               // ==== BITMAP RESIZING ====
-               else if (!entry.bitmapPath.isEmpty()) {
-                   QPointF mouseDelta = newPos - centerCanvas;
+                    // Update vertices
+                    for (Vector* v : entry.mesh->polygen) delete v;
+                    entry.mesh->polygen.clear();
+                    entry.mesh->polygen = {
+                        new Vector(-newHalfW, newHalfH, 0),
+                        new Vector(newHalfW, newHalfH, 0),
+                        new Vector(newHalfW, -newHalfH, 0),
+                        new Vector(-newHalfW, -newHalfH, 0)
+                    };
 
-                   float cosInv = std::cos(-rotationRad);
-                   float sinInv = std::sin(-rotationRad);
-                   float localX = mouseDelta.x() * cosInv - mouseDelta.y() * sinInv;
-                   float localY = mouseDelta.x() * sinInv + mouseDelta.y() * cosInv;
+                    // Recalculate handles
+                    resizeHandles.clear();
+                    float cosFwd = std::cos(rotationRad);
+                    float sinFwd = std::sin(rotationRad);
+                    for (Vector* v : entry.mesh->polygen) {
+                        float worldX = v->x * cosFwd - v->y * sinFwd;
+                        float worldY = v->x * sinFwd + v->y * cosFwd;
+                        QPointF vGeo(centerGeo.x() + worldX, centerGeo.y() + worldY);
+                        resizeHandles.push_back(gislib->geoToCanvas(vGeo.y(), vGeo.x()));
+                    }
+                }
+                // ==== CIRCLE RESIZING ====
+                else if (entry.name.startsWith("TempCircle")) {
+                    float newCanvasRadius = QVector2D(newPos - centerCanvas).length();
+                    newCanvasRadius = std::max(10.0f, newCanvasRadius);
+                    QPointF radiusPointCanvas = centerCanvas + QPointF(newCanvasRadius, 0);
+                    QPointF radiusPointGeo = gislib->canvasToGeo(radiusPointCanvas);
+                    QPointF centerGeoCalc = gislib->canvasToGeo(centerCanvas);
+                    float newGeoRadius = qAbs(radiusPointGeo.x() - centerGeoCalc.x());
+                    entry.size->setX(newGeoRadius);
+                    entry.size->setY(newGeoRadius);
+                    resizeHandles = { radiusPointCanvas };
+                }
+                // ==== BITMAP RESIZING ====
+                else if (!entry.bitmapPath.isEmpty()) {
+                    // Same logic as rectangle for bitmap
+                    QPointF mouseDelta = newPos - centerCanvas;
+                    float cosInv = std::cos(-rotationRad);
+                    float sinInv = std::sin(-rotationRad);
+                    float localX = mouseDelta.x() * cosInv - mouseDelta.y() * sinInv;
+                    float localY = mouseDelta.x() * sinInv + mouseDelta.y() * cosInv;
 
-                   float currentHalfW = entry.size->x() / 2.0f;
-                   float currentHalfH = entry.size->y() / 2.0f;
+                    float currentHalfW = entry.size->x() / 2.0f;
+                    float currentHalfH = entry.size->y() / 2.0f;
 
-                   QPointF refPointGeo(centerGeo.x() + currentHalfW, centerGeo.y() + currentHalfH);
-                   QPointF refPointCanvas = gislib->geoToCanvas(refPointGeo.y(), refPointGeo.x());
-                   float canvasScaleX = std::abs(refPointCanvas.x() - centerCanvas.x()) / currentHalfW;
-                   float canvasScaleY = std::abs(refPointCanvas.y() - centerCanvas.y()) / currentHalfH;
+                    QPointF refPointGeo(centerGeo.x() + currentHalfW, centerGeo.y() + currentHalfH);
+                    QPointF refPointCanvas = gislib->geoToCanvas(refPointGeo.y(), refPointGeo.x());
+                    float canvasScaleX = std::abs(refPointCanvas.x() - centerCanvas.x()) / currentHalfW;
+                    float canvasScaleY = std::abs(refPointCanvas.y() - centerCanvas.y()) / currentHalfH;
 
-                   float newHalfW = std::abs(localX) / canvasScaleX;
-                   float newHalfH = std::abs(localY) / canvasScaleY;
+                    float newHalfW = std::abs(localX) / canvasScaleX;
+                    float newHalfH = std::abs(localY) / canvasScaleY;
 
-                   const float minGeoSize = 0.0001f;
-                   newHalfW = std::max(newHalfW, minGeoSize);
-                   newHalfH = std::max(newHalfH, minGeoSize);
+                    const float minGeoSize = 0.0001f;
+                    newHalfW = std::max(newHalfW, minGeoSize);
+                    newHalfH = std::max(newHalfH, minGeoSize);
 
-                   entry.size->setX(newHalfW * 2.0f);
-                   entry.size->setY(newHalfH * 2.0f);
+                    entry.size->setX(newHalfW * 2.0f);
+                    entry.size->setY(newHalfH * 2.0f);
 
-                   //FIX: Recalculate corner handles with rotation
-                   resizeHandles.clear();
-                   QVector<QPointF> localCorners = {
-                       QPointF(-newHalfW, newHalfH),
-                       QPointF(newHalfW, newHalfH),    // Top-right
-                       QPointF(newHalfW, -newHalfH),   // Bottom-right
-                       QPointF(-newHalfW, -newHalfH)   // Bottom-left
-                   };
+                    resizeHandles.clear();
+                    QVector<QPointF> localCorners = {
+                        QPointF(-newHalfW, newHalfH),
+                        QPointF(newHalfW, newHalfH),
+                        QPointF(newHalfW, -newHalfH),
+                        QPointF(-newHalfW, -newHalfH)
+                    };
+                    float cosFwd = std::cos(rotationRad);
+                    float sinFwd = std::sin(rotationRad);
+                    for (const QPointF& corner : localCorners) {
+                        float worldX = corner.x() * cosFwd - corner.y() * sinFwd;
+                        float worldY = corner.x() * sinFwd + corner.y() * cosFwd;
+                        QPointF cGeo(centerGeo.x() + worldX, centerGeo.y() + worldY);
+                        resizeHandles.push_back(gislib->geoToCanvas(cGeo.y(), cGeo.x()));
+                    }
+                }
 
-                   float cosFwd = std::cos(rotationRad);
-                   float sinFwd = std::sin(rotationRad);
+                if (m_layerPanel && !entry.bitmapPath.isEmpty()) {
+                    m_layerPanel->updateRasterLayerFromShape(entry.name);
+                }
 
-                   for (const QPointF& corner : localCorners) {
-                       // Apply rotation
-                       float worldX = corner.x() * cosFwd - corner.y() * sinFwd;
-                       float worldY = corner.x() * sinFwd + corner.y() * cosFwd;
-
-                       // Convert to geo
-                       QPointF cGeo(centerGeo.x() + worldX, centerGeo.y() + worldY);
-
-                       // Convert to canvas
-                       resizeHandles.push_back(gislib->geoToCanvas(cGeo.y(), cGeo.x()));
-                   }
-               }
-
-               if (m_layerPanel && entry.bitmapPath.isEmpty() == false) {
-                   m_layerPanel->updateRasterLayerFromShape(entry.name);
-               }
-               // ==== CIRCLE RESIZING ====
-               else if (entry.name.startsWith("TempCircle")) {
-                   float newCanvasRadius = QVector2D(newPos - centerCanvas).length();
-                   newCanvasRadius = std::max(10.0f, newCanvasRadius);
-                   QPointF radiusPointCanvas = centerCanvas + QPointF(newCanvasRadius, 0);
-                   QPointF radiusPointGeo = gislib->canvasToGeo(radiusPointCanvas);
-                   QPointF centerGeoCalc = gislib->canvasToGeo(centerCanvas);
-                   float newGeoRadius = qAbs(radiusPointGeo.x() - centerGeoCalc.x());
-                   entry.size->setX(newGeoRadius);
-                   entry.size->setY(newGeoRadius);
-                     resizeHandles = { radiusPointCanvas };
-               }
-               dragStartPos = newPos;
-               Refresh();
-               return;
-           }
-       }
-       return;
-   }
+                dragStartPos = newPos;
+                Refresh();
+                return;
+            }
+        }
+        return;
+    }
 }
 
 //============================================================================
@@ -3303,8 +3313,9 @@ void CanvasWidget::handleKeyPress(QKeyEvent *event) {
                    if (entry.trajectory) {
                        for (const Waypoints* wp : entry.trajectory->Trajectories) {
                            Waypoints* newWaypoint = new Waypoints();
-                           newWaypoint->position = new Vector(wp->position->x, wp->position->y, wp->position->z);
-                           newWaypoint->speed = wp->speed;
+                           // newWaypoint->position = new Vector(wp->position->x, wp->position->y, wp->position->z);
+                           // newWaypoint->speed = wp->speed;
+                           newWaypoint->fromJson(wp->toJson());
                            currentTrajectory.push_back(newWaypoint);
                        }
                    }
@@ -4020,9 +4031,9 @@ void CanvasWidget::drawRadio(QPainter& painter, std::string id, MeshEntry entry)
        float centerY = point.y();
        QString  msg = QString::fromStdString(s->msg);
        if(!msg.isEmpty()){
-        QFont font("Arial", 5, QFont::Bold);
+        QFont font("Arial", 10, QFont::Bold);
         painter.setFont(font);
-        painter.setPen(QColor(0, 0, 0, 255));
+        painter.setPen(QColor(0, 255, 0, 255));
         // Fixed screen coordinates ka upyog karein
         painter.drawText(QPointF(centerX, centerY),msg);
        }
@@ -4499,6 +4510,29 @@ void CanvasWidget::drawTrajectory(QPainter& painter, const std::string& id, Mesh
        painter.setPen(peen);
        painter.drawPoints(entry.pointsToDraw);
    }
+   QString entityIdStr = QString::fromStdString(id);
+      if (m_highlightedWaypointIndex >= 0 &&
+          m_highlightedWaypointEntityId == entityIdStr &&
+          m_highlightedWaypointIndex < (int)entry.trajectory->Trajectories.size())
+      {
+          Waypoints* wp = entry.trajectory->Trajectories[m_highlightedWaypointIndex];
+          if (wp && wp->position) {
+              QPointF wpCanvas = gislib->geoToCanvas(wp->position->x, wp->position->z);
+              painter.save();
+              painter.setPen(QPen(QColor(255, 255, 0, 180), 3));
+              painter.setBrush(Qt::NoBrush);
+              painter.drawEllipse(wpCanvas, 14, 14);
+              painter.setPen(QPen(Qt::yellow, 2));
+              painter.setBrush(QColor(255, 255, 0, 120));
+              painter.drawEllipse(wpCanvas, 8, 8);
+              painter.setPen(Qt::black);
+              painter.setFont(QFont("Arial", 8, QFont::Bold));
+              painter.drawText(wpCanvas + QPointF(12, -12),
+                               QString("WP%1").arg(m_highlightedWaypointIndex + 1));
+
+              painter.restore();
+          }
+      }
    painter.restore();
 }
 void CanvasWidget::toggleLayerVisibility(const QString& layer, bool visible) {
@@ -4763,14 +4797,15 @@ void CanvasWidget::updateTrajectoryData() {
    }
    QJsonArray waypointsArray;
    for (const Waypoints* wp : currentTrajectory) {
-       QJsonObject wpObj;
-       QJsonObject posObj;
-       posObj["type"] = "vector";
-       posObj["x"] = wp->position->x;
-       posObj["y"] = wp->position->y;
-       posObj["z"] = wp->position->z;
-       wpObj["position"] = posObj;
-       waypointsArray.append(wpObj);
+       // QJsonObject wpObj;
+       // QJsonObject posObj;
+       // posObj["type"] = "vector";
+       // posObj["x"] = wp->position->x;
+       // posObj["y"] = wp->position->y;
+       // posObj["z"] = wp->position->z;
+       // wpObj["position"] = posObj;
+       // waypointsArray.append(wpObj);
+         waypointsArray.append(wp->toJson());
    }
    emit trajectoryUpdated(QString::fromStdString(selectedEntityId), waypointsArray);
    QJsonDocument doc(waypointsArray);
@@ -4928,6 +4963,7 @@ QJsonObject CanvasWidget::toJson() const {
 }
 
 void CanvasWidget::fromJson(const QJsonObject& json) {
+
    for (Waypoints* wp : currentTrajectory) {
        if (wp) {
            if (wp->position) {
@@ -5597,10 +5633,11 @@ bool CanvasWidget::handleUserImageSelection(QMouseEvent *event) {
 // Written by: Waris
 //============================================================================
 bool CanvasWidget::handleShapeSelection(QMouseEvent *event) {
+
     if (currentMode == DrawShape && (selectedShape == "Line" || selectedShape == "Polygon")) {
         return false;
     }
-
+if (currentMode == EditShape) return false;
     for (auto& entry : tempMeshes) {
         if (entry.name.startsWith("Temp") && !entry.name.startsWith("TempText") &&
             !entry.name.startsWith("TempBitmap") && entry.bitmapPath.isEmpty()) {
@@ -6498,7 +6535,7 @@ bool CanvasWidget::deleteObjectById(const QString& id)
            Refresh();
 
            if (m_layerPanel) {
-               m_layerPanel->removeShapeFromLayer(id);  // ← ADD THIS
+               m_layerPanel->removeShapeFromLayer(id);
            }
            return true;
        }
@@ -6954,7 +6991,6 @@ bool CanvasWidget::shouldDrawShape(const QString& shapeId) const {
    }
    return m_layerPanel->isLayerVisible(layerName);
 }
-// Add this helper function in canvaswidget.cpp (around line 100)
 double CanvasWidget::calculateTrajectoryCompletionTime(const MeshEntry& entry) const {
    if (!entry.trajectory || entry.trajectory->Trajectories.empty()) {
        return -1.0; // No trajectory
@@ -6998,7 +7034,7 @@ double CanvasWidget::calculateTrajectoryCompletionTime(const MeshEntry& entry) c
        double distance = gislib->calculateDistance(pos1, pos2) / 1000.0; // km
        double speedForSegment = (wp1->speed > 0) ? wp1->speed : currentSpeed;
 
-       totalTime += (distance / speedForSegment) * 3600.0; // seconds
+       totalTime += (distance / speedForSegment) * 3600.0;
    }
 
    return totalTime;
@@ -7055,7 +7091,6 @@ void CanvasWidget::loadImportedLayerFeaturesToMeshes(const QString& filePath,
         QString geomType = geom["type"].toString();
         QJsonArray coords = geom["coordinates"].toArray();
 
-        // Feature display name
         QString featName = props.value("name").toString();
         if (featName.isEmpty()) featName = props.value("NAME").toString();
         if (featName.isEmpty()) featName = props.value("title").toString();
@@ -7078,7 +7113,6 @@ void CanvasWidget::loadImportedLayerFeaturesToMeshes(const QString& filePath,
         else if (!colorStr.isEmpty() && QColor::isValidColor(colorStr))
             shapeColor = QColor(colorStr);
 
-        // Base MeshEntry banana
         auto makeBase = [&]() -> MeshEntry {
             MeshEntry e;
             e.rotation        = new QQuaternion();
@@ -7092,7 +7126,6 @@ void CanvasWidget::loadImportedLayerFeaturesToMeshes(const QString& filePath,
             return e;
         };
 
-        // Single ring ko LineString MeshEntry mein convert karo
         auto ringToPolylineEntry = [&](const QJsonArray& ring,
                                        const QString& namePrefix) -> MeshEntry
         {
@@ -7157,7 +7190,7 @@ void CanvasWidget::loadImportedLayerFeaturesToMeshes(const QString& filePath,
             double minD = *std::min_element(dists.begin(), dists.end());
             double maxD = *std::max_element(dists.begin(), dists.end());
 
-            if (minD < 1e-12) return false;   // degenerate
+            if (minD < 1e-12) return false;
 
             double ratio = (maxD - minD) / maxD;
             if (ratio > 0.15) return false;
@@ -7672,13 +7705,9 @@ void CanvasWidget::performBoxSelection(const QPoint& p1, const QPoint& p2)
         if (selRect.contains(pos))
             selectedEntityIds.push_back(id);
     }
-
-    // Select Shapes, Bitmaps, Text
     for (auto& entry : tempMeshes)
     {
         bool isSelected = false;
-
-        // === TEXT SPECIAL HANDLING ===
         if (entry.name.startsWith("TempText") && !entry.text.isEmpty())
         {
             QPointF textPos = gislib->geoToCanvas(entry.position->y(), entry.position->x());
@@ -7686,11 +7715,10 @@ void CanvasWidget::performBoxSelection(const QPoint& p1, const QPoint& p2)
             QRect textRect = fm.boundingRect(entry.text);
             textRect.moveTo(textPos.x(), textPos.y() - fm.ascent());
 
-            QRectF expandedRect = textRect.adjusted(-10, -10, 10, 10); // thoda bada tolerance
+            QRectF expandedRect = textRect.adjusted(-10, -10, 10, 10);
             if (selRect.intersects(expandedRect))
                 isSelected = true;
         }
-        // === OTHER SHAPES ===
         else
         {
             QPolygonF poly = getRotatedShapePolygon(entry);
@@ -7706,56 +7734,45 @@ void CanvasWidget::performBoxSelection(const QPoint& p1, const QPoint& p2)
                 }
             }
         }
-
         if (isSelected)
         {
             selectedShapeIds.push_back(entry.name);
         }
     }
-
     if (!selectedEntityIds.empty())
         selectedEntityId = selectedEntityIds[0];
-
     if (!selectedShapeIds.empty())
         m_highlightedShapeId = selectedShapeIds[0];
-
     Refresh();
 }
 
 void CanvasWidget::moveSelectedItems(const QPointF& deltaGeo)
 {
     if (!isMultiDrag) return;
-
     // 1. Move Entities + Their Trajectories
     for (const std::string& id : selectedEntityIds)
     {
         auto it = Meshes.find(id);
         if (it == Meshes.end()) continue;
-
         MeshEntry& entry = it->second;
-
-        // Move Main Entity
         if (entry.coreTransform)
         {
             double newLat = entry.coreTransform->getLatitude() + deltaGeo.y();
             double newLon = entry.coreTransform->getLongitude() + deltaGeo.x();
             entry.coreTransform->setGeoCord(newLat, newLon);
         }
-
-        // Move Trajectory Waypoints (Yeh important hai)
         if (entry.trajectory && !entry.trajectory->Trajectories.empty())
         {
             for (Waypoints* wp : entry.trajectory->Trajectories)
             {
                 if (wp && wp->position)
                 {
-                    wp->position->x += deltaGeo.y();   // Latitude
-                    wp->position->z += deltaGeo.x();   // Longitude
+                    wp->position->x += deltaGeo.y();
+                    wp->position->z += deltaGeo.x();
                 }
             }
         }
     }
-
     // 2. Move Shapes, Bitmaps, Text
     for (const QString& name : selectedShapeIds)
     {
@@ -7803,4 +7820,59 @@ bool CanvasWidget::isClickOnAnySelectedItem(const QPoint& pos)
         }
     }
     return false;
+}
+void CanvasWidget::fullCanvasReset()
+{
+    for (auto& entry : tempMeshes) {
+        if (entry.position)  delete entry.position;
+        if (entry.rotation)  delete entry.rotation;
+        if (entry.size)      delete entry.size;
+        if (entry.velocity)  delete entry.velocity;
+        if (entry.mesh) {
+            for (Vector* v : entry.mesh->polygen) delete v;
+            if (entry.mesh->color) delete entry.mesh->color;
+            delete entry.mesh;
+        }
+        delete entry.collider;
+        if (entry.trajectory) {
+            for (Waypoints* wp : entry.trajectory->Trajectories) {
+                delete wp->position; delete wp;
+            }
+            delete entry.trajectory;
+        }
+    }
+    tempMeshes.clear();
+    std::vector<std::string> toRemove;
+    for (auto& [id, entry] : Meshes) {
+        if (entry.entity && entry.entity->type == Constants::EntityType::Weapon) {
+            toRemove.push_back(id);
+        }
+    }
+    for (const auto& id : toRemove) {
+        Meshes.erase(id);
+    }
+    clearMultiSelection();
+    selectedEntityIds.clear();
+    selectedShapeIds.clear();
+    selectedEntityId.clear();
+    m_highlightedShapeId.clear();
+    draggingShapeId.clear();
+    activeRotateId.clear();
+    if (m_copiedShape) {
+        delete m_copiedShape;
+        m_copiedShape = nullptr;
+    }
+    for (Waypoints* wp : currentTrajectory) {
+        if (wp) { delete wp->position; delete wp; }
+    }
+    currentTrajectory.clear();
+    geoJsonLayers.clear();
+    geoJsonLayerFilePaths.clear();
+    Refresh();
+}
+void CanvasWidget::onWaypointSelectedFromInspector(int waypointIndex)
+{
+    m_highlightedWaypointIndex    = waypointIndex;
+    m_highlightedWaypointEntityId = QString::fromStdString(selectedEntityId);
+    Refresh();
 }

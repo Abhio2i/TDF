@@ -130,6 +130,7 @@ public:
     // DESCRIPTION: Rotate to face a target point.
     // =========================================================================
     void lookAt(const QVector3D& targetWorldPos);   //!< Rotates to face target in world space
+    void lookAt(float lat, float lon);   //!< Rotates to face target in world space
     void lookAt3D(const QVector3D& targetWorldPos); //!< 3D version (same as lookAt)
 
     // =========================================================================

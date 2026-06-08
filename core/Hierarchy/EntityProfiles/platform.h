@@ -212,6 +212,7 @@ public:
     int _lastcurrent = 0;
     float time = 0;
     bool autoDrop = false;
+    float dropcount = 0;
     float dropInterval = 10;//s
     float dropTime =0;
 public slots:

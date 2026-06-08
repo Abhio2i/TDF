@@ -443,9 +443,11 @@ void RuntimeToolBar::onTimeLabelClicked()
         int minutes = minutesEdit->text().toInt();
         int seconds = secondsEdit->text().toInt();
         float totalSeconds = hours * 3600 + minutes * 60 + seconds;
-        elapsedSeconds = totalSeconds;
-        updateTimeDisplay();
-        emit timeChanged(totalSeconds);
+        if(totalSeconds>elapsedSeconds){
+            elapsedSeconds = totalSeconds;
+            updateTimeDisplay();
+            emit timeChanged(totalSeconds);
+        }
     }
     dialog->deleteLater();
 }

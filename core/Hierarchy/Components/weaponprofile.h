@@ -46,6 +46,7 @@ class WeaponProfile : public QObject, public Component
     Q_OBJECT
 public:
     WeaponProfile(Hierarchy* h);
+    ~WeaponProfile();
     ComponentType Typo() const override { return ComponentType::WeaponProfile; }
 
     // =========================================================================

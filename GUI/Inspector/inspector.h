@@ -153,6 +153,8 @@ signals:
     /* Signal trajectory waypoints modification */
     void trajectoryWaypointsChanged(QString entityId, QJsonArray waypoints);
     void resetComponentRequested(const QString& entityID, const QString& componentName);
+    void waypointSelected(const QString& entityId, int waypointIndex);
+
 private slots:
     // %%% Clipboard Operations %%%
     /* Copy current component data */

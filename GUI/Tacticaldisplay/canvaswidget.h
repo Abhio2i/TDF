@@ -172,6 +172,7 @@ public:
     // canvaswidget.h mein public section mein add karo:
     void loadImportedLayerFeaturesToMeshes(const QString& filePath,
                                            const QString& layerName);
+    void fullCanvasReset();
 public slots:
     void ReInit();
     // GIS event forwarding slots
@@ -189,9 +190,9 @@ public slots:
     // GeoJSON functionality
     void importGeoJsonLayer(const QString &filePath);  // Import GeoJSON layer
     void onGeoJsonLayerToggled(const QString &layerName, bool visible);  // Toggle GeoJSON layer visibility
-    void centerOnShape(const QString& shapeId);   // new
-    void resetEntityInfoDialog();  // ← add karo
-
+    void centerOnShape(const QString& shapeId);
+    void resetEntityInfoDialog();
+    void onWaypointSelectedFromInspector(int waypointIndex);
 
 private slots:
     void onMeasurementTypeChanged(bool isEll);  // Handle measurement type change (ellipsoidal vs planar)
@@ -233,6 +234,8 @@ private:
     void moveSelectedItems(const QPointF& deltaGeo);
     bool isClickOnAnySelectedItem(const QPoint& pos);
     bool isBoxSelectionMode = false;
+    int m_highlightedWaypointIndex = -1;
+    QString m_highlightedWaypointEntityId;
 
 
 public slots:

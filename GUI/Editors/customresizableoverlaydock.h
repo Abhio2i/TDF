@@ -52,6 +52,8 @@ public:
     void enableLockButton();
     void setWindowTitle(const QString &title);
     void setWidget(QWidget *widget);
+    void setTitleStripe(bool enabled, const QColor &color = QColor("#00BFFF"));
+
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
@@ -80,6 +82,8 @@ private:
     bool m_locked = false;
     QToolButton *m_lockButton = nullptr;
     void setupTitleBar(const QString &title);
+    bool m_stripeEnabled = false;
+    QColor m_stripeColor = QColor("#00BFFF");
 };
 
 #endif // CUSTOMRESIZABLEOVERLAYDOCK_H

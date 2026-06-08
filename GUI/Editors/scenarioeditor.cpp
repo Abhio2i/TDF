@@ -172,6 +172,11 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
 
         connect(inspector, &Inspector::trajectoryWaypointsChanged,
                 tacticalDisplay->canvas, &CanvasWidget::updateWaypointsFromInspector);
+
+        connect(inspector, &Inspector::waypointSelected,
+                tacticalDisplay->canvas, [=](const QString& entityId, int wpIndex) {
+                    tacticalDisplay->canvas->onWaypointSelectedFromInspector(wpIndex);
+                });
     }
     // Connect renderer signals
     connect(renderer, &SceneRenderer::addMesh, tacticalDisplay, &TacticalDisplay::addMesh);
@@ -189,7 +194,18 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
         renderer->Render(0.01f);
         markUnsavedChanges();
     });
-
+    connect(inspector, &Inspector::valueChanged, this,
+            [=](QString entityID, QString componentName, QJsonObject delta) {
+                if (!delta.contains("Category")) return;
+                QTimer::singleShot(50, this, [=]() {
+                    auto it = hierarchy->Entities.find(entityID.toStdString());
+                    if (it == hierarchy->Entities.end()) return;
+                    QJsonObject entityJson = filterEntityJsonForInspector(it->second->toJson());
+                    inspector->init(entityID,
+                                    capitalizeFirstLetter(QString::fromStdString(it->second->Name)) + "_self",
+                                    entityJson);
+                });
+            });
     // Configure hierarchy connector signals
     HierarchyConnector::instance()->connectSignals(hierarchy,library, treeView,
                                                    tacticalDisplay, inspector);

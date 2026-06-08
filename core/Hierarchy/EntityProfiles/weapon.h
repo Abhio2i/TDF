@@ -155,7 +155,7 @@ public:
     void          disarmWeapon();
     void          rearmWeapon();
     void          clearTargets();
-
+    void init();
     // ── Entity interface overrides ────────────────────────────────────────────
     void spawn()                                               override;
     std::vector<std::string> getSupportedComponents()          override;

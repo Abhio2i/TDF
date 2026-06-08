@@ -11,6 +11,7 @@ QJsonObject Waypoints::toJson()const {
     obj["sensor"] = sensor;
     obj["formation"] = formation;
     obj["dropWeapon"] = dropWeapon;
+    obj["dropcount"] = dropcount;
     obj["speed"] = speed;
 
     if (geocord)
@@ -32,6 +33,8 @@ void Waypoints::fromJson(const QJsonObject& obj) {
         dropWeapon = obj["dropWeapon"].toBool();
     if (obj.contains("speed"))
         speed = obj["speed"].toVariant().toDouble();
+    if (obj.contains("dropcount"))
+        dropcount = obj["dropcount"].toVariant().toDouble();
 
     if (obj.contains("geocord") && obj["geocord"].isObject()) {
         if (!geocord) geocord = new Geocords();

@@ -158,6 +158,7 @@ public:
 
     float lerp(float a, float b, float t);          //!< Linear interpolation helper
 
+    double calculateTurnRadius(double speedKmph, double turnRateDegPerSec);
     // Component interface overrides
     void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QJsonObject data3 = QJsonObject()) override;
     void removeSubComponent(std::string ID) override;
@@ -169,7 +170,7 @@ public:
     void fromJson(const QJsonObject &obj) override;
 
     void FollowTrajectory();        //!< Execute trajectory following
-
+    void TimeJump(int sec);
     // Formation turn tracking state
     float lastLeaderHeading = 0.0f;      //!< Leader's previous heading
     float turnStartHeading = 0.0f;       //!< Wingman heading at turn start

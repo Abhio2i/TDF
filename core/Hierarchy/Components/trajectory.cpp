@@ -131,7 +131,8 @@ QJsonObject Trajectory::toJson() const {
             waypointObj["Speed"] = toParm(waypoint->speed,"km/h");
             waypointObj["ActivateSensor"] = waypoint->sensor;
             waypointObj["dropWeapon"] = waypoint->dropWeapon;
-            waypointObj["MakeForamation"] = waypoint->formation;
+            waypointObj["dropcount"] = toParm(waypoint->dropcount,"int");
+            waypointObj["MakeFormation"] = waypoint->formation;
             obj["waypoint_"+QString::number(i)] = waypointObj;
         }
     }
@@ -152,6 +153,7 @@ void Trajectory::fromJson(const QJsonObject& obj) {
         Active = obj["active"].toBool();
     if(obj.contains("currentWaypoint"))
         current = obj["currentWaypoint"].toInt();
+    current = current>(Trajectories.size()-1)?(Trajectories.size()-1):current;
 
     if (obj.contains("Rule") && obj["Rule"].isObject()) {
         QJsonObject followruleObj = obj["Rule"].toObject();
@@ -209,8 +211,10 @@ void Trajectory::fromJson(const QJsonObject& obj) {
                     wp->sensor = waypointObj["ActivateSensor"].toBool();
                 if (waypointObj.contains("dropWeapon") && waypointObj["dropWeapon"].isBool())
                     wp->dropWeapon = waypointObj["dropWeapon"].toBool();
-                if (waypointObj.contains("MakeForamation") && waypointObj["MakeForamation"].isBool())
-                    wp->formation = waypointObj["MakeForamation"].toBool();
+                if (waypointObj.contains("dropcount")&& waypointObj["dropcount"].isObject() )
+                    wp->dropcount = valueFromParm(waypointObj["dropcount"].toObject());
+                if (waypointObj.contains("MakeFormation") && waypointObj["MakeFormation"].isBool())
+                    wp->formation = waypointObj["MakeFormation"].toBool();
             }
         }
     }
@@ -273,6 +277,14 @@ Waypoints* Trajectory::getCurrentWaypoint(){
     return nullptr;
 }
 
+Waypoints* Trajectory::getWaypointByIndex(int current){
+    if((current-1)<Trajectories.size()){
+        int c = (current-1)<0?0:(current-1);
+        return Trajectories[c];
+    }
+    return nullptr;
+}
+
 /**
  * @brief Returns the target waypoint (the next waypoint to reach).
  * @return Pointer to the target Waypoints, or nullptr if none.
@@ -280,6 +292,11 @@ Waypoints* Trajectory::getCurrentWaypoint(){
 Waypoints* Trajectory::getTargetWaypoint(){
     if((current)<Trajectories.size()){
         return Trajectories[current];
+    }else{
+        current = Trajectories.size()-1;
+        if(current >=0){
+            return Trajectories[current];
+        }
     }
     return nullptr;
 }

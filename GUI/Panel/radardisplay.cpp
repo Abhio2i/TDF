@@ -383,7 +383,31 @@ void RadarDisplay::selectEntity(Entity* entit)
 void RadarDisplay::updateRadar()
 {
     if (!entity || !sensor) return;
+    // Re-validate: confirm sensor still exists in the entity's live sensor list
+    // Prevents crash if sensor was freed by engine between ticks
+    if (!entity->sensors || !entity->sensors->sensors) {
+        sensor = nullptr;
+        updateModeButtonStyles();
+        update();
+        return;
+    }
 
+    bool sensorStillValid = false;
+    for (auto const& pair : *entity->sensors->sensors) {
+        if (pair.second == sensor) {
+            sensorStillValid = true;
+            break;
+        }
+    }
+
+    if (!sensorStillValid) {
+        sensor = nullptr;
+        sensorlist.clear();
+        lockedTargetID = 0;
+        updateModeButtonStyles();
+        update();
+        return;
+    }
     // ALIGNMENT: getRadarConfig() returns RadarConfig — same field names used.
     Radar* r = dynamic_cast<Radar*>(sensor);
     if (r) {
