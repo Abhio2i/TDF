@@ -432,7 +432,7 @@ void test_sp_kinematics()
     // TC-AESA-SP-029: stationary target CPA = current range
     aesa::TargetInput stationary = buildSPTarget(2u, 30000.0, 0.0, 0.0);
     aesa::DetectionOutput det;
-    sp.computeCPA(det, stationary, 30000.0);
+    sp.computeCPA(det, stationary, 30000.0, 0.0, 0.0, 0.0);
     ASSERT_NEAR(det.cpa_distance, 30000.0, 1.0,
                 "TC-AESA-SP-029: stationary target CPA = current range");
     ASSERT_NEAR(det.time_to_cpa, 0.0, 1e-9,
@@ -586,14 +586,14 @@ void test_sp_modulation_doppler()
 
     // TC-AESA-SP-044: HPRF waveform is never in Doppler blind zone
     aesa::BeamWaveform hprf = cfg.fireControlWaveform;  // HPRF
-    ASSERT_FALSE(sp.isInDopplerBlindZone(0.0, cfg, hprf),
+    ASSERT_FALSE(sp.isInDopplerBlindZone(0.0, cfg, hprf, cfg.platformSpeed_m_s),
                  "TC-AESA-SP-044: HPRF waveform returns false for blind zone");
 
     // TC-AESA-SP-045: stationary platform (speed < 1 m/s) has no blind zone
     aesa::RadarConfig staticCfg = cfg;
     staticCfg.platformSpeed_m_s = 0.0f;
     aesa::BeamWaveform lprf = cfg.searchWaveform;
-    ASSERT_FALSE(sp.isInDopplerBlindZone(0.0, staticCfg, lprf),
+    ASSERT_FALSE(sp.isInDopplerBlindZone(0.0, staticCfg, lprf, staticCfg.platformSpeed_m_s),
                  "TC-AESA-SP-045: stationary platform returns false (no blind zone)");
 
     // TC-AESA-SP-046: target far from notch gets full STAP gain

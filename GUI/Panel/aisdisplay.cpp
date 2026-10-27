@@ -129,11 +129,11 @@ void AISDisplay::selectEntity(Entity* entit)
 
     sensor = nullptr;
         sensorlist.clear();
-    if (!entity->sensors || !entity->sensors->sensors) {
-        update();
-        return;
-    }
-    for (auto const& pair :  *entity->sensors->sensors) {
+    // if (/*!entity->sensors || */!entity->sensors.sensors) {
+    //     update();
+    //     return;
+    // }
+    for (auto const& pair :  entity->sensors.sensors) {
         Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::AIS) {
             AISSensor* sono = dynamic_cast<AISSensor*>(s);
@@ -163,7 +163,7 @@ void AISDisplay::RemoveEntity(QString ID)
         sensor = nullptr;
             sensorlist.clear();
         // Reset window title
-        setWindowTitle("CSM Display");
+        setWindowTitle("AIS Display");
         // Reset hover state
         hoveredTargetIndex = -1;
     }
@@ -317,8 +317,8 @@ void AISDisplay::paintEvent(QPaintEvent * /*event*/)
         QFont font = p.font();
         font.setPointSize(10);
         p.setFont(font);
-        QRect textRect = p.fontMetrics().boundingRect("No CSM Targets Detected");
-        p.drawText(center.x() - textRect.width()/2, center.y(), "No CSM Targets Detected");
+        QRect textRect = p.fontMetrics().boundingRect("No AIS Targets Detected");
+        p.drawText(center.x() - textRect.width()/2, center.y(), "No AIS Targets Detected");
     }
 
     qint64 elapsedMs = timer.elapsed();
@@ -459,7 +459,7 @@ void AISDisplay::drawTargetAndPath(QPainter &painter)
 
     if (entity && sensor) {
         // Get entity angle
-        ang = entity->transform->toEulerAngles().y();
+        ang = entity->transform.toEulerAngles().y();
         painter.setBrush(Qt::red);
 
         for (const Target &target : sensor->csmtargets) {

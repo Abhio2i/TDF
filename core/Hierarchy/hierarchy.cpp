@@ -73,18 +73,61 @@ void Hierarchy::addProfileCategaoryWithObject(ProfileCategaory *profile)
  */
 void Hierarchy::removeProfileCategaory(QString ID)
 {
-    if(ID.isEmpty()){
+    if (ID.isEmpty())
+        return;
+
+    const std::string requestedID =
+        ID.toStdString();
+
+    auto requestedIt =
+        ProfileCategories.find(requestedID);
+
+    if (requestedIt ==
+        ProfileCategories.end())
+    {
         return;
     }
-    std::string key = ID.toStdString();
-    auto it = ProfileCategories.find(key);
 
-    if (it != ProfileCategories.end()) {
-        emit status("delete");
-        delete it->second;
-        ProfileCategories.erase(it);
+    ProfileCategaory *profile =
+        requestedIt->second;
+    if (!profile)
+    {
+        ProfileCategories.erase(requestedIt);
         emit profileRemoved(ID);
+        return;
     }
+
+
+    // ============================================================
+    // IMPORTANT:
+    //
+    // One ProfileCategaory object can now have multiple IDs
+    // pointing to it because replay aliases recorded IDs.
+    //
+    // Remove ALL aliases before deleting the object.
+    // ============================================================
+
+    std::vector<std::string> keysToErase;
+
+    for (const auto &[key, profilePtr]
+         : ProfileCategories)
+    {
+        if (profilePtr == profile)
+        {
+            keysToErase.push_back(key);
+        }
+    }
+    emit status("delete");
+
+
+    for (const std::string &key : keysToErase)
+    {
+        ProfileCategories.erase(key);
+    }
+    // Now no map entry points to this object.
+    delete profile;
+    // Keep existing UI signal behaviour.
+    emit profileRemoved(ID);
 }
 
 /**
@@ -329,15 +372,30 @@ void Hierarchy::addEntityViaNetwork(QString parentId, QString ID, QString Entity
  * @param EntityName Entity name.
  * @param Profile Parent is profile flag.
  */
-void Hierarchy::addEntityViaLogger(QString parentId, QString ID, QString EntityName, bool Profile)
+//fix by yogesh
+void Hierarchy::addEntityViaLogger(
+    QString parentId,
+    QString ID,
+    QString EntityName,
+    bool Profile)
 {
     if(parentId.isEmpty() || ID.isEmpty() || EntityName.isEmpty()){
         return;
     }
+
     emit status("add");
+
     std::string pId = parentId.toStdString();
     std::string Id = ID.toStdString();
     std::string EName = EntityName.toStdString();
+
+    const bool alreadyExists =
+        (Entities.find(Id) != Entities.end());
+
+    if (alreadyExists) {
+        return;
+    }
+
     if (Profile) {
         auto it = ProfileCategories.find(pId);
         if (it != ProfileCategories.end()) {
@@ -386,6 +444,7 @@ Entity* Hierarchy::addEntityFromJson(QString parentId, QJsonObject obj, bool Pro
         std::string prntId = entity->parentID;
         obj["id"] = QString::fromStdString(id);
         obj["parent_id"] = QString::fromStdString(prntId);
+        entity->addSupportedcomponent();
         entity->fromJson(obj);
         return entity;
     }
@@ -592,18 +651,148 @@ void Hierarchy::removeComponent(QString entityId, QString componentName)
  * @param data2 Optional second string data.
  * @param data3 Optional JSON data.
  */
-void Hierarchy::addSubComponent(QString ID,QString subComponentName, QString data1 , QString data2, QJsonObject data3){
-    if(ID.isEmpty() || subComponentName.isEmpty()){
-        return ;
+
+
+
+//fix by yogesh.
+void Hierarchy::addSubComponent(
+    QString ID,
+    QString subComponentName,
+    QString data1,
+    QString data2,
+    QJsonObject data3)
+{
+    qDebug()
+    << "[HIERARCHY ADD SUBCOMPONENT]"
+    << "componentID =" << ID
+    << "name =" << subComponentName
+    << "type =" << data1
+    << "subComponentID =" << data2;
+
+    // ============================================================
+    // 1. Validate input
+    // ============================================================
+
+    if (ID.isEmpty() || subComponentName.isEmpty())
+    {
+        qDebug()
+        << "[HIERARCHY ADD SUBCOMPONENT] REJECTED:"
+        << "empty component ID or subComponent name";
+
+        return;
     }
 
-    auto it = Components.find(ID.toStdString());
-    if (it != Components.end()) {
-        emit status("add");
-        it->second->addSubComponent(subComponentName.toStdString(),data1,data2,data3);
+    // ============================================================
+    // 2. Find component in registry
+    // ============================================================
+
+    auto it =
+        Components.find(ID.toStdString());
+
+    if (it == Components.end() || !it->second)
+    {
+        qDebug()
+        << "[HIERARCHY ADD SUBCOMPONENT]"
+        << "COMPONENT NOT FOUND:"
+        << ID
+        << "Registered Components:"
+        << Components.size();
+
+        return;
     }
+
+    Component* component = it->second;
+
+    qDebug()
+        << "[HIERARCHY ADD SUBCOMPONENT]"
+        << "COMPONENT FOUND:"
+        << ID;
+
+    // ============================================================
+    // 3. Check whether this is actually SensorProfile
+    // ============================================================
+
+    SensorProfile* sensorProfile =
+        dynamic_cast<SensorProfile*>(component);
+
+    if (sensorProfile)
+    {
+        qDebug()
+        << "[HIERARCHY ADD SUBCOMPONENT]"
+        << "COMPONENT TYPE = SensorProfile"
+        << "Current sensor count ="
+        << sensorProfile->sensors.size();
+    }
+    else
+    {
+        qDebug()
+        << "[HIERARCHY ADD SUBCOMPONENT]"
+        << "COMPONENT TYPE = NOT SensorProfile"
+        << "Typo ="
+        << static_cast<int>(component->Typo());
+    }
+
+    // ============================================================
+    // 4. Forward sub-component creation
+    // ============================================================
+
+    emit status("add");
+
+    component->addSubComponent(
+        subComponentName.toStdString(),
+        data1,
+        data2,
+        data3
+        );
+
+    // ============================================================
+    // 5. Verify result for SensorProfile
+    // ============================================================
+
+    if (sensorProfile)
+    {
+        qDebug()
+        << "[HIERARCHY ADD SUBCOMPONENT]"
+        << "Sensor count AFTER addSubComponent ="
+        << sensorProfile->sensors.size();
+
+        // --------------------------------------------------------
+        // Optional verification:
+        // Check whether the exact replay sensor ID was inserted.
+        // --------------------------------------------------------
+
+        if (!data2.isEmpty())
+        {
+            auto sensorIt =
+                sensorProfile->sensors.find(
+                    data2.toStdString()
+                    );
+
+            if (sensorIt !=
+                    sensorProfile->sensors.end() &&
+                sensorIt->second)
+            {
+                qDebug()
+                << "[HIERARCHY ADD SUBCOMPONENT]"
+                << "SUCCESS: Sensor inserted:"
+                << data2;
+            }
+            else
+            {
+                qDebug()
+                << "[HIERARCHY ADD SUBCOMPONENT]"
+                << "WARNING: Sensor NOT found in"
+                << "SensorProfile after add:"
+                << data2;
+            }
+        }
+    }
+
+    qDebug()
+        << "[HIERARCHY ADD SUBCOMPONENT]"
+        << "FORWARDED TO COMPONENT:"
+        << ID;
 }
-
 /**
  * @brief Renames a sub‑component.
  * @param ID Parent component ID.
@@ -1004,32 +1193,32 @@ void Hierarchy::Anlaysis(){
     bluelossPercent = bluelossPercent==NULL?0:bluelossPercent;
 
     if(bluelastdamages!=bluelossPercent){
-        bluedamages[Simulation::simulationTime] = bluelossPercent;
+        // bluedamages[Simulation::simulationTime] = bluelossPercent;
         bluelastdamages = bluelossPercent;
     }
 
     if(redlastdamages!=redlossPercent){
-        reddamages[Simulation::simulationTime] = redlossPercent;
+        // reddamages[Simulation::simulationTime] = redlossPercent;
         redlastdamages = redlossPercent;
     }
 
     if(bluelastengagments != blueEngage){
-        blueengagements[Simulation::simulationTime] = blueEngage;
+        // blueengagements[Simulation::simulationTime] = blueEngage;
         bluelastengagments = blueEngage;
     }
 
     if(bluelastdetections != bluedetection){
-        bluedetections[Simulation::simulationTime] = bluedetection;
+        // bluedetections[Simulation::simulationTime] = bluedetection;
         bluelastdetections = bluedetection;
     }
 
     if(redlastengagments != redEngage){
-        redengagements[Simulation::simulationTime] = redEngage;
+        // redengagements[Simulation::simulationTime] = redEngage;
         redlastengagments = redEngage;
     }
 
     if(redlastdetections != reddetection){
-        reddetections[Simulation::simulationTime] = reddetection;
+        // reddetections[Simulation::simulationTime] = reddetection;
         redlastdetections = reddetection;
     }
 }
@@ -1237,6 +1426,74 @@ bool Hierarchy::registerNewSensor(std::string name){
 bool Hierarchy::unregisterNewSensor(std::string name){
     if(sensorlist->contains(QString::fromStdString(name))){
         sensorlist->removeAt(sensorlist->indexOf(QString::fromStdString(name)));
+        return true;
+    }else{
+        return false;
+    }
+}
+
+QStringList Hierarchy::getAvailableRadioTypes() const
+{
+    return *radiolist ;//QStringList({"Generic", "CSM", "ESM", "EO", "IR", "Sonar", "AIS", "ADSB", "AESA"});
+}
+bool Hierarchy::registerNewRadio(std::string name){
+    if(radiolist->contains(QString::fromStdString(name))){
+        return false;
+    }else{
+        radiolist->append(QString::fromStdString(name));
+        return true;
+    }
+}
+
+bool Hierarchy::unregisterNewRadio(std::string name){
+    if(radiolist->contains(QString::fromStdString(name))){
+        radiolist->removeAt(radiolist->indexOf(QString::fromStdString(name)));
+        return true;
+    }else{
+        return false;
+    }
+}
+
+QStringList Hierarchy::getAvailableIFFTypes() const
+{
+    return *ifflist ;//QStringList({"Generic", "CSM", "ESM", "EO", "IR", "Sonar", "AIS", "ADSB", "AESA"});
+}
+
+bool Hierarchy::registerNewIFF(std::string name){
+    if(ifflist->contains(QString::fromStdString(name))){
+        return false;
+    }else{
+        ifflist->append(QString::fromStdString(name));
+        return true;
+    }
+}
+
+bool Hierarchy::unregisterNewIFF(std::string name){
+    if(ifflist->contains(QString::fromStdString(name))){
+        ifflist->removeAt(ifflist->indexOf(QString::fromStdString(name)));
+        return true;
+    }else{
+        return false;
+    }
+}
+
+QStringList Hierarchy::getAvailableDynamicTypes() const
+{
+    return *dynamiclist ;//QStringList({"Generic", "CSM", "ESM", "EO", "IR", "Sonar", "AIS", "ADSB", "AESA"});
+}
+
+bool Hierarchy::registerNewDynamic(std::string name){
+    if(dynamiclist->contains(QString::fromStdString(name))){
+        return false;
+    }else{
+        dynamiclist->append(QString::fromStdString(name));
+        return true;
+    }
+}
+
+bool Hierarchy::unregisterNewDynamic(std::string name){
+    if(dynamiclist->contains(QString::fromStdString(name))){
+        dynamiclist->removeAt(dynamiclist->indexOf(QString::fromStdString(name)));
         return true;
     }else{
         return false;

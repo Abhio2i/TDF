@@ -74,6 +74,9 @@ public:
     /* Initialize entity information dialog */
     explicit EntityInfoDialog(QWidget *parent = nullptr);
     void setEntityInfo(const QString& entityId, const QString& entityName, MeshEntry* info);
+    void setEntityInfoFromHierarchy(const QString& entityId,
+                                    Entity* entity,
+                                    Platform* platform);
     void updateEntityInfo();
     /* Clear all displayed information */
     void clearInfo();
@@ -85,7 +88,7 @@ signals:
     void speedAltitudeUpdated(const QString& entityId, float speed, float altitude);
 public slots:
     void onEntityInvalidated(const QString& entityId);
-     void onHierarchyReset();   // ← ADD THIS
+    void onHierarchyReset();
 private slots:
     // %%% Action Slots %%%
     /* Handle close button click */
@@ -100,7 +103,7 @@ private slots:
     void onWeaponsClicked();
     /* Handle formation button click */
     void onFormationClicked();
-     void onSpeedAltCellChanged(int row, int column);
+    void onSpeedAltCellChanged(int row, int column);
 private:
     // %%% UI Setup Methods %%%
     /* Set up user interface */
@@ -117,7 +120,7 @@ private:
     void createEquipmentSection();
     /* Create options section */
     void createOptionsSection();
-   QString currentEntityName;
+    QString currentEntityName;
     // %%% Data Update Methods %%%
     /* Update sensors table data */
     void updateSensorsTable(QTableWidget* sensorsTable, Entity* platform);
@@ -167,7 +170,13 @@ private:
     QPointer<QDialog> m_radiosDialog;
     QPointer<QDialog> m_iffDialog;
     QPointer<QDialog> m_formationDialog;
-     Entity* m_trackedEntity = nullptr;
+    Entity* m_trackedEntity = nullptr;
+    bool m_headingManuallySet = false;
+    Entity*    m_entityFromHierarchy = nullptr;
+    Platform*  m_platformFromHierarchy = nullptr;
+
+    Platform* resolvePlatform() const;
+    Entity* resolveEntity() const;
 };
 
 #endif // ENTITYINFODIALOG_H

@@ -152,7 +152,7 @@ void EWDisplay::drawTargetAndPath(QPainter &painter)
     int outerRadius = outerDiameter / 2;
     if (entity && sensor) {
         // Get entity angle
-        ang = entity->transform->toEulerAngles().y();
+        ang = entity->transform.toEulerAngles().y();
         painter.setBrush(Qt::red);
         for (const Target &target : sensor->ewtargets) {
             // Calculate target position

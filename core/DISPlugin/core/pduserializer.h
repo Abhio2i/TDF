@@ -43,8 +43,11 @@
 #include "core/DISPlugin/utils/entityidmapper.h"
 #include "core/DISPlugin/utils/coordconverter.h"
 #include "core/DISPlugin/interface/DISIFFSnapshot.h"
-
-
+#include "../interface/DISExerciseControl.h"
+#include "core/DISPlugin/interface/DISDesignatorSnapshot.h"
+#include "core/DISPlugin/interface/DISTransmitterSnapshot.h"
+#include "core/DISPlugin/interface/DISSignalSnapshot.h"
+#include "core/DISPlugin/interface/DISDatumSnapshot.h"
 
 class PDUSerializer {
 public:
@@ -107,10 +110,43 @@ public:
     static QByteArray serializeCreateEntity(const DISCreateEntityData& data,
                                             const DISConfig&           config,
                                             const EntityIDMapper&      mapper);
+    // Acknowledge PDU — IEEE 1278.1 type 15
+    // No mapper needed — uses raw DIS triplets from DISAcknowledgeData
+    static QByteArray serializeAcknowledge(const DISAcknowledgeData& data,
+                                           const DISConfig&          config);
+    // Transfer Ownership PDU — IEEE 1278.1 type 35
+    // Manual serialization — TransferOwnershipPdu.h not in this dis7 build
+    static QByteArray serializeTransferOwnership(const DISTransferOwnershipData& data,
+                                                 const DISConfig&                config,
+                                                 const EntityIDMapper&           mapper);
     // ── IFF PDU ───────────────────────────────────────────────────────────────────
     static QByteArray serializeIFF(const DISIFFSnapshot&  snap,
                                    const DISConfig&        config,
                                    const EntityIDMapper&   mapper);
+    static QByteArray serializeEmission(const DISEmissionSnapshot& snap,
+                                        const DISConfig&           config,
+                                        const EntityIDMapper&      mapper);
+    static QByteArray serializeDesignator(const DISDesignatorSnapshot& snap,
+                                          const DISConfig&              config,
+                                          const EntityIDMapper&         mapper);
+
+    static QByteArray serializeTransmitter(const DISTransmitterSnapshot& snap,
+                                           const DISConfig&               config,
+                                           const EntityIDMapper&          mapper);
+
+    static QByteArray serializeSignal(const DISSignalSnapshot& snap,
+                                      const DISConfig&          config,
+                                      const EntityIDMapper&     mapper);
+
+    static QByteArray serializeDataQuery(const DISDatumSnapshot& snap,
+                                         const DISConfig&        config,
+                                         const EntityIDMapper&   mapper);
+    static QByteArray serializeSetData(const DISDatumSnapshot& snap,
+                                       const DISConfig&        config,
+                                       const EntityIDMapper&   mapper);
+    static QByteArray serializeData(const DISDatumSnapshot& snap,
+                                    const DISConfig&        config,
+                                    const EntityIDMapper&   mapper);
 private:
     // ── Internal helpers ─────────────────────────────────────────────────────
 

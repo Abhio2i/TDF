@@ -52,6 +52,10 @@
 #include <QStringListModel>                        // For string list model
 #include <QPainter>                                // For painting operations
 
+class QSpinBox;
+class AutoScriptMultiSender;
+class QTableWidget;
+
 // %%% Class Definition %%%
 /* Widget for test script editing */
 class TestScriptDialog : public QWidget
@@ -135,7 +139,7 @@ private:
     // Script name combo box
     QComboBox *scriptNameCombo;
     // Script type combo box
-    QComboBox *scriptTypeCombo;
+    //  QComboBox *scriptTypeCombo;
     // Script path input
     QLineEdit *scriptPathEdit;
     // Edit file path
@@ -150,6 +154,7 @@ private:
     QCompleter *completer;
     // Word list model
     QStringListModel *wordListModel;
+
 };
 
 #endif // TESTSCRIPTDIALOG_H

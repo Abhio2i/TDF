@@ -4,58 +4,59 @@
 #include <dis7/opendis7_export.h>
 #include <dis7/EightByteChunk.h>
 #include <vector>
-
+#include <cstdint>
 
 namespace DIS
 {
 // the variable datum type, the datum length, and the value for that variable datum type. NOT COMPLETE. Section 6.2.92
 
-// Copyright (c) 2007-2009, MOVES Institute, Naval Postgraduate School. All rights reserved. 
+// Copyright (c) 2007-2009, MOVES Institute, Naval Postgraduate School. All rights reserved.
 //
 // @author DMcG, jkg
 
 class OPENDIS7_EXPORT VariableDatum
 {
 protected:
-  /** Type of variable datum to be transmitted. 32 bit enumeration defined in EBV */
-  unsigned int _variableDatumID; 
+    /** Type of variable datum to be transmitted. 32 bit enumeration defined in EBV */
+    unsigned int _variableDatumID;
 
-  /** Length, in bits, of the variable datum. */
-  unsigned int _variableDatumLength; 
+    /** Length, in bits, of the variable datum. */
+    unsigned int _variableDatumLength;
 
-  /** Variable datum. This can be any number of bits long, depending on the datum. */
-  unsigned int _variableDatumBits; 
+    /** Variable datum. This can be any number of bits long, depending on the datum. */
+    unsigned int _variableDatumBits;
 
-  /** padding to put the record on a 64 bit boundary */
-  unsigned int _padding; 
+    /** padding to put the record on a 64 bit boundary */
+    unsigned int _padding;
 
-  // Variable Data
-  std::vector<EightByteChunk> _variableDatums;
+    // Variable Data
+    std::vector<EightByteChunk> _variableDatums;
 
 
- public:
+public:
     VariableDatum();
     virtual ~VariableDatum();
 
     virtual void marshal(DataStream& dataStream) const;
     virtual void unmarshal(DataStream& dataStream);
 
-    unsigned int getVariableDatumID() const; 
-    void setVariableDatumID(unsigned int pX); 
+    unsigned int getVariableDatumID() const;
+    void setVariableDatumID(unsigned int pX);
 
-    unsigned int getVariableDatumLength() const; 
-    void setVariableDatumLength(unsigned int pX); 
+    unsigned int getVariableDatumLength() const;
+    void setVariableDatumLength(unsigned int pX);
 
-    unsigned int getVariableDatumBits() const; 
-    void setVariableDatumBits(unsigned int pX); 
+    unsigned int getVariableDatumBits() const;
+    void setVariableDatumBits(unsigned int pX);
 
-    unsigned int getPadding() const; 
-    void setPadding(unsigned int pX); 
+    unsigned int getPadding() const;
+    void setPadding(unsigned int pX);
+    void setPayloadBytes(const std::vector<uint8_t>& bytes);
+    std::vector<uint8_t> getPayloadBytes() const;
 
+    virtual int getMarshalledSize() const;
 
-virtual int getMarshalledSize() const;
-
-     bool operator  ==(const VariableDatum& rhs) const;
+    bool operator  ==(const VariableDatum& rhs) const;
 };
 }
 
@@ -63,7 +64,7 @@ virtual int getMarshalledSize() const;
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 //  are met:
-// 
+//
 //  * Redistributions of source code must retain the above copyright
 // notice, this list of conditions and the following disclaimer.
 // * Redistributions in binary form must reproduce the above copyright
@@ -76,7 +77,7 @@ virtual int getMarshalledSize() const;
 // nor the names of its contributors may be used to endorse or
 //  promote products derived from this software without specific
 // prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS

@@ -115,6 +115,16 @@ void Simulation::setFps(int value){
     updateTimer->setInterval(1000/value);
 }
 
+// void Simulation::frame() {
+//     qint64 currentTime = elapsedTimer->elapsed();
+//     deltaTime = (currentTime - lastTime) / 1000.0f;
+//     if(!isPlay){
+//         deltaTime = 0.02f;
+//     }
+//     if(deltaTime>0.05){
+//         deltaTime = 0.05f;
+//     }
+//     lastTime = currentTime;
 void Simulation::frame() {
     qint64 currentTime = elapsedTimer->elapsed();
     deltaTime = (currentTime - lastTime) / 1000.0f;
@@ -125,6 +135,9 @@ void Simulation::frame() {
         deltaTime = 0.05f;
     }
     lastTime = currentTime;
+    if(deltaTime ==0 ){
+        qDebug()<<"";deltaTime = (1000.0f/SimulationFrameRate)/1000.0f;
+    }
     for (SimulationPlugin* plugin : m_plugins)//by aman
         plugin->applyPendingUpdates();//by Aman to apply recived update via network
     //applyPendingNetworkUpdates();//by Aman to apply recived update via network
@@ -138,14 +151,14 @@ void Simulation::frame() {
         QJsonObject entityFrame;
         entityFrame["id"] = QString::fromStdString(id);
         entityFrame["position"] = QJsonObject{
-            {"x", comp.transform->matrix->translation().x()},
-            {"y", comp.transform->matrix->translation().y()},
-            {"z", comp.transform->matrix->translation().z()}
+            {"x", comp.transform->matrix.translation().x()},
+            {"y", comp.transform->matrix.translation().y()},
+            {"z", comp.transform->matrix.translation().z()}
         };
         entityFrame["rotation"] = QJsonObject{
-            {"x", comp.transform->matrix->rotation().toEulerAngles().x()},
-            {"y", comp.transform->matrix->rotation().toEulerAngles().y()},
-            {"z", comp.transform->matrix->rotation().toEulerAngles().z()}
+            {"x", comp.transform->matrix.rotation().toEulerAngles().x()},
+            {"y", comp.transform->matrix.rotation().toEulerAngles().y()},
+            {"z", comp.transform->matrix.rotation().toEulerAngles().z()}
         };
 
         entitiesArray.append(entityFrame);
@@ -182,7 +195,14 @@ void Simulation::startf() {
     /* Shared Memory By Himanshu */
 
     for (auto& [id, comp] : physicsComponent) {
-        if (comp.platform) comp.platform->Start();
+        if (comp.platform){
+            if(simulationTime == 0){
+                comp.platform.data()->SaveState();
+            }
+            comp.platform.data()->Start();
+        }
+
+
         if (comp.dynamicModel) comp.dynamicModel->start();
 
         // For weapon entities: (re)start the flight monitor so missiles
@@ -195,11 +215,11 @@ void Simulation::startf() {
         //         weapon->startFlightMonitor();
         //     }
         // }
-        if (comp.base && comp.base->type == Constants::EntityType::Weapon) {
-            Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
-            // if (weapon && weapon->isLaunched && !weapon->isDead)
-            //     // weapon->resumeFlightMonitor();
-        }
+        // if (comp.base && comp.base->type == Constants::EntityType::Weapon) {
+        //     Weapon* weapon = dynamic_cast<Weapon*>(comp.base.data());
+        //     // if (weapon && weapon->isLaunched && !weapon->isDead)
+        //     //     // weapon->resumeFlightMonitor();
+        // }
     }
 
 }
@@ -212,13 +232,13 @@ void Simulation::pausef() {
     updateTimer->stop();
     isPlay = false;
 
-    for (auto& [id, comp] : physicsComponent) {
-        if (comp.base && comp.base->type == Constants::EntityType::Weapon) {
-            Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
-            // if (weapon && weapon->isLaunched && !weapon->isDead)
-            // weapon->pauseFlightMonitor();
-        }
-    }
+    // for (auto& [id, comp] : physicsComponent) {
+    //     if (comp.base && comp.base->type == Constants::EntityType::Weapon) {
+    //         Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
+    //         // if (weapon && weapon->isLaunched && !weapon->isDead)
+    //         // weapon->pauseFlightMonitor();
+    //     }
+    // }
 
     /* Shared Memory By Himanshu */
     Status = SimulationStateNS::PAUSE;
@@ -262,10 +282,16 @@ void Simulation::nextStep() {
 }
 
 void Simulation::timeJump(int newTime){
+    startf();
     pausef();
 
     int secDiff = newTime - simulationTime;
-    if(secDiff <= 0) return;
+    bool restorestate = false;
+    if(secDiff <0){
+        restorestate = true;
+        simulationTime= 0;
+        secDiff = newTime;
+    };
     deltaTime = 0.02f;
     float speedvar = speed;
     fastupdate = true;
@@ -293,7 +319,7 @@ void Simulation::timeJump(int newTime){
         count++;
         if(!comp.base->Active) continue;
         if (!comp.transform) continue;
-
+        if(restorestate && comp.platform)comp.platform->RestoreState();
         if(comp.rigidbody){
             comp.rigidbody->deltaTime = deltaTime;
         }
@@ -301,7 +327,7 @@ void Simulation::timeJump(int newTime){
         bool isMaster = true;
         if (networkManager && networkManager->isActive())
             isMaster = networkManager->isServer();
-        if (isMaster && comp.dynamicModel){
+        if (isMaster && comp.dynamicModel && !comp.dynamicModel->followEntity){
             comp.dynamicModel->TimeJump(secDiff);
             comp.dynamicModel->Update(dt);
             updateDynamics(dt,&comp);
@@ -309,6 +335,29 @@ void Simulation::timeJump(int newTime){
         }
         comp.transform->sync();
     }
+
+    for (auto& [id, comp] : physicsComponent) {
+        count++;
+        if(!comp.base->Active) continue;
+        if (!comp.transform) continue;
+        // if(restorestate && comp.platform)comp.platform->RestoreState();
+        if(comp.rigidbody){
+            comp.rigidbody->deltaTime = deltaTime;
+        }
+        //fix:we are keeping dynamic only to server
+        bool isMaster = true;
+        if (networkManager && networkManager->isActive())
+            isMaster = networkManager->isServer();
+        if (isMaster && comp.dynamicModel && comp.dynamicModel->followEntity){
+            comp.dynamicModel->TimeJump(secDiff);
+            comp.dynamicModel->Update(dt);
+            updateDynamics(dt,&comp);
+            progress.setValue(count);
+        }
+        comp.transform->sync();
+    }
+
+
     simulationTime = newTime;
 
     // for(int i = 0; i < totalSteps; i++){
@@ -335,7 +384,7 @@ void Simulation::timeJump(int newTime){
     emit Render(dt);
     speed = speedvar;
     fastupdate = false;
-    startf();
+    // startf();
 }
 
 
@@ -396,9 +445,9 @@ void Simulation::handleReplayFrame(const QJsonObject& frame) {
                 QJsonObject pos = entity["position"].toObject();
                 QJsonObject rot = entity["rotation"].toObject();
 
-                comp.transform->matrix->translation().setX(pos["x"].toDouble());
-                comp.transform->matrix->translation().setY(pos["y"].toDouble());
-                comp.transform->matrix->translation().setZ(pos["z"].toDouble());
+                comp.transform->matrix.translation().setX(pos["x"].toDouble());
+                comp.transform->matrix.translation().setY(pos["y"].toDouble());
+                comp.transform->matrix.translation().setZ(pos["z"].toDouble());
 
                 comp.transform->toEulerAngles().setX(rot["x"].toDouble());
                 comp.transform->toEulerAngles().setY(rot["y"].toDouble());
@@ -426,7 +475,7 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
     }
     if (entity->isRemoteDISEntity) {
         Platform* platform = dynamic_cast<Platform*>(entity);
-        if (platform && platform->transform) {
+        if (platform /*&& platform->transform*/) {
             // Guard: don't register twice
             if (physicsComponent.find(platform->ID) != physicsComponent.end())
                 return;
@@ -435,11 +484,12 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
             component.name         = platform->Name;
             component.base         = entity;
             component.platform     = platform;
-            component.transform    = platform->transform;
+            component.transform    = &platform->transform;
             component.rigidbody    = nullptr;
             component.collider     = nullptr;
             component.dynamicModel = nullptr;
             component.aircraft     = nullptr;
+            component.sea          = nullptr;
             physicsComponent[platform->ID] = component;
         }
         emit HierarchyUpdate();
@@ -459,92 +509,98 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
         component.name = platform->Name;
         component.base = entity;
         component.platform = platform;
-        component.transform = platform->transform;
-        component.rigidbody = platform->rigidbody;
-        component.collider = platform->collider;
-        component.dynamicModel = platform->dynamicModel;
-        component.aircraft = new Aircraft();
+        component.transform = &platform->transform;
+        component.rigidbody = &platform->rigidbody;
+        component.collider = &platform->collider;
+        component.dynamicModel = &platform->dynamicModel;
+        if (entity->category == Entity::Category::Marine) {
+            component.sea = std::make_shared<SeaModel>();
+            component.aircraft.reset();
+        } else {
+            component.aircraft = std::make_shared<Aircraft>();
+            component.sea.reset();
+        }
         physicsComponent[platform->ID] = component;
 
-        if (platform->transform && platform->rigidbody) {
-            btCollisionShape* shape = nullptr;
+        // if (/*platform->transform &&*/ platform->rigidbody) {
+        btCollisionShape* shape = nullptr;
 
-            if (platform->collider && platform->collider->collider == Constants::ColliderType::Box) {
-                shape = new btBoxShape(btVector3(1, 1, 1));
-                shape->setLocalScaling(btVector3(
-                    platform->transform->matrix->scale3D().x() * platform->collider->Width * 0.5f,
-                    platform->transform->matrix->scale3D().y() * platform->collider->Length * 0.5f,
-                    platform->transform->matrix->scale3D().z() * platform->collider->Height * 0.5f));
-            } else if (platform->collider && platform->collider->collider == Constants::ColliderType::Sphere) {
-                shape = new btSphereShape(platform->collider->CollideRadius * platform->transform->matrix->scale3D().length());
-            }
-
-            if (shape) {
-                btTransform transform;
-                transform.setIdentity();
-                transform.setOrigin(btVector3(
-                    platform->transform->matrix->translation().x(),
-                    platform->transform->matrix->translation().y(),
-                    platform->transform->matrix->translation().z()));
-                btQuaternion quat;
-                quat.setEulerZYX(
-                    qDegreesToRadians(platform->transform->toEulerAngles().z()),
-                    qDegreesToRadians(platform->transform->toEulerAngles().y()),
-                    qDegreesToRadians(platform->transform->toEulerAngles().x()));
-                transform.setRotation(quat);
-
-                float mass = platform->rigidbody->Mass;
-                btVector3 inertia(0, 0, 0);
-                if (mass > 0)
-                    shape->calculateLocalInertia(mass, inertia);
-
-                btDefaultMotionState* motionState = new btDefaultMotionState(transform);
-                btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, inertia);
-                btRigidBody* body = new btRigidBody(rbInfo);
-
-                if (!platform->rigidbody->Gravity) {
-                    body->setGravity(btVector3(0, 0, 0));
-                }
-
-                if (platform->rigidbody->Kinematics) {
-                    body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-                    body->setActivationState(DISABLE_DEACTIVATION);
-                }
-
-                body->setLinearVelocity(btVector3(
-                    platform->rigidbody->velocity->x,
-                    platform->rigidbody->velocity->y,
-                    platform->rigidbody->velocity->z));
-
-                body->setAngularVelocity(btVector3(
-                    platform->rigidbody->angularVelocity->x,
-                    platform->rigidbody->angularVelocity->y,
-                    platform->rigidbody->angularVelocity->z));
-
-                connect(platform->rigidbody, &Rigidbody::setLinearVel, this, [body](const Vector& velocity) {
-                    body->setLinearVelocity(btVector3(velocity.x, velocity.y, velocity.z));
-                });
-
-                connect(platform->rigidbody, &Rigidbody::setAngularVel, this, [body](const Vector& velocity) {
-                    body->setAngularVelocity(btVector3(velocity.x, velocity.y, velocity.z));
-                });
-
-                btVector3 linearFactor(1, 1, 1);
-                if (platform->rigidbody->freezePositionX) linearFactor.setX(0);
-                if (platform->rigidbody->freezePositionY) linearFactor.setY(0);
-                if (platform->rigidbody->freezePositionZ) linearFactor.setZ(0);
-                body->setLinearFactor(linearFactor);
-
-                btVector3 angularFactor(1, 1, 1);
-                if (platform->rigidbody->freezeRotationX) angularFactor.setX(0);
-                if (platform->rigidbody->freezeRotationY) angularFactor.setY(0);
-                if (platform->rigidbody->freezeRotationZ) angularFactor.setZ(0);
-                body->setAngularFactor(angularFactor);
-
-                dynamicsWorld->addRigidBody(body);
-                bulletBodies[platform->ID] = body;
-            }
+        if (/*platform->collider &&*/ platform->collider.collider == Constants::ColliderType::Box) {
+            shape = new btBoxShape(btVector3(1, 1, 1));
+            shape->setLocalScaling(btVector3(
+                platform->transform.matrix.scale3D().x() * platform->collider.getDimension().Width * 0.5f,
+                platform->transform.matrix.scale3D().y() * platform->collider.getDimension().Length * 0.5f,
+                platform->transform.matrix.scale3D().z() * platform->collider.getDimension().Height * 0.5f));
+        } else if (/*platform->collider && */platform->collider.collider == Constants::ColliderType::Sphere) {
+            shape = new btSphereShape(platform->collider.CollideRadius * platform->transform.matrix.scale3D().length());
         }
+
+        if (shape) {
+            btTransform transform;
+            transform.setIdentity();
+            transform.setOrigin(btVector3(
+                platform->transform.matrix.translation().x(),
+                platform->transform.matrix.translation().y(),
+                platform->transform.matrix.translation().z()));
+            btQuaternion quat;
+            quat.setEulerZYX(
+                qDegreesToRadians(platform->transform.toEulerAngles().z()),
+                qDegreesToRadians(platform->transform.toEulerAngles().y()),
+                qDegreesToRadians(platform->transform.toEulerAngles().x()));
+            transform.setRotation(quat);
+
+            float mass = platform->rigidbody.Mass;
+            btVector3 inertia(0, 0, 0);
+            if (mass > 0)
+                shape->calculateLocalInertia(mass, inertia);
+
+            btDefaultMotionState* motionState = new btDefaultMotionState(transform);
+            btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, inertia);
+            btRigidBody* body = new btRigidBody(rbInfo);
+
+            if (!platform->rigidbody.Gravity) {
+                body->setGravity(btVector3(0, 0, 0));
+            }
+
+            if (platform->rigidbody.Kinematics) {
+                body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+                body->setActivationState(DISABLE_DEACTIVATION);
+            }
+
+            body->setLinearVelocity(btVector3(
+                platform->rigidbody.velocity->x,
+                platform->rigidbody.velocity->y,
+                platform->rigidbody.velocity->z));
+
+            body->setAngularVelocity(btVector3(
+                platform->rigidbody.angularVelocity->x,
+                platform->rigidbody.angularVelocity->y,
+                platform->rigidbody.angularVelocity->z));
+
+            connect(&platform->rigidbody, &Rigidbody::setLinearVel, this, [body](const Vector& velocity) {
+                body->setLinearVelocity(btVector3(velocity.x, velocity.y, velocity.z));
+            });
+
+            connect(&platform->rigidbody, &Rigidbody::setAngularVel, this, [body](const Vector& velocity) {
+                body->setAngularVelocity(btVector3(velocity.x, velocity.y, velocity.z));
+            });
+
+            btVector3 linearFactor(1, 1, 1);
+            if (platform->rigidbody.freezePositionX) linearFactor.setX(0);
+            if (platform->rigidbody.freezePositionY) linearFactor.setY(0);
+            if (platform->rigidbody.freezePositionZ) linearFactor.setZ(0);
+            body->setLinearFactor(linearFactor);
+
+            btVector3 angularFactor(1, 1, 1);
+            if (platform->rigidbody.freezeRotationX) angularFactor.setX(0);
+            if (platform->rigidbody.freezeRotationY) angularFactor.setY(0);
+            if (platform->rigidbody.freezeRotationZ) angularFactor.setZ(0);
+            body->setAngularFactor(angularFactor);
+
+            dynamicsWorld->addRigidBody(body);
+            bulletBodies[platform->ID] = body;
+        }
+        // }
     }
 
     // ── Weapon entity: register in physics + start missile flight monitor ───
@@ -557,11 +613,12 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
             component.platform    = nullptr;
             component.weapon      = weapon;
             component.zone        = nullptr;
-            component.transform   = weapon->transform;
-            component.rigidbody   = weapon->rigidbody;
-            component.collider    = weapon->collider;
-            component.dynamicModel= weapon->dynamicModel;
+            component.transform   = &weapon->transform;
+            component.rigidbody   = &weapon->rigidbody;
+            component.collider    = &weapon->collider;
+            component.dynamicModel= &weapon->dynamicModel;
             component.aircraft    = nullptr;   // weapons use own flight model
+            component.sea         = nullptr;
             physicsComponent[weapon->ID] = component;
 
             // Set canvas so blast PNG renders on detonation
@@ -570,8 +627,8 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
             // Start the missile flight monitor: it will call missileStart()
             // automatically as soon as weapon->Active becomes true.
             // weapon->startFlightMonitor();
-            Console::log("[Simulation] Weapon registered + flight monitor started: "
-                         + weapon->Name);
+            // Console::log("[Simulation] Weapon registered + flight monitor started: "
+            //              + weapon->Name);
         }
     }
 
@@ -582,9 +639,9 @@ void Simulation::entityAdded(QString /*parentID*/, Entity* entity) {
         component.base = entity;
         component.zone = zone;
         component.platform = nullptr;
-        component.transform = zone->transform;
+        component.transform = &zone->transform;
         component.rigidbody = nullptr;
-        component.collider = zone->collider;
+        component.collider = &zone->collider;
         component.dynamicModel = nullptr;
         physicsComponent[zone->ID] = component;
     }
@@ -618,11 +675,11 @@ void Simulation::entityRemoved(QString ID) {
     auto physIt = physicsComponent.find(key);
     if (physIt != physicsComponent.end()) {
         // Stop weapon flight monitor before removing
-        if (physIt->second.base &&
-            physIt->second.base->type == Constants::EntityType::Weapon) {
-            Weapon* weapon = dynamic_cast<Weapon*>(physIt->second.base);
-            // if (weapon) weapon->stopFlightMonitor();
-        }
+        // if (physIt->second.base &&
+        //     physIt->second.base->type == Constants::EntityType::Weapon) {
+        //     Weapon* weapon = dynamic_cast<Weapon*>(physIt->second.base);
+        //     // if (weapon) weapon->stopFlightMonitor();
+        // }
         physicsComponent.erase(physIt);
     }
 
@@ -649,8 +706,8 @@ void Simulation::applyPendingNetworkUpdates()
         if (!comp.transform) continue;
 
 
-        comp.transform->matrix->setTranslation(msg->pos);
-        comp.transform->matrix->rotation().fromEulerAngles(msg->rot);
+        comp.transform->matrix.setTranslation(msg->pos);
+        comp.transform->matrix.rotation().fromEulerAngles(msg->rot);
         //rotaion issue may be there
         // comp.transform->setTranslation(msg->pos);
         // comp.transform->setFromEulerAngles(msg->rot);
@@ -686,99 +743,344 @@ void Simulation::enqueueTransformUpdate(const TransformUpdate& msg)//by Aman
       - Clients only receive updates (no physics)
 */
 
-void Simulation::updateDynamics(float dt,PhysicsComponent *comp){
-    if(comp->dynamicModel->startTime > comp->dynamicModel->time || comp->dynamicModel->followEntity || comp->dynamicModel->trajectory->Trajectories.size()<2 || comp->platform->fuel<=0.5f) return;
-    comp->aircraft->MaxAcceleration = comp->dynamicModel->Acceleration;
-    comp->aircraft->MaxDecceleration = comp->dynamicModel->Decceleration;
-    comp->aircraft->CeilingHeight = comp->dynamicModel->maxAltitude / 3.281f;
-    comp->aircraft->TargetSpeed = comp->dynamicModel->moveSpeed  /3.6f;
-    comp->aircraft->turnRate = comp->dynamicModel->turnRate;
-    comp->aircraft->ClimbRate = comp->dynamicModel->climbRate/196.9f;
-    comp->aircraft->DiveRate = comp->dynamicModel->diveRate/196.9f;
-    // comp->aircraft->MaxPitch = comp->dynamicModel->maxPitch;
-    comp->aircraft->PitchRate = comp->dynamicModel->turnRate;
-    comp->aircraft->WindDirection = comp->dynamicModel->windAngle;
-    comp->aircraft->WindIntensity = comp->dynamicModel->windSpeed;
-    QVector3D position = comp->transform->translation();
-    comp->aircraft->Position = Aircraft::vec3(position.x()* 1000.f,
-                                              position.y()* 1000.f,
-                                              position.z()* 1000.f);
+// ============================================================================
+// Simulation::updateDynamics
+// Trajectory/Waypoint -> DynamicModel command -> Aircraft SI solver
+// -> DynamicModel telemetry + Qt Transform
+// ============================================================================
 
-    QVector3D eularAngle = comp->transform->toEulerAngles();
-    comp->aircraft->EularAngles = Aircraft::vec3(eularAngle.x(),eularAngle.y(),eularAngle.z());
-    comp->aircraft->LocalEularAngles = Aircraft::vec3(eularAngle.x(),eularAngle.y(),eularAngle.z());
+// ============================================================================
+// Simulation::updateDynamics
+// Trajectory/Waypoint -> DynamicModel command -> Aircraft SI solver
+// -> DynamicModel telemetry + Qt Transform
+// ============================================================================
 
-    comp->aircraft->Forward.x = comp->transform->forward().x();
-    comp->aircraft->Forward.y = comp->transform->forward().y();
-    comp->aircraft->Forward.z = comp->transform->forward().z();
-
-    Vector target = *comp->dynamicModel->trajectory->getTargetWaypoint()->position;
-    if(comp->dynamicModel->trajectory->getCurrentWaypoint()){
-        target.y = comp->dynamicModel->trajectory->getCurrentWaypoint()->position->y;
-    }
-    if(comp->dynamicModel->parentEntity && (comp->dynamicModel->parentEntity->category == Entity::Category::Marine ||
-                                             comp->dynamicModel->parentEntity->category == Entity::Category::Marine ||
-                                             comp->dynamicModel->parentEntity->category == Entity::Category::Ground ))
+void Simulation::updateDynamics(float dt, PhysicsComponent *comp)
+{
+    if (!comp ||!comp->dynamicModel  ||!comp->transform ||!comp->dynamicModel->trajectory)
     {
-        target.y = target.y>0?0:target.y;
+        return;
     }
 
+    DynamicModel *dm = comp->dynamicModel;
+    Transform *transform = comp->transform;
+    Trajectory *trajectory = dm->trajectory;
 
-    //float tgtSpd = comp.dynamicModel->trajectory->getTargetWaypoint()->speed;
-    FlatXYZ targt = geoToFlatXYZ(target.x,target.z,target.y);
-    if(comp->dynamicModel->followTarget){
-        targt = geoToFlatXYZ(comp->dynamicModel->followEntity->transform->getLatitude(),
-                             comp->dynamicModel->followEntity->transform->getLongitude(),
-                             comp->dynamicModel->followEntity->transform->getAltitude());
-        comp->aircraft->TargetPosition.x = targt.x * 1000.f;
-        comp->aircraft->TargetPosition.y = targt.y / 3.281f;
-        comp->aircraft->TargetPosition.z = targt.z * 1000.f;
+    if (dt <= 0.0f || !std::isfinite(dt))
+        return;
 
-    }else{
-        comp->aircraft->TargetPosition.x = targt.x * 1000.f;
-        comp->aircraft->TargetPosition.y = comp->dynamicModel->Altitude / 3.281f;
-        comp->aircraft->TargetPosition.z = targt.z * 1000.f;
+    if (dm->startTime > dm->time)
+        return;
+
+    // Formation/follow uses the existing specialized path.
+    if (dm->follow && dm->followEntity)
+        return;
+
+    if (!trajectory->Active ||!trajectory->FollowPath ||trajectory->Trajectories.size() < 2)
+    {
+        return;
     }
 
+    // ========================================================================
+    // UNIT CONTRACT
+    // ========================================================================
+    constexpr float KM_TO_M = 1000.0f;
+    constexpr float M_TO_KM = 0.001f;
+    constexpr float KMH_TO_MS = 1.0f / 3.6f;
+    constexpr float MS_TO_KMH = 3.6f;
+    constexpr float FT_TO_M = 0.3048f;
+    constexpr float M_TO_FT = 3.280839895f;
+    constexpr float FPM_TO_MS = 0.00508f;
 
-    comp->aircraft->FixedUpdate(dt);
+    auto normalize360 = [](float angle) -> float
+    {
+        angle = std::fmod(angle, 360.0f);
+        if (angle < 0.0f)
+            angle += 360.0f;
+        return angle;
+    };
 
-    Aircraft::vec3 pos = comp->aircraft->Position;
-    comp->transform->setTranslation(QVector3D(pos.x/1000.f,
-                                              pos.y/1000.f,
-                                              pos.z/1000.f));
+    auto normalize180 = [](float angle) -> float
+    {
+        angle = std::fmod(angle + 180.0f, 360.0f);
+        if (angle < 0.0f)
+            angle += 360.0f;
+        return angle - 180.0f;
+    };
 
-    Aircraft::vec3 rot = comp->aircraft->LocalEularAngles;
-    // Aircraft::vec3 rot = comp->aircraft->EularAngles;
-    rot.y = comp->aircraft->EularAngles.y;
-    comp->transform->matrix->setRotation(QQuaternion::fromEulerAngles(QVector3D(rot.x,rot.y,rot.z)));
-    comp->dynamicModel->currentSpeed =  comp->aircraft->Velocity.Magnitude()*3.6f;
-    comp->dynamicModel->currentAltitude = comp->aircraft->Altitude/1000.0f;
-    if (comp->transform && comp->transform->geocord){
-        comp->transform->geocord->altitude =
-            static_cast<double>(comp->aircraft->Altitude) * 3.28084;
+    if (comp->base && comp->base->category == Entity::Category::Marine)
+    {
+        SeaModel *sea = comp->sea.get();
+        if (!sea) return;
+        const bool submarine = comp->base->marineCategory == Entity::SubMarineCategory::Submarine;
+        sea->vesselType = submarine ? SeaModel::VesselType::Submarine : SeaModel::VesselType::SurfaceShip;
+        sea->environment.seaSurfaceY = 0;
+        sea->environment.hasSeafloor = 0;
+        sea->environment.seafloorY = -500;
+        sea->environment.seabedClearance = 10.0f;
+        sea->environment.waterCurrent = SeaModel::Vec3(0,0,0);
+
+        // Marine-specific defaults intentionally replace aircraft's 1800 km/h,
+        // 100 m/s^2 and 10.62 deg/s defaults. Override using the JSON block.
+        sea->limits.maxSpeed = dm->maxSpeed * KMH_TO_MS;
+        sea->limits.maxAcceleration = dm->Acceleration;
+        sea->limits.maxDeceleration = dm->Decceleration;
+        sea->limits.maxJerk = 0.30f;
+        sea->limits.maxTurnRate = dm->turnRate;
+        sea->limits.maxTurnAcceleration = 0.35f;
+        sea->limits.minSteerageSpeed = 0.30f;
+        sea->limits.fullSteerageSpeed = 3.0f;
+        sea->limits.canTurnInPlace = false;
+        const float defaultDepth = dm->maxAltitude < 0.0f
+                                       ? -dm->maxAltitude * FT_TO_M : 300.0f;
+        sea->limits.maxOperatingDepth = defaultDepth;
+        sea->limits.maxRiseRate = dm->climbRate * FPM_TO_MS;
+        sea->limits.maxDiveRate = dm->diveRate * FPM_TO_MS;
+        sea->limits.maxVerticalAcceleration = 0.30f;
+        sea->limits.maxPitch = 12;
+        sea->limits.maxRoll = 8;
+        sea->responses.speedResponseTime = 2;
+        sea->responses.headingResponseTime = 3;
+        sea->responses.depthResponseTime = 6;
+
+        const QVector3D posKm = transform->translation();
+        const QVector3D qtEuler = transform->toEulerAngles();
+        sea->transform.position = SeaModel::Vec3(posKm.x() * KM_TO_M,
+                                                 posKm.y() * KM_TO_M,
+                                                 posKm.z() * KM_TO_M);
+        sea->transform.heading = normalize360(qtEuler.y());
+        sea->transform.pitch = -qtEuler.x();
+        sea->transform.roll = qtEuler.z();
+        if (!sea->IsInitialized())
+            sea->state.speedThroughWater = std::max(0.0f, dm->currentSpeed) * KMH_TO_MS;
+        // Marine accepts negative altitude. 0 is sea level, -100 m is 100 m below.
+        // "GroundRelative" is not meaningful underwater: for Marine only, it
+        // is interpreted as an offset relative to the sea surface.
+        const auto ref = dm->altitudeReference == DynamicModel::AltitudeReference::GroundRelative
+                             ? SeaModel::AltitudeReference::SeaSurfaceRelative
+                             : SeaModel::AltitudeReference::WorldY;
+        sea->SetNavigationCommand(dm->commandedSpeed * KMH_TO_MS,
+                                  dm->commandedHeading,
+                                  dm->commandedAltitude * FT_TO_M,
+                                  ref);
+        if (comp->platform && comp->platform->fuel <= 0.5f)
+            sea->commands.speed = 0.0f;
+        sea->FixedUpdate(dt);
+
+        const SeaModel::TransformState &st = sea->transform;
+        const SeaModel::Telemetry &t = sea->telemetry;
+        const SeaModel::State &rs = sea->state;
+        transform->setTranslation(QVector3D(st.position.x * M_TO_KM,
+                                            st.position.y * M_TO_KM,
+                                            st.position.z * M_TO_KM));
+        transform->matrix.setRotation(QQuaternion::fromEulerAngles(
+            -st.pitch, st.heading, st.roll));
+
+        dm->currentSpeed = t.speedThroughWater * MS_TO_KMH;
+        dm->currentAcceralation = rs.acceleration;
+        dm->currentAltitude = t.altitude * M_TO_KM; // existing runtime contract: km
+        //dm->currentDepth = t.depth;                 // new field: positive metres
+        dm->currentHeightAboveGround = 0.0f;  // aircraft-only telemetry
+        //dm->currentHeightAboveSeabed = std::isfinite(t.heightAboveSeabed)
+                                           // ? t.heightAboveSeabed : -1.0f;  // metres, -1 when seafloor unknown
+        dm->pitch = t.pitch;
+        dm->roll = t.roll;
+        dm->yaw = t.heading;
+        dm->TrueHeading = t.heading;
+        dm->Pitchrate = rs.pitchRate;
+        dm->Rollrate = rs.rollRate;
+        dm->Yawrate = rs.headingRate;
+        dm->currentTurnRate = rs.headingRate;
+        dm->horizonPitchRate = rs.pitchRate;
+        dm->horizonRollRate = rs.rollRate;
+        dm->horizonRatesValid = true;
+        dm->TrueAirSpeed = 0.0f;              // not applicable to marine
+        dm->GroundVelocity = t.speedOverGround * MS_TO_KMH;
+        dm->NorthVelocity = t.groundVelocity.z;
+        dm->EastVelocity = t.groundVelocity.x;
+        dm->VerticalVelocity = t.verticalSpeed;
+        dm->groundVelocity = QVector3D(t.groundVelocity.x,
+                                       t.groundVelocity.y,
+                                       t.groundVelocity.z);
+        dm->bodyGroundVelocity = QVector3D(t.bodyGroundVelocity.x,
+                                           t.bodyGroundVelocity.y,
+                                           t.bodyGroundVelocity.z);
+        dm->airVelocity = QVector3D();        // water != air
+        dm->bodyAirVelocity = QVector3D();
+        dm->localVelocity = dm->bodyGroundVelocity;
+        dm->acceleration = QVector3D(t.acceleration.x, t.acceleration.y, t.acceleration.z);
+        dm->bodyAcceleration = QVector3D(t.bodyAcceleration.x, t.bodyAcceleration.y,
+                                         t.bodyAcceleration.z);
+        dm->velocity = dm->groundVelocity * M_TO_KM; // legacy formation km/s
+        dm->angularVelocity = QVector3D(rs.pitchRate, rs.headingRate, rs.rollRate);
+        dm->DriftAngle = t.driftAngle;
+        dm->isGrounded = false;
+        dm->isStalling = false;
+        dm->liftFactor = 0.0f;
+        dm->angleOfAttack = 0.0f;
+        dm->sideslipAngle = 0.0f;
+        dm->flightPathAngle = std::atan2(t.verticalSpeed,
+                                         std::max(0.001f, t.speedOverGround)) *
+                              (180.0f / static_cast<float>(M_PI));
+        transform->geocord.altitude = static_cast<double>(t.altitude) * M_TO_FT;
+        return;
+
     }
 
-    comp->dynamicModel->pitch = comp->aircraft->Pitch;
-    comp->dynamicModel->roll = comp->aircraft->Roll;
-    comp->dynamicModel->yaw = comp->aircraft->Yaw;
+    // ========================================================================
+    // 2. DYNAMIC MODEL CONFIG -> AIRCRAFT
+    // ========================================================================
 
-    comp->dynamicModel->Pitchrate = comp->aircraft->currentPitchRate;
-    comp->dynamicModel->Rollrate = comp->aircraft->Rollrate;
-    comp->dynamicModel->Yawrate = comp->aircraft->yawRate;
+    if (!comp->aircraft)
+    {
+        return;
+    }
+    Aircraft *aircraft = comp->aircraft.get();
+    aircraft->maximums.minSpeed = std::max(0.0f, dm->minSpeed) * KMH_TO_MS;
+    aircraft->maximums.maxSpeed = std::max(0.0f, dm->maxSpeed) * KMH_TO_MS;
+    aircraft->maximums.maxAcceleration = std::max(0.0f, dm->Acceleration);
+    aircraft->maximums.maxDeceleration = std::max(0.0f, dm->Decceleration);
+    aircraft->maximums.turnRate = std::max(0.0f, dm->turnRate);
+    aircraft->maximums.minimumTurnSpeed = std::max(0.0f, dm->minimumTurnSpeed) * KMH_TO_MS;
+    aircraft->maximums.fullTurnAuthoritySpeed = std::max(0.0f, dm->fullTurnAuthoritySpeed) * KMH_TO_MS;
+    aircraft->maximums.maxPitchAngle = std::clamp(dm->maxPitchAngle, 0.0f, 89.0f);
+    aircraft->maximums.maxBankAngle = std::clamp(dm->maxBankAngle, 0.0f, 180.0f);
+    aircraft->maximums.maxAltitude = dm->maxAltitude * FT_TO_M;
+    aircraft->maximums.climbRate = std::max(0.0f, dm->climbRate) * FPM_TO_MS;
+    aircraft->maximums.diveRate = std::max(0.0f, dm->diveRate) * FPM_TO_MS;
+    // Responses
+    aircraft->responses.deltaSpdCommandMaxAcc = std::max( 0.001f, dm->deltaSpdCommandMaxAcc);
+    aircraft->responses.timeToReachMaxAcc = std::max( 0.0f, dm->timeToReachMaxAcc);
+    aircraft->responses.deltaSpdCommandMaxDecel = std::max( 0.001f, dm->deltaSpdCommandMaxDecel);
+    aircraft->responses.timeToReachMaxDecel = std::max( 0.0f, dm->timeToReachMaxDecel);
+    aircraft->responses.deltaHdgCommandMaxRot = std::max( 0.001f, dm->deltaHdgCommandMaxRot);
+    aircraft->responses.timeToReachMaxRot = std::max( 0.0f, dm->timeToReachMaxRot);
+    aircraft->responses.maximumPitchRate = std::max( 0.0f, dm->maximumPitchRate);
+    aircraft->responses.maximumRollRate = std::max( 0.0f, dm->maximumRollRate);
+    aircraft->responses.deltaToReachMaxROC = std::max( 0.001f, dm->deltaToReachMaxROC);
+    aircraft->responses.deltaToReachMaxROD = std::max( 0.001f, dm->deltaToReachMaxROD);
+    // Flight physics
+    aircraft->flightPhysics.minimumTakeoffSpeed = std::max( 0.0f, dm->minimumTakeoffSpeed) * KMH_TO_MS;
+    aircraft->flightPhysics.stallSpeed = std::max( 0.0f, dm->stallSpeed) * KMH_TO_MS;
+    aircraft->flightPhysics.criticalAngleOfAttack = std::max( 0.0f, dm->criticalAngleOfAttack);
+    aircraft->flightPhysics.gravity = std::max( 0.0f, dm->gravity);
+    aircraft->flightPhysics.maxSinkSpeed = std::max( 0.0f, dm->maxSinkSpeed);
+    aircraft->flightPhysics.stallRecoveryRate = std::max( 0.0f, dm->stallRecoveryRate);
+    aircraft->flightPhysics.stalledLiftFactor = std::clamp( dm->stalledLiftFactor, 0.0f, 1.0f);
+    aircraft->flightPhysics.takeoffPitchThreshold = std::max( 0.0f, dm->takeoffPitchThreshold);
+    aircraft->flightPhysics.groundLevel = dm->groundLevel * FT_TO_M;
+    aircraft->stallRecovery.autoStallRecovery = dm->autoStallRecovery;
+    aircraft->stallRecovery.stallRecoveryPitch = dm->stallRecoveryPitch;
+    aircraft->aerodynamicDrag.zeroThrottleDrag = std::max( 0.0f, dm->zeroThrottleDrag);
+    aircraft->aerodynamicDrag.highSpeedDrag = std::max( 0.0f, dm->highSpeedDrag);
+    aircraft->aerodynamicDrag.inducedDrag = std::max( 0.0f, dm->inducedDrag);
+    aircraft->aerodynamicDrag.referenceSpeed = std::max( 1.0f, dm->dragReferenceSpeed);
+    // Wind: 0 deg -> +Z, 90 deg -> +X.
+    const float windRad =dm->windAngle * static_cast<float>( M_PI / 180.0);
+    aircraft->wind.windVelocity = Aircraft::vec3( dm->windSpeed * std::sin(windRad), 0.0f, dm->windSpeed * std::cos(windRad));
+    // ========================================================================
+    // 3. QT TRANSFORM (km) -> AIRCRAFT TRANSFORM (m)
+    // ========================================================================
+    const QVector3D qtPositionKm = transform->translation();
+    aircraft->transform.position = Aircraft::vec3( qtPositionKm.x() * KM_TO_M, qtPositionKm.y() * KM_TO_M, qtPositionKm.z() * KM_TO_M);
+    const QVector3D qtEuler = transform->toEulerAngles();
 
-    comp->dynamicModel->DriftAngle = comp->aircraft->DriftAngle;
-    comp->dynamicModel->TrueHeading = comp->aircraft->TrueHeading;
-    comp->dynamicModel->TrueAirSpeed = comp->aircraft->TrueAirSpeed * 3.6f;
-    comp->dynamicModel->NorthVelocity = comp->aircraft->NorthVelocity;
-    comp->dynamicModel->EastVelocity = comp->aircraft->EastVelocity;
-    comp->dynamicModel->VerticalVelocity = comp->aircraft->VerticalVelocity;
-    comp->dynamicModel->GroundVelocity = comp->aircraft->GroundVelocity * 3.6f;
-    comp->dynamicModel->localVelocity = QVector3D(comp->aircraft->localVelocity.x * 3.6f,
-                                                  comp->aircraft->localVelocity.y * 3.6f,
-                                                  comp->aircraft->localVelocity.z * 3.6f);
+    // Aircraft positive pitch = nose up.
+    aircraft->transform.pitch = -qtEuler.x();
+    aircraft->transform.heading = normalize360( qtEuler.y());
+    aircraft->transform.roll = qtEuler.z();
+    aircraft->aircraftState.currentSpeed = std::max( 0.0f, dm->currentSpeed) * KMH_TO_MS;
+    // ========================================================================
+    // 4. DYNAMICMODEL COMMAND -> AIRCRAFT COMMAND
+    // ========================================================================
+    const Aircraft::AltitudeReference altitudeReference =dm->altitudeReference ==DynamicModel::AltitudeReference::GroundRelative? Aircraft::AltitudeReference::GroundRelative: Aircraft::AltitudeReference::WorldY;
+    aircraft->SetNavigationCommand(
+        dm->commandedSpeed *
+            KMH_TO_MS,
+        dm->commandedHeading,
+        dm->commandedAltitude *
+            FT_TO_M,
+        altitudeReference);
+    // Fuel exhausted: engine command is zero, but Aircraft continues under
+    // drag/gravity instead of freezing.
+    if (comp->platform && comp->platform->fuel <= 0.5f)
+    {
+        aircraft->commands.commandedSpeed = 0.0f;
+    }
+    // 5. AIRCRAFT SOLVER
+    aircraft->FixedUpdate(dt);
+    // 6. AIRCRAFT TRANSFORM (m) -> QT TRANSFORM (km)
+    const Aircraft::vec3 &p = aircraft->transform.position;
+    transform->setTranslation( QVector3D( p.x * M_TO_KM, p.y * M_TO_KM, p.z * M_TO_KM));
 
+    // if (dm->control)
+    // {
+        transform->matrix.setRotation( QQuaternion::fromEulerAngles(
+                -aircraft->aircraftState.currentPitch,
+                aircraft->aircraftState.currentHeading,
+                aircraft->aircraftState.currentRoll));
+    // }
 
+    // ========================================================================
+    // 7. AIRCRAFT -> DYNAMICMODEL TELEMETRY
+    // ========================================================================
+
+    dm->currentSpeed = aircraft->aircraftState.currentSpeed * MS_TO_KMH;
+    dm->currentAcceralation = aircraft->aircraftState.currentAcceleration;
+    // Existing project contract: currentAltitude is kilometres.
+    dm->currentAltitude = aircraft->aircraftState.currentAltitude * M_TO_KM;
+    dm->currentHeightAboveGround = aircraft->aircraftState.currentHeightAboveGround * M_TO_KM;
+    dm->pitch = aircraft->aircraftState.currentPitch;
+    dm->roll = aircraft->aircraftState.currentRoll;
+    dm->yaw = aircraft->aircraftState.currentYaw;
+    dm->TrueHeading = aircraft->aircraftState.currentHeading;
+    dm->Pitchrate = aircraft->aircraftState.currentPitchRate;
+    dm->Rollrate = aircraft->aircraftState.currentRollRate;
+    dm->Yawrate = aircraft->aircraftState.currentYawRate;
+    dm->currentTurnRate = aircraft->aircraftState.currentTurnRate;
+    dm->horizonPitchRate = aircraft->aircraftState.horizonPitchRate;
+    dm->horizonRollRate = aircraft->aircraftState.horizonRollRate;
+    dm->horizonRatesValid = aircraft->aircraftState.horizonRatesValid;
+    dm->isGrounded = aircraft->flightState.isGrounded;
+    dm->isStalling = aircraft->flightState.isStalling;
+    dm->liftFactor = aircraft->flightState.liftFactor;
+    dm->angleOfAttack = aircraft->flightState.angleOfAttack;
+    dm->sideslipAngle = aircraft->flightState.sideslipAngle;
+    dm->flightPathAngle = aircraft->flightState.flightPathAngle;
+    dm->TrueAirSpeed = aircraft->speedState.trueAirSpeed * MS_TO_KMH;
+    dm->GroundVelocity = aircraft->speedState.groundSpeed * MS_TO_KMH;
+    const Aircraft::vec3 &gv = aircraft->velocityState.groundVelocity;
+    dm->EastVelocity = gv.x;
+    dm->VerticalVelocity = gv.y;
+    dm->NorthVelocity = gv.z;
+    dm->groundVelocity = QVector3D( gv.x, gv.y, gv.z);
+    const Aircraft::vec3 &av = aircraft->velocityState.airVelocity;
+    dm->airVelocity = QVector3D( av.x, av.y, av.z);
+    const Aircraft::vec3 &bav = aircraft->velocityState.bodyAirVelocity;
+    dm->bodyAirVelocity = QVector3D( bav.x, bav.y, bav.z);
+    const Aircraft::vec3 &bgv = aircraft->velocityState.bodyGroundVelocity;
+    dm->bodyGroundVelocity = QVector3D( bgv.x, bgv.y, bgv.z);
+    // Legacy localVelocity: body ground-relative m/s.
+    dm->localVelocity = dm->bodyGroundVelocity;
+    const Aircraft::vec3 &acc = aircraft->accelerationState.acceleration;
+    dm->acceleration = QVector3D( acc.x, acc.y, acc.z);
+    const Aircraft::vec3 &bodyAcc = aircraft->accelerationState.bodyAcceleration;
+    dm->bodyAcceleration = QVector3D( bodyAcc.x, bodyAcc.y, bodyAcc.z);
+    // Existing formation logic expects DynamicModel velocity in km/s.
+    dm->velocity = QVector3D( gv.x * M_TO_KM, gv.y * M_TO_KM, gv.z * M_TO_KM);
+    dm->angularVelocity = QVector3D( dm->Pitchrate, dm->Yawrate, dm->Rollrate);
+    // Drift = horizontal ground-track minus aircraft heading.
+    if ((gv.x * gv.x + gv.z * gv.z) > 0.000001f)
+    {
+        const float groundTrack = normalize360( std::atan2( gv.x, gv.z) * (180.0f / static_cast<float>(M_PI)));
+        dm->DriftAngle = normalize180( groundTrack - aircraft->aircraftState.currentHeading);
+    }
+    else
+    {
+        dm->DriftAngle = 0.0f;
+    }
+    // Existing geocord altitude contract remains feet.
+    transform->geocord.altitude = static_cast<double>( aircraft->aircraftState.currentAltitude) * M_TO_FT;
 }
 
 void Simulation::calculateDynamic(float dt){
@@ -786,6 +1088,18 @@ void Simulation::calculateDynamic(float dt){
         if(!comp.base->Active) continue;
         if(comp.dynamicModel)
             comp.dynamicModel->Update(dt);
+    }
+}
+
+void Simulation::promoteToLocalPhysics(const std::string& entityID) {
+    auto it = physicsComponent.find(entityID);
+    if (it == physicsComponent.end() || !it->second.platform) return;
+    Platform* platform = it->second.platform;
+    it->second.dynamicModel = &platform->dynamicModel;
+    it->second.rigidbody    = &platform->rigidbody;
+    it->second.collider     = &platform->collider;
+    if (!it->second.aircraft) {
+        it->second.aircraft = std::make_shared<Aircraft>();
     }
 }
 void Simulation::calculatePhysics() {
@@ -828,7 +1142,8 @@ void Simulation::calculatePhysics() {
         bool isMaster = true;
         if (networkManager && networkManager->isActive())
             isMaster = networkManager->isServer();
-        if (isMaster && comp.dynamicModel){
+        // if (isMaster && comp.dynamicModel){
+        if (isMaster && comp.dynamicModel && !comp.base->isRemoteDISEntity){//by new aman
             QElapsedTimer timer;
             timer.start();  // Start measuring
             comp.dynamicModel->Update(dt);
@@ -838,7 +1153,7 @@ void Simulation::calculatePhysics() {
         }
         bool opt = true;
         if(physicsComponent.size()>70){
-            opt = simMin<num && num< simMax;
+            // opt = simMin<num && num< simMax;
         }
         if(comp.base->type == Constants::EntityType::Weapon) {
             // Weapon* weapon = dynamic_cast<Weapon*>(comp.base);
@@ -882,33 +1197,33 @@ void Simulation::calculatePhysics() {
         //             comp.transform->matrix->scale3D().z() * comp.collider->Height * 0.5f));
         //     }
 
-        //     if (comp.rigidbody->Gravity) {
+        //     if (comp.rigidbody.Gravity) {
         //         body->setGravity(btVector3(Gravity->x, Gravity->y, Gravity->z));
         //     } else {
         //         body->setGravity(btVector3(0, 0, 0));
         //     }
 
-        //     comp.rigidbody->velocity->x = body->getLinearVelocity().x();
-        //     comp.rigidbody->velocity->y = body->getLinearVelocity().y();
-        //     comp.rigidbody->velocity->z = body->getLinearVelocity().z();
+        //     comp.rigidbody.velocity->x = body->getLinearVelocity().x();
+        //     comp.rigidbody.velocity->y = body->getLinearVelocity().y();
+        //     comp.rigidbody.velocity->z = body->getLinearVelocity().z();
 
-        //     comp.rigidbody->angularVelocity->x = body->getAngularVelocity().x();
-        //     comp.rigidbody->angularVelocity->y = body->getAngularVelocity().y();
-        //     comp.rigidbody->angularVelocity->z = body->getAngularVelocity().z();
+        //     comp.rigidbody.angularVelocity->x = body->getAngularVelocity().x();
+        //     comp.rigidbody.angularVelocity->y = body->getAngularVelocity().y();
+        //     comp.rigidbody.angularVelocity->z = body->getAngularVelocity().z();
 
         //     btVector3 linearFactor(1, 1, 1);
-        //     if (comp.rigidbody->freezePositionX) linearFactor.setX(0);
-        //     if (comp.rigidbody->freezePositionY) linearFactor.setY(0);
-        //     if (comp.rigidbody->freezePositionZ) linearFactor.setZ(0);
+        //     if (comp.rigidbody.freezePositionX) linearFactor.setX(0);
+        //     if (comp.rigidbody.freezePositionY) linearFactor.setY(0);
+        //     if (comp.rigidbody.freezePositionZ) linearFactor.setZ(0);
         //     body->setLinearFactor(linearFactor);
 
         //     btVector3 angularFactor(1, 1, 1);
-        //     if (comp.rigidbody->freezeRotationX) angularFactor.setX(0);
-        //     if (comp.rigidbody->freezeRotationY) angularFactor.setY(0);
-        //     if (comp.rigidbody->freezeRotationZ) angularFactor.setZ(0);
+        //     if (comp.rigidbody.freezeRotationX) angularFactor.setX(0);
+        //     if (comp.rigidbody.freezeRotationY) angularFactor.setY(0);
+        //     if (comp.rigidbody.freezeRotationZ) angularFactor.setZ(0);
         //     body->setAngularFactor(angularFactor);
 
-        //     if (comp.rigidbody->Kinematics) {
+        //     if (comp.rigidbody.Kinematics) {
         //         body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
         //         body->setActivationState(DISABLE_DEACTIVATION);
         //     } else {
@@ -937,9 +1252,9 @@ void Simulation::entityUpdate(QString ID) {
         body->getMotionState()->getWorldTransform(trans);
 
         trans.setOrigin(btVector3(
-            comp.transform->matrix->translation().x(),
-            comp.transform->matrix->translation().y(),
-            comp.transform->matrix->translation().z()));
+            comp.transform->matrix.translation().x(),
+            comp.transform->matrix.translation().y(),
+            comp.transform->matrix.translation().z()));
 
         btQuaternion quat;
         quat.setEulerZYX(
@@ -952,9 +1267,9 @@ void Simulation::entityUpdate(QString ID) {
 
         if (comp.collider) {
             body->getCollisionShape()->setLocalScaling(btVector3(
-                comp.transform->matrix->scale3D().x() * comp.collider->Width * 0.5f,
-                comp.transform->matrix->scale3D().y() * comp.collider->Length * 0.5f,
-                comp.transform->matrix->scale3D().z() * comp.collider->Height * 0.5f));
+                comp.transform->matrix.scale3D().x() * comp.collider->getDimension().Width * 0.5f,
+                comp.transform->matrix.scale3D().y() * comp.collider->getDimension().Length * 0.5f,
+                comp.transform->matrix.scale3D().z() * comp.collider->getDimension().Height * 0.5f));
         }
 
         comp.rigidbody->velocity->x = body->getLinearVelocity().x();

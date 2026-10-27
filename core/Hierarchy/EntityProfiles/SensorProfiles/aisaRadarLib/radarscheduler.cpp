@@ -360,12 +360,15 @@ void RadarScheduler::insertFireControlBeam(uint32_t targetID,
     // atan2 and asin at zero range. REQ-AESA-010.
     if (track != nullptr && track->predictedRange > MIN_TRACK_RANGE_M)
     {
-        // Azimuth from atan2 — gives signed angle in (-180, +180]. REQ-AESA-010.
-        fc.azimuth_deg = std::atan2(track->y, track->x) * RAD_TO_DEG;
-
-        // Elevation from asin — clamp argument to [-1, 1] for domain safety.
+        // Track position is stabilised; antenna needs body angles.
+        // Elevation keeps the predictedRange denominator (unchanged formula;
+        // rotation preserves vector length). REQ-AESA-010.
+        const double s[3] = { track->x, track->y, track->z };
+        double b[3];
+        stabToBody(bodyFromStab_, s, b);
+        fc.azimuth_deg = std::atan2(b[1], b[0]) * RAD_TO_DEG;
         fc.elevation_deg = std::asin(
-                               std::clamp(track->z / track->predictedRange,
+                               std::clamp(b[2] / track->predictedRange,
                                           CLAMP_MIN, CLAMP_MAX))
                            * RAD_TO_DEG;
     }
@@ -606,12 +609,14 @@ BeamRequest RadarScheduler::makeTrackBeam(const TrackFile& t,
     // atan2 and asin results at zero range. REQ-AESA-030.
     if (t.predictedRange > MIN_TRACK_RANGE_M)
     {
-        // atan2 gives az in (-180, +180] — body-frame signed convention.
-        r.azimuth_deg = std::atan2(t.y, t.x) * RAD_TO_DEG;
-
-        // asin domain protection — clamp to [-1, 1]. REQ-AESA-030.
+        // Track position is stabilised; antenna needs body angles.
+        // Elevation keeps the predictedRange denominator. REQ-AESA-030.
+        const double s[3] = { t.x, t.y, t.z };
+        double b[3];
+        stabToBody(bodyFromStab_, s, b);
+        r.azimuth_deg = std::atan2(b[1], b[0]) * RAD_TO_DEG;
         r.elevation_deg = std::asin(
-                              std::clamp(t.z / t.predictedRange, CLAMP_MIN, CLAMP_MAX))
+                              std::clamp(b[2] / t.predictedRange, CLAMP_MIN, CLAMP_MAX))
                           * RAD_TO_DEG;
     }
     // If predictedRange <= MIN_TRACK_RANGE_M, r.azimuth_deg and

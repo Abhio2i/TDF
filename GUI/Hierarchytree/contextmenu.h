@@ -47,6 +47,8 @@
 // Forward declarations
 class Hierarchy;
 class AddItemDialog;
+class AddWeaponDialog;
+class Weapon;
 
 // %%% Class Definition %%%
 /* Context-sensitive menu that adapts to different hierarchy item types */
@@ -71,9 +73,6 @@ public:
 
     // %%% Multi-Select Support %%%
     QList<QVariantMap> m_copiedItems;
-    // static void runUnitTestsOnce();
-  // we'll modify this to add formation action
-
 
 signals:
     // %%% Folder Operations Signals %%%
@@ -129,7 +128,16 @@ signals:
     void addTeamToEntityRequested(QVariantMap entityData, QString team);
     void setCategoryToEntityRequested(QVariantMap data, QString category, QString subCategory);
     void selectFormationWithEntityRequested(const QString& formationId);
-
+    void changeMothershipRequested(const QString& formationId);
+    void editSubComponentRequested(QString parentID, QString subCompID, QString subCompName, QString subCompType);
+    void editMultipleSubComponentsRequested(QList<QVariantMap> subComponents);
+    void editEntityRequested(QVariantMap entityData);
+    void editMultipleEntitiesRequested(QList<QVariantMap> entities);
+    void removeEntityFromFormationRequested(const QString& formationId,
+                                            const QString& entityId);
+    void addEntityToFormationRequested(const QString& formationId);
+    void breakFormationRequested(const QString& formationId);
+    void resumeFormationRequested(const QString& formationId);
 
 private:
     // %%% Menu Setup Methods %%%
@@ -144,6 +152,36 @@ private:
     /* Configure menu options for sub-component items */
     void setupSubComponentMenu(const QVariantMap &data);
 
+    /* Returns "database" / "scenario" / "runtime" based on the currently
+     * active editor in MainWindow, or "" if undetermined. Single source of
+     * truth — used instead of repeating the MainWindow-inspection logic
+     * inline in every setup*Menu() function. */
+    QString getCurrentEditorContext() const;
+
+    /* Resolves the correct Hierarchy instance (database / scenario library /
+     * runtime library, or the weapon-specific scenario/runtime hierarchy)
+     * for the given editor context. Falls back to the database hierarchy
+     * if no context-specific one is available. */
+    Hierarchy* resolveHierarchyForContext(const QString& editorContext, bool isWeaponProfile) const;
+
+    /* Walks the hierarchy tree to find which top-level profile type
+     * (e.g. "Platform", "Weapon", "Sensor") the given parentID ultimately
+     * belongs to, whether parentID is a profile node itself or a folder
+     * nested under one. Returns "" if it cannot be determined. */
+    QString findParentProfileType(const QString& parentID) const;
+
+    /* Builds a fully-configured Weapon object from an AddWeaponDialog,
+     * either from manually entered config (fromDatabaseSelection = false)
+     * or from an existing database weapon's data while preserving this
+     * weapon's own ID/Name/parentID (fromDatabaseSelection = true).
+     * Returns nullptr on invalid/incomplete dialog input. Caller owns the
+     * returned pointer and is responsible for inserting it into the
+     * hierarchy or deleting it on failure. */
+    Weapon* buildWeaponFromDialog(const AddWeaponDialog& dlg,
+                                  Hierarchy* correctHierarchy,
+                                  Hierarchy* dbHierarchy,
+                                  const QString& parentID,
+                                  bool fromDatabaseSelection) const;
 };
 
 #endif // CONTEXTMENU_H

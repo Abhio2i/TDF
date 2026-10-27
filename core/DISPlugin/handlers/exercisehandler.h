@@ -19,6 +19,7 @@
 #include <QHostAddress>
 
 #include "core/DISPlugin/DISNetworkPlugin.h"  // for DISIncomingExercise
+#include "core/DISPlugin/interface/DISExerciseControl.h"
 
 class ExerciseHandler : public QObject {
     Q_OBJECT
@@ -33,6 +34,10 @@ public slots:
 
 signals:
     void incomingExercise(DISIncomingExercise event);
+    // Emitted when CreateEntity or RemoveEntity is received
+    // DISManager connects this directly to PDUSender::sendAcknowledge
+    // All on network thread — DirectConnection
+    void acknowledgeNeeded(DISAcknowledgeData data);
 };
 
 #endif // EXERCISEHANDLER_H

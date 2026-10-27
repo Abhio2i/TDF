@@ -20,6 +20,45 @@
 #include "core/Hierarchy/EntityProfiles/iff.h"
 #include "core/Hierarchy/EntityProfiles/radio.h"
 #include "core/Hierarchy/EntityProfiles/weapon.h"
+#include "core/Hierarchy/ECS/Struct/transform_component.h"
+#include "core/Hierarchy/ECS/Struct/mesh_component.h"
+#include "core/Hierarchy/ECS/Struct/trajectory_component.h"
+#include <cstdio>
+
+
+
+
+static void syncEntityToEcs(Hierarchy* hierarchy,
+                            Platform* platform,
+                            const QString& spritePath = QString())
+{
+    if (!hierarchy || !platform)
+        return;
+
+    ECS::World* world = &hierarchy->world;
+    const ECS::Entity e = platform->ecsID;
+    if (e == 0)
+        return;
+
+    if (auto* geo = world->GetComponent<ECS::GeocordComponent>(e)) {
+        geo->lat     = static_cast<float>(platform->transform.getLatitude());
+        geo->lon     = static_cast<float>(platform->transform.getLongitude());
+        geo->heading = platform->transform.getHeading();
+    }
+
+    QString path = spritePath;
+    if (path.isEmpty() && platform->meshRenderer2d.Sprite)
+        path = QString::fromStdString(*platform->meshRenderer2d.Sprite);
+
+    if (!path.isEmpty()) {
+        if (auto* sp = world->GetComponent<ECS::SpritePath>(e)) {
+            const QByteArray utf = path.toUtf8();
+            std::snprintf(sp->path, sizeof(sp->path), "%s", utf.constData());
+            // Agar SpritePath::path pointer hai, apne struct ke hisaab se set karo
+        }
+    }
+}
+
 
 /* -------------------------------------------------------
  * Recording Implementation Information Start
@@ -124,7 +163,7 @@ DB_Validity Recorder::sqliteIsValid()
 
 void Recorder::saveFile(QString path)
 {
-     *isFileSaved = false;
+    *isFileSaved = false;
     savedFilePath = path;
     fileToDB(savedFilePath,*isFileSaved);
     str = "Convert File to '.db' Logger->Recorder->Sqlite ";
@@ -405,12 +444,12 @@ void Recording::beforeRecording(QSharedPointer<PayLoad> payload)
         std::string parentID  = platform.second->parentID;
         std::string ID   = platform.first.c_str();
         entityAddedInBetween(payload,parentID.c_str(), ID.c_str(), name.c_str());
-        if(platform.second->meshRenderer2d){
-            meshRenderer2DCRUD(payload,platform.first.c_str(),platform.second->meshRenderer2d);
-        }
-        if(platform.second->trajectory){
-            trajectoryCRUD(payload,platform.first.c_str(),platform.second->trajectory->Trajectories);
-        }
+        // if(platform.second->meshRenderer2d){
+            meshRenderer2DCRUD(payload,platform.first.c_str(),&platform.second->meshRenderer2d);
+        // }
+        // if(platform.second->trajectory){
+            trajectoryCRUD(payload,platform.first.c_str(),platform.second->trajectory.Trajectories);
+        // }
     }
 }
 void Recording::currentEntities()
@@ -521,39 +560,148 @@ void Recording::entityAddedInBetween(
     debug(str,D_EntityCreated);
 }
 
+//fix by yogesh for specialzone exact location rendering in replay
 void Recording::entityUpdatesInBetween(QSharedPointer<PayLoad> payload)
 {
-    std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
-    EntitiesUpdated m_entitiesUpdated;
-    Platform* platform;
-    int indexSize = entitiesIDIndex.size();
-    QString m_str = "Entity List Size" +QString(indexSize)+" Updates In Between: ";
+    std::unordered_map<std::string, Platform*> m_Platforms =
+        m_hierarchy->Platforms;
 
-    for(auto i = entitiesIDIndex.begin(), end = entitiesIDIndex.end();
-         i != end ; ++i){
-        QString m_str = i.key();
-        if(m_Platforms.find(m_str.toStdString()) == m_Platforms.end()){
+    EntitiesUpdated m_entitiesUpdated;
+
+    int indexSize = entitiesIDIndex.size();
+
+    QString m_str =
+        "Entity List Size " +
+        QString::number(indexSize) +
+        " Updates In Between: ";
+
+    for (auto i = entitiesIDIndex.begin(),
+         end = entitiesIDIndex.end();
+         i != end;
+         ++i)
+    {
+        QString entityID = i.key();
+
+        // ============================================================
+        // 1. PLATFORM
+        // ============================================================
+
+        auto platformIt =
+            m_Platforms.find(entityID.toStdString());
+
+        if (platformIt != m_Platforms.end())
+        {
+            Platform* platform = platformIt->second;
+
+            m_str +=
+                "\n" + entityID +
+                " Index :" +
+                QString::number(i.value());
+
+            if (platform)
+            {
+                m_entitiesUpdated.index =
+                    i.value();
+
+                m_entitiesUpdated.longitude =
+                    platform->transform.getLongitude();
+
+                m_entitiesUpdated.latitude =
+                    platform->transform.getLatitude();
+
+                m_entitiesUpdated.altitude =
+                    platform->transform.getAltitude();
+
+                m_entitiesUpdated.heading =
+                    platform->transform.getHeading();
+
+                m_entitiesUpdated.turn_radius =
+                    platform->dynamicModel.turnRate;
+
+                m_entitiesUpdated.curr_speed =
+                    platform->dynamicModel.currentSpeed;
+
+                m_entitiesUpdated.climb_rate =
+                    platform->dynamicModel.climbRate;
+
+                payload->entitiesUpdatedList->push_back(
+                    m_entitiesUpdated);
+
+                m_str += " PASS";
+            }
+            else
+            {
+                m_str += " Failed";
+            }
+
             continue;
         }
-        platform = m_Platforms.at(m_str.toStdString());
-        m_str += "Index :" + QString(i.value());
-        if(platform){
-            m_entitiesUpdated.index       = i.value();
-            m_entitiesUpdated.longitude   = platform->transform->getLongitude();
-            m_entitiesUpdated.latitude    = platform->transform->getLatitude();
-            m_entitiesUpdated.altitude    = platform->transform->getAltitude();
-            m_entitiesUpdated.heading     = platform->transform->getHeading();
-            m_entitiesUpdated.turn_radius = platform->dynamicModel->turnRate;
-            m_entitiesUpdated.curr_speed  = platform->dynamicModel->currentSpeed;
-            m_entitiesUpdated.climb_rate  = platform->dynamicModel->climbRate;
-            payload->entitiesUpdatedList->push_back(m_entitiesUpdated);
-            m_str += "PASS";
-        }else{
-            m_str += "Failed";
+
+
+        // ============================================================
+        // 2. SPECIAL ZONE
+        // ============================================================
+
+        auto specialZoneIt =
+            m_hierarchy->Specialzones.find(
+                entityID.toStdString());
+
+        if (specialZoneIt !=
+            m_hierarchy->Specialzones.end())
+        {
+            Specialzone* specialZone =
+                specialZoneIt->second;
+
+            m_str +=
+                "\n" + entityID +
+                " [SpecialZone] Index :" +
+                QString::number(i.value());
+
+            if (specialZone)
+            {
+                // ----------------------------------------------------
+                // SpecialZone has no dynamicModel requirement.
+                // We only record its geographic position/orientation.
+                // ----------------------------------------------------
+
+                m_entitiesUpdated.index =
+                    i.value();
+
+                m_entitiesUpdated.longitude =
+                    specialZone->transform.getLongitude();
+
+                m_entitiesUpdated.latitude =
+                    specialZone->transform.getLatitude();
+
+                m_entitiesUpdated.altitude =
+                    specialZone->transform.getAltitude();
+
+                m_entitiesUpdated.heading =
+                    specialZone->transform.getHeading();
+
+                m_entitiesUpdated.turn_radius = 0;
+                m_entitiesUpdated.curr_speed  = 0;
+                m_entitiesUpdated.climb_rate  = 0;
+
+                payload->entitiesUpdatedList->push_back(
+                    m_entitiesUpdated);
+
+                m_str += " PASS";
+            }
+            else
+            {
+                m_str += " Failed";
+            }
+
+            continue;
         }
-        m_str += "\n  ";
+
+        m_str +=
+            "\n" + entityID +
+            " skipped (not Platform/SpecialZone)";
     }
-    debug(m_str,D_UpdatesInBTW);
+
+    debug(m_str, D_UpdatesInBTW);
 }
 void Recording::entityRemovedInBetween(
     QSharedPointer<PayLoad> payload,
@@ -729,12 +877,12 @@ void Recording::entityAddedAllFromStart()
         std::string parentID  = platform.second->parentID;
         std::string ID   = platform.first.c_str();
         entityAddedInBetween(parentID.c_str(), ID.c_str(), name.c_str());
-        if(platform.second->meshRenderer2d){
-            meshRenderer2DCRUD(platform.first.c_str(),platform.second->meshRenderer2d);
-        }
-        if(platform.second->trajectory){
-            trajectoryCRUD(platform.first.c_str(),platform.second->trajectory->Trajectories);
-        }
+        // if(platform.second->meshRenderer2d){
+            meshRenderer2DCRUD(platform.first.c_str(),&platform.second->meshRenderer2d);
+        // }
+        // if(platform.second->trajectory){
+            trajectoryCRUD(platform.first.c_str(),platform.second->trajectory.Trajectories);
+        // }
     }
 }
 /*---------------- Packet Changes Start ------------------*/
@@ -829,15 +977,15 @@ void Recording::beforeChangesPacket(QSharedPointer<PayLoad> data)
 
         entityAddedInBetween(data, parentID.c_str(), ID.c_str(), name.c_str());
 
-        if(platform.second->meshRenderer2d){
+        /*if(platform.second->meshRenderer2d)*/{
             meshRenderer2DCRUD(data, platform.first.c_str(),
-                               platform.second->meshRenderer2d);
+                               &platform.second->meshRenderer2d);
         }
 
         // Trajectory filter
-        if(filterTrajectories && platform.second->trajectory){
+        if(filterTrajectories /*&& platform.second->trajectory*/){
             trajectoryCRUD(data, platform.first.c_str(),
-                           platform.second->trajectory->Trajectories);
+                           platform.second->trajectory.Trajectories);
         }
     }
 
@@ -851,18 +999,18 @@ void Recording::beforeChangesPacket(QSharedPointer<PayLoad> data)
                                  QString::fromStdString(fp->parentID),
                                  QString::fromStdString(fp->ID),
                                  QString::fromStdString(fp->Name));
-            if(fp->meshRenderer2d){
+            // if(fp->meshRenderer2d){
                 meshRenderer2DCRUD(data, QString::fromStdString(fp->ID),
-                                   fp->meshRenderer2d);
-            }
+                                   &fp->meshRenderer2d);
+            // }
             // Position save karo replay ke liye
-            if (fp->transform && entitiesIDIndex.contains(QString::fromStdString(fp->ID))) {
+            if (/*fp->transform && */entitiesIDIndex.contains(QString::fromStdString(fp->ID))) {
                 EntitiesUpdated eu;
                 eu.index       = entitiesIDIndex.value(QString::fromStdString(fp->ID));
-                eu.latitude    = fp->transform->getLatitude();
-                eu.longitude   = fp->transform->getLongitude();
-                eu.altitude    = fp->transform->getAltitude();
-                eu.heading     = fp->transform->getHeading();
+                eu.latitude    = fp->transform.getLatitude();
+                eu.longitude   = fp->transform.getLongitude();
+                eu.altitude    = fp->transform.getAltitude();
+                eu.heading     = fp->transform.getHeading();
                 eu.turn_radius = 0;
                 eu.curr_speed  = 0;
                 eu.climb_rate  = 0;
@@ -881,18 +1029,18 @@ void Recording::beforeChangesPacket(QSharedPointer<PayLoad> data)
                                  QString::fromStdString(sz->parentID),
                                  QString::fromStdString(sz->ID),
                                  QString::fromStdString(sz->Name));
-            if(sz->meshRenderer2d){
+            /*if(sz->meshRenderer2d)*/{
                 meshRenderer2DCRUD(data, QString::fromStdString(sz->ID),
-                                   sz->meshRenderer2d);
+                                   &sz->meshRenderer2d);
             }
             // Position save karo replay ke liye
-            if (sz->transform && entitiesIDIndex.contains(QString::fromStdString(sz->ID))) {
+            if (/*sz->transform && */entitiesIDIndex.contains(QString::fromStdString(sz->ID))) {
                 EntitiesUpdated eu;
                 eu.index       = entitiesIDIndex.value(QString::fromStdString(sz->ID));
-                eu.latitude    = sz->transform->getLatitude();
-                eu.longitude   = sz->transform->getLongitude();
-                eu.altitude    = sz->transform->getAltitude();
-                eu.heading     = sz->transform->getHeading();
+                eu.latitude    = sz->transform.getLatitude();
+                eu.longitude   = sz->transform.getLongitude();
+                eu.altitude    = sz->transform.getAltitude();
+                eu.heading     = sz->transform.getHeading();
                 eu.turn_radius = 0;
                 eu.curr_speed  = 0;
                 eu.climb_rate  = 0;
@@ -1205,13 +1353,13 @@ void Recording::entityUpdatesInBetween()
         m_str += "Index :" + QString(i.value());
         if(platform){
             m_entitiesUpdated.index       = i.value();
-            m_entitiesUpdated.longitude   = platform->transform->getLongitude();
-            m_entitiesUpdated.latitude    = platform->transform->getLatitude();
-            m_entitiesUpdated.altitude    = platform->transform->getAltitude();
-            m_entitiesUpdated.heading     = platform->transform->getHeading();
-            m_entitiesUpdated.turn_radius = platform->dynamicModel->turnRate;
-            m_entitiesUpdated.curr_speed  = platform->dynamicModel->currentSpeed;
-            m_entitiesUpdated.climb_rate  = platform->dynamicModel->climbRate;
+            m_entitiesUpdated.longitude   = platform->transform.getLongitude();
+            m_entitiesUpdated.latitude    = platform->transform.getLatitude();
+            m_entitiesUpdated.altitude    = platform->transform.getAltitude();
+            m_entitiesUpdated.heading     = platform->transform.getHeading();
+            m_entitiesUpdated.turn_radius = platform->dynamicModel.turnRate;
+            m_entitiesUpdated.curr_speed  = platform->dynamicModel.currentSpeed;
+            m_entitiesUpdated.climb_rate  = platform->dynamicModel.climbRate;
             m_entitiesUpdatedList->push_back(m_entitiesUpdated);
             m_str += "PASS";
         }else{
@@ -1402,7 +1550,9 @@ Replay::Replay(
     m_recorder(parentRecorder)
 {
     m_recorder = getRecorder();
-    emit getCanvas(&canvas);
+    if(canvas){
+        emit getCanvas(canvas);
+    }
 }
 void Replay::update()
 {
@@ -1558,34 +1708,72 @@ void Replay::replayStart()
     // FixedPoints ke components add karo aur entityRecreated emit karo
     for (auto& [id, fp] : m_hierarchy->FixedPointes) {
         if (!fp) continue;
-        if (!fp->transform)      fp->addComponent("transform");
-        if (!fp->collider)       fp->addComponent("collider");
-        if (!fp->meshRenderer2d) fp->addComponent("bitmap");
+        /*if (!fp->transform)    */  fp->addComponent("transform");
+        /*if (!fp->collider) */      fp->addComponent("collider");
+        /*if (!fp->meshRenderer2d)*/ fp->addComponent("bitmap");
         emit entityRecreated(QString::fromStdString(fp->ID));
     }
 
     // SpecialZones ke components add karo aur entityRecreated emit karo
     for (auto& [id, sz] : m_hierarchy->Specialzones) {
         if (!sz) continue;
-        if (!sz->transform)      sz->addComponent("transform");
-        if (!sz->collider)       sz->addComponent("collider");
-        if (!sz->meshRenderer2d) sz->addComponent("bitmap");
+        /*if (!sz->transform)  */    sz->addComponent("transform");
+        /*if (!sz->collider)    */   sz->addComponent("collider");
+        /*if (!sz->meshRenderer2d) */sz->addComponent("bitmap");
         emit entityRecreated(QString::fromStdString(sz->ID));
     }
 
-    // Ek aur processEvents taaki entityRecreated se canvas Meshes map
-    // update ho jaaye PEHLE MeshRenderer apply ho
     QCoreApplication::processEvents();
     // ── FIX END ──
 
     // Step 4: MeshRenderer
     if (!packet->entitiesMeshRenderer2DList->empty()) {
-        setEntitiesMeshRenderer2D(packet);
+        setEntitiesMeshRenderer2D(packet);   // ye sirf cache banata hai
+
+        //fix by yogesh — jump path jaisa hi actual sprite apply karo,
+        // warna sirf CRUD-list entities ka hi icon set hota hai, snapshot-only
+        // entities (scenario config, jinka sprite kabhi change nahi hua) default rehte hain
+        for (const auto& emr : *packet->entitiesMeshRenderer2DList) {
+            auto entityIt = entitiesIndexDetails.find(emr.index);
+            if (entityIt == entitiesIndexDetails.end())
+                continue;
+            const QString entityId = entityIt->second.ID;
+            if (entityId.isEmpty())
+                continue;
+            const std::string idStr = entityId.toStdString();
+
+            auto platformIt = m_hierarchy->Platforms.find(idStr);
+            if (platformIt != m_hierarchy->Platforms.end() && platformIt->second) {
+                Platform* platform = platformIt->second;
+                if (!emr.Sprite.isEmpty()) {
+                    platform->meshRenderer2d.setSprite(emr.Sprite.toStdString());
+                    syncEntityToEcs(m_hierarchy, platform, emr.Sprite);
+                }
+                continue;
+            }
+
+            auto fpIt = m_hierarchy->FixedPointes.find(idStr);
+            if (fpIt != m_hierarchy->FixedPointes.end() && fpIt->second) {
+                if (!emr.Sprite.isEmpty()) {
+                    fpIt->second->meshRenderer2d.Sprite->clear();
+                    fpIt->second->meshRenderer2d.Sprite->append(emr.Sprite.toStdString());
+                }
+                continue;
+            }
+
+            auto szIt = m_hierarchy->Specialzones.find(idStr);
+            if (szIt != m_hierarchy->Specialzones.end() && szIt->second) {
+                if (!emr.Sprite.isEmpty()) {
+                    szIt->second->meshRenderer2d.Sprite->clear();
+                    szIt->second->meshRenderer2d.Sprite->append(emr.Sprite.toStdString());
+                }
+                continue;
+            }
+        }
     }
     if (!packet->entitiesMeshRenderer2DCRUDList->empty()) {
         crudEntitiesMeshRenderer2D(packet);
     }
-
     // Step 5: Trajectory
     if (!packet->entitiesTrajectoryList->empty()) {
         setEntitiesTrajectory(packet);
@@ -1666,6 +1854,7 @@ void Replay::replayStart()
 }
 
 /*---------------- Shared Pointer Write Start --------------*/
+//fix by yogesh.
 void Replay::framePayLoad(QSharedPointer<PayLoad> payload)
 {
 
@@ -1674,37 +1863,116 @@ void Replay::framePayLoad(QSharedPointer<PayLoad> payload)
         setProfileCategoriesDetails(payload);
         str += QString("[ Profile Categories Details Update Size: %1 ] ")
                    .arg(payload->profileCategoriesDetailsList->size());
-        // ===== CREATE ALL MISSING PROFILES FROM DETAILS =====
-        for (const auto &pcd : *payload->profileCategoriesDetailsList) {
-            // Check if this profile already exists in the hierarchy
-            auto it = m_hierarchy->ProfileCategories.find(pcd.ID.toStdString());
-            if (it == m_hierarchy->ProfileCategories.end()) {
-                ProfileCategaory* profile = new ProfileCategaory(m_hierarchy);
-                profile->Name = pcd.name.toStdString();
-                profile->ID   = pcd.ID.toStdString();
-                // Set the correct profile type based on name
-                QString profileName = pcd.name;
+        for (const auto &pcd : *payload->profileCategoriesDetailsList)
+        {
+            const std::string recordedID = pcd.ID.toStdString();
+            auto getProfileType =
+                [](const QString &profileName) -> Constants::EntityType
+            {
                 if (profileName.contains("Sensor", Qt::CaseInsensitive))
-                    profile->setProfileType(Constants::EntityType::Sensor);
-                else if (profileName.contains("IFF", Qt::CaseInsensitive))
-                    profile->setProfileType(Constants::EntityType::IFF);
-                else if (profileName.contains("Radio", Qt::CaseInsensitive))
-                    profile->setProfileType(Constants::EntityType::Radio);
-                else if (profileName.contains("Weapon", Qt::CaseInsensitive))
-                    profile->setProfileType(Constants::EntityType::Weapon);
-                else if (profileName.contains("FixedPoint", Qt::CaseInsensitive) ||
-                         profileName.contains("Fixed", Qt::CaseInsensitive))
-                    profile->setProfileType(Constants::EntityType::FixedPoint);
-                else if (profileName.contains("Zone", Qt::CaseInsensitive) ||
-                         profileName.contains("Special", Qt::CaseInsensitive))
-                    profile->setProfileType(Constants::EntityType::SpecialZone);
-                else if (profileName.contains("Formation", Qt::CaseInsensitive))
-                    profile->setProfileType(Constants::EntityType::Formation);
-                else
-                    profile->setProfileType(Constants::EntityType::Platform);
+                    return Constants::EntityType::Sensor;
 
-                emit createProfileCategories(profile);
+                if (profileName.contains("IFF", Qt::CaseInsensitive))
+                    return Constants::EntityType::IFF;
+
+                if (profileName.contains("Radio", Qt::CaseInsensitive))
+                    return Constants::EntityType::Radio;
+
+                if (profileName.contains("Weapon", Qt::CaseInsensitive))
+                    return Constants::EntityType::Weapon;
+
+                if (profileName.contains("FixedPoint", Qt::CaseInsensitive) ||
+                    profileName.contains("Fixed", Qt::CaseInsensitive))
+                    return Constants::EntityType::FixedPoint;
+
+                if (profileName.contains("Zone", Qt::CaseInsensitive) ||
+                    profileName.contains("Special", Qt::CaseInsensitive))
+                    return Constants::EntityType::SpecialZone;
+
+                if (profileName.contains("Formation", Qt::CaseInsensitive))
+                    return Constants::EntityType::Formation;
+
+                return Constants::EntityType::Platform;
+            };
+
+            const Constants::EntityType profileType =
+                getProfileType(pcd.name);
+
+
+            // ============================================================
+            // 1. Exact recorded ID already exists
+            // ============================================================
+
+            auto exactIt =
+                m_hierarchy->ProfileCategories.find(recordedID);
+
+            if (exactIt != m_hierarchy->ProfileCategories.end())
+            {
+                continue;
             }
+
+            ProfileCategaory *existingProfile = nullptr;
+
+            for (const auto &[existingID, profilePtr]
+                 : m_hierarchy->ProfileCategories)
+            {
+                if (!profilePtr)
+                    continue;
+
+                if (profilePtr->type == profileType)
+                {
+                    existingProfile = profilePtr;
+                    break;
+                }
+            }
+
+
+            // ============================================================
+            // 3. Existing semantic profile found
+            // ============================================================
+
+            if (existingProfile)
+            {
+                m_hierarchy->ProfileCategories[recordedID] =
+                    existingProfile;
+
+                qDebug()
+                    << "[REPLAY PROFILE REUSE]"
+                    << "Recorded ID =" << pcd.ID
+                    << "Name =" << pcd.name
+                    << "Reusing existing profile ID ="
+                    << QString::fromStdString(existingProfile->ID);
+
+                continue;
+            }
+
+
+            // ============================================================
+            // 4. No profile of this type exists -> genuine creation
+            // ============================================================
+
+            ProfileCategaory *profile =
+                new ProfileCategaory(m_hierarchy);
+
+            profile->Name =
+                pcd.name.toStdString();
+
+            profile->ID =
+                recordedID;
+
+            profile->setProfileType(profileType);
+
+            // Register the profile in the hierarchy map.
+            m_hierarchy->ProfileCategories[recordedID] =
+                profile;
+
+            // Only genuine new profiles should create a tree/UI entry.
+            emit createProfileCategories(profile);
+
+            qDebug()
+                << "[REPLAY PROFILE CREATE]"
+                << "ID =" << pcd.ID
+                << "Name =" << pcd.name;
         }
     }
     // 2. Profile categories CRUD
@@ -1714,12 +1982,14 @@ void Replay::framePayLoad(QSharedPointer<PayLoad> payload)
                    .arg(payload->profileCategoriesCRUDList->size());
     }
 
-    // 3. Entity index details (sirf pehli baar)
-    if(entitiesIndexDetails.empty() && !payload->entitiesDetailsList->empty()){
+    //fix by yogesh for logger part
+    // 3. Entity index details
+    if (!payload->entitiesDetailsList->empty()) {
         setEntitiesIndexDetails(payload);
         str += QString("[ Index Detail Update Size: %1 ] ")
                    .arg(payload->entitiesDetailsList->size());
     }
+
 
     // 4. Entities CREATE — PEHLE karo taaki platform ready ho sensors ke liye
     if(!payload->entitiesCreatedList->empty()){
@@ -1731,17 +2001,55 @@ void Replay::framePayLoad(QSharedPointer<PayLoad> payload)
     // 5. Mesh renderer data
     if(!payload->entitiesMeshRenderer2DList->empty()){
         str += QString("[ Entities Mesh Renderer Update Size: %1 ] ")
-                   .arg(payload->entitiesMeshRenderer2DList->size());
-        setEntitiesMeshRenderer2D(payload);
+        .arg(payload->entitiesMeshRenderer2DList->size());
+        setEntitiesMeshRenderer2D(payload);   // ye sirf cache banata hai
+
+        //fix by yogesh
+        for (const auto& emr : *payload->entitiesMeshRenderer2DList) {
+            auto entityIt = entitiesIndexDetails.find(emr.index);
+            if (entityIt == entitiesIndexDetails.end())
+                continue;
+            const QString entityId = entityIt->second.ID;
+            if (entityId.isEmpty())
+                continue;
+            const std::string idStr = entityId.toStdString();
+
+            auto platformIt = m_hierarchy->Platforms.find(idStr);
+            if (platformIt != m_hierarchy->Platforms.end() && platformIt->second) {
+                Platform* platform = platformIt->second;
+                if (!emr.Sprite.isEmpty()) {
+                    platform->meshRenderer2d.setSprite(emr.Sprite.toStdString());
+                    syncEntityToEcs(m_hierarchy, platform, emr.Sprite);
+                }
+                continue;
+            }
+
+            auto fpIt = m_hierarchy->FixedPointes.find(idStr);
+            if (fpIt != m_hierarchy->FixedPointes.end() && fpIt->second) {
+                if (!emr.Sprite.isEmpty()) {
+                    fpIt->second->meshRenderer2d.Sprite->clear();
+                    fpIt->second->meshRenderer2d.Sprite->append(emr.Sprite.toStdString());
+                }
+                continue;
+            }
+
+            auto szIt = m_hierarchy->Specialzones.find(idStr);
+            if (szIt != m_hierarchy->Specialzones.end() && szIt->second) {
+                if (!emr.Sprite.isEmpty()) {
+                    szIt->second->meshRenderer2d.Sprite->clear();
+                    szIt->second->meshRenderer2d.Sprite->append(emr.Sprite.toStdString());
+                }
+                continue;
+            }
+        }
     }
 
     // 6. Mesh renderer CRUD
     if(!payload->entitiesMeshRenderer2DCRUDList->empty()){
         str += QString("[ Entities Mesh Renderer CRUD Size: %1 ] ")
-                   .arg(payload->entitiesMeshRenderer2DCRUDList->size());
+        .arg(payload->entitiesMeshRenderer2DCRUDList->size());
         crudEntitiesMeshRenderer2D(payload);
     }
-
     // 7. Trajectory
     if(!payload->entitiesTrajectoryList->empty()
         || !payload->entitiesTrajectoryCRUDList->empty()){
@@ -1768,18 +2076,18 @@ void Replay::framePayLoad(QSharedPointer<PayLoad> payload)
         (!payload->sensorsList->empty() || !payload->sensorsCRUDList->empty())) {
         restoreSensorsFromPayload(payload);
     }
-        if (!iffsRestored &&
-            (!payload->iffList->empty() || !payload->iffCRUDList->empty())) {
-            restoreIffsFromPayload(payload);
-        }
-        if (!radiosRestored &&
-            (!payload->radioList->empty() || !payload->radioCRUDList->empty())) {
-            restoreRadiosFromPayload(payload);
-        }
-        if (!weaponsRestored &&
-            (!payload->weaponList->empty() || !payload->weaponCRUDList->empty())) {
-            restoreWeaponsFromPayload(payload);
-        }
+    if (!iffsRestored &&
+        (!payload->iffList->empty() || !payload->iffCRUDList->empty())) {
+        restoreIffsFromPayload(payload);
+    }
+    if (!radiosRestored &&
+        (!payload->radioList->empty() || !payload->radioCRUDList->empty())) {
+        restoreRadiosFromPayload(payload);
+    }
+    if (!weaponsRestored &&
+        (!payload->weaponList->empty() || !payload->weaponCRUDList->empty())) {
+        restoreWeaponsFromPayload(payload);
+    }
     debug(str, D_PayLoad_Inspect);
     payload->profileCategoriesCRUDList->clear();
     payload->entitiesCreatedList->clear();
@@ -1791,14 +2099,16 @@ void Replay::framePayLoad(QSharedPointer<PayLoad> payload)
     payload->entitiesTrajectoryCRUDList->clear();
     payload->sensorsList->clear();
     payload->sensorsCRUDList->clear();
-        payload->iffList->clear();
-        payload->iffCRUDList->clear();
-        payload->radioList->clear();
-        payload->radioCRUDList->clear();
-        payload->weaponList->clear();
-        payload->weaponCRUDList->clear();
+    payload->iffList->clear();
+    payload->iffCRUDList->clear();
+    payload->radioList->clear();
+    payload->radioCRUDList->clear();
+    payload->weaponList->clear();
+    payload->weaponCRUDList->clear();
+    // Clear entity details so the next frame gets a fresh
+    // entity snapshot from the recorder/database.
+    payload->entitiesDetailsList->clear();
 }
-
 void Replay::initiateTask()
 {
     // Create the shared pointer
@@ -1894,22 +2204,23 @@ void Replay::setEntitiesMeshRenderer2D(
     debug(str,D_MeshRenderer);
 }
 
+//fix by yogesh
 void Replay::crudEntitiesMeshRenderer2D(QSharedPointer<PayLoad> payload)
 {
     str = "Mesh CRUD Operation";
     std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
 
-    for(auto etc = payload->entitiesMeshRenderer2DCRUDList->begin();
+    for (auto etc = payload->entitiesMeshRenderer2DCRUDList->begin();
          etc != payload->entitiesMeshRenderer2DCRUDList->end(); ++etc)
     {
         // MeshRenderer2D data check
-        if(entitiesMeshRenderer2DIndex.find(etc->index) == entitiesMeshRenderer2DIndex.end()){
+        if (entitiesMeshRenderer2DIndex.find(etc->index) == entitiesMeshRenderer2DIndex.end()) {
             str += " MeshIndex not found: " + QString::number(etc->index);
             continue;
         }
 
         // EntityDetails check
-        if(entitiesIndexDetails.find(etc->index) == entitiesIndexDetails.end()){
+        if (entitiesIndexDetails.find(etc->index) == entitiesIndexDetails.end()) {
             str += " EntityDetails not found: " + QString::number(etc->index);
             continue;
         }
@@ -1918,38 +2229,42 @@ void Replay::crudEntitiesMeshRenderer2D(QSharedPointer<PayLoad> payload)
         EntitiesDetails &ed = entitiesIndexDetails.at(etc->index);
         std::string idStr = ed.ID.toStdString();
 
-        // ✅ Platform check
+        // ── Platform ──────────────────────────────────────────────
         auto platIt = m_Platforms.find(idStr);
-        if(platIt != m_Platforms.end()){
-            if(platIt->second->meshRenderer2d){
-                platIt->second->meshRenderer2d->Sprite->clear();
-                platIt->second->meshRenderer2d->Sprite->append(emr.Sprite.toStdString());
+        if (platIt != m_Platforms.end() && platIt->second) {
+            if (!emr.Sprite.isEmpty()) {
+                platIt->second->meshRenderer2d.Sprite->clear();
+                platIt->second->meshRenderer2d.Sprite->append(emr.Sprite.toStdString());
+
+                // ECS SpritePath — DynamicCanvas recorded icon use kare
+                syncEntityToEcs(m_hierarchy, platIt->second, emr.Sprite);
             }
             continue;
         }
 
-        // ✅ FixedPoints check
+        // ── FixedPoints ───────────────────────────────────────────
         auto fpIt = m_hierarchy->FixedPointes.find(idStr);
-        if(fpIt != m_hierarchy->FixedPointes.end()){
-            if(fpIt->second->meshRenderer2d){
-                fpIt->second->meshRenderer2d->Sprite->clear();
-                fpIt->second->meshRenderer2d->Sprite->append(emr.Sprite.toStdString());
+        if (fpIt != m_hierarchy->FixedPointes.end() && fpIt->second) {
+            if (!emr.Sprite.isEmpty()) {
+                fpIt->second->meshRenderer2d.Sprite->clear();
+                fpIt->second->meshRenderer2d.Sprite->append(emr.Sprite.toStdString());
             }
             continue;
         }
 
-        // ✅ SpecialZone check
-        auto szIt = m_hierarchy->Specialzones.find(idStr);
-        if(szIt != m_hierarchy->Specialzones.end()){
-            if(szIt->second->meshRenderer2d){
-                szIt->second->meshRenderer2d->Sprite->clear();
-                szIt->second->meshRenderer2d->Sprite->append(emr.Sprite.toStdString());
+        // ── SpecialZone ───────────────────────────────────────────
+        if (platIt != m_Platforms.end() && platIt->second) {
+            Platform* platform = platIt->second;
+            if (!emr.Sprite.isEmpty()) {
+                platform->meshRenderer2d.setSprite(emr.Sprite.toStdString());
+                syncEntityToEcs(m_hierarchy, platform, emr.Sprite);
             }
             continue;
         }
 
         str += " Entity not found for ID: " + ed.ID;
     }
+
     debug(str, D_MeshRenderer);
 }
 void Replay::setEntitiesTrajectory(QSharedPointer<PayLoad> payload)
@@ -1963,8 +2278,8 @@ void Replay::setEntitiesTrajectory(QSharedPointer<PayLoad> payload)
          et != payload->entitiesTrajectoryList->end(); ++et)
     {
         str += QString(" [ Index: %1 | Waypoints: %2 ] ,")
-                   .arg(et->index)
-                   .arg(et->Trajectories.size());
+        .arg(et->index)
+            .arg(et->Trajectories.size());
 
         auto edIt = entitiesIndexDetails.find(et->index);
         if (edIt == entitiesIndexDetails.end()) {
@@ -1984,22 +2299,21 @@ void Replay::setEntitiesTrajectory(QSharedPointer<PayLoad> payload)
 
         entitiesTrajectoryIndex[et->index] = *et;
         Platform* platform = platIt->second;
-
-        // Clear old trajectory safely
-        if (platform->trajectory) {
-            for (Waypoints* wp : platform->trajectory->Trajectories) {
-                if (wp) {
-                    delete wp->position; wp->position = nullptr;
-                    delete wp->geocord;  wp->geocord = nullptr;
-                    delete wp;
-                }
+        for (Waypoints* wp : platform->trajectory.Trajectories) {
+            if (wp) {
+                delete wp->position; wp->position = nullptr;
+                delete wp->geocord;  wp->geocord = nullptr;
+                delete wp;
             }
-            platform->trajectory->Trajectories.clear();
-        } else {
-            platform->addComponent("trajectory");
         }
 
-        // Add new waypoints
+        //fix by yogesh
+        platform->trajectory.Trajectories.clear();
+        if (platform->trajectory.parentEntity && platform->trajectory.parentEntity->root) {
+            ECS::trajectoryPathComponent& ecsPath = platform->trajectory.getTrajectoryPath();
+            ecsPath.activeCount = 0;
+            ecsPath.delta = true;
+        }
         for (const auto& tw : et->Trajectories) {
             Waypoints* newWaypoint = new Waypoints();
             newWaypoint->position = new Vector(tw.vector_x, tw.vector_y, tw.vector_z);
@@ -2012,12 +2326,10 @@ void Replay::setEntitiesTrajectory(QSharedPointer<PayLoad> payload)
             newWaypoint->sensor    = tw.sensor;
             newWaypoint->formation = tw.formation;
 
-            platform->trajectory->addTrajectory(newWaypoint);
+            platform->trajectory.addTrajectory(newWaypoint);
         }
-
         emit selectMesh(ed.ID);
     }
-
     emit render(0.01f);
     debug(str, D_EntitiesTrajectory);
 }
@@ -2045,11 +2357,11 @@ void Replay::setEntitiesTrajectoryByBack(QSharedPointer<PayLoad> payload)
             continue;
         }
         emit selectMesh(platform->first.c_str());
-        for (Waypoints* wp : platform->second->trajectory->Trajectories) {
+        for (Waypoints* wp : platform->second->trajectory.Trajectories) {
             delete wp->position;
             delete wp;
         }
-        platform->second->trajectory->Trajectories.clear();
+        platform->second->trajectory.Trajectories.clear();
         for(auto tw = et->Trajectories.begin();
              tw != et->Trajectories.end();
              ++tw){
@@ -2058,11 +2370,12 @@ void Replay::setEntitiesTrajectoryByBack(QSharedPointer<PayLoad> payload)
             newWaypoint->speed = tw->speed;
             newWaypoint->formation = tw->formation;
             newWaypoint->sensor = tw->sensor;
-            platform->second->trajectory->addTrajectory(newWaypoint);
+            platform->second->trajectory.addTrajectory(newWaypoint);
         }
     }
     debug(str,D_EntitiesTrajectory);
 }
+
 
 void Replay::crudEntitiesTrajectory(
     QSharedPointer<PayLoad> payload)
@@ -2070,73 +2383,241 @@ void Replay::crudEntitiesTrajectory(
 
 }
 
+
+
+
+
+//fix by yogesh
 void Replay::crudProfileCategoriesDetails(
     QSharedPointer<PayLoad> payload)
 {
-    std::unordered_map<std::string, ProfileCategaory*> pc = m_hierarchy->ProfileCategories;
+    if (!payload)
+        return;
+
+    if (!payload->profileCategoriesCRUDList)
+        return;
+
     str = QString();
-    for(auto pcc = payload->profileCategoriesCRUDList->cbegin();
-         pcc != payload->profileCategoriesCRUDList->cend();
+
+    for (auto pcc =
+         payload->profileCategoriesCRUDList->cbegin();
+         pcc !=
+         payload->profileCategoriesCRUDList->cend();
          ++pcc)
     {
         ProfileCategoriesDetails pcd;
-        try {
-            pcd = profileCategoriesIndexDetails.at(pcc->index);
+
+        try
+        {
+            pcd =
+                profileCategoriesIndexDetails.at(pcc->index);
         }
-        catch (std::out_of_range e) {
-            str += QString("Failed profileCategoriesIndexDetails Caught: %1")
+        catch (const std::out_of_range &e)
+        {
+            str += QString(
+                       "Failed profileCategoriesIndexDetails Caught: %1")
                        .arg(QString(e.what()));
+
             continue;
         }
 
-        auto exist = pc.find(pcd.ID.toStdString());
+        const std::string recordedID =
+            pcd.ID.toStdString();
 
-        if(pcc->operation == Operation::CREATE && exist == pc.end()){
-            ProfileCategaory* profile = new ProfileCategaory(m_hierarchy);
-            profile->Name = pcd.name.toStdString();
-            profile->ID   = pcd.ID.toStdString();
 
-            // FIX: Profile ka sahi type set karo name ke basis par.
-            // Pehle sirf Platform type set hoti thi (implicitly), ab sab handle karo.
-            QString profileName = pcd.name;
-            if(profileName.contains("Sensor", Qt::CaseInsensitive)){
-                profile->setProfileType(Constants::EntityType::Sensor);
-            } else if(profileName.contains("IFF", Qt::CaseInsensitive)){
-                profile->setProfileType(Constants::EntityType::IFF);
-            } else if(profileName.contains("Radio", Qt::CaseInsensitive)){
-                profile->setProfileType(Constants::EntityType::Radio);
-            } else if(profileName.contains("Weapon", Qt::CaseInsensitive)){
-                profile->setProfileType(Constants::EntityType::Weapon);
-            } else if(profileName.contains("FixedPoint", Qt::CaseInsensitive)
-                       || profileName.contains("Fixed", Qt::CaseInsensitive)){
-                profile->setProfileType(Constants::EntityType::FixedPoint);
-            } else if(profileName.contains("Zone", Qt::CaseInsensitive)
-                       || profileName.contains("Special", Qt::CaseInsensitive)){
-                profile->setProfileType(Constants::EntityType::SpecialZone);
-            } else if(profileName.contains("Formation", Qt::CaseInsensitive)){
-                profile->setProfileType(Constants::EntityType::Formation);
-            } else {
-                // Default: Platform
-                profile->setProfileType(Constants::EntityType::Platform);
+        // ========================================================
+        // CREATE
+        // ========================================================
+
+        if (pcc->operation == Operation::CREATE)
+        {
+            // ----------------------------------------------------
+            // 1. Exact recorded ID already exists
+            // ----------------------------------------------------
+
+            auto exactIt =
+                m_hierarchy->ProfileCategories.find(recordedID);
+
+            if (exactIt !=
+                m_hierarchy->ProfileCategories.end())
+            {
+                continue;
             }
+
+
+            // ----------------------------------------------------
+            // 2. Determine semantic profile type
+            // ----------------------------------------------------
+
+            Constants::EntityType profileType =
+                Constants::EntityType::Platform;
+
+            const QString profileName =
+                pcd.name;
+
+            if (profileName.contains(
+                    "Sensor",
+                    Qt::CaseInsensitive))
+            {
+                profileType =
+                    Constants::EntityType::Sensor;
+            }
+            else if (profileName.contains(
+                         "IFF",
+                         Qt::CaseInsensitive))
+            {
+                profileType =
+                    Constants::EntityType::IFF;
+            }
+            else if (profileName.contains(
+                         "Radio",
+                         Qt::CaseInsensitive))
+            {
+                profileType =
+                    Constants::EntityType::Radio;
+            }
+            else if (profileName.contains(
+                         "Weapon",
+                         Qt::CaseInsensitive))
+            {
+                profileType =
+                    Constants::EntityType::Weapon;
+            }
+            else if (profileName.contains(
+                         "FixedPoint",
+                         Qt::CaseInsensitive) ||
+                     profileName.contains(
+                         "Fixed",
+                         Qt::CaseInsensitive))
+            {
+                profileType =
+                    Constants::EntityType::FixedPoint;
+            }
+            else if (profileName.contains(
+                         "Zone",
+                         Qt::CaseInsensitive) ||
+                     profileName.contains(
+                         "Special",
+                         Qt::CaseInsensitive))
+            {
+                profileType =
+                    Constants::EntityType::SpecialZone;
+            }
+            else if (profileName.contains(
+                         "Formation",
+                         Qt::CaseInsensitive))
+            {
+                profileType =
+                    Constants::EntityType::Formation;
+            }
+
+
+            // ----------------------------------------------------
+            // 3. Check whether a profile of the same TYPE
+            //    already exists.
+            //
+            // Example:
+            //     Sensor
+            //     Sensors
+            //
+            // Both map to EntityType::Sensor.
+            // Therefore only ONE actual object should exist.
+            // ----------------------------------------------------
+
+            ProfileCategaory *existingProfile =
+                nullptr;
+
+            for (const auto &[existingID, profilePtr]
+                 : m_hierarchy->ProfileCategories)
+            {
+                if (!profilePtr)
+                    continue;
+
+                if (profilePtr->type == profileType)
+                {
+                    existingProfile = profilePtr;
+                    break;
+                }
+            }
+
+
+            // ----------------------------------------------------
+            // 4. Existing semantic profile found.
+            //    Reuse it and alias recorded ID.
+            // ----------------------------------------------------
+
+            if (existingProfile)
+            {
+                m_hierarchy->ProfileCategories[recordedID] =
+                    existingProfile;
+
+                qDebug()
+                    << "[REPLAY PROFILE CRUD REUSE]"
+                    << "Recorded ID =" << pcd.ID
+                    << "Name =" << pcd.name
+                    << "Existing Profile ID ="
+                    << QString::fromStdString(
+                           existingProfile->ID);
+
+                continue;
+            }
+
+
+            // ----------------------------------------------------
+            // 5. No profile of this type exists.
+            //    Create a genuine new profile.
+            // ----------------------------------------------------
+
+            ProfileCategaory *profile =
+                new ProfileCategaory(m_hierarchy);
+
+            profile->Name =
+                pcd.name.toStdString();
+
+            profile->ID =
+                recordedID;
+
+            profile->setProfileType(
+                profileType
+                );
+
+            m_hierarchy->ProfileCategories[recordedID] =
+                profile;
 
             emit createProfileCategories(profile);
 
             str += QString(
                        "[ Entity Name: %1 \t"
                        "ID: %2 \t"
-                       "Index: %3 \t"
-                       "Type: %4 \t ]"
-                       ).arg(profile->Name.c_str(),
-                            profile->ID.c_str(),
-                            QString::number(pcd.index),
-                            profileName);
+                       "Index: %3 \t ]")
+                       .arg(
+                           QString::fromStdString(
+                               profile->Name),
+                           QString::fromStdString(
+                               profile->ID),
+                           QString::number(
+                               pcd.index));
         }
 
-        if(pcc->operation == Operation::DELETE && exist != pc.end()){
-            emit deleteProfileCategories(pcd.ID);
+
+        // ========================================================
+        // DELETE
+        // ========================================================
+
+        if (pcc->operation == Operation::DELETE)
+        {
+            auto exist =
+                m_hierarchy->ProfileCategories.find(
+                    recordedID);
+
+            if (exist !=
+                m_hierarchy->ProfileCategories.end())
+            {
+                emit deleteProfileCategories(pcd.ID);
+            }
         }
     }
+
     debug(str, D_EntitiesCreateList);
 }
 void Replay::createEntitiesCreateList(QSharedPointer<PayLoad> payload)
@@ -2156,21 +2637,21 @@ void Replay::createEntitiesCreateList(QSharedPointer<PayLoad> payload)
         auto platIt = m_Platforms->find(idStr);
         if (platIt != m_Platforms->end()) {
             Platform* platform = platIt->second;
-            if (!platform->transform) platform->addComponent("transform");
-            if (platform->transform && !platform->transform->geocord) {
-                platform->transform->geocord = new Geocords();
-                platform->transform->geocord->latitude  = 0.0;
-                platform->transform->geocord->longitude = 0.0;
-                platform->transform->geocord->altitude  = 0.0;
-                platform->transform->geocord->Heading   = 0.0;
-            }
+           /* if (!platform->transform) */platform->addComponent("transform");
+            // if (/*platform->transform && */!platform->transform.geocord) {
+                // platform->transform.geocord = *new Geocords();
+                platform->transform.geocord.latitude  = 0.0;
+                platform->transform.geocord.longitude = 0.0;
+                platform->transform.geocord.altitude  = 0.0;
+                platform->transform.geocord.Heading   = 0.0;
+            // }
             emit entityRecreated(ed.ID);
             platform->addComponent("crossSection");
             platform->addComponent("trajectory");
             platform->addComponent("rigidbody");
+            platform->addComponent("collider");
             platform->addComponent("dynamicModel");
             platform->addComponent("bitmap");
-            platform->addComponent("collider");
             platform->addComponent("sensors");
             platform->addComponent("iffs");
             platform->addComponent("radios");
@@ -2186,12 +2667,12 @@ void Replay::createEntitiesCreateList(QSharedPointer<PayLoad> payload)
             fp->addComponent("collider");
             fp->addComponent("bitmap");
             // geocord initialize karo — canvas drawImage() isko check karta hai
-            if (fp->transform && !fp->transform->geocord) {
-                fp->transform->geocord = new Geocords();
-                fp->transform->geocord->latitude  = 0.0;
-                fp->transform->geocord->longitude = 0.0;
-                fp->transform->geocord->altitude  = 0.0;
-                fp->transform->geocord->Heading   = 0.0;
+           /* if (fp->transform && !fp->transform->geocord) */{
+                // fp->transform->geocord = new Geocords();
+                fp->transform.geocord.latitude  = 0.0;
+                fp->transform.geocord.longitude = 0.0;
+                fp->transform.geocord.altitude  = 0.0;
+                fp->transform.geocord.Heading   = 0.0;
             }
             continue;
         }
@@ -2204,12 +2685,12 @@ void Replay::createEntitiesCreateList(QSharedPointer<PayLoad> payload)
             sz->addComponent("collider");
             sz->addComponent("bitmap");
             // geocord initialize karo — canvas drawImage() isko check karta hai
-            if (sz->transform && !sz->transform->geocord) {
-                sz->transform->geocord = new Geocords();
-                sz->transform->geocord->latitude  = 0.0;
-                sz->transform->geocord->longitude = 0.0;
-                sz->transform->geocord->altitude  = 0.0;
-                sz->transform->geocord->Heading   = 0.0;
+           /* if (sz->transform && !sz->transform->geocord)*/ {
+                // sz->transform->geocord = new Geocords();
+                sz->transform.geocord.latitude  = 0.0;
+                sz->transform.geocord.longitude = 0.0;
+                sz->transform.geocord.altitude  = 0.0;
+                sz->transform.geocord.Heading   = 0.0;
             }
             continue;
         }
@@ -2235,6 +2716,93 @@ void Replay::createEntitiesCreateList(QSharedPointer<PayLoad> payload)
         }
     }
 }
+
+
+//fix by yogesh
+// void Replay::updateEntitiesUpdatedList(QSharedPointer<PayLoad> payload)
+// {
+//     if (!payload || !payload->entitiesUpdatedList)
+//         return;
+
+//     std::unordered_map<std::string, Platform*>& m_Platforms = m_hierarchy->Platforms;
+
+//     for (auto eu = payload->entitiesUpdatedList->begin();
+//          eu != payload->entitiesUpdatedList->end(); ++eu)
+//     {
+//         auto it = entitiesIndexDetails.find(eu->index);
+//         if (it == entitiesIndexDetails.end())
+//             continue;
+
+//         EntitiesDetails& ed = it->second;
+//         std::string idStr = ed.ID.toStdString();
+
+//         // ── Platform ──────────────────────────────────────────────
+//         auto platformIt = m_Platforms.find(idStr);
+//         if (platformIt != m_Platforms.end())
+//         {
+//             Platform* platform = platformIt->second;
+//             if (!platform)
+//                 continue;
+
+//             platform->transform.setGeoCord(eu->latitude, eu->longitude);
+//             platform->transform.setAltitude(eu->altitude);
+//             platform->transform.setHeading(eu->heading);
+
+//             platform->dynamicModel.turnRate     = eu->turn_radius;
+//             platform->dynamicModel.currentSpeed = eu->curr_speed;
+//             platform->dynamicModel.climbRate    = eu->climb_rate;
+
+//             platform->update();
+
+//             // >>> NEW: push into ECS so DynamicCanvas moves
+//             syncEntityToEcs(m_hierarchy, platform);
+
+//             continue;
+//         }
+
+//         // ── FixedPoints ───────────────────────────────────────────
+//         auto fpIt = m_hierarchy->FixedPointes.find(idStr);
+//         if (fpIt != m_hierarchy->FixedPointes.end())
+//         {
+//             FixedPoints* fp = fpIt->second;
+//             if (!fp)
+//                 continue;
+
+//             fp->transform.geocord.latitude  = eu->latitude;
+//             fp->transform.geocord.longitude = eu->longitude;
+//             fp->transform.geocord.altitude  = eu->altitude;
+//             fp->transform.geocord.Heading   = eu->heading;
+
+//             // If FixedPoints also have ecsID + GeocordComponent, sync similarly:
+//             // if (ECS::World* world = replayWorld(m_hierarchy)) {
+//             //     if (auto* geo = world->GetComponent<ECS::GeocordComponent>(fp->ecsID)) {
+//             //         geo->lat = eu->latitude; geo->lon = eu->longitude;
+//             //         geo->heading = eu->heading;
+//             //     }
+//             // }
+//             continue;
+//         }
+
+//         // ── SpecialZones ──────────────────────────────────────────
+//         auto szIt = m_hierarchy->Specialzones.find(idStr);
+//         if (szIt != m_hierarchy->Specialzones.end())
+//         {
+//             Specialzone* sz = szIt->second;
+//             if (!sz)
+//                 continue;
+
+//             sz->transform.geocord.latitude  = eu->latitude;
+//             sz->transform.geocord.longitude = eu->longitude;
+//             sz->transform.geocord.altitude  = eu->altitude;
+//             sz->transform.geocord.Heading   = eu->heading;
+//             continue;
+//         }
+//     }
+
+//     emit render(0.01f);  // RuntimeEditor must redraw DynamicCanvas on this
+// }
+
+
 void Replay::updateEntitiesUpdatedList(QSharedPointer<PayLoad> payload)
 {
     if (!payload || !payload->entitiesUpdatedList)
@@ -2249,81 +2817,88 @@ void Replay::updateEntitiesUpdatedList(QSharedPointer<PayLoad> payload)
         if (it == entitiesIndexDetails.end())
             continue;
 
-        EntitiesDetails &ed = it->second;
+        EntitiesDetails& ed = it->second;
         std::string idStr = ed.ID.toStdString();
 
-        // ── Platform ──────────────────────────────────────────────────────────
-        auto platIt = m_Platforms.find(idStr);
-        if (platIt != m_Platforms.end())
+        // ── Platform ──────────────────────────────────────────────
+        auto platformIt = m_Platforms.find(idStr);
+        if (platformIt != m_Platforms.end())
         {
-            Platform* platform = platIt->second;
-            if (!platform) continue;
+            Platform* platform = platformIt->second;
+            if (!platform)
+                continue;
 
-            // Safety checks
-            if (!platform->transform) {
-                platform->addComponent("transform");
-            }
-            if (!platform->dynamicModel) {
-                platform->addComponent("dynamicModel");
-            }
+            platform->transform.setGeoCord(eu->latitude, eu->longitude);
+            platform->transform.setAltitude(eu->altitude);
+            platform->transform.setHeading(eu->heading);
 
-            if (platform->transform) {
-                platform->transform->setLongitude(eu->longitude);
-                platform->transform->setLatitude(eu->latitude);
-                platform->transform->setAltitude(eu->altitude);
-                platform->transform->setHeading(eu->heading);
-            }
+            platform->dynamicModel.turnRate     = eu->turn_radius;
+            platform->dynamicModel.currentSpeed = eu->curr_speed;
+            platform->dynamicModel.climbRate    = eu->climb_rate;
 
-            if (platform->dynamicModel) {
-                platform->dynamicModel->turnRate     = eu->turn_radius;
-                platform->dynamicModel->currentSpeed = eu->curr_speed;
-                platform->dynamicModel->climbRate    = eu->climb_rate;
-            }
+            platform->update();
 
-            if (platform->transform || platform->dynamicModel) {
-                platform->update();
-            }
+            // >>> NEW: push into ECS so DynamicCanvas moves
+            syncEntityToEcs(m_hierarchy, platform);
+
             continue;
         }
 
-        // ── FixedPoints ───────────────────────────────────────────────────────
+        // ── FixedPoints ───────────────────────────────────────────
         auto fpIt = m_hierarchy->FixedPointes.find(idStr);
         if (fpIt != m_hierarchy->FixedPointes.end())
         {
             FixedPoints* fp = fpIt->second;
-            if (!fp || !fp->transform) continue;
+            if (!fp)
+                continue;
 
-            if (!fp->transform->geocord) {
-                fp->transform->geocord = new Geocords();
+            fp->transform.geocord.latitude  = eu->latitude;
+            fp->transform.geocord.longitude = eu->longitude;
+            fp->transform.geocord.altitude  = eu->altitude;
+            fp->transform.geocord.Heading   = eu->heading;
+
+            // fix: same ECS-sync gap as SpecialZone above — bina isske
+            // canvas FixedPoints ka naya position kabhi nahi dekhta.
+            if (fp->ecsID != 0) {
+                if (auto* geo = m_hierarchy->world.GetComponent<ECS::GeocordComponent>(fp->ecsID)) {
+                    geo->lat     = static_cast<float>(fp->transform.getLatitude());
+                    geo->lon     = static_cast<float>(fp->transform.getLongitude());
+                    geo->heading = fp->transform.getHeading();
+                }
             }
-            fp->transform->geocord->latitude  = eu->latitude;
-            fp->transform->geocord->longitude = eu->longitude;
-            fp->transform->geocord->altitude  = eu->altitude;
-            fp->transform->geocord->Heading   = eu->heading;
             continue;
         }
 
-        // ── SpecialZones ──────────────────────────────────────────────────────
+        // ── SpecialZones ──────────────────────────────────────────
         auto szIt = m_hierarchy->Specialzones.find(idStr);
         if (szIt != m_hierarchy->Specialzones.end())
         {
             Specialzone* sz = szIt->second;
-            if (!sz || !sz->transform) continue;
+            if (!sz)
+                continue;
 
-            if (!sz->transform->geocord) {
-                sz->transform->geocord = new Geocords();
+            sz->transform.geocord.latitude  = eu->latitude;
+            sz->transform.geocord.longitude = eu->longitude;
+            sz->transform.geocord.altitude  = eu->altitude;
+            sz->transform.geocord.Heading   = eu->heading;
+
+            // fix: Platform ki tarah SpecialZone ka update bhi ECS mein
+            // push karna zaroori hai, warna canvas ko naya position
+            // kabhi pata hi nahi chalta aur zone replay mein hamesha
+            // creation-time wali jagah pe hi freeze dikhti hai.
+            if (sz->ecsID != 0) {
+                if (auto* geo = m_hierarchy->world.GetComponent<ECS::GeocordComponent>(sz->ecsID)) {
+                    geo->lat     = static_cast<float>(sz->transform.getLatitude());
+                    geo->lon     = static_cast<float>(sz->transform.getLongitude());
+                    geo->heading = sz->transform.getHeading();
+                }
             }
-            sz->transform->geocord->latitude  = eu->latitude;
-            sz->transform->geocord->longitude = eu->longitude;
-            sz->transform->geocord->altitude  = eu->altitude;
-            sz->transform->geocord->Heading   = eu->heading;
             continue;
         }
     }
 
-    emit render(0.01);
+    emit render(0.01f);  // RuntimeEditor must redraw DynamicCanvas on this
 }
-
 void Replay::deleteEntitiesDeletedList(
     QSharedPointer<PayLoad> payload)
 {
@@ -2455,109 +3030,113 @@ void Replay::crudEntitiesMeshRenderer2D()
         EntitiesMeshRenderer2D emr = entitiesMeshRenderer2DIndex.at(etc->index);
         EntitiesDetails &ed = entitiesIndexDetails.at(etc->index);
         Platform *platform = m_Platforms.at(ed.ID.toStdString());
-        platform->meshRenderer2d->Sprite->clear();
-        platform->meshRenderer2d->Sprite->append(emr.Sprite.toStdString());
+        platform->meshRenderer2d.Sprite->clear();
+        platform->meshRenderer2d.Sprite->append(emr.Sprite.toStdString());
     }
     debug(str, D_MeshRenderer);
 }
 
 void Replay::setEntitiesTrajectory()
 {
-    str = QString("EntitiesTrajectory { ");
-    for(auto et = payload.entitiesTrajectoryList->begin();
-         et != payload.entitiesTrajectoryList->end();
-         ++et)
-    {
-        // For index of Trajectory
-        entitiesTrajectoryIndex[et->index] = *et;
-        // To Debug
-        str += QString(
-                   " [ Index: %1 and Size: %2 ] ,"
-                   ).arg(QString::number(et->index),
-                        QString::number(et->Trajectories.size()));
-    }
-    str += QString("  }  \n   ");
-    std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
-    str += QString("EntitiesCRUD { ");
-    for(auto etc = payload.entitiesTrajectoryCRUDList->begin();
-         etc != payload.entitiesTrajectoryCRUDList->end();
-         ++etc)
-    {
-        // For index of Trajectory
-        EntitiesDetails ed;
-        try {
-            ed = entitiesIndexDetails.at(etc->index);
-        }
-        catch (std::out_of_range e) {
-            str += QString("Failed entitiesIndexDetails Caught: %1")
-                       .arg(QString(e.what()));
-            continue;
-        }
+    // str = QString("EntitiesTrajectory { ");
+    // for(auto et = payload.entitiesTrajectoryList->begin();
+    //      et != payload.entitiesTrajectoryList->end();
+    //      ++et)
+    // {
+    //     // For index of Trajectory
+    //     entitiesTrajectoryIndex[et->index] = *et;
+    //     // To Debug
+    //     str += QString(
+    //                " [ Index: %1 and Size: %2 ] ,"
+    //                ).arg(QString::number(et->index),
+    //                     QString::number(et->Trajectories.size()));
+    // }
+    // str += QString("  }  \n   ");
+    // std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
+    // str += QString("EntitiesCRUD { ");
+    // for(auto etc = payload.entitiesTrajectoryCRUDList->begin();
+    //      etc != payload.entitiesTrajectoryCRUDList->end();
+    //      ++etc)
+    // {
+    //     // For index of Trajectory
+    //     EntitiesDetails ed;
+    //     try {
+    //         ed = entitiesIndexDetails.at(etc->index);
+    //     }
+    //     catch (std::out_of_range e) {
+    //         str += QString("Failed entitiesIndexDetails Caught: %1")
+    //                    .arg(QString(e.what()));
+    //         continue;
+    //     }
 
-        Platform* platform = m_Platforms.at(ed.ID.toStdString());
-        EntitiesTrajectory et;
-        try {
-            et = entitiesTrajectoryIndex.at(etc->index);
-        }
-        catch (std::out_of_range e) {
-            str += QString("Failed entitiesTrajectoryIndex Caught: %1")
-                       .arg(QString(e.what()));
-            continue;
-        }
-        switch (etc->operation) {
-        case Operation::CREATE:
-            if(platform->trajectory){
-                for (Waypoints* wp : platform->trajectory->Trajectories) {
-                    delete wp->position;
-                    delete wp;
-                }
-                platform->trajectory->Trajectories.clear();
-                for(auto tw = et.Trajectories.begin();
-                     tw != et.Trajectories.end();
-                     ++tw){
-                    Waypoints* newWaypoint = new Waypoints();
-                    newWaypoint->position = new Vector(tw->vector_x, tw->vector_y, tw->vector_z);
-                    newWaypoint->speed = tw->speed;
-                    newWaypoint->formation = tw->formation;
-                    newWaypoint->sensor = tw->sensor;
-                    platform->trajectory->addTrajectory(newWaypoint);
-                }
-            }
-            break;
-        case Operation::UPDATE:
-            if(platform->trajectory){
-                for (Waypoints* wp : platform->trajectory->Trajectories) {
-                    delete wp->position;
-                    delete wp;
-                }
-                platform->trajectory->Trajectories.clear();
-                for(auto tw = et.Trajectories.begin();
-                     tw != et.Trajectories.end();
-                     ++tw){
-                    Waypoints* newWaypoint = new Waypoints();
-                    newWaypoint->position = new Vector(tw->vector_x, tw->vector_y, tw->vector_z);
-                    newWaypoint->speed = tw->speed;
-                    newWaypoint->formation = tw->formation;
-                    newWaypoint->sensor = tw->sensor;
-                    platform->trajectory->addTrajectory(newWaypoint);
-                }
-            }
-            break;
-        case Operation::DELETE:
-            if(platform->trajectory){
-                for (Waypoints* wp : platform->trajectory->Trajectories) {
-                    delete wp->position;
-                    delete wp;
-                }
-                platform->trajectory->Trajectories.clear();
-            }
-            break;
-        default:
-            break;
-        }
-    }
-    str += QString("  }");
-    debug(str,D_EntitiesTrajectory);
+    //     Platform* platform = m_Platforms.at(ed.ID.toStdString());
+    //     EntitiesTrajectory et;
+    //     try {
+    //         et = entitiesTrajectoryIndex.at(etc->index);
+    //     }
+    //     catch (std::out_of_range e) {
+    //         str += QString("Failed entitiesTrajectoryIndex Caught: %1")
+    //                    .arg(QString(e.what()));
+    //         continue;
+    //     }
+    //     switch (etc->operation) {
+    //     case Operation::CREATE:
+    //         // if(platform->trajectory){
+    //             for (Waypoints* wp : platform->trajectory.Trajectories) {
+    //                 delete wp->position;
+    //                 delete wp;
+    //             }
+    //             platform->trajectory.Trajectories.clear();
+    //             for(auto tw = et.Trajectories.begin();
+    //                  tw != et.Trajectories.end();
+    //                  ++tw){
+    //                 Waypoints* newWaypoint = new Waypoints();
+    //                 newWaypoint->position = new Vector(tw->vector_x, tw->vector_y, tw->vector_z);
+    //                 newWaypoint->speed = tw->speed;
+    //                 newWaypoint->formation = tw->formation;
+    //                 newWaypoint->sensor = tw->sensor;
+    //                 platform->trajectory.addTrajectory(newWaypoint);
+    //             }
+    //     case READ:
+    //     case UPDATE:
+    //     case DELETE:
+    //         break;
+    //     }
+    //         break;
+    //     case Operation::UPDATE:
+    //         if(true/*platform->trajectory*/){
+    //             for (Waypoints* wp : platform->trajectory.Trajectories) {
+    //                 delete wp->position;
+    //                 delete wp;
+    //             }
+    //             platform->trajectory.Trajectories.clear();
+    //             for(auto tw = et.Trajectories.begin();
+    //                  tw != et.Trajectories.end();
+    //                  ++tw){
+    //                 Waypoints* newWaypoint = new Waypoints();
+    //                 newWaypoint->position = new Vector(tw->vector_x, tw->vector_y, tw->vector_z);
+    //                 newWaypoint->speed = tw->speed;
+    //                 newWaypoint->formation = tw->formation;
+    //                 newWaypoint->sensor = tw->sensor;
+    //                 platform->trajectory.addTrajectory(newWaypoint);
+    //             }
+    //         }
+    //         break;
+    //     case Operation::DELETE:
+    //         // if(platform->trajectory){
+    //             for (Waypoints* wp : platform->trajectory.Trajectories) {
+    //                 delete wp->position;
+    //                 delete wp;
+    //             }
+    //             platform->trajectory.Trajectories.clear();
+    //         // }
+    //         break;
+    //     default:
+    //         break;
+    //     }
+    // }
+    // str += QString("  }");
+    // debug(str,D_EntitiesTrajectory);
 }
 void Replay::crudProfileCategoriesDetails()
 {
@@ -2602,39 +3181,92 @@ void Replay::crudProfileCategoriesDetails()
     debug(str,D_EntitiesCreateList);
 }
 
-void Replay::createEntitiesCreateList()
-{
-    std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
-    str = QString();
-    for(auto ec = payload.entitiesCreatedList->begin();
-         ec != payload.entitiesCreatedList->end();
-         ++ec)
-    {
-        if(entitiesIndexDetails.find(ec->index) != entitiesIndexDetails.end()){
-            EntitiesDetails &ed = entitiesIndexDetails.at(ec->index);
-            str += QString(
-                       "Entity Name: %1 \t"
-                       "ID: %2 \t"
-                       ).arg(ed.name,ed.ID);
 
-            emit createEntitiesCreate(ed.parentID, ed.ID, ed.name, true);
-            Platform* platform = m_Platforms.at(ed.ID.toStdString());
-            platform->addComponent("transform");
-            platform->addComponent("crossSection");
-            platform->addComponent("trajectory");
-            platform->addComponent("rigidbody");
-            platform->addComponent("dynamicModel");
-            platform->addComponent("bitmap");
-            platform->addComponent("collider");
-            platform->addComponent("sensors");
-            platform->addComponent("iffs");
-            platform->addComponent("radios");
-            platform->addComponent("weapons");
-        }
-    }
-    debug(str,D_EntitiesCreateList);
-}
+// //fix by yogesh
+// void Replay::createEntitiesCreateList(QSharedPointer<PayLoad> payload)
+// {
+//     for (auto ec = payload->entitiesCreatedList->begin();
+//          ec != payload->entitiesCreatedList->end(); ++ec)
+//     {
+//         if (entitiesIndexDetails.find(ec->index) == entitiesIndexDetails.end())
+//             continue;
 
+//         EntitiesDetails& ed = entitiesIndexDetails.at(ec->index);
+//         emit createEntitiesCreate(ed.parentID, ed.ID, ed.name, true);
+
+//         std::string idStr = ed.ID.toStdString();
+
+//         // ── Platform ────────────────────────────────────────────────
+//         auto platIt = m_Platforms->find(idStr);
+//         if (platIt != m_Platforms->end() && platIt->second) {
+//             Platform* platform = platIt->second;
+
+//             platform->addComponent("transform");
+//             platform->transform.geocord.latitude  = 0.0;
+//             platform->transform.geocord.longitude = 0.0;
+//             platform->transform.geocord.altitude  = 0.0;
+//             platform->transform.geocord.Heading   = 0.0;
+
+//             emit entityRecreated(ed.ID);
+
+//             platform->addComponent("crossSection");
+//             platform->addComponent("trajectory");
+//             platform->addComponent("rigidbody");
+//             platform->addComponent("collider");
+//             platform->addComponent("dynamicModel");
+//             platform->addComponent("bitmap");
+//             platform->addComponent("sensors");
+//             platform->addComponent("iffs");
+//             platform->addComponent("radios");
+//             platform->addComponent("weapons");
+
+//             // ECS geocord + sprite — DynamicCanvas move + correct icon
+//             syncEntityToEcs(m_hierarchy, platform);
+
+//             continue;
+//         }
+
+//         // ── FixedPoints ─────────────────────────────────────────────
+//         auto fpIt = m_hierarchy->FixedPointes.find(idStr);
+//         if (fpIt != m_hierarchy->FixedPointes.end() && fpIt->second) {
+//             FixedPoints* fp = fpIt->second;
+//             fp->addComponent("transform");
+//             fp->addComponent("collider");
+//             fp->addComponent("bitmap");
+//             fp->transform.geocord.latitude  = 0.0;
+//             fp->transform.geocord.longitude = 0.0;
+//             fp->transform.geocord.altitude  = 0.0;
+//             fp->transform.geocord.Heading   = 0.0;
+//             continue;
+//         }
+
+//         // ── SpecialZone ─────────────────────────────────────────────
+//         auto szIt = m_hierarchy->Specialzones.find(idStr);
+//         if (szIt != m_hierarchy->Specialzones.end() && szIt->second) {
+//             Specialzone* sz = szIt->second;
+//             sz->addComponent("transform");
+//             sz->addComponent("collider");
+//             sz->addComponent("bitmap");
+//             sz->transform.geocord.latitude  = 0.0;
+//             sz->transform.geocord.longitude = 0.0;
+//             sz->transform.geocord.altitude  = 0.0;
+//             sz->transform.geocord.Heading   = 0.0;
+//             continue;
+//         }
+
+//         // Sensor / IFF / Radio / Weapon — hierarchy already has them; skip
+//         if (m_hierarchy->Sensors.find(idStr) != m_hierarchy->Sensors.end())
+//             continue;
+//         if (m_hierarchy->Iffs.find(idStr) != m_hierarchy->Iffs.end())
+//             continue;
+//         if (m_hierarchy->Radios.find(idStr) != m_hierarchy->Radios.end())
+//             continue;
+//         if (m_hierarchy->Weapons.find(idStr) != m_hierarchy->Weapons.end())
+//             continue;
+//     }
+// }
+
+//fix by yogesh
 void Replay::updateEntitiesUpdatedList()
 {
     std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
@@ -2650,13 +3282,13 @@ void Replay::updateEntitiesUpdatedList()
                 continue;
             }else{
                 Platform* platform = m_Platforms.at(ed.ID.toStdString());
-                platform->transform->setLongitude (eu->longitude);
-                platform->transform->setLatitude  (eu->latitude );
-                platform->transform->setAltitude  (eu->altitude );
-                platform->transform->setHeading   (eu->heading  );
-                platform->dynamicModel->turnRate     = eu->turn_radius;
-                platform->dynamicModel->currentSpeed = eu->curr_speed ;
-                platform->dynamicModel->climbRate    = eu->climb_rate ;
+                platform->transform.setLongitude (eu->longitude);
+                platform->transform.setLatitude  (eu->latitude );
+                platform->transform.setAltitude  (eu->altitude );
+                platform->transform.setHeading   (eu->heading  );
+                platform->dynamicModel.turnRate     = eu->turn_radius;
+                platform->dynamicModel.currentSpeed = eu->curr_speed ;
+                platform->dynamicModel.climbRate    = eu->climb_rate ;
             }
         }
     }
@@ -2708,68 +3340,365 @@ void Replay::jumpInBetween(qint64 clickedTimestamp)
 
 void Replay::framePayLoadForJumpInBetween(int frameIndex)
 {
+    if (!packet)
+        return;
+
+    // 1. CLEAR ONLY TEMPORARY PAYLOAD DATA
     packet->entitiesDetailsList->clear();
     packet->entitiesMeshRenderer2DList->clear();
     packet->entitiesTrajectoryList->clear();
     packet->entitiesTrajectoryCRUDList->clear();
+
+    // 2. LOAD COMPLETE SNAPSHOT FOR TARGET FRAME
     emit getPayLoadFromIndex(packet, frameIndex);
 
-    // Step 1: Profile categories
+    // 3. PROFILE CATEGORIES
     if (!packet->profileCategoriesDetailsList->empty())
         setProfileCategoriesDetails(packet);
     if (!packet->profileCategoriesCRUDList->empty())
         crudProfileCategoriesDetails(packet);
 
-    // Step 2: Entity details index
-    if (entitiesIndexDetails.empty() && !packet->entitiesDetailsList->empty())
+    // 4. TARGET FRAME ENTITY SNAPSHOT
+    QSet<QString> targetEntityIds;
+    if (!packet->entitiesDetailsList->empty()) {
         setEntitiesIndexDetails(packet);
+        for (const auto& details : *packet->entitiesDetailsList) {
+            if (!details.ID.isEmpty())
+                targetEntityIds.insert(details.ID);
+        }
+    }
 
-    // Step 3: CREATE
-    if (!packet->entitiesCreatedList->empty())
-        createEntitiesCreateList(packet);
+    // 5. REMOVE ENTITIES WHICH MUST NOT EXIST AT TARGET FRAME
+    // 5A. Platforms
+    std::vector<std::string> platformsToRemove;
+    if (m_Platforms) {
+        for (const auto& [id, platform] : *m_Platforms) {
+            if (!platform)
+                continue;
+            if (!targetEntityIds.contains(QString::fromStdString(id)))
+                platformsToRemove.push_back(id);
+        }
+    }
+    for (const auto& id : platformsToRemove) {
+        if (!m_Platforms)
+            break;
+        auto it = m_Platforms->find(id);
+        if (it == m_Platforms->end() || !it->second)
+            continue;
+        Platform* platform = it->second;
+        emit deleteEntities(
+            QString::fromStdString(platform->parentID),
+            QString::fromStdString(id),
+            true);
+    }
 
-    // ── FIX START: same as replayStart ──
+    // 5B. Special Zones
+    std::vector<std::string> specialZonesToRemove;
+    for (const auto& [id, zone] : m_hierarchy->Specialzones) {
+        if (!zone)
+            continue;
+        if (!targetEntityIds.contains(QString::fromStdString(id)))
+            specialZonesToRemove.push_back(id);
+    }
+    for (const auto& id : specialZonesToRemove) {
+        auto it = m_hierarchy->Specialzones.find(id);
+        if (it == m_hierarchy->Specialzones.end() || !it->second)
+            continue;
+        Specialzone* zone = it->second;
+        emit deleteEntities(
+            QString::fromStdString(zone->parentID),
+            QString::fromStdString(id),
+            true);
+    }
+
+    // 5C. Sensors
+    std::vector<std::string> sensorsToRemove;
+    for (const auto& [id, sensor] : m_hierarchy->Sensors) {
+        if (!sensor)
+            continue;
+        if (!targetEntityIds.contains(QString::fromStdString(id)))
+            sensorsToRemove.push_back(id);
+    }
+    for (const auto& id : sensorsToRemove) {
+        auto sensorIt = m_hierarchy->Sensors.find(id);
+        if (sensorIt == m_hierarchy->Sensors.end() || !sensorIt->second)
+            continue;
+        Sensor* sensor = sensorIt->second;
+        std::vector<int> indicesToPurge;
+        for (const auto& [index, mappedSensor] : sensorsIndexMap) {
+            if (mappedSensor == sensor)
+                indicesToPurge.push_back(index);
+        }
+        for (int index : indicesToPurge)
+            sensorsIndexMap.erase(index);
+        Platform* owner = dynamic_cast<Platform*>(sensor->parentEntity);
+        if (owner) {
+            m_hierarchy->removeSubComponent(
+                QString::fromStdString(owner->sensors.ID),
+                QString::fromStdString(id));
+        }
+    }
+
+    // 5D. Formations
+    std::vector<std::string> formationsToRemove;
+    for (const auto& [id, formation] : m_hierarchy->Formations) {
+        if (!formation)
+            continue;
+        if (!targetEntityIds.contains(QString::fromStdString(id)))
+            formationsToRemove.push_back(id);
+    }
+    for (const auto& id : formationsToRemove) {
+        auto it = m_hierarchy->Formations.find(id);
+        if (it == m_hierarchy->Formations.end() || !it->second)
+            continue;
+        Formation* formation = it->second;
+        emit deleteEntities(
+            QString::fromStdString(formation->parentID),
+            QString::fromStdString(id),
+            true);
+    }
+
     QCoreApplication::processEvents();
 
+    // 6. RECREATE ENTITIES MISSING FROM CURRENT HIERARCHY
+    std::vector<EntitiesDetails> missingEntities;
+    if (packet->entitiesDetailsList) {
+        for (const auto& ed : *packet->entitiesDetailsList) {
+            if (ed.ID.isEmpty())
+                continue;
+            const std::string idStr = ed.ID.toStdString();
+            if (m_hierarchy->Entities.find(idStr) != m_hierarchy->Entities.end())
+                continue;
+            missingEntities.push_back(ed);
+        }
+    }
+    std::sort(missingEntities.begin(), missingEntities.end(),
+              [](const EntitiesDetails& a, const EntitiesDetails& b) {
+                  return a.index < b.index;
+              });
+
+    for (const auto& ed : missingEntities) {
+        emit createEntitiesCreate(ed.parentID, ed.ID, ed.name, true);
+        QCoreApplication::processEvents();
+
+        const std::string idStr = ed.ID.toStdString();
+
+        Platform* platform = nullptr;
+        if (m_Platforms) {
+            auto platIt = m_Platforms->find(idStr);
+            if (platIt != m_Platforms->end())
+                platform = platIt->second;
+        }
+        if (!platform) {
+            auto entIt = m_hierarchy->Entities.find(idStr);
+            if (entIt != m_hierarchy->Entities.end()) {
+                platform = dynamic_cast<Platform*>(entIt->second);
+                if (platform && m_Platforms)
+                    (*m_Platforms)[idStr] = platform;
+            }
+        }
+        if (platform) {
+            platform->addComponent("transform");
+            platform->addComponent("crossSection");
+            platform->addComponent("trajectory");
+            platform->addComponent("rigidbody");
+            platform->addComponent("collider");
+            platform->addComponent("dynamicModel");
+            platform->addComponent("bitmap");
+            platform->addComponent("sensors");
+            platform->addComponent("iffs");
+            platform->addComponent("radios");
+            platform->addComponent("weapons");
+            platform->transform.geocord.latitude  = 0.0;
+            platform->transform.geocord.longitude = 0.0;
+            platform->transform.geocord.altitude  = 0.0;
+            platform->transform.geocord.Heading   = 0.0;
+            emit entityRecreated(QString::fromStdString(platform->ID));
+            syncEntityToEcs(m_hierarchy, platform);
+            continue;
+        }
+
+        auto fpIt = m_hierarchy->FixedPointes.find(idStr);
+        if (fpIt != m_hierarchy->FixedPointes.end()) {
+            FixedPoints* fp = fpIt->second;
+            if (fp) {
+                fp->addComponent("transform");
+                fp->addComponent("collider");
+                fp->addComponent("bitmap");
+                emit entityRecreated(QString::fromStdString(fp->ID));
+            }
+            continue;
+        }
+
+        auto szIt = m_hierarchy->Specialzones.find(idStr);
+        if (szIt != m_hierarchy->Specialzones.end()) {
+            Specialzone* sz = szIt->second;
+            if (sz) {
+                sz->addComponent("transform");
+                sz->addComponent("collider");
+                sz->addComponent("bitmap");
+                emit entityRecreated(QString::fromStdString(sz->ID));
+            }
+            continue;
+        }
+    }
+
+    QCoreApplication::processEvents();
+
+    // 7. FIXED POINT / SPECIAL ZONE COMPONENT RECONSTRUCTION
     for (auto& [id, fp] : m_hierarchy->FixedPointes) {
-        if (!fp) continue;
-        if (!fp->transform)      fp->addComponent("transform");
-        if (!fp->collider)       fp->addComponent("collider");
-        if (!fp->meshRenderer2d) fp->addComponent("bitmap");
+        if (!fp)
+            continue;
+        fp->addComponent("transform");
+        fp->addComponent("collider");
+        fp->addComponent("bitmap");
+        fp->transform.geocord.latitude  = 0.0;
+        fp->transform.geocord.longitude = 0.0;
+        fp->transform.geocord.altitude  = 0.0;
+        fp->transform.geocord.Heading   = 0.0;
         emit entityRecreated(QString::fromStdString(fp->ID));
     }
     for (auto& [id, sz] : m_hierarchy->Specialzones) {
-        if (!sz) continue;
-        if (!sz->transform)      sz->addComponent("transform");
-        if (!sz->collider)       sz->addComponent("collider");
-        if (!sz->meshRenderer2d) sz->addComponent("bitmap");
+        if (!sz)
+            continue;
+        sz->addComponent("transform");
+        sz->addComponent("collider");
+        sz->addComponent("bitmap");
+        sz->transform.geocord.latitude  = 0.0;
+        sz->transform.geocord.longitude = 0.0;
+        sz->transform.geocord.altitude  = 0.0;
+        sz->transform.geocord.Heading   = 0.0;
         emit entityRecreated(QString::fromStdString(sz->ID));
     }
-
     QCoreApplication::processEvents();
-    // ── FIX END ──
 
-    // Step 4: MeshRenderer
-    if (!packet->entitiesMeshRenderer2DList->empty())
+    // 8. MESH / SPRITE RESTORE
+    if (!packet->entitiesMeshRenderer2DList->empty()) {
         setEntitiesMeshRenderer2D(packet);
+        for (const auto& emr : *packet->entitiesMeshRenderer2DList) {
+            auto entityIt = entitiesIndexDetails.find(emr.index);
+            if (entityIt == entitiesIndexDetails.end()) {
+                qDebug() << "[Jump Mesh] EntityDetails not found for index:" << emr.index;
+                continue;
+            }
+            const QString entityId = entityIt->second.ID;
+            if (entityId.isEmpty()) {
+                qDebug() << "[Jump Mesh] Empty Entity ID for index:" << emr.index;
+                continue;
+            }
+            const std::string idStr = entityId.toStdString();
+
+            auto platformIt = m_hierarchy->Platforms.find(idStr);
+            if (platformIt != m_hierarchy->Platforms.end() && platformIt->second) {
+                Platform* platform = platformIt->second;
+                if (!emr.Sprite.isEmpty()) {
+                    // setSprite → hierarchy + ECS SpritePath
+                    platform->meshRenderer2d.setSprite(emr.Sprite.toStdString());
+                    syncEntityToEcs(m_hierarchy, platform, emr.Sprite);
+                    qDebug() << "[Jump Mesh] Platform Sprite restored:"
+                             << entityId << "index:" << emr.index
+                             << "Sprite:" << emr.Sprite;
+                }
+                continue;
+            }
+
+            auto fpIt = m_hierarchy->FixedPointes.find(idStr);
+            if (fpIt != m_hierarchy->FixedPointes.end() && fpIt->second) {
+                if (!emr.Sprite.isEmpty()) {
+                    fpIt->second->meshRenderer2d.Sprite->clear();
+                    fpIt->second->meshRenderer2d.Sprite->append(emr.Sprite.toStdString());
+                    qDebug() << "[Jump Mesh] FixedPoint Sprite restored:"
+                             << entityId << "index:" << emr.index
+                             << "Sprite:" << emr.Sprite;
+                }
+                continue;
+            }
+
+            auto szIt = m_hierarchy->Specialzones.find(idStr);
+            if (szIt != m_hierarchy->Specialzones.end() && szIt->second) {
+                if (!emr.Sprite.isEmpty()) {
+                    szIt->second->meshRenderer2d.Sprite->clear();
+                    szIt->second->meshRenderer2d.Sprite->append(emr.Sprite.toStdString());
+                    qDebug() << "[Jump Mesh] SpecialZone Sprite restored:"
+                             << entityId << "index:" << emr.index
+                             << "Sprite:" << emr.Sprite;
+                }
+                continue;
+            }
+
+            qDebug() << "[Jump Mesh] Entity not found:" << entityId << "index:" << emr.index;
+        }
+    }
+
     if (!packet->entitiesMeshRenderer2DCRUDList->empty())
         crudEntitiesMeshRenderer2D(packet);
 
-    // Step 5: Trajectory
-    if (!packet->entitiesTrajectoryList->empty())
-        setEntitiesTrajectory(packet);
+    // 9. TRAJECTORY
+    // if (!packet->entitiesTrajectoryList->empty())
+    //     setEntitiesTrajectory(packet);
 
-    // Step 6: Sensors/IFF/Radio/Weapon
-    if (!sensorsRestored)
-        restoreSensorsFromPayload(packet);
-    if (!iffsRestored)
-        restoreIffsFromPayload(packet);
-    if (!radiosRestored)
-        restoreRadiosFromPayload(packet);
-    if (!weaponsRestored)
-        restoreWeaponsFromPayload(packet);
+    // 9. TRAJECTORY
+    {
+        // Target frame par jin entities ki trajectory honi CHAHIYE, unke IDs collect karo
+        QSet<QString> targetTrajectoryIds;
+        if (!packet->entitiesTrajectoryList->empty()) {
+            for (const auto& et : *packet->entitiesTrajectoryList) {
+                auto edIt = entitiesIndexDetails.find(et.index);
+                if (edIt != entitiesIndexDetails.end())
+                    targetTrajectoryIds.insert(edIt->second.ID);
+            }
+            setEntitiesTrajectory(packet);
+        }
 
-    // Step 7: Clear
+        if (m_Platforms) {
+            for (auto& [id, platform] : *m_Platforms) {
+                if (!platform)
+                    continue;
+                if (targetTrajectoryIds.contains(QString::fromStdString(id)))
+                    continue;
+
+                bool hadWaypoints = !platform->trajectory.Trajectories.empty();
+
+                for (Waypoints* wp : platform->trajectory.Trajectories) {
+                    if (wp) {
+                        delete wp->position; wp->position = nullptr;
+                        delete wp->geocord;  wp->geocord = nullptr;
+                        delete wp;
+                    }
+                }
+                platform->trajectory.Trajectories.clear();
+                platform->trajectory.Active = false;
+
+                //fix by yogesh
+                if (platform->trajectory.parentEntity && platform->trajectory.parentEntity->root) {
+                    ECS::trajectoryPathComponent& ecsPath = platform->trajectory.getTrajectoryPath();
+                    if (ecsPath.activeCount != 0) {
+                        ecsPath.activeCount = 0;
+                        ecsPath.delta = true;
+                    }
+                }
+
+                if (hadWaypoints)
+                    emit selectMesh(QString::fromStdString(id));
+            }
+        }
+    }
+
+
+
+    // 10. RESTORE TARGET FRAME ENTITY STATE
+    if (!packet->entitiesUpdatedList->empty())
+        updateEntitiesUpdatedList(packet);
+
+    // 11. SENSORS / IFF / RADIO / WEAPON
+    restoreSensorsFromPayload(packet);
+    restoreIffsFromPayload(packet);
+    restoreRadiosFromPayload(packet);
+    restoreWeaponsFromPayload(packet);
+
+    emit render(0.01f);
+
+    // 12. CLEAR TEMPORARY PAYLOAD DATA
     packet->profileCategoriesCRUDList->clear();
     packet->entitiesCreatedList->clear();
     packet->entitiesUpdatedList->clear();
@@ -2787,7 +3716,6 @@ void Replay::framePayLoadForJumpInBetween(int frameIndex)
     packet->weaponList->clear();
     packet->weaponCRUDList->clear();
 }
-
 void Replay::setEntitiesDetailsInBtw()
 {
     std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
@@ -2822,29 +3750,44 @@ void Replay::setEntitiesDetailsInBtw()
         platform->addComponent("radios");
     }
 }
+//fix by yogesh
 void Replay::setEntitiesMeshRenderer2DBtw()
 {
     str = "Mesh Between Operation";
     std::unordered_map<std::string, Platform*> m_Platforms = m_hierarchy->Platforms;
-    for(auto emr = payload.entitiesMeshRenderer2DList->begin();
+
+    for (auto emr = payload.entitiesMeshRenderer2DList->begin();
          emr != payload.entitiesMeshRenderer2DList->end();
-         ++emr){
+         ++emr)
+    {
         entitiesMeshRenderer2DIndex[emr->index] = *emr;
     }
-    for(auto ed = payload.entitiesDetailsList->begin();
+
+    for (auto ed = payload.entitiesDetailsList->begin();
          ed != payload.entitiesDetailsList->end();
-         ++ed){
+         ++ed)
+    {
         EntitiesMeshRenderer2D emr = entitiesMeshRenderer2DIndex[ed->index];
-        if(m_Platforms.find(ed->ID.toStdString()) == m_Platforms.end()){
-            str += "Failed to Add Mesh For Index: "+QString::number(ed->index);
+        if (m_Platforms.find(ed->ID.toStdString()) == m_Platforms.end()) {
+            str += "Failed to Add Mesh For Index: " + QString::number(ed->index);
             continue;
         }
-        Platform *platform = m_Platforms.at(ed->ID.toStdString());
-        platform->meshRenderer2d->Sprite->clear();
-        platform->meshRenderer2d->Sprite->append(emr.Sprite.toStdString());
+
+        Platform* platform = m_Platforms.at(ed->ID.toStdString());
+        if (!platform)
+            continue;
+
+        if (!emr.Sprite.isEmpty()) {
+            platform->meshRenderer2d.Sprite->clear();
+            platform->meshRenderer2d.Sprite->append(emr.Sprite.toStdString());
+
+            // NEW
+            syncEntityToEcs(m_hierarchy, platform, emr.Sprite);
+        }
     }
     debug(str, D_MeshRenderer);
 }
+
 
 void Replay::setEntitiesDetailsInBtw(QSharedPointer<PayLoad> payload)
 {
@@ -2867,11 +3810,11 @@ void Replay::setEntitiesDetailsInBtw(QSharedPointer<PayLoad> payload)
         if(platform == m_Platforms.end()){
             continue;
         }
-        for (Waypoints* wp : platform->second->trajectory->Trajectories) {
+        for (Waypoints* wp : platform->second->trajectory.Trajectories) {
             delete wp->position;
             delete wp;
         }
-        platform->second->trajectory->Trajectories.clear();
+        platform->second->trajectory.Trajectories.clear();
         for(auto tw = et->Trajectories.begin();
              tw != et->Trajectories.end();
              ++tw){
@@ -2880,7 +3823,7 @@ void Replay::setEntitiesDetailsInBtw(QSharedPointer<PayLoad> payload)
             newWaypoint->speed = tw->speed;
             newWaypoint->formation = tw->formation;
             newWaypoint->sensor = tw->sensor;
-            platform->second->trajectory->addTrajectory(newWaypoint);
+            platform->second->trajectory.addTrajectory(newWaypoint);
         }
     }
     debug(str,D_EntitiesTrajectory);
@@ -2905,8 +3848,8 @@ void Replay::setEntitiesMeshRenderer2DBtw(QSharedPointer<PayLoad> payload)
             continue;
         }
         Platform *platform = m_Platforms.at(ed->ID.toStdString());
-        platform->meshRenderer2d->Sprite->clear();
-        platform->meshRenderer2d->Sprite->append(emr.Sprite.toStdString());
+        platform->meshRenderer2d.Sprite->clear();
+        platform->meshRenderer2d.Sprite->append(emr.Sprite.toStdString());
     }
     debug(str, D_MeshRenderer);
 }
@@ -2932,11 +3875,11 @@ void Replay::setEntitiesTrajectoryBtw()
         if(platform == m_Platforms.end()){
             continue;
         }
-        for (Waypoints* wp : platform->second->trajectory->Trajectories) {
+        for (Waypoints* wp : platform->second->trajectory.Trajectories) {
             delete wp->position;
             delete wp;
         }
-        platform->second->trajectory->Trajectories.clear();
+        platform->second->trajectory.Trajectories.clear();
         for(auto tw = et->Trajectories.begin();
              tw != et->Trajectories.end();
              ++tw){
@@ -2945,7 +3888,7 @@ void Replay::setEntitiesTrajectoryBtw()
             newWaypoint->speed = tw->speed;
             newWaypoint->formation = tw->formation;
             newWaypoint->sensor = tw->sensor;
-            platform->second->trajectory->addTrajectory(newWaypoint);
+            platform->second->trajectory.addTrajectory(newWaypoint);
         }
     }
 
@@ -3145,71 +4088,485 @@ void Recording::sensorRemoved(QSharedPointer<PayLoad> payload, const QString &se
     sensorIndexMap.remove(sensorId);
 }
 
+
+//fix by yogesh
 void Replay::restoreSensorsFromPayload(QSharedPointer<PayLoad> payload)
 {
-    if (m_hierarchy->Platforms.empty()) return;
-    if (sensorsRestored) return;
+    if (!payload)
+        return;
 
-    // DELETE pass
-    for (auto &crud : *payload->sensorsCRUDList) {
-        if (crud.operation == DELETE) {
-            auto it = sensorsIndexMap.find(crud.index);
-            if (it != sensorsIndexMap.end()) {
-                m_hierarchy->Sensors.erase(it->second->ID);
-                delete it->second;
-                sensorsIndexMap.erase(it);
+    if (!m_hierarchy)
+        return;
+
+    if (!payload->sensorsList)
+        return;
+    QSet<QString> targetSensorIDs;
+
+    for (const auto &sdata : *payload->sensorsList)
+    {
+        if (!sdata.id.isEmpty())
+            targetSensorIDs.insert(sdata.id);
+    }
+
+    qDebug()
+        << "\n========== RESTORE SENSORS =========="
+        << "\nFrame =" << payload->frameIndex
+        << "\nTarget sensors =" << targetSensorIDs.size()
+        << "\nGlobal sensors ="
+        << static_cast<int>(m_hierarchy->Sensors.size());
+
+
+    // ============================================================
+    // 2. REMOVE SENSORS NOT PRESENT IN TARGET FRAME
+    // ============================================================
+
+    std::vector<std::pair<Platform*, std::string>> sensorsToRemove;
+
+    for (auto &[platformID, platform] : m_hierarchy->Platforms)
+    {
+        if (!platform)
+            continue;
+
+        auto &profileSensors = platform->sensors.sensors;
+
+        for (const auto &[sensorID, sensor] : profileSensors)
+        {
+            if (!sensor)
+                continue;
+
+            QString id =
+                QString::fromStdString(sensorID);
+
+            if (!targetSensorIDs.contains(id))
+            {
+                sensorsToRemove.push_back({
+                    platform,
+                    sensorID
+                });
             }
         }
     }
-    bool hasSensorProfile = false;
-    for (const auto& [key, profilePtr] : m_hierarchy->ProfileCategories) {
-        if (profilePtr && profilePtr->type == Constants::EntityType::Sensor) {
-            hasSensorProfile = true;
-            break;
+
+
+    // ============================================================
+    // 3. REMOVE STALE SENSORS
+    // ============================================================
+
+    for (const auto &[platform, sensorID] : sensorsToRemove)
+    {
+        if (!platform)
+            continue;
+
+        qDebug()
+            << "[REPLAY SENSOR DELETE]"
+            << "Frame =" << payload->frameIndex
+            << "Platform ="
+            << QString::fromStdString(platform->ID)
+            << "Sensor ="
+            << QString::fromStdString(sensorID);
+
+
+        // --------------------------------------------------------
+        // Remove replay index mappings pointing to this sensor
+        // --------------------------------------------------------
+
+        for (auto it = sensorsIndexMap.begin();
+             it != sensorsIndexMap.end();)
+        {
+            Sensor *mappedSensor = it->second;
+
+            if (mappedSensor &&
+                mappedSensor->ID == sensorID)
+            {
+                it = sensorsIndexMap.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+
+
+        // --------------------------------------------------------
+        // Remove through SensorProfile.
+        //
+        // IMPORTANT:
+        // Do NOT directly delete Sensor*.
+        // --------------------------------------------------------
+
+        auto sensorIt =
+            platform->sensors.sensors.find(sensorID);
+
+        if (sensorIt !=
+            platform->sensors.sensors.end())
+        {
+            platform->sensors.removeSubComponent(sensorID);
         }
     }
-    if (!hasSensorProfile) {
-        ProfileCategaory* sensorsProfile = m_hierarchy->addProfileCategaory("Sensors");
-        if (sensorsProfile)
-            sensorsProfile->setProfileType(Constants::EntityType::Sensor);
-    }
 
-    bool anyCreated = false;
-    for (auto &sdata : *payload->sensorsList) {
-        auto it = sensorsIndexMap.find(sdata.index);
-        if (it != sensorsIndexMap.end()) {
-            it->second->fromJson(sdata.state);
+    for (const auto &sdata : *payload->sensorsList)
+    {
+        if (sdata.id.isEmpty())
+            continue;
+
+
+        // ========================================================
+        // 4A. REPLAY INDEX MAP
+        // ========================================================
+
+        auto indexIt =
+            sensorsIndexMap.find(sdata.index);
+
+        if (indexIt != sensorsIndexMap.end())
+        {
+            Sensor *sensor = indexIt->second;
+
+            if (sensor)
+            {
+                auto globalIt =
+                    m_hierarchy->Sensors.find(sensor->ID);
+
+                if (globalIt != m_hierarchy->Sensors.end() &&
+                    globalIt->second == sensor)
+                {
+                    sensor->fromJson(sdata.state);
+
+                    qDebug()
+                        << "[REPLAY SENSOR UPDATE]"
+                        << "Using index mapping:"
+                        << sdata.id;
+
+                    continue;
+                }
+            }
+
+            // stale mapping
+            sensorsIndexMap.erase(indexIt);
+        }
+
+
+        // ========================================================
+        // 4B. FIND PARENT PLATFORM
+        // ========================================================
+
+        QString parentEntityId =
+            sdata.state["_parentEntityId"].toString();
+
+        if (parentEntityId.isEmpty())
+        {
+            parentEntityId =
+                sdata.state["parentEntityId"].toString();
+        }
+
+        if (parentEntityId.isEmpty())
+        {
+            qDebug()
+            << "[REPLAY SENSOR]"
+            << "Missing parent platform:"
+            << sdata.id;
+
             continue;
         }
 
-        // CREATE
-        QString sensorName = sdata.state["_name"].toString();
-        if (sensorName.isEmpty()) sensorName = sdata.state["name"].toString();
-        if (sensorName.isEmpty()) sensorName = sdata.type;
 
-        QString parentEntityId = sdata.state["_parentEntityId"].toString();
-        if (parentEntityId.isEmpty())
-            parentEntityId = sdata.state["parentEntityId"].toString();
-        if (parentEntityId.isEmpty()) continue;
-        auto platIt = m_hierarchy->Platforms.find(parentEntityId.toStdString());
-        if (platIt == m_hierarchy->Platforms.end()) continue;
-        Platform* platform = platIt->second;
-        // sensors component ensure karo
-        if (!platform->sensors)
+        auto platformIt =
+            m_hierarchy->Platforms.find(
+                parentEntityId.toStdString()
+                );
+
+        if (platformIt ==
+            m_hierarchy->Platforms.end())
+        {
+            qDebug()
+            << "[REPLAY SENSOR]"
+            << "Parent platform not found:"
+            << parentEntityId
+            << "Sensor:"
+            << sdata.id;
+
+            continue;
+        }
+
+        Platform *platform =
+            platformIt->second;
+
+        if (!platform)
+            continue;
+
+
+        // ========================================================
+        // 4C. ENSURE PLATFORM SENSOR COMPONENT
+        // ========================================================
+
+        if (platform->sensors.parentEntity != platform)
+        {
+            platform->sensors.init(platform);
+        }
+
+        platform->sensors.parentID =
+            platform->ID;
+
+
+        QString componentID =
+            QString::fromStdString(
+                platform->sensors.ID
+                );
+
+
+        // --------------------------------------------------------
+        // Register existing Platform::sensors component if needed.
+        //
+        // This does NOT create a profile category.
+        // --------------------------------------------------------
+
+        if (m_hierarchy->Components.find(
+                platform->sensors.ID)
+            ==
+            m_hierarchy->Components.end())
+        {
             platform->addComponent("sensors");
-        if (!platform->sensors) continue;
-        QString compId = QString::fromStdString(platform->sensors->ID);
-        m_hierarchy->addSubComponent(compId, sensorName, sdata.type,
-                                     sdata.id, sdata.state);
-        auto addedIt = m_hierarchy->Sensors.find(sdata.id.toStdString());
-        if (addedIt != m_hierarchy->Sensors.end()) {
-            sensorsIndexMap[sdata.index] = addedIt->second;
-            anyCreated = true;
+        }
+
+
+        // ========================================================
+        // 4D. FIND EXISTING SENSOR
+        //
+        // Priority:
+        //
+        // 1. Exact recorded ID
+        // 2. Existing sensor with same name
+        //
+        // Name is only fallback for Scenario Configuration sensors.
+        // ========================================================
+
+        Sensor *existingSensor = nullptr;
+
+
+        // --------------------------------------------------------
+        // FIRST: exact recorded ID inside this platform
+        // --------------------------------------------------------
+
+        auto exactLocalIt =
+            platform->sensors.sensors.find(
+                sdata.id.toStdString()
+                );
+
+        if (exactLocalIt !=
+                platform->sensors.sensors.end() &&
+            exactLocalIt->second)
+        {
+            existingSensor =
+                exactLocalIt->second;
+        }
+
+
+        // --------------------------------------------------------
+        // SECOND: exact recorded ID globally
+        // --------------------------------------------------------
+
+        if (!existingSensor)
+        {
+            auto globalIt =
+                m_hierarchy->Sensors.find(
+                    sdata.id.toStdString()
+                    );
+
+            if (globalIt !=
+                    m_hierarchy->Sensors.end() &&
+                globalIt->second)
+            {
+                Sensor *candidate =
+                    globalIt->second;
+
+                // Only reuse it if it belongs to this platform.
+                if (candidate->parentEntity == platform)
+                {
+                    existingSensor = candidate;
+                }
+            }
+        }
+
+
+        // --------------------------------------------------------
+        // THIRD: Scenario Configuration fallback by name
+        // --------------------------------------------------------
+
+        if (!existingSensor)
+        {
+            QString recordedName =
+                sdata.state["_name"].toString();
+
+            if (recordedName.isEmpty())
+            {
+                recordedName =
+                    sdata.state["name"].toString();
+            }
+
+            if (!recordedName.isEmpty())
+            {
+                for (const auto &[existingID, candidate]
+                     : platform->sensors.sensors)
+                {
+                    if (!candidate)
+                        continue;
+
+                    QString existingName =
+                        QString::fromStdString(
+                            candidate->Name
+                            );
+
+                    if (existingName == recordedName)
+                    {
+                        existingSensor = candidate;
+                        break;
+                    }
+                }
+            }
+        }
+
+
+        // ========================================================
+        // 4E. UPDATE EXISTING SENSOR
+        // ========================================================
+
+        if (existingSensor)
+        {
+            std::string actualID =
+                existingSensor->ID;
+
+            std::string actualParentID =
+                existingSensor->parentID;
+
+
+            existingSensor->fromJson(
+                sdata.state
+                );
+
+
+            // fromJson() can modify identity.
+            // Restore actual hierarchy identity.
+            existingSensor->ID =
+                actualID;
+
+            existingSensor->parentID =
+                actualParentID;
+
+            existingSensor->parentEntity =
+                platform;
+
+
+            // Repair global/local registries.
+            m_hierarchy->Sensors[actualID] =
+                existingSensor;
+
+            platform->sensors.sensors[actualID] =
+                existingSensor;
+
+
+            qDebug()
+                << "[REPLAY SENSOR UPDATE]"
+                << "Frame =" << payload->frameIndex
+                << "Sensor ="
+                << QString::fromStdString(
+                       existingSensor->Name)
+                << "Recorded ID ="
+                << sdata.id;
+
+            continue;
+        }
+
+
+        // ========================================================
+        // 4F. CREATE GENUINE REPLAY SENSOR
+        // ========================================================
+
+        QString sensorName =
+            sdata.state["_name"].toString();
+
+        if (sensorName.isEmpty())
+        {
+            sensorName =
+                sdata.state["name"].toString();
+        }
+
+        if (sensorName.isEmpty())
+        {
+            sensorName =
+                sdata.type;
+        }
+
+
+        qDebug()
+            << "[REPLAY SENSOR CREATE]"
+            << "Frame =" << payload->frameIndex
+            << "Index =" << sdata.index
+            << "ID =" << sdata.id
+            << "Name =" << sensorName
+            << "Type =" << sdata.type
+            << "Parent =" << parentEntityId;
+
+
+        m_hierarchy->addSubComponent(
+            componentID,
+            sensorName,
+            sdata.type,
+            sdata.id,
+            sdata.state
+            );
+
+
+        // ========================================================
+        // 4G. REGISTER GENUINELY CREATED SENSOR
+        // ========================================================
+
+        auto addedIt =
+            m_hierarchy->Sensors.find(
+                sdata.id.toStdString()
+                );
+
+        if (addedIt !=
+                m_hierarchy->Sensors.end() &&
+            addedIt->second)
+        {
+            Sensor *addedSensor =
+                addedIt->second;
+
+            sensorsIndexMap[sdata.index] =
+                addedSensor;
+
+            qDebug()
+                << "[REPLAY SENSOR CREATE]"
+                << "SUCCESS:"
+                << sdata.id;
+        }
+        else
+        {
+            qDebug()
+            << "[REPLAY SENSOR CREATE]"
+            << "FAILED:"
+            << sdata.id;
         }
     }
-    sensorsRestored = true;
+
+
+    // ============================================================
+    // 5. FINAL DEBUG
+    // ============================================================
+
+    qDebug()
+        << "========== RESTORE SENSORS DONE =========="
+        << "Frame =" << payload->frameIndex
+        << "Global sensors ="
+        << static_cast<int>(
+               m_hierarchy->Sensors.size())
+        << "Replay map ="
+        << static_cast<int>(
+               sensorsIndexMap.size());
+
+
     emit render(0.01f);
-}template<typename T, typename DataT, typename CRUDT, typename ListT, typename CRUDListT>
+}
+template<typename T, typename DataT, typename CRUDT, typename ListT, typename CRUDListT>
 static void genericAdded(
     QSharedPointer<PayLoad> payload,
     const QString          &id,
@@ -3231,7 +4588,7 @@ static void genericAdded(
     data.state = component->toJson();
     data.state["_name"]           = QString::fromStdString(component->Name);
     data.state["_parentEntityId"] = QString::fromStdString(
-    component->parentEntity ? component->parentEntity->ID : "");
+        component->parentEntity ? component->parentEntity->ID : "");
     payloadList->push_back(data);
     CRUDT crud;
     crud.index     = idx;
@@ -3293,7 +4650,7 @@ void Recording::iffAdded(QSharedPointer<PayLoad> payload,
     data.state = iffObj->toJson();
     data.state["_name"]           = QString::fromStdString(iffObj->Name);
     data.state["_parentEntityId"] = QString::fromStdString(
-    iffObj->parentEntity ? iffObj->parentEntity->ID : "");
+        iffObj->parentEntity ? iffObj->parentEntity->ID : "");
     payload->iffList->push_back(data);
     IffCRUD crud;
     crud.index     = idx;
@@ -3355,7 +4712,7 @@ void Recording::radioAdded(QSharedPointer<PayLoad> payload,
     data.state = radioObj->toJson();
     data.state["_name"]           = QString::fromStdString(radioObj->Name);
     data.state["_parentEntityId"] = QString::fromStdString(
-    radioObj->parentEntity ? radioObj->parentEntity->ID : "");
+        radioObj->parentEntity ? radioObj->parentEntity->ID : "");
     payload->radioList->push_back(data);
     RadioCRUD crud;
     crud.index     = idx;
@@ -3415,7 +4772,7 @@ void Recording::weaponAdded(QSharedPointer<PayLoad> payload,
     data.state = weaponObj->toJson();
     data.state["_name"]           = QString::fromStdString(weaponObj->Name);
     data.state["_parentEntityId"] = QString::fromStdString(
-    weaponObj->parentEntity ? weaponObj->parentEntity->ID : "");
+        weaponObj->parentEntity ? weaponObj->parentEntity->ID : "");
     payload->weaponList->push_back(data);
     WeaponCRUD crud;
     crud.index     = idx;
@@ -3475,7 +4832,6 @@ void Replay::restoreIffsFromPayload(QSharedPointer<PayLoad> payload)
             }
         }
     }
-
     bool anyCreated = false;
     for (auto &idata : *payload->iffList) {
         if (iffsIndexMap_replay.count(idata.index)) {
@@ -3496,14 +4852,14 @@ void Replay::restoreIffsFromPayload(QSharedPointer<PayLoad> payload)
 
         Platform* platform = platIt->second;
         QString compId;
-        if (platform->iffs)
-            compId = QString::fromStdString(platform->iffs->ID);
-        else {
-            platform->addComponent("iffs");
-            if (platform->iffs)
-                compId = QString::fromStdString(platform->iffs->ID);
-            else continue;
-        }
+        // if (platform->iffs)
+            compId = QString::fromStdString(platform->iffs.ID);
+        // else {
+        //     platform->addComponent("iffs");
+        //     if (platform->iffs)
+        //         compId = QString::fromStdString(platform->iffs->ID);
+        //     else continue;
+        // }
 
         m_hierarchy->addSubComponent(compId, iffName, "IFF", idata.id, idata.state);
     }
@@ -3559,11 +4915,11 @@ void Replay::restoreRadiosFromPayload(QSharedPointer<PayLoad> payload)
         auto platIt = m_hierarchy->Platforms.find(parentEntityId.toStdString());
         if (platIt == m_hierarchy->Platforms.end()) continue;
         Platform* platform = platIt->second;
-        if (!platform->radios)
+        // if (!platform->radios)
             platform->addComponent("radios");
-        if (!platform->radios) continue;
+        // if (!platform->radios) continue;
 
-        QString compId = QString::fromStdString(platform->radios->ID);
+        QString compId = QString::fromStdString(platform->radios.ID);
         m_hierarchy->addSubComponent(compId, radioName, "Radio", rdata.id, rdata.state);
         anyCreated = true;
     }
@@ -3621,10 +4977,10 @@ void Replay::restoreWeaponsFromPayload(QSharedPointer<PayLoad> payload)
         auto platIt = m_hierarchy->Platforms.find(parentEntityId.toStdString());
         if (platIt == m_hierarchy->Platforms.end()) continue;
         Platform* platform = platIt->second;
-        if (!platform->weapons)
+        // if (!platform->weapons)
             platform->addComponent("weapons");
-        if (!platform->weapons) continue;
-        QString compId = QString::fromStdString(platform->weapons->ID);
+        // if (!platform->weapons) continue;
+        QString compId = QString::fromStdString(platform->weapons.ID);
         m_hierarchy->addSubComponent(compId, weaponName, wdata.type, wdata.id, wdata.state);
         anyCreated = true;
     }

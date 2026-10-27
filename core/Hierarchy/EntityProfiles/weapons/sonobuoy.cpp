@@ -1,4 +1,5 @@
 #include "sonobuoy.h"
+#include "core/Hierarchy/ECS/Struct/Meta_Data_Component.h"
 #include "core/Hierarchy/Utils/entityutils.h"
 #include "core/Hierarchy/hierarchy.h"
 #include "core/Simulation/simulation.h"
@@ -8,59 +9,86 @@ const float RAD2DEG = 180.0f / M_PI;
 Sonobuoy::Sonobuoy(Hierarchy* h) : Weapon(h){
     weaponType     = WeaponType::Sonobuoy;
     Active = false;
-    if (meshRenderer2d && meshRenderer2d->Sprite) {
-        meshRenderer2d->Sprite->clear();
-        meshRenderer2d->Sprite->append(":/sea/images/sea/sonobuoy.png");
+    if (/*meshRenderer2d && */meshRenderer2d.Sprite) {
+        meshRenderer2d.Sprite->clear();
+        meshRenderer2d.Sprite->append(":/sea/images/sea/sonobuoy.png");
     }
 
-    if (collider) {
-        collider->CollideRadius = 10000;
+    // if (collider) {
+        collider.CollideRadius = 10000;
+    // }
+
+    if(root){
+        auto& data = root->world.AddComponent<ECS::Entity_Data>(ecsID);
+        data.active = false;
+        data.destroy = false;
     }
-
-
 }
 
 Sonobuoy::~Sonobuoy(){
-
+    if(root){
+        auto* data = root->world.GetComponent<ECS::Entity_Data>(ecsID);
+        data->active = false;
+        data->destroy = true;
+    }
 }
+
+void Sonobuoy::SaveState(){
+    /*if(transform)*/transform.SaveState();
+    /*if(trajectory)*/trajectory.SaveState();
+    /*if(dynamicModel)*/dynamicModel.SaveState();
+
+    InitalState["active"] = Active;
+    InitalState["drop"] = drop;
+}
+void Sonobuoy::RestoreState(){
+    /*if(transform)*/transform.RestoreState();
+    /*if(trajectory)*/trajectory.RestoreState();
+    /*if(dynamicModel)*/dynamicModel.RestoreState();
+    fromJson(InitalState);
+}
+
 
 void Sonobuoy::dropped(){
     drop = true;
     Active = true;
-    starttime = Simulation::simulationTime;
-    if(parentEntity && transform){
-        Transform* source = root->Platforms[parentEntity->ID]->transform;
-        transform->setTranslation(source->translation());
-        transform->setAltitude(Depth*3.281f);
+    if(root){
+        auto* data = root->world.GetComponent<ECS::Entity_Data>(ecsID);
+        data->active = true;
+    }
+    // starttime = Simulation::simulationTime;
+    if(parentEntity /*&& transform*/){
+        Transform& source = root->Platforms[parentEntity->ID]->transform;
+        transform.setTranslation(source.translation());
+        transform.setAltitude(-Depth*3.281f);
     }
 
 }
 
 void Sonobuoy::Update(){
     if(!drop) return;
-
-
-
     if(!Active)return;
-    time =  -starttime + Simulation::simulationTime;
+    // time =  -starttime + Simulation::simulationTime;
     if((time/3600.f) > Life ){
         detects.clear();
         detection.clear();
-        collider->CollideRadius = 1000;
+        collider.blinkRadius = 0;
+        // Active = false;
         return;
     }
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
-    if(!parentEntity || !transform || !collider) return;
-    Transform* source = transform;
+    if(!parentEntity /*|| !transform || !collider*/) return;
+    Transform* source = &transform;
     if(!source) return;
-    if(collider && !detection.empty()){
-        if(collider->CollideRadius>5000){
-            collider->CollideRadius = 5000;
+    if(/*collider &&*/ !detection.empty()){
+        if(collider.blinkRadius>20){
+            collider.blinkRadius = 20;
         }else{
-            collider->CollideRadius = 10000;
+            collider.blinkRadius = 40;
         }
     }else{
-        collider->CollideRadius = 1000;
+        collider.blinkRadius = 0;
+
     }
     detects.clear();
     detection.clear();
@@ -71,10 +99,10 @@ void Sonobuoy::Update(){
         if (entity->category == Entity::Category::Marine) {
             Platform* platform = entity;
             // qDebug() << "[Sensor::ewscan] iterating entity:" << QString::fromStdString(key);
-            if(platform->ID == parentEntity->ID || !platform || !platform->transform) continue;
-            QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
+            if(platform->ID == parentEntity->ID || !platform /*|| !platform->transform*/) continue;
+            QVector3D localPos = source->inverseTransformPoint(platform->transform.matrix.translation());
             //float distance = localPos.length();
-            float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
+            float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform.getLatitude(),platform->transform.getLongitude())/1000;
 
             // horizontal angle (Y axis) : x vs z
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
@@ -132,17 +160,17 @@ QJsonObject Sonobuoy::toJson() const
     defaultObj["type"] = "Section";
     defaultObj["range"] = toParm(range,"km",0, 120);
     // defaultObj["TransmissionRange"] = toParm(TransmissionRange,"km", 0.1,  500);
-    defaultObj["Depth"] = toParm(Depth,"m", 10, 700);
-    defaultObj["Life"] = toParm(Life,"h", 1, 10);
+    defaultObj["Depth"] = toParm(Depth,"m", 10, 2000);
+    defaultObj["Life"] = toParm(Life,"h", 1, 100);
     obj["default"] = defaultObj;
 
-    if (transform)      obj["transform"]    = transform->toJson();
-    if (rigidbody)      obj["rigidbody"]    = rigidbody->toJson();
-    if (collider)       obj["collider"]     = collider->toJson();
-    if (trajectory)     obj["trajectory"]   = trajectory->toJson();
-    if (meshRenderer2d) obj["bitmap"]       = meshRenderer2d->toJson();
-    if (dynamicModel)   obj["dynamicModel"] = dynamicModel->toJson();
-    if (crossSection)   obj["crossSection"] = crossSection->toJson();
+    /*if (transform)  */    obj["transform"]    = transform.toJson();
+    /*if (rigidbody)  */    obj["rigidbody"]    = rigidbody.toJson();
+    /*if (collider)    */   obj["collider"]     = collider.toJson();
+    /*if (trajectory)   */  obj["trajectory"]   = trajectory.toJson();
+    /*if (meshRenderer2d) */obj["bitmap"]       = meshRenderer2d.toJson();
+    /*if (dynamicModel) */  obj["dynamicModel"] = dynamicModel.toJson();
+    /*if (crossSection)  */ obj["crossSection"] = crossSection.toJson();
     QJsonObject AddParameters = AdditionalParameters;
     AddParameters["type"] = "Section";
     obj["AdditionalParameters"] = AddParameters;
@@ -185,16 +213,24 @@ void Sonobuoy::fromJson(const QJsonObject& obj)
 
     }
     // 7 auto-components
-    if (obj.contains("transform")    && transform)     transform->fromJson(obj["transform"].toObject());
-    if (obj.contains("rigidbody")    && rigidbody)     rigidbody->fromJson(obj["rigidbody"].toObject());
-    if (obj.contains("collider")     && collider)      collider->fromJson(obj["collider"].toObject());
-    if (obj.contains("trajectory")   && trajectory)    trajectory->fromJson(obj["trajectory"].toObject());
-    if (obj.contains("bitmap")       && meshRenderer2d) meshRenderer2d->fromJson(obj["bitmap"].toObject());
-    if (obj.contains("dynamicModel") && dynamicModel)  dynamicModel->fromJson(obj["dynamicModel"].toObject());
-    if (obj.contains("crossSection") && crossSection)  crossSection->fromJson(obj["crossSection"].toObject());
+    if (obj.contains("transform")    /*&& transform*/)     transform.fromJson(obj["transform"].toObject());
+    if (obj.contains("rigidbody")    /*&& rigidbody*/)     rigidbody.fromJson(obj["rigidbody"].toObject());
+    if (obj.contains("collider")     /*&& collider*/)      collider.fromJson(obj["collider"].toObject());
+    if (obj.contains("trajectory")   /*&& trajectory*/)    trajectory.fromJson(obj["trajectory"].toObject());
+    if (obj.contains("bitmap")       /*&& meshRenderer2d*/) meshRenderer2d.fromJson(obj["bitmap"].toObject());
+    if (obj.contains("dynamicModel") /*&& dynamicModel*/)  dynamicModel.fromJson(obj["dynamicModel"].toObject());
+    if (obj.contains("crossSection") /*&& crossSection*/)  crossSection.fromJson(obj["crossSection"].toObject());
 
     if(obj.contains("AdditionalParameters")){
         AdditionalParameters = obj["AdditionalParameters"].toObject();
+    }
+
+    // if(collider){
+        collider.CollideRadius = 10;
+    // }
+
+    if(!statesaved){
+        SaveState();
     }
 }
 

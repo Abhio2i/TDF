@@ -412,9 +412,9 @@ Bomb::Bomb(Hierarchy* h) : Weapon(h)
     // Weapon base constructor already called addComponent("bitmap") which
     // created meshRenderer2d with a default AUV sprite. We replace it here
     // so the user sees the correct bomb icon as soon as the weapon is added.
-    if (meshRenderer2d && meshRenderer2d->Sprite) {
-        meshRenderer2d->Sprite->clear();
-        meshRenderer2d->Sprite->append(":/texture/images/Texture/bomb.png");
+    if (/*meshRenderer2d &&*/ meshRenderer2d.Sprite) {
+        meshRenderer2d.Sprite->clear();
+        meshRenderer2d.Sprite->append(":/texture/images/Texture/bomb.png");
     }
 }
 void Bomb::Update(){
@@ -430,30 +430,30 @@ void Bomb::launch()
     if (isLaunched) return;
 
     Platform* aircraft = dynamic_cast<Platform*>(parentEntity);
-    if (!aircraft || !aircraft->transform || !aircraft->transform->geocord) {
+    if (!aircraft /*|| !aircraft->transform *//*|| !aircraft->transform.geocord*/) {
         Console::error("Bomb::launch() — no parent aircraft or transform: " + Name);
         return;
     }
-    if (!transform || !transform->geocord) {
-        Console::error("Bomb::launch() — bomb has no transform: " + Name);
-        return;
-    }
+    // if (!transform /*|| !transform->geocord*/) {
+    //     Console::error("Bomb::launch() — bomb has no transform: " + Name);
+    //     return;
+    // }
 
     // Copy aircraft position — bomb starts at aircraft location.
     // NOTE: aircraft geocord->altitude is in FEET (FTtoKM = 1/3281).
     //       bombUpdate() physics uses metres (gravity 9.81 m/s²), so
     //       convert feet → metres here for correct ballistic calculations.
-    transform->geocord->latitude  = aircraft->transform->geocord->latitude;
-    transform->geocord->longitude = aircraft->transform->geocord->longitude;
-    transform->geocord->altitude  = aircraft->transform->geocord->altitude * 0.3048; // ft → m
-    transform->geocord->Heading   = aircraft->transform->geocord->Heading;
+    transform.geocord.latitude  = aircraft->transform.geocord.latitude;
+    transform.geocord.longitude = aircraft->transform.geocord.longitude;
+    transform.geocord.altitude  = aircraft->transform.geocord.altitude * 0.3048; // ft → m
+    transform.geocord.Heading   = aircraft->transform.geocord.Heading;
 
-    releaseAltitude = static_cast<float>(transform->geocord->altitude); // metres
+    releaseAltitude = static_cast<float>(transform.geocord.altitude); // metres
 
     // Inherit aircraft forward speed (DynamicModel stores km/h)
     float speedMs = 200.0f;
-    if (aircraft->dynamicModel)
-        speedMs = aircraft->dynamicModel->moveSpeed / 3.6f;
+    // if (aircraft->dynamicModel)
+        speedMs = aircraft->dynamicModel.moveSpeed / 3.6f;
 
     m_horizontalVelocity = speedMs;
     m_verticalVelocity   = 0.0f;
@@ -473,9 +473,9 @@ void Bomb::launch()
         emit par->bombLaunched(
             QString::fromStdString(ID),
             QString::fromStdString(aircraft->ID),
-            transform->geocord->latitude,
-            transform->geocord->longitude,
-            static_cast<double>(transform->geocord->altitude)
+            transform.geocord.latitude,
+            transform.geocord.longitude,
+            static_cast<double>(transform.geocord.altitude)
             );
     }
 
@@ -522,26 +522,26 @@ void Bomb::checkFlightState()
 // =============================================================================
 void Bomb::bombUpdate(float dt)
 {
-    if (!transform || !transform->geocord || isDead) return;
+    if (/*!transform /*|| !transform->geocord ||*/ isDead) return;
 
     m_airborneTime += dt;
 
     // ── Vertical ─────────────────────────────────────────────────────────────
     m_verticalVelocity -= GRAVITY_MS2 * dt;
-    double newAlt = transform->geocord->altitude +
+    double newAlt = transform.geocord.altitude +
                     static_cast<double>(m_verticalVelocity * dt);
 
     // ── Horizontal ───────────────────────────────────────────────────────────
     m_horizontalVelocity *= (1.0f - dragCoefficient * dt);
     float  horizDist  = m_horizontalVelocity * dt;
-    double headingRad = qDegreesToRadians(transform->geocord->Heading);
-    double latRad     = qDegreesToRadians(transform->geocord->latitude);
+    double headingRad = qDegreesToRadians(transform.geocord.Heading);
+    double latRad     = qDegreesToRadians(transform.geocord.latitude);
     double dLat = (horizDist * qCos(headingRad)) / EARTH_RADIUS_M;
     double dLon = (horizDist * qSin(headingRad)) / (EARTH_RADIUS_M * qCos(latRad));
 
-    transform->geocord->latitude  += qRadiansToDegrees(dLat);
-    transform->geocord->longitude += qRadiansToDegrees(dLon);
-    transform->geocord->altitude   = (newAlt < 0.0) ? 0.0 : newAlt;
+    transform.geocord.latitude  += qRadiansToDegrees(dLat);
+    transform.geocord.longitude += qRadiansToDegrees(dLon);
+    transform.geocord.altitude   = (newAlt < 0.0) ? 0.0 : newAlt;
 
     m_fuzeTimer += dt;
 
@@ -550,7 +550,7 @@ void Bomb::bombUpdate(float dt)
 
     qDebug() << "[Bomb]" << QString::fromStdString(Name)
              << "t=" << m_airborneTime << "s"
-             << "alt=" << transform->geocord->altitude << "m"
+             << "alt=" << transform.geocord.altitude << "m"
              << "vVel=" << m_verticalVelocity << "m/s";
 
     checkDetonation();
@@ -563,12 +563,12 @@ void Bomb::bombUpdate(float dt)
 // =============================================================================
 void Bomb::checkDetonation()
 {
-    if (isDead || !transform || !transform->geocord) return;
+    if (isDead /*|| !transform *//*|| !transform->geocord*/) return;
 
     // Must be airborne ≥ 0.5 s before any detonation check
     if (m_airborneTime < 0.5f) return;
 
-    double  alt            = transform->geocord->altitude;
+    double  alt            = transform.geocord.altitude;
     bool    shouldDetonate = false;
     QString reason;
 
@@ -624,25 +624,25 @@ void Bomb::bombEnd()
     m_flightActive = false;
     stopFlightMonitor();
 
-    if (transform && transform->geocord)
-        transform->geocord->altitude = 0.0;
+    // if (transform /*&& transform->geocord*/)
+        transform.geocord.altitude = 0.0;
 
     Hierarchy* par = GlobalRegistry::getParentHierarchy(this);
 
     // ── Swap bomb icon → blast image ──────────────────────────────────────────
-    if (meshRenderer2d && meshRenderer2d->Sprite && par) {
+    if (/*meshRenderer2d &&*/ meshRenderer2d.Sprite && par) {
 
         // 1. Remove the old bomb icon so canvas stops drawing it
         emit par->entityMeshRemoved(QString::fromStdString(ID));
 
         // 2. Swap sprite — Sprite is QStringList*, use clear()+append(), NOT assign()
-        meshRenderer2d->Sprite->clear();
-        meshRenderer2d->Sprite->append(":/texture/images/Texture/blast.png");
+        meshRenderer2d.Sprite->clear();
+        meshRenderer2d.Sprite->append(":/texture/images/Texture/blast.png");
 
         // 3. Force canvas to reload and draw the new blast image.
         //    entityUpdate alone is NOT enough — canvas only re-renders
         //    the sprite when meshRenderer2DisAdded is emitted.
-        emit par->meshRenderer2DisAdded(QString::fromStdString(ID), meshRenderer2d);
+        emit par->meshRenderer2DisAdded(QString::fromStdString(ID), &meshRenderer2d);
         emit par->entityMeshAdded(QString::fromStdString(parentID), this);
         emit par->entityUpdate(QString::fromStdString(ID));
 
@@ -665,9 +665,9 @@ void Bomb::bombEnd()
     if (par) {
         emit par->bombDetonated(
             QString::fromStdString(ID),
-            transform ? transform->geocord->latitude  : 0.0,
-            transform ? transform->geocord->longitude : 0.0,
-            transform ? transform->geocord->altitude  : 0.0
+            transform.geocord.latitude  ,
+            transform.geocord.longitude ,
+            transform.geocord.altitude
             );
     }
 

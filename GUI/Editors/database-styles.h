@@ -157,5 +157,14 @@ const QString ContextMenu = R"(
         margin: 5px 10px;
     }
 )";
+
+
+const QString ComponentFrame = R"(
+    QFrame {
+        background-color: #0F2636;
+        border: 1px solid #27446d;
+        border-radius: 3px;
+    }
+)";
 } // namespace DatabaseStyles
 #endif // DATABASE_STYLES_H

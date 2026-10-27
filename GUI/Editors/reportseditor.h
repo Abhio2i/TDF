@@ -78,10 +78,9 @@
 #include <QtCharts/QValueAxis>
 
 QT_CHARTS_USE_NAMESPACE
-
-    /* =========================================================================
+/* =========================================================================
    ReportTimelineWidget  — custom painted engagement timeline
-   ========================================================================= */
+========================================================================= */
     class ReportTimelineWidget : public QWidget
 {
 public:
@@ -135,7 +134,6 @@ class ReportsEditor : public QWidget
 public:
     explicit ReportsEditor(QWidget* parent = nullptr);
     ~ReportsEditor() = default;
-
     /* ── Data structs ── */
     struct TeamMetrics {
         double successProbability  = 0.0;
@@ -210,7 +208,6 @@ private:
     QMap<QString, LossesData>   m_teamLosses;
     QMap<QString, QColor>       m_teamColors;
     QString                     m_selectedTeam;
-
     static QColor paletteColor(int idx);
 
     /* ── member widgets ── */

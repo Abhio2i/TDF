@@ -63,11 +63,13 @@
 
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/aisaRadarLib/radarmodel_aesa.h"
 #include "core/Hierarchy/EntityProfiles/sensor.h"
-
+#include "core/DISPlugin/interface/DISEmissionSnapshot.h"
+#include "core/Hierarchy/ECS/Struct/sensor_component.h"
 #include <QElapsedTimer>
 #include <QJsonObject>
 #include <unordered_map>
 #include <unordered_set>
+#include <array>
 
 // =============================================================================
 // CLASS: AESARadar
@@ -128,7 +130,7 @@ public:
     //               Sets maxDetectionAngle from cfg.maxAzimuth.
     // =========================================================================
     explicit AESARadar(Hierarchy* h);
-
+~AESARadar() override;
     // =========================================================================
     // LIFECYCLE WRAPPERS
     // =========================================================================
@@ -143,6 +145,7 @@ public:
     // =========================================================================
     void stop() { radarCore_.end(); }
 
+    int emitterIndex = 0;   // 0 = unassigned; SensorProfile assigns a real, per-platform-unique value at attachment
     // =========================================================================
     // CONFIGURATION ACCESS
     // =========================================================================
@@ -283,16 +286,23 @@ public:
     // READ-ONLY STATE (sourced from model — no duplicate fields in bridge)
     // =========================================================================
 
-    // Returns current beam azimuth from latest model output (degrees, body frame).
-    // REQ-AESA-010.
-    double getCurrentAzimuth()   const { return radarCore_.getOutput().currentAzimuth;  }
+    // Returns current beam azimuth (degrees) relative to the platform nose,
+    // including the antenna mount orientation. REQ-AESA-010.
+    double getCurrentAzimuth()   const;
 
-    // Returns current beam elevation from latest model output (degrees, body frame).
-    // REQ-AESA-010.
-    double getCurrentElevation() const { return radarCore_.getOutput().currentElevation; }
+    // Returns current beam elevation (degrees) relative to the platform body,
+    // including the antenna mount orientation. REQ-AESA-010.
+    double getCurrentElevation() const;
+
+    // Antenna mount orientation (degrees). 0/0 = facing the nose, level.
+    // Set through the "scan" section of fromJson(). REQ-AESA-010.
+    float mountAzimuth()   const { return mountAzimuth_deg_;   }
+    float mountElevation() const { return mountElevation_deg_; }
 
     // Returns current radar operating mode from latest model output. REQ-AESA-003.
     aesa::RadarMode getMode()    const { return radarCore_.getOutput().mode;             }
+
+    ECS::sensorComponent& getSensorData() const;
 
     // Returns current T/R module duty cycle [0.0, 1.0] from latest model output.
     // REQ-AESA-020.
@@ -493,7 +503,7 @@ signals:
     //   trackID  — ID of the injected external track (from TrackOutput::id).
     // =========================================================================
     void externalTrackInjected(uint32_t trackID);
-
+    void emissionSnapshotReady(DISEmissionSnapshot snap);
 private:
 
     // =========================================================================
@@ -520,6 +530,8 @@ private:
     // Accumulated simulation time (seconds). Monotonically increasing.
     // Passed to radarCore_.update() each tick. REQ-AESA-001.
     double simTime_ = 0.0;
+    // Simulation time at the previous scan() (seconds). REQ-AESA-001.
+    double lastSimTime_ = 0.0;
 
     // ---- Display range cache -------------------------------------------------
 
@@ -584,7 +596,8 @@ private:
     //               for each platform seen. Writes outIdMap.
     // =========================================================================
     std::vector<aesa::TargetInput> collectTargets(
-        Transform*                               source,
+        const QVector3D&                         ownPosKm,
+        double                                   velDt,
         std::unordered_map<uint32_t, Platform*>& outIdMap) const;
 
     // =========================================================================
@@ -607,6 +620,7 @@ private:
     // =========================================================================
     void processSurveillance(
         const aesa::RadarOutput&                       output,
+        const aesa::RadarConfig&                       cfg,
         const std::unordered_map<uint32_t, Platform*>& idMap,
         std::unordered_set<uint32_t>&                  addedIDs);
 
@@ -632,6 +646,7 @@ private:
     // =========================================================================
     void processTWS(
         const aesa::RadarOutput&                       output,
+        const aesa::RadarConfig&                       cfg,
         const std::unordered_map<uint32_t, Platform*>& idMap,
         std::unordered_set<uint32_t>&                  addedIDs);
 
@@ -653,6 +668,7 @@ private:
     // =========================================================================
     void processLockOn(
         const aesa::RadarOutput&                       output,
+        const aesa::RadarConfig&                       cfg,
         const std::unordered_map<uint32_t, Platform*>& idMap);
 
     // =========================================================================
@@ -724,9 +740,37 @@ private:
     // Initialised to 0.0 on first sighting. Updated when movement > 0.001 units.
     // Declared mutable so collectTargets() (const) can update it. REQ-AESA-004.
     mutable std::unordered_map<uint32_t, float> computedHeadings_;
+
+    // ---- Stabilised-frame velocity estimator (Phase 2c) ---------------------
+
+    // Per-entity finite-difference velocity estimate (engine axes, m/s).
+    struct VelocityState
+    {
+        QVector3D prevPosKm;              // last world position used (km)
+        double    v[3]    = { 0.0, 0.0, 0.0 };
+        int       samples = 0;            // 0 = none, 1 = one position, 2 = estimating
+        bool      seen    = false;        // seen this tick (for pruning)
+    };
+    mutable std::unordered_map<uint32_t, VelocityState> velState_;
+
+    // Pose of the current scan (stabilised -> body conversion of outputs).
+    aesa::RadarPose lastPose_;
+
+    // ---- Antenna mount orientation (REQ-AESA-010) ---------------------------
+    // Direction the array faces relative to the platform body, degrees.
+    // mountAzimuth_deg_: clockwise from the nose (0 fwd, 180 rear, +90 right).
+    // mountElevation_deg_: tilt, positive up. 0/0 = previous behaviour.
+    float mountAzimuth_deg_   = 0.0f;
+    float mountElevation_deg_ = 0.0f;
+
+    // Updates and returns the smoothed world velocity (x = E, y = U, z = N,
+    // m/s). velDt = actual elapsed simulation time since the previous scan;
+    // 0 means time did not advance, in which case nothing is updated.
+    std::array<double, 3> updateVelocityEstimate(uint32_t id,
+                                                 const QVector3D& posKm,
+                                                 double velDt) const;
 };
 
 #endif // AESARADAR_H
-
 
 

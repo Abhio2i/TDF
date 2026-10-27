@@ -1,0 +1,17 @@
+CHECK a mount 0/0                        PASS  dets=17457 front=17457 rear=0 high=0 az90=0 other=0
+CHECK b mount 180/0                      PASS  dets=17457 front=0 rear=17457 high=0 az90=0 other=0
+CHECK c mount 0/+20                      PASS  dets=2342 front=0 rear=0 high=2342 az90=0 other=0
+CHECK d mount 90/0 (30..150, +-bw/2)     FAIL  dets=11554 front=5017 rear=3541 high=0 az90=2996 other=0 trueAz[min,max]=[23.963,157.164] outside[30,150]=2564 outside[28.5,151.5]=2198
+INFO d-ref mount 0/0, targets rotated -90: dets=11554 front=5017 rear=3541 high=0 az90=2996 other=0 trueAz+90[min,max]=[23.963,157.164] outside[30,150]=2564
+INFO d vs d-ref per-target detection counts: targets=17 differing=0 sum|diff|=0
+INFO d out-of-window id=1012 trueAz[24.100,24.135]  ref[24.100,24.135]
+INFO d out-of-window id=1013 trueAz[24.088,24.725]  ref[24.088,24.725]
+INFO d out-of-window id=1015 trueAz[23.963,28.692]  ref[23.963,28.692]
+INFO d out-of-window id=1016 trueAz[24.108,29.791]  ref[24.108,29.791]
+INFO d out-of-window id=1102 trueAz[150.009,156.641]  ref[150.009,156.641]
+INFO d out-of-window id=1103 trueAz[150.013,157.164]  ref[150.013,157.164]
+INFO d out-of-window id=1104 trueAz[151.581,155.760]  ref[151.581,155.760]
+INFO d out-of-window id=1107 trueAz[155.344,155.955]  ref[155.344,155.955]
+INFO d out-of-window id=1120 trueAz[150.010,155.577]  ref[150.010,155.577]
+CHECK e arrayToPlatformAzEl              PASS  0/0 exact=1; 180/0 az10->-170.000000000000 (el 0); 0/+20 el0->20.000000000000 (az 0)
+SCENARIO8 FAIL (1 failed)

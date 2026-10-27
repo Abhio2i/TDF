@@ -60,6 +60,7 @@ RADIODisplay::RADIODisplay(QWidget *parent)
     radioDropdown->hide(); // Pehle chhupa do, entity select hone par dikhao
     connect(radioDropdown, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &RADIODisplay::onRadioSelected);
+
 }
 
 // %%% Size Management %%%
@@ -170,11 +171,11 @@ void RADIODisplay::selectEntity(Entity* entit)
     // Select first valid Radio from entity
     radio = nullptr;
     radiolist.clear();
-    if (!entity->radios || !entity->radios->radios) {
-        update();
-        return;
-    }
-    for (auto const& pair :  *entity->radios->radios) {
+    // if (/*!entity->radios ||*/ !entity->radios.radios) {
+    //     update();
+    //     return;
+    // }
+    for (auto const& pair :  entity->radios.radios) {
         Radio* r = pair.second;
         if (r) {
             if(radio==nullptr){
@@ -193,17 +194,24 @@ void RADIODisplay::selectEntity(Entity* entit)
 }
 
 /* Remove entity from display */
+/* Remove entity from display */
 void RADIODisplay::RemoveEntity(QString ID)
 {
     if (id == ID) {
         entity = nullptr;
         radio = nullptr;
-            radiolist.clear();
-        setWindowTitle("RADIO Display");
-        // Reset hover state
-        hoveredTargetIndex = -1;
-        if (radioDropdown) radioDropdown->hide();
+        radiolist.clear();
+        if (radioDropdown) {
+            QSignalBlocker blocker(radioDropdown);
+            radioDropdown->clear();
+            radioDropdown->hide();
+        }
 
+        id.clear();
+        setWindowTitle("RADIO Display");
+        hoveredTargetIndex = -1;
+
+        update();
     }
 }
 
@@ -212,11 +220,17 @@ void RADIODisplay::RemoveEntity(QString ID)
 void RADIODisplay::updateRadar()
 {
     if (entity && radio) {
+        bool stillValid = false;
+        for (auto const& pair : entity->radios.radios) {
+            if (pair.second == radio) { stillValid = true; break; }
+        }
+        if (!stillValid) radio = nullptr;
+    }
+
+    if (entity && radio) {
         setRange(radio->Range);
-        // targets = radio->targets;
         update();
     } else {
-        // Clear targets if no radio available
         targets.clear();
         hoveredTargetIndex = -1;
     }
@@ -228,9 +242,19 @@ void RADIODisplay::paintEvent(QPaintEvent * /*event*/)
 {
     if (width() <= 0 || height() <= 0) return;
 
-    QPainter p(this);
 
-    // Draw all display components
+    if (entity && radio) {
+        bool stillValid = false;
+        for (auto const& pair : entity->radios.radios) {
+            if (pair.second == radio) { stillValid = true; break; }
+        }
+        if (!stillValid) {
+            radio = nullptr;
+            hoveredTargetIndex = -1;
+        }
+    }
+
+    QPainter p(this);
     drawBackground(p);
 
     int w = width();
@@ -245,8 +269,7 @@ void RADIODisplay::paintEvent(QPaintEvent * /*event*/)
     drawCenterMark(p, center);
     drawTopMarker(p, center, outerRadius);
 
-    if(!radio)return;
-    // Draw targets with hover functionality
+    if (!radio) return;   // ab yeh check trustworthy hai
     if (!radio->targets.isEmpty()) {
         int i=0;
         for (const Radio::RadioTarget &t : radio->targets) {
@@ -259,9 +282,10 @@ void RADIODisplay::paintEvent(QPaintEvent * /*event*/)
 
             double r = per * outerRadius;
             double angleDeg = t.angle-90;
-            double theta = qDegreesToRadians(angleDeg);
+            qDebug() <<  (t.angle+180)*-1;
+            double theta = qDegreesToRadians(angleDeg+entity->transform.getHeading()*2);
             int tx = center.x() + int(r * cos(theta));
-            int ty = center.y() + int(r * sin(theta));
+            int ty = center.y() + int(r * sin(-theta));
 
             // Draw line from center to target
             p.setPen(QPen(radarGreen, 1, Qt::DotLine));
@@ -331,7 +355,7 @@ void RADIODisplay::drawTargetAndPath(QPainter &painter)
     int outerRadius = outerDiameter / 2;
 
     if (entity && radio) {
-        ang = entity->transform->toEulerAngles().y();
+        ang = entity->transform.toEulerAngles().y();
     }
 }
 
@@ -509,10 +533,15 @@ void RADIODisplay::updateDropdown()
     int dropH = 22;
     // Green border ke UPAR
     radioDropdown->setGeometry(width() - dropW - padding, 4, dropW, dropH);
-}void RADIODisplay::onRadioSelected(int index)
+}
+void RADIODisplay::onRadioSelected(int index)
 {
     if (index < 0 || index >= radiolist.size()) return;
-    radio = radiolist[index];
+
+    Radio* r = radiolist[index];
+    if (!r) return;
+
+    radio = r;
     hoveredTargetIndex = -1;
     if (radio)
         setRange(radio->Range);

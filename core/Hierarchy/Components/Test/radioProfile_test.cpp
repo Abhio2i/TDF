@@ -43,12 +43,12 @@ if ((val1) == (val2)) { \
 void test_RadioProfile_initialization() {
     std::cout << "\n--- Running RadioProfile Initialization Tests ---" << std::endl;
     Hierarchy* h = new Hierarchy();
-    RadioProfile* rp = new RadioProfile(h);
+    RadioProfile* rp = new RadioProfile();
 
     ASSERT_NEQ(rp, nullptr, "RadioProfile object should be created");
     ASSERT_TRUE(rp->Active, "RadioProfile should be active by default");
-    ASSERT_NEQ(rp->radios, nullptr, "Radios map should be initialized");
-    ASSERT_TRUE(rp->radios->empty(), "Radios map should be empty initially");
+    // ASSERT_NEQ(rp->radios, nullptr, "Radios map should be initialized");
+    ASSERT_TRUE(rp->radios.empty(), "Radios map should be empty initially");
 
     delete rp;
     delete h;
@@ -57,15 +57,15 @@ void test_RadioProfile_initialization() {
 void test_RadioProfile_Subcomponent_Operations() {
     std::cout << "\n--- Running RadioProfile Subcomponent Tests ---" << std::endl;
     Hierarchy* h = new Hierarchy();
-    RadioProfile* rp = new RadioProfile(h);
+    RadioProfile* rp = new RadioProfile();
 
     // 1. Test addSubComponent
     rp->addSubComponent("Primary_Radio");
-    ASSERT_EQ(rp->radios->size(), 1, "Radios size should be 1 after adding one radio");
+    ASSERT_EQ(rp->radios.size(), 1, "Radios size should be 1 after adding one radio");
 
     // Get the ID of the newly added radio
-    std::string radioID = rp->radios->begin()->first;
-    Radio* r = (*rp->radios)[radioID];
+    std::string radioID = rp->radios.begin()->first;
+    Radio* r = (rp->radios)[radioID];
     ASSERT_EQ(r->Name, "Primary_Radio", "Radio name should match the input");
 
     // 2. Test renameSubComponent
@@ -85,7 +85,7 @@ void test_RadioProfile_Subcomponent_Operations() {
 
     // 5. Test removeSubComponent
     rp->removeSubComponent(radioID);
-    ASSERT_TRUE(rp->radios->empty(), "Radios map should be empty after removal");
+    ASSERT_TRUE(rp->radios.empty(), "Radios map should be empty after removal");
 
     delete rp;
     delete h;
@@ -94,7 +94,7 @@ void test_RadioProfile_Subcomponent_Operations() {
 void test_RadioProfile_JSON_Serialization() {
     std::cout << "\n--- Running RadioProfile JSON Tests ---" << std::endl;
     Hierarchy* h = new Hierarchy();
-    RadioProfile* rp = new RadioProfile(h);
+    RadioProfile* rp = new RadioProfile();
 
     // Add some data
     rp->addSubComponent("Radio_A");
@@ -107,14 +107,14 @@ void test_RadioProfile_JSON_Serialization() {
     ASSERT_EQ(radiosObj.size(), 2, "JSON should contain 2 radio objects");
 
     // Test fromJson
-    RadioProfile* rp2 = new RadioProfile(h);
+    RadioProfile* rp2 = new RadioProfile();
     try {
         rp2->fromJson(root);
-        ASSERT_EQ(rp2->radios->size(), 2, "fromJson should restore 2 radios from JSON");
+        ASSERT_EQ(rp2->radios.size(), 2, "fromJson should restore 2 radios from JSON");
 
         // Check if names are preserved
         bool foundA = false;
-        for(auto const& [id, radio] : *rp2->radios) {
+        for(auto const& [id, radio] : rp2->radios) {
             if(radio->Name == "Radio_A") foundA = true;
         }
         ASSERT_TRUE(foundA, "fromJson should correctly restore radio names");

@@ -40,10 +40,8 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     installEventFilter(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
-
     // Create splitter
     splitter = new QSplitter(Qt::Horizontal, this);
-
     // Set up map canvas container
     //QWidget *mapCanvasContainer = new QWidget(this);
     mapCanvasContainer = new QWidget(this);
@@ -52,19 +50,27 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
 
     // Configure canvas widget
     canvas = new CanvasWidget(mapCanvasContainer);
-
     canvas->setAttribute(Qt::WA_TranslucentBackground);
     canvas->setAttribute(Qt::WA_TransparentForMouseEvents);
     canvas->setStyleSheet("background: transparent;");
-    containerLayout->addWidget(canvas);
     canvas->setMinimumWidth(200);
 
     // Configure GIS map widget
-    mapWidget = new GISlib(mapCanvasContainer);
+    if(canvas->gislib){
+        mapWidget = canvas->gislib;
+    }else{
+        //mapWidget = new GISlib(mapCanvasContainer);
+        canvas->gislib = mapWidget;
+    }
     mapWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    containerLayout->addWidget(mapWidget);
-    canvas->gislib = mapWidget;
 
+    // Add widgets to stacked layout in correct Z-order (bottom to top)
+    containerLayout->addWidget(mapWidget);  // Index 0: Map tiles
+    containerLayout->addWidget(canvas);     // Index 1: Transparent overlay
+
+    // Optional but recommended
+    canvas->raise();
+    canvas->update();
     // Create coordinate overlay widget (TOP-LEFT)
     QWidget *coordWidget = new QWidget(mapWidget);
     coordWidget->setStyleSheet("background-color: transparent;");
@@ -85,7 +91,6 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
         "font-size: 9pt;"
         );
     overlayLabel->setFixedSize(150, 40);
-
     coordLayout->addWidget(overlayLabel);
     coordWidget->setFixedSize(160, 50);
     coordWidget->setGeometry(20, 20, 160, 50);
@@ -114,8 +119,6 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
         }
 
         overlayLabel->setText(text);
-
-        // Update scale bar when coordinates change (for latitude adjustment)
         updateScaleBar();
     });
 
@@ -125,6 +128,7 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
     connect(mapWidget, &GISlib::mouseMoved, canvas, &CanvasWidget::onGISMouseMoved);
     connect(mapWidget, &GISlib::mouseReleased, canvas, &CanvasWidget::onGISMouseReleased);
     connect(mapWidget, &GISlib::painted, canvas, &CanvasWidget::onGISPainted);
+
     connect(mapWidget, &GISlib::dragEnterEvents, canvas, &CanvasWidget::dragEnterEvents);
     connect(mapWidget, &GISlib::dragMoveEvents, canvas, &CanvasWidget::dragMoveEvents);
     connect(mapWidget, &GISlib::dropEvents, canvas, &CanvasWidget::dropEvents);
@@ -159,18 +163,12 @@ TacticalDisplay::TacticalDisplay(QWidget *parent)
 void TacticalDisplay::updateScaleBar()
 {
     if (scaleBar && mapWidget) {
-        // Calculate meters per pixel based on zoom level
-        // This formula will need adjustment based on your actual map scale
-        double baseScale = 156543.03392; // meters per pixel at zoom 0 (equator)
+        double baseScale = 156543.03392;
         double metersPerPixel = baseScale / std::pow(2, currentZoom);
-        double currentLatitude = 0.0; // Default
-
+        double currentLatitude = 0.0;
         double latRad = currentLatitude * M_PI / 180.0;
         metersPerPixel *= std::cos(latRad);
-
         scaleBar->updateScale(metersPerPixel, mapWidget->width());
-
-        // Ensure scale bar stays in top-right corner
         scaleBar->setGeometry(mapWidget->width() - 200, 20, 180, 40);
         scaleBar->raise();
     }
@@ -190,13 +188,11 @@ void TacticalDisplay::addMesh(QString ID, MeshData meshData)
     MeshEntry entity;
     entity.name = meshData.name;
     entity.velocity = new QVector3D(0, 0, 0);
-    entity.transform = meshData.transform->matrix;
+    entity.transform = meshData.transform;
     entity.coreTransform = meshData.transform;
     entity.position = new QVector3D(0, 0, 0);
     entity.rotation = new QQuaternion();
     entity.size = new QVector3D(0, 0, 0);
-    //entity.mesh = meshData.Meshes[0];
-    // Fix: std::vector uses .empty()
     entity.mesh = meshData.Meshes.empty() ? nullptr : meshData.Meshes[0];
     entity.collider = meshData.collider;
     entity.trajectory = meshData.trajectory;
@@ -208,7 +204,6 @@ void TacticalDisplay::addMesh(QString ID, MeshData meshData)
     {
         entity.platform = nullptr;
     }
-
     entity.dynamicModel = meshData.dynamicmodel;
     canvas->Meshes[ID.toStdString()] = entity;
     canvas->update();
@@ -269,10 +264,10 @@ bool TacticalDisplay::eventFilter(QObject *obj, QEvent *event)
     }
     return QWidget::eventFilter(obj, event);
 }
+
 void TacticalDisplay::onCoordinateSystemChanged(const QString& crsId) {
     if (mapWidget) {
         mapWidget->setCoordinateSystem(crsId);
         // qDebug() << "TacticalDisplay: Forwarded CRS change to GISlib:" << crsId;
     }
 }
-

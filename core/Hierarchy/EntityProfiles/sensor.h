@@ -46,7 +46,8 @@ struct Target{
     float altitude;
     float lat;
     float lon;
-    float radialVelocity = 0.0f;  // ADD THIS — m/s, + = closing, - = opening
+    float radialVelocity = 0.0f;  // m/s, range rate relative to the sensor: negative = closing
+    float trueBearing    = 0.0f;  // deg clockwise from true North (set by AESA radar; 0 for others)
 
 };
 
@@ -212,7 +213,7 @@ public:
     // --- Add below Mode enum ---
     SubType subType = SubType::Generic;
     DetectionCapabilities capabilities = DetectionCapabilities::All;
-
+    int dataid = 0;
 
 
     /*  EO Resolution */
@@ -293,6 +294,7 @@ public:
     std::unordered_map<std::string,std::pair<bool,PoseOpenGL>> EODetectionCood;
     GeoCoord sensorGeoCoord;
     std::unordered_map<std::string,std::pair<bool,CartesianCoord>> EODetectionCoord;
+    std::unordered_map<std::string, std::pair<bool, CartesianCoord>> IRDetectionCoord;
     std::unordered_map<std::string,bool> EODetection;// ID of Entity who is detected by is true or false
     std::unordered_map<std::string,bool> IRDetection;// ID of Entity who is detected by is true or false
     /*          For EO/IR Sensor By Himanshu */
@@ -331,6 +333,7 @@ public:
     // =========================================================================
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
+    void addSupportedcomponent() override;
     void addComponent(std::string name) override;
     void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;
@@ -347,6 +350,10 @@ public:
         if (str == "ESM") return SubType::ESM;
         if (str == "Sonar") return SubType::Sonar;
         if (str == "AESA") return SubType::AESA;
+        if (str == "EO") return SubType::EO;
+        if (str == "IR") return SubType::IR;
+        if (str == "AIS") return SubType::AIS;
+        if (str == "ADSB") return SubType::ADSB;
         return SubType::Generic;
     }
     QString detectionCapabilitiesToString(DetectionCapabilities t) const;

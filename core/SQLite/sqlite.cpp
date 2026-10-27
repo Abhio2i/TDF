@@ -32,7 +32,7 @@ bool SQLite::open(const QString &dbPath)
     if (QSqlDatabase::contains("main_connection"))
         QSqlDatabase::removeDatabase("main_connection");
 
-   m_db = QSqlDatabase::addDatabase("QSQLITE", "main_connection");
+    m_db = QSqlDatabase::addDatabase("QSQLITE", "main_connection");
     m_db.setDatabaseName(dbPath);
 
     if (!m_db.open()) {
@@ -65,7 +65,7 @@ bool SQLite::exec(const QString &queryStr)
     QSqlQuery query(m_db);
     if (!query.exec(queryStr)) {
         qCritical() << query.lastError().text()
-                    << "\nQuery:" << queryStr;
+        << "\nQuery:" << queryStr;
         return false;
     }
     return true;
@@ -717,24 +717,118 @@ bool SQLite::insertSensorsDetails(int frameIndex, const SensorList &list)
     return true;
 }
 
-bool SQLite::insertSensorsCRUD(int frameIndex, const SensorCRUDList &list)
+// bool SQLite::insertSensorsCRUD(int frameIndex, const SensorCRUDList &list)
+// {
+//     QSqlQuery query(database());
+//     query.prepare(R"(
+//         INSERT INTO sensorsCRUD (operation, indexNo, frameIndex)
+//         VALUES (:operation, :indexNo, :frameIndex)
+//     )");
+//     for (const auto &c : list) {
+//         query.bindValue(":operation", c.operation);
+//         query.bindValue(":indexNo",   c.index);
+//         query.bindValue(":frameIndex",frameIndex);
+//         if (!query.exec()) {
+//             qCritical() << "Insert sensorsCRUD failed:" << query.lastError().text();
+//             return false;
+//         }
+//     }
+//     return true;
+// }
+
+
+
+
+
+//fix by yogesh
+bool SQLite::insertSensorsCRUD(
+    int frameIndex,
+    const SensorCRUDList &list)
 {
     QSqlQuery query(database());
+
     query.prepare(R"(
-        INSERT INTO sensorsCRUD (operation, indexNo, frameIndex)
-        VALUES (:operation, :indexNo, :frameIndex)
+        INSERT INTO sensorsCRUD
+        (operation, indexNo, frameIndex)
+        VALUES
+        (:operation, :indexNo, :frameIndex)
     )");
-    for (const auto &c : list) {
-        query.bindValue(":operation", c.operation);
-        query.bindValue(":indexNo",   c.index);
-        query.bindValue(":frameIndex",frameIndex);
-        if (!query.exec()) {
-            qCritical() << "Insert sensorsCRUD failed:" << query.lastError().text();
+    QSqlQuery deleteMarkQuery(database());
+
+    deleteMarkQuery.prepare(R"(
+        UPDATE sensorsDetails
+        SET deletion = :frameIndex
+        WHERE indexNo = :indexNo
+    )");
+
+
+    for (const auto &c : list)
+    {
+        // ========================================================
+        // Always record CRUD operation
+        // ========================================================
+
+        query.bindValue(
+            ":operation",
+            c.operation
+            );
+
+        query.bindValue(
+            ":indexNo",
+            c.index
+            );
+
+        query.bindValue(
+            ":frameIndex",
+            frameIndex
+            );
+
+
+        if (!query.exec())
+        {
+            qCritical()
+            << "Insert sensorsCRUD failed:"
+            << query.lastError().text();
+
             return false;
         }
+
+
+        // ========================================================
+        // DELETE
+        //
+        // Mark the exact frame at which this sensor disappears.
+        // ========================================================
+
+        if (c.operation == DELETE)
+        {
+            deleteMarkQuery.bindValue(
+                ":frameIndex",
+                frameIndex
+                );
+
+            deleteMarkQuery.bindValue(
+                ":indexNo",
+                c.index
+                );
+
+
+            if (!deleteMarkQuery.exec())
+            {
+                qCritical()
+                << "Mark sensorsDetails deletion failed:"
+                << deleteMarkQuery.lastError().text();
+
+                return false;
+            }
+        }
     }
+
     return true;
 }
+
+
+
 
 // ========== END SENSOR INSERT METHODS ==========
 
@@ -1371,15 +1465,24 @@ void SQLite::setEntitiesTrajectoryBtw(int &frameIndex,
     QSqlQuery query(database());
     query.prepare(R"(
         WITH latest AS (
+            -- FIX: ab operation=8 (CREATE) tak seemit nahi — CREATE ya UPDATE
+            -- dono ka sabse latest frame nikalta hai target frameIndex tak
             SELECT e.indexNo, MAX(t.frameIndex) AS frameIndex
             FROM entitiesDetails e
             JOIN entitiesTrajectoryCRUD t
                 ON e.indexNo = t.indexNo
             WHERE e.creation <= :frameIndex
               AND (e.deletion IS NULL OR e.deletion >= :frameIndex)
-              AND t.operation = 8
               AND t.frameIndex <= :frameIndex
             GROUP BY e.indexNo
+        ),
+        latestOp AS (
+            -- us latest frame par jo operation hua, wo bhi nikalo
+            SELECT l.indexNo, l.frameIndex, t.operation
+            FROM latest l
+            JOIN entitiesTrajectoryCRUD t
+              ON t.indexNo = l.indexNo
+             AND t.frameIndex = l.frameIndex
         )
 
         SELECT DISTINCT
@@ -1389,9 +1492,10 @@ void SQLite::setEntitiesTrajectoryBtw(int &frameIndex,
                w.vector_x, w.vector_y, w.vector_z,
                w.speed, w.sensor, w.formation
         FROM trajectoryWaypoint w
-        JOIN latest l
-          ON w.indexNo = l.indexNo
-         AND w.frameIndex = l.frameIndex
+        JOIN latestOp lo
+          ON w.indexNo = lo.indexNo
+         AND w.frameIndex = lo.frameIndex
+        WHERE lo.operation != 1   -- DELETE ko exclude karo — us entity ki trajectory abhi nahi honi chahiye
         ORDER BY w.indexNo ASC, w.waypoint_index ASC;
     )");
     query.bindValue(":frameIndex"  ,frameIndex);
@@ -1821,29 +1925,70 @@ void SQLite::setEntitiesTrajectoryCRUD(int &frameIndex, EntitiesTrajectoryCRUDLi
 }
 
 // ========== SENSOR READ METHODS ==========
+// void SQLite::setSensorsDetails(int frameIndex, SensorList &list)
+// {
+//     QSqlQuery query(database());
+//     query.prepare(R"(
+//         SELECT indexNo, id, type, state FROM sensorsDetails
+//         WHERE creation <= :frameIndex
+//           AND (deletion IS NULL OR deletion >= :frameIndex)
+//     )");
+//     query.bindValue(":frameIndex", frameIndex);
+//     if (!query.exec()) {
+//         qCritical() << "setSensorsDetails failed:" << query.lastError().text();
+//         return;
+//     }
+//     while (query.next()) {
+//         SensorData s;
+//         s.index = query.value(0).toInt();
+//         s.id    = query.value(1).toString();
+//         s.type  = query.value(2).toString();
+//         s.state = QJsonDocument::fromJson(query.value(3).toByteArray()).object();
+//         list.push_back(s);
+//     }
+
+// }
+
+// fix by yogesh
 void SQLite::setSensorsDetails(int frameIndex, SensorList &list)
 {
     QSqlQuery query(database());
+
     query.prepare(R"(
-        SELECT indexNo, id, type, state FROM sensorsDetails
+        SELECT indexNo, id, type, state
+        FROM sensorsDetails
         WHERE creation <= :frameIndex
-          AND (deletion IS NULL OR deletion >= :frameIndex)
+          AND (deletion IS NULL OR deletion > :frameIndex)
     )");
+
     query.bindValue(":frameIndex", frameIndex);
-    if (!query.exec()) {
-        qCritical() << "setSensorsDetails failed:" << query.lastError().text();
+
+    if (!query.exec())
+    {
+        qCritical()
+        << "setSensorsDetails failed:"
+        << query.lastError().text();
+
         return;
     }
-    while (query.next()) {
+
+    while (query.next())
+    {
         SensorData s;
+
         s.index = query.value(0).toInt();
         s.id    = query.value(1).toString();
         s.type  = query.value(2).toString();
-        s.state = QJsonDocument::fromJson(query.value(3).toByteArray()).object();
+
+        s.state =
+            QJsonDocument::fromJson(
+                query.value(3).toByteArray()
+                ).object();
+
         list.push_back(s);
     }
-
 }
+
 
 void SQLite::setSensorsCRUD(int frameIndex, SensorCRUDList &list)
 {

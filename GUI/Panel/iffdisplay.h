@@ -70,7 +70,6 @@ public:
     void selectEntity(Entity* entity);
     void RemoveEntity(QString ID);
     void updateRadar();
-
     // IFF instance
     IFF* iff = nullptr;
     QVector<IFF*> ifflist;

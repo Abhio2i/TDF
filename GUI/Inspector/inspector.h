@@ -84,7 +84,8 @@ protected:
 
 // %%% Inspector Class %%%
 /* Dock widget for inspecting, editing, and managing hierarchical data */
-class Inspector : public QDockWidget
+// class Inspector : public QDockWidget
+class Inspector : public QWidget
 {
     Q_OBJECT
 
@@ -183,8 +184,10 @@ private:
     QSet<QString> customParameterKeys;// Set of custom parameter keys
     QWidget *titleBarWidget;          // Custom title bar widget
     QPushButton *menuButton;          // Menu access button
-    QJsonObject copiedComponentData;  // Copied component data storage
-    QString copiedComponentType;      // Type of copied component
+    // QJsonObject copiedComponentData;  // Copied component data storage
+    // QString copiedComponentType;      // Type of copied component
+    static inline QJsonObject copiedComponentData;
+    static inline QString copiedComponentType;
     Hierarchy* hierarchy = nullptr;   // Reference to hierarchy structure
     QJsonObject copiedVectorData;     // Copied vector data storage
     bool m_locked;                    // Locked state flag
@@ -286,9 +289,17 @@ private:
     QPushButton  *addButton                = nullptr;
     int           m_additionalParamsHeaderRow = -1;
     QJsonObject rebuildAdditionalParameters() const;
-void emitFullAdditionalParametersUpdate();
-bool m_isDatabaseEditor = false;
-
+    void emitFullAdditionalParametersUpdate();
+    bool m_isDatabaseEditor = false;
+    void setupTimeCell(int row, const QString &fullKey, const QJsonObject &timeObj);
+    QWidget *m_columnGripWidget = nullptr;
+    void updateColumnGripPosition();
+    bool m_resizingColumn   = false;
+    int  m_resizeStartX     = 0;
+    int  m_resizeStartWidth = 0;
+    static const int kGripWidthPx = 6;
+    bool m_gripCursorOverridden = false;
+    void autoFitKeyColumn();
 
 };
 

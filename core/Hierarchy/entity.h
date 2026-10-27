@@ -25,6 +25,7 @@
 #define ENTITY_H
 
 #include "core/Hierarchy/Components/attachedenitities.h"
+#include "ECS/World/world.h"
 #include <QObject>
 #include <QString>
 #include <QJsonObject>
@@ -124,27 +125,27 @@ public:
     };
 
     enum SubAirCategory{
-        Aircraft, Helicopter, UAV
+       Aircraft, Helicopter, UAV, FighterAircraft, TransportAircraft, FixedWingDrone, RotaryWingDrone
     };
 
-    const std::string AirCategoryNames[3] = {
-        "Aircraft", "Helicopter", "UAV"
+    const std::string AirCategoryNames[7] = {
+        "Aircraft", "Helicopter", "UAV", "FighterAircraft", "TransportAircraft",  "FixedWingDrone", "RotaryWingDrone"
     };
 
     enum SubGroundCategory{
-        Tank, GroundRadar, Human
+         Tank, GroundRadar, Human, BattleVehicle, MilitaryGroundVehicle, TransportVehicle
     };
 
-    const std::string GroundCategoryNames[3] = {
-        "Tank", "GroundRadar", "Human"
+    const std::string GroundCategoryNames[6] = {
+        "Tank", "GroundRadar", "Human", "BattleVehicle", "MilitaryGroundVehicle", "TransportVehicle"
     };
 
     enum SubMarineCategory{
-        Ship, Frigate, Submarine
+        Ship, Frigate, Submarine, AircraftCarrier, GuidedMissileCruiser, Destroyer, SmallBoat
     };
 
-    const std::string MarineCategoryNames[3] = {
-        "Ship", "Frigate", "Submarine"
+    const std::string MarineCategoryNames[7] = {
+        "Ship", "Frigate", "Submarine", "AircraftCarrier", "GuidedMissileCruiser", "Destroyer", "SmallBoat"
     };
 
     // =========================================================================
@@ -153,12 +154,14 @@ public:
     // =========================================================================
     Entity(Hierarchy* h);
     ~Entity();
-    Hierarchy* root;
+    ECS::Entity ecsID;
+    Hierarchy* root = nullptr;
     std::string Name;
     bool Active = true;
     bool isDestroy = false;
     bool collisionWarning = false;
     std::string ID;
+    std::string ReferenceID;
     std::string parentID;
     Constants::EntityType type;
 
@@ -211,19 +214,23 @@ public:
     void removeWeapon(Weapon* weapon);
     void clearWeapons();
 
+public: signals:
+    void destroy(std::string ID);
     // =========================================================================
     // SECTION: Virtual Interface (DO-178C Compliance)
     // DESCRIPTION: Mandatory methods for derived simulation objects.
     // =========================================================================
     virtual void spawn() = 0;
+    virtual void SyncByJson(const QJsonObject& obj);
     virtual std::vector<std::string> getSupportedComponents() = 0;
+    virtual void addSupportedcomponent() = 0;
     virtual void addComponent(std::string name) = 0;
     virtual void removeComponent(std::string name) = 0;
     virtual QJsonObject getComponent(std::string name) = 0;
     virtual void updateComponent(QString name, const QJsonObject& obj) = 0;
-
     virtual QJsonObject toJson() const = 0;
     virtual void fromJson(const QJsonObject& obj) = 0;
+
 };
 
 #endif // ENTITY_H

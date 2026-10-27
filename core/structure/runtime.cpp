@@ -4,16 +4,12 @@
 #include <core/Network/libs/TransformUpdate.h> //for qued connnection
 #include <QMetaType>//by aman
 #include <core/SharedMemory/sharedmemorywrapper.h>
-#include "core/DISPlugin/utils/coordconverter.h"
 #include <iostream>
 #include "core/DISPlugin/DISNetworkPlugin.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/aesaradar.h"
+#include "core/Hierarchy/EntityProfiles/radio.h"
 Runtime::Runtime() {
     qRegisterMetaType<TransformUpdate>("TransformUpdate");//by Aman
-
-
-
-
-
     // New By Himanshu Start
     // Register the Enum so it can be passed across threads via Signals/Slots
     qRegisterMetaType<SimulationStateNS::State>("SimulationStateNS::State");
@@ -103,6 +99,31 @@ Runtime::Runtime() {
     connect(disPlugin, &DISNetworkPlugin::removeRemoteDISEntity,
             hierarchy, &Hierarchy::removeEntity,
             Qt::QueuedConnection);
+    connect(hierarchy, &Hierarchy::sensorAdded, this,
+            [this](const QString &entityId, const QString &sensorId) {
+                Q_UNUSED(entityId)
+                auto it = hierarchy->Sensors.find(sensorId.toStdString());
+                if (it == hierarchy->Sensors.end()) return;
+
+                if (AESARadar* radar = dynamic_cast<AESARadar*>(it->second)) {
+                    connect(radar, &AESARadar::emissionSnapshotReady,
+                            disPlugin, &DISNetworkPlugin::publishEmission,
+                            Qt::QueuedConnection);
+                }
+            });
+
+    connect(hierarchy, &Hierarchy::radioAdded, this,
+            [this](const QString &entityId, const QString &radioId) {
+                Q_UNUSED(entityId)
+        // std::cout<<"we reached here-1"<<std::endl;
+
+                auto it = hierarchy->Radios.find(radioId.toStdString());
+                if (it == hierarchy->Radios.end()) return;
+
+                connect(it->second, &Radio::transmitterSnapshotReady,
+                        disPlugin, &DISNetworkPlugin::publishTransmitter,
+                        Qt::QueuedConnection);
+            });
 
     // simulation->moveToThread(simulationThread);
 
@@ -137,73 +158,72 @@ Runtime::Runtime() {
     // NetworkManager connections
     networkManager->setHierarchy(hierarchy);
 
-    connect(hierarchy, &Hierarchy::folderAdded,
-            networkManager, &NetworkManager::folderAdded);
-    connect(hierarchy, &Hierarchy::folderRemoved,
-            networkManager, &NetworkManager::folderRemoved);
+    // connect(hierarchy, &Hierarchy::folderAdded,
+    //         networkManager, &NetworkManager::folderAdded);
+    // connect(hierarchy, &Hierarchy::folderRemoved,
+    //         networkManager, &NetworkManager::folderRemoved);
 
-    connect(hierarchy, &Hierarchy::entityAddedPointer,
-            networkManager, &NetworkManager::entityAddedPointer);
-    connect(hierarchy, &Hierarchy::entityAdded,
-            networkManager, &NetworkManager::entityAdded);
-    connect(hierarchy, &Hierarchy::entityRemovedfull,
-            networkManager, &NetworkManager::entityRemoved);
-    connect(hierarchy, &Hierarchy::entityRenamed,
-            networkManager, &NetworkManager::entityRenamed);
-    connect(hierarchy, &Hierarchy::entityUpdate,
-            networkManager, &NetworkManager::entityUpdate);
+    // connect(hierarchy, &Hierarchy::entityAddedPointer,
+    //         networkManager, &NetworkManager::entityAddedPointer);
+    // connect(hierarchy, &Hierarchy::entityAdded,
+    //         networkManager, &NetworkManager::entityAdded);
+    // connect(hierarchy, &Hierarchy::entityRemovedfull,
+    //         networkManager, &NetworkManager::entityRemoved);
+    // connect(hierarchy, &Hierarchy::entityRenamed,
+    //         networkManager, &NetworkManager::entityRenamed);
+    // connect(hierarchy, &Hierarchy::entityUpdate,
+    //         networkManager, &NetworkManager::entityUpdate);
 
-    connect(hierarchy, &Hierarchy::componentAdded,
-            networkManager, &NetworkManager::componentAdded);
+    // connect(hierarchy, &Hierarchy::componentAdded,
+    //         networkManager, &NetworkManager::componentAdded);
 
-    connect(hierarchy, &Hierarchy::entityComponentUpdate,
-            networkManager, &NetworkManager::entityComponentsUpdate);
+    // connect(hierarchy, &Hierarchy::entityComponentUpdate,
+    //         networkManager, &NetworkManager::entityComponentsUpdate);
 
-    connect(hierarchy, &Hierarchy::entityMeshAdded,
-            networkManager, &NetworkManager::entityMeshAdded);
-    connect(hierarchy, &Hierarchy::entityMeshRemoved,
-            networkManager, &NetworkManager::entityMeshRemoved);
+    // connect(hierarchy, &Hierarchy::entityMeshAdded,
+    //         networkManager, &NetworkManager::entityMeshAdded);
+    // connect(hierarchy, &Hierarchy::entityMeshRemoved,
+    //         networkManager, &NetworkManager::entityMeshRemoved);
 
-    connect(hierarchy, &Hierarchy::entityPhysicsAdded,
-            networkManager, &NetworkManager::entityPhysicsAdded);
-    connect(hierarchy, &Hierarchy::entityPhysicsRemoved,
-            networkManager, &NetworkManager::entityPhysicsRemoved);
+    // connect(hierarchy, &Hierarchy::entityPhysicsAdded,
+    //         networkManager, &NetworkManager::entityPhysicsAdded);
+    // connect(hierarchy, &Hierarchy::entityPhysicsRemoved,
+    //         networkManager, &NetworkManager::entityPhysicsRemoved);
 
-    connect(simulation, &Simulation::Update,
-            networkManager, &NetworkManager::UpdateClient);
+    // connect(simulation, &Simulation::Update,
+    //         networkManager, &NetworkManager::UpdateClient);
 
-    connect(networkManager,&NetworkManager::initData,hierarchy,&Hierarchy::fromJson);
-    connect(networkManager,&NetworkManager::getCurrentJsonData,hierarchy,&Hierarchy::getCurrentJsonData);
-    connect(hierarchy,&Hierarchy::getJsonData,networkManager,&NetworkManager::getJsonData);
-    connect(networkManager,&NetworkManager::addFolder,hierarchy,&Hierarchy::addFolderViaNetwork);
-    connect(networkManager,&NetworkManager::removeFolder,hierarchy,&Hierarchy::removeFolderViaNetwork);
-    connect(networkManager,&NetworkManager::addEntity,hierarchy,&Hierarchy::addEntityViaNetwork);
-    connect(networkManager,&NetworkManager::addComponent,hierarchy,&Hierarchy::addComponent);
-    connect(networkManager,&NetworkManager::entityComponentUpdate,hierarchy,&Hierarchy::UpdateComponent);
-    connect(networkManager,&NetworkManager::removeEntity,hierarchy,&Hierarchy::removeEntity);
-    connect(networkManager,&NetworkManager::updateScene,scenerenderer,&SceneRenderer::Render);
-    connect(networkManager,
-            &NetworkManager::renameEntity,
-            hierarchy,
-            &Hierarchy::renameEntity);
+    // connect(networkManager,&NetworkManager::initData,hierarchy,&Hierarchy::fromJson);
+    // connect(networkManager,&NetworkManager::getCurrentJsonData,hierarchy,&Hierarchy::getCurrentJsonData);
+    // connect(hierarchy,&Hierarchy::getJsonData,networkManager,&NetworkManager::getJsonData);
+    // connect(networkManager,&NetworkManager::addFolder,hierarchy,&Hierarchy::addFolderViaNetwork);
+    // connect(networkManager,&NetworkManager::removeFolder,hierarchy,&Hierarchy::removeFolderViaNetwork);
+    // connect(networkManager,&NetworkManager::addEntity,hierarchy,&Hierarchy::addEntityViaNetwork);
+    // connect(networkManager,&NetworkManager::addComponent,hierarchy,&Hierarchy::addComponent);
+    // connect(networkManager,&NetworkManager::entityComponentUpdate,hierarchy,&Hierarchy::UpdateComponent);
+    // connect(networkManager,&NetworkManager::removeEntity,hierarchy,&Hierarchy::removeEntity);
+    // connect(networkManager,&NetworkManager::updateScene,scenerenderer,&SceneRenderer::Render);
+    // connect(networkManager,
+    //         &NetworkManager::renameEntity,
+    //         hierarchy,
+    //         &Hierarchy::renameEntity);
 
-    // --- START CLIENT SIMULATION AUTOMATICALLY ---by Aman
-    connect(networkManager, &NetworkManager::initSyncComplete,
-            this, [this]() {
+    // // --- START CLIENT SIMULATION AUTOMATICALLY ---by Aman
+    // connect(networkManager, &NetworkManager::initSyncComplete,
+    //         this, [this]() {
 
-                if (!networkManager->isServer()) {
-                    qDebug() << "[CLIENT] Starting simulation loop";
-                    //simulation->start();
-                }
-            });
+    //             if (!networkManager->isServer()) {
+    //                 qDebug() << "[CLIENT] Starting simulation loop";
+    //                 //simulation->start();
+    //             }
+    //         });
+
     // connect(hierarchy, &Hierarchy::status,this,[this]{
     //     if(simulation->isPlay){
     //         simulation->pause();
     //         QThread::msleep(200);
     //     }
     // });
-
-
     //Shared Memory
     //connect(simulation,&Simulation::sendMode,sharedmemory,&SharedMemory::getMode);
     // 7. Connect Simulation to SharedMemory (Cross-Thread Communication)
@@ -242,7 +262,6 @@ Runtime::Runtime() {
         sqlite->dbConnect(path,isFileLoaded);
     });
 
-
     // connect(replay,&Replay::updateScene,scenerenderer,&SceneRenderer::Render);
     connect(replay,&Replay::createProfileCategories,hierarchy,&Hierarchy::addProfileCategaoryWithObject);
     connect(replay,&Replay::deleteProfileCategories,hierarchy,&Hierarchy::removeProfileCategaory);
@@ -251,12 +270,9 @@ Runtime::Runtime() {
     /* -------------------------------------------------------
      * Recording Implementation End
      * ------------------------------------------------------*/
-
     QObject::connect(simulationThread, &QThread::started, simulation, &Simulation::init);
     connect(simulationThread, &QThread::finished, simulationThread, &QThread::deleteLater);
     simulationThread->start();
-
-
 }
 
 Runtime::~Runtime() {
@@ -268,7 +284,7 @@ Runtime::~Runtime() {
     delete recorder;
     // delete missionExcuter;
     // delete sharedmemory; //Shared Memory By Himanshu
-    // Clean up Shared Memory Thread New
+    // Clean up Shared Memory Thread Newz
     if (sharedMemoryThread && sharedMemoryThread->isRunning()) {
         sharedMemoryThread->quit();
         sharedMemoryThread->wait();

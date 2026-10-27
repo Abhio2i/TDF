@@ -30,6 +30,8 @@ class TacticalDisplay : public QWidget {
     Q_OBJECT
 
 public:
+public:
+
     // Initialize tactical display
     explicit TacticalDisplay(QWidget *parent = nullptr);
     // Show 3D view
@@ -62,7 +64,7 @@ signals:
 protected:
     // Handle event filtering
     bool eventFilter(QObject *obj, QEvent *event) override;
-    // Handle resize events - ADD THIS LINE
+    // Handle resize events
     void resizeEvent(QResizeEvent *event) override;
 
 public:

@@ -1,8 +1,12 @@
 #include "mission.h"
 
-Mission::Mission():Component(nullptr) {}
+Mission::Mission():Component() {}
 
-
+void Mission::init(Entity *Entity){
+    parentEntity = Entity;
+}
+void Mission::Awake(){}
+void Mission::Start(){}
 void Mission::addSubComponent(std::string name, QString data1, QString data2 , QJsonObject data3){
 
 }

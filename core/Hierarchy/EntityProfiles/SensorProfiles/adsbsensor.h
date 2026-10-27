@@ -46,6 +46,7 @@ public:
 
 
     explicit ADSBSensor(Hierarchy* h);
+    ~ADSBSensor();
 
     adsb::AdsbSensor ownship;
     static rf::RfPropagationModel* model;

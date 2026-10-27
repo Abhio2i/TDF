@@ -2,8 +2,8 @@
 #define CANVASWIDGET_H
 
 #include "GUI/Tacticaldisplay/Gis/gislib.h"
-#include "GUI/measuredistance/measuredistancedialog.h"
-#include "GUI/Tacticaldisplay/Gis/shapes_feature.h"
+#include "GUI/Tacticaldisplay/Measurement/measurement.h"
+#include "GUI/Tacticaldisplay/Shape/shapes_feature.h"
 #include "qnamespace.h"
 #include "qtimer.h"
 #include <QWidget>
@@ -18,70 +18,32 @@
 #include <Qt3DCore/QTransform>
 #include <core/Hierarchy/entity.h>
 #include <core/Hierarchy/Components/transform.h>
-#include <GUI/Tacticaldisplay/Gis/layerpanel.h>
-// #include <GUI/Tacticaldisplay/entityinfodialog.h>
+#include "GUI/Tacticaldisplay/Layer/layerpanel.h"
+#include "GUI/Tacticaldisplay/Gis/transformmode.h"
+#include "GUI/Tacticaldisplay/Shape/IShapeHost.h"
+#include "GUI/Tacticaldisplay/Shape/mesh_entry.h"
+#include "GUI/Tacticaldisplay/Layer/ILayerHost.h"
+#include <core/Debug/console.h>
+#include "GUI/Tacticaldisplay/contextmenu/contextmenu_handler.h"
+
+// Forward declarations
 class EntityContextMenu;
 class EntityInfoDialog;
-// Forward declarations
 class QDialog;
 class QSpinBox;
 class QPushButton;
 class ShapesFeature;
-
-/* MeshEntry structure section */
-
-struct MeshEntry {
-    QString name;                           // Name identifier for the mesh
-    Qt3DCore::QTransform* transform = nullptr;        // 3D transformation
-    Transform* coreTransform = nullptr;
-    QVector3D* position;                    // Position in 3D space
-    QQuaternion* rotation;                  // Rotation as quaternion
-    QVector3D* velocity = nullptr;                    // Velocity vector
-    QVector3D* size;                        // Size/scaling factors
-    Mesh* mesh;                           // Mesh geometry data
-    Entity* entity = nullptr;
-    Platform* platform = nullptr;
-    Collider* collider = nullptr;                     // Collision detection component
-    Trajectory* trajectory = nullptr;               // Path/trajectory data
-    DynamicModel* dynamicModel = nullptr;
-    QString bitmapPath;                     // Path to bitmap image
-    QString text;                           // Text content for text entities
-    QPolygonF polyline;
-    QVector<QPointF> pointsToDraw;
-    bool detection = true;
-    bool radioVisible = false;
-    QColor textColor;          // Text color
-    QFont textFont;           // Text font
-    int textSize;             // Font size
-    bool isTextSelected;      // Selection flag for text
-    int individualImageSize = -1;
-    QColor trajectoryColor = Qt::blue;
-
-    float circleRadius = 0.0f;   // geo degrees (used only for circles) by amjad
-};
-
-/* TransformMode enumeration section */
-// Enumeration for different transformation and interaction modes
-enum TransformMode {
-    Panning,           // Camera panning mode
-    Translate,         // Object translation mode
-    Rotate,            // Object rotation mode
-    Scale,             // Object scaling mode
-    DrawTrajectory,    // Trajectory drawing mode
-    DrawShape,         // Shape drawing mode
-    PlaceBitmap,       // Bitmap placement mode
-    MeasureDistance,   // Distance measurement mode
-    EditShape          // Shape editing mode
-};
-
-/* Class declaration section */
-// Main canvas widget class for rendering and interaction
-class CanvasWidget : public QWidget {
-    Q_OBJECT  // Qt macro for signals/slots
+class ShapeEventHandler;
+class CanvasWidget : public QWidget, public IShapeHost, public ILayerHost {
+    Q_OBJECT
     friend class ShapesFeature;
+    friend class ShapeEventHandler;
 
 public:
-    /* Constructor section */
+    Measurement* m_measurementModule = nullptr;
+    Measurement* getMeasurementModule() const { return m_measurementModule; }
+
+    // Constructor / Destructor
     QPixmap* cacheimg;
     QPixmap scaledimg;
     QPen pointPen;
@@ -89,118 +51,194 @@ public:
     int ImageScale = 50;
     double getMetersPerPixel() const;
     CanvasWidget(QWidget *parent = nullptr);
+    ~CanvasWidget();
+
     GISlib* gislib;
 
-
-    /* Public members section */
+    // Public members
     std::unordered_map<std::string, MeshEntry> Meshes;
     std::string selectedEntityId;
     std::vector<std::string> selectedEntityIds;
     TransformMode currentMode = Translate;
 
-    /* Rendering and mode control section */
-    void Render(float deltatime);  // Main rendering function
+    // Rendering and mode control
+    void Render(float deltatime);
     void Refresh();
-    void setTransformMode(TransformMode mode);  // Set transformation mode
-    void setTrajectoryDrawingMode(bool enabled);  // Enable/disable trajectory drawing
-    void saveTrajectory();  // Save current trajectory
+    void setTransformMode(TransformMode mode);
+    void setTrajectoryDrawingMode(bool enabled);
+    void saveTrajectory();
     void setImageScale(int value);
+    int m_importCounter = 0;
 
-    /* Simulation and editor control section */
-    void simulation();  // Enter simulation mode
-    void editor();      // Enter editor mode
+    // Simulation and editor control
+    void simulation();
+    void editor();
 
-    /* Grid visibility and settings section */
-    void setXGridVisible(bool visible) { showXGrid = visible; update(); }  // Toggle X grid
-    void setYGridVisible(bool visible) { showYGrid = visible; update(); }  // Toggle Y grid
-    void setGridOpacity(int opacity) { gridOpacity = opacity; update(); }  // Set grid opacity
-    void toggleColliders(bool show) { showColliders = show; update(); }  // Toggle collider visibility
-    void toggleMesh(bool show) { showMesh = show; update(); }  // Toggle mesh visibility
-    void toggleOutline(bool show) { showOutline = show; update(); }  // Toggle selection outline
-    void toggleInformation(bool show) { showInformation = show; update(); }  // Toggle info display
-    void toggleFPS(bool show) { showFPS = show; update(); }  // Toggle FPS display
-    void toggleLayerVisibility(const QString& layer, bool visible);  // Toggle specific layer
-    void wheelEvent(QWheelEvent *event) override;  // Handle mouse wheel events
+    // Grid visibility and settings
+    void setXGridVisible(bool visible) { showXGrid = visible; update(); }
+    void setYGridVisible(bool visible) { showYGrid = visible; update(); }
+    void setGridOpacity(int opacity) { gridOpacity = opacity; update(); }
+    void toggleColliders(bool show) { showColliders = show; update(); }
+    void toggleMesh(bool show) { showMesh = show; update(); }
+    void toggleOutline(bool show) { showOutline = show; update(); }
+    void toggleInformation(bool show) { showInformation = show; update(); }
+    void toggleFPS(bool show) { showFPS = show; update(); }
+    void toggleLayerVisibility(const QString& layer, bool visible);
+    void wheelEvent(QWheelEvent *event) override;
 
-    // Shape drawing related members and methods
-    QString selectedShape;  // Currently selected shape type
-    void setShapeDrawingMode(bool enabled, const QString& shapeType = "");  // Set shape drawing mode
-    // void handleShapeDrawing(const QString& shapeType, const QPointF& geoPos, bool finalize);
-    std::vector<MeshEntry> tempMeshes;  // Temporary meshes for shapes and bitmaps
-
-    // Bitmap/image related methods
-    void onBitmapImageSelected(const QString& filePath);  // Handle user image selection
-    QString getBitmapImagePath(const QString& bitmapType);  // Get path for preset bitmaps
-    void onBitmapSelected(const QString& bitmapType);  // Handle preset bitmap selection
-    void onBitmapImageSelectedAtGeo(const QString& path, const QPointF& geo); // Script / deterministic geo based //
-    void onBitmapSelectedAtGeo(const QString& bitmapType, const QPointF& geo);  // Script / deterministic geo based //
-
-    // Waypoint and trajectory methods
-    void selectWaypoint(int index);  // Select specific waypoint
-    void deselectWaypoint();  // Deselect current waypoint
-
-    // Serialization methods
-    QJsonObject toJson() const;  // Convert state to JSON
-    void fromJson(const QJsonObject& json);  // Load state from JSON
-
-    void setTextPropertiesMode(bool enabled);
-    void updateTextProperties(const QString& textId, const QColor& color,
-                              const QFont& font, int fontSize);
-    void deleteText(const QString& textId);
-    //=============info
-    EntityInfoDialog *entityInfoDialog = NULL;
-    bool m_isBeingDestroyed = false;
-
-    void updateShapeProperties(const QString& shapeId, const QColor& color, int borderThickness);
-
-    ShapesFeature* getShapesFeature() const;  // getter for shape feature
-
-
-    /////////// move shape by coordinate ////////
-    bool moveShapeByName(const std::string& shapeName,
-                         const QPointF& geoPos);
-
-    // add text using script ///////
+    // Shape API - All delegated to ShapeEventHandler
+    QString selectedShape;
+    void setShapeDrawingMode(bool enabled, const QString& shapeType = "") override;
+    void onBitmapImageSelected(const QString& filePath);
+    QString getBitmapImagePath(const QString& bitmapType);
+    void onBitmapSelected(const QString& bitmapType);
+    void onBitmapImageSelectedAtGeo(const QString& path, const QPointF& geo);
+    void onBitmapSelectedAtGeo(const QString& bitmapType, const QPointF& geo);
     void addTextAtGeo(const QString& text, const QPointF& geo);
-
-    /////// delete shapes ////////////
+    void copySelectedShape();
+    void pasteShape();
+    void deleteText(const QString& textId);
+    void updateShapeProperties(const QString& shapeId, const QColor& color, int borderThickness);
+    void showShapePropertiesDialog(const QString& shapeId);
+    bool moveShapeByName(const std::string& shapeName, const QPointF& geoPos);
     bool deleteObjectById(const QString& id);
+    void centerOnShape(const QString& shapeId);
+    void placePastedShape(const QPointF& geoPos);
+    bool isShape(const QString& shapeId) const;
+
+    const QString& getHighlightedShapeId() const;
+    void setHighlightedShapeId(const QString& id);
+    bool isDraggingShape() const;
+    const QString& getDraggingShapeId() const;
+    bool isResizingShape() const;
+    int getSelectedHandleIndex() const;
+    const std::vector<QPointF>& getResizeHandles() const;
+    const QString& getEditingShapeId() const;
+    std::vector<QString>& getSelectedShapeIds();
+    bool isMultiSelecting() const;
+    bool isRotatingBitmap() const;
+    const QString& getRotatingBitmapId() const;
+    void setActiveRotateId(const QString& id);
+    const QString& getActiveRotateId() const;
+    void clearActiveRotateId();
+    void clearSelectedShapeIds();
+    bool isPlacingBitmap() const;
+    const QString& getSelectedBitmapType() const;
+
+    // Waypoint and trajectory
+    void selectWaypoint(int index);
+    void deselectWaypoint();
+
+    // Serialization
+    QJsonObject toJson() const;
+    void fromJson(const QJsonObject& json);
+
+    // Entity info
+    EntityInfoDialog* entityInfoDialog = NULL;
+    bool m_isBeingDestroyed = false;
+    ShapesFeature* getShapesFeature() const override;
+
     void centerOnEntity(const QString& entityId, bool adjustZoom = false);
     void centerOnEntityWithZoom(const QString& entityId, int zoomLevel);
     double calculateTrajectoryCompletionTime(const MeshEntry& entry) const;
-    // static void runUnitTestsOnce();
-    // canvaswidget.h mein public section mein add karo:
-    void loadImportedLayerFeaturesToMeshes(const QString& filePath,
-                                           const QString& layerName);
     void fullCanvasReset();
+    void highlightSonobuoy(const QString& sonobuoyId);
+    void clearSonobuoyHighlight();
+    QString m_highlightedSonobuoyId;
+
+    // These methods need to be public for ShapeEventHandler access
+    void handleShapeRightClick(QMouseEvent *event);
+    bool handleShapeSelection(QMouseEvent *event);
+
+    std::vector<MeshEntry>& getTempMeshes() override;
+    const std::vector<MeshEntry>& getTempMeshes() const;
+
+    std::vector<Vector*>& getTempPolygonVertices() override;
+    const std::vector<Vector*>& getTempPolygonVertices() const;
+
+    std::vector<Vector*>& getTempLineVertices() override;
+    const std::vector<Vector*>& getTempLineVertices() const;
+
+    std::vector<QPointF>& getTempPolygonCanvasPoints() override;
+    const std::vector<QPointF>& getTempPolygonCanvasPoints() const;
+
+    std::vector<QPointF>& getTempLineCanvasPoints() override;
+    const std::vector<QPointF>& getTempLineCanvasPoints() const;
+    MeshEntry* getEntityMeshEntry(const QString& entityId) override;   // ADDED - entity context menu fix
+    // added for shapes operation handling
+    void startShapeEdit(const QString& shapeId) override;
+    void startShapeRotate(const QString& shapeId) override;
+    void cancelActiveShapeOperation() override;
+
+    // ========================================================================
+    // NEW: IShapeHost interface implementation
+    // All trivial, inline, delegate to existing members/methods below.
+    // No canvaswidget.cpp changes required because of these.
+    // ========================================================================
+
+    void refreshView() override { Refresh(); }
+    void forceRedraw() override { update(); }
+    QPoint getMousePosition() const override { return m_lastMousePos; }
+
+    void setCursor(const QCursor& cursor) override { QWidget::setCursor(cursor); }
+
+    void setCurrentMode(TransformMode mode) override { currentMode = mode; }
+    TransformMode getCurrentMode() const override { return currentMode; }
+
+    void setSelectedShape(const QString& shapeType) override { selectedShape = shapeType; }
+    QString getSelectedShape() const override { return selectedShape; }
+
+    // Named differently from the existing `isDrawingTrajectory` bool member
+    // to avoid a method/member name collision in C++.
+    bool isTrajectoryDrawingActive() const override { return isDrawingTrajectory; }
+    // CHAITANYA JAIN CHANGE:
+    // Why: Overrode getTrajectoryWaypointCount to return count of current trajectory waypoints.
+    int getTrajectoryWaypointCount() const override { return currentTrajectory.size(); }
+
+    GISlib* getGISlib() const override { return gislib; }
+
+    void addShapeToActiveLayer(const QString& shapeId, const QString& shapeType) override {
+        if (m_shapesFeature) m_shapesFeature->addShapeToActiveLayer(shapeId, shapeType);
+    }
+
+    LayerPanel* getLayerPanel() const override { return m_layerPanel; }
+
+    void logMessage(const QString& message) override { Console::log(message.toStdString()); }
+    void logWarning(const QString& message) override { Console::warning(message.toStdString()); }
+    void logError(const QString& message) override { Console::error(message.toStdString()); }
+
 public slots:
     void ReInit();
-    // GIS event forwarding slots
     void onGISKeyPressed(QKeyEvent *event) { keyPressEvent(event); }
     void onGISMousePressed(QMouseEvent *event) { mousePressEvent(event); }
     void onGISMouseMoved(QMouseEvent *event) { mouseMoveEvent(event); }
     void onGISMouseReleased(QMouseEvent *event) { mouseReleaseEvent(event); }
     void onGISPainted(QPaintEvent *event) { paintEvent(event); }
-
-    // Data update slots
-    void updateWaypointsFromInspector(QString entityId, QJsonArray waypoints);  // Update waypoints from UI
-    void onDistanceMeasured(double distance, QPointF startPoint, QPointF endPoint);  // Handle distance measurement
-    void onPresetLayerSelected(const QString& preset);  // Handle preset layer selection
-
-    // GeoJSON functionality
-    void importGeoJsonLayer(const QString &filePath);  // Import GeoJSON layer
-    void onGeoJsonLayerToggled(const QString &layerName, bool visible);  // Toggle GeoJSON layer visibility
-    void centerOnShape(const QString& shapeId);
+    void updateWaypointsFromInspector(QString entityId, QJsonArray waypoints);
+    void onDistanceMeasured(double distance, QPointF startPoint, QPointF endPoint);
+    void onPresetLayerSelected(const QString& preset);
+    // void importGeoJsonLayer(const QString &filePath);
+    void onGeoJsonLayerToggled(const QString &layerName, bool visible);
     void resetEntityInfoDialog();
     void onWaypointSelectedFromInspector(int waypointIndex);
+    void showEntityInfo(const QString& entityId);
+    void hideEntityInfo();
+    void importLayer(const QString& filePath);
 
 private slots:
-    void onMeasurementTypeChanged(bool isEll);  // Handle measurement type change (ellipsoidal vs planar)
+    // Measurement slots moved to Measurement module
+
 
 private:
-    // Add this member variable
+    // Shape event handler
+    ShapeEventHandler* m_shapeEventHandler;
+    ShapesFeature* m_shapesFeature;
+    std::vector<MeshEntry> m_dummyMeshes;
+    std::vector<Vector*> m_dummyVectors;
+    std::vector<QPointF> m_dummyPoints;
+
+    // Entity context menu
     EntityContextMenu* m_entityContextMenu;
-    // Add this method declaration
     void handleEntityDoubleClick(const QString& entityId, MeshEntry& entry);
     void showEntityContextMenu(const QPoint& globalPos, const QString& entityId, MeshEntry& entry);
     QString checkEntityHover(const QPoint& mousePos);
@@ -208,88 +246,35 @@ private:
     QString m_hoveredEntityId;
     QTimer m_tooltipTimer;
     LayerPanel* m_layerPanel = nullptr;
-    QString m_highlightedShapeId;   // shape to draw selection outline for
-    // private members mein add karo
-    MeshEntry* m_copiedShape = nullptr;  // clipboard for shape copy
-    bool m_renderEnabled = true;
+    void selectEntitiesInBox(const QRectF& boxRect);// by chaitanya jain
 
-    bool isBoxSelecting = false;
-    QPoint boxStartPos;
-    QPoint boxCurrentPos;
 
-    // Multi Selection (Basic)
-    std::vector<QString> selectedShapeIds;   // Shapes, Bitmaps, Text ke liye
-
-    // Multi Drag
+    // Multi Selection
     bool isMultiDrag = false;
     QPointF multiDragStartGeo;
-
-    bool isMultiSelecting() const {
-        return !selectedEntityIds.empty() || !selectedShapeIds.empty();
-    }
-
-    // Function Declarations
-    void clearMultiSelection();
-    void performBoxSelection(const QPoint& p1, const QPoint& p2);
-    void moveSelectedItems(const QPointF& deltaGeo);
-    bool isClickOnAnySelectedItem(const QPoint& pos);
-    bool isBoxSelectionMode = false;
     int m_highlightedWaypointIndex = -1;
     QString m_highlightedWaypointEntityId;
 
+    void clearMultiSelection();
+    void moveSelectedItems(const QPointF& deltaGeo);
+    bool isClickOnAnySelectedItem(const QPoint& pos);
 
-public slots:
-    void showEntityInfo(const QString& entityId);
-    void hideEntityInfo();
-    void importLayer(const QString& filePath);
-    // void setTooltipOptions(const QSet<QString>& options);
-public:
-    // Drag and drop event handlers
-    void dragEnterEvents(QDragEnterEvent *event);
-    void dragMoveEvents(QDragMoveEvent *event);
-    void dropEvents(QDropEvent *event);
-
-public:
-    // Distance Measurement API for scripts
-    void startDistanceMeasurement();  // Enables MeasureDistance mode
-    void addMeasurePoint(double lon, double lat);  // Adds a point manually
-    double getLastSegmentDistance() const;  // Distance between last two points
-    double getTotalDistance() const;        // Total distance from first to last
-    void clearMeasurementPoints();          // Clears all points
-    void setMeasurementUnit(const QString &unit);  // Set measurement unit (e.g., "m", "km", "ft", "mile")
-    QString measurementUnit = "m";      // Default: meters
-    double conversionFactor = 1.0;      // Default factor for meters
-    EntityInfoDialog* getEntityInfoDialog() const { return entityInfoDialog; }
-    void selectMultipleEntities(const QList<QString>& entityIds);
-    void clearSelection();
-    void setTooltipOptions(const QSet<QString>& options);
-
-    void setLayerPanel(LayerPanel* panel);
-    LayerPanel* getLayerPanel() const { return m_layerPanel; }
-    bool isDrawingTrajectory = false;  // Currently drawing trajectory
-    bool showImage = true;
-    bool showFPS = true;     // Show FPS counter
-    bool showTrajectories = true;
-    QMap<QString, QString> geoJsonLayerFilePaths;
-    void copySelectedShape();
-    void pasteShape();
-private:
-    // Drawing methods for different canvas elements
-    void drawGridLines(QPainter& painter);  // Draw grid lines
-    void drawEntityInformation(QPainter& painter);  // Draw entity info overlay
-    void drawSceneInformation(QPainter& painter);  // Draw scene info (FPS, mode)
-    void drawTransformGizmo(QPainter& painter);  // Draw transformation gizmo
-    void drawCollider(QPainter& painter,std::string id , MeshEntry entry);  // Draw collision boundaries
-    void drawSelectionOutline(QPainter& painter);  // Draw selection outline
-    void drawCollision(QPainter& painter,std::string id , MeshEntry entry);
-    void drawImage(QPainter& painter,std::string id , MeshEntry entry);  // Draw entity images
-    void drawFormation(QPainter& painter,std::string id , MeshEntry entry);
-    void drawTrajectory(QPainter& painter,const std::string& id , MeshEntry& entry);  // Draw trajectory paths
-    void drawTrail(QPainter& painter,std::string id , MeshEntry entry);  // Draw trajectory paths
-    void drawMesh(QPainter& painter);  // Draw mesh geometries
-    // void drawMesh(QPainter& painter,std::string id , MeshEntry entry);  // Draw mesh geometries
-    void drawRadar(QPainter& painter,std::string id , MeshEntry entry);  // Draw collision boundaries
-    void drawRadio(QPainter& painter,std::string id , MeshEntry entry);  // Draw collision boundaries
+    // Drawing methods
+    void drawGridLines(QPainter& painter);
+    void drawEntityInformation(QPainter& painter);
+    void drawSceneInformation(QPainter& painter);
+    void drawTransformGizmo(QPainter& painter);
+    void drawCollider(QPainter& painter, std::string id, MeshEntry entry);
+    void drawSelectionOutline(QPainter& painter);
+    void drawCollision(QPainter& painter, std::string id, MeshEntry entry);
+    void drawImage(QPainter& painter, std::string id, MeshEntry entry);
+    void drawFormation(QPainter& painter, std::string id, MeshEntry entry);
+    void drawTrajectory(QPainter& painter, const std::string& id, MeshEntry& entry);
+    void drawTrail(QPainter& painter, std::string id, MeshEntry entry);
+    void drawMesh(QPainter& painter);
+    void drawRadar(QPainter& painter, std::string id, MeshEntry entry);
+    void drawRadio(QPainter& painter, std::string id, MeshEntry entry);
+    void drawSonobuoyHighlight(QPainter& painter);
 
     // Mouse event handlers
     void handleMousePress(QMouseEvent *event);
@@ -298,210 +283,160 @@ private:
     void handleKeyPress(QKeyEvent *event);
     void handlePaint(QPaintEvent *event);
 
+    // Delegated handlers
     void handleShapesMousePress(QMouseEvent *event);
-    // void handleBitmapsMousePress(QMouseEvent *event);
     bool handleBitmapsMousePress(QMouseEvent *event);
-    void handleTextMousePress(QMouseEvent *event);  // NEW: Text handling function
-
+    void handleTextMousePress(QMouseEvent *event);
     void handleShapesMouseMove(QMouseEvent *event);
     void handleTextMouseMove(QMouseEvent *event);
     void handleBitmapsMouseMove(QMouseEvent *event);
-
     void handleShapesMouseRelease(QMouseEvent *event);
     void handleTextMouseRelease(QMouseEvent *event);
     void handleBitmapsMouseRelease(QMouseEvent *event);
-
     void handleShapesKeyPress(QKeyEvent *event);
     void handleTextKeyPress(QKeyEvent *event);
     void handleBitmapsKeyPress(QKeyEvent *event);
-
     void handleShapesPaint(QPainter& painter);
     void handleTextPaint(QPainter& painter);
     void handleBitmapsPaint(QPainter& painter);
+    ContextMenuHandler* m_contextMenuHandler = nullptr;
+    void setupContextMenuCallbacks();
 
     // View and display settings
-    float zoomLevel = 1.0f;  // Current zoom level
-    bool showXGrid = true;   // Show X grid lines
-    bool showYGrid = true;   // Show Y grid lines
-    int gridOpacity = 50;    // Grid opacity percentage
-    bool showColliders = true;  // Show collision boundaries
-    bool showMesh = true;    // Show mesh geometries
-    bool showOutline = true; // Show selection outlines
-    bool showInformation = false;  // Show information overlay
-    // bool showFPS = true;     // Show FPS counter
-    bool showSensors = true;     // Default sensors visible
-    bool showRadio = true;       // Default radio visible
-    // bool showImage = true;
+    float zoomLevel = 1.0f;
+    bool showXGrid = true;
+    bool showYGrid = true;
+    int gridOpacity = 50;
+    bool showColliders = true;
+    bool showMesh = true;
+    bool showOutline = true;
+    bool showInformation = false;
+    bool showSensors = true;
+    bool showRadio = true;
     bool showTooltip = false;
-    // bool showTrajectories = true;
-    // Mode and state flags
-    // bool isDrawingTrajectory = false;  // Currently drawing trajectory
-    QString selectedBitmapType;  // Selected bitmap type for placement
-    bool isPlacingBitmap = false;  // Currently placing bitmap
+    bool isDrawingTrajectory = false;
+    bool showImage = true;
+    bool showFPS = true;
+    bool showTrajectories = true;
 
     // Trajectory data
-    std::vector<Waypoints*> currentTrajectory;  // Current trajectory waypoints
-    std::vector<Vector*> tempPolygonVertices;   // Temporary polygon vertices
-    std::vector<QPointF> tempPolygonCanvasPoints;  // Temporary polygon canvas points
+    std::vector<Waypoints*> currentTrajectory;
+    int selectedWaypointIndex;
+    bool isDraggingWaypoint;
 
-    // Waypoint selection and manipulation
-    int selectedWaypointIndex;  // Index of selected waypoint
-    bool isDraggingWaypoint;    // Currently dragging waypoint
-
-    // Shape editing
-    QString editingShapeId;     // ID of shape being edited
-    int selectedHandleIndex;    // Index of selected resize handle
-    bool isResizingShape;       // Currently resizing shape
-    std::vector<QPointF> resizeHandles;  // Resize handle positions
-
-    // Utility function for point-in-polygon detection
-    bool isPointInPolygon(const QPointF& point, const std::vector<Vector*>& vertices,
-                          const QPointF& centroidGeo, GISlib* gislib);
-
-    // Right-click context menu handlers
+    // Right-click handlers
     void handleRightClick(QMouseEvent *event);
     void handleTrajectoryRightClick(QMouseEvent *event);
-    void handleShapeRightClick(QMouseEvent *event);
 
-    // Distance measurement
-    MeasureDistanceDialog* measureDialog = nullptr;  // Measurement dialog
-    QList<QPointF> measurePoints; // geo points (lon, lat) for measurement
+    // Distance measurement moved to Measurement module
 
-    ShapesFeature* shapesFeature;
-    void updateResizeHandlesForRotation(const QString& shapeId);
-    QPolygonF getRotatedShapePolygon(const MeshEntry& entry) const;
-    // Box-zoom functionality
-    bool isBoxZooming = false;           // Currently performing box-zoom drag
-    bool boxZoomPending = false;         // Double-click detected, waiting for drag
-    QPoint boxZoomStart;                 // Start point of box-zoom (canvas coordinates)
-    QPoint boxZoomCurrent;               // Current mouse position during box-zoom
-    QElapsedTimer doubleClickTimer;      // Timer to track double-click timing
-    static constexpr int DOUBLE_CLICK_TIMEOUT = 500;  // Max time between clicks (ms)
 
-    // Helper function to check if click is on empty canvas (no entities/shapes/bitmaps)
+    // Box-zoom
+    bool isBoxZooming = false;
+    bool boxZoomPending = false;
+    QPoint boxZoomStart;
+    QPoint boxZoomCurrent;
+    QElapsedTimer doubleClickTimer;
+    static constexpr int DOUBLE_CLICK_TIMEOUT = 500;
+
+    // Helpers
     bool isClickOnEmptyCanvas(const QPoint& pos);
     QSet<QString> activeTooltipOptions;
+    QPoint m_lastMousePos;
     bool shouldDrawShape(const QString& shapeId) const;
+    QPointF m_lastLeftClickGeo;
+
+    // Internal state
+    bool selectEntity;
+    QTimer *updateTimer;
+    QElapsedTimer fpsTimer;
+    int frameCount = 0;
+    float fps = 0.0f;
+    float angle = 0.0;
+    QPointF dragStartPos;
+    QString activeDragAxis;
+    bool simulate = true;
+    QPointF canvasOffset = QPointF(0, 0);
+    QPoint lastMousePos;
+    bool isPanning = false;
+    std::vector<QString> m_dummyShapeIds;
+    // Trajectory management
+    int findNearestWaypoint(QPointF canvasPos);
+    void updateTrajectoryData();
+    // GeoJSON
+    QMap<QString, bool> geoJsonLayers;
+    QMap<QString, QString> geoJsonLayerFilePaths;
+    MeshEntry* m_copiedShape = nullptr;
 
 protected:
-    // Qt event overrides
     void keyPressEvent(QKeyEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 signals:
-    // Communication signals with other components
-    // void selectEntitybyCursor(QString ID);  // Entity selection signal
     void selectEntitybyCursor(const QString& entityId, bool isEntitySelection = true);
-
-    void MoveEntity(QString ID);  // Entity movement signal
-    void trajectoryUpdated(QString entityId, QJsonArray waypoints);  // Trajectory update signal
+    void MoveEntity(QString ID);
+    void trajectoryUpdated(QString entityId, QJsonArray waypoints);
     void trajectoryUpdatedforLogger(QString entityId, std::vector<Waypoints *> Trajectories);
-    void airbaseLayerToggled(bool visible);  // Airbase layer toggle signal
-
-    // GeoJSON signals
-    void geoJsonLayerAdded(const QString& layerName);  // GeoJSON layer added
-    void pointsUpdated(const QList<QPointF>& points);  // Measurement points updated
+    void airbaseLayerToggled(bool visible);
+    void geoJsonLayerAdded(const QString& layerName);
+    void pointsUpdated(const QList<QPointF>& points);
     void requestAddEntityAtPosition(double longitude, double latitude);
     void entitySelectedOnCanvas(QString entityId);
     void shapeSelectedFromCanvas(const QString& shapeId);
 
-private:
-    // Internal state variables
-    bool selectEntity;  // Entity selection flag
-    QTimer *updateTimer;  // Timer for periodic updates
-    QElapsedTimer fpsTimer;  // Timer for FPS calculation
-    int frameCount = 0;  // Frame counter for FPS
-    float fps = 0.0f;    // Current FPS value
-    float angle = 0.0;   // Rotation angle for demo
+public:
+    void addImportedMesh(
+        const MeshEntry& entry
+        ) override;
+    // Drag and drop
+    void dragEnterEvents(QDragEnterEvent *event);
+    void dragMoveEvents(QDragMoveEvent *event);
+    void dropEvents(QDropEvent *event);
 
-    // Dragging and interaction
-    QPointF dragStartPos;  // Starting position for drag operations
-    QString activeDragAxis;  // Currently active drag axis
-    bool simulate = true;  // Simulation mode flag
-    QPointF canvasOffset = QPointF(0, 0);  // Canvas panning offset
-    QPoint lastMousePos;  // Last mouse position for panning
-    bool isPanning = false;  // Currently panning canvas
+    // Distance Measurement API (now managed by Measurement module)
 
-    // Trajectory management
-    int findNearestWaypoint(QPointF canvasPos);  // Find nearest waypoint to canvas position
-    void updateTrajectoryData();  // Update trajectory data and emit signals
+    EntityInfoDialog* getEntityInfoDialog() const { return entityInfoDialog; }
+    void selectMultipleEntities(const QList<QString>& entityIds);
+    void clearSelection();
+    void setTooltipOptions(const QSet<QString>& options);
+    void setLayerPanel(LayerPanel* panel);
+    // NOTE: getLayerPanel() already declared above as part of IShapeHost override — not repeated here.
 
-    // GeoJSON layer management
-    QMap<QString, bool> geoJsonLayers;  // GeoJSON layer visibility map
-    std::vector<Vector*> tempLineVertices;  // Temporary line vertices
-    std::vector<QPointF> tempLineCanvasPoints;  // Temporary line canvas points
+    // Static helper for line segment distance (used in right-click)
+    static bool isPointNearLineSegment(const QPointF& p, const QPointF& v1, const QPointF& v2, qreal tolerance);
 
-    // Bitmap dragging functionality
-    bool isDraggingBitmap = false;  // Currently dragging bitmap
-    QString draggingBitmapId;  // ID of bitmap being dragged
-    QPointF bitmapDragStartPos;  // Start position for bitmap drag
+    // CHAITANYA JAIN CHANGE:
+    // Why: Declared overrides for the ILayerHost interface.
+    bool deleteObjectFromCanvas(const QString& shapeId) override;
+    void addRasterMesh(const MeshEntry& entry) override;
+    std::vector<MeshEntry> getMeshEntriesForShapes(const QStringList& shapeIds) override;
+    ViewportInfo getViewportInfo() const override;
+    void fitMapBounds(double minLon, double minLat, double maxLon, double maxLat) override;
+    void registerImportedShape(const QString& layerName,
+                               const QString& shapeType,
+                               const QString& shapeName,
+                               const QVector3D& position,
+                               const std::vector<QVector3D>& polygenOffsets,
+                               const QVector3D& size,
+                               bool closePath) ;
+    void registerImportedText(
+        const QString& layerName,
+        const QString& featureName,
+        const QVector3D& position,
+        const QString& text) override;
 
-    // User uploaded image dragging (separate from preset bitmaps)
-    bool isDraggingUserImage = false;  // Currently dragging user image
-    QString draggingUserImageId;  // ID of user image being dragged
-    QPointF userImageDragStartPos;  // Start position for user image drag
+    void registerImportedBitmap(
+        const QString& layerName,
+        const QString& featureName,
+        const QVector3D& position,
+        const QString& bitmapPath,
+        const QVector3D& size,
+        float rotation) override;
 
-    // Shape dragging functionality
-    bool isDraggingShape = false;  // Currently dragging shape
-    QString draggingShapeId;  // ID of shape being dragged
-    QPointF shapeDragStartPos;  // Start position for shape drag
-
-    // Selection and dragging handler methods
-    bool handleShapeSelection(QMouseEvent *event);  // Handle shape selection
-    void handleShapeDragging(QMouseEvent *event);  // Handle shape dragging
-    void stopShapeDragging();  // Stop shape dragging
-
-    void placeBitmapAtGeo(const QPointF& geo);  // bitmap plaing using geo //
-
-    bool handleBitmapSelection(QMouseEvent *event);  // Handle bitmap selection
-    void handleBitmapDragging(QMouseEvent *event);  // Handle bitmap dragging
-    void stopBitmapDragging();  // Stop bitmap dragging
-
-    bool handleUserImageSelection(QMouseEvent *event);  // Handle user image selection
-    void handleUserImageDragging(QMouseEvent *event);  // Handle user image dragging
-    void stopUserImageDragging();  // Stop user image dragging
-
-    bool   isRotating = false;          // are we rotating a temp object?
-    QString rotatingId;                 // id of the object being rotated
-    QPoint  rotateStartPos;             // mouse pos when rotation started
-    qreal   rotateStartAngle = 0.0;     // initial rotation of the object (degrees)
-    static qreal angleBetweenPoints(const QPointF &center, const QPointF &p1, const QPointF &p2);
-    void drawRotationHandle(QPainter &painter, const MeshEntry &entry);
-    QPointF rotateCenter;
-    qreal initialMouseAngle = 0.0;
-    QString rotatingBitmapId;           // For bitmap rotation
-    QPointF rotateHandleCenter;         // Handle center (canvas)
-    QPointF rotateHandleStartPos;       // Mouse start
-    qreal initialBitmapAngle = 0.0;     // For smooth rotation
-    bool isRotatingBitmap = false;
-    QString activeRotateId;  // NEW: Tracks which shape is in rotate mode
-
-    // Text editing related members
-    bool isEditingText = false;
-    QString editingTextId;
-    QColor currentTextColor = Qt::black;
-    QFont currentTextFont = QFont("Arial", 12);
-    int currentTextSize = 12;
-
-    // Text editing methods
-    bool handleTextSelection(QMouseEvent *event);
-    void handleTextDragging(QMouseEvent *event);
-    void stopTextDragging();
-    void showTextPropertiesDialog(const QString& textId);
-    void drawTextResizeHandles(QPainter& painter, const MeshEntry& entry);
-    bool handleTextRightClick(QMouseEvent *event);
-
-    QDialog* textPropertiesDialog = nullptr;
-
-    // Shape properties dialog
-    QDialog* shapePropertiesDialog = nullptr;
-
-    // Shape properties methods
-    void showShapePropertiesDialog(const QString& shapeId);
-    bool isShape(const QString& shapeId) const;
 
 };
 

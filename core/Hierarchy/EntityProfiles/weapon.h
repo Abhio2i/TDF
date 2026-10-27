@@ -83,13 +83,13 @@ public:
     // =========================================================================
     // AUTO-INTEGRATED COMPONENTS  (created in constructor, same as Platform)
     // =========================================================================
-    Transform      *transform      = nullptr;
-    Rigidbody      *rigidbody      = nullptr;
-    Collider       *collider       = nullptr;
-    Trajectory     *trajectory     = nullptr;
-    MeshRenderer2D *meshRenderer2d = nullptr;
-    DynamicModel   *dynamicModel   = nullptr;
-    CrossSection   *crossSection   = nullptr;
+    Transform      transform      ;
+    Rigidbody      rigidbody      ;
+    Collider       collider       ;
+    Trajectory     trajectory     ;
+    MeshRenderer2D meshRenderer2d ;
+    DynamicModel   dynamicModel   ;
+    CrossSection   crossSection   ;
 
     // ── Shared physical fields ────────────────────────────────────────────────
     std::string designation;
@@ -159,6 +159,7 @@ public:
     // ── Entity interface overrides ────────────────────────────────────────────
     void spawn()                                               override;
     std::vector<std::string> getSupportedComponents()          override;
+    void addSupportedcomponent()                               override;
     void addComponent   (std::string name)                     override;
     void removeComponent(std::string name)                     override;
     QJsonObject getComponent(std::string name)                 override;

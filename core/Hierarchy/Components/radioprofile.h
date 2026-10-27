@@ -24,6 +24,7 @@
 #define RADIOPROFILE_H
 
 #include "./component.h"
+#include "core/Hierarchy/ECS/Struct/radio_component.h"
 #include <QObject>
 #include <QJsonObject>
 
@@ -42,7 +43,7 @@ class RadioProfile: public QObject, public Component
 {
     Q_OBJECT
 public:
-    RadioProfile(Hierarchy* h);
+    RadioProfile();
     ~RadioProfile();
     ComponentType Typo() const override { return ComponentType::RadioProfile; }
 
@@ -51,13 +52,17 @@ public:
     // DESCRIPTION: Core state and reference to global radio registry.
     // =========================================================================
     bool Active;                                      //!< Whether this radio profile is active
-    std::unordered_map<std::string, Radio*> *radios; //!< Pointer to map of Radio entries
-
+    std::unordered_map<std::string, Radio*> radios; //!< Pointer to map of Radio entries
+    ECS::radioComponent& getRadioData() const;
     // =========================================================================
     // SECTION: Custom Parameters
     // DESCRIPTION: Extensible key-value store for user-defined radio parameters.
     // =========================================================================
     QJsonObject AdditionalParameters;                     //!< Custom key-value parameters
+
+    void init(Entity* Entity) override;
+    void Awake() override;
+    void Start() override;
 
     // Component interface overrides
     void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QJsonObject data3 = QJsonObject()) override;
@@ -70,6 +75,8 @@ public:
     void fromJson(const QJsonObject &obj) override;
 
     void renameSubComponent(std::string ID, QString newName) override;
+private:
+    int m_nextRadioIndex = 1;
 };
 
 #endif // RADIOPROFILE_H

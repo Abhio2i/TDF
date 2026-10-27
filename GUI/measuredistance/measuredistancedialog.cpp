@@ -150,7 +150,6 @@ MeasureDistanceDialog::MeasureDistanceDialog(QWidget *parent)
     buttonLayout->addWidget(copyButton);
     buttonLayout->addStretch();
     buttonLayout->addWidget(closeButton);
-
     mainLayout->addLayout(buttonLayout);
 
     // Connect button signals
@@ -160,7 +159,6 @@ MeasureDistanceDialog::MeasureDistanceDialog(QWidget *parent)
     connect(infoButton, &QPushButton::clicked, this, &MeasureDistanceDialog::onInfoButtonClicked);
     connect(ellipsoidalRadio, &QRadioButton::toggled, this, &MeasureDistanceDialog::onMeasurementTypeChanged);
     connect(unitComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MeasureDistanceDialog::onUnitChanged);
-
     // Set main layout
     setLayout(mainLayout);
 }
@@ -204,12 +202,10 @@ void MeasureDistanceDialog::updateTotalDistance()
     double total = 0.0;
     double factor = getConversionFactor(currentUnit);
     QString unitStr = getUnitString(currentUnit);
-
     // Sum distances
     for (const auto &measurement : measurements) {
         total += measurement.distance;
     }
-
     // Update total display
     totalDistanceEdit->setText(QString::number(total * factor, 'f', 3) + " " + unitStr);
 }
@@ -220,10 +216,8 @@ void MeasureDistanceDialog::clearMeasurements()
     // Clear list and measurements
     segmentsList->clear();
     measurements.clear();
-
     // Reset total display
     totalDistanceEdit->setText("0.000 " + getUnitString(currentUnit));
-
     // Emit new measurement signal
     emit newMeasurementRequested();
 }
@@ -236,7 +230,6 @@ void MeasureDistanceDialog::updateMeasurementDisplay()
     double total = 0.0;
     double factor = getConversionFactor(currentUnit);
     QString unitStr = getUnitString(currentUnit);
-
     // Repopulate list with converted measurements
     for (const auto &measurement : measurements) {
         double convertedDistance = measurement.distance * factor;
@@ -247,7 +240,6 @@ void MeasureDistanceDialog::updateMeasurementDisplay()
                                .arg(convertedDistance, 10, 'f', 3);
         segmentsList->addItem(itemText);
     }
-
     // Update total display
     totalDistanceEdit->setText(QString::number(total * factor, 'f', 3) + " " + unitStr);
 }
@@ -334,8 +326,6 @@ void MeasureDistanceDialog::onInfoButtonClicked()
                        ? "Ellipsoidal: Distances are calculated using an ellipsoidal model (e.g., WGS84)."
                        : "Cartesian: Distances are calculated using flat-plane geometry.";
     info += "\nCurrent unit: " + unitComboBox->currentText();
-
-    // Show info dialog
     QMessageBox msgBox(this);
     msgBox.setStyleSheet(MeasureDistanceDialogStyles::Dialog);
     msgBox.setWindowTitle("Measurement Info");
@@ -361,10 +351,8 @@ void MeasureDistanceDialog::onUnitChanged(int index)
 {
     // Update current unit
     currentUnit = static_cast<Unit>(index);
-
     // Emit unit change signal
     emit unitChanged(unitComboBox->currentText());
-
     // Update display
     updateMeasurementDisplay();
 }

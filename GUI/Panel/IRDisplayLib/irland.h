@@ -6,6 +6,8 @@
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLBuffer>
 #include <QMatrix4x4>
+#include <QVector>
+#include <QVector3D>
 
 class IRLand : protected QOpenGLFunctions
 {
@@ -15,14 +17,14 @@ public:
 
     void initialize();
 
-    // --> NEW: Added rx, ry, rz parameters
-    void render(const QMatrix4x4 &projection, const QMatrix4x4 &cameraMatrix,
-                float altitude, float rx, float ry, float rz);
+    void render(const QMatrix4x4 &projection, const QMatrix4x4 &cameraMatrix);
 
 private:
     QOpenGLShaderProgram groundProgram;
     QOpenGLVertexArrayObject groundVao;
     QOpenGLBuffer groundVbo;
+
+    int vertexCount; // --> NEW: Tracks the size of our generated mesh
 };
 
 #endif // IRLAND_H

@@ -243,6 +243,9 @@ constexpr double DOT_CLAMP_MAX =  1.0;
 static thread_local std::default_random_engine tl_rng{
     std::random_device{}()
 };
+#ifdef AESA_REGRESSION_TEST
+extern "C" void aesa_test_seed_model(unsigned seed) { tl_rng.seed(seed); }
+#endif
 
 namespace aesa {
 
@@ -461,6 +464,21 @@ RadarConfig RadarModel_AESA::getConfig() const
     // Acquire mutex_ for thread-safe config copy. REQ-AESA-002.
     std::lock_guard<std::mutex> lk(mutex_);
     return config_;
+}
+void RadarModel_AESA::setPlatformSpeed(float speed_m_s)
+{
+    std::lock_guard<std::mutex> lk(mutex_);
+    config_.platformSpeed_m_s = speed_m_s;
+}
+
+// =============================================================================
+// FUNCTION: setLogicOverrides
+// Full description in header. REQ-AESA-090.
+// =============================================================================
+void RadarModel_AESA::setLogicOverrides(const LogicOverrides& ov)
+{
+    std::lock_guard<std::mutex> lk(mutex_);
+    overrides_ = ov;
 }
 
 // =============================================================================
@@ -777,10 +795,19 @@ void RadarModel_AESA::update(double dt, const RadarPose& pose,
     currentSimTime_     = simTime;
     currentPose_        = pose;
 
+    // Attitude for TRACK / FIRE_CONTROL beam pointing. REQ-AESA-010.
+    scheduler_->setBodyFromStab(pose.bodyFromStab);
+
+    // Own velocity: tracker state is own-relative. REQ-AESA-020.
+    tracker_->setOwnVelocity(pose.vx, pose.vy, pose.vz);
+
+    // Propagation-loss override lives in the signal processor. REQ-AESA-090.
+    signal_->setLogicOverrides(&overrides_);
+
     // Store world inputs for occlusion computation. computeOcclusion() runs
     // inside processTargetDetection() and needs all other targets — it cannot
     // receive worldInputs as a parameter from that call site. REQ-AESA-070.
-    currentWorldInputs_ = worldInputs;
+    currentWorldInputs_ = &worldInputs;
 
     // Clear the lock-broken flag. Set again below only if lock is broken this tick.
     latestOutput_.lockBroken = false;
@@ -866,10 +893,15 @@ void RadarModel_AESA::update(double dt, const RadarPose& pose,
         {
             if (tr.id == config_.lockedTargetID && tr.predictedRange > DRFM_MIN_RANGE_M)
             {
-                // Compute fire-control beam direction from Kalman-predicted position.
-                double fcAz = std::atan2(tr.y, tr.x) * RAD_TO_DEG;
+                // Compute fire-control beam direction from Kalman-predicted
+                // position. Track position is stabilised; antenna needs body
+                // angles. Elevation keeps the predictedRange denominator.
+                const double s[3] = { tr.x, tr.y, tr.z };
+                double b[3];
+                stabToBody(currentPose_.bodyFromStab, s, b);
+                double fcAz = std::atan2(b[1], b[0]) * RAD_TO_DEG;
                 double fcEl = std::asin(
-                                  std::clamp(tr.z / tr.predictedRange,
+                                  std::clamp(b[2] / tr.predictedRange,
                                              DOT_CLAMP_MIN, DOT_CLAMP_MAX))
                               * RAD_TO_DEG;
 
@@ -894,6 +926,21 @@ void RadarModel_AESA::update(double dt, const RadarPose& pose,
         // Normal surveillance or TWS beam pointing from schedule. REQ-AESA-010.
         antenna_->pointBeam(beam.azimuth_deg, beam.elevation_deg,
                             config_, beam.spoilFactor);
+    }
+
+    // -------------------------------------------------------------------------
+    // Step 7b: Beam direction in the stabilised frame and clutter range rate.
+    // Ground clutter is stationary: its range rate along the beam is
+    // -v_own · u_beam (negative = closing). REQ-AESA-040, REQ-AESA-061.
+    // -------------------------------------------------------------------------
+    {
+        double beamB[3], beamS[3];
+        azElToVec(antenna_->currentAzimuth(), antenna_->currentElevation(), beamB);
+        bodyToStab(currentPose_.bodyFromStab, beamB, beamS);
+        currentClutterRR_ = -(currentPose_.vx * beamS[0] +
+                              currentPose_.vy * beamS[1] +
+                              currentPose_.vz * beamS[2]);
+        vecToAzEl(beamS, currentBeamStabAz_, currentBeamStabEl_);
     }
 
     // -------------------------------------------------------------------------
@@ -1234,6 +1281,8 @@ void RadarModel_AESA::update(double dt, const RadarPose& pose,
     {
         rebuildSchedule();
     }
+
+    currentWorldInputs_ = nullptr;
 }
 
 // =============================================================================
@@ -1287,16 +1336,55 @@ bool RadarModel_AESA::processTargetDetection(
     // Targets beyond the radar and target horizon cannot be detected due to
     // Earth curvature. Uses 4/3 earth radius model. REQ-AESA-071.
     // -------------------------------------------------------------------------
-    if (!signal_->checkHorizon(range, target.z, config_)) return false;
+    // Target height above surface = radar height + relative Up (target.z is
+    // relative to the radar). REQ-AESA-071.
+    const double tgtHeight = std::max(0.0, config_.radarHeight + target.z);
+    if (!signal_->checkHorizon(range, tgtHeight, config_)) return false;
 
     // -------------------------------------------------------------------------
-    // Gate 4: Occlusion check.
+    // Gate 5: Beam gate — target must be within the effective beam pattern.
+    // Use effective beamwidth (natural * spoilFactor) for the gate threshold.
+    // azDiff and elDiff are also used for beam gain and monopulse computations.
+    // REQ-AESA-010.
+    // -------------------------------------------------------------------------
+
+    // True (stabilised) angles: measurement output, multipath, tracking.
+    const double sAz = std::atan2(target.y, target.x) * RAD_TO_DEG;
+    const double sEl = std::asin(std::clamp(target.z / range,
+                                            DOT_CLAMP_MIN, DOT_CLAMP_MAX))
+                       * RAD_TO_DEG;
+
+    // Body angles: beam gate, array gain, monopulse (antenna physics).
+    // atan2 gives az in (-180, +180] — body-frame signed convention. REQ-AESA-040.
+    double tAz, tEl;
+    {
+        const double pS[3] = { target.x, target.y, target.z };
+        double pB[3];
+        stabToBody(currentPose_.bodyFromStab, pS, pB);
+        tAz = std::atan2(pB[1], pB[0]) * RAD_TO_DEG;
+        tEl = std::asin(std::clamp(pB[2] / range,
+                                   DOT_CLAMP_MIN, DOT_CLAMP_MAX))
+              * RAD_TO_DEG;
+    }
+
+    double azDiff, elDiff;
+    if (!signal_->isTargetInBeam(antenna_->currentAzimuth(),
+                                 antenna_->currentElevation(),
+                                 tAz, tEl, config_,
+                                 azDiff, elDiff,
+                                 antenna_->effectiveBeamWidth()))
+    {
+        return false;
+    }
+
+    // -------------------------------------------------------------------------
+    // Gate 5b: Occlusion check (after beam gate — only in-beam targets).
     // Compute knife-edge diffraction loss from all other platforms between
     // the radar and this target. If the target is in the SHADOW zone (>= 40 dB
     // loss), reject it entirely. REQ-AESA-070.
     // -------------------------------------------------------------------------
     OcclusionResult occlusion = computeOcclusion(
-        target, currentWorldInputs_, config_);
+        target, *currentWorldInputs_, config_);
 
     // Debug output for non-LIT targets. Retained for certification evidence —
     // occlusion events must be observable during validation testing. REQ-AESA-070.
@@ -1310,30 +1398,6 @@ bool RadarModel_AESA::processTargetDetection(
 
     // Target in SHADOW zone — fully blocked. Reject. REQ-AESA-070.
     if (occlusion.zone == OcclusionResult::Zone::SHADOW) return false;
-
-    // -------------------------------------------------------------------------
-    // Gate 5: Beam gate — target must be within the effective beam pattern.
-    // Use effective beamwidth (natural * spoilFactor) for the gate threshold.
-    // azDiff and elDiff are also used for beam gain and monopulse computations.
-    // REQ-AESA-010.
-    // -------------------------------------------------------------------------
-
-    // Compute target azimuth and elevation in body frame.
-    // atan2 gives az in (-180, +180] — body-frame signed convention. REQ-AESA-040.
-    double tAz = std::atan2(target.y, target.x) * RAD_TO_DEG;
-    double tEl = std::asin(std::clamp(target.z / range,
-                                      DOT_CLAMP_MIN, DOT_CLAMP_MAX))
-                 * RAD_TO_DEG;
-
-    double azDiff, elDiff;
-    if (!signal_->isTargetInBeam(antenna_->currentAzimuth(),
-                                 antenna_->currentElevation(),
-                                 tAz, tEl, config_,
-                                 azDiff, elDiff,
-                                 antenna_->effectiveBeamWidth()))
-    {
-        return false;
-    }
 
     // -------------------------------------------------------------------------
     // Gate 6: Sidelobe blanking.
@@ -1351,9 +1415,10 @@ bool RadarModel_AESA::processTargetDetection(
     // Compute raw radial velocity (before noise). If target is in the MTI
     // clutter notch, determine whether STAP can recover it. REQ-AESA-040.
     // -------------------------------------------------------------------------
-    double radVelRaw = (target.vx * target.x +
-                        target.vy * target.y +
-                        target.vz * target.z)
+    // Range rate relative to the radar (negative = closing). REQ-AESA-040.
+    double radVelRaw = ((target.vx - currentPose_.vx) * target.x +
+                        (target.vy - currentPose_.vy) * target.y +
+                        (target.vz - currentPose_.vz) * target.z)
                        / std::max(range, DRFM_MIN_RANGE_M);
 
     bool inBlind = false;
@@ -1364,9 +1429,9 @@ bool RadarModel_AESA::processTargetDetection(
     if (config_.mode != RadarMode::LOCK_ON)
     {
         bool inStapNotch = signal_->isInClutterNotchSTAP(
-            radVelRaw, config_, beam.waveform);
+            radVelRaw, config_, beam.waveform, currentClutterRR_);
         bool inMtiNotch  = signal_->isInDopplerBlindZone(
-            radVelRaw, config_, beam.waveform);
+            radVelRaw, config_, beam.waveform, currentClutterRR_);
 
         if (inMtiNotch && !inStapNotch)
         {
@@ -1426,12 +1491,30 @@ bool RadarModel_AESA::processTargetDetection(
     // interpolation, plus Swerling fluctuation, aspect-angle weighting,
     // multipath factor, and occlusion power reduction. REQ-AESA-040.
     // -------------------------------------------------------------------------
-    double effRCS = signal_->computeEffectiveRCS(target, range,
-                                                 config_.frequency_Hz);
+    // A plugin may replace the MEAN RCS (AESA plugin SDK). Swerling
+    // fluctuation is still applied here, so the random draw count matches
+    // the built-in path. REQ-AESA-090.
+    double effRCS  = 0.0;
+    double meanRcs = 0.0;
+    if (overrides_.meanRcs != nullptr &&
+        overrides_.meanRcs(overrides_.context, target, range,
+                           config_.frequency_Hz, meanRcs) &&
+        std::isfinite(meanRcs) && meanRcs >= 0.0)
+    {
+        const bool coherent = (target.swerlingCase == SwerlingCase::CASE_II ||
+                               target.swerlingCase == SwerlingCase::CASE_IV);
+        effRCS = signal_->computeSwerlingRCS(meanRcs, target.swerlingCase,
+                                             coherent);
+    }
+    else
+    {
+        effRCS = signal_->computeEffectiveRCS(target, range,
+                                              config_.frequency_Hz);
+    }
 
     // Two-ray multipath factor — applies constructive/destructive interference
     // at low elevation angles over a reflecting surface. REQ-AESA-072.
-    effRCS *= signal_->computeMultipathFactor(range, tEl, target.z, config_);
+    effRCS *= signal_->computeMultipathFactor(range, sEl, tgtHeight, config_);
 
     // Occlusion penumbra power reduction — attenuates RCS by diffraction loss.
     // In SHADOW zone the target is already rejected above. REQ-AESA-070.
@@ -1440,8 +1523,9 @@ bool RadarModel_AESA::processTargetDetection(
     // -------------------------------------------------------------------------
     // Step D: Chaff clutter power in current beam. REQ-AESA-061.
     // -------------------------------------------------------------------------
+    // Chaff positions are stabilised: use the beam direction in that frame.
     double chaffPwr = signal_->computeChaffReturn(
-        antenna_->currentAzimuth(), antenna_->currentElevation(),
+        currentBeamStabAz_, currentBeamStabEl_,
         chaffClouds_, simTime, config_);
 
     // -------------------------------------------------------------------------
@@ -1460,7 +1544,7 @@ bool RadarModel_AESA::processTargetDetection(
     // from notch centre. REQ-AESA-040.
     double stapGain = signal_->computeSTAPGain(
         radVelRaw,
-        static_cast<double>(config_.platformSpeed_m_s),
+        currentClutterRR_,
         wf, config_);
     sinr *= stapGain;
 
@@ -1485,14 +1569,32 @@ bool RadarModel_AESA::processTargetDetection(
     // relaxed threshold to reduce false alarms from residual clutter. REQ-AESA-040.
     // -------------------------------------------------------------------------
     auto   cells  = signal_->generateReferenceCells(target.surface, config_);
-    double radVel = signal_->computeRadialVelocity(target, range, dvNoise);
+    double radVel = signal_->addDopplerNoise(radVelRaw, dvNoise);
 
     double thresh = (std::abs(radVel) < CFAR_RELAXED_RADVEL_THRESHOLD)
                         ? signal_->computeCFARThresholdRelaxed(cells, config_)
                         : signal_->computeCFARThreshold(cells, config_);
 
     // SINR at or below threshold — not detected. REQ-AESA-040.
-    if (sinr <= thresh) return false;
+    // A plugin may replace this decision (AESA plugin SDK). Without a
+    // plugin the decision is exactly sinr > thresh. REQ-AESA-090.
+    bool detected = (sinr > thresh);
+    if (overrides_.detect != nullptr)
+    {
+        DetectionStageInput di;
+        di.sinr               = sinr;
+        di.cfarThreshold      = thresh;
+        di.radialVelocity_m_s = radVel;
+        di.mode               = config_.mode;
+        di.builtInDetected    = detected;
+        bool pluginDetected   = detected;
+        if (overrides_.detect(overrides_.context, target, range, di,
+                              pluginDetected))
+        {
+            detected = pluginDetected;
+        }
+    }
+    if (!detected) return false;
 
     // =========================================================================
     // Detection declared. Build the DetectionOutput. REQ-AESA-040.
@@ -1501,8 +1603,8 @@ bool RadarModel_AESA::processTargetDetection(
     det.targetID       = target.id;
 
     // Apply measurement noise to azimuth and elevation. REQ-AESA-040.
-    det.azimuth        = tAz  + azNoise(tl_rng);
-    det.elevation      = tEl  + elNoise(tl_rng);
+    det.azimuth        = sAz  + azNoise(tl_rng);
+    det.elevation      = sEl  + elNoise(tl_rng);
     det.snr            = sinr;
     det.radialVelocity = radVel;
     det.inDopplerBlind = inBlind;
@@ -1517,7 +1619,8 @@ bool RadarModel_AESA::processTargetDetection(
 
     // Compute derived kinematic parameters from target state. REQ-AESA-004.
     signal_->computeTargetMotionParams(det, target, range);
-    signal_->computeCPA(det, target, range);
+    signal_->computeCPA(det, target, range,
+                        currentPose_.vx, currentPose_.vy, currentPose_.vz);
 
     // Albersheim probability of kill estimate. REQ-AESA-040.
     det.Pk = signal_->computePk(sinr, config_.targetPfa,
@@ -1542,7 +1645,7 @@ bool RadarModel_AESA::processTargetDetection(
         double Vmax2  = lambda * static_cast<double>(wf.prf2_Hz) / 2.0;
 
         // Second independent Doppler measurement from interleaved PRF.
-        double radVel2 = signal_->computeRadialVelocity(target, range, dvNoise);
+        double radVel2 = signal_->addDopplerNoise(radVelRaw, dvNoise);
 
         // Resolve velocity using coincidence detector. REQ-AESA-021.
         det.radialVelocity = signal_->resolveVelocityStaggered(
@@ -1669,9 +1772,9 @@ void RadarModel_AESA::injectDRFMGhost(
 
     // DRFM velocity: negate true radial velocity (creates a false heading)
     // and add fixed velocity offset. REQ-AESA-060.
-    ghost.radialVelocity = -(real.vx * real.x +
-                             real.vy * real.y +
-                             real.vz * real.z) / range
+    ghost.radialVelocity = -((real.vx - currentPose_.vx) * real.x +
+                             (real.vy - currentPose_.vy) * real.y +
+                             (real.vz - currentPose_.vz) * real.z) / range
                            + static_cast<double>(j.drfmVelocityOffset_m_s)
                            + dvNoise(tl_rng);
 
@@ -1749,9 +1852,9 @@ void RadarModel_AESA::injectRGPOVGPO(
         ghost.elevation      = gEl + elNoise(tl_rng);
 
         // Ghost radial velocity matches real target (RGPO is range-only pull-off).
-        ghost.radialVelocity = (real.vx * real.x +
-                                real.vy * real.y +
-                                real.vz * real.z) / range
+        ghost.radialVelocity = ((real.vx - currentPose_.vx) * real.x +
+                                (real.vy - currentPose_.vy) * real.y +
+                                (real.vz - currentPose_.vz) * real.z) / range
                                + dvNoise(tl_rng);
 
         // RGPO ghost is slightly stronger than real — jammer amplifies the
@@ -1794,9 +1897,9 @@ void RadarModel_AESA::injectRGPOVGPO(
         ghost.elevation = gEl + elNoise(tl_rng);
 
         // Ghost velocity = real radial velocity + accumulated VGPO offset.
-        ghost.radialVelocity = (real.vx * real.x +
-                                real.vy * real.y +
-                                real.vz * real.z) / range
+        ghost.radialVelocity = ((real.vx - currentPose_.vx) * real.x +
+                                (real.vy - currentPose_.vy) * real.y +
+                                (real.vz - currentPose_.vz) * real.z) / range
                                + vgpoPullOff_[real.id]
                                + dvNoise(tl_rng);
 

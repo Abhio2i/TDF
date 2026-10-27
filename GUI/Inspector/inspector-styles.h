@@ -483,7 +483,19 @@ const QString SectionHeaderLabel = R"(
         letter-spacing: 0.3px;
     }
 )";
-
+inline constexpr const char* TimeSpinBox = R"(
+    QSpinBox {
+        background-color: #1A3652;
+        color: #E0E0E0;
+        border: 1px solid #27446d;
+        border-radius: 3px;
+        padding: 2px 4px;
+        font-size: 11px;
+    }
+    QSpinBox:focus {
+        border: 1px solid #0078D4;
+    }
+)";
 /* Container Dropdown Button - used in createSubcomponentWidget and handleMultiComponentContainer */
 const QString ContainerDropdownButton = R"(
     QPushButton {

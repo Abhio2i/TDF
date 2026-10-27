@@ -16,11 +16,16 @@
  */
 Entity::Entity(Hierarchy* h) {
     ID = Uuid::generateShortUniqueID();
-    Hierarchy* hierarchy = h;
-    if (hierarchy) {
-        GlobalRegistry::registerEntity(this, hierarchy);
-        hierarchy->dictionry[ID] = {};
-        root = hierarchy;
+
+    // Hierarchy* hierarchy = h;
+    if (h) {
+        GlobalRegistry::registerEntity(this, h);
+        // h->dictionry[ID] = {};
+        root = h;
+
+        ecsID = h->world.CreateEntity();
+        strncpy(h->ecsIDMap[ecsID], ID.c_str(), ID.length());
+
     }
 }
 
@@ -29,6 +34,10 @@ Entity::Entity(Hierarchy* h) {
  */
 Entity::~Entity() {
     Console::log("Delete" + Name);
+    emit destroy(ID);
+    if(root){
+        root->world.DestroyEntity(ecsID);
+    }
 }
 
 /**
@@ -37,8 +46,8 @@ Entity::~Entity() {
  */
 void Entity::spawn() {
     // Minimal or empty implementation, to be overridden by derived classes
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-    emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
+    // Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    emit root->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
 }
 
 /**

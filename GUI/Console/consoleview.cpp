@@ -35,9 +35,6 @@
 #include <QStyleOptionTab>
 #include <QStylePainter>
 #include "tests/consoleviewtest/consoleview_test.h"
-// #include "GUI/mainwindow.h"
-// #include <QTimer>
-// #include "tests/gui_test_control.h"
 
 //============================================================================
 // CLASS: ConsoleView
@@ -346,28 +343,4 @@ void ConsoleView::saveLog()
 
     file.close();
 }
-// void ConsoleView::runUnitTestsOnce()
-// {
-//        if (!GuiTestControl::isEnabled()) return;
-//     static bool testsRun = false;
-//     if (testsRun) return;
-//     testsRun = true;
 
-//     // Delay to ensure UI is ready
-//     QTimer::singleShot(0, []() {
-//         Console* console = nullptr;
-//         MainWindow* mw = MainWindow::instance();
-//         if (mw && mw->databaseEditor && mw->databaseEditor->console) {
-//             console = mw->databaseEditor->console;
-//         }
-//         if (!console) {
-//             qDebug() << "ConsoleView: console not available, cannot run tests";
-//             return;
-//         }
-
-//         // Create a temporary ConsoleView for testing
-//         ConsoleView* testConsole = new ConsoleView(nullptr);
-//         runConsoleViewTests(testConsole, console);
-//         testConsole->deleteLater();
-//     });
-// }

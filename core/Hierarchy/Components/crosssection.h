@@ -70,7 +70,9 @@ public:
     // DESCRIPTION: Storage for custom key-value pairs associated with signatures.
     // =========================================================================
     QJsonObject AdditionalParameters;
-
+    void init(Entity* Entity) override;
+    void Awake() override;
+    void Start() override;
     // =========================================================================
     // SECTION: Virtual Interface Overrides
     // DESCRIPTION: Mandatory methods for sub-component CRUD and serialization.

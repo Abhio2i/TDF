@@ -12,8 +12,9 @@
 #include <core/Debug/console.h>
 #include "core/Debug/profiler.h"
 #include "GUI/Editors/runtimeeditor.h"
+#include "core/Hierarchy/ECS/Struct/Meta_Data_Component.h"
 
-Platform::Platform(Hierarchy* h) : Entity(h) {
+Platform::Platform(Hierarchy* h) : Entity(h), collider(),sensors(),radios(),weapons(),iffs() {
     type = Constants::EntityType::Platform;
     std::shared_ptr<Parameter> par = std::make_shared<Parameter>();
     par->Name = "roll";
@@ -23,6 +24,11 @@ Platform::Platform(Hierarchy* h) : Entity(h) {
     m_hierarchy = h;
     taskgroup = new TaskGroup();
     taskgroup->hide();
+    if(root){
+        auto& data = root->world.AddComponent<ECS::Entity_Data>(ecsID);
+        data.active = true;
+        data.destroy = false;
+    }
 }
 
 Platform::~Platform(){
@@ -31,6 +37,25 @@ Platform::~Platform(){
         removeComponent(component);
     }
     delete taskgroup;
+    if(root){
+        auto* data = root->world.GetComponent<ECS::Entity_Data>(ecsID);
+        data->active = false;
+        data->destroy = true;
+    }
+}
+
+void Platform::SaveState(){
+    /*if(transform)*/transform.SaveState();
+    /*if(trajectory)*/trajectory.SaveState();
+    /*if(dynamicModel)*/dynamicModel.SaveState();
+    /*if(weapons)*/weapons.SaveState();
+}
+void Platform::RestoreState(){
+    /*if(transform)*/transform.RestoreState();
+    /*if(trajectory)*/trajectory.RestoreState();
+    /*if(dynamicModel)*/dynamicModel.RestoreState();
+    /*if(weapons)*/weapons.RestoreState();
+    dropcount = 0;
 }
 
 void Platform::Start(){
@@ -82,74 +107,74 @@ void Platform::Start(){
             engagementRange  = data["maxEngagementRange"].toVariant().toDouble();
         }
     }
-    switch (detection) {
-    case Detection::STEALTH_MODE:
-        if(sensors){
-            for (auto const& pair :*sensors->sensors) {
-                Sensor* s = pair.second;
-                if(!s)continue;
-                s->Active = false;
-            }
-        }
-        break;
-    case Detection::PASSIVE_SENSORS_ONLY:
-        if(sensors){
-            for (auto const& pair :*sensors->sensors) {
-                Sensor* s = pair.second;
-                if(!s)continue;
-                if(s->subType == Sensor::SubType::CSM || s->subType == Sensor::SubType::ESM){
-                    s->Active = true;
-                }else{
-                    s->Active = false;
-                }
-            }
-        }
-    case Detection::EMCON_PASSIVE:
-        if(sensors){
-            for (auto const& pair :*sensors->sensors) {
-                Sensor* s = pair.second;
-                if(!s)continue;
-                s->Active = false;
-            }
-        }
-        break;
+    // switch (detection) {
+    // case Detection::STEALTH_MODE:
+    //     if(sensors){
+    //         for (auto const& pair :*sensors->sensors) {
+    //             Sensor* s = pair.second;
+    //             if(!s)continue;
+    //             s->Active = false;
+    //         }
+    //     }
+    //     break;
+    // case Detection::PASSIVE_SENSORS_ONLY:
+    //     if(sensors){
+    //         for (auto const& pair :*sensors->sensors) {
+    //             Sensor* s = pair.second;
+    //             if(!s)continue;
+    //             if(s->subType == Sensor::SubType::CSM || s->subType == Sensor::SubType::ESM){
+    //                 s->Active = true;
+    //             }else{
+    //                 s->Active = false;
+    //             }
+    //         }
+    //     }
+    // case Detection::EMCON_PASSIVE:
+    //     if(sensors){
+    //         for (auto const& pair :*sensors->sensors) {
+    //             Sensor* s = pair.second;
+    //             if(!s)continue;
+    //             s->Active = false;
+    //         }
+    //     }
+    //     break;
 
-    case Detection::ACTIVE_RADAR_ALLOWED:
-        if(sensors){
-            for (auto const& pair :*sensors->sensors) {
-                Sensor* s = pair.second;
-                if(!s)continue;
-                if(s->subType == Sensor::SubType::Generic){
-                    s->Active = true;
-                }else{
-                    s->Active = false;
-                }
-            }
-        }
-    case Detection::FULL_SENSOR_USAGE:
-        if(sensors){
-            for (auto const& pair :*sensors->sensors) {
-                Sensor* s = pair.second;
-                if(!s)continue;
-                s->Active = true;
-            }
-        }
-        break;
+    // case Detection::ACTIVE_RADAR_ALLOWED:
+    //     if(sensors){
+    //         for (auto const& pair :*sensors->sensors) {
+    //             Sensor* s = pair.second;
+    //             if(!s)continue;
+    //             if(s->subType == Sensor::SubType::Generic){
+    //                 s->Active = true;
+    //             }else{
+    //                 s->Active = false;
+    //             }
+    //         }
+    //     }
+    // case Detection::FULL_SENSOR_USAGE:
+    //     if(sensors){
+    //         for (auto const& pair :*sensors->sensors) {
+    //             Sensor* s = pair.second;
+    //             if(!s)continue;
+    //             s->Active = true;
+    //         }
+    //     }
+    //     break;
 
-    case Detection::INTERMITTENT_RADAR:
-        if(sensors){
-            for (auto const& pair :*sensors->sensors) {
-                Sensor* s = pair.second;
-                if(!s)continue;
-                if(s->subType == Sensor::SubType::Generic){
-                    s->Active = true;
-                }else{
-                    s->Active = false;
-                }
-            }
-        }
-        break;
-    }
+    // case Detection::INTERMITTENT_RADAR:
+    //     if(sensors){
+    //         for (auto const& pair :*sensors->sensors) {
+    //             Sensor* s = pair.second;
+    //             if(!s)continue;
+    //             if(s->subType == Sensor::SubType::Generic){
+    //                 s->Active = true;
+    //             }else{
+    //                 s->Active = false;
+    //             }
+    //         }
+    //     }
+    //     break;
+    // }
 
 
 }
@@ -169,17 +194,17 @@ void Platform::reset(){
 // =============================================================================
 void Platform::launchBombs()
 {
-    if (!weapons || !weapons->weapons || weapons->weapons->empty()) {
+    if (/*!weapons ||*/ !weapons.weapons || weapons.weapons->empty()) {
         Console::log("Platform::launchBombs() — no weapons on: " + Name);
         return;
     }
-    if (!transform || !transform->geocord) {
-        Console::error("Platform::launchBombs() — no transform: " + Name);
-        return;
-    }
+    // if (/*!transform ||*/ !transform.geocord) {
+    //     Console::error("Platform::launchBombs() — no transform: " + Name);
+    //     return;
+    // }
 
     int total = 0, launched = 0;
-    for (auto& [id, weapon] : *weapons->weapons) {
+    for (auto& [id, weapon] : *weapons.weapons) {
         if (!weapon) continue;
         Bomb* bomb = dynamic_cast<Bomb*>(weapon);
         if (!bomb) continue;
@@ -192,7 +217,7 @@ void Platform::launchBombs()
 
     Console::log("Platform::launchBombs() — " + Name + " released " +
                  std::to_string(launched) + "/" + std::to_string(total) + " bombs" +
-                 " at alt=" + std::to_string(static_cast<int>(transform->geocord->altitude)) + "m");
+                 " at alt=" + std::to_string(static_cast<int>(transform.geocord.altitude)) + "m");
 }
 
 void Platform::start(){
@@ -203,11 +228,11 @@ void Platform::pause(){
     //taskgroup->pause();
 }
 
- void Platform::update(){
+void Platform::update(){
     if (isRemoteDISEntity) return;//by Aman
 
     time =Simulation::simulationTime;
-    float fuelconsumption = 0.002*(dynamicModel->currentSpeed/3000.0f);
+    float fuelconsumption = 0.002*(dynamicModel.currentSpeed/3000.0f);
     // fuel -= fuelconsumption;
     // fuel = fuel<0?0:fuel;
     if(Health <= 0){
@@ -225,17 +250,17 @@ void Platform::pause(){
     //     launchBombs();
     //     m_bombsReleased = true;   // bombs released — don't check again this flight
     // }
-    int cur = trajectory->current;
-    Waypoints* waypoint = trajectory->getCurrentWaypoint();
-    if(cur == 0 && _lastcurrent == trajectory->Trajectories.size()-1){
-        waypoint = trajectory->getWaypointByIndex(_lastcurrent+1);
+    int cur = trajectory.current;
+    Waypoints* waypoint = trajectory.getCurrentWaypoint();
+    if(cur == 0 && _lastcurrent == trajectory.Trajectories.size()-1){
+        waypoint = trajectory.getWaypointByIndex(_lastcurrent+1);
     }
     if((cur!=_lastcurrent && waypoint && waypoint->dropWeapon) || (autoDrop && dropTime<time && dropcount > 0) ){
         autoDrop = false;
-        if(cur!=_lastcurrent && waypoint->dropWeapon){
+        if(cur!=_lastcurrent && waypoint&& waypoint->dropWeapon){
             dropcount += waypoint->dropcount;
         }
-        for (auto const& pair :*weapons->weapons) {
+        for (auto const& pair :*weapons.weapons) {
             Weapon* s = pair.second;
             if(!s)continue;
             Sonobuoy* sono = dynamic_cast<Sonobuoy*>(s);
@@ -253,22 +278,20 @@ void Platform::pause(){
 
     if(Simulation::fastupdate) return;
 
-    for (auto const& pair :*weapons->weapons) {
+    for (auto const& pair :*weapons.weapons) {
         if(Simulation::fastupdate)continue;
         Weapon* s = pair.second;
         if(!s)continue;
         s->Update();
     }
-
-
     //qDebug()<<"update";
     int csmTime = 0;
     int esmTime = 0;
     int radarTime = 0;
     int ewTime = 0;
-    if(!sensors)return;
-    Waypoints* wp = trajectory->getCurrentWaypoint();
-    for (auto const& pair :*sensors->sensors) {
+    // if(!sensors)return;
+    Waypoints* wp = trajectory.getCurrentWaypoint();
+    for (auto const& pair :sensors.sensors) {
         if(Simulation::fastupdate)continue;
         Sensor* s = pair.second;
         if(!s)continue;
@@ -346,7 +369,7 @@ void Platform::pause(){
     QElapsedTimer timer;
     timer.start();  // Start measuring
 
-    for (auto const& pair : *radios->radios) { // assuming you have a list of radios on this platform
+    for (auto const& pair : radios.radios) { // assuming you have a list of radios on this platform
         if(Simulation::fastupdate)continue;
         Radio* r = pair.second;
         if (r) {
@@ -358,7 +381,7 @@ void Platform::pause(){
     Profiler::currentFrame->RadioTime +=elapsedMs;
 
     timer.start();  // Start measuring
-    for (auto const& pair : *iffs->iffs) {
+    for (auto const& pair : iffs.iffs) {
         if(Simulation::fastupdate)continue;
         IFF* iff = pair.second;
         if (iff) {
@@ -369,15 +392,15 @@ void Platform::pause(){
     Profiler::currentFrame->IFFTime +=elapsedMs;
 
     timer.start();
-    if (weapons && !Simulation::fastupdate) {
+    // if (/*weapons &&*/ !Simulation::fastupdate) {
 
-        for (auto const& pair : *weapons->weapons) {
-            Weapon* w = pair.second;
-            if (w && w->Active) {
-                w->scan();
-            }
-        }
-    }
+    //     for (auto const& pair : *weapons.weapons) {
+    //         Weapon* w = pair.second;
+    //         if (w && w->Active) {
+    //             w->scan();
+    //         }
+    //     }
+    // }
     // Note: add WeaponTime to Frame struct in profiler.h to enable weapon timing
     // if(team == Team::RedTeam||team == Team::BlueTeam){
     //     Decision();
@@ -386,7 +409,6 @@ void Platform::pause(){
 
 }
 
-
 void Platform::Decision(){
 
     float lowestRange = 11000000000;
@@ -394,10 +416,11 @@ void Platform::Decision(){
     Platform* closestTarget = nullptr;
     Platform* lowestHealthTarget = nullptr;
     int enemyCount = 0;
-    for (auto const& pair :*sensors->sensors) {
+    for (auto const& pair :sensors.sensors) {
         Sensor* s = pair.second;
         if(!s||!s->Active)continue;
         for (int i = 0; i < s->targets.size(); ++i) {
+            if (!s->targets.at(i).entity) continue;   // external/datalink track
             if(s->targets.at(i).entity->team != team){
                 if(s->targets.at(i).radius<lowestRange ){
                     lowestRange = s->targets.at(i).radius;
@@ -412,6 +435,7 @@ void Platform::Decision(){
             }
         }
         for (int i = 0; i < s->ewtargets.size(); ++i) {
+            if (!s->ewtargets.at(i).entity) continue;   // external/datalink track
             if(s->ewtargets.at(i).entity->team != team){
                 if(s->ewtargets.at(i).radius<lowestRange ){
                     lowestRange = s->ewtargets.at(i).radius;
@@ -427,7 +451,7 @@ void Platform::Decision(){
         }
     }
     detectionCount = enemyCount;
-    weaponcount = weapons->weapons->size();
+    weaponcount = weapons.weapons->size();
     // --- STEP 1: Retreat Logic (Same as before) ---
     bool shouldRetreat = false;
     if (retreat != Retreat::NEVER_RETREAT) {
@@ -441,8 +465,8 @@ void Platform::Decision(){
 
 
     if (shouldRetreat) {
-        dynamicModel->followTarget = false;
-        trajectory->goHome();
+        dynamicModel.followTarget = false;
+        trajectory.goHome();
         return;
     }
 
@@ -480,13 +504,13 @@ void Platform::Decision(){
         break;
     }
 
-    if(primaryTarget && dynamicModel->followEntity!=primaryTarget){
-        dynamicModel->followEntity = primaryTarget;
-        dynamicModel->followTarget = true;
+    if(primaryTarget && dynamicModel.followEntity!=primaryTarget){
+        dynamicModel.followEntity = primaryTarget;
+        dynamicModel.followTarget = true;
         engaged = true;
     }
     if(primaryTarget==nullptr || !primaryTarget->Active){
-        dynamicModel->followTarget = false;
+        dynamicModel.followTarget = false;
         engaged = false;
     }
 
@@ -519,13 +543,13 @@ void Platform::Decision(){
     if (primaryTarget!=nullptr && primaryTarget->Active && canFire && primaryTarget && !primaryTarget->isVictom ) {
         if (weaponrelease == WeaponRelease::AUTOMATIC || weaponrelease == WeaponRelease::WEAPON_FREE) {
             ////ExecuteFireSequence(primaryTarget); // Target ko shoot karo
-            if (weapons) {
-                for (auto const& pair : *weapons->weapons) {
+            /*if (weapons)*/ {
+                for (auto const& pair : *weapons.weapons) {
                     Weapon* w = pair.second;
                     if (w  && !w->isLaunched) {
-                        w->setTarget(primaryTarget->transform,3000);
+                        w->setTarget(&primaryTarget->transform,3000);
                         w->missileStart();
-                        weapons->weapons->erase(pair.first);
+                        weapons.weapons->erase(pair.first);
                         break;
                     }
                 }
@@ -540,7 +564,6 @@ void Platform::Decision(){
     }
 }
 
-
 void Platform::fireMissile(){
     if(roi != ROI::COMMAND_AUTHORIZATION_REQUIRED) return;
     float lowestRange = 11000000000;
@@ -548,10 +571,11 @@ void Platform::fireMissile(){
     Platform* closestTarget = nullptr;
     Platform* lowestHealthTarget = nullptr;
     int enemyCount = 0;
-    for (auto const& pair :*sensors->sensors) {
+    for (auto const& pair :sensors.sensors) {
         Sensor* s = pair.second;
         if(!s||!s->Active)continue;
         for (int i = 0; i < s->targets.size(); ++i) {
+            if (!s->targets.at(i).entity) continue;   // external/datalink track
             if(s->targets.at(i).entity->team != team){
                 if(s->targets.at(i).radius<lowestRange ){
                     lowestRange = s->targets.at(i).radius;
@@ -566,6 +590,7 @@ void Platform::fireMissile(){
             }
         }
         for (int i = 0; i < s->ewtargets.size(); ++i) {
+            if (!s->ewtargets.at(i).entity) continue;   // external/datalink track
             if(s->ewtargets.at(i).entity->team != team){
                 if(s->ewtargets.at(i).radius<lowestRange ){
                     lowestRange = s->ewtargets.at(i).radius;
@@ -581,24 +606,23 @@ void Platform::fireMissile(){
         }
     }
 
-    if (weapons && closestTarget!=nullptr && closestTarget->Active) {
-        for (auto const& pair : *weapons->weapons) {
+    if (/*weapons && */closestTarget!=nullptr && closestTarget->Active) {
+        for (auto const& pair : *weapons.weapons) {
             Weapon* w = pair.second;
             if (w  && !w->isLaunched) {
-                w->setTarget(closestTarget->transform,3000);
+                w->setTarget(&closestTarget->transform,3000);
                 w->missileStart();
-                weapons->weapons->erase(pair.first);
+                weapons.weapons->erase(pair.first);
                 break;
             }
         }
     }
 }
 
-
 void Platform::spawn() {
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-    emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
-    emit parent->entityAddedPointer(QString::fromStdString(parentID),this);
+    // Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    emit root->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
+    emit root->entityAddedPointer(QString::fromStdString(parentID),this);
 }
 
 void Platform::addParam(std::string key,std::string value){
@@ -617,17 +641,17 @@ void Platform::removeParam(std::string key){
     customParameters.remove(QString::fromStdString(key));
 }
 
-
 std::vector<std::string> Platform::getSupportedComponents() {
     std::vector<std::string> supported;
     supported.push_back("transform");
+    supported.push_back("collider");
+    supported.push_back("bitmap");
     supported.push_back("trajectory");
     supported.push_back("rigidbody");
     supported.push_back("dynamicModel");
-    supported.push_back("collider");
     supported.push_back("crossSection");
+    supported.push_back("distype");
     supported.push_back("networkObject");
-    supported.push_back("bitmap");
     supported.push_back("mission");
     supported.push_back("radios");
     supported.push_back("sensors");
@@ -636,13 +660,30 @@ std::vector<std::string> Platform::getSupportedComponents() {
     return supported;
 }
 
+void Platform::addSupportedcomponent(){
+    for (const auto& item : getSupportedComponents()) {
+        addComponent(item.c_str());
+        // 'item' har ek string ko represent karega
+        qDebug() << item.c_str(); // Ya std::cout << item << std::endl;
+    }
+}
+
+void Platform::SyncByJson(const QJsonObject& obj){
+    if (obj.contains("dynamicModel") && obj["dynamicModel"].isObject()) {
+        dynamicModel.parentEntity = this;
+        dynamicModel.SyncByJson(obj["dynamicModel"].toObject());
+    }
+}
+
 QJsonObject Platform::toJson() const {
     QJsonObject obj;
     obj["name"] = QString::fromStdString(Name);
     obj["branch"] = QString::fromStdString("Entity");
     obj["id"] = QString::fromStdString(ID);
     obj["parent_id"] = QString::fromStdString(parentID);
+    obj["referenceIDE"] = QString::fromStdString(ReferenceID);
     obj["active"] = Active;
+    // obj["follow_me"] = followme;
     obj["health"] = toParm(Health,"%",0,100);
     obj["dropInterval"] = toParm(dropInterval,"s",0,3600);
     obj["fuel"] = toParm(fuel,"%",0,100);
@@ -720,17 +761,18 @@ QJsonObject Platform::toJson() const {
     // parObj["value"] = paramMap;
     // obj["parameters"] = parObj;
 
-    if (transform) obj["transform"] = transform->toJson();
-    if (trajectory) obj["trajectory"] = trajectory->toJson();
-    if (crossSection) obj["crossSection"] = crossSection->toJson();
-    if (rigidbody) obj["rigidbody"] = rigidbody->toJson();
-    if (dynamicModel) obj["dynamicModel"] = dynamicModel->toJson();
-    if (collider) obj["collider"] = collider->toJson();
-    if (meshRenderer2d) obj["bitmap"] = meshRenderer2d->toJson();
-    if (sensors) obj["sensors"] = sensors->toJson();
-    if (iffs) obj["iffs"] = iffs->toJson();
-    if (radios) obj["radios"] = radios->toJson();
-    if (weapons) obj["weapons"] = weapons->toJson();
+    /*if (transform)*/ obj["transform"] = transform.toJson();
+    /*if (trajectory)*/ obj["trajectory"] = trajectory.toJson();
+    /*if (crossSection)*/ obj["crossSection"] = crossSection.toJson();
+    obj["disType"] = disType.toJson();//by aman
+    /*if (rigidbody)*/ obj["rigidbody"] = rigidbody.toJson();
+    /*if (dynamicModel) */obj["dynamicModel"] = dynamicModel.toJson();
+    /*if (collider)*/ obj["collider"] = collider.toJson();
+    /*if (meshRenderer2d)*/ obj["bitmap"] = meshRenderer2d.toJson();
+    /*if (sensors)*/ obj["sensors"] = sensors.toJson();
+    /*if (iffs)*/ obj["iffs"] = iffs.toJson();
+    /*if (radios)*/ obj["radios"] = radios.toJson();
+    /*if (weapons)*/ obj["weapons"] = weapons.toJson();
     // QJsonArray radioArray;
     // for (Radio* r : radioList) {
     //     if (r) radioArray.append(r->toJson());
@@ -770,14 +812,26 @@ QJsonObject Platform::toJson() const {
 
 void Platform::fromJson(const QJsonObject& obj) {
 
-    if (obj.contains("active"))
+    if (obj.contains("active")){
         Active = obj["active"].toBool();
+        if(root){
+            auto* data = root->world.GetComponent<ECS::Entity_Data>(ecsID);
+            data->active = Active;
+        }
+    }
+
+    if(obj.contains("follow_me")){
+        followme = obj["follow_me"].toBool();
+    }
+
     if (obj.contains("name"))
         Name = obj["name"].toString().toStdString();
     if (obj.contains("id"))
         ID = obj["id"].toString().toStdString();
     if (obj.contains("parent_id"))
         parentID = obj["parent_id"].toString().toStdString();
+    if (obj.contains("referenceIDE"))
+        ReferenceID = obj["referenceIDE"].toString().toStdString();
     if (obj.contains("health"))
         Health = valueFromParm(obj["health"].toObject());
     if (obj.contains("dropInterval"))
@@ -838,26 +892,26 @@ void Platform::fromJson(const QJsonObject& obj) {
         QJsonObject subCategoryObj = obj["SubCategory"].toObject();
         if (subCategoryObj.contains("value")){
             if(category == Entity::Category::Air){
-                for (int i = 0; i < 3 ; i++) {
+                for (int i = 0; i < 7 ; i++) {
                     if (AirCategoryNames[i] == subCategoryObj["value"].toString().toStdString()) {
                         airCategory = (SubAirCategory)i;
                     }
                 }
             }else
                 if(category == Entity::Category::Ground){
-                    for (int i = 0; i < 3 ; i++) {
+                    for (int i = 0; i < 6 ; i++) {
                         if (GroundCategoryNames[i] == subCategoryObj["value"].toString().toStdString()) {
                             groundCategory = (SubGroundCategory)i;
                         }
                     }
                 }else
-                if(category == Entity::Category::Marine){
-                    for (int i = 0; i < 3 ; i++) {
-                        if (MarineCategoryNames[i] == subCategoryObj["value"].toString().toStdString()) {
-                            marineCategory = (SubMarineCategory)i;
+                    if(category == Entity::Category::Marine){
+                        for (int i = 0; i < 7 ; i++) {
+                            if (MarineCategoryNames[i] == subCategoryObj["value"].toString().toStdString()) {
+                                marineCategory = (SubMarineCategory)i;
+                            }
                         }
                     }
-                }
         }
     }
 
@@ -868,60 +922,49 @@ void Platform::fromJson(const QJsonObject& obj) {
     }
 
     if (obj.contains("transform") && obj["transform"].isObject()) {
-        if (!transform) addComponent("transform");
-        transform->fromJson(obj["transform"].toObject());
-    }else{
-        if (!transform) addComponent("transform");
+        transform.parentEntity = this;
+        transform.fromJson(obj["transform"].toObject());
     }
 
     if (obj.contains("crossSection") && obj["crossSection"].isObject()) {
-        if (!crossSection) addComponent("crossSection");
-        crossSection->fromJson(obj["crossSection"].toObject());
-    }else{
-        if (!crossSection) addComponent("crossSection");
+        crossSection.parentEntity = this;
+        crossSection.fromJson(obj["crossSection"].toObject());
     }
-
+    if (obj.contains("disType") && obj["disType"].isObject()) {
+        disType.parentEntity = this;
+        disType.fromJson(obj["disType"].toObject());
+    }//by aman
     if (obj.contains("trajectory") && obj["trajectory"].isObject()) {
-        if (!trajectory) addComponent("trajectory");
-        trajectory->fromJson(obj["trajectory"].toObject());
-    }else{
-        if (!trajectory) addComponent("trajectory");
+        trajectory.parentEntity = this;
+        trajectory.fromJson(obj["trajectory"].toObject());
     }
 
     if (obj.contains("rigidbody") && obj["rigidbody"].isObject()) {
-        if (!rigidbody) addComponent("rigidbody");
-        rigidbody->fromJson(obj["rigidbody"].toObject());
-    }else{
-        if (!rigidbody) addComponent("rigidbody");
+        rigidbody.parentEntity = this;
+        rigidbody.fromJson(obj["rigidbody"].toObject());
     }
 
     if (obj.contains("dynamicModel") && obj["dynamicModel"].isObject()) {
-        if (!dynamicModel) addComponent("dynamicModel");
-        dynamicModel->fromJson(obj["dynamicModel"].toObject());
-    }else{
-        if (!dynamicModel) addComponent("dynamicModel");
+        dynamicModel.parentEntity = this;
+        dynamicModel.fromJson(obj["dynamicModel"].toObject());
     }
 
     if (obj.contains("collider") && obj["collider"].isObject()) {
-        if (!collider) addComponent("collider");
-        collider->fromJson(obj["collider"].toObject());
-    }else{
-        if (!collider) addComponent("collider");
+        collider.parentEntity = this;
+        collider.fromJson(obj["collider"].toObject());
     }
 
     if (obj.contains("bitmap") && obj["bitmap"].isObject()) {
-        if (!meshRenderer2d) addComponent("bitmap");
-        meshRenderer2d->fromJson(obj["bitmap"].toObject());
+        meshRenderer2d.parentEntity = this;
+        meshRenderer2d.fromJson(obj["bitmap"].toObject());
         //Logger
         for(auto it = m_hierarchy->Platforms.begin();
              it != m_hierarchy->Platforms.end(); ++it){
             if(this == (*it).second){
                 //qDebug()<<"Mesh Platform Found!!";
-                emit m_hierarchy->meshRenderer2DisAdded((*it).first.c_str(),meshRenderer2d);
+                emit m_hierarchy->meshRenderer2DisAdded((*it).first.c_str(),&meshRenderer2d);
             }
         }
-    }else{
-        if (!meshRenderer2d) addComponent("bitmap");
     }
 
     // if (obj.contains("meshRenderer2d") && obj["meshRenderer2d"].isObject()) { // Fix: Correct key
@@ -930,364 +973,597 @@ void Platform::fromJson(const QJsonObject& obj) {
     // }
 
     if (obj.contains("sensors") && obj["sensors"].isObject()) { // Fix: Correct key
-        if (!sensors) addComponent("sensors");
-        sensors->fromJson(obj["sensors"].toObject());
-    }else{
-        if (!sensors) addComponent("sensors");
+        sensors.parentEntity = this;
+        sensors.fromJson(obj["sensors"].toObject());
     }
 
     if (obj.contains("iffs") && obj["iffs"].isObject()) { // Fix: Correct key
-        if (!iffs) addComponent("iffs");
-        iffs->fromJson(obj["iffs"].toObject());
-    }else{
-        if (!iffs) addComponent("iffs");
+        iffs.parentEntity = this;
+        iffs.fromJson(obj["iffs"].toObject());
     }
 
     if (obj.contains("radios") && obj["radios"].isObject()) { // Fix: Correct key
-        if (!radios) addComponent("radios");
-        radios->fromJson(obj["radios"].toObject());
-    }else{
-        if (!radios) addComponent("radios");
+        radios.parentEntity = this;
+        radios.fromJson(obj["radios"].toObject());
     }
 
     if (obj.contains("weapons") && obj["weapons"].isObject()) {
-        if (!weapons) addComponent("weapons");
-        weapons->fromJson(obj["weapons"].toObject());
-    }else{
-        if (!weapons) addComponent("weapons");
+        weapons.parentEntity = this;
+        weapons.fromJson(obj["weapons"].toObject());
     }
 
-    // if (obj.contains("parameters")) {
-    //     QJsonObject parObj = obj["parameters"].toObject();
-    //     if (parObj.contains("value")) { // Fix: Check "value" instead of "array"
-    //         QJsonObject paramMap = parObj["value"].toObject();
-    //         for (const QString& key : paramMap.keys()) {
-    //             QJsonObject paramObj = paramMap[key].toObject();
-    //             std::shared_ptr<Parameter> param = std::make_shared<Parameter>();
-    //             param->fromJson(paramObj);
-    //             parameters[key.toStdString()] = param;
-    //         }
-    //     }
-    // }
-    // // Merge custom parameters
-    // for (auto it = obj.begin(); it != obj.end(); ++it) {
-    //     if (it.key() != "name" &&
-    //         it.key() != "id" &&
-    //         it.key() != "parent_id" &&
-    //         it.key() != "active" &&
-    //         it.key() != "parameters" &&
-    //         it.key() != "type" &&
-    //         it.key() != "transform" &&
-    //         it.key() != "trajectory" &&
-    //         it.key() != "rigidbody" &&
-    //         it.key() != "dynamicModel" &&
-    //         it.key() != "crossSection" &&
-    //         it.key() != "collider" &&
-    //         it.key() != "meshRenderer2d" &&
-    //         it.key() != "bitmap" &&
-    //         it.key() != "radios" &&
-    //         it.key() != "sensors" &&
-    //         it.key() != "health" &&
-    //         it.key() != "fuel" &&
-    //         it.key() != "iffs" &&
-    //         it.key() != "weapons" &&
-    //         it.key() != "Mission" &&
-    //         it.key() != "parent_id") {
-    //         customParameters[it.key()] = it.value();
-    //     }
-    // }
+
 
 }
 
 
-void Platform::addComponent(std::string name) {
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-    if (name == "transform") {
-        if (!transform){
-            transform = new Transform();
-            transform->parentEntity = this;
-            parent->Components.insert({transform->ID, transform});
-            emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(transform->ID),"transform");
-        }
-    } else if (name == "crossSection") {
-        if (!crossSection){
-            crossSection = new CrossSection();
-            crossSection->parentEntity = this;
-            parent->Components.insert({crossSection->ID, crossSection});
-            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(crossSection->ID), "crossSection");
-        }
-    } else if (name == "trajectory") {
-        if (!trajectory){
-            trajectory = new Trajectory();
-            trajectory->parentEntity = this;
-            parent->Components.insert({trajectory->ID, trajectory});
-            connect(taskgroup,&TaskGroup::goHome,trajectory,&Trajectory::goHome);
-            connect(taskgroup,&TaskGroup::activateSensors,trajectory,&Trajectory::activateSensors);
-            connect(taskgroup,&TaskGroup::deactivateSensors,trajectory,&Trajectory::deactivateSensors);
-            connect(taskgroup,&TaskGroup::goHome,trajectory,&Trajectory::goHome);
-            connect(taskgroup,&TaskGroup::goHome,trajectory,&Trajectory::goHome);
-            emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(trajectory->ID),"trajectory");
-        }
-    } else if (name == "rigidbody") {
-        if (!rigidbody) {
-            if (!transform)
-                addComponent("transform");
-            rigidbody = new Rigidbody();
-            rigidbody->parentEntity = this;
-            parent->Components.insert({rigidbody->ID, rigidbody});
-            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(rigidbody->ID), "rigidbody");
+void Platform::addComponent(std::string name)
+{
+    if (!root)
+        return;
+
+    // ============================================================
+    // Transform
+    // ============================================================
+
+    if (name == "transform")
+    {
+        if (root->Components.find(transform.ID) !=
+            root->Components.end())
+        {
+            return;
         }
 
-    } else if (name == "sensors") {
-        if (!sensors) {
-            if (!transform)
-                addComponent("transform");
-            sensors = new SensorProfile(parent);
-            sensors->parentEntity = this;
-            sensors->parentID = ID;
-            parent->Components.insert({sensors->ID, sensors});
-            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(sensors->ID), "sensors");
+        transform.init(this);
+
+        root->Components.insert({
+            transform.ID,
+            &transform
+        });
+
+        emit root->componentAdded(
+            QString::fromStdString(ID),
+            QString::fromStdString(transform.ID),
+            "transform"
+            );
+    }
+
+    // ============================================================
+    // Cross Section
+    // ============================================================
+
+    else if (name == "crossSection")
+    {
+        if (root->Components.find(crossSection.ID) !=
+            root->Components.end())
+        {
+            return;
         }
 
-    } else if (name == "iffs") {
-        if (!iffs) {
-            if (!transform)
-                addComponent("transform");
-            iffs = new IFFProfile(parent);
-            iffs->parentEntity = this;
-            iffs->parentID = ID;
-            parent->Components.insert({iffs->ID, iffs});
-            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(iffs->ID), "iffs");
+        crossSection.init(this);
+
+        root->Components.insert({
+            crossSection.ID,
+            &crossSection
+        });
+
+        emit root->componentAdded(
+            QString::fromStdString(ID),
+            QString::fromStdString(crossSection.ID),
+            "crossSection"
+            );
+    }
+
+    // ============================================================
+    // Trajectory
+    // ============================================================
+
+    else if (name == "trajectory")
+    {
+        // Always bind the value-member component to this platform.
+        trajectory.parentEntity = this;
+        trajectory.parentID = ID;
+
+        // init() handles ECS component creation.
+        trajectory.init(this);
+
+        // Register only once in global component map.
+        auto it = root->Components.find(trajectory.ID);
+
+        if (it == root->Components.end())
+        {
+            root->Components.insert({
+                trajectory.ID,
+                &trajectory
+            });
+
+            // Preserve new-version TaskGroup connections.
+            connect(
+                taskgroup,
+                &TaskGroup::goHome,
+                &trajectory,
+                &Trajectory::goHome
+                );
+
+            connect(
+                taskgroup,
+                &TaskGroup::activateSensors,
+                &trajectory,
+                &Trajectory::activateSensors
+                );
+
+            connect(
+                taskgroup,
+                &TaskGroup::deactivateSensors,
+                &trajectory,
+                &Trajectory::deactivateSensors
+                );
+
+            emit root->componentAdded(
+                QString::fromStdString(ID),
+                QString::fromStdString(trajectory.ID),
+                "trajectory"
+                );
         }
 
-    } else if (name == "radios") {
-        if (!radios) {
-            if (!transform)
-                addComponent("transform");
-            radios = new RadioProfile(parent);
-            radios->parentEntity = this;
-            radios->parentID = ID;
-            parent->Components.insert({radios->ID, radios});
-            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(radios->ID), "radios");
+        return;
+    }
+
+    // ============================================================
+    // Rigidbody
+    // ============================================================
+
+    else if (name == "rigidbody")
+    {
+        if (root->Components.find(rigidbody.ID) !=
+            root->Components.end())
+        {
+            return;
         }
 
-    } else if (name == "weapons") {
-        if (!weapons) {
-            if (!transform)
-                addComponent("transform");
-            weapons = new WeaponProfile(parent);
-            weapons->parentEntity = this;
-            weapons->parentID = ID;
-            parent->Components.insert({weapons->ID, weapons});
-            emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(weapons->ID), "weapons");
-        }
-    } else if (name == "dynamicModel") {
-        if (!dynamicModel) {
-            if (!transform)
-                addComponent("transform");
-            if (!rigidbody)
-                addComponent("rigidbody");
-            if (!collider)
-                addComponent("collider");
-            if (!trajectory)
-                addComponent("trajectory");
-            dynamicModel = new DynamicModel();
-            dynamicModel->parentEntity = this;
-            dynamicModel->transform = transform;
-            dynamicModel->rigidbody = rigidbody;
-            dynamicModel->trajectory = trajectory;
-            dynamicModel->init();
-            parent->Components.insert({dynamicModel->ID, dynamicModel});
-            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(dynamicModel->ID), "dynamicModel");
-            emit parent->entityPhysicsAdded(QString::fromStdString(parentID), this);
+        rigidbody.init(this);
+
+        root->Components.insert({
+            rigidbody.ID,
+            &rigidbody
+        });
+
+        emit root->componentAdded(
+            QString::fromStdString(ID),
+            QString::fromStdString(rigidbody.ID),
+            "rigidbody"
+            );
+    }
+
+    // ============================================================
+    // Sensors
+    // ============================================================
+
+    else if (name == "sensors")
+    {
+        if (!sensors.ID.empty())
+        {
+            // Existing value-member SensorProfile.
+            //
+            // Do not blindly create/register it again.
+            sensors.init(this);
+            sensors.parentID = ID;
+
+            auto it =
+                root->Components.find(sensors.ID);
+
+            if (it == root->Components.end())
+            {
+                root->Components.insert({
+                    sensors.ID,
+                    &sensors
+                });
+
+                qDebug()
+                    << "[PLATFORM SENSORS]"
+                    << "SensorProfile registered:"
+                    << QString::fromStdString(sensors.ID);
+
+                emit root->componentAdded(
+                    QString::fromStdString(ID),
+                    QString::fromStdString(sensors.ID),
+                    "sensors"
+                    );
+            }
+            else
+            {
+                qDebug()
+                << "[PLATFORM SENSORS]"
+                << "SensorProfile already registered:"
+                << QString::fromStdString(sensors.ID);
+            }
+
+            return;
         }
 
-    } else if (name == "collider") {
-        if (!collider) {
-            if (!transform)
-                addComponent("transform");
-            collider = new Collider(parent);
-            collider->parentEntity = this;
-            collider->parentID = ID;
-            parent->Components.insert({collider->ID, collider});
-            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(collider->ID), "collider");
+        // Genuine first-time creation.
+        sensors.init(this);
+        sensors.parentID = ID;
+
+        root->Components.insert({
+            sensors.ID,
+            &sensors
+        });
+
+        emit root->componentAdded(
+            QString::fromStdString(ID),
+            QString::fromStdString(sensors.ID),
+            "sensors"
+            );
+    }
+
+    // ============================================================
+    // IFF
+    // ============================================================
+
+    else if (name == "iffs")
+    {
+        if (root->Components.find(iffs.ID) !=
+            root->Components.end())
+        {
+            return;
         }
 
-    } else if (name == "bitmap") {
-        if (!meshRenderer2d) {
-            if (!transform)
-                addComponent("transform");
-            if (!collider)
-                addComponent("collider");
-            meshRenderer2d = new MeshRenderer2D();
-            meshRenderer2d->parentEntity = this;
-            parent->Components.insert({meshRenderer2d->ID, meshRenderer2d});
-            emit parent->componentAdded(QString::fromStdString(ID), QString::fromStdString(meshRenderer2d->ID),"bitmap");
-            emit parent->entityMeshAdded(QString::fromStdString(parentID), this);
+        iffs.init(this);
+        iffs.parentID = ID;
+
+        root->Components.insert({
+            iffs.ID,
+            &iffs
+        });
+
+        emit root->componentAdded(
+            QString::fromStdString(ID),
+            QString::fromStdString(iffs.ID),
+            "iffs"
+            );
+    }
+
+    // ============================================================
+    // Radio
+    // ============================================================
+
+    else if (name == "radios")
+    {
+        if (root->Components.find(radios.ID) !=
+            root->Components.end())
+        {
+            return;
         }
 
+        radios.init(this);
+        radios.parentID = ID;
+
+        root->Components.insert({
+            radios.ID,
+            &radios
+        });
+
+        emit root->componentAdded(
+            QString::fromStdString(ID),
+            QString::fromStdString(radios.ID),
+            "radios"
+            );
+    }
+
+    // ============================================================
+    // Weapons
+    // ============================================================
+
+    else if (name == "weapons")
+    {
+        if (root->Components.find(weapons.ID) !=
+            root->Components.end())
+        {
+            return;
+        }
+
+        weapons.init(this);
+        weapons.parentID = ID;
+
+        root->Components.insert({
+            weapons.ID,
+            &weapons
+        });
+
+        emit root->componentAdded(
+            QString::fromStdString(ID),
+            QString::fromStdString(weapons.ID),
+            "weapons"
+            );
+    }
+
+    // ============================================================
+    // Dynamic Model
+    // ============================================================
+
+    else if (name == "dynamicModel")
+    {
+        if (root->Components.find(dynamicModel.ID) !=
+            root->Components.end())
+        {
+            return;
+        }
+
+        dynamicModel.transform = &transform;
+        dynamicModel.rigidbody = &rigidbody;
+        dynamicModel.trajectory = &trajectory;
+
+        dynamicModel.init(this);
+
+        root->Components.insert({
+            dynamicModel.ID,
+            &dynamicModel
+        });
+
+        emit root->componentAdded(
+            QString::fromStdString(ID),
+            QString::fromStdString(dynamicModel.ID),
+            "dynamicModel"
+            );
+
+        emit root->entityPhysicsAdded(
+            QString::fromStdString(parentID),
+            this
+            );
+    }
+
+    // ============================================================
+    // Collider
+    // ============================================================
+
+    else if (name == "collider")
+    {
+        if (root->Components.find(collider.ID) !=
+            root->Components.end())
+        {
+            return;
+        }
+
+        collider.init(this);
+        collider.parentID = ID;
+
+        root->Components.insert({
+            collider.ID,
+            &collider
+        });
+
+        emit root->componentAdded(
+            QString::fromStdString(ID),
+            QString::fromStdString(collider.ID),
+            "collider"
+            );
+    }
+
+    else if (name == "distype")//by aman
+    {
+        if (root->Components.find(disType.ID) !=
+            root->Components.end())
+        {
+            return;
+        }
+
+        disType.init(this);
+        disType.parentID = ID;
+
+        root->Components.insert({
+            disType.ID,
+            &disType
+        });
+
+        emit root->componentAdded(
+            QString::fromStdString(ID),
+            QString::fromStdString(disType.ID),
+            "distype"
+            );
+    }
+    // ============================================================
+    // Bitmap
+    // ============================================================
+
+    else if (name == "bitmap")
+    {
+        if (root->Components.find(meshRenderer2d.ID) !=
+            root->Components.end())
+        {
+            return;
+        }
+
+        meshRenderer2d.init(this);
+
+        root->Components.insert({
+            meshRenderer2d.ID,
+            &meshRenderer2d
+        });
+
+        emit root->componentAdded(
+            QString::fromStdString(ID),
+            QString::fromStdString(meshRenderer2d.ID),
+            "bitmap"
+            );
+
+        emit root->entityMeshAdded(
+            QString::fromStdString(parentID),
+            this
+            );
     }
 }
 
 void Platform::removeComponent(std::string name) {
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    // Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    if(!root)return;
     if (name == "transform") {
-        if (!transform) return;
-        parent->Components.erase(transform->ID);
-        delete transform;
-        transform = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "transform");
-        emit parent->entityMeshRemoved(QString::fromStdString(parentID));
-        emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+        // if (!transform) return;
+        root->Components.erase(transform.ID);
+        // delete transform;
+        // transform = nullptr;
+        emit root->componentRemoved(QString::fromStdString(ID), "transform");
+        emit root->entityMeshRemoved(QString::fromStdString(parentID));
+        emit root->entityPhysicsRemoved(QString::fromStdString(parentID));
     } else if (name == "crossSection") {
-        if (!crossSection) return;
-        parent->Components.erase(crossSection->ID);
-        delete crossSection;
-        crossSection = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "crossSection");
+        // if (!crossSection) return;
+        root->Components.erase(crossSection.ID);
+        // delete crossSection;
+        // crossSection = nullptr;
+        emit root->componentRemoved(QString::fromStdString(ID), "crossSection");
     } else if (name == "trajectory") {
-        if (!trajectory) return;
-        parent->Components.erase(trajectory->ID);
-        delete trajectory;
-        trajectory = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "trajectory");
+        // if (!trajectory) return;
+        root->Components.erase(trajectory.ID);
+        // delete trajectory;
+        // trajectory = nullptr;
+        emit root->componentRemoved(QString::fromStdString(ID), "trajectory");
     } else if (name == "sensors") {
-        if (!sensors) return;
-        parent->Components.erase(sensors->ID);
-        delete sensors;
-        sensors = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "sensors");
+        // if (!sensors) return;
+        root->Components.erase(sensors.ID);
+        // delete sensors;
+        // sensors = nullptr;
+        emit root->componentRemoved(QString::fromStdString(ID), "sensors");
     } else if (name == "iffs") {
-        if (!iffs) return;
-        parent->Components.erase(iffs->ID);
-        delete iffs;
-        iffs = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "iffs");
+        // if (!iffs) return;
+        root->Components.erase(iffs.ID);
+        // delete iffs;
+        // iffs = nullptr;
+        emit root->componentRemoved(QString::fromStdString(ID), "iffs");
     } else if (name == "radios") {
-        if (!radios) return;
-        parent->Components.erase(radios->ID);
-        delete radios;
-        radios = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "radios");
+        // if (!radios) return;
+        root->Components.erase(radios.ID);
+        // delete radios;
+        // radios = nullptr;
+        emit root->componentRemoved(QString::fromStdString(ID), "radios");
     } else if (name == "weapons") {
-        if (!weapons) return;
-        parent->Components.erase(weapons->ID);
-        delete weapons;
-        weapons = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "weapons");
+        // if (!weapons) return;
+        root->Components.erase(weapons.ID);
+        // delete weapons;
+        // weapons = nullptr;
+        emit root->componentRemoved(QString::fromStdString(ID), "weapons");
     } else if (name == "rigidbody") {
-        if (!rigidbody) return;
-        parent->Components.erase(rigidbody->ID);
-        delete rigidbody;
-        rigidbody = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "rigidbody");
-        emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+        // if (!rigidbody) return;
+        root->Components.erase(rigidbody.ID);
+        // delete rigidbody;
+        // rigidbody = nullptr;
+        emit root->componentRemoved(QString::fromStdString(ID), "rigidbody");
+        emit root->entityPhysicsRemoved(QString::fromStdString(parentID));
     } else if (name == "dynamicModel") {
-        if (!dynamicModel) return;
-        parent->Components.erase(dynamicModel->ID);
-        delete dynamicModel;
-        dynamicModel = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "dynamicModel");
-        emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+        // if (!dynamicModel) return;
+        root->Components.erase(dynamicModel.ID);
+        // delete dynamicModel;
+        // dynamicModel = nullptr;
+        emit root->componentRemoved(QString::fromStdString(ID), "dynamicModel");
+        emit root->entityPhysicsRemoved(QString::fromStdString(parentID));
     } else if (name == "collider") {
-        if (!collider) return;
-        parent->Components.erase(collider->ID);
-        delete collider;
-        collider = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "collider");
-        emit parent->entityMeshRemoved(QString::fromStdString(parentID));
-        emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
-    } else if (name == "bitmap") {
-        if (!meshRenderer2d) return;
-        parent->Components.erase(meshRenderer2d->ID);
-        delete meshRenderer2d;
-        meshRenderer2d = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "bitmap");
-        emit parent->entityMeshRemoved(QString::fromStdString(parentID));
+        // if (!collider) return;
+        root->Components.erase(collider.ID);
+        // delete collider;
+        // collider = nullptr;
+        emit root->componentRemoved(QString::fromStdString(ID), "collider");
+        emit root->entityMeshRemoved(QString::fromStdString(parentID));
+        emit root->entityPhysicsRemoved(QString::fromStdString(parentID));
+    }
+ else if (name == "distype") {//by aman
+    root->Components.erase(disType.ID);
+    emit root->componentRemoved(QString::fromStdString(ID), "distype");
+}
+
+    else if (name == "bitmap") {
+        // if (!meshRenderer2d) return;
+        root->Components.erase(meshRenderer2d.ID);
+        // delete meshRenderer2d;
+        // meshRenderer2d = nullptr;
+        emit root->componentRemoved(QString::fromStdString(ID), "bitmap");
+        emit root->entityMeshRemoved(QString::fromStdString(parentID));
     }
 }
 
 QJsonObject Platform::getComponent(std::string name) {
     if (name == "transform") {
-        if (!transform) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return transform->toJson();
+        // if (!transform) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return transform.toJson();
     } else if (name == "crossSection") {
-        if (!crossSection) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return crossSection->toJson();
+        // if (!crossSection) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return crossSection.toJson();
     } else if (name == "trajectory") {
-        if (!trajectory) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return trajectory->toJson();
+        // if (!trajectory) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return trajectory.toJson();
     } else if (name == "rigidbody") {
-        if (!rigidbody) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return rigidbody->toJson();
+        // if (!rigidbody) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return rigidbody.toJson();
     } else if (name == "dynamicModel") {
-        if (!dynamicModel) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return dynamicModel->toJson();
+        // if (!dynamicModel) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return dynamicModel.toJson();
     } else if (name == "collider") {
-        if (!collider) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return collider->toJson();
+        // if (!collider) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return collider.toJson();
     } else if (name == "bitmap") {
-        if (!meshRenderer2d) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return meshRenderer2d->toJson();
+        // if (!meshRenderer2d) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return meshRenderer2d.toJson();
     } else if (name == "sensors") {
-        if (!sensors) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return sensors->toJson();
+        // if (!sensors) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return sensors.toJson();
     }else if (name == "iffs") {
-        if (!iffs) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return iffs->toJson();
+        // if (!iffs) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return iffs.toJson();
     }else if (name == "radios") {
-        if (!radios) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return radios->toJson();
+        // if (!radios) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return radios.toJson();
     }else if (name == "weapons") {
-        if (!weapons) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return weapons->toJson();
-    }
+        // if (!weapons) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return weapons.toJson();
+    }else if (name == "distype") {
+    return disType.toJson();
+}
     return QJsonObject();
 }
 
 void Platform::updateComponent(QString name, const QJsonObject& obj) {
     if (name == "transform") {
-        if (!transform) { Console::error(name.toStdString() + ": not exist"); return; }
-        transform->fromJson(obj);
+        //if (!transform) { Console::error(name.toStdString() + ": not exist"); return; }
+        transform.fromJson(obj);
     } else if (name == "crossSection") {
-        if (!crossSection) { Console::error(name.toStdString() + ": not exist"); return; }
-        crossSection->fromJson(obj);
+        // if (!crossSection) { Console::error(name.toStdString() + ": not exist"); return; }
+        crossSection.fromJson(obj);
     } else if (name == "trajectory") {
-        if (!trajectory) { Console::error(name.toStdString() + ": not exist"); return; }
-        trajectory->fromJson(obj);
+        // if (!trajectory) { Console::error(name.toStdString() + ": not exist"); return; }
+        trajectory.fromJson(obj);
     } else if (name == "rigidbody") {
-        if (!rigidbody) { Console::error(name.toStdString() + ": not exist"); return; }
-        rigidbody->fromJson(obj);
+        // if (!rigidbody) { Console::error(name.toStdString() + ": not exist"); return; }
+        rigidbody.fromJson(obj);
     } else if (name == "dynamicModel") {
-        if (!dynamicModel) { Console::error(name.toStdString() + ": not exist"); return; }
-        dynamicModel->fromJson(obj);
+        // if (!dynamicModel) { Console::error(name.toStdString() + ": not exist"); return; }
+        dynamicModel.fromJson(obj);
     } else if (name == "collider") {
-        if (!collider) { Console::error(name.toStdString() + ": not exist"); return; }
-        collider->fromJson(obj);
+        // if (!collider) { Console::error(name.toStdString() + ": not exist"); return; }
+        collider.fromJson(obj);
     } else if (name == "bitmap") {
-        if (!meshRenderer2d) { Console::error(name.toStdString() + ": not exist"); return; }
-        meshRenderer2d->fromJson(obj);
+        // if (!meshRenderer2d) { Console::error(name.toStdString() + ": not exist"); return; }
+        meshRenderer2d.fromJson(obj);
     } else if (name == "sensors") {
-        if (!sensors) { Console::error(name.toStdString() + ": not exist"); return; }
-        sensors->fromJson(obj);
+        // if (!sensors) { Console::error(name.toStdString() + ": not exist"); return; }
+        sensors.fromJson(obj);
     } else if (name == "iffs") {
-        if (!iffs) { Console::error(name.toStdString() + ": not exist"); return; }
-        iffs->fromJson(obj);
+        // if (!iffs) { Console::error(name.toStdString() + ": not exist"); return; }
+        iffs.fromJson(obj);
     } else if (name == "radios") {
-        if (!radios) { Console::error(name.toStdString() + ": not exist"); return; }
-        radios->fromJson(obj);
+        // if (!radios) { Console::error(name.toStdString() + ": not exist"); return; }
+        radios.fromJson(obj);
     } else if (name == "weapons") {
-        if (!weapons) { Console::error(name.toStdString() + ": not exist"); return; }
-        weapons->fromJson(obj);
-    }
+        // if (!weapons) { Console::error(name.toStdString() + ": not exist"); return; }
+        weapons.fromJson(obj);
+    } else if (name == "distype") {
+    disType.fromJson(obj);
+}
 }
 
 Sensor* Platform::getSensorByName(const std::string& name) const
 {
-    if (!sensors || !sensors->sensors)
-        return nullptr;
+    // if (/*!sensors ||*/ !sensors.sensors)
+    //     return nullptr;
 
-    for (const auto& [id, sensor] : *sensors->sensors)
+    for (const auto& [id, sensor] : sensors.sensors)
     {
         if (sensor && sensor->Name == name)
             return sensor;
@@ -1297,11 +1573,11 @@ Sensor* Platform::getSensorByName(const std::string& name) const
 }
 Radio* Platform::getRadioByName(const std::string& name) const
 {
-    if (!radios || !radios->radios)
-        return nullptr;
+    // if (/*!radios ||*/ !radios.radios)
+    //     return nullptr;
 
     // Iterate through the radios map in the RadioProfile component
-    for (const auto& [id, radio] : *radios->radios)
+    for (const auto& [id, radio] : radios.radios)
     {
         if (radio && radio->Name == name)
             return radio;
@@ -1311,11 +1587,11 @@ Radio* Platform::getRadioByName(const std::string& name) const
 }
 IFF* Platform::getIFFByName(const std::string& name) const
 {
-    if (!iffs || !iffs->iffs)
-        return nullptr;
+    // if (/*!iffs || */!iffs.iffs)
+    //     return nullptr;
 
     // Iterate through the iffs map in the IFFProfile component
-    for (const auto& [id, iff] : *iffs->iffs)
+    for (const auto& [id, iff] : iffs.iffs)
     {
         if (iff && iff->Name == name)
             return iff;
@@ -1324,8 +1600,8 @@ IFF* Platform::getIFFByName(const std::string& name) const
     return nullptr;
 }
 Weapon* Platform::getWeaponByName(const std::string& name) const {
-    if (!weapons) return nullptr;
-    for (auto& [key, weapon] : *weapons->weapons) {
+    // if (!weapons) return nullptr;
+    for (auto& [key, weapon] : *weapons.weapons) {
         if (weapon && weapon->Name == name) {
             return weapon;
         }

@@ -1,0 +1,11 @@
+BASE (built-in, empty registry): dets=13125 trks=20309 modelOutTicks=1177 targetsTicks=1177
+CHECK a detection=false            PASS  dets=0 trks=0 modelOutTicks=0 targetsTicks=0
+CHECK b1 rcs mean=0                PASS  dets=0 trks=0 modelOutTicks=0 targetsTicks=0
+CHECK b2 rcs mean=1e6              PASS  dets=13370 trks=20834 modelOutTicks=1178 targetsTicks=1178 (base dets=13125)
+CHECK c propagation=1e-12          PASS  dets=0 trks=0 modelOutTicks=0 targetsTicks=0
+CHECK d preFilter=false            PASS  dets=0 trks=0 modelOutTicks=0 targetsTicks=0
+CHECK e postFilter=false           PASS  dets=13125 trks=20309 modelOutTicks=1177 targetsTicks=0 (base targetsTicks=1177)
+CHECK f inStage inside hook        PASS  hookCalls=2700 refused=2700 outsideOK=1
+INFO f: detection hook returning false (built-in used): dets=13125 trks=20309 modelOutTicks=1177 targetsTicks=1177; same as base: yes
+CHECK g removeOwner (registry)     PASS  dets=13125 trks=20309 modelOutTicks=1177 targetsTicks=1177 log=p1plug_7g.txt (byte-compare vs scenario 1 log done outside)
+SCENARIO7 PASS (0 failed)

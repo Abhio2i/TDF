@@ -1,6 +1,12 @@
 #include "networkobject.h"
 
-NetworkObject::NetworkObject():Component(nullptr) {}
+NetworkObject::NetworkObject():Component() {}
+
+void NetworkObject::init(Entity *Entity){
+    parentEntity = Entity;
+}
+void NetworkObject::Awake(){}
+void NetworkObject::Start(){}
 
 void NetworkObject::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
 

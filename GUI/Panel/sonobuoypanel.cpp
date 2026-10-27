@@ -192,13 +192,13 @@ void SonoBuoyPanel::selectEntity(Entity* entit)
     sensor = nullptr;
     sensorlist.clear();
     // Remote DIS entities have no weapons component
-    if (!entity->weapons || !entity->weapons->weapons) {
+    if (/*!entity->weapons ||*/ !entity->weapons.weapons) {
         setWindowTitle("SonoBuoyPanel (" +
                        QString::fromStdString(entity->Name) + ")");
         update();
         return;
     }
-    for (auto const& pair :  *entity->weapons->weapons) {
+    for (auto const& pair :  *entity->weapons.weapons) {
         Weapon* s = pair.second;
         if (s ) {
 
@@ -262,7 +262,7 @@ void SonoBuoyPanel::paintEvent(QPaintEvent * /*event*/)
     QPainter p(this);
     if(!entity) return;
     //p.setRenderHint(QPainter::Antialiasing);
-    QVector3D position = entity->transform->translation();
+    QVector3D position = entity->transform.translation();
     QPointF pos(position.x(),-position.z());
     // Draw display components
     drawBackground(p);
@@ -307,7 +307,7 @@ void SonoBuoyPanel::paintEvent(QPaintEvent * /*event*/)
 
     p.save(); // Current painter state save karein[cite: 2]
     p.translate(center.x(), center.y()); // Painter ko aircraft ke center position par le jayein[cite: 2]
-    p.rotate(entity->transform->getHeading()); // Aircraft ko uske heading angle par rotate karein[cite: 2]
+    p.rotate(entity->transform.getHeading()); // Aircraft ko uske heading angle par rotate karein[cite: 2]
 
     p.setBrush(Qt::blue); // Normally blue[cite: 2]
     p.setPen(QPen(Qt::white, 0.5)); // Patli white outline
@@ -334,16 +334,16 @@ void SonoBuoyPanel::paintEvent(QPaintEvent * /*event*/)
     p.setPen(Qt::NoPen);
     QVector<std::string> output;
     for (const Sonobuoy* sensor : sensorlist) {
-        if(!sensor || !sensor->transform) continue;
-        auto it = entity->weapons->weapons->find(sensor->ID);
-        if (it != entity->weapons->weapons->end() && it->second ) {
-            QVector3D Sposition = sensor->transform->translation();
+        if(!sensor ) continue;
+        auto it = entity->weapons.weapons->find(sensor->ID);
+        if (it != entity->weapons.weapons->end() && it->second ) {
+            QVector3D Sposition = sensor->transform.translation();
             QPointF senpos(Sposition.x(),-Sposition.z());
             QPointF relPos((senpos.x()-pos.x()),(senpos.y()-pos.y()));
             relPos.setX(((relPos.x()/zoomLevel)*center.x())+center.x());
             relPos.setY(((relPos.y()/zoomLevel)*center.x())+center.y());
             float size = 4;
-            if(sensor->collider->CollideRadius>5000){
+            if(sensor->collider.CollideRadius>5000){
                 size = 8.f;
                 p.setBrush(Qt::red);
             }else{
@@ -353,10 +353,10 @@ void SonoBuoyPanel::paintEvent(QPaintEvent * /*event*/)
             if (!sensor->detection.isEmpty()) {
                 int i=0;
                 for (const Sonobuoy::SonobuoyOutput &t : sensor->detection) {
-                    if(t.entity && t.entity->transform && !output.contains(t.entity->ID)){
+                    if(t.entity &&/* t.entity->transform &&*/ !output.contains(t.entity->ID)){
                         output.append(t.entity->ID);
 
-                        QVector3D Subposition = t.entity->transform->translation();
+                        QVector3D Subposition = t.entity->transform.translation();
                         QPointF senpos(Subposition.x(),-Subposition.z());
                         // QPointF relPos((senpos.x()-pos.x())+center.x(),(senpos.y()-pos.y())+center.y());
                         QPointF relPos((senpos.x()-pos.x()),(senpos.y()-pos.y()));
@@ -365,7 +365,7 @@ void SonoBuoyPanel::paintEvent(QPaintEvent * /*event*/)
 
                         p.save(); // Coordinate system save karein
                         p.translate(relPos); // Painter ko ship ki position par le jayein
-                        p.rotate(t.entity->transform->getHeading()); // Ship ko uske original angle par rotate karein
+                        p.rotate(t.entity->transform.getHeading()); // Ship ko uske original angle par rotate karein
 
                         p.setBrush(Qt::red);
                         p.setPen(QPen(Qt::white, 1)); // Outline ke liye
@@ -474,7 +474,7 @@ void SonoBuoyPanel::drawTargetAndPath(QPainter &painter)
 
     if (entity && sensor) {
         // Get entity angle
-        ang = entity->transform->toEulerAngles().y();
+        ang = entity->transform.toEulerAngles().y();
         painter.setBrush(Qt::red);
 
         // for (const Target &target : sensor->esmtargets) {

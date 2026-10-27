@@ -38,6 +38,12 @@ class StopFreezePdu;
 class RemoveEntityPdu;
 class CreateEntityPdu;
 class ElectromagneticEmissionsPdu;
+class DesignatorPdu;
+class TransmitterPdu;
+class SignalPdu;
+class DataQueryPdu;
+class SetDataPdu;
+class DataPdu;
 }
 
 // =============================================================================
@@ -75,14 +81,20 @@ signals:
     void removeEntityReceived   (QByteArray pduBytes, QHostAddress sender);
     void createEntityReceived   (QByteArray pduBytes, QHostAddress sender);
     void emissionReceived       (QByteArray pduBytes, QHostAddress sender);
-
+    void designatorReceived(QByteArray pduBytes, QHostAddress sender);
     // ── Stats signals ─────────────────────────────────────────────────────────
     void unknownPDUReceived     (uint8_t pduType, QHostAddress sender);
     void invalidPDUReceived     (QHostAddress sender);
     void peerDiscovered         (QHostAddress addr, uint8_t version,
                         uint16_t site, uint16_t app);
     void iffReceived(QByteArray data, QHostAddress sender, quint16 port);
-
+    void acknowledgeReceived(QByteArray pduBytes, QHostAddress sender);
+    void transferOwnershipReceived(QByteArray pduBytes, QHostAddress sender);
+    void transmitterReceived(QByteArray pduBytes, QHostAddress sender);
+    void signalReceived(QByteArray pduBytes, QHostAddress sender);
+    void dataQueryReceived(QByteArray pduBytes, QHostAddress sender);
+    void setDataReceived(QByteArray pduBytes, QHostAddress sender);
+    void dataReceived(QByteArray pduBytes, QHostAddress sender);
 
 private:
     DISConfig            m_config;

@@ -293,7 +293,6 @@ void TacticalRules::loadBothTeamsFromJson(const QJsonObject &data)
         m_redData  = data["red"].toObject();
         loadCurrentTeamData();
     } else {
-        // Legacy single format — load into blue
         m_blueData = data;
         if (m_currentForce == 0) loadFromJson(data);
     }

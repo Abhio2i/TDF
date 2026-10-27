@@ -2,7 +2,7 @@ void main(ScriptEngine@ e)
 {
     e.useCity("Bhopal");
 
-    e.addText("Bhopal HQ", 77.369882, 23.278665);
+    e.addText("Bhopal HQ",  23.278665, 77.369882);
     e.sleep(1000);
 
     // Generate PDF report

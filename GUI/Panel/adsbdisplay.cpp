@@ -114,7 +114,7 @@ void ADSBDisplay::selectEntity(Entity* entit)
     platform = dynamic_cast<Platform*>(entit);
     if (!platform) {
         Console::error("Entity is not a Platform");
-        setWindowTitle("CSM Display (No Platform)");
+        setWindowTitle("ADSB Display (No Platform)");
         update();
         return;
     }
@@ -123,11 +123,11 @@ void ADSBDisplay::selectEntity(Entity* entit)
     entity = platform;
     sensor = nullptr;
     sensorlist.clear();
-    if (!entity->sensors || !entity->sensors->sensors) {
-        update();
-        return;
-    }
-    for (auto const& pair :  *entity->sensors->sensors) {
+    // if (/*!entity->sensors ||*/ !entity->sensors.sensors) {
+    //     update();
+    //     return;
+    // }
+    for (auto const& pair :  entity->sensors.sensors) {
         Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::ADSB) {
             ADSBSensor* sono = dynamic_cast<ADSBSensor*>(s);
@@ -155,7 +155,7 @@ void ADSBDisplay::RemoveEntity(QString ID)
         sensor = nullptr;
         sensorlist.clear();
         // Reset window title
-        setWindowTitle("CSM Display");
+        setWindowTitle("ADSB Display");
         // Reset hover state
         hoveredTargetIndex = -1;
     }
@@ -279,10 +279,10 @@ void ADSBDisplay::paintEvent(QPaintEvent * /*event*/)
 
                 // Dynamic Data
                 QString altText   = QString("ALT: %1 ft").arg(t.altitude);
-                QString gsText    = QString("GS: %1 kt").arg(t.entity->dynamicModel->GroundVelocity);
+                QString gsText    = QString("GS: %1 kt").arg(t.entity->dynamicModel.GroundVelocity);
                 QString trackText = QString("TRK: %1°").arg(t.track);
                 QString climbText = QString("ROC: %1 fpm").arg(t.climb_rate);
-                QString posText   = QString("Pos: %1, %2").arg(t.entity->transform->getLatitude(), 0, 'f', 4).arg(t.entity->transform->getLongitude(), 0, 'f', 4);
+                QString posText   = QString("Pos: %1, %2").arg(t.entity->transform.getLatitude(), 0, 'f', 4).arg(t.entity->transform.getLongitude(), 0, 'f', 4);
 
                 // Status Data
                 QString squawkText = QString("Squawk: %1").arg(QString::fromStdString(t.squawk));
@@ -323,8 +323,8 @@ void ADSBDisplay::paintEvent(QPaintEvent * /*event*/)
         QFont font = p.font();
         font.setPointSize(10);
         p.setFont(font);
-        QRect textRect = p.fontMetrics().boundingRect("No CSM Targets Detected");
-        p.drawText(center.x() - textRect.width()/2, center.y(), "No CSM Targets Detected");
+        QRect textRect = p.fontMetrics().boundingRect("No ADSB Targets Detected");
+        p.drawText(center.x() - textRect.width()/2, center.y(), "No ADSB Targets Detected");
     }
 
     qint64 elapsedMs = timer.elapsed();
@@ -465,9 +465,8 @@ void ADSBDisplay::drawTargetAndPath(QPainter &painter)
 
     if (entity && sensor) {
         // Get entity angle
-        ang = entity->transform->toEulerAngles().y();
+        ang = entity->transform.toEulerAngles().y();
         painter.setBrush(Qt::red);
-
         for (const Target &target : sensor->csmtargets) {
             // Calculate target position
             int panelhigh = outerRadius;
@@ -478,10 +477,8 @@ void ADSBDisplay::drawTargetAndPath(QPainter &painter)
             double targetRadius = radius;
             int targetX = centerX + static_cast<int>(targetRadius * cos(targetAngle));
             int targetY = centerY - static_cast<int>(targetRadius * sin(targetAngle));
-
             // Draw target point
             painter.drawEllipse(targetX - 3, targetY - 3, 6, 6);
-
             // Draw target labels
             painter.setPen(QPen(Qt::green, 1));
             painter.drawText(targetX - 20, targetY - 10, QString("%1").arg(angle));

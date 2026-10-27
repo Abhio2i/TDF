@@ -57,11 +57,42 @@ struct DISIncomingIFF {
     bool        mode4Active = false;
     uint8_t     forceID     = 1;
 };
+// =============================================================================
+// DISIncomingAcknowledge
+// Received when a remote machine acknowledges our CreateEntity,
+// RemoveEntity, StartResume, or StopFreeze PDU.
+// Future: matched against pending request tracking map.
+// =============================================================================
+struct DISIncomingAcknowledge {
+    std::string originatingEntityID; // engine ID of sender (empty if unknown)
+    uint16_t    acknowledgeFlag = 0; // DISAcknowledgeFlag::* — which PDU was ACKd
+    uint16_t    responseFlag    = 0; // DISResponseFlag::AbleToComply etc
+    uint32_t    requestID       = 0; // matches our original request ID
+};
+
+// =============================================================================
+// DISIncomingTransferOwnership
+// Received when another machine transfers an entity's ownership to us.
+// TransferOwnershipHandler sends Acknowledge automatically before emitting this.
+// DISNetworkPlugin takes ownership on the main thread in applyTransferOwnershipEvents().
+// =============================================================================
+struct DISIncomingTransferOwnership {
+    std::string transferEntityID;       // engine ID (resolved from mapper)
+    uint16_t    transferEntitySite   = 0;
+    uint16_t    transferEntityApp    = 0;
+    uint16_t    transferEntityEntity = 0;
+    uint16_t    originSite           = 0;
+    uint16_t    originApp            = 0;
+    uint16_t    originEntity         = 0;
+    uint8_t     transferType         = 0;
+    uint32_t    requestID            = 0;
+};
 #include <QMetaType>
 Q_DECLARE_METATYPE(DISIncomingTransform)
 Q_DECLARE_METATYPE(DISIncomingFire)
 Q_DECLARE_METATYPE(DISIncomingDetonation)
 Q_DECLARE_METATYPE(DISIncomingExercise)
 Q_DECLARE_METATYPE(DISIncomingIFF)
-
+Q_DECLARE_METATYPE(DISIncomingAcknowledge)
+Q_DECLARE_METATYPE(DISIncomingTransferOwnership)
 #endif // DISINCOMINGDATA_H

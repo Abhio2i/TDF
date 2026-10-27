@@ -84,16 +84,26 @@
 #include <QTabWidget>                             // For tabbed interface
 #include <QStatusBar>                              // For status bar display
 #include <GUI/Menubars/profileinfodialog.h>
-#include <GUI/Tacticaldisplay/Gis/layerpanel.h>
+#include <GUI/Tacticaldisplay/Layer/layerpanel.h>
 #include "GUI/Editors/customresizableoverlaydock.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h" //by amjad
 #include "core/Hierarchy/Components/transform.h"
 #include "core/Hierarchy/EntityProfiles/platform.h"
 #include <QElapsedTimer>
 #include "GUI/Panel/aesaradardisplay.h"
+#include <GIS_API/frontend/widgets/map_widget.h>
+#include <GUI/Canvas/map_with_canvas.h>
+#include "GUI/Tacticaldisplay/entityinfodialog.h"
+
 
 // %%% Class Definition %%%
 /* Main window class for the runtime editor */
+class ApiMapToolbar;
+class MapWidget;
+class ApiLayerPanel;
+class AutoScriptManager; //////////
+class TcpAutoScriptSource; ////////////
+class AutoScriptController; ////////////////
 class RuntimeEditor : public QMainWindow
 {
     Q_OBJECT
@@ -133,13 +143,17 @@ public:
     void markUnsavedChanges();
     ConsoleView *consoleView;
     PluginManager* pluginManager = nullptr;
+    QString m_loadedDatabaseFile;
+    MapWithCanvas* m_apiMapWidget = nullptr;  // by amjad
+
+    AutoScriptController* autoScriptController = nullptr;  /////////////////
 
 public slots:
     void showProfileInfo();
     void showApplicationDialog();
     void createDuplicateSensorsWindow();
     void filterSensorTabsByCategory(const QString &category);
-
+    void setLoadedDatabaseFile(const QString& dbFilePath);
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
@@ -164,15 +178,14 @@ private slots:
     void onDockVisibilityChanged(bool visible);
     void resetLayout();
     void showPanelContextMenu(const QPoint &pos);
-    void filterSensorTabsForEntity(const QString &entityId, const QString &category);
+    // void filterSensorTabsForEntity(const QString &entityId, const QString &category);
     void setCanvas(CanvasWidget* canvas);
 
-
 signals:
-    // Signal unsaved changes state
     void unsavedChangesChanged(bool hasChanges);
     void Activated();
-
+    void runtimeFileLoaded(const QString& filePath);
+    void pluginMenuActionRequested(const QString& menuName, QAction* action, const QString& pluginId);
 
 private:
     // %%% UI Setup Methods %%%
@@ -190,7 +203,7 @@ private:
     CustomResizableOverlayDock *layerDock;
     void openLibraryDialog();
     void openTestScriptDialog();
-
+    void openSensorsDialog();
     // Configure menu bar
     void setupMenuBar();
     // Configure toolbars
@@ -199,7 +212,6 @@ private:
     void setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures);
     // Connect toolbar signals
     void setupToolBarConnections();
-
     // %%% UI Components %%%
     Inspector *inspector;
     Scene3DWidget *scene3dwidget;
@@ -207,7 +219,6 @@ private:
     HierarchyConnector* m_hierarchyConnector;
     QVariantMap copydata;
     Hierarchy* copyhirarchy = nullptr;
-
     NetworkToolbar *networkToolBar;
     LayerPanel *layerPanel = nullptr;
     MenuBar *menuBar;
@@ -231,18 +242,28 @@ private:
     AISDisplay *aisDisplayUI;
     ADSBDisplay *adsbDisplayUI;
     SonoBuoyPanel * sonoBuoyDisplayUI;
-    SonarDisplay *sonarDisplayUI;  //  by amjad
+    SonarDisplay *sonarDisplayUI;
     LoggerDialog *loggerDialog;
     QDateTime recordingStartTime;
     QTimer *recordingTimer = nullptr;
     ScenarioConfig* m_scenarioConfig;
     bool m_canvasSelecting = false;
-    ActiveSonar   m_activeSonar; // by amjad
+    ActiveSonar   m_activeSonar;
     QElapsedTimer m_sonarTimer;
     Entity* m_selectedSonarEntity = nullptr;
     QString m_lastSelectedEntityId;
     QToolBar *rightToolBar = nullptr;
      bool m_loggerDialogPausedSim = false;
+    QString m_loadedRuntimeFile;
+    void updateTitleBar();
+    ApiLayerPanel* m_apiLayerPanel = nullptr;
+    CustomResizableOverlayDock* m_apiMapDock = nullptr;
+    ApiMapToolbar* m_apiMapToolbar = nullptr;
+    EntityInfoDialog* m_entityInfoDialog = nullptr;
+     void syncEntityActiveStatesFromHierarchy();
+    QPointer<QDialog> m_sensorsDialog;   // currently open Sensors dialog (agar hai)
+    void updateSensorsDialogTitle(const QString &title);   // helper
+
 
 private:
     qint64 pausedTimeMs = 0;

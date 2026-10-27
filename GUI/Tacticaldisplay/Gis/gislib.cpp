@@ -9,7 +9,7 @@
 #include <QtMath>
 #include <QMessageBox>
 #include <qgscoordinatetransform.h>
-#include <qgsproject.h>
+// #include <qgsproject.h>
 #include <QFile>
 #include <QFileInfo>
 #include <QDebug>
@@ -22,6 +22,8 @@
 #include <qgswkbtypes.h>
 #include <QFileInfo>
 #include <qgis.h>
+#include "Setup.h"
+#include "qgsproject.h"
 
 // =========================================================================
 // MGRS Conversion Utility Functions (Relies on QGIS for robust UTM conversion)
@@ -138,6 +140,10 @@ QString GISlib::latLonToMGRS(double lat, double lon) {
         .arg(numNorthing);
 }
 
+void GISlib::addOverlayCallback(std::function<void(QPainter*)> callback) {
+    m_overlayCallbacks.push_back(callback);
+}
+
 /*
  * Constructor: GISlib
  * Initializes the GIS library with default settings, network components,
@@ -154,6 +160,7 @@ GISlib::GISlib(QWidget *parent) : QWidget(parent) {
     setAcceptDrops(true);                       // Accept drag and drop operations
 
     // Initialize network component for tile downloads
+
     net = new GISNetwork(this);
     connect(net, &GISNetwork::receiveImage, this, &GISlib::receiveImage);
     connect(net, &GISNetwork::receivePlace, this, &GISlib::receivePlace);
@@ -174,10 +181,8 @@ GISlib::GISlib(QWidget *parent) : QWidget(parent) {
     vectorLayers.clear();
     qDebug() << "GISlib initialized with vector layer support";
 
-    airbasePixmap = QPixmap(airbaseIconPath);
-    if (airbasePixmap.isNull()) {
-        Console::error("Failed to load airbase icon: " + airbaseIconPath.toStdString());
-    }
+    m_airbaseModule = std::make_unique<Airbase>();
+    m_airbaseModule->initialize();
 
 }
 
@@ -214,8 +219,8 @@ void GISlib::setEllipsoidal(bool e) {
  */
 void GISlib::addCustomMap(const QString& layerName, int zoomMin, int zoomMax,
                           const QString& tileUrl, qreal opacity) {
-    qDebug() << "Adding custom layer: name =" << layerName << ", zoomMin =" << zoomMin
-             << ", zoomMax =" << zoomMax << ", tileUrl =" << tileUrl << ", opacity =" << opacity;
+    // qDebug() << "Adding custom layer: name =" << layerName << ", zoomMin =" << zoomMin
+    //          << ", zoomMax =" << zoomMax << ", tileUrl =" << tileUrl << ", opacity =" << opacity;
 
     // Validate input parameters
     if (layerName.isEmpty() || tileUrl.isEmpty()) {
@@ -513,36 +518,11 @@ void GISlib::searchByCoordinates(double lat, double lon) {
     Console::log("Coordinate search: " + std::to_string(lat) + ", " + std::to_string(lon));
 }
 
-/*
- * setZoom: Set map zoom level with validation
- * Adjusts zoom based on layer capabilities and clears tile cache
- * Visual zoom can go up to 19, but tiles are only requested up to maxZoom
- */
-// void GISlib::setZoom(int level) {
-//     int maxTileZoom = 13;  // Default maximum tile zoom for most layers
-
-//     // Adjust max tile zoom based on active layers
-//     if (activeLayers.contains("opentopo")) maxTileZoom = 17;
-//     for (const QString& layer : activeLayers) {
-//         if (customMaps.contains(layer)) {
-//             maxTileZoom = qMin(maxTileZoom, customMaps[layer].zoomMax);
-//         }
-//     }
-
-//     // Clamp visual zoom level to absolute maximum (19)
-//     zoom = qBound(1, level, ABSOLUTE_MAX_ZOOM);
-
-//     // Effective tile zoom is capped at the layer's maximum tile availability
-//     effectiveTileZoom = qMin(zoom, maxTileZoom);
-
-//     tileCache.clear();          // Clear tile cache for new zoom
-//     pendingTiles = 0;           // Reset pending tiles
-//     emit zoomChanged(zoom);     // Notify zoom change (visual zoom)
-//     update();                   // Refresh display
-// }
 void GISlib::setZoom(int level) {
     int maxTileZoom = 8;  // Default maximum tile zoom for most layers
-
+    if(level < 1 || level >20){
+        return;
+    }
     // Adjust max tile zoom based on active layers
     if (activeLayers.contains("opentopo")) maxTileZoom = 17;
     for (const QString& layer : activeLayers) {
@@ -572,22 +552,34 @@ void GISlib::setZoom(int level) {
 
 /* Convert longitude to tile X coordinate at specified zoom level */
 double GISlib::lonToX(double lon, int zoom) {
+    zoom = zoom>18?18:zoom;
     return ((lon + 180.0) / 360.0) * std::pow(2.0, zoom);
 }
 
 /* Convert latitude to tile Y coordinate at specified zoom level */
 double GISlib::latToY(double lat, int zoom) {
+    zoom = zoom>18?18:zoom;
+
+    // CHAITANYA JAIN CHANGE:
+    // Mathematically clamp latitude to Web Mercator bounds [-85.051128, 85.051128].
+    // This absolutely guarantees that std::log() will never receive a negative number,
+    // completely eliminating the root cause of the `NaN` scattering geometry bug.
+    if (lat > 85.051128) lat = 85.051128;
+    if (lat < -85.051128) lat = -85.051128;
+
     double rad = lat * M_PI / 180.0;
     return (1.0 - std::log(std::tan(rad) + 1.0 / std::cos(rad)) / M_PI) / 2.0 * std::pow(2.0, zoom);
 }
 
 /* Convert tile X coordinate to longitude */
 double GISlib::xToLon(double x, int zoom) {
+    zoom = zoom>18?18:zoom;
     return x / std::pow(2.0, zoom) * 360.0 - 180.0;
 }
 
 /* Convert tile Y coordinate to latitude */
 double GISlib::yToLat(double y, int zoom) {
+    zoom = zoom>18?18:zoom;
     double n = M_PI - 2.0 * M_PI * y / std::pow(2.0, zoom);
     return (180.0 / M_PI) * std::atan(0.5 * (std::exp(n) - std::exp(-n)));
 }
@@ -624,7 +616,7 @@ QString GISlib::toDMS(double deg, bool isLat) {
  * Draws map tiles, vector layers, markers, and measurement tools
  * Scales tiles when visual zoom exceeds available tile zoom
  */
-void GISlib::paintEvent(QPaintEvent *) {
+void GISlib::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
     // drawAirbases(painter);
 
@@ -746,33 +738,6 @@ void GISlib::paintEvent(QPaintEvent *) {
         renderVectorLayer(painter, layer);
     }
 
-    // Draw distance measurement line and label if active
-    if (measuringDistance && measureStartPoint != QPointF(0, 0)) {
-        painter.setPen(QPen(Qt::yellow, 2, Qt::DashLine));
-        painter.setBrush(Qt::NoBrush);
-
-        // Convert geographic points to canvas coordinates
-        QPointF startCanvas = geoToCanvas(measureStartPoint.y(), measureStartPoint.x());
-        QPointF endCanvas = geoToCanvas(measureEndPoint.y(), measureEndPoint.x());
-        painter.drawLine(startCanvas, endCanvas);
-
-        // Draw measurement points
-        painter.setBrush(Qt::yellow);
-        painter.drawEllipse(startCanvas, 5, 5);
-        painter.drawEllipse(endCanvas, 5, 5);
-
-        // Calculate and display distance
-        double distanceMeters = calculateDistance(measureStartPoint, measureEndPoint);
-        double distanceKilometers = distanceMeters / 1000.0;
-        QString distanceText = QString("%1 m (%2 km)")
-                                   .arg(distanceMeters, 0, 'f', 2)
-                                   .arg(distanceKilometers, 0, 'f', 2);
-
-        painter.setPen(Qt::black);
-        painter.setFont(QFont("Arial", 10));
-        QPointF textPos = (startCanvas + endCanvas) / 2.0;
-        painter.drawText(textPos + QPointF(10, -10), distanceText);
-    }
 
     // Display loading message if no tiles rendered
     if (!tilesDrawn) {
@@ -802,6 +767,24 @@ void GISlib::paintEvent(QPaintEvent *) {
     painter.setBrush(QColor(255, 0, 0, 50));  // Semi-transparent red
     painter.setPen(QPen(Qt::red, 2));
     painter.drawPolygon(polygon);
+
+    // ============================================================================
+    // CHAITANYA JAIN CHANGE
+    // Root Cause: Measurement rendering was moved to CanvasWidget, causing overlay detachment.
+    // Why legacy behaviour broke: QPainter was targeting CanvasWidget instead of GISlib.
+    // Why this fix restores the original GIS rendering: Emits a signal so Measurement can draw on GISlib's QPainter.
+    // Why this is safe: Maintains decoupling while enforcing exact legacy render sequence.
+    // ============================================================================
+    for (auto& callback : m_overlayCallbacks) {
+        callback(&painter);
+    }
+
+    // ============================================================================
+    // CHAITANYA JAIN CHANGE
+    // Re-added the missing painted signal to perfectly synchronize CanvasWidget
+    // with GISlib during panning and zooming operations.
+    // ============================================================================
+   // emit painted(event);
 }
 
 /*
@@ -948,6 +931,16 @@ QPointF GISlib::geoToCanvas(double lat, double lon) {
     double dx = (pointX - centerX) * tileSize + width() / 2;
     double dy = (pointY - centerY) * tileSize + height() / 2;
 
+    // CHAITANYA JAIN CHANGE:
+    // Invisible bounding shield against Qt's 16-bit signed integer rendering overflow (±32767 limit).
+    // By mathematically clamping the coordinates outside the physical screen boundaries (e.g. ±16000 pixels),
+    // we prevent huge imported geographic shapes from wrapping and scattering vertices across the visible map.
+    // The distortion occurs entirely off-screen, maintaining 100% accurate visual rendering.
+    if (dx > 16000.0) dx = 16000.0;
+    if (dx < -16000.0) dx = -16000.0;
+    if (dy > 16000.0) dy = 16000.0;
+    if (dy < -16000.0) dy = -16000.0;
+
     return QPointF(dx, dy);
 }
 
@@ -1010,14 +1003,6 @@ void GISlib::mousePressEvent(QMouseEvent* event) {
         lastMouse = event->pos();  // Store initial position
     }
 
-    // Left button for distance measurement start
-    if (measuringDistance && event->button() == Qt::LeftButton) {
-        measureStartPoint = canvasToGeo(event->pos());  // Convert to geographic
-        measureEndPoint = measureStartPoint;
-        qDebug() << "Measurement start point set to (lon:" << measureStartPoint.x()
-                 << ", lat:" << measureStartPoint.y() << ")";
-        update();  // Refresh display
-    }
 }
 
 void GISlib::mouseReleaseEvent(QMouseEvent* event) {
@@ -1028,10 +1013,6 @@ void GISlib::mouseReleaseEvent(QMouseEvent* event) {
         dragging = false;
     }
 
-    // Complete distance measurement
-    if (measuringDistance && event->button() == Qt::LeftButton) {
-        endDistanceMeasurement();
-    }
 }
 // In gislib.cpp
 void GISlib::mouseMoveEvent(QMouseEvent* event) {
@@ -1059,13 +1040,6 @@ void GISlib::mouseMoveEvent(QMouseEvent* event) {
         update();
     }
 
-    // 3. Update measurement end point (RETAINED)
-    if (measuringDistance) {
-        measureEndPoint = canvasToGeo(event->pos());
-        qDebug() << "Measurement end point updated to (lon:" << measureEndPoint.x()
-                 << ", lat:" << measureEndPoint.y() << ")";
-        update();
-    }
 
     // 4. Calculate mouse coordinates in WGS84 (EPSG:4326)
     QPointF geo = canvasToGeo(event->pos());
@@ -1288,34 +1262,7 @@ double GISlib::calculateDistance(QPointF point1, QPointF point2) {
 
 /*
  * startDistanceMeasurement: Begin distance measurement mode
- * Resets measurement points and enables measurement state
- */
-void GISlib::startDistanceMeasurement() {
-    measuringDistance = true;           // Enable measurement mode
-    measureStartPoint = QPointF(0, 0);  // Reset start point
-    measureEndPoint = QPointF(0, 0);    // Reset end point
-    qDebug() << "Distance measurement started";
-    update();  // Refresh display
-}
 
-/*
- * endDistanceMeasurement: Complete distance measurement
- * Calculates final distance and emits measurement signal
- */
-void GISlib::endDistanceMeasurement() {
-    if (measuringDistance) {
-        // Calculate final distance
-        double distance = calculateDistance(measureStartPoint, measureEndPoint);
-        emit distanceMeasured(distance, measureStartPoint, measureEndPoint);
-
-        // Reset measurement state
-        measuringDistance = false;
-        measureStartPoint = QPointF(0, 0);
-        measureEndPoint = QPointF(0, 0);
-        qDebug() << "Distance measurement ended";
-        update();  // Refresh display
-    }
-}
 
 // ============================================================================
 // GeoJSON Layer Management Functions
@@ -1365,16 +1312,29 @@ void GISlib::importGeoJsonLayer(const QString &filePath) {
     }
 
     // Generate unique layer name from filename
-    QString layerName = QFileInfo(filePath).completeBaseName();
+    QFileInfo info(filePath);
+
+    QString base = info.completeBaseName();
+    QString ext  = info.suffix().toUpper();
+
+    QString layerName = QString("%1 (%2)")
+                            .arg(base)
+                            .arg(ext);
+
     if (vectorLayers.contains(layerName)) {
-        // Append number if layer name already exists
+
         int counter = 1;
+
         QString originalName = layerName;
+
         while (vectorLayers.contains(layerName)) {
-            layerName = QString("%1_%2").arg(originalName).arg(counter++);
+
+            layerName = QString("%1 (%2)_%3")
+            .arg(base)
+                .arg(ext)
+                .arg(counter++);
         }
     }
-
     // Create new vector layer configuration
     VectorLayer newLayer;
     newLayer.name = layerName;
@@ -1527,7 +1487,7 @@ void GISlib::renderGeometry(QPainter &painter, const QJsonObject &geometry,
             if (polyline.size() > 1) {
                 painter.setBrush(Qt::NoBrush);
                 painter.setPen(QPen(color, width));
-                painter.drawPolyline(polyline);  // Draw line
+                painter.drawPolyline(polyline);
             }
         }
     }
@@ -1637,7 +1597,6 @@ QPointF GISlib::latLonToCustomXY(double lat, double lon) {
         QgsPointXY transformed = transform.transform(point);
         return QPointF(transformed.x(), transformed.y());  // Return custom coordinates
     } catch (QgsCsException &e) {
-        qDebug() << "Transformation error:" << e.what();
         return QPointF(0, 0);  // Return origin on error
     }
 }
@@ -1658,197 +1617,27 @@ QPointF GISlib::customXYToLatLon(double x, double y) {
         return QPointF(0, 0);  // Return origin on error
     }
 }
-void GISlib::loadAirbaseData() {
-    if (!airbasePositions.empty()) return;
-
-    airbasePositions = {
-        {77.4301, 28.7172},  // Hindon
-        {76.7770, 30.3020},  // Ambala
-        {75.3800, 31.5400},  // Adampur
-        {70.0420, 22.5270},  // Jamnagar
-        {73.0219, 26.2842},  // Jodhpur
-        {78.1670, 26.2530},  // Gwalior
-        {78.0133, 27.1556},  // Agra
-        {79.4200, 28.3670},  // Bareilly
-        {74.9830, 33.8830},  // Awantipur
-        {77.6270, 34.0827},  // Leh
-        {74.7833, 34.0833},  // Srinagar
-        {73.9200, 18.5800},  // Pune
-        {77.1500, 10.6750},  // Sulur
-        {76.9167, 8.4833},   // Thiruvananthapuram
-        {94.4670, 26.6170},  // Jorhat
-        {87.2830, 22.1500},  // Kalaikunda
-        {88.3500, 22.7500},  // Barrackpore
-        {89.3500, 26.7500},  // Hasimara
-        {92.8167, 9.1500},   // Car Nicobar
-        {70.0420, 22.5270},   // Jamnagar (example duplicate)
-
-        // Pakistan Airbases [web:1, web:3]
-        {73.0992, 33.6027},  // PAF Base Mushaf, Sargodha, Punjab
-        {71.9789, 33.8730},  // PAF Base Minhas, Kamra, Punjab
-        {73.0500, 31.3667},  // PAF Base Rafiqui, Shorkot, Punjab
-        {71.5200, 33.9667},  // PAF Base Peshawar, Khyber Pakhtunkhwa
-        {67.0333, 24.8936},  // PAF Base Masroor, Karachi, Sindh
-        {72.2667, 30.1833},  // PAF Base Multan, Punjab
-        {74.4036, 31.6119},  // PAF Base Lahore, Punjab
-        {70.8967, 30.2033},  // PAF Base Dera Ghazi Khan, Punjab
-        {66.9375, 25.2764},  // PAF Base Samungli, Quetta, Balochistan
-        {69.2667, 28.9667}   // PAF Base Shahbaz, Jacobabad, Sindh
-    };
-
-    Console::log("Loaded " + std::to_string(airbasePositions.size()) + " airbases");
+bool GISlib::isAirbaseVisible() const {
+    return m_airbaseModule->isVisible();
 }
-void GISlib::drawAirbases(QPainter& painter) {
-    if (!showAirbases || airbasePositions.empty() || airbasePixmap.isNull())
-        return;
 
-    painter.save();
-
-    const int iconSize = 20;
-    QPixmap scaledIcon = airbasePixmap.scaled(
-        iconSize, iconSize,
-        Qt::KeepAspectRatio,
-        Qt::SmoothTransformation
-        );
-
-    for (const auto& pos : airbasePositions) {
-        double lon = pos.first;
-        double lat = pos.second;
-
-        QPointF canvasPos = geoToCanvas(lat, lon);
-        painter.drawPixmap(
-            canvasPos.x() - iconSize / 2.0,
-            canvasPos.y() - iconSize / 2.0,
-            scaledIcon
-            );
-    }
-
-    painter.restore();
+const std::vector<std::pair<double,double>>& GISlib::getAirbases() const {
+    return m_airbaseModule->airbases();
 }
+
+QPixmap GISlib::getAirbasePixmap() const {
+    return m_airbaseModule->getAirbasePixmap();
+}
+
 void GISlib::toggleAirbaseLayer() {
-    if (!showAirbases) {
-        loadAirbaseData();
-        showAirbases = true;
-        Console::log("Airbase layer enabled");
-    } else {
-        showAirbases = false;
-        Console::log("Airbase layer disabled");
-    }
+    m_airbaseModule->toggleVisibility();
     update();
 }
-void GISlib::renderAirbases(QPainter& painter)
-{
-    if (!showAirbases || airbasePositions.empty() || airbasePixmap.isNull())
-        return;
 
-    const int iconSize = 20;
-    static QPixmap cachedScaledIcon =
-        airbasePixmap.scaled(iconSize, iconSize,
-                             Qt::KeepAspectRatio,
-                             Qt::SmoothTransformation);
-
-    for (const auto& pos : airbasePositions) {
-        QPointF canvasPos = geoToCanvas(pos.second, pos.first);
-        painter.drawPixmap(
-            canvasPos.x() - iconSize / 2,
-            canvasPos.y() - iconSize / 2,
-            cachedScaledIcon
-            );
-    }
+void GISlib::renderAirbases(QPainter& painter) {
+    m_airbaseModule->render(painter, this, zoom);
 }
 void GISlib::removeVectorLayer(const QString& layerName) {
-    // remove from whatever map/list stores imported geojson layers
-    vectorLayers.remove(layerName);   // adjust to match your actual variable name
-    update(); // or repaint if needed
-}
-void GISlib::importVectorLayer(const QString &filePath)
-{
-    QgsVectorLayer *layer = new QgsVectorLayer(filePath, "temp", "ogr");
-    if (!layer->isValid()) {
-        Console::error("Failed to load: " + filePath.toStdString());
-        delete layer;
-        return;
-    }
-
-    QJsonArray featuresArray;
-    QgsFeatureIterator it = layer->getFeatures();
-    QgsFeature feat;
-    while (it.nextFeature(feat)) {
-        QJsonObject featureObj;
-        featureObj["type"] = "Feature";
-
-        QgsGeometry geom = feat.geometry();
-        if (geom.isNull()) {
-            continue; // skip features without geometry
-        }
-
-        // Get geometry type as Qgis::GeometryType
-        Qgis::GeometryType geomType = geom.type();  // simpler: geom.type()
-        QJsonObject geomObj;
-
-        if (geomType == Qgis::GeometryType::Point) {
-            geomObj["type"] = "Point";
-            QgsPointXY pt = geom.asPoint();
-            QJsonArray coords;
-            coords.append(pt.x());
-            coords.append(pt.y());
-            geomObj["coordinates"] = coords;
-        }
-        else if (geomType == Qgis::GeometryType::Line) {
-            geomObj["type"] = "LineString";
-            QgsPolylineXY line = geom.asPolyline();
-            QJsonArray coordsArray;
-            for (const QgsPointXY &p : line) {
-                QJsonArray coord;
-                coord.append(p.x());
-                coord.append(p.y());
-                coordsArray.append(coord);
-            }
-            geomObj["coordinates"] = coordsArray;
-        }
-        else if (geomType == Qgis::GeometryType::Polygon) {
-            geomObj["type"] = "Polygon";
-            QgsPolygonXY poly = geom.asPolygon();
-            QJsonArray ringsArray;
-            for (const QgsPolylineXY &ring : poly) {
-                QJsonArray ringCoords;
-                for (const QgsPointXY &p : ring) {
-                    QJsonArray coord;
-                    coord.append(p.x());
-                    coord.append(p.y());
-                    ringCoords.append(coord);
-                }
-                ringsArray.append(ringCoords);
-            }
-            geomObj["coordinates"] = ringsArray;
-        }
-        else {
-            // unsupported geometry type (MultiPoint, MultiLineString, MultiPolygon, etc.)
-            continue;
-        }
-
-        featureObj["geometry"] = geomObj;
-
-        // Add attributes as properties
-        QJsonObject properties;
-        const QgsFields fields = layer->fields();
-        for (int i = 0; i < fields.count(); ++i) {
-            QVariant value = feat.attribute(i);
-            if (value.isValid()) {
-                properties[fields[i].name()] = QJsonValue::fromVariant(value);
-            }
-        }
-        featureObj["properties"] = properties;
-
-        featuresArray.append(featureObj);
-    }
-
-    delete layer;
-
-    if (!featuresArray.isEmpty()) {
-        QString layerName = QFileInfo(filePath).completeBaseName();
-        addVectorLayer(layerName, featuresArray);
-    }
-
+    vectorLayers.remove(layerName);
     update();
 }

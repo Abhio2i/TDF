@@ -57,8 +57,23 @@
 #include <QProgressDialog>                        // For progress indication
 #include <QShowEvent>
 #include <core/Config/scenarioconfig.h>
-#include "GUI/Tacticaldisplay/Gis/layerpanel.h"
+#include <GUI/Tacticaldisplay/Layer/layerpanel.h>
 #include <GUI/Editors/customresizableoverlaydock.h>
+#include <GUI/Canvas/map_with_canvas.h>
+#include <GIS_API/frontend/toolbars/api_map_toolbar.h>
+#include "GUI/mainwindow.h"
+#include <GIS_API/frontend/panels/api_layer_panel.h>
+#include <GIS_API/frontend/widgets/map_widget.h>
+#include <GIS_API/backend/api/shape_api.h>
+#include "GUI/Testscript/testscriptdialog.h"  // by amjad
+#include "GUI/dialogwindowutils.h"
+#include "core/Hierarchy/ECS/Struct/Meta_Data_Component.h"
+#include "core/ScriptEngine/AutoScript/autoscriptmanager.h" ///////////
+#include "core/ScriptEngine/AutoScript/tcpautoscriptsource.h"//////////////////
+#include "core/ScriptEngine/AutoScript/autoscriptcontroller.h"  ////////////////////////
+#include <QHostAddress>//////////////////
+
+
 // %%% String Utility Function %%%
 /* Capitalize the first letter of a string */
 static QString capitalizeFirstLetter(const QString &str)
@@ -86,6 +101,7 @@ static QJsonObject filterEntityJsonForInspector(const QJsonObject &entityJson)
 
 // %%% Constructor %%%
 /* Initialize scenario editor */
+
 ScenarioEditor::ScenarioEditor(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -96,21 +112,158 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
     setupToolBars();
     // Initialize scenario components
     Scenario *scenario = new Scenario();
+
+    scriptengine = scenario->scriptengine;
     hierarchy = scenario->hierarchy;
+
+    // connect ScriptEngine GIS to Scenario Editor map
+    if (scriptengine && m_apiMapWidget && m_apiMapWidget->map()) {
+        scriptengine->setMapWidget(m_apiMapWidget->map());
+    }
+
+    if (m_apiMapWidget && hierarchy) {
+        m_apiMapWidget->staticCanvas()->setWorld(&hierarchy->world);
+        m_apiMapWidget->dynamicCanvas()->setWorld(&hierarchy->world);
+        m_apiMapWidget->editorCanvas()->setWorld(&hierarchy->world);
+        m_apiMapWidget->editorCanvas()->setHierarchy(hierarchy);
+    }
+
     SceneRenderer *renderer = scenario->scenerenderer;
     console = scenario->console;
-    scriptengine = scenario->scriptengine;
-    library = scenario->Library;
+    Hierarchy* library = nullptr;
+    if (MainWindow* mw = MainWindow::instance())
+        library = mw->getDatabaseHierarchy();
+    else
+        library = nullptr;
     lastSavedFilePath = "";
-    // Setup script engine
-    scenario->scriptengine->setHierarchy(hierarchy, treeView, renderer);
-    connect(textScriptView, &TextScriptWidget::runScriptstring,
-            scriptengine, &ScriptEngine::loadAndCompileScript);
+
     connect(textScriptView, &TextScriptWidget::runScriptFile,
             this, &ScenarioEditor::onRunScriptFileRequested);
     HierarchyConnector::instance()->setHierarchy(hierarchy);
     HierarchyConnector::instance()->setLibrary(library);
     HierarchyConnector::instance()->setLibTreeView(libTreeView);
+    m_apiMapWidget->editorCanvas()->setHierarchy(hierarchy);
+
+    // ===== AutoScript (remote script execution over LAN) ===== by amjad ===============
+    autoScriptController = new AutoScriptController(scriptengine, this);
+
+    QToolBar* autoScriptBar = new QToolBar(tr("AutoScript"), this);
+    autoScriptBar->setObjectName(QStringLiteral("AutoScriptToolbar"));
+    autoScriptBar->setMovable(true);
+    addToolBar(Qt::TopToolBarArea, autoScriptBar);
+
+    QAction* act = autoScriptBar->addAction(tr("AutoScript"));
+    act->setCheckable(true);
+    act->setObjectName(QStringLiteral("autoScriptToggleAction"));
+    autoScriptController->attachToggleAction(act);
+
+    QLabel* lbl = new QLabel(autoScriptBar);
+    lbl->setText(autoScriptController->statusText());
+    lbl->setStyleSheet(
+        QStringLiteral("QLabel { color: #C42B1C; font-weight: bold; "
+                       "font-size: 11px; padding: 0 8px; }"));
+    autoScriptBar->addWidget(lbl);
+
+    connect(autoScriptController, &AutoScriptController::statusChanged,
+            lbl, [lbl](const QString& t) {
+                lbl->setText(t);
+                const bool on = t.startsWith(QLatin1String("AutoScript: ON"));
+                lbl->setStyleSheet(on
+                                       ? QStringLiteral(
+                                             "QLabel { color: #00C853; font-weight: bold; "
+                                             "font-size: 11px; padding: 0 8px; }")
+                                       : QStringLiteral(
+                                             "QLabel { color: #C42B1C; font-weight: bold; "
+                                             "font-size: 11px; padding: 0 8px; }"));
+            });
+    // ======================================
+
+    connect(m_apiMapWidget->editorCanvas(), &EditorCanvas::entitySelectedById,
+            treeView, &HierarchyTree::selectEntityById);
+    connect(m_apiMapWidget->editorCanvas(), &EditorCanvas::entityRenameRequested,
+            treeView, &HierarchyTree::renameEntityById);
+    connect(m_apiMapWidget->editorCanvas(), &EditorCanvas::entityRemoveRequested,
+            treeView, &HierarchyTree::removeEntityById);
+    connect(m_apiMapWidget->editorCanvas(), &EditorCanvas::entityLeaveFormationRequested,
+            this, [this](const QString& entityId) {
+                if (!hierarchy || entityId.isEmpty())
+                    return;
+
+                Formation* form = nullptr;
+                auto eit = hierarchy->Entities.find(entityId.toStdString());
+                if (eit != hierarchy->Entities.end()) {
+                    if (Platform* pl = dynamic_cast<Platform*>(eit->second))
+                        form = pl->dynamicModel.formation;
+                }
+                if (!form) {
+                    for (const auto& pair : hierarchy->Entities) {
+                        Formation* f = dynamic_cast<Formation*>(pair.second);
+                        if (f && f->isAllyEntity(entityId)) {
+                            form = f;
+                            break;
+                        }
+                    }
+                }
+                if (form)
+                    form->removeEntityFromFormation(entityId);
+            });
+    connect(treeView, &HierarchyTree::itemsSelected, this, [=](QList<QVariantMap> dataList) {
+        QStringList entityIds;
+        for (const QVariantMap& data : dataList) {
+            QString type;
+            if (data["type"].type() == QVariant::Map) {
+                QVariantMap typeData = data["type"].toMap();
+                if (typeData.contains("type") && typeData["type"].toString() == "option")
+                    type = "profile";
+            } else {
+                type = data["type"].toString();
+            }
+            if (type == "entity")
+                entityIds.append(data["ID"].toString());
+        }
+        if (!m_apiMapWidget || !m_apiMapWidget->editorCanvas())
+            return;
+        if (entityIds.isEmpty())
+            m_apiMapWidget->editorCanvas()->clearSelection();
+        else if (entityIds.size() == 1)
+            m_apiMapWidget->editorCanvas()->selectEntityById(entityIds.first());
+        else
+            m_apiMapWidget->editorCanvas()->selectEntitiesById(entityIds);
+    });
+    connect(designToolBar, &DesignToolBar::selectionModeChanged,
+            this, [this](bool withGis) {
+                if (!m_apiMapWidget)
+                    return;
+                if (m_apiMapWidget->editorCanvas()) {
+                    m_apiMapWidget->editorCanvas()->setIncludeGisInSelection(withGis);
+                }
+                if (MapWidget* map = m_apiMapWidget->map()) {
+                    map->setGisInteractionEnabled(false);
+                }
+                if (m_apiMapToolbar) {
+                    m_apiMapToolbar->setGisInteractionChecked(false);
+                }
+            });
+    connect(designToolBar, &DesignToolBar::dataSyncTriggered,
+            this, [this, library]() {
+                for(const auto&pair : library->Platforms){
+                    if(pair.second){
+                        QJsonObject obj = pair.second->toJson();
+                        for(const auto&pair2 : this->hierarchy->Platforms){
+                            if(pair2.second && pair2.second->ReferenceID == pair.second->ID){
+                                pair2.second->SyncByJson(obj);
+                            }
+                        }
+                    }
+                }
+            });
+    connect(m_apiMapWidget->editorCanvas(), &EditorCanvas::selectionModeCleared,
+            designToolBar, &DesignToolBar::clearSelectionModeUI);
+    connect(m_apiMapWidget->editorCanvas(), &EditorCanvas::entityDoubleClicked,
+            this, [this](const QString& hierarchyId) {
+                if (tacticalDisplay && tacticalDisplay->canvas)
+                    tacticalDisplay->canvas->showEntityInfo(hierarchyId);
+            });
     connect(RecentProjectsManager::instance(), &RecentProjectsManager::projectSelected,
             this, [=](const QString& filePath, RecentProjectsManager::EditorType type) {
                 if (type == RecentProjectsManager::ScenarioEditor) {
@@ -137,19 +290,13 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
             consoleView->appendText(QString::fromStdString(warning));
         }
     });
-
     connect(console, &Console::debugUpdate, this, [=](std::string debug) {
         if (consoleView) {
             consoleView->appendDebug(QString::fromStdString(debug));
             consoleView->appendText(QString::fromStdString(debug));
         }
     });
-
-    // Setup tactical display and script engine connections
     if (tacticalDisplay && tacticalDisplay->canvas && tacticalDisplay->mapWidget) {
-        scriptengine->setCanvas(tacticalDisplay->canvas);
-        scriptengine->setGIS(tacticalDisplay->mapWidget);
-        // Connect trajectory signals
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated,
                 inspector, [=](QString entityId, QJsonArray waypoints) {
                     if (inspector->getName() == "trajectory" &&
@@ -157,7 +304,6 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
                         inspector->updateTrajectory(entityId, waypoints);
                     }
                 });
-
         connect(tacticalDisplay->canvas, &CanvasWidget::trajectoryUpdated,
                 this, [=](QString entityId, QJsonArray /*waypoints*/) {
                     auto it = tacticalDisplay->canvas->Meshes.find(entityId.toStdString());
@@ -169,25 +315,31 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
                     } else {
                     }
                 });
-
         connect(inspector, &Inspector::trajectoryWaypointsChanged,
                 tacticalDisplay->canvas, &CanvasWidget::updateWaypointsFromInspector);
-
         connect(inspector, &Inspector::waypointSelected,
                 tacticalDisplay->canvas, [=](const QString& entityId, int wpIndex) {
                     tacticalDisplay->canvas->onWaypointSelectedFromInspector(wpIndex);
                 });
     }
-    // Connect renderer signals
-    connect(renderer, &SceneRenderer::addMesh, tacticalDisplay, &TacticalDisplay::addMesh);
-    connect(hierarchy, &Hierarchy::entityRemoved, tacticalDisplay, &TacticalDisplay::removeMesh);
-    if (tacticalDisplay && tacticalDisplay->canvas) {
-        connect(renderer, &SceneRenderer::Render,
-                tacticalDisplay->canvas, &CanvasWidget::Render);
-        connect(renderer, &SceneRenderer::Render,
-                tacticalDisplay->scene3dwidget, &Scene3DWidget::updateEntities);
-    }
+    if (m_apiMapWidget && m_apiMapWidget->editorCanvas()) {
+        connect(inspector, &Inspector::waypointSelected,
+                m_apiMapWidget->editorCanvas(),
+                [=](const QString& entityId, int wpIndex) {
+                    m_apiMapWidget->editorCanvas()->onWaypointSelectedFromInspector(entityId, wpIndex);
+                });
 
+    }
+    // Connect renderer signals
+    // connect(renderer, &SceneRenderer::addMesh, tacticalDisplay, &TacticalDisplay::addMesh);
+    // connect(hierarchy, &Hierarchy::entityRemoved, tacticalDisplay, &TacticalDisplay::removeMesh);
+    // connect(renderer, &SceneRenderer::removeMesh, tacticalDisplay, &TacticalDisplay::removeMesh);
+    if (tacticalDisplay && tacticalDisplay->canvas) {
+        // connect(renderer, &SceneRenderer::Render,
+        //         tacticalDisplay->canvas, &CanvasWidget::Render);
+        // connect(renderer, &SceneRenderer::Render,
+        //         tacticalDisplay->scene3dwidget, &Scene3DWidget::updateEntities);
+    }
     // Connect inspector value changes
     connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
     connect(inspector, &Inspector::valueChanged, this, [=]{
@@ -206,20 +358,16 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
                                     entityJson);
                 });
             });
-    // Configure hierarchy connector signals
-    HierarchyConnector::instance()->connectSignals(hierarchy,library, treeView,
-                                                   tacticalDisplay, inspector);
-    HierarchyConnector::instance()->connectLibrarySignals(library, libTreeView);
+    HierarchyConnector::instance()->connectSignals(hierarchy, library, treeView, tacticalDisplay, inspector, m_apiMapWidget);
+    if (library)
+        HierarchyConnector::instance()->connectLibrarySignals(library, libTreeView);
     HierarchyConnector::instance()->initializeDummyData(hierarchy);
-    HierarchyConnector::instance()->initializeLibraryData(library);
-    HierarchyConnector::instance()->setupFileOperations(this, hierarchy, tacticalDisplay);
-    // Connect canvas selection signals
+
     if (tacticalDisplay && tacticalDisplay->canvas) {
         connect(tacticalDisplay->canvas, &CanvasWidget::selectEntitybyCursor,
                 treeView, &HierarchyTree::selectEntityById);
         connect(tacticalDisplay->canvas, &CanvasWidget::selectEntitybyCursor,
                 this, [=](const QString& entityId) {
-                    // if (!hierarchy->Entities) return;
                     auto it = hierarchy->Entities.find(entityId.toStdString());
                     if (it == hierarchy->Entities.end()) return;
                     Entity* entity = it->second;
@@ -241,8 +389,54 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
                     }
                 });
     }
-
-    // Connect tree view item selection
+    connect(m_apiMapWidget->editorCanvas(), &EditorCanvas::entitySelectedById,
+            this, [this](const QString& entityId) {
+                if (!hierarchy || entityId.isEmpty())
+                    return;
+                auto it = hierarchy->Entities.find(entityId.toStdString());
+                if (it == hierarchy->Entities.end() || !it->second)
+                    return;
+                Entity* entity = it->second;
+                QString entityName  = QString::fromStdString(entity->Name);
+                QString displayName = capitalizeFirstLetter(entityName);
+                if (inspectorDock && !inspectorDock->isLocked()) {
+                    for (Inspector* insp : inspectors) {
+                        if (!insp) continue;
+                        QJsonObject entityJson = filterEntityJsonForInspector(entity->toJson());
+                        insp->init(entityId, displayName + "_self", entityJson);
+                    }
+                }
+                if (inspectorDock && !inspectorDock->isVisible()) {
+                    if (libraryDock)    libraryDock->hide();
+                    if (textScriptDock) textScriptDock->hide();
+                    inspectorDock->show();
+                    inspectorDock->raise();
+                }
+            });
+    connect(m_apiMapWidget->map(), &MapWidget::gisInteractionEnabledChanged,
+            this, [this](bool enabled) {
+                if (designToolBar)
+    designToolBar->setEnabled(!enabled);
+                if (m_apiMapToolbar) {
+                    if (QAction* gisAct = m_apiMapToolbar->gisInteractionAction()) {
+                        gisAct->setVisible(true);
+                        gisAct->setEnabled(true);
+                        gisAct->setChecked(enabled);
+                    }
+                }
+                if (QToolBar* gisBar = findChild<QToolBar*>(QStringLiteral("GisToggleToolbar")))
+                    gisBar->setVisible(true);
+                if (!enabled && m_apiMapWidget) {
+                    if (m_apiMapWidget->editorCanvas())
+                        m_apiMapWidget->editorCanvas()->clearSelection();
+                    if (MapWidget* map = m_apiMapWidget->map())
+                        map->selectShape(QString());
+                    if (m_apiLayerPanel)
+                        m_apiLayerPanel->selectShape(QString());
+                    if (designToolBar)
+                        designToolBar->clearSelectionModeUI();
+                }
+            });
     connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
         QString type;
         if (data["type"].type() == QVariant::Map) {
@@ -253,54 +447,50 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
         } else {
             type = data["type"].toString();
         }
-
-        // ===== FORMATION MULTI-SELECT LOGIC =====
         if (type == "entity") {
         }
         QString name = data["name"].toString();
         QString ID = data["parentId"].toString();
         QString displayName = capitalizeFirstLetter(name);
         if (!inspectorDock->isLocked()) {
-        for (Inspector* inspector : inspectors) {
-            if (type == "subcomponent") {
-                QJsonObject componentData = (hierarchy->Components)[data["parentId"].toString()
-                                                                         .toStdString()]->getsubComponentData(data["ID"].toString()
-                                                                          .toStdString());
-                if (!componentData.isEmpty()) {
-                    inspector->init(ID, displayName + "_sub", componentData);
+            for (Inspector* inspector : inspectors) {
+                if (type == "subcomponent") {
+                    QJsonObject componentData = (hierarchy->Components)[data["parentId"].toString()
+                                                                            .toStdString()]->getsubComponentData(data["ID"].toString()
+                                                                              .toStdString());
+                    if (!componentData.isEmpty()) {
+                        inspector->init(ID, displayName + "_sub", componentData);
+                    }
+                } else if (type == "component") {
+                    QJsonObject componentData = hierarchy->getComponentData(ID, name);
+                    if (!componentData.isEmpty()) {
+                        inspector->init(ID, displayName, componentData);
+                    }
+                } else if (type == "profile") {
+                    inspector->init(ID, displayName + "_self",
+                                    (hierarchy->ProfileCategories)[data["ID"].toString()
+                                                                       .toStdString()]->toJson());
+                } else if (type == "folder") {
+                    inspector->init(ID, displayName + "_self",
+                                    (hierarchy->Folders)[data["ID"].toString()
+                                                             .toStdString()]->toJson());
+                } else if (type == "entity") {
+                    QJsonObject entityJson = filterEntityJsonForInspector(
+                        (hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson()
+                        );
+                    inspector->init(data["ID"].toString(), displayName + "_self", entityJson);
+                } else {
+                    inspector->init(ID, displayName, QJsonObject());
                 }
-            } else if (type == "component") {
-                QJsonObject componentData = hierarchy->getComponentData(ID, name);
-                if (!componentData.isEmpty()) {
-                    inspector->init(ID, displayName, componentData);
-                }
-            } else if (type == "profile") {
-                inspector->init(ID, displayName + "_self",
-                                (hierarchy->ProfileCategories)[data["ID"].toString()
-                                                                   .toStdString()]->toJson());
-            } else if (type == "folder") {
-                inspector->init(ID, displayName + "_self",
-                                (hierarchy->Folders)[data["ID"].toString()
-                                                          .toStdString()]->toJson());
-            } else if (type == "entity") {
-                QJsonObject entityJson = filterEntityJsonForInspector(
-                    (hierarchy->Entities)[data["ID"].toString().toStdString()]->toJson()
-                    );
-                inspector->init(data["ID"].toString(), displayName + "_self", entityJson);
-            } else {
-                inspector->init(ID, displayName, QJsonObject());
             }
         }
-}
         if (!inspectorDock->isVisible()) {
-            // Hide other right panel docks
             if (libraryDock && libraryDock->isVisible()) {
                 libraryDock->hide();
             }
             if (textScriptDock && textScriptDock->isVisible()) {
                 textScriptDock->hide();
             }
-            // Show inspector
             addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
             splitDockWidget(sidebarDock, inspectorDock, Qt::Vertical);
             inspectorDock->show();
@@ -358,7 +548,6 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
                 if (tacticalDisplay && tacticalDisplay->canvas)
                     tacticalDisplay->canvas->selectMultipleEntities(entityIds);
             });
-    // ===== AUTO-CENTER MAP ON ENTITY SELECTION =====
     connect(treeView, &HierarchyTree::itemSelected, this, [=](QVariantMap data) {
         QString type;
         if (data["type"].type() == QVariant::Map) {
@@ -369,34 +558,43 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
         } else {
             type = data["type"].toString();
         }
-        if (type == "entity" && tacticalDisplay && tacticalDisplay->canvas) {
-            QString entityId = data["ID"].toString();
-            tacticalDisplay->canvas->centerOnEntity(entityId, false);
+        if (type == "entity") {
+            const QString entityId = data["ID"].toString();
+                      if (m_apiMapWidget)
+                m_apiMapWidget->centerOnEntity(entityId, false);
         }
     });
     connect(treeView, &HierarchyTree::itemsSelected, this, [=](QList<QVariantMap> dataList) {
-        QList<QString> entityIds;
+        QStringList entityIds;
         for (const QVariantMap& data : dataList) {
             QString type;
             if (data["type"].type() == QVariant::Map) {
                 QVariantMap typeData = data["type"].toMap();
-                if (typeData.contains("type") && typeData["type"].toString() == "option") {
+                if (typeData.contains("type") && typeData["type"].toString() == "option")
                     type = "profile";
-                }
             } else {
                 type = data["type"].toString();
             }
             if (type == "entity") {
-                entityIds.append(data["ID"].toString());
+                const QString id = data["ID"].toString();
+                if (!id.isEmpty() && !entityIds.contains(id))
+                    entityIds.append(id);
+            } else if (type == "component" || type == "subcomponent") {
+                QString parentId = data.value("entityID").toString();
+                if (parentId.isEmpty())
+                    parentId = data.value("parentId").toString();
+                if (!parentId.isEmpty() && !entityIds.contains(parentId))
+                    entityIds.append(parentId);
             }
         }
-        if (tacticalDisplay && tacticalDisplay->canvas) {
-            if (entityIds.isEmpty()) {
-                tacticalDisplay->canvas->clearSelection();
-            } else {
-                tacticalDisplay->canvas->selectMultipleEntities(entityIds);
-            }
-        }
+        if (!m_apiMapWidget || !m_apiMapWidget->editorCanvas())
+            return;
+        if (entityIds.isEmpty())
+            m_apiMapWidget->editorCanvas()->clearSelection();
+        else if (entityIds.size() == 1)
+            m_apiMapWidget->editorCanvas()->selectEntityById(entityIds.first());
+        else
+            m_apiMapWidget->editorCanvas()->selectEntitiesById(entityIds);
     });
     // Connect inspector tab signals
     connect(inspector, &Inspector::addTabRequested, this, &ScenarioEditor::addInspectorTab);
@@ -422,7 +620,9 @@ ScenarioEditor::ScenarioEditor(QWidget *parent)
 void ScenarioEditor::setupEnhancedDockWidgets()
 {
     tacticalDisplay = new TacticalDisplay(this);
-    setCentralWidget(tacticalDisplay);
+    tacticalDisplay->hide();
+    m_apiMapWidget = new MapWithCanvas(this);
+    setCentralWidget(m_apiMapWidget);
     this->setStyleSheet("QMainWindow { background-color: #0F2636; }");
     auto setupOverlay = [this](CustomResizableOverlayDock* &dock, QWidget* content, const QString &title, bool isLeftPanel) {
         dock = new CustomResizableOverlayDock(title, this);
@@ -474,7 +674,6 @@ void ScenarioEditor::setupEnhancedDockWidgets()
                                "background-color: #1A3A4F; "
                                "color: white; "
                                "font-weight: bold; }");
-
     inspector = new Inspector(this);
     inspector->setHierarchy(hierarchy);
     inspector->setStyleSheet("background-color: #0F2636; color: white;");
@@ -495,37 +694,33 @@ void ScenarioEditor::setupEnhancedDockWidgets()
     treeView->setStyleSheet("background-color: #0F2636; color: white;");
     setupOverlay(hierarchyDock, treeView, "Hierarchy", true);
 
-    // --- 5. LAYERS PANEL (Left Side, Hierarchy ke neeche) ---
-    layerPanel = new LayerPanel(this);
-    layerPanel->setStyleSheet("background-color: #0F2636; color: white;");
-    layerDock = new CustomResizableOverlayDock("Layers", this);
-    layerDock->setWidget(layerPanel);
-    layerDock->setFloating(true);
-    layerDock->setParent(this);
-    // Enable title bar with close button for layers panel
-    layerDock->setWindowFlags(Qt::SubWindow | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
-    layerDock->setMinimumWidth(280);
-    layerDock->setMinimumHeight(150);
-    layerDock->handlePos = CustomResizableOverlayDock::Right;
-    layerDock->setStyleSheet("CustomResizableOverlayDock { "
-                             "background-color: #0F2636; "
-                             "color: white; "
-                             "border-right: 4px solid #00BFFF; }"
-                             "CustomResizableOverlayDock::title { "
-                             "background-color: #1A3A4F; "
-                             "color: white; "
-                             "font-weight: bold; }");
-    // Connect layer panel to canvas
-    if (tacticalDisplay && tacticalDisplay->canvas) {
-        tacticalDisplay->canvas->setLayerPanel(layerPanel);
-        if (tacticalDisplay->canvas->getShapesFeature()) {
-            tacticalDisplay->canvas->getShapesFeature()->setLayerPanel(layerPanel);
-            layerPanel->setCanvasWidget(tacticalDisplay->canvas);
+    // --- 5. LAYERS PANEL ---
+    m_apiLayerPanel = new ApiLayerPanel(this);
+    m_apiLayerPanel->setStyleSheet("background-color: #0F2636; color: white;");
+    setupOverlay(layerDock, m_apiLayerPanel, "Layers", true);
+    if (layerDock) {
+        layerDock->setMinimumHeight(150);
+        layerDock->setMinimumWidth(280);
+    }
+    if (m_apiMapWidget) {
+        if (MapWidget* map = m_apiMapWidget->map()) {
+            connect(map, &MapWidget::shapeSelectionChanged,
+                    m_apiLayerPanel, &ApiLayerPanel::selectShape);
+            connect(m_apiLayerPanel, &ApiLayerPanel::shapeClicked,
+                    map, [map](const QString& shapeId) {
+                        if (!map->isGisInteractionEnabled())
+                            return;
+                        map->selectShape(shapeId);
+                        if (!shapeId.isEmpty())
+                            map->centerOnShape(shapeId);
+                    });
+            connect(m_apiLayerPanel, &ApiLayerPanel::shapesSelectionChanged,
+                    map, [map](const QStringList& shapeIds) {
+                        if (!map->isGisInteractionEnabled())
+                            return;
+                        map->setSelectedShapes(shapeIds);
+                    });
         }
-        connect(layerPanel, &LayerPanel::shapeClicked,
-                tacticalDisplay->canvas, &CanvasWidget::centerOnShape);
-        connect(tacticalDisplay->canvas, &CanvasWidget::shapeSelectedFromCanvas,
-                layerPanel, &LayerPanel::selectShapeInPanel);
     }
 
     // --- 6. CONSOLE (Bottom) ---
@@ -558,26 +753,20 @@ void ScenarioEditor::setupEnhancedDockWidgets()
     int hierarchyHeight = 500;
     hierarchyDock->setGeometry(leftX, topY, panelWidth, hierarchyHeight);
     hierarchyDock->show();
-
     int hierarchyBottom = hierarchyDock->y() + hierarchyDock->height();
     layerDock->setGeometry(leftX, hierarchyBottom + 5, panelWidth, 150);
     layerDock->show();
-
     sidebarDock->setGeometry(rightX, topY, panelWidth, 28);
     sidebarDock->hide();
-
     int rightPanelHeight = winH - topY - 100;
     inspectorDock->setGeometry(rightX, topY, panelWidth, rightPanelHeight);
     inspectorDock->show();
     inspectorDock->raise();
-
     libraryDock->setGeometry(rightX, topY, panelWidth, rightPanelHeight);
     libraryDock->hide();
     textScriptDock->setGeometry(rightX, topY, panelWidth, rightPanelHeight);
-
     textScriptDock->setGeometry(rightX, topY, panelWidth, rightPanelHeight);
     textScriptDock->hide();
-
     consoleDock->setGeometry(20, winH - 180, winW - rightToolbarWidth - 25, 150);
     consoleDock->hide();
     hierarchyDock->raise();
@@ -602,8 +791,7 @@ void ScenarioEditor::setupEnhancedDockWidgets()
             QString currentTitle = libraryDock->windowTitle();
             libDialog->setWindowTitle(currentTitle.isEmpty() ? "Library" : currentTitle);
             libDialog->setAttribute(Qt::WA_DeleteOnClose);
-            libDialog->setWindowFlags(Qt::Dialog | Qt::WindowTitleHint |
-                                      Qt::WindowCloseButtonHint | Qt::WindowMinMaxButtonsHint);
+            makeDialogResizable(libDialog);
             libDialog->resize(350, 600);
             QVBoxLayout *layout = new QVBoxLayout(libDialog);
             layout->setContentsMargins(0, 0, 0, 0);
@@ -620,7 +808,6 @@ void ScenarioEditor::setupEnhancedDockWidgets()
                 libTreeView->setParent(libraryDock);
                 libraryDock->setWidget(libTreeView);
             });
-
             libDialog->show();
             return;
         } else if (viewName == "TextScript") {
@@ -631,12 +818,10 @@ void ScenarioEditor::setupEnhancedDockWidgets()
                     return;
                 }
             }
-
             QDialog *tsDialog = new QDialog(this);
             tsDialog->setWindowTitle("TestScript");
             tsDialog->setAttribute(Qt::WA_DeleteOnClose);
-            tsDialog->setWindowFlags(Qt::Dialog | Qt::WindowTitleHint |
-                                     Qt::WindowCloseButtonHint | Qt::WindowMinMaxButtonsHint);
+            makeDialogResizable(tsDialog);
             tsDialog->resize(450, 600);
             QVBoxLayout *layout = new QVBoxLayout(tsDialog);
             layout->setContentsMargins(4, 4, 4, 4);
@@ -654,11 +839,10 @@ void ScenarioEditor::setupEnhancedDockWidgets()
             if (consoleDock->isVisible()) consoleDock->raise();
             return;
         }
-
         CustomResizableOverlayDock* target = nullptr;
         if (viewName == "Inspector") target = inspectorDock;
         if (target) {
-            int rightPanelHeight = height() - topY - 100;  // ya koi fixed value
+            int rightPanelHeight = height() - topY - 100;
             target->setGeometry(rightX, topY, panelWidth, rightPanelHeight);
             target->show();
             target->raise();
@@ -690,7 +874,6 @@ void ScenarioEditor::setupEnhancedDockWidgets()
                     libraryDock->setWindowTitle("Library - " + fileName);
                 }
             });
-
     inspectorDocks.append(inspectorDock);
     inspectors.append(inspector);
 }
@@ -722,6 +905,7 @@ void ScenarioEditor::resizeEvent(QResizeEvent *event)
     if (textScriptDock && textScriptDock->isVisible())
         textScriptDock->setGeometry(rightX, topY, panelWidth, rightPanelHeight);
 }
+
 void ScenarioEditor::showEvent(QShowEvent *event)
 {
     QMainWindow::showEvent(event);
@@ -731,6 +915,7 @@ void ScenarioEditor::showEvent(QShowEvent *event)
         delete re;
     });
 }
+
 /* Setup dock widgets - legacy method */
 void ScenarioEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures)
 {
@@ -745,6 +930,7 @@ void ScenarioEditor::onDockVisibilityChanged(bool visible)
         dock->raise();
     }
 }
+
 // %%% Toolbars Setup %%%
 /* Setup toolbars */
 void ScenarioEditor::setupToolBars()
@@ -752,6 +938,27 @@ void ScenarioEditor::setupToolBars()
     designToolBar = new DesignToolBar(this, m_scenarioConfig);
     addToolBar(Qt::TopToolBarArea, designToolBar);
     designToolBar->setMovable(true);
+    if (!m_apiMapWidget)
+        m_apiMapWidget = new MapWithCanvas(this);
+    m_apiMapToolbar = new ApiMapToolbar(m_apiMapWidget->map(), this);
+    m_apiMapToolbar->setObjectName("ApiMapToolbar");
+    m_apiMapToolbar->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_apiMapToolbar, &QToolBar::customContextMenuRequested,
+            this, &ScenarioEditor::showPanelContextMenu);
+    if (QAction* gisAct = m_apiMapToolbar->gisInteractionAction()) {
+        gisAct->setToolTip(tr("GIS Interaction"));
+        QToolBar* gisToggleBar = new QToolBar(tr("GIS Mode"), this);
+        gisToggleBar->setObjectName(QStringLiteral("GisToggleToolbar"));
+        gisToggleBar->setMovable(false);
+        gisToggleBar->setFloatable(false);
+        gisToggleBar->setIconSize(QSize(20, 20));
+        gisToggleBar->addAction(gisAct);
+        addToolBar(Qt::TopToolBarArea, gisToggleBar);
+        gisToggleBar->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(gisToggleBar, &QToolBar::customContextMenuRequested,
+                this, &ScenarioEditor::showPanelContextMenu);
+    }
+    addToolBar(Qt::TopToolBarArea, m_apiMapToolbar);
     designToolBar->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(designToolBar, &QToolBar::customContextMenuRequested,
             this, &ScenarioEditor::showPanelContextMenu);
@@ -792,10 +999,7 @@ void ScenarioEditor::setupToolBars()
             QString currentTitle = libraryDock->windowTitle();
             libDialog->setWindowTitle(currentTitle.isEmpty() ? "Library" : currentTitle);
             libDialog->setAttribute(Qt::WA_DeleteOnClose);
-            libDialog->setWindowFlags(Qt::Dialog |
-                                      Qt::WindowTitleHint |
-                                      Qt::WindowCloseButtonHint |
-                                      Qt::WindowMinMaxButtonsHint);
+            makeDialogResizable(libDialog);
             libDialog->resize(350, 600);
             QVBoxLayout *layout = new QVBoxLayout(libDialog);
             layout->setContentsMargins(0, 0, 0, 0);
@@ -825,6 +1029,7 @@ void ScenarioEditor::setupToolBars()
             }
         }
     });
+
     connect(libraryDock, &CustomResizableOverlayDock::visibilityChanged,
             this, [=](bool visible) { libBtn->setChecked(visible); });
     rightToolBar->addWidget(libBtn);
@@ -850,20 +1055,27 @@ void ScenarioEditor::setupToolBars()
                     return;
                 }
             }
-
             QDialog *tsDialog = new QDialog(this);
             tsDialog->setWindowTitle("TestScript");
             tsDialog->setAttribute(Qt::WA_DeleteOnClose);
-            tsDialog->setWindowFlags(Qt::Dialog |
-                                     Qt::WindowTitleHint |
-                                     Qt::WindowCloseButtonHint |
-                                     Qt::WindowMinMaxButtonsHint);
+            makeDialogResizable(tsDialog);
             tsDialog->resize(450, 600);
             QVBoxLayout *layout = new QVBoxLayout(tsDialog);
             layout->setContentsMargins(4, 4, 4, 4);
             textScriptView->setParent(tsDialog);
             layout->addWidget(textScriptView);
             tsDialog->setStyleSheet("QDialog { background-color: #0F2636; color: white; }");
+            connect(textScriptView,
+                    &TextScriptWidget::runScriptstring,
+                    this,
+                    [this](QString content)
+                    {
+                        if (!scriptengine) {
+                            return;
+                        }
+                        const bool success =
+                            scriptengine->loadAndCompileScript(content);
+                    });
             connect(tsDialog, &QDialog::finished, this, [=]() {
                 tsBtn->setChecked(false);
                 textScriptView->setParent(textScriptDock);
@@ -897,28 +1109,37 @@ void ScenarioEditor::setupToolBarConnections()
     // Connect transform mode changes
     connect(designToolBar, &DesignToolBar::modeChanged,
             this, [=](int mode) {
-                tacticalDisplay->canvas->setTransformMode(static_cast<TransformMode>(mode));
+                if (tacticalDisplay && tacticalDisplay->canvas)
+                    tacticalDisplay->canvas->setTransformMode(static_cast<TransformMode>(mode));
+                if (m_apiMapWidget && m_apiMapWidget->editorCanvas())
+                    m_apiMapWidget->editorCanvas()->setTransformMode(static_cast<TransformMode>(mode));
             });
     // Connect shape selection
     connect(designToolBar, &DesignToolBar::shapeSelected,
             this, [=](const QString &shape) {
                 tacticalDisplay->canvas->setShapeDrawingMode(true, shape);
             });
-    // Connect grid visibility
-    connect(designToolBar, &DesignToolBar::gridPlaneXToggled,
-            tacticalDisplay->canvas, &CanvasWidget::setXGridVisible);
-    connect(designToolBar, &DesignToolBar::gridPlaneYToggled,
-            tacticalDisplay->canvas, &CanvasWidget::setYGridVisible);
-    // Connect grid opacity
-    connect(designToolBar, &DesignToolBar::gridOpacityChanged,
-            this, [=](int opacity) {
-                tacticalDisplay->canvas->setGridOpacity(opacity);
-            });
+    // // Connect grid visibility
+    // connect(designToolBar, &DesignToolBar::gridPlaneXToggled,
+    //         tacticalDisplay->canvas, &CanvasWidget::setXGridVisible);
+    // connect(designToolBar, &DesignToolBar::gridPlaneYToggled,
+    //         tacticalDisplay->canvas, &CanvasWidget::setYGridVisible);
+    // // Connect grid opacity
+    // connect(designToolBar, &DesignToolBar::gridOpacityChanged,
+    //         this, [=](int opacity) {
+    //             tacticalDisplay->canvas->setGridOpacity(opacity);
+    //         });
     connect(designToolBar, &DesignToolBar::tooltipOptionsChanged,
             tacticalDisplay->canvas, &CanvasWidget::setTooltipOptions);
     // Connect layer visibility
     connect(designToolBar, &DesignToolBar::layerOptionToggled,
             tacticalDisplay->canvas, &CanvasWidget::toggleLayerVisibility);
+    if (m_apiMapWidget) {
+        connect(designToolBar, &DesignToolBar::layerOptionToggled,
+                m_apiMapWidget, &MapWithCanvas::toggleLayerVisibility);
+        connect(designToolBar, &DesignToolBar::tooltipOptionsChanged,
+                m_apiMapWidget, &MapWithCanvas::setTooltipOptions);
+    }
     // Connect bitmap selection
     connect(designToolBar, &DesignToolBar::bitmapImageSelected,
             tacticalDisplay->canvas, &CanvasWidget::onBitmapImageSelected);
@@ -1106,7 +1327,6 @@ void ScenarioEditor::resetLayout()
     });
 }
 
-
 // %%% Inspector Tab Addition %%%
 /* Add new inspector tab */
 void ScenarioEditor::addInspectorTab()
@@ -1194,7 +1414,6 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
     }
     QByteArray data = file.readAll();
     file.close();
-    // Parse JSON
     QJsonParseError err;
     QJsonDocument doc = QJsonDocument::fromJson(data, &err);
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
@@ -1203,35 +1422,44 @@ void ScenarioEditor::loadFromJsonFile(const QString &filePath)
         return;
     }
     QJsonObject obj = doc.object();
-    // Load hierarchy data
+
     if (obj.contains("hierarchy")) {
         QCoreApplication::processEvents();
         QJsonObject hier = obj["hierarchy"].toObject();
         hierarchy->fromJson(hier);
+        syncEntityActiveStatesFromHierarchy();
+
         QCoreApplication::processEvents();
         if (treeView && treeView->getTreeWidget()) {
             treeView->getTreeWidget()->update();
         }
         QCoreApplication::processEvents();
     }
-    // Load tactical display data
-    if (tacticalDisplay && obj.contains("tactical")) {
-        QCoreApplication::processEvents();
-        QJsonObject tac = obj["tactical"].toObject();
-        tacticalDisplay->canvas->fromJson(tac);
+    if (obj.contains(QStringLiteral("apiGis"))) {
+        ShapeApi::instance()->fromJson(obj.value(QStringLiteral("apiGis")).toObject());
+    } else if (obj.contains(QStringLiteral("tactical"))) {
+        ShapeApi::instance()->importFromLegacyTactical(
+            obj.value(QStringLiteral("tactical")).toObject());
+    } else {
+        ShapeApi::instance()->fromJson(QJsonObject());
     }
-    // Update state
+    if (m_apiMapWidget && m_apiMapWidget->map())
+        m_apiMapWidget->map()->update();
+
     lastSavedFilePath = filePath;
+    m_loadedScenarioFile = filePath;
     clearUnsavedChanges();
+    updateTitleBar();
+    emit scenarioFileLoaded(filePath);
 }
+
 // %%% Unsaved Changes Management %%%
-/* Mark unsaved changes */
 void ScenarioEditor::markUnsavedChanges()
 {
     if (!hasUnsavedChanges) {
         hasUnsavedChanges = true;
         emit unsavedChangesChanged(true);
-        setWindowTitle("Scenario Editor *");
+        updateTitleBar();
     }
 }
 /* Clear unsaved changes */
@@ -1240,7 +1468,7 @@ void ScenarioEditor::clearUnsavedChanges()
     if (hasUnsavedChanges) {
         hasUnsavedChanges = false;
         emit unsavedChangesChanged(false);
-        setWindowTitle("Scenario Editor");
+        updateTitleBar();
     }
 }
 // %%% Recent Project Loading %%%
@@ -1312,21 +1540,32 @@ void ScenarioEditor::loadRecentProject(const QString& filePath)
     QCoreApplication::processEvents();
     QJsonObject hier = obj["hierarchy"].toObject();
     hierarchy->fromJson(hier);
+    syncEntityActiveStatesFromHierarchy();
     loadingDialog->setLabelText("Loading...");
     QCoreApplication::processEvents();
     if (tacticalDisplay && obj.contains("tactical")) {
         QJsonObject tac = obj["tactical"].toObject();
         tacticalDisplay->canvas->fromJson(tac);
     }
-    // Update state
+    if (obj.contains(QStringLiteral("apiGis"))) {
+        ShapeApi::instance()->fromJson(obj.value(QStringLiteral("apiGis")).toObject());
+    } else if (obj.contains(QStringLiteral("tactical"))) {
+        ShapeApi::instance()->importFromLegacyTactical(
+            obj.value(QStringLiteral("tactical")).toObject());
+    } else {
+        ShapeApi::instance()->fromJson(QJsonObject());
+    }
+    if (m_apiMapWidget && m_apiMapWidget->map())
+        m_apiMapWidget->map()->update();
     lastSavedFilePath = filePath;
+    m_loadedScenarioFile = filePath;
     clearUnsavedChanges();
-    // Add to recent projects
+    updateTitleBar();
     RecentProjectsManager::instance()->addToRecentProjects(filePath,
                                                            RecentProjectsManager::ScenarioEditor);
-    // Cleanup
     loadingDialog->close();
     loadingDialog->deleteLater();
+    emit scenarioFileLoaded(filePath);
 }
 
 // %%% Recent Project Trigger %%%
@@ -1349,8 +1588,10 @@ void ScenarioEditor::showProfileInfo()
 void ScenarioEditor::showApplicationDialog()
 {
     ApplicationDialog dialog(this);
-    connect(&dialog, &ApplicationDialog::canvasIconState,
-            tacticalDisplay->canvas, &CanvasWidget::setImageScale);
+    connect(&dialog, &ApplicationDialog::canvasIconState, this, [this](int px) {
+        if (m_apiMapWidget && m_apiMapWidget->dynamicCanvas())
+            m_apiMapWidget->dynamicCanvas()->setImageScale(px);
+    });
     dialog.exec();
 }
 
@@ -1371,7 +1612,6 @@ void ScenarioEditor::onRunScriptFileRequested(const QString& filePath)
 void ScenarioEditor::showPanelContextMenu(const QPoint &pos)
 {
     QMenu contextMenu("Panels", this);
-
     // === STYLESHEET WITH YOUR CHECK.PNG IMAGE ===
     contextMenu.setStyleSheet(R"(
         QMenu {
@@ -1439,9 +1679,9 @@ void ScenarioEditor::showPanelContextMenu(const QPoint &pos)
     QAction *showConsole = contextMenu.addAction("Console");
     showConsole->setCheckable(true);
     showConsole->setChecked(consoleDock->isVisible());
-    QAction *showSidebar = contextMenu.addAction("Sidebar");
-    showSidebar->setCheckable(true);
-    showSidebar->setChecked(sidebarDock->isVisible());
+    QAction *showInspector = contextMenu.addAction("Inspector");
+    showInspector->setCheckable(true);
+    showInspector->setChecked(inspectorDock->isVisible());
     QAction *selected = contextMenu.exec(mapToGlobal(pos));
     if (selected == showHierarchy) {
         hierarchyDock->setVisible(!hierarchyDock->isVisible());
@@ -1460,9 +1700,50 @@ void ScenarioEditor::showPanelContextMenu(const QPoint &pos)
             consoleDock->setGeometry(20, winH - 190, winW - 40, 150);
         }
     }
-    else if (selected == showSidebar) {
-        sidebarDock->setVisible(!sidebarDock->isVisible());
-        if (sidebarDock->isVisible()) sidebarDock->raise();
+    else if (selected == showInspector) {
+        inspectorDock->setVisible(!inspectorDock->isVisible());
+        if (inspectorDock->isVisible()) inspectorDock->raise();
     }
 }
+void ScenarioEditor::updateTitleBar()
+{
+    QString title = "Scenario Editor";
+    if (!m_loadedScenarioFile.isEmpty()) {
+        title += " - " + QFileInfo(m_loadedScenarioFile).fileName();
+    }
+    if (!m_loadedDatabaseFile.isEmpty()) {
+        title += " | Database: " + QFileInfo(m_loadedDatabaseFile).fileName();
+    }
+    if (hasUnsavedChanges) {
+        title = "*" + title;
+    }
+    setWindowTitle(title);
+}
 
+void ScenarioEditor::setLoadedDatabaseFile(const QString& dbFilePath)
+{
+    m_loadedDatabaseFile = dbFilePath;
+    updateTitleBar();
+    emit unsavedChangesChanged(hasUnsavedChanges);
+}
+void ScenarioEditor::syncEntityActiveStatesFromHierarchy()
+{
+    if (!hierarchy) return;
+    for (const auto& [entityId, entity] : hierarchy->Entities) {
+        if (!entity) continue;
+        bool isActive = entity->Active;
+        if (ECS::Entity_Data* data =
+            hierarchy->world.GetComponent<ECS::Entity_Data>(entity->ecsID)) {
+            data->active = isActive;
+        }
+        if (Platform* p = dynamic_cast<Platform*>(entity)) {
+            p->Active = isActive;
+        }
+        if (treeView) {
+            treeView->setEntityActiveState(
+                QString::fromStdString(entityId), isActive);
+        }
+    }
+    if (m_apiMapWidget && m_apiMapWidget->map())
+        m_apiMapWidget->map()->update();
+}

@@ -17,18 +17,36 @@
 /**
  * @brief Constructs a Transform component with default identity transform.
  */
-Transform::Transform():Component(nullptr) {
+Transform::Transform():Component() {
     ID = Uuid::generateShortUniqueID();
     Active = true;
 
-    geocord = new Geocords();
-    matrix = new Qt3DCore::QTransform();
+    //geocord = *new Geocords();
+    //matrix = *new Qt3DCore::QTransform();
     // Delhi 28.6139° N 77.2090° E
     setGeoCord(2842341234.70418974987,772344123.1025413276);
     // setTranslation(QVector3D(2842341234.70418974987,0,772344123.1025413276));
-    connect(matrix,&Qt3DCore::QTransform::translationChanged,this,&Transform::VectorChanged);
-    connect(matrix,&Qt3DCore::QTransform::rotationChanged,this,&Transform::rotationChanged);
+    connect(&matrix,&Qt3DCore::QTransform::translationChanged,this,&Transform::VectorChanged);
+    connect(&matrix,&Qt3DCore::QTransform::rotationChanged,this,&Transform::rotationChanged);
 }
+
+ECS::TransformComponent& Transform::getPosition(){
+    return *parentEntity->root->world.GetComponent<ECS::TransformComponent>(parentEntity->ecsID);
+}
+
+ECS::GeocordComponent &Transform::getGeocords(){
+    return *parentEntity->root->world.GetComponent<ECS::GeocordComponent>(parentEntity->ecsID);
+}
+
+
+void Transform::init(Entity *Entity){
+    parentEntity = Entity;
+    parentEntity->root->world.AddComponent<ECS::TransformComponent>(parentEntity->ecsID);
+    parentEntity->root->world.AddComponent<ECS::GeocordComponent>(parentEntity->ecsID);
+
+}
+void Transform::Awake(){}
+void Transform::Start(){}
 
 /**
  * @brief Slot called when the translation changes; updates geocord latitude/longitude.
@@ -36,9 +54,21 @@ Transform::Transform():Component(nullptr) {
  */
 void Transform::VectorChanged(QVector3D v){
     GeoPos geo = flatXYZToGeo(v.x(), v.y()*KMtoFT, v.z());
-    geocord->latitude = geo.lat;
-    geocord->longitude = geo.lon;
-    geocord->altitude = geo.alt;
+    geocord.latitude = geo.lat;
+    geocord.longitude = geo.lon;
+    geocord.altitude = geo.alt;
+    if(parentEntity){
+        auto& g = getGeocords();
+        g.lat = geo.lat;
+        g.lon = geo.lon;
+        g.altitude = geo.alt;
+        g.heading = geocord.Heading;
+        auto& pos = getPosition();
+        pos.position.setX(v.x());
+        pos.position.setY(v.y());
+        pos.position.setZ(v.z());
+    }
+
 }
 
 /**
@@ -46,7 +76,17 @@ void Transform::VectorChanged(QVector3D v){
  * @param r New rotation quaternion.
  */
 void Transform::rotationChanged(QQuaternion r){
-    geocord->Heading = toEulerAngles().y();
+    geocord.Heading = toEulerAngles().y();
+    if(parentEntity){
+        auto& pos = getPosition();
+        pos.rotation.setX(r.x());
+        pos.rotation.setY(r.y());
+        pos.rotation.setZ(r.z());
+        pos.rotation.setScalar(r.scalar());
+        auto& g = getGeocords();
+        g.heading = geocord.Heading;
+    }
+
 }
 
 /**
@@ -55,9 +95,9 @@ void Transform::rotationChanged(QQuaternion r){
  * @param lon Longitude in degrees * 10^7.
  */
 void Transform::setGeoCord(float lat,float lon){
-    geocord->latitude = lat;
-    geocord->longitude = lon;
-    FlatXYZ xyz = geoToFlatXYZ(lat,lon,geocord->altitude*FTtoKM);
+    geocord.latitude = lat;
+    geocord.longitude = lon;
+    FlatXYZ xyz = geoToFlatXYZ(lat,lon,geocord.altitude*FTtoKM);
     setTranslation(QVector3D(xyz.x,xyz.y,xyz.z));
     ////qDebug()<<geocord->latitude<<","<<geocord->longitude<<","<<geocord->altitude;
 }
@@ -69,9 +109,9 @@ void Transform::setGeoCord(float lat,float lon){
  * @param alt Altitude in feet.
  */
 void Transform::setGeoCord(float lat,float lon, float alt){
-    geocord->latitude = lat;
-    geocord->longitude = lon;
-    geocord->altitude = alt;
+    geocord.latitude = lat;
+    geocord.longitude = lon;
+    geocord.altitude = alt;
     FlatXYZ xyz = geoToFlatXYZ(lat,lon,alt*FTtoKM);
     setTranslation(QVector3D(xyz.x,xyz.y,xyz.z));
 }
@@ -84,10 +124,10 @@ void Transform::setGeoCord(float lat,float lon, float alt){
  * @param heading Yaw angle in degrees.
  */
 void Transform::setGeoCord(float lat,float lon, float alt, float heading){
-    geocord->latitude = lat;
-    geocord->longitude = lon;
-    geocord->altitude = alt;
-    geocord->Heading = heading;
+    geocord.latitude = lat;
+    geocord.longitude = lon;
+    geocord.altitude = alt;
+    geocord.Heading = heading;
     FlatXYZ xyz = geoToFlatXYZ(lat,lon,alt*FTtoKM);
     setTranslation(QVector3D(xyz.x,xyz.y,xyz.z));
     QVector3D euAngle = toEulerAngles();
@@ -100,7 +140,7 @@ void Transform::setGeoCord(float lat,float lon, float alt, float heading){
  * @param heading Yaw angle in degrees.
  */
 void Transform::setHeading(float heading){
-    geocord->Heading = heading;
+    geocord.Heading = heading;
     QVector3D euAngle = toEulerAngles();
     euAngle.setY(heading);
     setFromEulerAngles(euAngle);
@@ -111,8 +151,8 @@ void Transform::setHeading(float heading){
  * @return Heading in degrees.
  */
 float Transform::getHeading(){
-     if(!geocord) return 0.0f;
-    return geocord->Heading;
+     // if(!geocord) return 0.0f;
+    return geocord.Heading;
 }
 
 /**
@@ -120,8 +160,8 @@ float Transform::getHeading(){
  * @param lat Latitude.
  */
 void Transform::setLatitude(float lat){
-    geocord->latitude = lat;
-    FlatXYZ xyz = geoToFlatXYZ(geocord->latitude,geocord->longitude,geocord->altitude*FTtoKM);
+    geocord.latitude = lat;
+    FlatXYZ xyz = geoToFlatXYZ(geocord.latitude,geocord.longitude,geocord.altitude*FTtoKM);
     ////qDebug()<<geocord->latitude<<","<<geocord->longitude<<","<<geocord->altitude;
     setTranslation(QVector3D(xyz.x,xyz.y,xyz.z));
 }
@@ -130,8 +170,7 @@ void Transform::setLatitude(float lat){
  * @brief Returns the current latitude.
  */
 float Transform::getLatitude(){
-     if(!geocord) return 0.0f;
-    return geocord->latitude;
+    return geocord.latitude;
 }
 
 /**
@@ -139,8 +178,8 @@ float Transform::getLatitude(){
  * @param lon Longitude.
  */
 void Transform::setLongitude(float lon){
-    geocord->longitude = lon;
-    FlatXYZ xyz = geoToFlatXYZ(geocord->latitude,geocord->longitude,geocord->altitude);
+    geocord.longitude = lon;
+    FlatXYZ xyz = geoToFlatXYZ(geocord.latitude,geocord.longitude,geocord.altitude);
     setTranslation(QVector3D(xyz.x,xyz.y,xyz.z));
 }
 
@@ -148,8 +187,7 @@ void Transform::setLongitude(float lon){
  * @brief Returns the current longitude.
  */
 float Transform::getLongitude(){
-     if(!geocord) return 0.0f;
-    return geocord->longitude;
+    return geocord.longitude;
 }
 
 /**
@@ -157,8 +195,8 @@ float Transform::getLongitude(){
  * @param alt Altitude in feet.
  */
 void Transform::setAltitude(float alt){
-    geocord->altitude = alt;
-    FlatXYZ xyz = geoToFlatXYZ(geocord->latitude,geocord->longitude,geocord->altitude*FTtoKM);
+    geocord.altitude = alt;
+    FlatXYZ xyz = geoToFlatXYZ(geocord.latitude,geocord.longitude,geocord.altitude*FTtoKM);
     setTranslation(QVector3D(xyz.x,xyz.y,xyz.z));
 }
 
@@ -166,8 +204,7 @@ void Transform::setAltitude(float alt){
  * @brief Returns altitude in feet.
  */
 float Transform::getAltitude(){
-    if(!geocord) return 0.0f;
-    return geocord->altitude;
+    return geocord.altitude;
 }
 
 // ===== Unity-like Directional Methods (using QQuaternion) =====
@@ -177,13 +214,10 @@ float Transform::getAltitude(){
  * @return QVector3D with x = pitch, y = yaw, z = roll.
  */
 QVector3D Transform::toEulerAngles() const {
-    if(Simulation::isPlay && false){
+    if( false){
         return rotationbuffer.toEulerAngles();
     }else{
-        if(matrix)
-        return matrix->rotation().toEulerAngles();
-        else
-            return QVector3D(0,0,0);
+        return matrix.rotation().toEulerAngles();
     }
 }
 
@@ -192,12 +226,11 @@ QVector3D Transform::toEulerAngles() const {
  * @param eulerAngles QVector3D (pitch, yaw, roll) in degrees.
  */
 void Transform::setFromEulerAngles(const QVector3D& eulerAngles) {
-    if(Simulation::isPlay && false){
+    if( false){
         RotUpdate = true;
         rotationbuffer.fromEulerAngles(eulerAngles);
     }else{
-        if(matrix)
-        matrix->setRotation(QQuaternion::fromEulerAngles(eulerAngles));
+        matrix.setRotation(QQuaternion::fromEulerAngles(eulerAngles));
     }
 }
 
@@ -226,21 +259,21 @@ float Transform::yaw(){
  * @brief Returns the forward direction vector (local Z+) transformed to world space.
  */
 QVector3D Transform::forward() {
-    return matrix->rotation().rotatedVector(QVector3D(0.0f, 0.0f, 1.0f));
+    return matrix.rotation().rotatedVector(QVector3D(0.0f, 0.0f, 1.0f));
 }
 
 /**
  * @brief Returns the up direction vector (local Y+) transformed to world space.
  */
 QVector3D Transform::up() {
-    return matrix->rotation().rotatedVector(QVector3D(0.0f, 1.0f, 0.0f));
+    return matrix.rotation().rotatedVector(QVector3D(0.0f, 1.0f, 0.0f));
 }
 
 /**
  * @brief Returns the right direction vector (local X+) transformed to world space.
  */
 QVector3D Transform::right() {
-    return matrix->rotation().rotatedVector(QVector3D(1.0f, 0.0f, 0.0f));
+    return matrix.rotation().rotatedVector(QVector3D(1.0f, 0.0f, 0.0f));
 }
 
 /**
@@ -270,7 +303,7 @@ QVector3D Transform::down() {
  * @return Direction in local coordinates.
  */
 QVector3D Transform::inverseTransformDirection(const QVector3D& worldDir) {
-    return matrix->rotation().inverted().rotatedVector(worldDir);
+    return matrix.rotation().inverted().rotatedVector(worldDir);
 }
 
 /**
@@ -279,7 +312,7 @@ QVector3D Transform::inverseTransformDirection(const QVector3D& worldDir) {
  * @return Direction in world coordinates.
  */
 QVector3D Transform::TransformDirection(const QVector3D& localDir) {
-    return matrix->rotation().rotatedVector(localDir);
+    return matrix.rotation().rotatedVector(localDir);
 }
 
 /**
@@ -288,7 +321,7 @@ QVector3D Transform::TransformDirection(const QVector3D& localDir) {
  * @return Vector in local coordinates.
  */
 QVector3D Transform::inverseTransformVector(const QVector3D& worldVec) {
-    return matrix->rotation().inverted().rotatedVector(worldVec);
+    return matrix.rotation().inverted().rotatedVector(worldVec);
 }
 
 /**
@@ -298,10 +331,10 @@ QVector3D Transform::inverseTransformVector(const QVector3D& worldVec) {
  */
 QVector3D Transform::transformPoint(const QVector3D& localPos) {
     // 1. Pehle rotation apply karein
-    QVector3D rotated = matrix->rotation().rotatedVector(localPos);
+    QVector3D rotated = matrix.rotation().rotatedVector(localPos);
 
     // 2. Phir world translation add karein
-    QVector3D worldPos = rotated + matrix->translation();
+    QVector3D worldPos = rotated + matrix.translation();
 
     return worldPos;
 }
@@ -312,8 +345,8 @@ QVector3D Transform::transformPoint(const QVector3D& localPos) {
  * @return Position in local coordinates.
  */
 QVector3D Transform::inverseTransformPoint(const QVector3D& worldPos) {
-    QVector3D relativePosition = worldPos - matrix->translation();
-    QVector3D final = matrix->rotation().inverted().rotatedVector(relativePosition);
+    QVector3D relativePosition = worldPos - matrix.translation();
+    QVector3D final = matrix.rotation().inverted().rotatedVector(relativePosition);
     return final;
 }
 
@@ -331,7 +364,7 @@ void Transform::lookAt(const QVector3D& targetWorldPos) {
 }
 
 void Transform::lookAt(float lat, float lon) {
-    FlatXYZ xyz = geoToFlatXYZ(lat,lon,geocord->altitude*FTtoKM);
+    FlatXYZ xyz = geoToFlatXYZ(lat,lon,geocord.altitude*FTtoKM);
     QVector3D diff = QVector3D(xyz.x,xyz.y,xyz.z) - this->translation();
 
     // Standard Heading (Yaw): using atan2(x, z) because forward is Z+
@@ -363,15 +396,15 @@ void Transform::lookAt3D(const QVector3D& targetWorldPos) {
  * @param vector New position.
  */
 void Transform::setTranslation(const QVector3D& vector) {
-    if(Simulation::isPlay && false){
+    if( false){
         PosUpdate = true;
         positionbuffer.setX(vector.x());
         positionbuffer.setY(vector.y());
         positionbuffer.setZ(vector.z());
     }else
     {
-        if(matrix)
-        matrix->setTranslation(vector);
+        // if(matrix)
+        matrix.setTranslation(vector);
     }
     // //qDebug()<< vector;
 }
@@ -381,15 +414,15 @@ void Transform::setTranslation(const QVector3D& vector) {
  * @param vector Offset to add.
  */
 void Transform::addTranslation(const QVector3D& vector) {
-    if(Simulation::isPlay && false){
+    if( false){
         PosUpdate = true;
         positionbuffer.setX(positionbuffer.x() + vector.x());
         positionbuffer.setY(positionbuffer.y() + vector.y());
         positionbuffer.setZ(positionbuffer.z() + vector.z());
     }else
     {
-        if(matrix)
-        matrix->setTranslation(translation()+vector);
+        // if(matrix)
+        matrix.setTranslation(translation()+vector);
     }
 }
 
@@ -397,11 +430,11 @@ void Transform::addTranslation(const QVector3D& vector) {
  * @brief Returns the current translation (position).
  */
 QVector3D Transform::translation() const {
-    if(Simulation::isPlay && false){
+    if( false){
         return positionbuffer;
     }else
     {
-        return matrix->translation();
+        return matrix.translation();
     }
 }
 
@@ -410,7 +443,7 @@ QVector3D Transform::translation() const {
  * @param quat New rotation.
  */
 void Transform::setRotation(const QQuaternion& quat) {
-    if(Simulation::isPlay && false){
+    if( false){
         RotUpdate = true;
         rotationbuffer.setX(quat.x());
         rotationbuffer.setY(quat.y());
@@ -418,8 +451,8 @@ void Transform::setRotation(const QQuaternion& quat) {
         rotationbuffer.setScalar(quat.scalar());
     }else
     {
-        if(matrix)
-        matrix->setRotation(quat);
+        // if(matrix)
+        matrix.setRotation(quat);
     }
 }
 
@@ -427,11 +460,11 @@ void Transform::setRotation(const QQuaternion& quat) {
  * @brief Returns the current rotation quaternion.
  */
 QQuaternion Transform::rotation() {
-    if(Simulation::isPlay && false){
+    if( false){
         return rotationbuffer;
     }else
     {
-        return matrix->rotation();
+        return matrix.rotation();
     }
 }
 
@@ -440,16 +473,16 @@ QQuaternion Transform::rotation() {
  * @param vector Scale (x, y, z).
  */
 void Transform::setScale3D(const QVector3D& vector) {
-    if(matrix)
-    matrix->setScale3D(vector);
+    // if(matrix)
+    matrix.setScale3D(vector);
 }
 
 /**
  * @brief Returns the current scale factor.
  */
 QVector3D Transform::scale3D() {
-    if(matrix)
-    return matrix->scale3D();
+    // if(matrix)
+    return matrix.scale3D();
 }
 
 /**
@@ -481,15 +514,15 @@ QJsonObject Transform::getsubComponentData(std::string ID) const{
  * @brief Serializes the Transform component to JSON.
  * @return QJsonObject containing position, rotation, scale, and geocord data.
  */
-QJsonObject Transform::toJson() const {
+QJsonObject Transform::toJson() const   {
     QJsonObject obj;
     obj["id"] = QString::fromStdString(ID);
     obj["active"] = Active;
-    obj["geocord"] = geocord->toJson();
-    obj["position"] = (new Vector(translation().x(),translation().y(),translation().z()))->toJson();
+    obj["geocord"] = geocord.toJson();
+    obj["position"] = (Vector(translation().x(),translation().y(),translation().z())).toJson();
     QVector3D rot = toEulerAngles();
-    obj["rotation"] = (new Vector(rot.x(),rot.y(),rot.z()))->toJson();
-    obj["size"] = (new Vector(matrix->scale3D().x(),matrix->scale3D().y(),matrix->scale3D().z()))->toJson();
+    obj["rotation"] = ( Vector(rot.x(),rot.y(),rot.z())).toJson();
+    // obj["size"] = ( Vector(matrix.scale3D().x(),matrix.scale3D().y(),matrix.scale3D().z())).toJson();
     // obj["localPosition"] = (new Vector(localPosition->x(),localPosition->y(),localPosition->z()))->toJson();
     // QVector3D localrot = toEulerAngles();
     // obj["localRotation"] = (new Vector(localrot.x(),localrot.y(),localrot.z()))->toJson();
@@ -514,19 +547,23 @@ void Transform::fromJson(const QJsonObject &obj) {
     bool rotchange = false;
     if (obj.contains("geocord") && obj["geocord"].isObject()){
         Geocords geo;
-        geo.fromJson(geocord->toJson());
-        geocord->fromJson(obj["geocord"].toObject());
-        if(geo.latitude != geocord->latitude ||
-           geo.longitude != geocord->longitude ||
-           geo.altitude != geocord->altitude ||
-           geo.Heading != geocord->Heading
+        geo.fromJson(geocord.toJson());
+        geocord.fromJson(obj["geocord"].toObject());
+        if(geo.latitude != geocord.latitude ||
+           geo.longitude != geocord.longitude ||
+           geo.altitude != geocord.altitude ||
+           geo.Heading != geocord.Heading
             ){
             cordchange = true;
         }
-        if(geo.Heading != geocord->Heading){
+        if(geo.Heading != geocord.Heading){
             rotchange = true;
         }
-        setGeoCord(geocord->latitude,geocord->longitude,geocord->altitude,geocord->Heading);
+        if(geocord.latitude > 180 || geocord.latitude < -180 || geocord.longitude > 180 || geocord.longitude < -180){
+            geocord.latitude = 0;
+            geocord.longitude = 0;
+        }
+        setGeoCord(geocord.latitude,geocord.longitude,geocord.altitude,geocord.Heading);
     }
     if (obj.contains("position") && obj["position"].isObject())
     {   Vector* v = new Vector();
@@ -538,13 +575,13 @@ void Transform::fromJson(const QJsonObject &obj) {
         v->fromJson(obj["rotation"].toObject());
         if(!rotchange)setFromEulerAngles(QVector3D(v->x,v->y,v->z));
     }
-    if (obj.contains("size") && obj["size"].isObject())
-    {   Vector* v = new Vector();
-        v->fromJson(obj["size"].toObject());
-        matrix->scale3D().setX(v->x);
-        matrix->scale3D().setY(v->y);
-        matrix->scale3D().setZ(v->z);
-    }
+    // if (obj.contains("size") && obj["size"].isObject())
+    // {   Vector* v = new Vector();
+    //     v->fromJson(obj["size"].toObject());
+    //     matrix.scale3D().setX(v->x);
+    //     matrix.scale3D().setY(v->y);
+    //     matrix.scale3D().setZ(v->z);
+    // }
     // if (obj.contains("localPosition") && obj["localPosition"].isObject())
     // {   Vector* v = new Vector();
     //     v->fromJson(obj["localPosition"].toObject());
@@ -568,8 +605,19 @@ void Transform::fromJson(const QJsonObject &obj) {
     if(obj.contains("AdditionalParameters")){
         AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
+
+    if(!statesaved){
+        statesaved = true;
+        InitalState = obj;
+    }
 }
 
+void Transform::SaveState(){
+    if(!statesaved||true){
+        // statesaved = true;
+        InitalState = toJson();
+    }
+}
 /**
  * @brief Populates a TransformPDU structure for network transmission.
  * @param pdu Output PDU struct.
@@ -588,9 +636,9 @@ void Transform::toPDU(TransformPDU& pdu, const std::string& entityID, const std:
     // pdu.heading   = geocord->Heading;
 
     // Local transform
-    QVector3D pos = matrix->translation();
+    QVector3D pos = matrix.translation();
     QVector3D rot = toEulerAngles();
-    QVector3D scale = matrix->scale3D();
+    QVector3D scale = matrix.scale3D();
 
     pdu.posX = pos.x();
     pdu.posY = pos.y();
@@ -623,13 +671,13 @@ void Transform::fromPDU(const TransformPDU& pdu) {
     QVector3D rot(pdu.rotX, pdu.rotY, pdu.rotZ);
     QVector3D scale(pdu.sizeX, pdu.sizeY, pdu.sizeZ);
 
-    matrix->setTranslation(pos);
+    matrix.setTranslation(pos);
     setFromEulerAngles(rot);
 
     // Apply scale to UI
-    matrix->scale3D().setX(scale.x());
-    matrix->scale3D().setY(scale.y());
-    matrix->scale3D().setZ(scale.z());
+    matrix.scale3D().setX(scale.x());
+    matrix.scale3D().setY(scale.y());
+    matrix.scale3D().setZ(scale.z());
 }
 
 /**
@@ -645,15 +693,19 @@ void Transform::sync(){
 void Transform::invokesync(){
     if(PosUpdate){
         PosUpdate = false;
-        matrix->setTranslation(positionbuffer);
+        matrix.setTranslation(positionbuffer);
     }else{
-        positionbuffer = matrix->translation();
+        positionbuffer = matrix.translation();
     }
 
     if(RotUpdate){
         RotUpdate = false;
-        matrix->setRotation(rotationbuffer);
+        matrix.setRotation(rotationbuffer);
     }else{
-        rotationbuffer = matrix->rotation();
+        rotationbuffer = matrix.rotation();
     }
+}
+
+void Transform::RestoreState(){
+    fromJson(InitalState);
 }

@@ -79,9 +79,9 @@ void EntityStateHandler::onEntityStateReceived(QByteArray   pduBytes,
         // Register it so subsequent PDUs can find it
         //if (m_mapper && m_mapper->isOwnApplication(site, app)) return;
         if (m_mapper && m_mapper->isOwnApplication(site, app)) {
-            qDebug() << "[EntityStateHandler] DROPPING PDU — own application:"
-                     << "site=" << site << "app=" << app
-                     << "entity=" << entity;
+            // qDebug() << "[EntityStateHandler] DROPPING PDU — own application:"
+            //          << "site=" << site << "app=" << app
+            //          << "entity=" << entity;
             return;
         }
 
@@ -98,6 +98,7 @@ void EntityStateHandler::onEntityStateReceived(QByteArray   pduBytes,
 
     // Skip if this is OUR OWN entity
     // (we sent this PDU — no need to apply it to ourselves)
+
     if (m_mapper && m_mapper->isLocalEntity(engineID)) return;
 
     // ── Extract position (ECEF) ───────────────────────────────────────────────
@@ -111,6 +112,14 @@ void EntityStateHandler::onEntityStateReceived(QByteArray   pduBytes,
     float psi   = ori.getPsi();
     float theta = ori.getTheta();
     float phi   = ori.getPhi();
+
+    // ── DEBUG HEADING MYSTERY ─────────────────────────────────────────────────
+ /*   qDebug().nospace()
+        << "[HDG-1 WIRE] site=" << site << " app=" << app << " entity=" << entity
+        << " | psi_rad=" << psi
+        << " psi_deg=" << (psi * 57.2958f)
+        << " | IEEE_expected_heading=" << (90.0f - psi * 57.2958f);
+    // ────────────────────────────────────────────────────────────────*/
 
     // ── Extract velocity ──────────────────────────────────────────────────────
     const DIS::Vector3Float& vel = pdu.getEntityLinearVelocity();
@@ -143,9 +152,16 @@ void EntityStateHandler::onEntityStateReceived(QByteArray   pduBytes,
     DISOrientation euler;
     euler.psi = psi; euler.theta = theta; euler.phi = phi;
 
+    // float heading, pitch, roll;
+    // CoordConverter::eulerToHeading(euler, heading, pitch, roll);
     float heading, pitch, roll;
-    CoordConverter::eulerToHeading(euler, heading, pitch, roll);
-
+    CoordConverter::eulerToHeading(euler, lat, lon, heading, pitch, roll);
+    // ── DEBUG HEADING MYSTERY ─────────────────────────────────────────────────
+    // qDebug().nospace()
+    //     << "[HDG-2 CONVERTED] heading=" << heading
+    //     << " pitch=" << pitch
+    //     << " roll=" << roll;
+    // ─────────────────────────────────────────────────────────────────────────
     // ── Convert ECEF velocity to NED ─────────────────────────────────────────
     float northVel, eastVel, vertVel;
     DISVelocity disVel;

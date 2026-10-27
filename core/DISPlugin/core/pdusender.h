@@ -36,7 +36,10 @@
 #include "pduserializer.h"
 #include "core/DISPlugin/bridge/disnetworkbridge.h"
 #include "core/DISPlugin/interface/DISIFFSnapshot.h"
-
+#include "core/DISPlugin/interface/DISDesignatorSnapshot.h"
+#include "core/DISPlugin/interface/DISTransmitterSnapshot.h"
+#include "core/DISPlugin/interface/DISSignalSnapshot.h"
+#include "core/DISPlugin/interface/DISDatumSnapshot.h"
 class DISNetworkPlugin;
 
 // Forward declare transport
@@ -78,12 +81,21 @@ public:
     void sendStopFreeze  (const DISStopFreezeData&     data);
     void sendRemoveEntity(const DISRemoveEntityData&   data);
     void sendCreateEntity(const DISCreateEntityData&   data);
-
+    void sendAcknowledge(const DISAcknowledgeData& data);
+    void sendTransferOwnership(const DISTransferOwnershipData& data);
     // ── Stats ─────────────────────────────────────────────────────────────────
     int pdusSentPerSecond() const { return m_pdusSentSec; }
     void updateIFFSnapshot(const DISIFFSnapshot& snap);
+    void updateEmissionSnapshot(const DISEmissionSnapshot& snap);
+    void updateTransmitterSnapshot(const DISTransmitterSnapshot& snap);
     void sendIFF(const DISIFFSnapshot& snap);
-
+    void sendEmission(const DISEmissionSnapshot& snap);
+    void sendDesignator(const DISDesignatorSnapshot& snap);
+    void sendTransmitter(const DISTransmitterSnapshot& snap);
+    void sendSignal(const DISSignalSnapshot& snap);
+    void sendDataQuery(const DISDatumSnapshot& snap);
+    void sendSetData(const DISDatumSnapshot& snap);
+    void sendData(const DISDatumSnapshot& snap);
 signals:
     void pduSent(QString pduType, QString entityID);
     void errorOccurred(QString error);
@@ -125,6 +137,12 @@ DISNetworkPlugin* m_plugin = nullptr;
                     const QString& entityID = "");
     QByteArray adaptForPeers(const QByteArray& pduBytes);
     QMap<QString, DISIFFSnapshot> m_iffSnapshots;
+    QMap<QString, DISEmissionSnapshot> m_emissionSnapshots;
+    QMap<QString, DISTransmitterSnapshot> m_transmitterSnapshots;
+    // Entities whose ownership was transferred away.
+    // Permanently blocked from re-entering m_snapshots.
+    // Protected by m_snapshotMutex.
+    QSet<QString> m_transferredEntities;
 };
 
 #endif // PDUSENDER_H

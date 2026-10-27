@@ -121,7 +121,6 @@ ADSBSensor::ADSBSensor(Hierarchy* h) : Sensor(h) {
     own_rf.propagation.sea_attenuation_db_per_km = 0.003;
     ownship.configureRf(own_rf);
     ownship.attachToModel(model,  {0.0,     0.0,   10000.0});
-
     ownship.setTrackUpdateCallback([](const adsb::AdsbTrack& t) {
         std::cout << "[OWN RECEIVED TRACK UPDATE] ICAO=0x"
                   << std::hex << std::uppercase << t.icao_address << std::dec
@@ -130,23 +129,27 @@ ADSBSensor::ADSBSensor(Hierarchy* h) : Sensor(h) {
     });
 
     ownship.setReceiveCallback([this](const adsb::AdsbReceiveReport& r) {
-        rxEvents.append({Simulation::simulationTime, r});
+        // rxEvents.append({Simulation::simulationTime, r});
     });
+}
+
+ADSBSensor::~ADSBSensor(){
+    detect.clear();
 }
 
 void ADSBSensor::scan(){
     if(!Active)return;
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
     if(!parentEntity) return;
-    Transform* source = (root->Platforms)[parentEntity->ID]->transform;
-    if(!source) return;
+    Transform& source = (root->Platforms)[parentEntity->ID]->transform;
+    // if(!source) return;
 
 
 
     rf::RfPosition pos;
-    pos.x = source->translation().z()*1000.f;
-    pos.y = source->translation().x()*1000.f;
-    pos.altitude = source->translation().y()*1000.f;
+    pos.x = source.translation().z()*1000.f;
+    pos.y = source.translation().x()*1000.f;
+    pos.altitude = source.translation().y()*1000.f;
     ownship.updatePosition(pos);
 
 
@@ -159,13 +162,13 @@ void ADSBSensor::scan(){
 
         adsb::AdsbConfig cfg = ownship.getAdsbConfiguration();
         cfg.enabled = enabled && parentEntity->Active;
-        cfg.status_data.utc_second = static_cast<uint32_t>(Simulation::simulationTime);
+        // cfg.status_data.utc_second = static_cast<uint32_t>(Simulation::simulationTime);
         cfg.static_data.flight_id = parentEntity->Name;
         ownship.configureAdsb(cfg);
         ownship.configureRf(own_rf);
     }
 
-    ownship.tick(Simulation::simulationTime);
+    // ownship.tick(Simulation::simulationTime);
 
     std::vector<rf::RfScanHit> rf_hits = ownship.rfDevice().scan();
 
@@ -202,33 +205,33 @@ void ADSBSensor::scan(){
         }
     }
 
-    if ((Simulation::simulationTime - lastPrintTime) >= 1.0f) {
-        lastPrintTime = Simulation::simulationTime;
+    // if ((Simulation::simulationTime - lastPrintTime) >= 1.0f) {
+    //     lastPrintTime = Simulation::simulationTime;
 
-        for (const auto& e : rxEvents) {
-            const auto& t = e.report.track;
+    //     for (const auto& e : rxEvents) {
+    //         const auto& t = e.report.track;
 
-            if (parentEntity && t.last_report.sender_id == parentEntity->ID) {
-                continue;
-            }
+    //         if (parentEntity && t.last_report.sender_id == parentEntity->ID) {
+    //             continue;
+    //         }
 
-            qDebug().noquote()
-                << QString("[ADSB RX] receiver=%1 sender=%2 icao=%3 flight=%4 lat=%5 lon=%6 alt_ft=%7 gs=%8 track=%9 vr=%10 snr=%11")
-                       .arg(QString::fromStdString(parentEntity ? parentEntity->Name : Name))
-                       .arg(QString::fromStdString(t.last_report.sender_id))
-                       .arg(t.icao_address)
-                       .arg(QString::fromStdString(t.static_data.flight_id))
-                       .arg(t.dynamic_data.latitude_deg, 0, 'f', 5)
-                       .arg(t.dynamic_data.longitude_deg, 0, 'f', 5)
-                       .arg(t.dynamic_data.altitude_baro_ft, 0, 'f', 1)
-                       .arg(t.dynamic_data.ground_speed_kt, 0, 'f', 2)
-                       .arg(t.dynamic_data.track_angle_deg, 0, 'f', 2)
-                       .arg(t.dynamic_data.vertical_rate_fpm, 0, 'f', 1)
-                       .arg(t.last_report.snr_db, 0, 'f', 2);
-        }
+    //         qDebug().noquote()
+    //             << QString("[ADSB RX] receiver=%1 sender=%2 icao=%3 flight=%4 lat=%5 lon=%6 alt_ft=%7 gs=%8 track=%9 vr=%10 snr=%11")
+    //                    .arg(QString::fromStdString(parentEntity ? parentEntity->Name : Name))
+    //                    .arg(QString::fromStdString(t.last_report.sender_id))
+    //                    .arg(t.icao_address)
+    //                    .arg(QString::fromStdString(t.static_data.flight_id))
+    //                    .arg(t.dynamic_data.latitude_deg, 0, 'f', 5)
+    //                    .arg(t.dynamic_data.longitude_deg, 0, 'f', 5)
+    //                    .arg(t.dynamic_data.altitude_baro_ft, 0, 'f', 1)
+    //                    .arg(t.dynamic_data.ground_speed_kt, 0, 'f', 2)
+    //                    .arg(t.dynamic_data.track_angle_deg, 0, 'f', 2)
+    //                    .arg(t.dynamic_data.vertical_rate_fpm, 0, 'f', 1)
+    //                    .arg(t.last_report.snr_db, 0, 'f', 2);
+    //     }
 
-        rxEvents.clear();
-    }
+    //     rxEvents.clear();
+    // }
 }
 
 

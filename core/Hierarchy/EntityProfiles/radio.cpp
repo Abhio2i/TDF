@@ -34,6 +34,33 @@ std::string textFromBytes(const std::vector<std::byte>& data) {
     return text;
 }
 
+static void mapModulation(radio::ModulationScheme scheme,
+                          uint16_t& major, uint16_t& detail)
+{
+    detail = 0;
+    switch (scheme) {
+    case radio::ModulationScheme::AM:    major = 1; break;
+    case radio::ModulationScheme::FM:    major = 3; break;
+    case radio::ModulationScheme::BPSK:
+    case radio::ModulationScheme::QPSK:
+    case radio::ModulationScheme::PSK8:  major = 3; break;
+    case radio::ModulationScheme::QAM16:
+    case radio::ModulationScheme::QAM64: major = 2; break;
+    case radio::ModulationScheme::FSK2:
+    case radio::ModulationScheme::FSK4:
+    case radio::ModulationScheme::GMSK:  major = 3; break;
+    default: major = 0; break;
+    }
+}
+
+static uint16_t mapSpreadSpectrum(radio::SpreadSpectrum ss)
+{
+    switch (ss) {
+    case radio::SpreadSpectrum::FHSS: return 1; // bit0: frequency hopping
+    case radio::SpreadSpectrum::DSSS: return 2; // bit1: pseudo-noise
+    default: return 0;
+    }
+}
 Radio::Radio(Hierarchy* h) : Entity(h) {
     type = Constants::EntityType::Radio;
     // Initialize default parameter (similar to Platform and Sensor)
@@ -184,7 +211,7 @@ Radio::Radio(Hierarchy* h) : Entity(h) {
     cfg.velocity_mps = 1;//m
     lib_radio->setReceiveCallbackWithMeta(
         [this](const std::vector<std::byte>& data, const radio::ReceiveReport& report) {
-            msgTimeStamp = Simulation::simulationTime;
+            // msgTimeStamp = Simulation::simulationTime;
             msg = textFromBytes(data);
 
             qDebug().noquote()
@@ -225,18 +252,35 @@ Radio::Radio(Hierarchy* h) : Entity(h) {
 }
 
 
+Radio::~Radio(){
+    lib_radio->setPowerOn(false);
+    targets.clear();
+    if(parentEntity){
+        auto& rd = getRadioData();
+        for(int i=0;i<90;i++){
+            rd.radios[i]=-1;
+        }
+    }
+}
+
 void Radio::sendMsg(std::string msg){
     lib_radio->transmit(bytesFromText(msg));
 }
 
-
+ECS::radioComponent& Radio::getRadioData() const{
+    return *parentEntity->root->world.GetComponent<ECS::radioComponent>(parentEntity->ecsID);
+}
 void Radio::spawn() {
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-    emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
+    // Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    emit root->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
 }
 
 std::vector<std::string>Radio:: getSupportedComponents(){
     return std::vector<std::string>{};
+}
+
+void Radio::addSupportedcomponent(){
+
 }
 
 void Radio::addComponent(std::string name) {
@@ -266,7 +310,7 @@ QJsonObject Radio::toJson() const {
     obj["parent_id"] = QString::fromStdString(parentID);
     obj["active"] = Active;
 
-
+    obj["radioIndex"] = radioIndex;
 
     QJsonObject RadioTypeObj;
     RadioTypeObj["type"] = "option";
@@ -560,6 +604,8 @@ void Radio::fromJson(const QJsonObject& obj) {
     if(obj.contains("AdditionalParameters")){
         AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
+    if (obj.contains("radioIndex"))
+        radioIndex = obj["radioIndex"].toInt();
     lib_radio->configure(cfg);
 }
 
@@ -667,38 +713,49 @@ void Radio::fromJson(const QJsonObject& obj) {
 //     }
 // }
 void Radio::scan(){
-    if((Simulation::simulationTime-msgTimeStamp) >= 2.50f){
-        msg = "";
-    }
+    // if((Simulation::simulationTime-msgTimeStamp) >= 2.50f){
+    //     msg = "";
+    // }
 
     if(!Active)return;
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
     if(!parentEntity) return;
-    Transform* source = (root->Platforms)[parentEntity->ID]->transform;
+
+    Transform& source = (root->Platforms)[parentEntity->ID]->transform;
     float head = 0.f;
-    if(!source) return;
+    // if(!source) return;
     radio::RadioConfig cfg = lib_radio->getConfiguration();
     if(cfg.id == ""||true){
         cfg.id = parentEntity->ID;
         lib_radio->setPowerOn(parentEntity->Active);
-        cfg.heading_deg = source->getHeading();
+        cfg.heading_deg = source.getHeading();
         head = cfg.heading_deg;
 
         lib_radio->configure(cfg);
     }
     radio::Position pos;
-    pos.x = source->translation().z()*1000.f;
-    pos.y = source->translation().x()*1000.f;
-    pos.altitude = source->translation().y()*1000.f;
+    pos.x = source.translation().z()*1000.f;
+    pos.y = source.translation().x()*1000.f;
+    pos.altitude = source.translation().y()*1000.f;
     model->updateRadioPosition(lib_radio, pos);
     std::vector<radio::ScanHit> hits = lib_radio->radiolibscan();
     targets.clear();
+    auto& rd = getRadioData();
+    if(parentEntity){
+        for(int i=0;i<90;i++){
+            rd.radios[i]=-1;
+        }
+    }
     for (std::size_t i = 0; i < hits.size(); ++i) {
         const radio::ScanHit& hit = hits[i];
         RadioTarget target;
         try {
             if ((root->Platforms)[hit.id]) {
                 target.entity = (root->Platforms)[hit.id];
+                if(parentEntity){
+                    rd.radios[i]= target.entity->ecsID;
+                }
+
             }else{
                 target.entity = nullptr;
             }
@@ -710,6 +767,48 @@ void Radio::scan(){
         target.radius = hit.distance_m/1000.f;
         targets.append(target);
 
+    }
+
+
+    // ── Build and emit Transmitter snapshot ──────────────────────────────────
+    {
+        radio::RadioConfig liveCfg = lib_radio->getConfiguration();
+
+        DISTransmitterSnapshot snap;
+        snap.transmittingEntityID = parentEntity->ID;
+        //snap.radioID = 1;  // TODO: single-radio-per-platform assumption —
+        snap.radioID = static_cast<uint16_t>(radioIndex > 0 ? radioIndex : 1);
+        // revisit with a real persistent per-radio ID
+        // if/when multi-radio platforms are exercised.
+
+        snap.frequency = static_cast<uint64_t>(liveCfg.frequency_hz);
+        snap.transmitFrequencyBandwidth = static_cast<float>(liveCfg.bandwidth_hz);
+        snap.power = static_cast<float>(liveCfg.tx_power_dbm);
+
+        // On=1 / Off=0 — lib_radio has no distinct "actively transmitting"
+        // state, only powered on/off. See radio_interface.h.
+        snap.transmitState = lib_radio->isPoweredOn() ? 1 : 0;
+
+        mapModulation(liveCfg.modulation_scheme, snap.modMajorModulation, snap.modDetail);
+        snap.modSpreadSpectrum = mapSpreadSpectrum(liveCfg.spread_spectrum);
+
+        // cryptoSystem left at 0 ("Other") — SISO-REF-010's Crypto System
+        // table lists specific tactical hardware (KY-58, VINSON, etc.), a
+        // different concept than Radio's AES/DES algorithm selection. No
+        // honest mapping exists between the two.
+        snap.cryptoSystem = 0;
+        snap.cryptoKeyId = 0;
+
+        snap.latitude  = source.getLatitude();
+        snap.longitude = source.getLongitude();
+        snap.altitude  = source.getAltitude();
+        snap.active = Active;
+
+
+        qDebug() << "[EMIT-CHECK-2] radio ID=" << QString::fromStdString(ID)
+                 << "radioIndex=" << radioIndex << "about to emit";
+
+        emit transmitterSnapshotReady(snap);
     }
 }
 int Radio::getRadioTargetCount() const

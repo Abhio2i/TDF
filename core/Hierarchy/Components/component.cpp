@@ -11,18 +11,19 @@
  * @brief Constructs a Component and registers it with the global hierarchy.
  * @param h Pointer to the parent Hierarchy object.
  */
-Component::Component(Hierarchy* h) {
+Component::Component() {
     // Optional: Initialization code
-    Hierarchy* hierarchy = h;
-    if (hierarchy) {
-        GlobalRegistry::registerComponent(this, hierarchy);
-        hierarchy->dictionry[ID] = {};
-    }
+    // Hierarchy* hierarchy = h;
+    // if (hierarchy) {
+    //     GlobalRegistry::registerComponent(this, hierarchy);
+    //     hierarchy->dictionry[ID] = {};
+    // }
 }
 
 /**
  * @brief Destructor – performs optional cleanup.
  */
 Component::~Component() {
+    parentEntity = nullptr;
     // Optional: Cleanup
 }

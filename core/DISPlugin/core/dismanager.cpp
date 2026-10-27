@@ -19,6 +19,12 @@
 #include <QDebug>
 #include <QTimer>
 #include "../handlers/iffhandler.h"
+#include "../handlers/emissionhandler.h"
+#include "../handlers/transmitterhandler.h"
+#include "../handlers/signalhandler.h"
+#include "../handlers/dataqueryhandler.h"
+#include "../handlers/setdatahandler.h"
+#include "../handlers/datahandler.h"
 // =============================================================================
 // Constructor
 // =============================================================================
@@ -166,6 +172,30 @@ void DISManager::createComponents()
     m_sender->setBridge(m_bridge);
     m_iffHandler = new IFFHandler(this);
     m_iffHandler->setMapper(&m_mapper);
+    // Acknowledge handler — processes incoming Acknowledge PDUs (type 15)
+    m_emissionHandler = new EmissionHandler(this);
+    m_emissionHandler->setMapper(&m_mapper);
+
+    m_designatorHandler = new DesignatorHandler(this);
+    m_designatorHandler->setMapper(&m_mapper);
+
+    m_ackHandler = new AcknowledgeHandler(this);
+    m_ackHandler->setMapper(&m_mapper);
+    // Transfer Ownership handler — processes incoming type-35 PDUs
+    m_transferHandler = new TransferOwnershipHandler(this);
+    m_transferHandler->setMapper(&m_mapper);
+
+    m_transmitterHandler = new TransmitterHandler(this);
+    m_transmitterHandler->setMapper(&m_mapper);
+    m_signalHandler = new SignalHandler(this);
+    m_signalHandler->setMapper(&m_mapper);
+
+    m_dataQueryHandler = new DataQueryHandler(this);
+    m_dataQueryHandler->setMapper(&m_mapper);
+    m_setDataHandler = new SetDataHandler(this);
+    m_setDataHandler->setMapper(&m_mapper);
+    m_dataHandler = new DataHandler(this);
+    m_dataHandler->setMapper(&m_mapper);
     DIS_LOG_BASIC("[DISManager] All components created");
 }
 
@@ -212,7 +242,42 @@ void DISManager::connectComponents()
     connect(m_dispatcher, &PDUDispatcher::iffReceived,
             m_iffHandler,  &IFFHandler::onIFFReceived,
             Qt::DirectConnection);
+    // ── Dispatcher → AcknowledgeHandler ──────────────────────────────────────────
+    connect(m_dispatcher, &PDUDispatcher::acknowledgeReceived,
+            m_ackHandler, &AcknowledgeHandler::onAcknowledgeReceived,
+            Qt::DirectConnection);
+    // ── Dispatcher → TransferOwnershipHandler ────────────────────────────────────
+    connect(m_dispatcher, &PDUDispatcher::transferOwnershipReceived,
+            m_transferHandler, &TransferOwnershipHandler::onTransferOwnershipReceived,
+            Qt::DirectConnection);
 
+    // ── TransferOwnershipHandler → PDUSender (auto-acknowledge, same thread) ─────
+    connect(m_transferHandler, &TransferOwnershipHandler::acknowledgeNeeded,
+            m_sender, &PDUSender::sendAcknowledge,
+            Qt::DirectConnection);
+    // ── ExerciseHandler → PDUSender (auto-acknowledge on CreateEntity/RemoveEntity)
+    // DirectConnection — both on network thread — fires immediately before reply
+    connect(m_exerciseHandler, &ExerciseHandler::acknowledgeNeeded,
+            m_sender, &PDUSender::sendAcknowledge,
+            Qt::DirectConnection);
+    connect(m_dispatcher, &PDUDispatcher::emissionReceived,
+            m_emissionHandler, &EmissionHandler::onEmissionReceived,
+            Qt::DirectConnection);
+    connect(m_dispatcher, &PDUDispatcher::designatorReceived,
+            m_designatorHandler, &DesignatorHandler::onDesignatorReceived,
+            Qt::DirectConnection);
+    connect(m_dispatcher, &PDUDispatcher::transmitterReceived,
+            m_transmitterHandler, &TransmitterHandler::onTransmitterReceived,
+            Qt::DirectConnection);
+    connect(m_dispatcher, &PDUDispatcher::signalReceived,
+            m_signalHandler, &SignalHandler::onSignalReceived,
+            Qt::DirectConnection);
+    connect(m_dispatcher, &PDUDispatcher::dataQueryReceived,
+            m_dataQueryHandler, &DataQueryHandler::onDataQueryReceived, Qt::DirectConnection);
+    connect(m_dispatcher, &PDUDispatcher::setDataReceived,
+            m_setDataHandler, &SetDataHandler::onSetDataReceived, Qt::DirectConnection);
+    connect(m_dispatcher, &PDUDispatcher::dataReceived,
+            m_dataHandler, &DataHandler::onDataReceived, Qt::DirectConnection);
     DIS_LOG_BASIC("[DISManager] Components wired");
 }
 
@@ -318,6 +383,72 @@ void DISManager::connectToPlugin()
 
     connect(m_plugin, &DISNetworkPlugin::_internalPushIFFSnapshot,
             this, &DISManager::onPushIFFSnapshot,
+            Qt::QueuedConnection);
+    // ── Incoming transfer → plugin queue ─────────────────────────────────────────
+    connect(m_transferHandler, &TransferOwnershipHandler::incomingTransferOwnership,
+            m_plugin, &DISNetworkPlugin::onIncomingTransferOwnership,
+            Qt::QueuedConnection);
+
+    // ── Plugin → DISManager for ownership operations ─────────────────────────────
+    connect(m_plugin, &DISNetworkPlugin::_internalSendTransferOwnership,
+            this, &DISManager::onSendTransferOwnership,
+            Qt::QueuedConnection);
+
+    connect(m_plugin, &DISNetworkPlugin::_internalTakeEntityOwnership,
+            this, &DISManager::onTakeEntityOwnership,
+            Qt::QueuedConnection);
+
+    connect(m_plugin, &DISNetworkPlugin::_internalGiveUpEntityOwnership,
+            this, &DISManager::onGiveUpEntityOwnership,
+            Qt::QueuedConnection);
+    // ── Incoming acknowledge → plugin queue ───────────────────────────────────────
+    connect(m_ackHandler, &AcknowledgeHandler::incomingAcknowledge,
+            m_plugin, &DISNetworkPlugin::onIncomingAcknowledge,
+            Qt::QueuedConnection);
+    connect(m_emissionHandler, &EmissionHandler::incomingEmission,
+            m_plugin, &DISNetworkPlugin::onIncomingEmission,
+            Qt::QueuedConnection);
+
+    connect(m_plugin, &DISNetworkPlugin::_internalSendEmission,
+            this, &DISManager::onSendEmission,
+            Qt::QueuedConnection);
+    connect(m_designatorHandler, &DesignatorHandler::incomingDesignator,
+            m_plugin, &DISNetworkPlugin::onIncomingDesignator,
+            Qt::QueuedConnection);
+
+    connect(m_plugin, &DISNetworkPlugin::_internalSendDesignator,
+            this, &DISManager::onSendDesignator,
+            Qt::QueuedConnection);
+
+    connect(m_transmitterHandler, &TransmitterHandler::incomingTransmitter,
+            m_plugin, &DISNetworkPlugin::onIncomingTransmitter,
+            Qt::QueuedConnection);
+    connect(m_plugin, &DISNetworkPlugin::_internalSendTransmitter,
+            this, &DISManager::onSendTransmitter,
+            Qt::QueuedConnection);
+
+    connect(m_signalHandler, &SignalHandler::incomingSignal,
+            m_plugin, &DISNetworkPlugin::onIncomingSignal,
+            Qt::QueuedConnection);
+    connect(m_plugin, &DISNetworkPlugin::_internalSendSignal,
+            this, &DISManager::onSendSignal,
+            Qt::QueuedConnection);
+    connect(m_dataQueryHandler, &DataQueryHandler::incomingDataQuery,
+            m_plugin, &DISNetworkPlugin::onIncomingDataQuery, Qt::QueuedConnection);
+    connect(m_plugin, &DISNetworkPlugin::_internalSendDataQuery,
+            this, &DISManager::onSendDataQuery, Qt::QueuedConnection);
+
+    connect(m_setDataHandler, &SetDataHandler::incomingSetData,
+            m_plugin, &DISNetworkPlugin::onIncomingSetData, Qt::QueuedConnection);
+    connect(m_plugin, &DISNetworkPlugin::_internalSendSetData,
+            this, &DISManager::onSendSetData, Qt::QueuedConnection);
+
+    connect(m_dataHandler, &DataHandler::incomingData,
+            m_plugin, &DISNetworkPlugin::onIncomingData, Qt::QueuedConnection);
+    connect(m_plugin, &DISNetworkPlugin::_internalSendData,
+            this, &DISManager::onSendData, Qt::QueuedConnection);
+    connect(m_plugin, &DISNetworkPlugin::_internalSendAcknowledgeDecision,
+            this, &DISManager::onSendAcknowledgeDecision,
             Qt::QueuedConnection);
 }
 
@@ -440,3 +571,73 @@ void DISManager::onPushIFFSnapshot(DISIFFSnapshot snap)
 {
     if (m_sender) m_sender->updateIFFSnapshot(snap);
 }
+// =============================================================================
+// onSendTransferOwnership
+// Forwards from plugin (main thread) to PDUSender (network thread)
+// =============================================================================
+void DISManager::onSendAcknowledgeDecision(DISAcknowledgeData ack)
+{
+    if (m_sender) m_sender->sendAcknowledge(ack);
+}
+void DISManager::onSendTransferOwnership(DISTransferOwnershipData data)
+{
+    if (m_sender) m_sender->sendTransferOwnership(data);
+}
+
+// =============================================================================
+// onTakeEntityOwnership
+// Called after Machine B accepts a Transfer Ownership PDU.
+// Flips entity to local in mapper — PDUSender starts sending EntityState
+// automatically on the next 5Hz tick via pushAllLocalSnapshots().
+// =============================================================================
+void DISManager::onTakeEntityOwnership(QString entityID)
+{
+    m_mapper.takeOwnership(entityID.toStdString());
+    DIS_LOG_BASIC("[DISManager] Ownership taken for entity:" << entityID);
+}
+
+// =============================================================================
+// onGiveUpEntityOwnership
+// Called after Machine A receives AbleToComply Acknowledge.
+// Removes entity from PDUSender so EntityState stops broadcasting.
+// =============================================================================
+void DISManager::onGiveUpEntityOwnership(QString entityID)
+{
+    DIS_LOG_BASIC("[DISManager] onGiveUpEntityOwnership:"
+                  << entityID);
+
+    // Clear from bridge cache — prevents re-insertion via collectSnapshots()
+    if (m_bridge) m_bridge->removeSnapshot(entityID);
+
+    // Blacklist in sender — prevents EntityState from being sent
+    if (m_sender) m_sender->removeEntitySnapshot(entityID);
+
+    // Flip isLocal to false in mapper — EntityStateHandler will now
+    // accept incoming EntityState from the new owner (Machine B)
+    // instead of dropping it at line 101 of entitystatehandler.cpp
+    m_mapper.giveUpOwnership(entityID.toStdString());
+}
+void DISManager::onSendEmission(DISEmissionSnapshot snap)
+{
+    if (m_sender) m_sender->updateEmissionSnapshot(snap);
+
+    //if (m_sender) m_sender->sendEmission(snap);
+}
+
+void DISManager::onSendDesignator(DISDesignatorSnapshot snap)
+{
+    if (m_sender) m_sender->sendDesignator(snap);
+}
+void DISManager::onSendTransmitter(DISTransmitterSnapshot snap)
+{
+    // if (m_sender) m_sender->sendTransmitter(snap);
+    if (m_sender) m_sender->updateTransmitterSnapshot(snap);
+
+}
+void DISManager::onSendSignal(DISSignalSnapshot snap)
+{
+    if (m_sender) m_sender->sendSignal(snap);
+}
+void DISManager::onSendDataQuery(DISDatumSnapshot snap) { if (m_sender) m_sender->sendDataQuery(snap); }
+void DISManager::onSendSetData(DISDatumSnapshot snap)   { if (m_sender) m_sender->sendSetData(snap); }
+void DISManager::onSendData(DISDatumSnapshot snap)      { if (m_sender) m_sender->sendData(snap); }

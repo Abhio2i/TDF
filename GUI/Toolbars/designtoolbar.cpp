@@ -14,11 +14,11 @@
  *               Also defines StayOpenMenu, a custom QMenu that stays open
  *               when an action is clicked.
  *
+ *
  * REQUIREMENTS: Implements REQ-DESIGNTOOLBAR-010 through REQ-DESIGNTOOLBAR-018
  *
  * AUTHOR:       Arti Rajpoot
  * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-DESIGNTOOLBAR-001
- *
  *
  * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
  *               Restricted circulation — defence simulation use only.
@@ -27,7 +27,7 @@
 #include "GUI/Toolbars/designtoolbar.h"
 #include "designtoolbar-styles.h"
 #include "GUI/Tacticaldisplay/Gis/custommapdialog.h"
-#include "GUI/Tacticaldisplay/Gis/layerinformationdialog.h"
+#include "GUI/Tacticaldisplay/Layer/layerinformationdialog.h"
 #include "GUI/Tacticaldisplay/canvaswidget.h"
 #include "GUI/Editors/recentprojectsmanager.h"
 #include "GUI/Tacticaldisplay/tooltiphelper.h"
@@ -68,95 +68,69 @@ QPixmap DesignToolBar::withWhiteBg(const QString &iconPath) {
 DesignToolBar::DesignToolBar(QWidget *parent, ScenarioConfig* config)
     : QToolBar(parent), scenarioConfig(config) {
     setWindowTitle("Design ToolBar");
-
-    // Apply toolbar styles
     setStyleSheet(DesignToolbarStyles::Toolbar);
-
-    // Set smaller icon size
     setIconSize(ICON_SIZE);
-
     createActions();
     setupToolBar();
+    onModeChanged(Translate);
 }
 
 // Creates all toolbar actions, menus, and signal connections
 void DesignToolBar::createActions() {
-    // Default base map layers
     mapLayers = {
         { "OpenStreetMap", "osm", 0, 9, "", false, 1.0, "N/A", "Raster" },
         { "Satellite Map", "satellite", 0, 9, "", true, 1.0, "N/A", "Raster" },
         { "Terrain Map", "terrain", 0, 9, "", true, 1.0, "N/A", "Raster" }
     };
-
-    // Initialize with OpenStreetMap as default selected layer
     selectedBaseLayers.clear();
     selectedBaseLayers.append("osm");
-
-    // Initialize layer order tracking with OSM as default
     currentLayerOrder.clear();
     currentLayerOrder.append("osm");
-
-    // Main map layer selection action
     mapSelectLayerAction = new QAction(QIcon(withWhiteBg(":/icons/images/map.png")), tr("Map Layer"), this);
     mapSelectLayerAction->setCheckable(true);
-
-    // Create the two-section menu
     StayOpenMenu* mapLayerMenu = new StayOpenMenu(this);
     mapLayerMenu->setStyleSheet(DesignToolbarStyles::StayOpenMenu);
 
     // ========== SECTION 1: Available Base Map Layers ==========
-    // Add section label
     QLabel* baseLayersLabel = new QLabel("  Available Base Map Layers");
     baseLayersLabel->setStyleSheet(DesignToolbarStyles::MenuLabel);
     QWidgetAction* baseLabelAction = new QWidgetAction(this);
     baseLabelAction->setDefaultWidget(baseLayersLabel);
     mapLayerMenu->addAction(baseLabelAction);
-
-    // Add base layer items with "+" buttons
     addLayerActions.clear();
     for (const auto& layer : mapLayers) {
-        // Create a widget for each base layer row
         QWidget* layerWidget = new QWidget();
         layerWidget->setStyleSheet("background-color: #1A3652;");
-
         QHBoxLayout* layout = new QHBoxLayout(layerWidget);
         layout->setContentsMargins(10, 2, 10, 2);
         layout->setSpacing(10);
-
         // Layer name label
         QLabel* nameLabel = new QLabel(layer.name);
         nameLabel->setMinimumWidth(150);
         nameLabel->setStyleSheet("color: white; background-color: transparent;");
         layout->addWidget(nameLabel);
         layout->addStretch();
-
         // "+" button to add layer
         QPushButton* addButton = new QPushButton("+");
         addButton->setFixedSize(25, 25);
         addButton->setStyleSheet(DesignToolbarStyles::PushButton);
-
         // Disable button if layer is already selected (OSM starts disabled)
         if (selectedBaseLayers.contains(layer.id)) {
             addButton->setEnabled(false);
         }
-
         // Capture layer.id by value
         QString capturedLayerId = layer.id;
         connect(addButton, &QPushButton::clicked, this, [this, capturedLayerId]() {
             onAddBaseLayerToSelected(capturedLayerId);
         });
-
         layout->addWidget(addButton);
         layerWidget->setLayout(layout);
-
         // Add widget to menu
         QWidgetAction* widgetAction = new QWidgetAction(this);
         widgetAction->setDefaultWidget(layerWidget);
         mapLayerMenu->addAction(widgetAction);
-
         // Store the add button for later enable/disable control
         addLayerActions[layer.id] = widgetAction;
-
         // Initialize custom maps
         if (layer.isCustom) {
             emit customMapAdded(layer.name, layer.zoomMin, layer.zoomMax,
@@ -165,9 +139,7 @@ void DesignToolBar::createActions() {
     }
 
     mapLayerMenu->addSeparator();
-
     // ========== SECTION 2: Selected Layers ==========
-    // Add section label
     QLabel* selectedLayersLabel = new QLabel("  Selected Layers");
     selectedLayersLabel->setStyleSheet(DesignToolbarStyles::MenuLabel);
     QWidgetAction* selectedLabelAction = new QWidgetAction(this);
@@ -186,7 +158,6 @@ void DesignToolBar::createActions() {
             action->setCheckable(true);
             action->setChecked(true);
             action->setData(layer.id);
-
             mapLayerMenu->addAction(action);
             layerGroup->addAction(action);
             layerActions[layer.id] = action;
@@ -194,7 +165,6 @@ void DesignToolBar::createActions() {
             // Connection for visibility toggle
             connect(action, &QAction::triggered, this, [=](bool checked) {
                 QString layerId = action->data().toString();
-
                 if (checked) {
                     // ACTIVATING: Move this layer to the front (top of rendering)
                     currentLayerOrder.removeAll(layerId);
@@ -216,20 +186,16 @@ void DesignToolBar::createActions() {
 
                 // Emit the properly ordered active layers
                 emit mapLayerChanged(activeLayers.join(","));
-
-                qDebug() << "Active layers emitted:" << activeLayers;
             });
 
             break;
         }
     }
-
     mapSelectLayerAction->setMenu(mapLayerMenu);
-
     // Main view mode action - for panning and navigation
     viewAction = new QAction(QIcon(withWhiteBg(":/icons/images/view.jpg")), tr("View"), this);
     viewAction->setCheckable(true);
-    viewAction->setShortcut(QKeySequence(Qt::Key_0));
+    viewAction->setShortcut(QKeySequence(Qt::Key_1));
     connect(viewAction, &QAction::triggered, this, [=]() {
         highlightAction(viewAction);
         emit modeChanged(Panning);
@@ -239,7 +205,7 @@ void DesignToolBar::createActions() {
     // Main move action - for translating objects
     moveAction = new QAction(QIcon(withWhiteBg(":/icons/images/move.png")), tr("Move"), this);
     moveAction->setCheckable(true);
-    moveAction->setShortcut(QKeySequence(Qt::Key_1));
+    moveAction->setShortcut(QKeySequence(Qt::Key_2));
     connect(moveAction, &QAction::triggered, this, [=]() {
         highlightAction(moveAction);
         emit modeChanged(Translate);
@@ -248,13 +214,11 @@ void DesignToolBar::createActions() {
     // Main rotate action - for rotating objects
     rotateAction = new QAction(QIcon(withWhiteBg(":/icons/images/rotate.png")), tr("Rotate"), this);
     rotateAction->setCheckable(true);
-    rotateAction->setShortcut(QKeySequence(Qt::Key_2));
+    rotateAction->setShortcut(QKeySequence(Qt::Key_3));
     connect(rotateAction, &QAction::triggered, this, [=]() {
         highlightAction(rotateAction);
         emit modeChanged(Rotate);
     });
-
-
     // Main zoom in action
     zoomInAction = new QAction(QIcon(withWhiteBg(":/icons/images/zoom-in.png")), tr("Zoom In"), this);
     zoomInAction->setCheckable(false);
@@ -302,9 +266,7 @@ void DesignToolBar::createActions() {
 
     // Get available fields from TooltipHelper
     QStringList availableFields = TooltipHelper::getAvailableFields();
-
     tooltipFieldActions.clear();
-
     // LOAD SAVED SETTINGS FIRST
     QSet<QString> savedFields;
     if (scenarioConfig) {
@@ -325,7 +287,6 @@ void DesignToolBar::createActions() {
                 fieldAction->setChecked(true);
             }
         }
-
         tooltipOptionsMenu->addAction(fieldAction);
         tooltipFieldActions[field] = fieldAction;
 
@@ -338,55 +299,49 @@ void DesignToolBar::createActions() {
 
     // Emit initial state
     updateTooltipOptions();
-
     QAction* colliderAction = new QAction("Collider", this);
-    QAction* meshAction = new QAction("Mesh", this);
-    QAction* outlineAction = new QAction("Outline", this);
+    // QAction* meshAction = new QAction("Mesh", this);
+    // QAction* outlineAction = new QAction("Outline", this);
     // QAction* informationAction = new QAction("Information", this);
-    QAction* fpsAction = new QAction("FPS", this);
+    // QAction* fpsAction = new QAction("FPS", this);
     QAction* imageAction = new QAction("Entities", this);
     QAction* sensorsAction = new QAction("Sensors", this);
     QAction* radioAction = new QAction("Radio", this);
     QAction* trajectoriesAction = new QAction("Trajectories", this);
     tooltipAction->setCheckable(true);
-
     tooltipAction->setChecked(false);
     colliderAction->setCheckable(true);
     colliderAction->setChecked(true);
-    meshAction->setCheckable(true);
-    meshAction->setChecked(true);
-    outlineAction->setCheckable(true);
-    outlineAction->setChecked(true);
+    // meshAction->setCheckable(true);
+    // meshAction->setChecked(true);
+    // outlineAction->setCheckable(true);
+    // outlineAction->setChecked(true);
     // informationAction->setCheckable(true);
     // informationAction->setChecked(false);
-    fpsAction->setCheckable(true);
-    fpsAction->setChecked(true);
+    // fpsAction->setCheckable(true);
+    // fpsAction->setChecked(true);
     imageAction->setCheckable(true);
     imageAction->setChecked(true);
     sensorsAction->setCheckable(true);
     sensorsAction->setChecked(true);
     radioAction->setCheckable(true);
-    radioAction->setChecked(false);
+    radioAction->setChecked(true);
     trajectoriesAction->setCheckable(true);
     trajectoriesAction->setChecked(true);
     layerMenu->addAction(tooltipAction);
     layerMenu->addAction(colliderAction);
-    layerMenu->addAction(meshAction);
-    layerMenu->addAction(outlineAction);
+    // layerMenu->addAction(meshAction);
+    // layerMenu->addAction(outlineAction);
     // layerMenu->addAction(informationAction);
-    layerMenu->addAction(fpsAction);
+    // layerMenu->addAction(fpsAction);
     layerMenu->addAction(imageAction);
     layerMenu->addSeparator();
     layerMenu->addAction(sensorsAction);
     layerMenu->addAction(radioAction);
     layerMenu->addAction(trajectoriesAction);
-
     layerSelectAction->setMenu(layerMenu);
-
     connect(tooltipAction, &QAction::triggered, this, [=](bool checked) {
         emit layerOptionToggled("ToolTip", checked);
-
-        // Also update which fields are shown
         if (checked) {
             updateTooltipOptions();
         }
@@ -394,18 +349,18 @@ void DesignToolBar::createActions() {
     connect(colliderAction, &QAction::triggered, this, [=](bool checked) {
         emit layerOptionToggled("Collider", checked);
     });
-    connect(meshAction, &QAction::triggered, this, [=](bool checked) {
-        emit layerOptionToggled("Mesh", checked);
-    });
-    connect(outlineAction, &QAction::triggered, this, [=](bool checked) {
-        emit layerOptionToggled("Outline", checked);
-    });
-    // connect(informationAction, &QAction::triggered, this, [=](bool checked) {
-    //     emit layerOptionToggled("Information", checked);
+    // connect(meshAction, &QAction::triggered, this, [=](bool checked) {
+    //     emit layerOptionToggled("Mesh", checked);
     // });
-    connect(fpsAction, &QAction::triggered, this, [=](bool checked) {
-        emit layerOptionToggled("FPS", checked);
-    });
+    // connect(outlineAction, &QAction::triggered, this, [=](bool checked) {
+    //     emit layerOptionToggled("Outline", checked);
+    // });
+    // // connect(informationAction, &QAction::triggered, this, [=](bool checked) {
+    // //     emit layerOptionToggled("Information", checked);
+    // // });
+    // connect(fpsAction, &QAction::triggered, this, [=](bool checked) {
+    //     emit layerOptionToggled("FPS", checked);
+    // });
     connect(imageAction, &QAction::triggered, this, [=](bool checked) {
         emit layerOptionToggled("Image", checked);
     });
@@ -643,6 +598,69 @@ void DesignToolBar::createActions() {
         }
     });
 
+
+    // ========== Selection (With GIS / Without GIS) ==========
+    selectionAction = new QAction(QIcon(withWhiteBg(":/icons/images/selection.png")), tr("Selection"), this);
+    selectionAction->setCheckable(true);
+
+    QMenu* selectionMenu = new QMenu(this);
+    selectionMenu->setStyleSheet(DesignToolbarStyles::StayOpenMenu);
+
+    selectionWithGisAction = new QAction(tr("Selection with GIS"), this);
+    selectionWithGisAction->setCheckable(true);
+    selectionWithoutGisAction = new QAction(tr("Selection without GIS"), this);
+    selectionWithoutGisAction->setCheckable(true);
+
+    // Exclusive OFF → user same option dubara click karke uncheck kar sake
+    QActionGroup* selectionGroup = new QActionGroup(this);
+    selectionGroup->setExclusive(false);
+    selectionGroup->addAction(selectionWithGisAction);
+    selectionGroup->addAction(selectionWithoutGisAction);
+
+    selectionMenu->addAction(selectionWithGisAction);
+    selectionMenu->addAction(selectionWithoutGisAction);
+    selectionAction->setMenu(selectionMenu);
+
+    connect(selectionWithGisAction, &QAction::triggered, this, [=](bool checked) {
+        if (checked) {
+            selectionWithoutGisAction->setChecked(false);
+            highlightAction(selectionAction);
+            selectionAction->setChecked(true);
+            emit selectionModeChanged(true);
+            emit modeChanged(Translate);
+        } else {
+            if (!selectionWithoutGisAction->isChecked()) {
+                clearSelectionModeUI();
+                emit modeChanged(Panning);
+            }
+        }
+    });
+
+    connect(selectionWithoutGisAction, &QAction::triggered, this, [=](bool checked) {
+        if (checked) {
+            selectionWithGisAction->setChecked(false);
+            highlightAction(selectionAction);
+            selectionAction->setChecked(true);
+            emit selectionModeChanged(false);
+            emit modeChanged(Translate);
+        } else {
+            if (!selectionWithGisAction->isChecked()) {
+                clearSelectionModeUI();
+                emit modeChanged(Panning);
+            }
+        }
+    });
+
+
+    dataSyncAction = new QAction(QIcon(withWhiteBg(":/icons/images/data-sync.png")),
+                                 tr("Data Sync"), this);
+    dataSyncAction->setCheckable(false);
+    connect(dataSyncAction, &QAction::triggered, this, [=]() {
+        highlightAction(dataSyncAction);
+        emit dataSyncTriggered();
+    });
+
+
     // Main search menu setup with coordinate parsing
     QMenu* searchMenu = new QMenu(this);
     searchMenu->setStyleSheet(DesignToolbarStyles::Menu);
@@ -652,7 +670,6 @@ void DesignToolBar::createActions() {
     searchInput->setPlaceholderText("Enter coordinates (lat,lon)...");
     searchInput->setMinimumWidth(200);
     searchInput->setStyleSheet(DesignToolbarStyles::LineEdit);
-
     connect(searchInput, &QLineEdit::returnPressed, [this, searchInput]() {
         QString input = searchInput->text().trimmed();
         QRegExp coordRegex("^[-]?\\d*\\.?\\d+,[-]?\\d*\\.?\\d+$");
@@ -669,7 +686,6 @@ void DesignToolBar::createActions() {
         } else {
             emit searchPlaceTriggered(input);
         }
-
         searchInput->clear();
     });
     searchAction->setDefaultWidget(searchInput);
@@ -680,7 +696,7 @@ void DesignToolBar::createActions() {
 // Main highlighting method: Visual feedback for active toolbar actions
 void DesignToolBar::highlightAction(QAction *activeAction) {
     QList<QAction*> actions = {
-        viewAction, moveAction, rotateAction, scaleAction,
+        viewAction, moveAction, rotateAction, /*scaleAction,*/
         zoomInAction, zoomOutAction,
         layerSelectAction,
         editTrajectoryAction,
@@ -690,6 +706,7 @@ void DesignToolBar::highlightAction(QAction *activeAction) {
         selectCenterAction, layerInfoAction,
         shapeAction, bitmapAction, selectBitmapAction,
         measureDistanceAction, presetLayersAction,
+        selectionAction
         // geoJsonLayersAction
     };
 
@@ -731,74 +748,86 @@ void DesignToolBar::setupToolBar()
     layerButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
     addWidget(layerButton);
 
-    QToolButton *addTrajectoryButton = new QToolButton(this);
-    addTrajectoryButton->setDefaultAction(addTrajectoryAction);
-    addTrajectoryButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
-    addWidget(addTrajectoryButton);
+    // QToolButton *addTrajectoryButton = new QToolButton(this);
+    // addTrajectoryButton->setDefaultAction(addTrajectoryAction);
+    // addTrajectoryButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    // addWidget(addTrajectoryButton);
     // addSeparator();
 
-    // Zoom and info section
-    addAction(zoomInAction);
-    addAction(zoomOutAction);
-    // addAction(layerInfoAction);
-    addAction(selectCenterAction);
+    // // Zoom and info section
+    // addAction(zoomInAction);
+    // addAction(zoomOutAction);
+    // // addAction(layerInfoAction);
+    // addAction(selectCenterAction);
 
-    QToolButton *coordSystemButton = new QToolButton(this);
-    coordSystemButton->setDefaultAction(coordinateSystemAction);
-    coordSystemButton->setPopupMode(QToolButton::InstantPopup);
-    coordSystemButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
-    addWidget(coordSystemButton);
+    // QToolButton *coordSystemButton = new QToolButton(this);
+    // coordSystemButton->setDefaultAction(coordinateSystemAction);
+    // coordSystemButton->setPopupMode(QToolButton::InstantPopup);
+    // coordSystemButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    // addWidget(coordSystemButton);
 
-    QToolButton *mapLayerButton = new QToolButton(this);
-    mapLayerButton->setDefaultAction(mapSelectLayerAction);
-    mapLayerButton->setPopupMode(QToolButton::InstantPopup);
-    mapLayerButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
-    addWidget(mapLayerButton);
-    QToolButton *importLayerButton = new QToolButton(this);
-    importLayerButton->setDefaultAction(importLayerAction);
-    importLayerButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
-    addWidget(importLayerButton);
-    // QToolButton *geoJsonLayersButton = new QToolButton(this);
-    // geoJsonLayersButton->setDefaultAction(geoJsonLayersAction);
-    // geoJsonLayersButton->setPopupMode(QToolButton::InstantPopup);
-    // geoJsonLayersButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
-    // addWidget(geoJsonLayersButton);
+    // QToolButton *mapLayerButton = new QToolButton(this);
+    // mapLayerButton->setDefaultAction(mapSelectLayerAction);
+    // mapLayerButton->setPopupMode(QToolButton::InstantPopup);
+    // mapLayerButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    // addWidget(mapLayerButton);
+    // QToolButton *importLayerButton = new QToolButton(this);
+    // importLayerButton->setDefaultAction(importLayerAction);
+    // importLayerButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    // addWidget(importLayerButton);
 
-    QToolButton *searchPlaceButton = new QToolButton(this);
-    searchPlaceButton->setDefaultAction(searchPlaceAction);
-    searchPlaceButton->setPopupMode(QToolButton::InstantPopup);
-    searchPlaceButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
-    addWidget(searchPlaceButton);
+    // // QToolButton *geoJsonLayersButton = new QToolButton(this);
+    // // geoJsonLayersButton->setDefaultAction(geoJsonLayersAction);
+    // // geoJsonLayersButton->setPopupMode(QToolButton::InstantPopup);
+    // // geoJsonLayersButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    // // addWidget(geoJsonLayersButton);
 
-    // Drawing tools section
-    QToolButton *shapeButton = new QToolButton(this);
-    shapeButton->setDefaultAction(shapeAction);
-    shapeButton->setPopupMode(QToolButton::InstantPopup);
-    shapeButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
-    addWidget(shapeButton);
+    // QToolButton *searchPlaceButton = new QToolButton(this);
+    // searchPlaceButton->setDefaultAction(searchPlaceAction);
+    // searchPlaceButton->setPopupMode(QToolButton::InstantPopup);
+    // searchPlaceButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    // addWidget(searchPlaceButton);
 
-    QToolButton *bitmapButton = new QToolButton(this);
-    bitmapButton->setDefaultAction(bitmapAction);
-    bitmapButton->setPopupMode(QToolButton::InstantPopup);
-    bitmapButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
-    addWidget(bitmapButton);
+    // // Drawing tools section
+    // QToolButton *shapeButton = new QToolButton(this);
+    // shapeButton->setDefaultAction(shapeAction);
+    // shapeButton->setPopupMode(QToolButton::InstantPopup);
+    // shapeButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    // addWidget(shapeButton);
 
-    QToolButton *selectBitmapButton = new QToolButton(this);
-    selectBitmapButton->setDefaultAction(selectBitmapAction);
-    selectBitmapButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
-    addWidget(selectBitmapButton);
+    // QToolButton *bitmapButton = new QToolButton(this);
+    // bitmapButton->setDefaultAction(bitmapAction);
+    // bitmapButton->setPopupMode(QToolButton::InstantPopup);
+    // bitmapButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    // addWidget(bitmapButton);
 
-    // Measurement and preset layers section
-    QToolButton *measureDistanceButton = new QToolButton(this);
-    measureDistanceButton->setDefaultAction(measureDistanceAction);
-    measureDistanceButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
-    addWidget(measureDistanceButton);
+    // QToolButton *selectBitmapButton = new QToolButton(this);
+    // selectBitmapButton->setDefaultAction(selectBitmapAction);
+    // selectBitmapButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    // addWidget(selectBitmapButton);
 
-    QToolButton *presetLayersButton = new QToolButton(this);
-    presetLayersButton->setDefaultAction(presetLayersAction);
-    presetLayersButton->setPopupMode(QToolButton::InstantPopup);
-    presetLayersButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
-    addWidget(presetLayersButton);
+    // // Measurement and preset layers section
+    // QToolButton *measureDistanceButton = new QToolButton(this);
+    // measureDistanceButton->setDefaultAction(measureDistanceAction);
+    // measureDistanceButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    // addWidget(measureDistanceButton);
+
+    // QToolButton *presetLayersButton = new QToolButton(this);
+    // presetLayersButton->setDefaultAction(presetLayersAction);
+    // presetLayersButton->setPopupMode(QToolButton::InstantPopup);
+    // presetLayersButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    // addWidget(presetLayersButton);
+
+    QToolButton *selectionButton = new QToolButton(this);
+    selectionButton->setDefaultAction(selectionAction);
+    selectionButton->setPopupMode(QToolButton::InstantPopup);
+    selectionButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    addWidget(selectionButton);
+    // QToolButton *dataSyncButton = new QToolButton(this);
+    // dataSyncButton->setDefaultAction(dataSyncAction);
+    // dataSyncButton->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    // addWidget(dataSyncButton);
+
 }
 
 // Main mode change handler: Updates action states based on current transformation mode
@@ -855,30 +884,12 @@ void DesignToolBar::importLayer() {
     highlightAction(importLayerAction);
     emit importLayerTriggered(filePath);
 }
-// // Main GeoJSON layer addition handler: Updates menu with new layer
-// void DesignToolBar::onGeoJsonLayerAdded(const QString &layerName) {
-//     if (geoJsonLayerActions.contains(layerName)) {
-//         return;
-//     }
-//     QAction* action = new QAction(layerName, this);
-//     action->setCheckable(true);
-//     action->setChecked(true);
-//     geoJsonLayersAction->menu()->addAction(action);
-//     geoJsonLayerActions[layerName] = action;
-//     connect(action, &QAction::triggered, this, [=](bool checked) {
-//         emit geoJsonLayerToggled(layerName, checked);
-//     });
-// }
 
 // Handle adding a base layer to selected layers
 void DesignToolBar::onAddBaseLayerToSelected(const QString& layerId) {
-    // Check if already added
     if (selectedBaseLayers.contains(layerId)) {
-        qDebug() << "Layer" << layerId << "is already in selected layers";
         return;
     }
-
-    // Find the layer info - search by index to avoid type issues
     int layerIndex = -1;
     for (int i = 0; i < mapLayers.size(); ++i) {
         if (mapLayers[i].id == layerId) {
@@ -887,17 +898,13 @@ void DesignToolBar::onAddBaseLayerToSelected(const QString& layerId) {
         }
     }
     if (layerIndex < 0) {
-        qDebug() << "Layer" << layerId << "not found in mapLayers";
         return;
     }
-    // Add to selected layers list
+
     selectedBaseLayers.append(layerId);
-    // Update the menu
     updateMapLayersMenu();
-    // Add to layer order (at the front, as it's newly added and active)
     currentLayerOrder.removeAll(layerId);
     currentLayerOrder.prepend(layerId);
-    // Emit signal to load/activate this layer
     QStringList activeLayers;
     for (const QString& orderedLayer : currentLayerOrder) {
         if (layerActions.contains(orderedLayer) &&
@@ -913,13 +920,10 @@ void DesignToolBar::updateMapLayersMenu() {
     // Get the menu
     StayOpenMenu* mapLayerMenu = qobject_cast<StayOpenMenu*>(mapSelectLayerAction->menu());
     if (!mapLayerMenu) return;
-
     // Clear existing menu
     mapLayerMenu->clear();
-
     // Recreate menu with updated state
     mapLayerMenu->setStyleSheet(DesignToolbarStyles::StayOpenMenu);
-
     // ========== SECTION 1: Available Base Map Layers ==========
     QLabel* baseLayersLabel = new QLabel("  Available Base Map Layers");
     baseLayersLabel->setStyleSheet(DesignToolbarStyles::MenuLabel);
@@ -974,11 +978,9 @@ void DesignToolBar::updateMapLayersMenu() {
     selectedLabelAction->setDefaultWidget(selectedLayersLabel);
     mapLayerMenu->addAction(selectedLabelAction);
 
-    // Add selected layers with checkboxes
     QActionGroup* layerGroup = new QActionGroup(this);
     layerGroup->setExclusive(false);
     for (const QString& layerId : selectedBaseLayers) {
-        // Find layer info by index
         int layerIndex = -1;
         for (int i = 0; i < mapLayers.size(); ++i) {
             if (mapLayers[i].id == layerId) {
@@ -1037,15 +1039,109 @@ void DesignToolBar::updateTooltipOptions()
     }
     emit tooltipOptionsChanged(activeOptions);
 }
+
 void DesignToolBar::setTrajectoryActionEnabled(bool enabled) {
     if (addTrajectoryAction) {
         addTrajectoryAction->setEnabled(enabled);
-        // Also update button style visually
         QWidget* btn = widgetForAction(addTrajectoryAction);
         if (btn) {
             btn->setStyleSheet(enabled
                                    ? DesignToolbarStyles::ToolbarButton
                                    : DesignToolbarStyles::ToolbarButton + "opacity: 0.4;");
         }
+    }
+}
+
+QAction* DesignToolBar::registerPluginAction(const QString& pluginId,
+                                             QAction* action,
+                                             int position)
+{
+    if (!action || pluginId.isEmpty())
+        return nullptr;
+    if (position < 0 || position >= this->actions().size()) {
+        addAction(action);
+    } else {
+        insertAction(this->actions().at(position), action);
+    }
+    QWidget* btn = widgetForAction(action);
+    if (btn) {
+        btn->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    }
+    m_pluginOwnedObjects[pluginId].append(action);
+    return action;
+}
+
+QToolButton* DesignToolBar::registerPluginToolButton(const QString& pluginId,
+                                                     QAction* action,
+                                                     QToolButton::ToolButtonPopupMode mode,
+                                                     int position)
+{
+    if (!action || pluginId.isEmpty())
+        return nullptr;
+    QToolButton* btn = new QToolButton(this);
+    btn->setDefaultAction(action);
+    btn->setPopupMode(mode);
+    btn->setStyleSheet(DesignToolbarStyles::ToolbarButton);
+    btn->setIconSize(ICON_SIZE);
+    QAction* wrapperAction = nullptr;
+    if (position < 0) {
+        wrapperAction = addWidget(btn);
+    } else if (position < this->actions().size()) {
+        wrapperAction = insertWidget(this->actions().at(position), btn);
+    } else {
+        wrapperAction = addWidget(btn);
+    }
+    m_pluginOwnedObjects[pluginId].append(btn);
+    m_pluginOwnedObjects[pluginId].append(action);
+    if (wrapperAction) {
+        m_pluginOwnedObjects[pluginId].append(wrapperAction);
+    }
+    return btn;
+}
+
+QAction* DesignToolBar::registerPluginMenu(const QString& pluginId,
+                                           const QString& title,
+                                           QMenu* menu,
+                                           int position)
+{
+    if (!menu || pluginId.isEmpty())
+        return nullptr;
+    QAction* act = new QAction(title, this);
+    act->setMenu(menu);
+    registerPluginToolButton(pluginId, act, QToolButton::InstantPopup, position);
+    m_pluginOwnedObjects[pluginId].append(menu);
+    return act;
+}
+
+void DesignToolBar::unregisterPlugin(const QString& pluginId)
+{
+    if (!m_pluginOwnedObjects.contains(pluginId))
+        return;
+    const QList<QObject*> objects = m_pluginOwnedObjects.value(pluginId);
+    for (QObject* obj : objects) {
+        if (QAction* act = qobject_cast<QAction*>(obj)) {
+            removeAction(act);
+            act->deleteLater();
+        }
+        else if (QToolButton* btn = qobject_cast<QToolButton*>(obj)) {
+            btn->deleteLater();
+        }
+        else if (QMenu* menu = qobject_cast<QMenu*>(obj)) {
+            menu->deleteLater();
+        }
+    }
+    m_pluginOwnedObjects.remove(pluginId);
+}
+void DesignToolBar::clearSelectionModeUI()
+{
+    if (selectionWithGisAction)
+        selectionWithGisAction->setChecked(false);
+    if (selectionWithoutGisAction)
+        selectionWithoutGisAction->setChecked(false);
+    if (selectionAction) {
+        selectionAction->setChecked(false);
+        QWidget* btn = widgetForAction(selectionAction);
+        if (btn)
+            btn->setStyleSheet(DesignToolbarStyles::ToolbarButton);
     }
 }

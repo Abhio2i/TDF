@@ -38,14 +38,15 @@ class Specialzone: public Entity
     Q_OBJECT
 public:
     Specialzone(Hierarchy* h);
+    ~Specialzone();
 
     // =========================================================================
     // SECTION: Spatial & Physical Components
     // DESCRIPTION: Pointers to functional blocks for positioning and collision.
     // =========================================================================
-    Transform *transform = nullptr;
-    Collider *collider = nullptr;
-    MeshRenderer2D *meshRenderer2d = nullptr;
+    Transform transform;
+    Collider collider;
+    MeshRenderer2D meshRenderer2d;
 
     // =========================================================================
     // SECTION: Atmospheric Parameters
@@ -85,6 +86,7 @@ public:
     // =========================================================================
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
+    void addSupportedcomponent() override;
     void addComponent(std::string name) override;
     void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;

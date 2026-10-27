@@ -5,13 +5,11 @@
 
 #include "crosssection.h"
 #include "core/Hierarchy/Utils/entityutils.h"
-#include "qjsondocument.h"
-#include "core/Debug/console.h"
 
 /**
  * @brief Constructs a CrossSection component.
  */
-CrossSection::CrossSection():Component(nullptr) {
+CrossSection::CrossSection():Component() {
 
 }
 
@@ -40,6 +38,12 @@ float valueFromParms(const QJsonObject& parm) {
     }
     return 0.0f; // Default value if key is missing or not a double
 }
+
+void CrossSection::init(Entity *Entity){
+    parentEntity = Entity;
+}
+void CrossSection::Awake(){}
+void CrossSection::Start(){}
 
 /**
  * @brief Converts a CrossSection::data structure to a JSON "Section" object.
@@ -103,7 +107,7 @@ QJsonObject CrossSection::getsubComponentData(std::string ID) const{
 QJsonObject CrossSection::toJson() const {
     QJsonObject obj;
     obj["id"] = QString::fromStdString(ID);
-    obj["type"] = "component"; // Assuming the Component class does not have a 'type' member
+    obj["type"] = "component";
 
     // --- Data Sections ---
     obj["Radar"] = toSection(Radar, "Radar");
@@ -153,6 +157,7 @@ void CrossSection::fromJson(const QJsonObject& obj) {
     if (obj.contains("Laser") && obj["Laser"].isObject()) {
         fromSection(Laser, obj["Laser"].toObject());
     }
+
     if(obj.contains("AdditionalParameters")){
         AdditionalParameters = obj["AdditionalParameters"].toObject();
     }

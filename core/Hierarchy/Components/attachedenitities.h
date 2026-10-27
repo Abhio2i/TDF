@@ -63,6 +63,10 @@ public:
     // =========================================================================
     QJsonObject getsubComponentData(std::string ID) const override;
 
+    void init(Entity* Entity) override;
+    void Awake() override;
+    void Start() override;
+
     // --- Serialization ---
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;

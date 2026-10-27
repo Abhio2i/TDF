@@ -1,115 +1,127 @@
 #include "irtargets.h"
 
 IRTargets::IRTargets()
-    : vbo(QOpenGLBuffer::VertexBuffer), vertexCount(0)
 {
 }
 
 IRTargets::~IRTargets()
 {
-    if (texture) {
-        delete texture;
+    // Clean up all cached GPU assets
+    for (auto& asset : assetCache) {
+        if (asset.texture) delete asset.texture;
+        if (asset.vao) { asset.vao->destroy(); delete asset.vao; }
+        if (asset.vbo) { asset.vbo->destroy(); delete asset.vbo; }
     }
-    vao.destroy();
-    vbo.destroy();
 }
 
 void IRTargets::initialize()
 {
     initializeOpenGLFunctions();
-
     initShaders();
-    loadOBJ("/home/o2i/Documents/Airplane_v1_L1/11803_Airplane_v1_l1.obj");
 
-    texture = new QOpenGLTexture(QImage("/home/o2i/Documents/Airplane_v1_L1/11803_Airplane_body_diff.jpg").mirrored(false, true));
-    texture->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
-    texture->setMagnificationFilter(QOpenGLTexture::Linear);
-
-    vao.create();
-    vao.bind();
-    program.bind();
-    vbo.bind();
-
-    int vertexLocation = program.attributeLocation("position");
-    program.enableAttributeArray(vertexLocation);
-    program.setAttributeBuffer(vertexLocation, GL_FLOAT, offsetof(IRVertexData, position), 3, sizeof(IRVertexData));
-
-    int texCoordLocation = program.attributeLocation("texCoord");
-    program.enableAttributeArray(texCoordLocation);
-    program.setAttributeBuffer(texCoordLocation, GL_FLOAT, offsetof(IRVertexData, texCoord), 2, sizeof(IRVertexData));
-
-    vao.release();
-    vbo.release();
-    program.release();
+    // Pre-load the default model so there is no stutter when the first frame renders
+    getAsset(defaultModel3d, defaultTexture);
 }
 
-// ... (initialize, initShaders, loadOBJ stay the same)
+// --- ASSET MANAGER (The Caching Engine) ---
+IRTargets::TargetAsset* IRTargets::getAsset(const QString& objPath, const QString& texPath)
+{
+    QString key = objPath + "|" + texPath;
+
+    // 1. If it's already in the GPU, return it instantly!
+    if (assetCache.contains(key)) {
+        return &assetCache[key];
+    }
+
+    // 2. Otherwise, we need to load it.
+    qDebug() << "Loading new asset into GPU:" << objPath;
+    TargetAsset asset;
+    asset.vao = new QOpenGLVertexArrayObject();
+    asset.vbo = new QOpenGLBuffer(QOpenGLBuffer::VertexBuffer);
+
+    // Load Texture safely
+    QImage img(texPath);
+    if (!img.isNull()) {
+        asset.texture = new QOpenGLTexture(img.mirrored(false, true));
+        asset.texture->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
+        asset.texture->setMagnificationFilter(QOpenGLTexture::Linear);
+    } else {
+        qDebug() << "Warning: Failed to load texture:" << texPath;
+        asset.texture = nullptr;
+    }
+
+    // Load OBJ
+    QVector<IRVertexData> loaded_vertices;
+    loadOBJ(objPath, loaded_vertices);
+    asset.vertexCount = loaded_vertices.size();
+
+    // Push geometry to GPU
+    if (asset.vertexCount > 0) {
+        asset.vao->create();
+        asset.vao->bind();
+
+        asset.vbo->create();
+        asset.vbo->bind();
+        asset.vbo->allocate(loaded_vertices.constData(), loaded_vertices.size() * sizeof(IRVertexData));
+
+        program.bind();
+        int vertexLocation = program.attributeLocation("position");
+        program.enableAttributeArray(vertexLocation);
+        program.setAttributeBuffer(vertexLocation, GL_FLOAT, offsetof(IRVertexData, position), 3, sizeof(IRVertexData));
+
+        int texCoordLocation = program.attributeLocation("texCoord");
+        program.enableAttributeArray(texCoordLocation);
+        program.setAttributeBuffer(texCoordLocation, GL_FLOAT, offsetof(IRVertexData, texCoord), 2, sizeof(IRVertexData));
+
+        asset.vao->release();
+        asset.vbo->release();
+        program.release();
+    }
+
+    // Store in cache and return
+    assetCache.insert(key, asset);
+    return &assetCache[key];
+}
 
 void IRTargets::render(const QMatrix4x4 &projection, const QMatrix4x4 &cameraMatrix,
                        float tx, float ty, float tz,
-                       float rx, float ry, float rz)
+                       const QQuaternion &rotation,
+                       const QString &modelPath, const QString &texturePath)
 {
+    // Check if telemetry paths are empty. If so, substitute defaults natively.
+    QString finalModel = modelPath.isEmpty() ? defaultModel3d : modelPath;
+    QString finalTex = texturePath.isEmpty() ? defaultTexture : texturePath;
+
+    // Grab asset from cache
+    TargetAsset* asset = getAsset(finalModel, finalTex);
+    if (!asset || asset->vertexCount == 0) return; // Skip if loading failed entirely
+
     QMatrix4x4 airplaneMatrix = cameraMatrix;
 
-    // 1. Move the target to its location relative to the sensor
     airplaneMatrix.translate(tx, ty, tz);
+    airplaneMatrix.rotate(rotation);
 
-    // 2. Apply the target's dynamic rotation (Yaw, Pitch, Roll)
-    airplaneMatrix.rotate(ry, 0.0f, 1.0f, 0.0f); // Yaw (Y-axis)
-    airplaneMatrix.rotate(rx, 1.0f, 0.0f, 0.0f); // Pitch (X-axis)
-    airplaneMatrix.rotate(rz, 0.0f, 0.0f, 1.0f); // Roll (Z-axis)
-
-    // 3. Apply model-specific orientation to fix how the OBJ was exported
-    airplaneMatrix.rotate(-90.0f, 1.0f, 0.0f, 0.0f); // Stand upright
-    airplaneMatrix.rotate(90.0f, 0.0f, 0.0f, 1.0f); // Point nose forward
-
-    // 4. Shrink the model
+    // Model orientation fixes
+    airplaneMatrix.rotate(90.0f, 0.0f, 1.0f, 0.0f);
+    airplaneMatrix.rotate(-90.0f, 1.0f, 0.0f, 0.0f);
     airplaneMatrix.scale(0.02f);
 
-    // --- Draw the Model ---
+    // --- Draw ---
     program.bind();
     program.setUniformValue("mvpMatrix", projection * airplaneMatrix);
 
     glActiveTexture(GL_TEXTURE0);
-    if (texture) {
-        texture->bind();
+    if (asset->texture) {
+        asset->texture->bind();
     }
     program.setUniformValue("textureSampler", 0);
 
-    vao.bind();
-    glDrawArrays(GL_TRIANGLES, 0, vertexCount);
-    vao.release();
+    asset->vao->bind();
+    glDrawArrays(GL_TRIANGLES, 0, asset->vertexCount);
+    asset->vao->release();
 
-    if (texture) {
-        texture->release();
-    }
-    program.release();
-}
-
-void IRTargets::render(const QMatrix4x4 &projection, const QMatrix4x4 &cameraMatrix)
-{
-    QMatrix4x4 airplaneMatrix = cameraMatrix;
-
-    // Apply model-specific orientation and scaling
-    airplaneMatrix.rotate(90.0f, 1.0f, 0.0f, 0.0f); // Stand upright
-    airplaneMatrix.rotate(90.0f, 0.0f, 0.0f, 1.0f); // Point nose at camera
-    airplaneMatrix.scale(0.02f);                     // Shrink
-
-    program.bind();
-    program.setUniformValue("mvpMatrix", projection * airplaneMatrix);
-
-    glActiveTexture(GL_TEXTURE0);
-    if (texture) {
-        texture->bind();
-    }
-    program.setUniformValue("textureSampler", 0);
-
-    vao.bind();
-    glDrawArrays(GL_TRIANGLES, 0, vertexCount);
-    vao.release();
-
-    if (texture) {
-        texture->release();
+    if (asset->texture) {
+        asset->texture->release();
     }
     program.release();
 }
@@ -127,13 +139,24 @@ void IRTargets::initShaders()
         "   gl_Position = mvpMatrix * vec4(position, 1.0);\n"
         "}\n";
 
+    // --> UPDATED FRAGMENT SHADER FOR THERMAL IMAGING (White Hot)
     const char *fsrc =
         "#version 330 core\n"
         "in vec2 vTexCoord;\n"
         "out vec4 fragColor;\n"
         "uniform sampler2D textureSampler;\n"
         "void main() {\n"
-        "   fragColor = texture(textureSampler, vTexCoord);\n"
+        "   // 1. Get the original color from the texture\n"
+        "   vec4 texColor = texture(textureSampler, vTexCoord);\n"
+        "   \n"
+        "   // 2. Convert standard RGB to Grayscale (Luminance)\n"
+        "   float luminance = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));\n"
+        "   \n"
+        "   // 3. Apply a Thermal Boost: Targets are hot, so we push the base intensity up.\n"
+        "   // This makes the target glow white/light-gray against the dark sky/ground.\n"
+        "   float thermalIntensity = clamp(luminance * 1.5 + 0.3, 0.0, 1.0);\n"
+        "   \n"
+        "   fragColor = vec4(vec3(thermalIntensity), texColor.a);\n"
         "}\n";
 
     program.addShaderFromSourceCode(QOpenGLShader::Vertex, vsrc);
@@ -141,7 +164,8 @@ void IRTargets::initShaders()
     program.link();
 }
 
-bool IRTargets::loadOBJ(const QString &filePath)
+// Slightly modified to push data into 'outVertices' instead of a class member
+bool IRTargets::loadOBJ(const QString &filePath, QVector<IRVertexData> &outVertices)
 {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -151,7 +175,6 @@ bool IRTargets::loadOBJ(const QString &filePath)
 
     QVector<QVector3D> temp_positions;
     QVector<QVector2D> temp_texCoords;
-    QVector<IRVertexData> loaded_vertices;
 
     QTextStream in(&file);
     while (!in.atEnd()) {
@@ -176,33 +199,20 @@ bool IRTargets::loadOBJ(const QString &filePath)
                     for (int j = 0; j < 3; ++j) {
                         QStringList &vertexParts = indices[j];
                         int vIndex = vertexParts[0].toInt() - 1;
-                        int vtIndex = -1;
-
-                        if (vertexParts.size() > 1 && !vertexParts[1].isEmpty()) {
-                            vtIndex = vertexParts[1].toInt() - 1;
-                        }
+                        int vtIndex = (vertexParts.size() > 1 && !vertexParts[1].isEmpty()) ? vertexParts[1].toInt() - 1 : -1;
 
                         if (vIndex >= 0 && vIndex < temp_positions.size()) {
                             IRVertexData vData;
                             vData.position = temp_positions[vIndex];
+                            vData.texCoord = (vtIndex >= 0 && vtIndex < temp_texCoords.size()) ? temp_texCoords[vtIndex] : QVector2D(0.0f, 0.0f);
 
-                            if (vtIndex >= 0 && vtIndex < temp_texCoords.size()) {
-                                vData.texCoord = temp_texCoords[vtIndex];
-                            } else {
-                                vData.texCoord = QVector2D(0.0f, 0.0f);
-                            }
-                            loaded_vertices.append(vData);
+                            // Load into the parameter vector!
+                            outVertices.append(vData);
                         }
                     }
                 }
             }
         }
     }
-
-    vertexCount = loaded_vertices.size();
-
-    vbo.create();
-    vbo.bind();
-    vbo.allocate(loaded_vertices.constData(), loaded_vertices.size() * sizeof(IRVertexData));
     return true;
 }

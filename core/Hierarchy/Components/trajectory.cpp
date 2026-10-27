@@ -4,8 +4,10 @@
  */
 
 #include "trajectory.h"
+#include "core/Hierarchy/ECS/Struct/transform_component.h"
 #include "core/Hierarchy/Utils/entityutils.h"
-#include "qjsondocument.h"
+#include "core/Hierarchy/entity.h"
+#include "core/Hierarchy/hierarchy.h"
 #include <QJsonArray>
 #include <QDebug>
 #include <QCollator>
@@ -13,11 +15,80 @@
 /**
  * @brief Constructs a Trajectory component with default values.
  */
-Trajectory::Trajectory():Component(nullptr) {
+Trajectory::Trajectory():Component() {
     Active = true; // Initialize Active
     FollowPath = true;
     current = 0;
 }
+
+//fix by yogesh
+void Trajectory::init(Entity *Entity)
+{
+    if (!Entity || !Entity->root)
+    {
+        qWarning() << "[TRAJECTORY INIT] Invalid Entity/root";
+        return;
+    }
+
+    parentEntity = Entity;
+
+    auto& world = parentEntity->root->world;
+    ECS::Entity ecsID = parentEntity->ecsID;
+
+    qDebug()
+        << "[TRAJECTORY INIT]"
+        << "Entity =" << QString::fromStdString(parentEntity->ID)
+        << "ECS ID =" << ecsID;
+
+    // Add ECS trajectory component only if it does not already exist.
+    if (!world.HasComponent<ECS::trajectoryPathComponent>(ecsID))
+    {
+        world.AddComponent<ECS::trajectoryPathComponent>(ecsID);
+
+        qDebug()
+            << "[TRAJECTORY INIT] ECS trajectory component CREATED";
+    }
+    else
+    {
+        qDebug()
+        << "[TRAJECTORY INIT] ECS trajectory component already exists";
+    }
+}
+void Trajectory::Awake(){}
+void Trajectory::Start(){}
+
+
+
+//fix by yogesh
+ECS::trajectoryPathComponent& Trajectory::getTrajectoryPath()
+{
+    // ------------------------------------------------------------
+    // Safety: parentEntity must already be bound.
+    // ------------------------------------------------------------
+    Q_ASSERT(parentEntity != nullptr);
+    Q_ASSERT(parentEntity->root != nullptr);
+
+    auto& world = parentEntity->root->world;
+    ECS::Entity ecsID = parentEntity->ecsID;
+    if (!world.HasComponent<ECS::trajectoryPathComponent>(ecsID))
+    {
+        qDebug()
+        << "[TRAJECTORY] ECS component missing."
+        << "Creating now for Entity ="
+        << QString::fromStdString(parentEntity->ID);
+
+        world.AddComponent<ECS::trajectoryPathComponent>(ecsID);
+    }
+
+    auto* component =
+        world.GetComponent<ECS::trajectoryPathComponent>(ecsID);
+
+    Q_ASSERT(component != nullptr);
+
+    return *component;
+}
+
+
 
 /**
  * @brief Adds a sub‑component (unused for Trajectory).
@@ -51,6 +122,7 @@ void Trajectory::goHome(){
     reverse = true;
     if(current>0){
         current -=1;
+        getTrajectoryPath().currentWaypoint = current;
     }
 }
 
@@ -107,7 +179,10 @@ QJsonObject Trajectory::toJson() const {
     obj["id"] = QString::fromStdString(ID);
     obj["active"] = Active;
     obj["type"] = "component";
-    obj["currentWaypoint"] = current;
+    QJsonObject wayobj = toParm(current,"NUM");
+    wayobj["editable"] = false;
+    obj["currentWaypoint"] = wayobj;
+
 
     QJsonObject followruleObj;
     followruleObj["type"] = "option";
@@ -148,12 +223,24 @@ QJsonObject Trajectory::toJson() const {
  * @param obj JSON object containing waypoint data.
  */
 void Trajectory::fromJson(const QJsonObject& obj) {
+    if (!parentEntity || !parentEntity->root)
+    {
+        return;
+    }
     // Standard fields
-    if (obj.contains("active"))
+    if (obj.contains("active")){
         Active = obj["active"].toBool();
-    if(obj.contains("currentWaypoint"))
-        current = obj["currentWaypoint"].toInt();
-    current = current>(Trajectories.size()-1)?(Trajectories.size()-1):current;
+        if(parentEntity)
+        getTrajectoryPath().active = Active;
+    }
+    if (obj.contains("currentWaypoint") && obj["currentWaypoint"].isObject()){
+        current = valueFromParm(obj["currentWaypoint"].toObject());
+        current = current>(Trajectories.size()-1)?(Trajectories.size()-1):current;
+
+    }
+
+    // if(obj.contains("currentWaypoint"))
+    //     current = obj["currentWaypoint"].toInt();
 
     if (obj.contains("Rule") && obj["Rule"].isObject()) {
         QJsonObject followruleObj = obj["Rule"].toObject();
@@ -187,7 +274,7 @@ void Trajectory::fromJson(const QJsonObject& obj) {
             }
         }
         std::sort(numbers.begin(), numbers.end());
-
+        auto& path = getTrajectoryPath();
         for (const int i : numbers) {
             QString key = "waypoint_"+QString::number(i);
             if (obj.contains(key) && obj[key].isObject()) {
@@ -198,6 +285,7 @@ void Trajectory::fromJson(const QJsonObject& obj) {
                     wp = Trajectories[n1-1];
                 }else{
                     Trajectories.push_back(wp);
+                    path.activeCount++;
                 }
                 if (waypointObj.contains("Latitude") && waypointObj["Latitude"].isObject())
                     wp->position->x = valueFromParm(waypointObj["Latitude"].toObject());
@@ -215,6 +303,9 @@ void Trajectory::fromJson(const QJsonObject& obj) {
                     wp->dropcount = valueFromParm(waypointObj["dropcount"].toObject());
                 if (waypointObj.contains("MakeFormation") && waypointObj["MakeFormation"].isBool())
                     wp->formation = waypointObj["MakeFormation"].toBool();
+                path.path[n1-1].lat = wp->position->x;
+                path.path[n1-1].lon = wp->position->z;
+                path.delta = true;
             }
         }
     }
@@ -222,8 +313,13 @@ void Trajectory::fromJson(const QJsonObject& obj) {
     if(obj.contains("AdditionalParameters")){
         AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
-}
 
+    if(!statesaved){
+        statesaved = true;
+        InitalState["currentWaypoint"] = current;
+    }
+    getTrajectoryPath().currentWaypoint = current;
+}
 /**
  * @brief Adds a waypoint with given coordinates.
  * @param x Latitude (or X coordinate).
@@ -243,6 +339,7 @@ void Trajectory::addWaypoint(float x,float y, float z){
  * @param z Longitude.
  * @param activateSensor Whether sensors should be active at this waypoint.
  */
+
 void Trajectory::addWaypoint(float x, float y, float z, bool activateSensor) {
     Waypoints* wp = new Waypoints();
     wp->position = new Vector(x, y, z);
@@ -262,6 +359,7 @@ bool Trajectory::removeTrajectory(size_t index) {
     delete Trajectories[index]->position;
     delete Trajectories[index];
     Trajectories.erase(Trajectories.begin() + index);
+    getTrajectoryPath().delta = true;
     return true;
 }
 
@@ -294,6 +392,7 @@ Waypoints* Trajectory::getTargetWaypoint(){
         return Trajectories[current];
     }else{
         current = Trajectories.size()-1;
+        getTrajectoryPath().currentWaypoint = current;
         if(current >=0){
             return Trajectories[current];
         }
@@ -305,8 +404,73 @@ Waypoints* Trajectory::getTargetWaypoint(){
  * @brief Appends a waypoint to the trajectory list.
  * @param waypoint Pointer to the Waypoints object to add.
  */
-void Trajectory::addTrajectory(Waypoints* waypoint) {
-    if (waypoint) {
-        Trajectories.push_back(waypoint);
+// void Trajectory::addTrajectory(Waypoints* waypoint) {
+//     if (waypoint) {
+//         Trajectories.push_back(waypoint);
+//         auto& path = getTrajectoryPath();
+//         path.path[path.activeCount].lat = waypoint->position->x;
+//         path.path[path.activeCount].lon = waypoint->position->z;
+//         path.activeCount ++;
+//         path.delta = true;
+//     }
+// }
+
+
+//fix by yogesh
+void Trajectory::addTrajectory(Waypoints* waypoint)
+{
+    if (!waypoint)
+        return;
+
+    // Keep the normal trajectory list updated.
+    Trajectories.push_back(waypoint);
+
+    // ECS path cannot be updated until Trajectory is attached
+    // to a valid Entity.
+    if (!parentEntity || !parentEntity->root)
+    {
+        qWarning()
+        << "[TRAJECTORY] addTrajectory() called before init."
+        << "Waypoint stored, ECS path update skipped.";
+
+        return;
     }
+
+    auto& path = getTrajectoryPath();
+
+    // trajectoryPathComponent::path is a fixed C-style array.
+    constexpr int PATH_CAPACITY =
+        sizeof(path.path) / sizeof(path.path[0]);
+
+    if (path.activeCount >= PATH_CAPACITY)
+    {
+        qWarning()
+        << "[TRAJECTORY] ECS path capacity exceeded."
+        << "activeCount =" << path.activeCount
+        << "capacity =" << PATH_CAPACITY;
+
+        return;
+    }
+
+    path.path[path.activeCount].lat =
+        waypoint->position->x;
+
+    path.path[path.activeCount].lon =
+        waypoint->position->z;
+
+    path.activeCount++;
+    path.delta = true;
+}
+
+void Trajectory::SaveState(){
+    if(!statesaved||true){
+        statesaved = true;
+        QJsonObject wayobj = toParm(current,"NUM");
+        wayobj["editable"] = false;
+        InitalState["currentWaypoint"] = wayobj;
+    }
+}
+
+void Trajectory::RestoreState(){
+    fromJson(InitalState);
 }

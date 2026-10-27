@@ -5,10 +5,12 @@
 #include "core/Hierarchy/hierarchy.h"
 #include "core/Render/scenerenderer.h"
 #include <QObject>
+#include <QtGlobal>
 #include <angelscript.h>
 #include <angelscript/add_on/scriptarray/scriptarray.h>
-#include "GUI/Tacticaldisplay/canvaswidget.h"
-#include "GUI/Tacticaldisplay/Gis/gislib.h"
+
+#include <QElapsedTimer>
+#include <QStringList>
 
 // AngelScript wrapper for SensorProfile::getSensor
 Sensor* AS_SensorProfile_getSensor(
@@ -44,7 +46,7 @@ struct ReportEvent {
 
 // ================= FORWARD DECLARATIONS =================
 class ScriptEngineGIS;
-class GISlib;
+class MapWidget;      // GIS_API/frontend/widgets/map_widget.h -- replaces Widget/GISlib
 class Platform;
 class ProfileCategaory;
 class Runtime;
@@ -82,6 +84,18 @@ public:
 
     void generatePDFReport(const std::string &filePath);
 
+    // autoscript  /////////////////////////////////////
+    bool isScriptRunning() const { return scriptRunning; }
+
+    // Restrict ReadFile/WriteFile/AppendFile to one folder (used for auto scripts)
+    void setFileSandbox(bool enabled, const QString& dir = QString());
+
+    // Timeouts (ms). 0 = disabled.
+    void setMaxSliceTime(int ms) { m_maxSliceMs = ms; }   // per continuous run (between sleeps)
+    void setMaxTotalTime(int ms) { m_maxTotalMs = ms; }   // whole script incl. sleeps
+
+    void appendEngineMessage(const QString& line);        // used by MessageCallback
+
 public slots:
     void ScriptSleep(int milliseconds);
     ProfileCategaory* addProfiles(const std::string &name);
@@ -111,51 +125,50 @@ public slots:
 
     //================ GIS wrappers (AngelScript exposed) ====================
 
-    Q_INVOKABLE void canvasCreateVectorLayer(const std::string &layerName);
-    Q_INVOKABLE void canvasSelectLayer(const std::string &layerName);
-    //Q_INVOKABLE void canvasRenameShape(const std::string &id,const std::string &newName);
+    Q_INVOKABLE void AddLayer(const std::string &layerName);
+    Q_INVOKABLE void SelectLayer(const std::string &layerName);
+    //Q_INVOKABLE void RenameShape(const std::string &id,const std::string &newName);
 
-    //Q_INVOKABLE void canvasAddCircle(const std::string &name, float x, float y, float radius);
-    Q_INVOKABLE void canvasAddCircle(const std::string &name, float radius);
-    // Q_INVOKABLE void canvasAddRectangle(const std::string &name, float x, float y, float width, float height);
-    Q_INVOKABLE void canvasAddRectangle(const std::string &name, float w, float h);
-    Q_INVOKABLE void canvasAddPolygon(const std::string &name, CScriptArray* pts);
+    //Q_INVOKABLE void AddCircle(const std::string &name, float x, float y, float radius);
+    Q_INVOKABLE void AddCircle(const std::string &name, float radius);
+    // Q_INVOKABLE void AddRectangle(const std::string &name, float x, float y, float width, float height);
+    Q_INVOKABLE void AddRectangle(const std::string &name, float w, float h);
+    Q_INVOKABLE void AddPolygon(const std::string &name, CScriptArray* pts);
 
     // ===== Script Line Tool =====
-    Q_INVOKABLE void canvasStartLine();
-    Q_INVOKABLE void canvasAddLinePoint(float lon, float lat);
-    Q_INVOKABLE void canvasFinishLine();
-    Q_INVOKABLE void canvasAddPoint(const std::string &name, float x, float y);
+    Q_INVOKABLE void StartLine();
+    Q_INVOKABLE void AddLinePoint(float lat, float lon);
+    Q_INVOKABLE void FinishLine();
+    Q_INVOKABLE void AddPoint(const std::string &name, float lat, float lon);
 
-    Q_INVOKABLE void onBitmapSelected(const std::string &bitmapType, float x, float y);
+    Q_INVOKABLE void onBitmapSelected(const std::string &bitmapType, float lat, float lon);
 
     // Get path of built-in bitmap
-    Q_INVOKABLE void getBitmapImagePath(const std::string &bitmapType);
-    Q_INVOKABLE void onBitmapImageSelected(const std::string &filePath, float lon, float lat);
+    Q_INVOKABLE void  getBitmapImagePath(const std::string &bitmapType);
+    Q_INVOKABLE void onBitmapImageSelected(const std::string &filePath, float lat, float lon);
 
     // ===== Preset Layers =====
-    void canvasToggleAirbases();
+    void ToggleAirbases(bool visible);
 
     // // === GeoJSON Layer Wrappers ===
-    Q_INVOKABLE void canvasImportGeoJsonLayer(const std::string &filePath);
-    Q_INVOKABLE void canvasToggleGeoJsonLayer(const std::string &layerName, bool visible);
+    // Q_INVOKABLE void ImportGeoJsonLayer(const std::string &filePath);
+    Q_INVOKABLE void ToggleGeoJsonLayer(const std::string &layerName, bool visible);
 
     // ===== Measurement =====
-    void canvasStartDistanceMeasurement();
-    void canvasAddMeasurePoint(double lon, double lat);
-    double canvasGetLastSegmentDistance();
-    double canvasGetTotalDistance();
-    void canvasSetMeasurementUnit(const std::string &unit);
+    void StartDistanceMeasurement();
+    void AddMeasurePoint(double lat, double lon);
+    double GetLastSegmentDistance();
+    double GetTotalDistance();
+    void SetMeasurementUnit(const std::string &unit);
 
     // Switch base map (osm, satellite, tarrine, opentopo)
-    Q_INVOKABLE void canvasSwitchMap(const std::string& mapName);
+    Q_INVOKABLE void SwitchMap(const std::string& mapName);
 
     // Switch coordinate system (latlon, utm, mgrs)
     Q_INVOKABLE void switchCoordinateSystem(const std::string& system);
 
-    // Move any shape to new geo location
-    Q_INVOKABLE void moveShape(const std::string& shapeName,
-                               double lon, double lat);
+    // Move any shape to new geo location (latitude first, then longitude)
+    Q_INVOKABLE void moveShape(const std::string& shapeName, double lat, double lon);
 
     // rotate shape by angle
     Q_INVOKABLE void rotateShape(const std::string& shapeName, double angleDeg);
@@ -165,7 +178,7 @@ public slots:
     Q_INVOKABLE void hideShapeHistory();
     Q_INVOKABLE void restoreShapeHistory(const std::string& shapeName);
 
-    Q_INVOKABLE void addText(const std::string& text, double lon, double lat);
+    Q_INVOKABLE void addText(const std::string& text, double lat, double lon);
 
     Q_INVOKABLE void addShapeProperties(const std::string& shapeName,int r, int g, int b,int borderThickness);
 
@@ -177,9 +190,8 @@ public:
     SceneRenderer *render;
     MyObj* e = nullptr;
 public:
-    //void setCanvas(CanvasWidget* c) { canvas = c; }
-    // === Canvas Shape Wrappers (for AngelScript) ===
-    Q_INVOKABLE void setCanvasSelectedShape(const std::string &shapeName);
+    // ===  Shape Wrappers (for AngelScript) ===
+    Q_INVOKABLE void setSelectedShape(const std::string &shapeName);
 
     // Fetch existing ProfileCategaory by name
     ProfileCategaory* getProfileByName(const std::string& name);
@@ -196,16 +208,12 @@ public:
     Q_INVOKABLE void useCity(const std::string& cityName);
     QString cityLocationString() const;
 
-    // void setGIS(GISlib* g) { gis = g; }  // for map
-
-    // void setMapCanvasContainer(QWidget* w) {
-    //     mapCanvasContainer = w;
-    // }
-
-    // ================= CANVAS / GIS SETTERS =================
-    void setCanvas(CanvasWidget* c);
-    void setGIS(GISlib* g);
-    void setMapCanvasContainer(QWidget* w);
+    // ================= MAP WIDGET SETTER =================
+    // Replaces the old set(Widget*) + setGIS(GISlib*) pair.
+    // MapWidget is the only widget-level dependency ScriptEngine/ScriptEngineGIS
+    // still need (for screenshots / forced repaint / interactive draw mode);
+    // everything else goes through the ShapeApi/LayerApi/MapApi singletons.
+    void setMapWidget(MapWidget* map);
 
     void logEvent(
         ReportCategory category,
@@ -241,24 +249,26 @@ public:
     void addIFFSubComponent(Platform* platform, const std::string& subName);
     void selectEntityDisplay(IFF* iff);
 
+    void stopScript();
+
 private:
     asIScriptEngine* engine = nullptr;
     asIScriptModule* mod = nullptr;
     asIScriptFunction* func = nullptr;
     asIScriptContext* ctx = nullptr;
     asITypeInfo* arrayEntityType = nullptr; // store type info once
-    CanvasWidget* canvas = nullptr;              // <--- NEW
-    GISlib* gis = nullptr;       // for map
+    MapWidget* gisMap = nullptr;            // <--- replaces  + gis
     Runtime* runtime = nullptr;
 
-    ScriptEngineGIS* gisEngine = nullptr;//////
+    quint64 scriptGeneration = 0;
+    bool scriptRunning = false;
 
-    QWidget* mapCanvasContainer;
+    ScriptEngineGIS* gisEngine = nullptr;
 
     std::vector<ReportEvent> executionReport;
 
     //for screenshot capture
-    QString captureCanvasScreenshot(const QString& tag);
+    QString captureScreenshot(const QString& tag);
 
 
     // ================= SCREENSHOT AUTO-ZOOM =================
@@ -273,11 +283,28 @@ private:
     // GeoBounds lastShapeBounds;
     QRectF lastShapeBounds;
 
+    ////////////////////////////////////
+    void executeContext();
+    void handleExecuteResult(int r);
+    void lineCallback(asIScriptContext* c);
+
+    QStringList   m_engineMessages;
+    bool          m_timedOut = false;
+    int           m_maxSliceMs = 10000;
+    int           m_maxTotalMs = 0;
+    QElapsedTimer m_sliceTimer;
+    QElapsedTimer m_totalTimer;
+
 signals:
     void requestSidebarView(const QString &viewName);
     void requestDisplayTab(const QString &tabName);
-    void requestSelectEntity(const QString &entityId);  // ← Add this signal
+    void requestSelectEntity(const QString &entityId);
     void requestSensorScreenshot(const QString &filePath);
+    void scriptEntityAboutToBeRemoved(const QString &entityId);
+
+
+    // status: DONE | ERROR | ABORTED
+    void scriptFinished(bool ok, const QString& status, const QString& message);  /////////////////////////////
 
 };
 

@@ -60,7 +60,15 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QVector3D>
+#include <QDebug>
+#include <algorithm>
 #include <cmath>
+#include <memory>
+#include "core/Plugins/aesalogicregistry.h"
+#ifdef AESA_REGRESSION_TEST
+extern "C" void aesa_test_seed_model(unsigned seed);
+extern "C" void aesa_test_seed_signal(unsigned seed);
+#endif
 
 // =============================================================================
 // NAMED CONSTANTS
@@ -131,8 +139,223 @@ static constexpr uint32_t FNV_PRIME = 16777619u;
 // Minimum valid radar ID — 0 is reserved for "no target". REQ-AESA-004.
 static constexpr uint32_t MIN_RADAR_ID = 1u;
 
-} // anonymous namespace
+// Velocity estimate smoothing time constant (s). First-order filter on the
+// finite-difference velocity; suppresses float-position quantisation noise.
+// MODEL PARAMETER — default agreed for Phase 2c. REQ-AESA-004.
+static constexpr double VEL_SMOOTH_TAU_S = 0.5;
 
+} // anonymous namespace
+static float computeERP_dBm(const aesa::RadarConfig& cfg)
+{
+    int numActive = std::max(0, cfg.numElements - cfg.failedModules);
+    double Pt_watts = static_cast<double>(numActive)
+                      * cfg.peakPowerPerElement_W
+                      * cfg.moduleEfficiency;
+    double antennaGainLinear = std::pow(10.0, cfg.antennaGain / 10.0);
+    double erp_watts = Pt_watts * antennaGainLinear;
+    return static_cast<float>(10.0 * std::log10(std::max(erp_watts, 1e-12) * 1000.0));
+}
+
+// True (stabilised) az/el -> body azimuth for the display. REQ-AESA-004.
+static double stabToBodyAz(const aesa::RadarPose& pose, double sAz, double sEl)
+{
+    double s[3], b[3], bAz, bEl;
+    aesa::azElToVec(sAz, sEl, s);
+    aesa::stabToBody(pose.bodyFromStab, s, b);
+    aesa::vecToAzEl(b, bAz, bEl);
+    return bAz;
+}
+
+// =============================================================================
+// ANTENNA MOUNT ORIENTATION. REQ-AESA-010.
+// Platform body: x = forward, y = right, z = up. The array is rotated by
+// mount azimuth (clockwise from the nose) then tilted by mount elevation.
+// Rows of M = array axes (forward, right, up) expressed in body axes, so
+// arrayFromStab = M * bodyFromStab and body = M^T * array.
+// =============================================================================
+static void mountFromBody(double azDeg, double elDeg, double M[3][3])
+{
+    constexpr double D2R = 3.14159265358979323846 / 180.0;
+    const double a  = azDeg * D2R, e = elDeg * D2R;
+    const double ca = std::cos(a), sa = std::sin(a);
+    const double ce = std::cos(e), se = std::sin(e);
+    M[0][0] =  ce * ca;  M[0][1] =  ce * sa;  M[0][2] = se;    // array forward
+    M[1][0] = -sa;       M[1][1] =  ca;       M[1][2] = 0.0;   // array right
+    M[2][0] = -se * ca;  M[2][1] = -se * sa;  M[2][2] = ce;    // array up
+}
+
+// Array-frame az/el -> platform-body az/el (degrees). Exact pass-through for
+// mount 0/0, so nose-mounted radars report bit-identical values.
+static void arrayToPlatformAzEl(float mountAz, float mountEl,
+                                double az, double el,
+                                double& pAz, double& pEl)
+{
+    if (mountAz == 0.0f && mountEl == 0.0f) { pAz = az; pEl = el; return; }
+    double M[3][3], a[3], b[3];
+    mountFromBody(mountAz, mountEl, M);
+    aesa::azElToVec(az, el, a);
+    aesa::bodyToStab(M, a, b);   // b = M^T a  (array -> platform body)
+    aesa::vecToAzEl(b, pAz, pEl);
+}
+
+// =============================================================================
+// FUNCTION:    AESARadar::getCurrentAzimuth / getCurrentElevation
+// DESCRIPTION: Beam direction relative to the platform body (model output is
+//              in the array frame; converted with the mount orientation).
+//              REQ-AESA-010.
+// =============================================================================
+double AESARadar::getCurrentAzimuth() const
+{
+    const aesa::RadarOutput o = radarCore_.getOutput();
+    double az = 0.0, el = 0.0;
+    arrayToPlatformAzEl(mountAzimuth_deg_, mountElevation_deg_,
+                        o.currentAzimuth, o.currentElevation, az, el);
+    return az;
+}
+
+double AESARadar::getCurrentElevation() const
+{
+    const aesa::RadarOutput o = radarCore_.getOutput();
+    double az = 0.0, el = 0.0;
+    arrayToPlatformAzEl(mountAzimuth_deg_, mountElevation_deg_,
+                        o.currentAzimuth, o.currentElevation, az, el);
+    return el;
+}
+
+// =============================================================================
+// PLUGIN LOGIC STAGES (AESA plugin SDK). REQ-AESA-090.
+// Translate between model types and SDK types and call the plugin hooks.
+// Every call into plugin code is wrapped in a StageGuard (host callbacks are
+// refused while it is active) and in try/catch: a plugin exception falls back
+// to the built-in logic for that call and never reaches the engine.
+// =============================================================================
+namespace
+{
+struct AesaStageContext
+{
+    const AesaLogicSnapshot*                       hooks = nullptr;
+    const std::unordered_map<uint32_t, Platform*>* idMap = nullptr;
+    aesaplugin::RadarInfo                          radar;
+};
+
+int aesaModeToInt(aesa::RadarMode m)
+{
+    switch (m)
+    {
+    case aesa::RadarMode::SURVEILLANCE: return 0;
+    case aesa::RadarMode::TWS:          return 1;
+    case aesa::RadarMode::LOCK_ON:      return 2;
+    }
+    return 0;
+}
+
+aesaplugin::TargetGeometry stageGeometry(const AesaStageContext& c,
+                                         const aesa::TargetInput& t,
+                                         double range_m)
+{
+    aesaplugin::TargetGeometry g;
+    g.targetId = t.id;
+    if (c.idMap != nullptr)
+    {
+        auto it = c.idMap->find(t.id);
+        if (it != c.idMap->end() && it->second != nullptr)
+            g.targetEntityId = it->second->ID;
+    }
+    g.x = t.x;   g.y = t.y;   g.z = t.z;
+    g.vx = t.vx; g.vy = t.vy; g.vz = t.vz;
+    g.range_m = range_m;
+    return g;
+}
+
+bool stageMeanRcs(void* ctx, const aesa::TargetInput& t, double range_m,
+                  double frequency_Hz, double& meanRcs_m2)
+{
+    const auto* c = static_cast<const AesaStageContext*>(ctx);
+    if (c == nullptr || c->hooks == nullptr || !c->hooks->rcs) return false;
+
+    aesaplugin::RcsQuery q;
+    q.radar           = c->radar;
+    q.target          = stageGeometry(*c, t, range_m);
+    q.platformType    = t.platformType;
+    q.length_m        = t.dimensions.length;
+    q.width_m         = t.dimensions.width;
+    q.height_m        = t.dimensions.height;
+    q.dimensionsValid = t.dimensions.valid;
+    q.frequency_Hz    = frequency_Hz;
+
+    bool ok = false;
+    {
+        AesaLogicRegistry::StageGuard guard;
+        try { ok = c->hooks->rcs(q, meanRcs_m2); } catch (...) { ok = false; }
+    }
+    if (ok && !(std::isfinite(meanRcs_m2) && meanRcs_m2 >= 0.0))
+    {
+        static bool warned = false;
+        if (!warned) { warned = true; qWarning() << "[AESA plugin] invalid RCS value; built-in RCS used"; }
+        return false;
+    }
+    return ok;
+}
+
+bool stageDetect(void* ctx, const aesa::TargetInput& t, double range_m,
+                 const aesa::DetectionStageInput& in, bool& detected)
+{
+    const auto* c = static_cast<const AesaStageContext*>(ctx);
+    if (c == nullptr || c->hooks == nullptr || !c->hooks->detection) return false;
+
+    aesaplugin::DetectionQuery q;
+    q.radar              = c->radar;
+    q.target             = stageGeometry(*c, t, range_m);
+    q.sinr               = in.sinr;
+    q.cfarThreshold      = in.cfarThreshold;
+    q.radialVelocity_m_s = in.radialVelocity_m_s;
+    q.mode               = aesaModeToInt(in.mode);
+    q.builtInDetected    = in.builtInDetected;
+
+    AesaLogicRegistry::StageGuard guard;
+    try { return c->hooks->detection(q, detected); } catch (...) { return false; }
+}
+
+bool stagePropagation(void* ctx, double range_m, const aesa::RadarConfig& cfg,
+                      double& lossFactor)
+{
+    const auto* c = static_cast<const AesaStageContext*>(ctx);
+    if (c == nullptr || c->hooks == nullptr || !c->hooks->propagation) return false;
+
+    aesaplugin::PropagationQuery q;
+    q.radar           = c->radar;
+    q.range_m         = range_m;
+    q.frequency_Hz    = cfg.frequency_Hz;
+    q.temperature_C   = cfg.atmosphere.temperature_C;
+    q.humidity_pct    = cfg.atmosphere.humidity_pct;
+    q.pressure_hPa    = cfg.atmosphere.pressure_hPa;
+    q.rainRate_mmph   = cfg.atmosphere.rainRate_mmph;
+    q.fogVisibility_m = cfg.atmosphere.fogVisibility_m;
+
+    bool ok = false;
+    {
+        AesaLogicRegistry::StageGuard guard;
+        try { ok = c->hooks->propagation(q, lossFactor); } catch (...) { ok = false; }
+    }
+    if (ok && !(std::isfinite(lossFactor) && lossFactor > 0.0 && lossFactor <= 1.0))
+    {
+        static bool warned = false;
+        if (!warned) { warned = true; qWarning() << "[AESA plugin] invalid propagation loss; built-in model used"; }
+        return false;
+    }
+    return ok;
+}
+} // namespace
+
+static const aesa::BeamWaveform& currentWaveformFor(const aesa::RadarConfig& cfg,
+                                                    aesa::RadarMode mode)
+{
+    switch (mode) {
+    case aesa::RadarMode::LOCK_ON: return cfg.fireControlWaveform;
+    case aesa::RadarMode::TWS:     return cfg.trackWaveform;
+    default:                       return cfg.searchWaveform;
+    }
+}
 // =============================================================================
 // CONSTRUCTOR
 // =============================================================================
@@ -322,6 +545,17 @@ AESARadar::AESARadar(Hierarchy* h) : Sensor(h)
     // Initialise the Sensor base class FoV limit from the config. REQ-AESA-011.
     maxDetectionAngle = cfg.maxAzimuth;
 }
+AESARadar::~AESARadar()
+{
+    if (parentEntity)
+    {
+        auto& data = getSensorData();
+        data.sensor[dataid].range = 1;
+    }
+}
+ECS::sensorComponent& AESARadar::getSensorData() const{
+    return *parentEntity->root->world.GetComponent<ECS::sensorComponent>(parentEntity->ecsID);
+}
 
 // =============================================================================
 // LOCK / BREAK LOCK
@@ -423,23 +657,23 @@ aesa::RadarPose AESARadar::buildPose() const
     if (!root || !parentEntity) return pose;
 
     auto it = root->Platforms.find(parentEntity->ID);
-    if (it == root->Platforms.end() || !it->second->transform)
+    if (it == root->Platforms.end() /*|| !it->second->transform*/)
         return pose;
 
     // Extract world-space position from the platform's transform matrix.
     // Scale from engine units to metres via COORD_SCALE. REQ-AESA-010.
-    QVector3D wpos = it->second->transform->matrix->translation();
+    QVector3D wpos = it->second->transform.matrix.translation();
     pose.x = static_cast<double>(wpos.x()) * COORD_SCALE;
     pose.y = static_cast<double>(wpos.y()) * COORD_SCALE;
     pose.z = static_cast<double>(wpos.z()) * COORD_SCALE;
 
     // Extract attitude from dynamicModel if available. REQ-AESA-010.
-    if (it->second->dynamicModel)
-    {
-        pose.heading = it->second->dynamicModel->TrueHeading;
-        pose.pitch   = it->second->dynamicModel->pitch;
-        pose.roll    = it->second->dynamicModel->roll;
-    }
+    // if (it->second->dynamicModel)
+    // {
+    pose.heading = it->second->dynamicModel.TrueHeading;
+    pose.pitch   = it->second->dynamicModel.pitch;
+    pose.roll    = it->second->dynamicModel.roll;
+    // }
     return pose;
 }
 
@@ -452,7 +686,8 @@ aesa::RadarPose AESARadar::buildPose() const
 // (Full description in header)
 // =============================================================================
 std::vector<aesa::TargetInput> AESARadar::collectTargets(
-    Transform*                               source,
+    const QVector3D&                         ownPosKm,
+    double                                   velDt,
     std::unordered_map<uint32_t, Platform*>& outIdMap) const
 {
     std::vector<aesa::TargetInput> inputs;
@@ -463,90 +698,44 @@ std::vector<aesa::TargetInput> AESARadar::collectTargets(
 
     for (auto& [key, entity] : root->Platforms)
     {
-        // Skip own platform and platforms with no transform. REQ-AESA-004.
+        // Skip own platform and null entries. REQ-AESA-004.
         if (!entity || key == parentEntity->ID) continue;
 
         Platform* platform = entity;
-        if (!platform->transform) continue;
-
-        // ---- Coordinate transform -------------------------------------------
-        // Convert world-space position to radar-local body frame via the
-        // own platform's inverse transform, then apply axis remapping and
-        // COORD_SCALE. Axis mapping: engine (x,y,z) → model (y,z,x).
-        // This matches the identical mapping in radar.cpp. REQ-AESA-004.
-        QVector3D localPos =
-            source->inverseTransformPoint(platform->transform->matrix->translation());
+        const QVector3D wpos = platform->transform.matrix.translation();
 
         aesa::TargetInput t;
 
-        // Engine z → model x (forward), engine x → model y (lateral),
-        // engine y → model z (vertical). REQ-AESA-004.
-        t.x = static_cast<double>(localPos.z()) * COORD_SCALE;
-        t.y = static_cast<double>(localPos.x()) * COORD_SCALE;
-        t.z = static_cast<double>(localPos.y()) * COORD_SCALE;
+        // ---- Position: relative to radar, stabilised frame ------------------
+        // Engine world: x = East, y = Up, z = North (km).
+        // Model: x = North, y = East, z = Up (m). No rotation by own attitude;
+        // the model converts to body angles where the antenna needs them.
+        // REQ-AESA-004.
+        t.x = (static_cast<double>(wpos.z()) - static_cast<double>(ownPosKm.z())) * COORD_SCALE;
+        t.y = (static_cast<double>(wpos.x()) - static_cast<double>(ownPosKm.x())) * COORD_SCALE;
+        t.z = (static_cast<double>(wpos.y()) - static_cast<double>(ownPosKm.y())) * COORD_SCALE;
 
         t.id = platformToRadarID(key);
         outIdMap[t.id] = platform;
 
-        // ---- Velocity estimation --------------------------------------------
-        // Velocity is estimated by combining:
-        //   1. Finite-differenced heading from consecutive world positions
-        //      (provides direction). Position delta threshold of MIN_MOVE_THRESHOLD
-        //      prevents heading flicker from floating-point position noise.
-        //   2. currentSpeed from dynamicModel (provides magnitude, converted
-        //      from km/h to m/s by dividing by 3.6).
-        // This is the same pattern as radar.cpp. REQ-AESA-004.
-        if (platform->dynamicModel)
-        {
-            QVector3D worldPos = platform->transform->matrix->translation();
-            uint32_t  tid      = platformToRadarID(key);
+        // ---- Velocity: absolute, stabilised frame (m/s) ---------------------
+        // Measured from position change over simulation time; valid for
+        // every entity type. REQ-AESA-004.
+        const std::array<double, 3> vW = updateVelocityEstimate(t.id, wpos, velDt);
+        t.vx = vW[2];   // North = world z
+        t.vy = vW[0];   // East  = world x
+        t.vz = vW[1];   // Up    = world y
 
-            if (prevPositions_.count(tid))
-            {
-                QVector3D delta = worldPos - prevPositions_[tid];
-                float dist = std::sqrt(delta.x()*delta.x() + delta.z()*delta.z());
-                if (dist > MIN_MOVE_THRESHOLD)
-                {
-                    // Compute heading from the horizontal displacement vector.
-                    // atan2(x, z) gives heading in engine's horizontal plane.
-                    float hdg = std::atan2(delta.x(), delta.z()) * (180.0f / M_PI);
-                    if (hdg < 0.0f) hdg += 360.0f;
-                    computedHeadings_[tid] = hdg;
-                }
-            }
-            prevPositions_[tid] = worldPos;
+        // ---- Physical dimensions (unchanged) --------------------------------
+        t.dimensions.length   = static_cast<double>(platform->collider.getDimension().Length);
+        t.dimensions.height   = static_cast<double>(platform->collider.getDimension().Height);
+        t.dimensions.width    = static_cast<double>(platform->collider.getDimension().Width);
+        t.dimensions.valid    = true;
+        t.dimensions.material = aesa::TargetMaterialType::METAL;
+        t.dimensions.shape    = aesa::TargetShapeType::GENERIC;
 
-            float hdg = computedHeadings_.count(tid) ? computedHeadings_[tid] : 0.0f;
-            velocityFromHeadingSpeed(
-                static_cast<double>(hdg),
-                static_cast<double>(platform->dynamicModel->currentSpeed) / 3.6,
-                t.vx, t.vy, t.vz);
-        }
-        else
-        {
-            // No dynamic model — treat as stationary. REQ-AESA-004.
-            t.vx = t.vy = t.vz = 0.0;
-        }
-
-        // ---- Physical dimensions --------------------------------------------
-        // Read collider dimensions for the 6-facet Physical Optics RCS model.
-        // Material and shape default to METAL / GENERIC — future versions can
-        // derive these from platform->type or profile. REQ-AESA-040.
-        if (platform->collider)
-        {
-            t.dimensions.length = static_cast<double>(platform->collider->Length);
-            t.dimensions.height = static_cast<double>(platform->collider->Height);
-            t.dimensions.width  = static_cast<double>(platform->collider->Width);
-            t.dimensions.valid  = true;
-            t.dimensions.material = aesa::TargetMaterialType::METAL;
-            t.dimensions.shape    = aesa::TargetShapeType::GENERIC;
-        }
-
-        // ---- Target descriptor defaults -------------------------------------
-        // All AESA bridge targets are treated as AIR domain generic targets
-        // with Swerling Case I fluctuation. Jammer inactive by default.
-        // REQ-AESA-040.
-        t.rcs          = 1.0;       // m² — fallback if dimensions.valid is false
+        // ---- Target descriptor defaults (unchanged) -------------------------
+        t.rcs          = 1.0;
         t.rcsTable     = {};
         t.platformType = "GENERIC";
         t.swerlingCase = aesa::SwerlingCase::CASE_I;
@@ -559,6 +748,54 @@ std::vector<aesa::TargetInput> AESARadar::collectTargets(
 }
 
 // =============================================================================
+// FUNCTION:    AESARadar::updateVelocityEstimate
+// DESCRIPTION: Finite-difference velocity from world position change over
+//              actual elapsed simulation time, smoothed by a first-order
+//              filter (VEL_SMOOTH_TAU_S). Only updates when simulation time
+//              advanced (velDt > 0): replay can call scan() before time
+//              advances, and dividing a full frame of movement by a
+//              near-zero step would give a huge false velocity.
+//              Returns world-axis velocity (x = E, y = U, z = N) in m/s.
+//              REQ-AESA-004.
+// =============================================================================
+std::array<double, 3> AESARadar::updateVelocityEstimate(
+    uint32_t id, const QVector3D& posKm, double velDt) const
+{
+    VelocityState& s = velState_[id];
+    s.seen = true;
+
+    if (s.samples == 0)
+    {
+        // First sighting: record position, no velocity yet.
+        s.prevPosKm = posKm;
+        s.samples   = 1;
+        return { 0.0, 0.0, 0.0 };
+    }
+
+    if (velDt > 0.0)
+    {
+        // Finite difference in double; engine km -> m.
+        const double raw[3] = {
+            (static_cast<double>(posKm.x()) - static_cast<double>(s.prevPosKm.x())) * COORD_SCALE / velDt,
+            (static_cast<double>(posKm.y()) - static_cast<double>(s.prevPosKm.y())) * COORD_SCALE / velDt,
+            (static_cast<double>(posKm.z()) - static_cast<double>(s.prevPosKm.z())) * COORD_SCALE / velDt };
+
+        if (s.samples == 1)
+        {
+            for (int i = 0; i < 3; ++i) s.v[i] = raw[i];
+        }
+        else
+        {
+            const double alpha = velDt / (VEL_SMOOTH_TAU_S + velDt);
+            for (int i = 0; i < 3; ++i) s.v[i] += alpha * (raw[i] - s.v[i]);
+        }
+        s.prevPosKm = posKm;
+        s.samples   = 2;
+    }
+    return { s.v[0], s.v[1], s.v[2] };
+}
+
+// =============================================================================
 // OUTPUT TRANSLATION
 // =============================================================================
 
@@ -568,6 +805,7 @@ std::vector<aesa::TargetInput> AESARadar::collectTargets(
 // =============================================================================
 void AESARadar::processSurveillance(
     const aesa::RadarOutput&                        output,
+    const aesa::RadarConfig&                        cfg,
     const std::unordered_map<uint32_t, Platform*>&  idMap,
     std::unordered_set<uint32_t>&                   addedIDs)
 {
@@ -601,11 +839,10 @@ void AESARadar::processSurveillance(
         // Range: model output is in metres; Sensor::Target::radius is in km.
         t.radius = static_cast<float>(d.range * RANGE_M_TO_KM);
 
-        // Azimuth: model body frame is [-180, +180]. Engine convention same.
-        // Clamp values that arrived >180 (rare float edge case). REQ-AESA-004.
-        float az = static_cast<float>(d.azimuth);
-        if (az > 180.0f) az -= 360.0f;
-        t.angle = az;
+        // Model angles are true (stabilised); the display needs body azimuth.
+        // REQ-AESA-004.
+        t.angle       = static_cast<float>(stabToBodyAz(lastPose_, d.azimuth, d.elevation));
+        t.trueBearing = static_cast<float>(d.azimuth);
 
         t.speed          = static_cast<float>(d.speedOverGround);
         t.direction      = static_cast<float>(d.heading);
@@ -614,7 +851,7 @@ void AESARadar::processSurveillance(
         // rather than altitude relative to the radar. REQ-AESA-004.
         t.altitude = static_cast<float>(
             d.range * std::sin(d.elevation * M_PI / 180.0)
-            + radarCore_.getConfig().radarHeight);
+            + cfg.radarHeight);
 
         t.radialVelocity = static_cast<float>(d.radialVelocity);
         targets.append(t);
@@ -627,6 +864,7 @@ void AESARadar::processSurveillance(
 // =============================================================================
 void AESARadar::processTWS(
     const aesa::RadarOutput&                        output,
+    const aesa::RadarConfig&                        cfg,
     const std::unordered_map<uint32_t, Platform*>&  idMap,
     std::unordered_set<uint32_t>&                   addedIDs)
 {
@@ -661,16 +899,16 @@ void AESARadar::processTWS(
         t.entity = platform;
         t.radius = static_cast<float>(tr.range * RANGE_M_TO_KM);
 
-        // Azimuth conversion — same as processSurveillance. REQ-AESA-004.
-        float bodyAz = static_cast<float>(tr.azimuth);
-        if (bodyAz > 180.0f) bodyAz -= 360.0f;
-        t.angle = bodyAz;
+        // Model angles are true (stabilised); the display needs body azimuth.
+        // REQ-AESA-004.
+        t.angle       = static_cast<float>(stabToBodyAz(lastPose_, tr.azimuth, tr.elevation));
+        t.trueBearing = static_cast<float>(tr.azimuth);
 
         t.speed          = static_cast<float>(tr.speedOverGround);
         t.direction      = static_cast<float>(tr.heading);
 
         // Altitude: Kalman z state plus radar platform height. REQ-AESA-004.
-        t.altitude = static_cast<float>(tr.z + radarCore_.getConfig().radarHeight);
+        t.altitude = static_cast<float>(tr.z + cfg.radarHeight);
 
         t.radialVelocity = static_cast<float>(tr.radialVelocity);
         targets.append(t);
@@ -695,6 +933,7 @@ void AESARadar::processTWS(
 // =============================================================================
 void AESARadar::processLockOn(
     const aesa::RadarOutput&                        output,
+    const aesa::RadarConfig&                        cfg,
     const std::unordered_map<uint32_t, Platform*>&  idMap)
 {
     // Break-lock condition — model has lost the target. REQ-AESA-003.
@@ -706,7 +945,7 @@ void AESARadar::processLockOn(
 
     if (output.tracks.empty()) return;
 
-    uint32_t lockedID = radarCore_.getConfig().lockedTargetID;
+    uint32_t lockedID = cfg.lockedTargetID;
 
     // Find the locked track in the output. Linear search over the (typically
     // small) fire-control track list. REQ-AESA-003.
@@ -732,14 +971,14 @@ void AESARadar::processLockOn(
     t.entity = platform;
     t.radius = static_cast<float>(locked->range * RANGE_M_TO_KM);
 
-    // Azimuth conversion. REQ-AESA-004.
-    float lockAz = static_cast<float>(locked->azimuth);
-    if (lockAz > 180.0f) lockAz -= 360.0f;
-    t.angle = lockAz;
+    // Model angles are true (stabilised); the display needs body azimuth.
+    // REQ-AESA-004.
+    t.angle       = static_cast<float>(stabToBodyAz(lastPose_, locked->azimuth, locked->elevation));
+    t.trueBearing = static_cast<float>(locked->azimuth);
 
     t.speed          = static_cast<float>(locked->speedOverGround);
     t.direction      = static_cast<float>(locked->heading);
-    t.altitude       = static_cast<float>(locked->z + radarCore_.getConfig().radarHeight);
+    t.altitude       = static_cast<float>(locked->z + cfg.radarHeight);
     t.radialVelocity = static_cast<float>(locked->radialVelocity);
     targets.append(t);
 
@@ -762,9 +1001,16 @@ void AESARadar::scan()
 {
     // Guard against uninitialised state. REQ-AESA-001.
     if (!parentEntity) return;
+#ifdef AESA_REGRESSION_TEST
+    static bool s_seeded = false;
+    if (!s_seeded) { aesa_test_seed_model(12345u); aesa_test_seed_signal(12345u); s_seeded = true; }
+#endif
 
-    Transform* source = (root->Platforms)[parentEntity->ID]->transform;
-    if (!source) return;
+    // Own platform lookup with find(): operator[] would insert a null entry
+    // and then dereference it if the platform is missing. REQ-AESA-001.
+    auto ownIt = root->Platforms.find(parentEntity->ID);
+    if (ownIt == root->Platforms.end() || !ownIt->second) return;
+    Transform& source = ownIt->second->transform;
 
     // -------------------------------------------------------------------------
     // dt computation — identical pattern to radar.cpp.
@@ -772,67 +1018,93 @@ void AESARadar::scan()
     // Subsequent calls measure real elapsed time and clamp to [MIN_DT, MAX_DT].
     // REQ-AESA-001.
     // -------------------------------------------------------------------------
+    // Simulation time from the owning platform. Platform::update() copies the
+    // engine time into Platform::time immediately before calling scan() on its
+    // sensors, in the same call chain: no dependency on Simulation and no
+    // cross-thread read. REQ-AESA-001.
+    const double now = static_cast<double>(ownIt->second->time);
     double dt;
+    double velDt = 0.0;   // actual elapsed sim time for velocity estimation (0 = no update)
     if (!timerStarted_)
     {
-        frameTimer_.start();
         timerStarted_ = true;
+        dt = FIRST_FRAME_DT;
+        velState_.clear();
+    }
+    else if (now < lastSimTime_)
+    {
+        // Simulation time moved backwards (Reset / timeJump to earlier time).
+        radarCore_.reset();
+        velState_.clear();
         dt = FIRST_FRAME_DT;
     }
     else
     {
-        dt = static_cast<double>(frameTimer_.elapsed()) / 1000.0;
-        frameTimer_.restart();
-        dt = std::clamp(dt, MIN_DT, MAX_DT);
+        const double elapsed = now - lastSimTime_;
+        if (elapsed > MAX_DT) velState_.clear();   // forward jump: positions not continuous
+        else                  velDt = elapsed;     // 0 when time did not advance
+        dt = std::clamp(elapsed, MIN_DT, MAX_DT);
     }
-    simTime_ += dt;
+    lastSimTime_ = now;
+    simTime_     = now;
 
     // -------------------------------------------------------------------------
     // Pose — build from current platform transform. REQ-AESA-010.
     // -------------------------------------------------------------------------
     aesa::RadarPose pose = buildPose();
 
-    // -------------------------------------------------------------------------
-    // Update radarHeight from live pose altitude.
-    // Only applied when pose.y exceeds MIN_RADAR_HEIGHT and the change
-    // exceeds HEIGHT_UPDATE_THRESHOLD to avoid redundant setConfig() calls.
-    // REQ-AESA-071.
-    // -------------------------------------------------------------------------
-    if (pose.y > MIN_RADAR_HEIGHT)
+    // ---- Attitude and own velocity (stabilised frame). REQ-AESA-010. -------
+    for (auto& kv : velState_) kv.second.seen = false;
+    const QVector3D ownPosKm = source.matrix.translation();
     {
-        aesa::RadarConfig altCfg = radarCore_.getConfig();
-        if (std::abs(pose.y - altCfg.radarHeight) > HEIGHT_UPDATE_THRESHOLD)
-        {
-            altCfg.radarHeight = pose.y;
-            radarCore_.setConfig(altCfg);
-            displayRangeDirty_ = true;
-        }
+        // Rows = body axes (forward, right, up) in (North, East, Up)
+        // = (world z, world x, world y) of each transform direction vector.
+        const QVector3D f = source.forward();
+        const QVector3D r = source.right();
+        const QVector3D u = source.up();
+        const double R[3][3] = { { f.z(), f.x(), f.y() },
+                                 { r.z(), r.x(), r.y() },
+                                 { u.z(), u.x(), u.y() } };
+        for (int i = 0; i < 3; ++i)
+            for (int j = 0; j < 3; ++j) pose.bodyFromStab[i][j] = R[i][j];
+
+        const std::array<double, 3> ov =
+            updateVelocityEstimate(platformToRadarID(parentEntity->ID), ownPosKm, velDt);
+        pose.vx = ov[2];   // North
+        pose.vy = ov[0];   // East
+        pose.vz = ov[1];   // Up
+    }
+    lastPose_ = pose;   // platform body frame: used for display angles (t.angle)
+
+    // ---- Antenna mount (REQ-AESA-010) ---------------------------------------
+    // The model works in the ARRAY frame: arrayFromStab = M * bodyFromStab.
+    // Scan limits, steering limit, beam gate, gain and track / fire-control
+    // pointing then all apply around the array's facing direction.
+    // Skipped for mount 0/0: bit-identical to the nose-mounted radar.
+    if (mountAzimuth_deg_ != 0.0f || mountElevation_deg_ != 0.0f)
+    {
+        double M[3][3];
+        mountFromBody(mountAzimuth_deg_, mountElevation_deg_, M);
+        double A[3][3];
+        for (int i = 0; i < 3; ++i)
+            for (int j = 0; j < 3; ++j)
+                A[i][j] = M[i][0] * pose.bodyFromStab[0][j]
+                        + M[i][1] * pose.bodyFromStab[1][j]
+                        + M[i][2] * pose.bodyFromStab[2][j];
+        for (int i = 0; i < 3; ++i)
+            for (int j = 0; j < 3; ++j) pose.bodyFromStab[i][j] = A[i][j];
     }
 
-    // {
-    //     //     aesa::RadarConfig altCfg = radarCore_.getConfig();
-    //     //     double liveHeight = std::max(2.0, pose.y);
-    //     //     if (std::abs(liveHeight - altCfg.radarHeight) > 1.0)
-    //     //     {
-    //     //         altCfg.radarHeight = liveHeight;
-    //     //         radarCore_.setConfig(altCfg);
-    //     //         displayRangeDirty_ = true;
-    //     //     }
-    //     // }
+    // radarHeight: updated inside RadarModel_AESA::update() step 2 from
+    // pose.y with the same thresholds (50 m, 1 m). REQ-AESA-071.
 
-    // -------------------------------------------------------------------------
-    // Update platformSpeed_m_s from own dynamicModel each tick.
-    // This feeds the clutter notch and Doppler blind zone computation inside
-    // the signal processor. FIX-01. REQ-AESA-040.
-    // -------------------------------------------------------------------------
+    // platformSpeed_m_s: feeds clutter notch / STAP. FIX-01. REQ-AESA-040.
     {
         auto it = root->Platforms.find(parentEntity->ID);
-        if (it != root->Platforms.end() && it->second->dynamicModel)
+        if (it != root->Platforms.end())
         {
-            aesa::RadarConfig speedCfg = radarCore_.getConfig();
-            speedCfg.platformSpeed_m_s =
-                static_cast<float>(it->second->dynamicModel->currentSpeed / 3.6);
-            radarCore_.setConfig(speedCfg);
+            radarCore_.setPlatformSpeed(
+                static_cast<float>(it->second->dynamicModel.currentSpeed / 3.6));
         }
     }
 
@@ -840,17 +1112,96 @@ void AESARadar::scan()
     // Collect targets and drive the model update. REQ-AESA-004.
     // -------------------------------------------------------------------------
     std::unordered_map<uint32_t, Platform*> idMap;
-    std::vector<aesa::TargetInput> radarInputs = collectTargets(source, idMap);
+    std::vector<aesa::TargetInput> radarInputs = collectTargets(ownPosKm, velDt, idMap);
+
+    // Drop velocity-estimator entries for entities no longer present.
+    for (auto it = velState_.begin(); it != velState_.end(); )
+        it = it->second.seen ? std::next(it) : velState_.erase(it);
+
+    // ---- Plugin logic (AESA plugin SDK). REQ-AESA-090. ----------------------
+    // One snapshot per scan. Empty registry = nothing below runs and the
+    // model uses its built-in logic only.
+    const std::shared_ptr<const AesaLogicSnapshot> pluginHooks =
+        AesaLogicRegistry::instance().snapshot();
+    AesaStageContext stageCtx;
+    if (pluginHooks && !pluginHooks->empty())
+    {
+        stageCtx.hooks          = pluginHooks.get();
+        stageCtx.idMap          = &idMap;
+        stageCtx.radar.radarId  = ID;
+        stageCtx.radar.entityId = parentEntity->ID;
+        stageCtx.radar.name     = Name;
+    }
+
+    // Pre-filter: plugins may remove targets before the radar sees them.
+    if (stageCtx.hooks != nullptr && !stageCtx.hooks->preFilters.empty())
+    {
+        radarInputs.erase(
+            std::remove_if(radarInputs.begin(), radarInputs.end(),
+                [&stageCtx](const aesa::TargetInput& t)
+                {
+                    const double r = std::sqrt(t.x * t.x + t.y * t.y + t.z * t.z);
+                    const aesaplugin::TargetGeometry g = stageGeometry(stageCtx, t, r);
+                    for (const auto& keepFn : stageCtx.hooks->preFilters)
+                    {
+                        bool keep = true;
+                        {
+                            AesaLogicRegistry::StageGuard guard;
+                            try { keep = keepFn(stageCtx.radar, g); } catch (...) { keep = true; }
+                        }
+                        if (!keep) return true;   // remove
+                    }
+                    return false;
+                }),
+            radarInputs.end());
+    }
+
+    // Replaceable stages: installed for this update() only.
+    const bool pluginStages = (stageCtx.hooks != nullptr && stageCtx.hooks->hasStages());
+    if (pluginStages)
+    {
+        aesa::LogicOverrides ov;
+        ov.context = &stageCtx;
+        if (stageCtx.hooks->rcs)         ov.meanRcs         = &stageMeanRcs;
+        if (stageCtx.hooks->detection)   ov.detect          = &stageDetect;
+        if (stageCtx.hooks->propagation) ov.propagationLoss = &stagePropagation;
+        radarCore_.setLogicOverrides(ov);
+    }
 
     radarCore_.update(dt, pose, radarInputs, simTime_);
 
+    // stageCtx lives on this stack frame: clear before it goes out of scope.
+    if (pluginStages)
+        radarCore_.setLogicOverrides(aesa::LogicOverrides{});
+
     aesa::RadarOutput output = radarCore_.getOutput();
     aesa::RadarConfig cfg    = radarCore_.getConfig();
+#ifdef AESA_REGRESSION_TEST
+    qInfo().noquote() << QString("TICK %1 mode=%2 dets=%3 trks=%4 dr=%5")
+        .arg(simTime_, 0, 'f', 6).arg(int(output.mode))
+        .arg(output.detections.size()).arg(output.tracks.size())
+        .arg(output.displayRange_km, 0, 'g', 17);
+    for (const auto& d : output.detections)
+        qInfo().noquote() << QString("  D %1 %2 %3 %4 %5").arg(d.targetID)
+            .arg(d.range, 0, 'g', 17).arg(d.azimuth, 0, 'g', 17)
+            .arg(d.elevation, 0, 'g', 17).arg(d.snr, 0, 'g', 17);
+    for (const auto& t : output.tracks)
+        qInfo().noquote() << QString("  T %1 %2 %3 %4").arg(t.id)
+            .arg(t.x, 0, 'g', 17).arg(t.y, 0, 'g', 17).arg(t.z, 0, 'g', 17);
+#endif
 
     // -------------------------------------------------------------------------
     // Sync Sensor base fields from model output. REQ-AESA-004.
     // -------------------------------------------------------------------------
-    azimuth           = static_cast<float>(output.currentAzimuth);
+    // Beam azimuth relative to the nose (model output is array frame).
+    // REQ-AESA-010.
+    {
+        double pAz = 0.0, pEl = 0.0;
+        arrayToPlatformAzEl(mountAzimuth_deg_, mountElevation_deg_,
+                            output.currentAzimuth, output.currentElevation,
+                            pAz, pEl);
+        azimuth = static_cast<float>(pAz);
+    }
     beamWidth         = cfg.beamWidth;
     maxDetectionAngle = cfg.maxAzimuth;
 
@@ -859,7 +1210,10 @@ void AESARadar::scan()
         DISPLAY_RANGE_MIN_KM,
         DISPLAY_RANGE_MAX_KM);
     range = cachedDisplayRange_;
-
+    if(parentEntity){
+        auto& data = getSensorData();
+        data.sensor[dataid].range = range;
+    }
     // Sync Sensor mode from model output mode. REQ-AESA-003.
     switch (output.mode)
     {
@@ -878,14 +1232,47 @@ void AESARadar::scan()
     switch (output.mode)
     {
     case aesa::RadarMode::SURVEILLANCE:
-        processSurveillance(output, idMap, addedIDs);
+        processSurveillance(output, cfg, idMap, addedIDs);
         break;
     case aesa::RadarMode::TWS:
-        processTWS(output, idMap, addedIDs);
+        processTWS(output, cfg, idMap, addedIDs);
         break;
     case aesa::RadarMode::LOCK_ON:
-        processLockOn(output, idMap);
+        processLockOn(output, cfg, idMap);
         break;
+    }
+
+    // Post-filter (AESA plugin SDK): plugins may remove entries from the
+    // engine-visible target list. Radar tracks and DIS emission are not
+    // affected. REQ-AESA-090.
+    if (stageCtx.hooks != nullptr && !stageCtx.hooks->postFilters.empty())
+    {
+        decltype(targets) kept;
+        kept.reserve(targets.size());
+        for (const auto& t : targets)
+        {
+            aesaplugin::OutputTarget o;
+            o.targetEntityId     = (t.entity != nullptr) ? t.entity->ID : std::string();
+            o.range_km           = t.radius;
+            o.bearingBody_deg    = t.angle;
+            o.trueBearing_deg    = t.trueBearing;
+            o.speed_m_s          = t.speed;
+            o.heading_deg        = t.direction;
+            o.altitude_m         = t.altitude;
+            o.radialVelocity_m_s = t.radialVelocity;
+
+            bool keep = true;
+            for (const auto& keepFn : stageCtx.hooks->postFilters)
+            {
+                {
+                    AesaLogicRegistry::StageGuard guard;
+                    try { keep = keepFn(stageCtx.radar, o); } catch (...) { keep = true; }
+                }
+                if (!keep) break;
+            }
+            if (keep) kept.append(t);
+        }
+        targets = kept;
     }
 
     // -------------------------------------------------------------------------
@@ -900,6 +1287,57 @@ void AESARadar::scan()
         emit enemyDetected();
     else
         emit enemyNotFound();
+
+    {
+        DISEmissionSnapshot snap;
+        snap.emittingEntityID = parentEntity->ID;
+        // snap.systemID          = cfg.emitterCode;
+        snap.systemID          = static_cast<uint8_t>(emitterIndex > 0 ? emitterIndex : 1);
+        snap.active            = true;
+        snap.emitterFunction   = 0;  // TODO: real SISO-REF-010 UID 76 code
+
+        DISEmissionBeam beam;
+        beam.beamID = 1;
+
+        const aesa::BeamWaveform& wf = currentWaveformFor(cfg, output.mode);
+        beam.frequency  = static_cast<float>(cfg.frequency_Hz);
+        beam.freqRange  = static_cast<float>(cfg.antennaBandwidth);
+        beam.pulseWidth = wf.pulseWidth_s * 1.0e6f;
+        beam.prf        = wf.prf_Hz;
+        beam.erpPower   = computeERP_dBm(cfg);
+
+        // DIS beam centre is relative to the emitting entity's body: convert
+        // from the array frame with the mount orientation. REQ-AESA-010.
+        {
+            double pAz = 0.0, pEl = 0.0;
+            arrayToPlatformAzEl(mountAzimuth_deg_, mountElevation_deg_,
+                                output.currentAzimuth, output.currentElevation,
+                                pAz, pEl);
+            beam.beamAzCenter = static_cast<float>(pAz);
+            beam.beamElCenter = static_cast<float>(pEl);
+        }
+        beam.beamAzSweep  = cfg.beamWidth;
+        beam.beamElSweep  = cfg.beamWidth;
+        beam.beamFunction = 0;  // TODO: real SISO-REF-010 UID 78 code
+
+        if (output.mode == aesa::RadarMode::SURVEILLANCE) {
+            for (const auto& d : output.detections) {
+                auto it = idMap.find(d.targetID);
+                if (it != idMap.end() && it->second)
+                    beam.trackedEntityIDs.push_back(it->second->ID);
+            }
+        } else {
+            for (const auto& tr : output.tracks) {
+                auto it = idMap.find(tr.id);
+                if (it != idMap.end() && it->second)
+                    beam.trackedEntityIDs.push_back(it->second->ID);
+            }
+        }
+
+        snap.beams.push_back(beam);
+        emit emissionSnapshotReady(snap);
+
+    }
 }
 
 // =============================================================================
@@ -952,6 +1390,8 @@ QJsonObject AESARadar::toJson() const
     scan["minElevation"]     = toParm(cfg.minElevation,          "deg",  -90.0f,   0.0f, "Min elevation");
     scan["maxElevation"]     = toParm(cfg.maxElevation,          "deg",    0.0f,  90.0f, "Max elevation");
     scan["maxSteeringAngle"] = toParm(cfg.maxSteeringAngle_deg,  "deg",    0.0f,  90.0f, "Max electronic steering angle");
+    scan["mountAzimuth"]     = toParm(mountAzimuth_deg_,         "deg", -180.0f, 180.0f, "Antenna mount azimuth (0 = forward, 180 = rearward, +90 = right)");
+    scan["mountElevation"]   = toParm(mountElevation_deg_,       "deg",  -90.0f,  90.0f, "Antenna mount elevation (tilt, + = up)");
     scan["searchDwellTime"]  = toParm(cfg.searchDwellTime_ms,    "ms",     0.1f, 100.0f, "Search dwell time");
     scan["trackDwellTime"]   = toParm(cfg.trackDwellTime_ms,     "ms",     0.1f, 100.0f, "Track dwell time");
     scan["fcDwellTime"]      = toParm(cfg.fireControlDwellTime_ms,"ms",    0.1f, 100.0f, "Fire-control dwell time");
@@ -1072,7 +1512,7 @@ QJsonObject AESARadar::toJson() const
     AddParameters["type"] = "Section";
     obj["AdditionalParameters"] = AddParameters;
 
-
+    obj["emitterIndex"] = emitterIndex;
     return obj;
 }
 
@@ -1082,6 +1522,8 @@ QJsonObject AESARadar::toJson() const
 // =============================================================================
 void AESARadar::fromJson(const QJsonObject& obj)
 {
+    if (obj.contains("Active"))
+        Active = obj["Active"].toBool();
     // Start from the current live config so that missing JSON keys leave the
     // corresponding fields unchanged. REQ-AESA-002.
     aesa::RadarConfig cfg = radarCore_.getConfig();
@@ -1123,8 +1565,18 @@ void AESARadar::fromJson(const QJsonObject& obj)
         if (s.contains("searchDwellTime"))   cfg.searchDwellTime_ms      = valueFromParm(s["searchDwellTime"].toObject());
         if (s.contains("trackDwellTime"))    cfg.trackDwellTime_ms       = valueFromParm(s["trackDwellTime"].toObject());
         if (s.contains("fcDwellTime"))       cfg.fireControlDwellTime_ms = valueFromParm(s["fcDwellTime"].toObject());
-        minAzimuth = cfg.minAzimuth;
-        maxAzimuth = cfg.maxAzimuth;
+        if (s.contains("mountAzimuth"))      mountAzimuth_deg_           = valueFromParm(s["mountAzimuth"].toObject());
+        if (s.contains("mountElevation"))    mountElevation_deg_         = valueFromParm(s["mountElevation"].toObject());
+        // Map consumers draw the wedge as heading + min/max: give them the
+        // sector around the array's facing direction. REQ-AESA-011.
+        minAzimuth = cfg.minAzimuth + mountAzimuth_deg_;
+        maxAzimuth = cfg.maxAzimuth + mountAzimuth_deg_;
+        if(parentEntity){
+            auto& data = getSensorData();
+            data.sensor[dataid].minAzimuth = cfg.minAzimuth + mountAzimuth_deg_;
+            data.sensor[dataid].maxAzimuth = cfg.maxAzimuth + mountAzimuth_deg_;
+            data.sensor[dataid].range = range;
+        }
     }
 
     // ---- Waveform section ---------------------------------------------------
@@ -1258,11 +1710,11 @@ void AESARadar::fromJson(const QJsonObject& obj)
     // ---- Mode ---------------------------------------------------------------
     if (obj.contains("mode"))
         cfg.mode = static_cast<aesa::RadarMode>(obj["mode"].toInt());
-
+    if (obj.contains("emitterIndex"))
+        emitterIndex = obj["emitterIndex"].toInt();
     // Apply the fully assembled config to the model. REQ-AESA-002.
     radarCore_.setConfig(cfg);
     displayRangeDirty_ = true;
 }
-
 
 

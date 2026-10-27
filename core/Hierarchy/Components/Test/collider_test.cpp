@@ -42,7 +42,7 @@ void test_Collider_initialization() {
     std::cout << "\n--- Running Initialization Tests ---" << std::endl;
     Hierarchy* h = new Hierarchy();
     ProfileCategaory* p = new ProfileCategaory(h);
-    Collider* e = new Collider(h);
+    Collider* e = new Collider();
 
     ASSERT_NEQ(e,nullptr, "Collider should be return object");
 
@@ -55,7 +55,7 @@ void test_Collider_Subcomponent_function() {
     std::cout << "\n--- Running Collider_Subcomponent Tests ---" << std::endl;
     Hierarchy* h = new Hierarchy();
     ProfileCategaory* p = new ProfileCategaory(h);
-    Collider* e = new Collider(h);
+    Collider* e = new Collider();
 
     //Test addSubComponent function
     // wrong values
@@ -105,7 +105,7 @@ void test_Collider_OthersFunction() {
     std::cout << "\n--- Running Collider_OthersFunction Tests ---" << std::endl;
     Hierarchy* h = new Hierarchy();
     ProfileCategaory* p = h->addProfileCategaory("test_Profile1");
-    Collider* e = new Collider(h);
+    Collider* e = new Collider();
     // Check map existence and pointer match
     auto it = h->ProfileCategories.find(p->ID);
     bool found = (it != h->ProfileCategories.end());

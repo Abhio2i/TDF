@@ -42,7 +42,7 @@ class IFFProfile: public QObject, public Component
 {
     Q_OBJECT
 public:
-    IFFProfile(Hierarchy* h);
+    IFFProfile();
     ~IFFProfile();
     ComponentType Typo() const override { return ComponentType::IFFProfile; }
 
@@ -51,7 +51,7 @@ public:
     // DESCRIPTION: Core state and reference to global IFF registry.
     // =========================================================================
     bool Active;                                      //!< Whether this IFF profile is active
-    std::unordered_map<std::string, IFF*> *iffs;     //!< Pointer to map of IFF entries (modes/codes)
+    std::unordered_map<std::string, IFF*> iffs;     //!< Pointer to map of IFF entries (modes/codes)
 
     // =========================================================================
     // SECTION: Custom Parameters
@@ -59,6 +59,9 @@ public:
     // =========================================================================
     QJsonObject AdditionalParameters;                     //!< Custom key-value parameters
 
+    void init(Entity* Entity) override;
+    void Awake() override;
+    void Start() override;
     // Component interface overrides
     void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QJsonObject data3 = QJsonObject()) override;
     void removeSubComponent(std::string ID) override;

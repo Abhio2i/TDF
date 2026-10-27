@@ -97,7 +97,6 @@ public slots:
     void exportResults();
     void openScenarioFile();
 
-
 private:
     /* stack / tabs */
     QStackedWidget* m_stack        = nullptr;

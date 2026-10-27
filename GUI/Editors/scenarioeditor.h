@@ -63,11 +63,20 @@
 #include "core/ScriptEngine/scriptengine.h"       // For script engine
 #include "core/Simulation/simulation.h"
 #include <core/Config/scenarioconfig.h>
-#include <GUI/Tacticaldisplay/Gis/layerpanel.h>
+#include <GUI/Tacticaldisplay/Layer/layerpanel.h>
 #include "GUI/Editors/customresizableoverlaydock.h"
+#include "GUI/Editors/customresizableoverlaydock.h"
+#include <GUI/Canvas/map_with_canvas.h>
+#include <GIS_API/frontend/widgets/map_widget.h>
+#include <GIS_API/backend/api/shape_api.h>
 
 // %%% Class Definition %%%
 /* Main window class for the scenario editor */
+class ApiMapToolbar;
+class ApiLayerPanel;
+class AutoScriptManager; //////////
+class TcpAutoScriptSource; ////////////
+class AutoScriptController; ////////////////
 class ScenarioEditor : public QMainWindow
 {
     Q_OBJECT
@@ -79,7 +88,7 @@ public:
     // Track last saved file path
     QString lastSavedFilePath;
     // Library hierarchy data
-    Hierarchy* library;
+    // Hierarchy* library;
     // Hierarchy tree view widget
     HierarchyTree *treeView;
     // Library tree view widget
@@ -98,7 +107,7 @@ public:
      Console *console;
      DesignToolBar *designToolBar;
      ConsoleView *consoleView;
-  LayerPanel *layerPanel = nullptr;
+     LayerPanel *layerPanel = nullptr;
      CustomResizableOverlayDock *hierarchyDock;
      CustomResizableOverlayDock *tacticalDisplayDock;
      CustomResizableOverlayDock *consoleDock;
@@ -107,11 +116,22 @@ public:
      CustomResizableOverlayDock *sidebarDock;
      CustomResizableOverlayDock *textScriptDock;
      CustomResizableOverlayDock *layerDock = nullptr;
+     // API GIS map
+     MapWithCanvas* m_apiMapWidget = nullptr;
+     CustomResizableOverlayDock* m_apiMapDock = nullptr;
+     ApiMapToolbar* m_apiMapToolbar = nullptr;
+     ApiLayerPanel* m_apiLayerPanel = nullptr;
+     QString m_loadedDatabaseFile;
+
+     AutoScriptController* autoScriptController = nullptr;  /////////////////
+
 
 public slots:
     void showProfileInfo();
     void showApplicationDialog();
     void markUnsavedChanges();
+    void setLoadedDatabaseFile(const QString& dbFilePath);
+
 protected:
     void resizeEvent(QResizeEvent *event) override;
     void showEvent(QShowEvent *event) override;
@@ -136,6 +156,7 @@ signals:
     // Signal unsaved changes state
     void unsavedChangesChanged(bool hasChanges);
     void Activated();
+    void scenarioFileLoaded(const QString& filePath);
 private:
     // %%% Core Components %%%
     ScriptEngine* scriptengine = nullptr;
@@ -167,6 +188,10 @@ private:
     ScenarioConfig* m_scenarioConfig;
     void showPanelContextMenu(const QPoint &pos);
     QToolBar *rightToolBar = nullptr;
+    QString m_loadedScenarioFile;
+    // QString m_loadedDatabaseFile;
+    void updateTitleBar();
+    void syncEntityActiveStatesFromHierarchy();
 private slots:
     void onRunScriptFileRequested(const QString& filePath);
 

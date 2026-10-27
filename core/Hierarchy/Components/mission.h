@@ -50,7 +50,9 @@ public:
     bool Active;                            //!< Whether this mission is currently active
     Constants::EntityType type;             //!< Type of entity this mission applies to
     // std::unordered_map<std::string, Task> *taskGroup; //!< Collection of tasks (commented out)
-
+    void init(Entity* Entity) override;
+    void Awake() override;
+    void Start() override;
     // Component interface overrides
     void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QJsonObject data3 = QJsonObject()) override;
     void removeSubComponent(std::string ID) override;

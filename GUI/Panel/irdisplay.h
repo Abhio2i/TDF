@@ -12,15 +12,18 @@
 #include <QtMath>
 #include <QLineF>
 
-#include "iropengldisplay.h"                      // <-- 1. Add this include
+#include "iropengldisplay.h" // <-- 1. Add this include
 #include "core/Hierarchy/EntityProfiles/sensor.h"
 #include "core/Hierarchy/hierarchy.h"
+#include <unordered_map>
+#include <string>
 
 class IRDisplay : public QWidget
 {
     Q_OBJECT
 public:
     explicit IRDisplay(QWidget *parent = nullptr);
+    ~IRDisplay() override;
     // Set hierarchy instance
     void setHierarchy(Hierarchy* h) { hierarchy = h; }
     // Get size hint
@@ -35,12 +38,15 @@ public:
     void selectEntity(Entity* entity);
     // Remove entity by ID
     void RemoveEntity(QString ID);
+    // Remove sensor by ID
+    void RemoveSensor(const QString& sensorID);
     // Update radar display
     void updateRadar();
     // Sensor instance
     Sensor* sensor = nullptr;
     // Entity platform
     Platform* entity = nullptr;
+
 protected:
     // Handle paint events
     void paintEvent(QPaintEvent *event) override;
@@ -59,11 +65,14 @@ private:
     int padding = 9;
     // Entity ID
     QString id = "";
+    // Sensor ID
+    QString sensorId = "";
     // Hierarchy instance
     Hierarchy* hierarchy = nullptr;
     // Hover tracking
     int hoveredTargetIndex = -1;
     QPoint lastMousePos;
+
 
     /*----------------   Resolution End   -------------------*/
     /*------------------ EO OpenGL Start --------------------*/
@@ -71,6 +80,23 @@ protected:
     void resizeEvent(QResizeEvent *event) override; // <-- 2. Add this override
 private:
     IROpenGLDisplay *glDisplay = nullptr;           // <-- 3. Add the subwidget pointer
+
+    // Per-entity camera state — stores the gimbal azimuth, elevation and
+    // zoom level the operator left it at, keyed by entity ID (std::string).
+    // When the operator switches to a different entity and comes back, the
+    // camera resumes exactly where they left it rather than resetting to 0.
+    // A brand-new entity (never visited before) starts at az=0, el=0, zoom=1.
+    struct CameraState { float az = 0.f; float el = 0.f; float zoom = 1.f; };
+    std::unordered_map<std::string, CameraState> m_cameraStates;
+
+    // Saves the glDisplay's current angles+zoom for the entity with the
+    // given ID. Called just BEFORE switching away from an entity.
+    void saveCameraState(const std::string &entityId);
+
+    // Restores (or initialises to 0,0,1) the camera for entityId.
+    // Called just AFTER the new entity is wired up.
+    void restoreCameraState(const std::string &entityId);
+
     /*------------------- EO OpenGL End ---------------------*/
 
     /*------------    Custom Debugger Start    ------------*/

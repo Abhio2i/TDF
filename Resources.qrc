@@ -100,6 +100,10 @@
         <file>images/TestScript.png</file>
         <file>images/library.png</file>
         <file>images/folder1.png</file>
+        <file>images/edit.png</file>
+        <file>images/networkicon.png</file>
+        <file>images/mapediting.png</file>
+        <file>images/selection.png</file>
     </qresource>
     <qresource prefix="/texture">
         <file>images/Texture/bball.png</file>
@@ -127,7 +131,7 @@
         <file>images/Texture/blast.png</file>
         <file>images/Texture/missile.png</file>
         <file>images/Texture/bomb.png</file>
-        <file>images/Texture/DIS_PIC/fighter_jet.png</file>
+                <file>images/Texture/DIS_PIC/fighter_jet.png</file>
         <file>images/Texture/DIS_PIC/helicopter.png</file>
         <file>images/Texture/DIS_PIC/uav.png</file>
         <file>images/Texture/DIS_PIC/tank.png</file>
@@ -135,6 +139,17 @@
         <file>images/Texture/DIS_PIC/ship.png</file>
         <file>images/Texture/DIS_PIC/frigate.png</file>
         <file>images/Texture/DIS_PIC/submarine.png</file>
+        <file>images/Texture/DIS_PIC/bomber.png</file>
+        <file>images/Texture/DIS_PIC/cargo_transport.png</file>
+        <file>images/Texture/DIS_PIC/afv.png</file>
+        <file>images/Texture/DIS_PIC/artillery.png</file>
+        <file>images/Texture/DIS_PIC/utility_vehicle.png</file>
+        <file>images/Texture/DIS_PIC/destroyer.png</file>
+        <file>images/Texture/DIS_PIC/patrol_craft.png</file>
+        <file>images/Texture/DIS_PIC/landing_ship.png</file>
+        <file>images/Texture/DIS_PIC/auxiliary_ship.png</file>
+        <file>images/Texture/DIS_PIC/merchant_ship.png</file>
+        <file>images/Texture/DIS_PIC/uuv.png</file>
     </qresource>
     <qresource prefix="/model/airplane">
         <file>Model/Airplane/11803_Airplane_body_diff.jpg</file>
@@ -158,6 +173,7 @@
     <qresource prefix="/jsonData">
         <file>DB/jsonData/entity_DB.json</file>
         <file>DB/jsonData/city.json</file>
+        <file>DB/jsonData/airbase.json</file>
     </qresource>
     <qresource prefix="/air">
         <file>images/air/AgustaWestlandAW101.png</file>

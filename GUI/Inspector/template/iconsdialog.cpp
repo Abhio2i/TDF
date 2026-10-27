@@ -29,6 +29,7 @@
  */
 
 #include "iconsdialog.h"
+#include "qapplication.h"
 #include "qlineedit.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -51,17 +52,12 @@ IconsDialog::IconsDialog(QWidget *parent)
     setWindowTitle("Select Image");
     setFixedSize(900, 600);
     setStyleSheet(InspectorStyles::IconsDialog_main);
-
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-
     QHBoxLayout *searchLayout = new QHBoxLayout();
-
     QPushButton *browseBtn = new QPushButton("Browse", this);
     browseBtn->setStyleSheet(InspectorStyles::IconsDialog_browseButton);
-
     QLabel *searchLabel = new QLabel("Search:", this);
     searchLabel->setStyleSheet(InspectorStyles::IconsDialog_searchLabel);
-
     searchBox = new QLineEdit(this);
     searchBox->setPlaceholderText("Type image name to search...");
     searchBox->setStyleSheet(InspectorStyles::IconsDialog_searchBox);
@@ -210,9 +206,9 @@ bool IconsDialog::addImageToList(const QString &imagePath, const QString &fileNa
         item->setTextAlignment(Qt::AlignCenter);
         item->setFlags(item->flags() | Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         listWidget->addItem(item);
+        // QCoreApplication::processEvents();
         return true;
     }
-
     return false;
 }
 void IconsDialog::filterImages(const QString &searchText)

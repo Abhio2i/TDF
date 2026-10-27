@@ -161,6 +161,7 @@ QWidget* AnalysisEditor::buildBottomTabBar()
     hl->addStretch();
     return bar;
 }
+
 void AnalysisEditor::switchTab(int index)
 {
     m_stack->setCurrentIndex(index);
@@ -560,6 +561,7 @@ void AnalysisEditor::rebuildMetricsPanel()
     table->horizontalHeader()->setStretchLastSection(false);
     m_metricsVL->addWidget(table, 1);
 }
+
 /* =========================================================================
    refreshAllMetricLabels
    ========================================================================= */
@@ -907,7 +909,6 @@ QWidget* AnalysisEditor::buildSelectableTimelineChart()
     v->setStyleSheet("background:transparent;border:2px solid #2a4a7a;border-radius:6px;");
     m_engagementChart2 = v;
     vl->addWidget(v, 1);
-
     return container;
 }
 /* =========================================================================
@@ -957,7 +958,6 @@ void AnalysisEditor::rebuildTeamSelectorBar()
 void AnalysisEditor::switchSelectedTeam(const QString& teamName)
 {
     m_selectedTeam=teamName;
-
     /* update button styles */
     for(const QString& t:m_teamNames){
         if(!m_teamButtons.contains(t)) continue;
@@ -1029,6 +1029,7 @@ void AnalysisEditor::rebuildRow2Chart()
 
             chart->addSeries(s);
         }
+
         // Engagement
         if (m_seriesVisible.value("Engagement", true) && !tl.engagement.isEmpty()) {
             QList<double>& engTimes = tl.engagementTimePoints.isEmpty()
@@ -1065,7 +1066,6 @@ void AnalysisEditor::rebuildRow2Chart()
             }
             chart->addSeries(s);
         }
-
     } else {
         // Dummy data
         QList<double> t   = {0,50,100,150,200,250,300,350,400,450,512};
@@ -1085,8 +1085,6 @@ void AnalysisEditor::rebuildRow2Chart()
                                         { "Engagement", &eV,  col,              Qt::DashLine,  {8, 4} },
                                         { "Damage",     &dmV, col.darker(140),  Qt::DotLine,   {2, 4} },
                                         };
-
-
         for (auto& d : dummyList) {
             if (!m_seriesVisible.value(d.name, true)) continue;
             QLineSeries* s = new QLineSeries();
@@ -1145,17 +1143,14 @@ void AnalysisEditor::rebuildSuccessChart()
     QChart* chart = m_successChart->chart();
     chart->removeAllSeries();
     for (QAbstractAxis* ax : chart->axes()) { chart->removeAxis(ax); delete ax; }
-
     double maxX = 40;
     int idx = 0;
-
     for (const QString& team : m_teamNames) {
         TimelineData& tl = m_teamTimelines[team];
         QColor col = m_teamColors.value(team, paletteColor(idx));
         QLineSeries* s = new QLineSeries();
         s->setName(team);
         s->setPen(QPen(col, 2));
-
         if (!tl.timePoints.isEmpty() && !tl.detection.isEmpty()) {
             double maxDet = *std::max_element(tl.detection.begin(), tl.detection.end());
             if (maxDet <= 0) maxDet = 1;
@@ -1172,7 +1167,6 @@ void AnalysisEditor::rebuildSuccessChart()
                 s->append(tp, qMin(100.0, peak * (tp / 512.0) + 10.0));
             maxX = qMax(maxX, 512.0);
         }
-
         chart->addSeries(s);
         idx++;
     }

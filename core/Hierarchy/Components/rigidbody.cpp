@@ -3,7 +3,7 @@
 #include "qjsondocument.h"
 #include <QDebug>
 
-Rigidbody::Rigidbody():Component(nullptr) {
+Rigidbody::Rigidbody():Component() {
     Active = true;
     Gravity = true;
     Kinematics = false;
@@ -20,6 +20,11 @@ Rigidbody::Rigidbody():Component(nullptr) {
     velocity = new Vector();
     angularVelocity = new Vector();
 }
+void Rigidbody::init(Entity *Entity){
+    parentEntity = Entity;
+}
+void Rigidbody::Awake(){}
+void Rigidbody::Start(){}
 
 void Rigidbody::addForce(const Vector& force) {
     if (!velocity || Mass <= 0.0f) return;

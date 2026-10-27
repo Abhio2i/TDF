@@ -493,6 +493,9 @@ constexpr double DOT_CLAMP_MAX =  1.0;
 static thread_local std::default_random_engine tl_rng{
     std::random_device{}()
 };
+#ifdef AESA_REGRESSION_TEST
+extern "C" void aesa_test_seed_signal(unsigned seed) { tl_rng.seed(seed); }
+#endif
 
 // =============================================================================
 // FILE-SCOPE RCS HELPER FUNCTIONS
@@ -1038,6 +1041,19 @@ double RadarSignalProcessor_AESA::computeGaseousAttenuation(
 double RadarSignalProcessor_AESA::computePropagationLoss(
     double range_m, const RadarConfig& cfg) const
 {
+    // A plugin may replace the propagation loss (AESA plugin SDK). The value
+    // must be a two-way linear factor in (0, 1]; anything else falls back to
+    // the built-in models below. REQ-AESA-090.
+    if (overrides_ != nullptr && overrides_->propagationLoss != nullptr)
+    {
+        double f = 0.0;
+        if (overrides_->propagationLoss(overrides_->context, range_m, cfg, f) &&
+            std::isfinite(f) && f > 0.0 && f <= 1.0)
+        {
+            return f;
+        }
+    }
+
     double loss_dB = 0.0;
 
     // ---- Rain attenuation (ITU-R P.838-3) -----------------------------------
@@ -1477,34 +1493,51 @@ double RadarSignalProcessor_AESA::computeRadialVelocity(
 }
 
 // =============================================================================
+// FUNCTION: addDopplerNoise
+// Adds Doppler noise to a precomputed range rate. Same RNG stream and draw
+// count as computeRadialVelocity(). REQ-AESA-040.
+// =============================================================================
+double RadarSignalProcessor_AESA::addDopplerNoise(
+    double rangeRate_m_s, std::normal_distribution<double>& noise) const
+{
+    return rangeRate_m_s + noise(tl_rng);
+}
+
+// =============================================================================
 // FUNCTION: computeCPA
 // Full description in header.
 // =============================================================================
 void RadarSignalProcessor_AESA::computeCPA(
-    DetectionOutput& det, const TargetInput& target, double range) const
+    DetectionOutput& det, const TargetInput& target, double range,
+    double ownVx, double ownVy, double ownVz) const
 {
     // Default: CPA is at current position (stationary target). REQ-AESA-040.
     det.cpa_distance = range;
     det.time_to_cpa  = 0.0;
 
-    double v2 = target.vx * target.vx +
-                target.vy * target.vy +
-                target.vz * target.vz;
+    // CPA is radar-relative: use velocity relative to own platform.
+    const double rvx = target.vx - ownVx;
+    const double rvy = target.vy - ownVy;
+    const double rvz = target.vz - ownVz;
+
+    double v2 = rvx * rvx +
+                rvy * rvy +
+                rvz * rvz;
 
     if (v2 > 0.01)
     {
         // Time to CPA: t = -dot(position, velocity) / |velocity|^2. REQ-AESA-040.
-        double t = -(target.x * target.vx +
-                     target.y * target.vy +
-                     target.z * target.vz) / v2;
+        double t = -(target.x * rvx +
+                     target.y * rvy +
+                     target.z * rvz) / v2;
 
         // CPA is only in the future — past CPA means target is receding.
         det.time_to_cpa = std::max(0.0, t);
 
         // CPA position. REQ-AESA-040.
-        double cx = target.x + target.vx * det.time_to_cpa;
-        double cy = target.y + target.vy * det.time_to_cpa;
-        double cz = target.z + target.vz * det.time_to_cpa;
+        double cx = target.x + rvx * det.time_to_cpa;
+        double cy = target.y + rvy * det.time_to_cpa;
+        double cz = target.z + rvz * det.time_to_cpa;
         det.cpa_distance = std::sqrt(cx * cx + cy * cy + cz * cz);
     }
 }
@@ -1950,9 +1983,16 @@ bool RadarSignalProcessor_AESA::isJammerInSidelobe(
     double Pj  = target.jammer.power_kW * 1000.0;
     double Gj  = std::pow(10.0, target.jammer.gain_dBi / 10.0);
     double lam = SPEED_OF_LIGHT / cfg.frequency_Hz;
-    double Rj  = target.jammer.selfScreening
-                    ? MIN_JAMMER_RANGE_M
-                    : std::max(MIN_JAMMER_RANGE_M, target.jammer.range_m);
+    // Jammer range consistent with computeJammerPower(): a self-screening
+    // jammer is co-located with the target; a stand-off jammer uses its own
+    // range, falling back to target range when unset. REQ-AESA-060.
+    const double tgtRange = std::max(MIN_JAMMER_RANGE_M,
+        std::sqrt(target.x * target.x + target.y * target.y + target.z * target.z));
+    const double Rj = target.jammer.selfScreening
+                          ? tgtRange
+                          : (target.jammer.range_m > MIN_JAMMER_RANGE_M
+                                 ? target.jammer.range_m
+                                 : tgtRange);
 
     double Pr  = (Pj * Gj * lam * lam)
                 / (std::pow(FOUR_PI, 2.0) * Rj * Rj);
@@ -2000,7 +2040,8 @@ double RadarSignalProcessor_AESA::computeModulationProcessingGain(
 // Full description in header.
 // =============================================================================
 std::pair<double,double> RadarSignalProcessor_AESA::computeClutterNotch(
-    const RadarConfig& cfg, const BeamWaveform& wf) const
+    const RadarConfig& cfg, const BeamWaveform& wf,
+    double notchCentre_m_s) const
 {
     // Notch half-width = lambda * PRF / (2 * N_pulses).
     // This is the Doppler bin width — the minimum resolvable velocity step.
@@ -2012,8 +2053,9 @@ std::pair<double,double> RadarSignalProcessor_AESA::computeClutterNotch(
     double notchWidth = (lambda * prf) / (2.0 * N);
     notchWidth        = std::clamp(notchWidth, NOTCH_WIDTH_MIN, NOTCH_WIDTH_MAX);
 
-    // Clutter centre velocity = platform speed. REQ-AESA-040.
-    double Vclutter = static_cast<double>(cfg.platformSpeed_m_s);
+    // Notch centre = clutter range rate in the beam direction (supplied by
+    // the model: -v_own · beam unit vector). REQ-AESA-040.
+    const double Vclutter = notchCentre_m_s;
     return { Vclutter - notchWidth, Vclutter + notchWidth };
 }
 
@@ -2022,7 +2064,8 @@ std::pair<double,double> RadarSignalProcessor_AESA::computeClutterNotch(
 // Full description in header.
 // =============================================================================
 bool RadarSignalProcessor_AESA::isInDopplerBlindZone(
-    double radVel_m_s, const RadarConfig& cfg, const BeamWaveform& wf) const
+    double radVel_m_s, const RadarConfig& cfg, const BeamWaveform& wf,
+    double notchCentre_m_s) const
 {
     // HPRF waveform is immune to MTI blind zones. REQ-AESA-040.
     if (wf.mode == WaveformMode::HPRF) return false;
@@ -2030,7 +2073,7 @@ bool RadarSignalProcessor_AESA::isInDopplerBlindZone(
     // Stationary platform has no meaningful clutter notch. REQ-AESA-040.
     if (cfg.platformSpeed_m_s < MIN_PLATFORM_SPEED_MPS) return false;
 
-    auto [lo, hi] = computeClutterNotch(cfg, wf);
+    auto [lo, hi] = computeClutterNotch(cfg, wf, notchCentre_m_s);
     return (radVel_m_s >= lo && radVel_m_s <= hi);
 }
 
@@ -2039,7 +2082,7 @@ bool RadarSignalProcessor_AESA::isInDopplerBlindZone(
 // Full description in header.
 // =============================================================================
 double RadarSignalProcessor_AESA::computeSTAPGain(
-    double radialVelocity_m_s, double platformSpeed_m_s,
+    double radialVelocity_m_s, double notchCentre_m_s,
     const BeamWaveform& wf, const RadarConfig& cfg) const
 {
     // STAP degrees of freedom: temporal = N_pulses, spatial = sqrt(N_elements).
@@ -2052,9 +2095,9 @@ double RadarSignalProcessor_AESA::computeSTAPGain(
     double stapGain  = N_pulses * N_spatial;
 
     // Velocity discrimination factor. REQ-AESA-040.
-    auto [notchLo, notchHi] = computeClutterNotch(cfg, wf);
+    auto [notchLo, notchHi] = computeClutterNotch(cfg, wf, notchCentre_m_s);
     double notchWidth    = notchHi - notchLo;
-    double distFromNotch = std::abs(radialVelocity_m_s - platformSpeed_m_s);
+    double distFromNotch = std::abs(radialVelocity_m_s - notchCentre_m_s);
 
     if (distFromNotch < notchWidth)
     {
@@ -2074,7 +2117,8 @@ double RadarSignalProcessor_AESA::computeSTAPGain(
 // Full description in header.
 // =============================================================================
 bool RadarSignalProcessor_AESA::isInClutterNotchSTAP(
-    double radVel_m_s, const RadarConfig& cfg, const BeamWaveform& wf) const
+    double radVel_m_s, const RadarConfig& cfg, const BeamWaveform& wf,
+    double notchCentre_m_s) const
 {
     // HPRF waveform is immune. REQ-AESA-040.
     if (wf.mode == WaveformMode::HPRF) return false;
@@ -2082,7 +2126,7 @@ bool RadarSignalProcessor_AESA::isInClutterNotchSTAP(
     // Stationary platform has no notch. REQ-AESA-040.
     if (cfg.platformSpeed_m_s < MIN_PLATFORM_SPEED_MPS) return false;
 
-    auto [lo, hi] = computeClutterNotch(cfg, wf);
+    auto [lo, hi] = computeClutterNotch(cfg, wf, notchCentre_m_s);
 
     // STAP narrows the notch by sqrt(N_spatial) compared to MTI. REQ-AESA-040.
     double N_spatial      = std::sqrt(static_cast<double>(

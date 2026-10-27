@@ -42,6 +42,7 @@
 #include "core/Hierarchy/EntityProfiles/iff.h"
 #include "core/Hierarchy/Utils/entityutils.h"
 
+
 // ========================================================================= //
 // Constructor & Basic Setup
 // ========================================================================= //
@@ -60,7 +61,13 @@ void EntityInfoDialog::setupUI()
     // setWindowFlags(Qt::Dialog | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
     setMinimumSize(400, 500);
     resize(500, 600);
-    setWindowFlags(Qt::Dialog | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint | Qt::WindowMaximizeButtonHint);
+    setWindowFlags(Qt::Window |
+                   Qt::WindowTitleHint |
+                   Qt::WindowSystemMenuHint |
+                   Qt::WindowStaysOnTopHint |
+                   Qt::WindowMinMaxButtonsHint |
+                   Qt::WindowCloseButtonHint);
+    setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
 
     setStyleSheet(EntityInfoDialogStyles::Dialog);
 
@@ -103,7 +110,7 @@ void EntityInfoDialog::createAttributeSection()
     attributeTable->verticalHeader()->setVisible(false);
     attributeTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     attributeTable->setFixedHeight(280);  // 240 → 280
-    QStringList attributes = {"Type", "Name", "DIS name", "Damages", "Carrier", "Fuel", "Weapons"};  // "Weapons" add hua
+    QStringList attributes = {"Type", "Name", "DIS name", "Damages", "Carrier", "Fuel", "Weapons"};
     for(int i = 0; i < 7; ++i) {  // 6 → 7
         attributeTable->setItem(i, 0, new QTableWidgetItem(attributes[i]));
         attributeTable->item(i, 0)->setForeground(Qt::white);
@@ -123,7 +130,7 @@ void EntityInfoDialog::createPositionSection()
 }
 void EntityInfoDialog::createSpeedAltTableSection()
 {
-    speedAltTable = new QTableWidget(2, 3);
+    speedAltTable = new QTableWidget(3, 3);
     speedAltTable->setHorizontalHeaderLabels(QStringList() << "Attribute" << "Current" << "Requested");
     speedAltTable->setStyleSheet(EntityInfoDialogStyles::TableWidget);
     speedAltTable->verticalHeader()->setVisible(false);
@@ -159,10 +166,21 @@ void EntityInfoDialog::createSpeedAltTableSection()
     speedAltTable->setItem(1, 2, new QTableWidgetItem("-"));
     speedAltTable->item(1, 2)->setFlags(speedAltTable->item(1, 2)->flags() | Qt::ItemIsEditable);
     speedAltTable->item(1, 2)->setForeground(Qt::white);
+    // Heading row add karo (existing code ke baad):
+    speedAltTable->setItem(2, 0, new QTableWidgetItem("Heading"));
+    speedAltTable->item(2, 0)->setForeground(Qt::white);
+
+    speedAltTable->setItem(2, 1, new QTableWidgetItem("-"));
+    speedAltTable->item(2, 1)->setFlags(speedAltTable->item(2, 1)->flags() & ~Qt::ItemIsEditable);
+    speedAltTable->item(2, 1)->setForeground(Qt::white);
+
+    speedAltTable->setItem(2, 2, new QTableWidgetItem("-"));
+    speedAltTable->item(2, 2)->setFlags(speedAltTable->item(2, 2)->flags() | Qt::ItemIsEditable);
+    speedAltTable->item(2, 2)->setForeground(Qt::white);
 
     // --- Recalculate fixed height using the new rowHeight ---
     int headerHeight = speedAltTable->horizontalHeader()->height();
-    speedAltTable->setFixedHeight((2 * rowHeight) + headerHeight + 5);
+    speedAltTable->setFixedHeight((3 * rowHeight) + headerHeight + 5);
 
     speedAltTable->horizontalHeader()->setStretchLastSection(true);
     speedAltTable->setColumnWidth(0, 100);
@@ -180,7 +198,6 @@ void EntityInfoDialog::createSpeedAltTableSection()
             });
         }
     });
-
     connect(speedAltTable, &QTableWidget::cellChanged, this, &EntityInfoDialog::onSpeedAltCellChanged);
     scrollLayout->addWidget(speedAltTable);
 }
@@ -227,6 +244,8 @@ void EntityInfoDialog::createOptionsSection()
 
     followTrajectoryCheckBox->setStyleSheet(EntityInfoDialogStyles::CheckBox);
     showDetectionCheckBox->setStyleSheet(EntityInfoDialogStyles::CheckBox);
+    followTrajectoryCheckBox->setVisible(false);
+    showDetectionCheckBox->setVisible(false);
 
     firstLineLayout->addWidget(followTrajectoryCheckBox);
     firstLineLayout->addWidget(showDetectionCheckBox);
@@ -237,6 +256,7 @@ void EntityInfoDialog::createOptionsSection()
 
     showConnectionCheckBox = new QCheckBox("Show Connection");
     showConnectionCheckBox->setStyleSheet(EntityInfoDialogStyles::CheckBox);
+        showConnectionCheckBox->setVisible(false);
 
     secondLineLayout->addWidget(showConnectionCheckBox);
     secondLineLayout->addStretch();
@@ -246,29 +266,70 @@ void EntityInfoDialog::createOptionsSection()
 
     showDetectionCheckBox->setChecked(true);
 
-    connect(followTrajectoryCheckBox, &QCheckBox::clicked, this, [=](bool checked) {
-        if(!currentEntityId.isEmpty() && entryInfo) {
-            if (entryInfo->dynamicModel) {
-                entryInfo->dynamicModel->follow = checked;
-                if (!checked) {
-                    entryInfo->dynamicModel->currentSpeed = 0;
-                }
-            }
-            if (entryInfo->trajectory) {
-                entryInfo->trajectory->Active = checked;
-                entryInfo->trajectory->FollowPath = checked;
-            }
+    // connect(followTrajectoryCheckBox, &QCheckBox::clicked, this, [=](bool checked) {
+    //     if(!currentEntityId.isEmpty() && entryInfo) {
+    //         if (entryInfo->dynamicModel) {
+    //             entryInfo->dynamicModel.follow = checked;
+    //             if (!checked) {
+    //                 entryInfo->dynamicModel.currentSpeed = 0;
+    //             }
+    //         }
+    //         if (entryInfo->trajectory) {
+    //             entryInfo->trajectory->Active = checked;
+    //             entryInfo->trajectory->FollowPath = checked;
+    //         }
 
-            emit update();
+    //         emit update();
+    //     }
+    // });
+
+    connect(followTrajectoryCheckBox, &QCheckBox::clicked, this, [=](bool checked) {
+        if (currentEntityId.isEmpty())
+            return;
+
+        DynamicModel* dynModel = nullptr;
+        Trajectory*   traj     = nullptr;
+
+        if (entryInfo) {
+            dynModel = entryInfo->dynamicModel;
+            traj     = entryInfo->trajectory;
+            if (!dynModel && entryInfo->platform) {
+                if (Platform* p = dynamic_cast<Platform*>(entryInfo->platform))
+                    dynModel = &p->dynamicModel;
+            }
+            if (!traj && entryInfo->platform) {
+                if (Platform* p = dynamic_cast<Platform*>(entryInfo->platform))
+                    traj = &p->trajectory;
+            }
+        } else if (m_platformFromHierarchy) {
+            dynModel = &m_platformFromHierarchy->dynamicModel;
+            traj     = &m_platformFromHierarchy->trajectory;
         }
+
+        if (dynModel) {
+            dynModel->follow = checked;
+            if (!checked) {
+                dynModel->currentSpeed = 0;
+                dynModel->control = false;
+            } else {
+                dynModel->control = true;
+            }
+        }
+        if (traj) {
+            traj->Active = checked;
+            traj->FollowPath = checked;
+        }
+        emit update();
     });
+
     connect(showDetectionCheckBox, &QCheckBox::clicked, this, [=](bool checked) {
-        if(!currentEntityId.isEmpty() && entryInfo && entryInfo->entity) {
+        if (entryInfo) {
             entryInfo->detection = checked;
             entryInfo->radioVisible = checked;
-            emit update();
         }
+        emit update();
     });
+
     QWidget *optionsWidget = new QWidget();
     optionsWidget->setStyleSheet(EntityInfoDialogStyles::OptionsWidget);
     optionsWidget->setLayout(optionsLayout);
@@ -279,124 +340,149 @@ void EntityInfoDialog::createOptionsSection()
 // Entity Data Management Methods
 // ========================================================================= //
 
-void EntityInfoDialog::setEntityInfo(const QString& entityId,
-                                     const QString& entityName,
-                                     MeshEntry* info)
+void EntityInfoDialog::setEntityInfoFromHierarchy(const QString& entityId,
+                                                  Entity* entity,
+                                                  Platform* platform)
 {
-    entryInfo       = nullptr;
-    m_trackedEntity = nullptr;
+    entryInfo               = nullptr;
+    m_trackedEntity         = nullptr;
+    m_entityFromHierarchy   = nullptr;
+    m_platformFromHierarchy = nullptr;
     currentEntityId.clear();
+    m_headingManuallySet    = false;
 
-    if (!info || !info->entity || !info->entity->Active) {
+    if (!entity || !entity->Active) {
         clearInfo();
         hide();
         return;
     }
 
-    if (!GlobalRegistry::entityToHierarchyMap.count(info->entity)) {
+    if (!GlobalRegistry::entityToHierarchyMap.count(entity)) {
         clearInfo();
         hide();
         return;
     }
-    currentEntityId   = entityId;
-    currentEntityName = entityName;
-    entryInfo         = info;
-    m_trackedEntity   = info->entity;
 
-    if (!currentEntityName.isEmpty()) {
+    currentEntityId         = entityId;
+    currentEntityName       = QString::fromStdString(entity->Name);
+    m_trackedEntity         = entity;
+    m_entityFromHierarchy   = entity;
+    m_platformFromHierarchy = platform;
+
+    if (!currentEntityName.isEmpty())
         titleLabel->setText("Name: " + currentEntityName);
-    } else {
+    else
         titleLabel->setText("Name: " + entityId);
-    }
-    if (entryInfo->trajectory) {
-        followTrajectoryCheckBox->setChecked(entryInfo->trajectory->FollowPath);
+
+    if (platform) {
+        followTrajectoryCheckBox->setChecked(platform->trajectory.FollowPath);
     } else {
         followTrajectoryCheckBox->setChecked(false);
     }
-    if (entryInfo->entity) {
-        entryInfo->detection = showDetectionCheckBox->isChecked();
-    }
-}
 
+    updateEntityInfo();
+    show();
+    raise();
+    activateWindow();
+}
 void EntityInfoDialog::updateEntityInfo()
 {
-    if (currentEntityId.isEmpty() || !entryInfo || !m_trackedEntity) {
+    Entity* entity = m_trackedEntity;
+    if (currentEntityId.isEmpty() || !entity) {
         if (isVisible()) hide();
         return;
     }
 
-    if (!GlobalRegistry::entityToHierarchyMap.count(m_trackedEntity)) {
-        entryInfo       = nullptr;
-        m_trackedEntity = nullptr;
+    if (!GlobalRegistry::entityToHierarchyMap.count(entity)) {
+        entryInfo               = nullptr;
+        m_trackedEntity         = nullptr;
+        m_entityFromHierarchy   = nullptr;
+        m_platformFromHierarchy = nullptr;
         currentEntityId.clear();
         clearInfo();
         if (isVisible()) hide();
         return;
     }
 
-    if (!entryInfo->entity || !entryInfo->entity->Active) {
+    if (!entity->Active) {
         if (isVisible()) hide();
         return;
     }
 
-    if (!entryInfo->coreTransform) {
-        if (isVisible()) hide();
-        return;
-    }
+    Platform*     plt      = nullptr;
+    Transform*    coreXf   = nullptr;
+    DynamicModel* dynModel = nullptr;
+    Trajectory*   traj     = nullptr;
 
-    if (!currentEntityName.isEmpty()) {
-        titleLabel->setText("Name: " + currentEntityName);
-    }
-
-    QString typeStr = "Unknown";
-    if(entryInfo->entity) {
-        switch(entryInfo->entity->type) {
-        case Constants::EntityType::Platform: typeStr = "Platform"; break;
-        case Constants::EntityType::Sensor:   typeStr = "Sensor";   break;
-        case Constants::EntityType::Weapon:   typeStr = "Weapon";   break;
-        default: typeStr = "Unknown"; break;
+    if (entryInfo) {
+        plt = entryInfo->platform
+                  ? dynamic_cast<Platform*>(entryInfo->platform)
+                  : dynamic_cast<Platform*>(entryInfo->entity);
+        coreXf   = entryInfo->coreTransform;
+        dynModel = entryInfo->dynamicModel;
+        traj     = entryInfo->trajectory;
+        if (!dynModel && plt)
+            dynModel = &plt->dynamicModel;
+        if (!traj && plt)
+            traj = &plt->trajectory;
+        if (!coreXf && plt)
+            coreXf = &plt->transform;
+    } else {
+        plt = m_platformFromHierarchy;
+        if (!plt)
+            plt = dynamic_cast<Platform*>(entity);
+        if (plt) {
+            coreXf   = &plt->transform;
+            dynModel = &plt->dynamicModel;
+            traj     = &plt->trajectory;
         }
+    }
+
+    if (!currentEntityName.isEmpty())
+        titleLabel->setText("Name: " + currentEntityName);
+
+    // ---------- Attribute table ----------
+    QString typeStr = "Unknown";
+    switch (entity->type) {
+    case Constants::EntityType::Platform: typeStr = "Platform"; break;
+    case Constants::EntityType::Sensor:   typeStr = "Sensor";   break;
+    case Constants::EntityType::Weapon:   typeStr = "Weapon";   break;
+    default: break;
     }
 
     if (attributeTable) {
         attributeTable->item(0, 1)->setText(typeStr);
-
-        if (!currentEntityName.isEmpty()) {
-            attributeTable->item(1, 1)->setText(currentEntityName);
-        } else {
-            attributeTable->item(1, 1)->setText("-");
-        }
-
+        attributeTable->item(1, 1)->setText(
+            currentEntityName.isEmpty() ? QString("-") : currentEntityName);
         attributeTable->item(2, 1)->setText("-");
-        float damages = 100.0f - qBound(0.0f, entryInfo->entity->Health, 100.0f);
-        attributeTable->item(3, 1)->setText(QString("%1 %").arg(damages, 0, 'f', 1));
 
-        QColor damageColor = (damages < 20.0f) ? QColor("#27ae60") :
-                                 (damages < 50.0f) ? QColor("#e67e22") :
-                                 QColor("#e74c3c");
+        float damages = 100.0f - qBound(0.0f, entity->Health, 100.0f);
+        attributeTable->item(3, 1)->setText(QString("%1 %").arg(damages, 0, 'f', 1));
+        QColor damageColor = (damages < 20.0f) ? QColor("#27ae60")
+                             : (damages < 50.0f) ? QColor("#e67e22")
+                                                 : QColor("#e74c3c");
         attributeTable->item(3, 1)->setForeground(damageColor);
         attributeTable->item(4, 1)->setText("Not Embarked");
-        Platform* plt = entryInfo->platform ?
-                            dynamic_cast<Platform*>(entryInfo->platform) : nullptr;
+
         if (plt) {
             float fuelPct = qBound(0.0f, plt->fuel, 100.0f);
-            int filled    = qBound(0, (int)(fuelPct / 10.0f), 10);
-            QString bar   = QString("▓").repeated(filled) +
+            int filled = qBound(0, static_cast<int>(fuelPct / 10.0f), 10);
+            QString bar = QString("▓").repeated(filled) +
                           QString("░").repeated(10 - filled);
             attributeTable->item(5, 1)->setText(
                 QString("%1 %   %2").arg(fuelPct, 0, 'f', 1).arg(bar));
-            QColor fuelColor = (fuelPct > 50.0f) ? QColor("#27ae60") :
-                                   (fuelPct > 20.0f) ? QColor("#e67e22") :
-                                   QColor("#e74c3c");
+            QColor fuelColor = (fuelPct > 50.0f) ? QColor("#27ae60")
+                               : (fuelPct > 20.0f) ? QColor("#e67e22")
+                                                   : QColor("#e74c3c");
             attributeTable->item(5, 1)->setForeground(fuelColor);
+
             int weaponCount = 0;
-            if (plt->weapons && plt->weapons->weapons) {
-                weaponCount = static_cast<int>(plt->weapons->weapons->size());
-            }
+            if (plt->weapons.weapons)
+                weaponCount = static_cast<int>(plt->weapons.weapons->size());
             attributeTable->item(6, 1)->setText(QString::number(weaponCount));
-            QColor weaponColor = (weaponCount > 5)  ? QColor("#27ae60") :
-                                     (weaponCount > 0)  ? QColor("#e67e22") :
-                                     QColor("#e74c3c");
+            QColor weaponColor = (weaponCount > 5) ? QColor("#27ae60")
+                                 : (weaponCount > 0) ? QColor("#e67e22")
+                                                     : QColor("#e74c3c");
             attributeTable->item(6, 1)->setForeground(weaponColor);
         } else {
             attributeTable->item(5, 1)->setText("-");
@@ -404,90 +490,100 @@ void EntityInfoDialog::updateEntityInfo()
             attributeTable->item(6, 1)->setText("-");
             attributeTable->item(6, 1)->setForeground(Qt::white);
         }
-        // ────────────────────────────────────────────────────────────────
     }
-    // Get position data
-    float lat = 0.0f, lon = 0.0f, x = 0.0f, z = 0.0f;
-    if(entryInfo->coreTransform) {
-        lat = entryInfo->coreTransform->getLatitude();
-        lon = entryInfo->coreTransform->getLongitude();
-    }
-    if(entryInfo->transform) {
-        x = entryInfo->transform->translation().x();
-        z = entryInfo->transform->translation().z();
-    }
-    // Get altitude
-    float y = 0.0f;
-    if (entryInfo->trajectory && !entryInfo->trajectory->Trajectories.empty()) {
-        int currentIdx = (entryInfo->trajectory->current >= 0 &&
-                          entryInfo->trajectory->current < entryInfo->trajectory->Trajectories.size()) ?
-                             entryInfo->trajectory->current : 0;
 
-        if (Waypoints* wp = entryInfo->trajectory->Trajectories[currentIdx]) {
-            if (wp->position) y = wp->position->y;
-        }
+    // ---------- Position ----------
+    float lat = 0.0f, lon = 0.0f;
+    if (coreXf) {
+        lat = coreXf->getLatitude();
+        lon = coreXf->getLongitude();
     }
-    // Update position display
-    QString currentPos = QString("Lat: %1, Long: %2, X: %3, Z: %4")
-                             .arg(lat, 0, 'f', 6)
-                             .arg(lon, 0, 'f', 6)
-                             .arg(x,   0, 'f', 2)
-                             .arg(z,   0, 'f', 2);
-    positionLabel->setText("Position: " + currentPos);
-    DynamicModel* dynModel = entryInfo->dynamicModel ? entryInfo->dynamicModel :
-                                 (entryInfo->platform && entryInfo->platform->dynamicModel) ?
-                                 entryInfo->platform->dynamicModel : nullptr;
-    // Update speed/altitude table
-    if (speedAltTable && dynModel) {
-        float currentSpeed    = dynModel->currentSpeed;
-        float currentAltitude = dynModel->currentAltitude * KMtoFT;
-        if (dynModel->follow && dynModel->followEntity) {
-            Platform* mothership = dynamic_cast<Platform*>(dynModel->followEntity);
-            if (mothership && mothership->dynamicModel) {
-                currentSpeed    = mothership->dynamicModel->currentSpeed;
-                currentSpeed = dynModel->currentSpeed;
-                currentAltitude = mothership->dynamicModel->currentAltitude * KMtoFT;
+    if (positionLabel) {
+        positionLabel->setText(
+            QString("Position: Lat: %1, Long: %2")
+                .arg(lat, 0, 'f', 6)
+                .arg(lon, 0, 'f', 6));
+    }
+
+    // ---------- Speed / Altitude / Heading ----------
+    if (speedAltTable) {
+        speedAltTable->blockSignals(true);
+
+        // Row 1 label: "Depth" for submarines — the value is already
+        // correctly negative (below sea level); this just makes that
+        // number self-explanatory instead of looking like an error.
+        // Every other category keeps "Altitude", unchanged.
+        bool isSubmarine = (entity->category == Entity::Category::Marine &&
+                            entity->marineCategory == Entity::SubMarineCategory::Submarine);
+        if (QTableWidgetItem* altLabelItem = speedAltTable->item(1, 0))
+            altLabelItem->setText(isSubmarine ? "Depth" : "Altitude");
+
+
+        float currentSpeed    = 0.0f;
+        float currentAltitude = 0.0f;
+        float reqSpeed        = 0.0f;
+        float reqAlt          = 0.0f;
+        float heading         = 0.0f;
+
+        if (dynModel) {
+            currentSpeed    = dynModel->currentSpeed;
+            currentAltitude = dynModel->currentAltitude * KMtoFT;
+            reqSpeed        = dynModel->moveSpeed;
+            reqAlt          = dynModel->Altitude;
+
+            if (dynModel->follow && dynModel->followEntity) {
+                Platform* mothership = dynamic_cast<Platform*>(dynModel->followEntity);
+                if (mothership) {
+                    currentSpeed    = mothership->dynamicModel.currentSpeed;
+                    currentAltitude = mothership->dynamicModel.currentAltitude * KMtoFT;
+                    reqSpeed        = mothership->dynamicModel.moveSpeed;
+                    reqAlt          = mothership->dynamicModel.Altitude;
+                }
             }
         }
-        speedAltTable->item(0, 1)->setText(QString("%1 km/h").arg(currentSpeed,    0, 'f', 2));
-        speedAltTable->item(0, 2)->setText(QString("%1 km/h").arg(dynModel->moveSpeed, 0, 'f', 2));
-        speedAltTable->item(1, 1)->setText(QString("%1 ft").arg(currentAltitude,   0, 'f', 2));
-        speedAltTable->item(1, 2)->setText(QString("%1 ft").arg(dynModel->Altitude,    0, 'f', 2));
-    } else if (speedAltTable) {
-        speedAltTable->item(0, 1)->setText("0.0 km/h");
-        speedAltTable->item(0, 2)->setText("0.0 km/h");
-        speedAltTable->item(1, 1)->setText("0.0 ft");
-        speedAltTable->item(1, 2)->setText("0.0 ft");
+        if (coreXf)
+            heading = coreXf->getHeading();
+
+        auto setCell = [&](int row, int col, const QString& text) {
+            if (QTableWidgetItem* it = speedAltTable->item(row, col))
+                it->setText(text);
+        };
+
+        setCell(0, 1, dynModel ? QString::number(currentSpeed, 'f', 2) + " km/h" : "-");
+        setCell(0, 2, dynModel ? QString::number(reqSpeed, 'f', 2) + " km/h" : "-");
+        setCell(1, 1, dynModel ? QString::number(currentAltitude, 'f', 2) + " ft" : "-");
+        setCell(1, 2, dynModel ? QString::number(reqAlt, 'f', 2) + " ft" : "-");
+        setCell(2, 1, coreXf ? QString::number(heading, 'f', 1) + "°" : "-");
+        if (!m_headingManuallySet)
+            setCell(2, 2, dynModel ? QString::number(dynModel->commandedHeading, 'f', 1) + "°" : "-");
+
+        speedAltTable->blockSignals(false);
     }
-    // Update checkboxes
-    if (followTrajectoryCheckBox) {
-        followTrajectoryCheckBox->setChecked(entryInfo->trajectory ?
-                                                 entryInfo->trajectory->FollowPath : false);
-    }
+
+    // Follow checkbox sync
+    if (traj)
+        followTrajectoryCheckBox->setChecked(traj->FollowPath);
 }
-
-
 void EntityInfoDialog::clearInfo()
 {
     titleLabel->setText("Entity Information");
     currentEntityId.clear();
 
     if (attributeTable) {
-        for(int i = 0; i < 7; ++i) {  // 6 → 7
+        for(int i = 0; i < 7; ++i) {
             attributeTable->item(i, 1)->setText("-");
             attributeTable->item(i, 1)->setForeground(Qt::white);
         }
     }
-
     positionLabel->setText("Position: -");
-
     if (speedAltTable) {
         speedAltTable->item(0, 1)->setText("-");
         speedAltTable->item(0, 2)->setText("-");
         speedAltTable->item(1, 1)->setText("-");
         speedAltTable->item(1, 2)->setText("-");
+        speedAltTable->item(2, 1)->setText("-");
+        speedAltTable->item(2, 2)->setText("-");
     }
-
     QList<QCheckBox*> checkboxes = {followTrajectoryCheckBox, showConnectionCheckBox};
     for(auto checkbox : checkboxes) {
         if(checkbox) checkbox->setChecked(false);
@@ -504,9 +600,46 @@ void EntityInfoDialog::onCloseClicked()
     hide();
 }
 
+Platform* EntityInfoDialog::resolvePlatform() const
+{
+    if (entryInfo) {
+        if (entryInfo->platform) {
+            if (Platform* p = dynamic_cast<Platform*>(entryInfo->platform))
+                return p;
+        }
+        if (entryInfo->entity) {
+            if (Platform* p = dynamic_cast<Platform*>(entryInfo->entity))
+                return p;
+        }
+    }
+    if (m_platformFromHierarchy)
+        return m_platformFromHierarchy;
+    if (m_entityFromHierarchy) {
+        if (Platform* p = dynamic_cast<Platform*>(m_entityFromHierarchy))
+            return p;
+    }
+    return nullptr;
+}
+
+Entity* EntityInfoDialog::resolveEntity() const
+{
+    if (entryInfo) {
+        if (entryInfo->entity)
+            return entryInfo->entity;
+        if (entryInfo->platform)
+            return entryInfo->platform;
+    }
+    if (m_entityFromHierarchy)
+        return m_entityFromHierarchy;
+    if (m_platformFromHierarchy)
+        return m_platformFromHierarchy;
+    return nullptr;
+}
+
 void EntityInfoDialog::onWeaponsClicked()
 {
-    if (currentEntityId.isEmpty() || !entryInfo || !entryInfo->platform) {
+    Platform* plt = resolvePlatform();
+    if (currentEntityId.isEmpty() || !plt) {
         QMessageBox::information(this, "Weapons", "No platform data available.");
         return;
     }
@@ -517,17 +650,25 @@ void EntityInfoDialog::onWeaponsClicked()
         return;
     }
 
-    Platform* plt = dynamic_cast<Platform*>(entryInfo->platform);
-    if (!plt) {
-        QMessageBox::information(this, "Weapons", "No platform data available.");
-        return;
-    }
-
     QDialog *weaponsDialog = new QDialog(this);
     m_weaponsDialog = weaponsDialog;
-    weaponsDialog->setWindowTitle("Weapons - " + currentEntityName);
-    weaponsDialog->setMinimumSize(600, 400);
-    weaponsDialog->setMaximumSize(700, 500);
+
+    QString title = currentEntityName.isEmpty()
+                        ? "Weapons"
+                        : "Weapons - " + currentEntityName;
+    weaponsDialog->setWindowTitle(title);
+
+    weaponsDialog->setMinimumSize(550, 400);
+
+    weaponsDialog->setWindowFlags(
+        Qt::Window |
+        Qt::WindowTitleHint |
+        Qt::WindowSystemMenuHint |
+        Qt::WindowMinMaxButtonsHint |
+        Qt::WindowCloseButtonHint |
+        Qt::WindowStaysOnTopHint
+        );
+
     weaponsDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
     weaponsDialog->setAttribute(Qt::WA_DeleteOnClose);
 
@@ -550,11 +691,11 @@ void EntityInfoDialog::onWeaponsClicked()
     weaponsTable->horizontalHeader()->setStretchLastSection(true);
     weaponsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-   auto fillTable = [=]() {
-        if (!plt->weapons || !plt->weapons->weapons) return;
+    auto fillTable = [=]() {
+        if (!plt->weapons.weapons) return;
         weaponsTable->setRowCount(0);
         int row = 0;
-        for (const auto& [id, weapon] : *plt->weapons->weapons) {
+        for (const auto& [id, weapon] : *plt->weapons.weapons) {
             if (!weapon) continue;
             weaponsTable->insertRow(row);
 
@@ -594,7 +735,6 @@ void EntityInfoDialog::onWeaponsClicked()
             launchedItem->setForeground(weapon->isLaunched ? QColor("#e74c3c") :
                                             QColor("#27ae60"));
             weaponsTable->setItem(row, 6, launchedItem);
-
             row++;
         }
 
@@ -609,7 +749,6 @@ void EntityInfoDialog::onWeaponsClicked()
     };
 
     fillTable();
-
     weaponsTable->setColumnWidth(0, 100);
     weaponsTable->setColumnWidth(1, 80);
     weaponsTable->setColumnWidth(2, 80);
@@ -629,11 +768,11 @@ void EntityInfoDialog::onWeaponsClicked()
     layout->addWidget(summaryLabel);
 
     connect(updateTimer, &QTimer::timeout, [=]() {
-        if (!plt->weapons || !plt->weapons->weapons) return;
-        int total    = static_cast<int>(plt->weapons->weapons->size());
+        if (!plt->weapons.weapons) return;
+        int total    = static_cast<int>(plt->weapons.weapons->size());
         int launched = 0;
         int armed    = 0;
-        for (const auto& [id, w] : *plt->weapons->weapons) {
+        for (const auto& [id, w] : *plt->weapons.weapons) {
             if (w && w->isLaunched) launched++;
             if (w && w->armed)      armed++;
         }
@@ -654,11 +793,14 @@ void EntityInfoDialog::onWeaponsClicked()
     layout->addLayout(buttonLayout);
 
     weaponsDialog->show();
+    weaponsDialog->raise();
+    weaponsDialog->activateWindow();
 }
 
 void EntityInfoDialog::onSensorsClicked()
 {
-    if (currentEntityId.isEmpty() || !entryInfo || !entryInfo->platform) {
+    Platform* plt = resolvePlatform();
+    if (currentEntityId.isEmpty() || !plt) {
         QMessageBox::information(this, "Sensors", "No platform data available.");
         return;
     }
@@ -671,9 +813,24 @@ void EntityInfoDialog::onSensorsClicked()
 
     QDialog *sensorsDialog = new QDialog(this);
     m_sensorsDialog = sensorsDialog;
-    sensorsDialog->setWindowTitle("Sensors - " + currentEntityId);
-    sensorsDialog->setMinimumSize(450, 300);
-    sensorsDialog->setMaximumSize(500, 400);
+
+    QString title = currentEntityName.isEmpty()
+                        ? "Sensors"
+                        : "Sensors - " + currentEntityName;
+    sensorsDialog->setWindowTitle(title);
+
+    sensorsDialog->setMinimumSize(400, 300);
+
+    sensorsDialog->setWindowFlags(
+        Qt::Window |
+        Qt::WindowTitleHint |
+        Qt::WindowSystemMenuHint |
+        Qt::WindowMinMaxButtonsHint |
+        Qt::WindowCloseButtonHint |
+        Qt::WindowStaysOnTopHint
+        );
+    // ====================================
+
     sensorsDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
     sensorsDialog->setAttribute(Qt::WA_DeleteOnClose);
 
@@ -695,11 +852,11 @@ void EntityInfoDialog::onSensorsClicked()
 
     QTimer *sensorsUpdateTimer = new QTimer(sensorsDialog);
     connect(sensorsUpdateTimer, &QTimer::timeout, [=]() {
-        updateSensorsTable(sensorsTable, entryInfo->platform);
+        updateSensorsTable(sensorsTable, plt);
     });
     sensorsUpdateTimer->start(100);
 
-    updateSensorsTable(sensorsTable, entryInfo->platform);
+    updateSensorsTable(sensorsTable, plt);
 
     sensorsTable->setColumnWidth(0, 120);
     sensorsTable->setColumnWidth(1, 80);
@@ -713,12 +870,7 @@ void EntityInfoDialog::onSensorsClicked()
     layout->addWidget(summaryLabel);
 
     connect(sensorsUpdateTimer, &QTimer::timeout, [=]() {
-        int total = 0;
-        if(Platform* platform = dynamic_cast<Platform*>(entryInfo->platform)) {
-            if(platform->sensors && platform->sensors->sensors) {
-                total = platform->sensors->sensors->size();
-            }
-        }
+        const int total = static_cast<int>(plt->sensors.sensors.size());
         summaryLabel->setText(QString("Total: %1 sensors").arg(total));
     });
 
@@ -734,11 +886,13 @@ void EntityInfoDialog::onSensorsClicked()
     layout->addLayout(buttonLayout);
 
     sensorsDialog->show();
+    sensorsDialog->raise();
+    sensorsDialog->activateWindow();
 }
-
 void EntityInfoDialog::onRadiosClicked()
 {
-    if (currentEntityId.isEmpty() || !entryInfo || !entryInfo->entity) {
+    Platform* plt = resolvePlatform();
+    if (currentEntityId.isEmpty() || !plt) {
         QMessageBox::information(this, "Radios", "No entity selected.");
         return;
     }
@@ -751,9 +905,24 @@ void EntityInfoDialog::onRadiosClicked()
 
     QDialog *radiosDialog = new QDialog(this);
     m_radiosDialog = radiosDialog;
-    radiosDialog->setWindowTitle("Radios - " + currentEntityId);
-    radiosDialog->setMinimumSize(300, 300);
-    radiosDialog->setMaximumSize(400, 400);
+
+    QString title = currentEntityName.isEmpty()
+                        ? "Radios"
+                        : "Radios - " + currentEntityName;
+    radiosDialog->setWindowTitle(title);
+
+    radiosDialog->setMinimumSize(300, 280);
+
+    radiosDialog->setWindowFlags(
+        Qt::Window |
+        Qt::WindowTitleHint |
+        Qt::WindowSystemMenuHint |
+        Qt::WindowMinMaxButtonsHint |
+        Qt::WindowCloseButtonHint |
+        Qt::WindowStaysOnTopHint
+        );
+    // ==========================================
+
     radiosDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
     radiosDialog->setAttribute(Qt::WA_DeleteOnClose);
 
@@ -775,23 +944,21 @@ void EntityInfoDialog::onRadiosClicked()
 
     QTimer *radiosUpdateTimer = new QTimer(radiosDialog);
     connect(radiosUpdateTimer, &QTimer::timeout, [=]() {
-        if(entryInfo->platform && entryInfo->platform->radios && entryInfo->platform->radios->radios) {
-            radiosTable->setRowCount(0);
-            int row = 0;
-            for (auto pair : *entryInfo->platform->radios->radios) {
-                if(Radio* radio = pair.second) {
-                    radiosTable->insertRow(row);
-                    radiosTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(radio->Name)));
-                    radiosTable->setItem(row, 1, new QTableWidgetItem(
-                                                     radio->Range > 0 ? QString("%1 km").arg(radio->Range, 0, 'f', 1) : "N/A"));
-                    row++;
-                }
+        radiosTable->setRowCount(0);
+        int row = 0;
+        for (auto pair : plt->radios.radios) {
+            if (Radio* radio = pair.second) {
+                radiosTable->insertRow(row);
+                radiosTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(radio->Name)));
+                radiosTable->setItem(row, 1, new QTableWidgetItem(
+                                                 radio->Range > 0 ? QString("%1 km").arg(radio->Range, 0, 'f', 1) : "N/A"));
+                row++;
             }
-            if(row == 0) {
-                radiosTable->setRowCount(1);
-                radiosTable->setItem(0, 0, new QTableWidgetItem("No radios"));
-                radiosTable->setItem(0, 1, new QTableWidgetItem(""));
-            }
+        }
+        if (row == 0) {
+            radiosTable->setRowCount(1);
+            radiosTable->setItem(0, 0, new QTableWidgetItem("No radios"));
+            radiosTable->setItem(0, 1, new QTableWidgetItem(""));
         }
     });
     radiosUpdateTimer->start(100);
@@ -806,8 +973,7 @@ void EntityInfoDialog::onRadiosClicked()
     layout->addWidget(summaryLabel);
 
     connect(radiosUpdateTimer, &QTimer::timeout, [=]() {
-        int total = entryInfo->platform && entryInfo->platform->radios ?
-                        entryInfo->platform->radios->radios->size() : 0;
+        const int total = static_cast<int>(plt->radios.radios.size());
         summaryLabel->setText(QString("Total: %1 radios").arg(total));
     });
 
@@ -823,11 +989,14 @@ void EntityInfoDialog::onRadiosClicked()
     layout->addLayout(buttonLayout);
 
     radiosDialog->show();
+    radiosDialog->raise();
+    radiosDialog->activateWindow();
 }
-
 void EntityInfoDialog::onIFFClicked()
 {
-    if (currentEntityId.isEmpty() || !entryInfo || !entryInfo->entity) {
+    Platform* plt = resolvePlatform();
+    Entity*   ent = resolveEntity();
+    if (currentEntityId.isEmpty() || (!plt && !ent)) {
         QMessageBox::information(this, "IFF", "No entity selected.");
         return;
     }
@@ -840,12 +1009,24 @@ void EntityInfoDialog::onIFFClicked()
 
     QDialog *iffDialog = new QDialog(this);
     m_iffDialog = iffDialog;
-    iffDialog->setWindowTitle("IFF Systems - " + currentEntityId);
-    iffDialog->setMinimumSize(450, 300);
-    iffDialog->setMaximumSize(500, 400);
+
+    QString title = currentEntityName.isEmpty()
+                        ? "IFF Systems"
+                        : "IFF Systems - " + currentEntityName;
+    iffDialog->setWindowTitle(title);
+
+    iffDialog->setMinimumSize(400, 300);
+
+    iffDialog->setWindowFlags(
+        Qt::Window |
+        Qt::WindowTitleHint |
+        Qt::WindowSystemMenuHint |
+        Qt::WindowMinMaxButtonsHint |
+        Qt::WindowCloseButtonHint |
+        Qt::WindowStaysOnTopHint
+        );
     iffDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
     iffDialog->setAttribute(Qt::WA_DeleteOnClose);
-
     QVBoxLayout *layout = new QVBoxLayout(iffDialog);
     layout->setSpacing(8);
     layout->setContentsMargins(10, 10, 10, 10);
@@ -864,35 +1045,34 @@ void EntityInfoDialog::onIFFClicked()
 
     QTimer *iffUpdateTimer = new QTimer(iffDialog);
     connect(iffUpdateTimer, &QTimer::timeout, [=]() {
-        if(entryInfo->platform && entryInfo->platform->iffs && entryInfo->platform->iffs->iffs) {
-            iffTable->setRowCount(0);
-            int row = 0;
-            for (auto pair : *entryInfo->platform->iffs->iffs) {
-                if(IFF* iff = pair.second) {
+        iffTable->setRowCount(0);
+        int row = 0;
+        if (plt) {
+            for (auto pair : plt->iffs.iffs) {
+                if (IFF* iff = pair.second) {
                     iffTable->insertRow(row);
                     iffTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(iff->Name)));
 
                     QString modeStr = "Unknown";
-                    switch(iff->operationalMode) {
-                    case IFF::OperationalMode::Active: modeStr = "Active"; break;
-                    case IFF::OperationalMode::Passive: modeStr = "Passive"; break;
-                    case IFF::OperationalMode::Off: modeStr = "Off"; break;
-                    case IFF::OperationalMode::Simulation: modeStr = "Simulation"; break;
+                    switch (iff->operationalMode) {
+                    case IFF::OperationalMode::Active:      modeStr = "Active"; break;
+                    case IFF::OperationalMode::Passive:     modeStr = "Passive"; break;
+                    case IFF::OperationalMode::Off:         modeStr = "Off"; break;
+                    case IFF::OperationalMode::Simulation:  modeStr = "Simulation"; break;
                     default: modeStr = "Unknown"; break;
                     }
                     iffTable->setItem(row, 1, new QTableWidgetItem(modeStr));
-
                     iffTable->setItem(row, 2, new QTableWidgetItem(
                                                   QString("%1 km").arg(iff->emittingRange, 0, 'f', 1)));
                     row++;
                 }
             }
-            if(row == 0) {
-                iffTable->setRowCount(1);
-                iffTable->setItem(0, 0, new QTableWidgetItem("No IFF systems"));
-                iffTable->setItem(0, 1, new QTableWidgetItem(""));
-                iffTable->setItem(0, 2, new QTableWidgetItem(""));
-            }
+        }
+        if (row == 0) {
+            iffTable->setRowCount(1);
+            iffTable->setItem(0, 0, new QTableWidgetItem("No IFF systems"));
+            iffTable->setItem(0, 1, new QTableWidgetItem(""));
+            iffTable->setItem(0, 2, new QTableWidgetItem(""));
         }
     });
     iffUpdateTimer->start(100);
@@ -909,10 +1089,19 @@ void EntityInfoDialog::onIFFClicked()
 
     connect(iffUpdateTimer, &QTimer::timeout, [=]() {
         int total = 0, active = 0;
-        if(entryInfo && entryInfo->entity) {
-            total = entryInfo->entity->iffList.size();
-            for (IFF* iff : entryInfo->entity->iffList) {
-                if(iff->operationalMode != IFF::OperationalMode::Off) active++;
+        if (plt) {
+            total = static_cast<int>(plt->iffs.iffs.size());
+            for (auto pair : plt->iffs.iffs) {
+                if (IFF* iff = pair.second) {
+                    if (iff->operationalMode != IFF::OperationalMode::Off)
+                        active++;
+                }
+            }
+        } else if (ent) {
+            total = static_cast<int>(ent->iffList.size());
+            for (IFF* iff : ent->iffList) {
+                if (iff && iff->operationalMode != IFF::OperationalMode::Off)
+                    active++;
             }
         }
         summaryLabel->setText(QString("Total: %1 IFF systems | Active: %2").arg(total).arg(active));
@@ -930,41 +1119,62 @@ void EntityInfoDialog::onIFFClicked()
     layout->addLayout(buttonLayout);
 
     iffDialog->show();
+    iffDialog->raise();
+    iffDialog->activateWindow();
 }
 // by WARIS
-
 void EntityInfoDialog::onFormationClicked()
 {
-    if (currentEntityId.isEmpty() || !entryInfo || !entryInfo->platform) {
+    Entity* ent = resolveEntity();
+    if (currentEntityId.isEmpty() || !ent) {
         QMessageBox::information(this, "Formation", "No entity selected or entity data missing.");
         return;
     }
+
     if (!m_formationDialog.isNull() && m_formationDialog->isVisible()) {
         m_formationDialog->raise();
         m_formationDialog->activateWindow();
         return;
     }
+
     QDialog *formationDialog = new QDialog(this);
     m_formationDialog = formationDialog;
-    formationDialog->setWindowTitle("Formation - " + currentEntityId);
-    formationDialog->setMinimumSize(500, 400);
-    formationDialog->setMaximumSize(600, 500);
+
+    QString title = currentEntityName.isEmpty()
+                        ? "Formation"
+                        : "Formation - " + currentEntityName;
+    formationDialog->setWindowTitle(title);
+
+    formationDialog->setMinimumSize(450, 350);
+
+    formationDialog->setWindowFlags(
+        Qt::Window |
+        Qt::WindowTitleHint |
+        Qt::WindowSystemMenuHint |
+        Qt::WindowMinMaxButtonsHint |
+        Qt::WindowCloseButtonHint |
+        Qt::WindowStaysOnTopHint
+        );
+
     formationDialog->setStyleSheet(EntityInfoDialogStyles::SubDialog);
     formationDialog->setAttribute(Qt::WA_DeleteOnClose);
+
     QVBoxLayout *layout = new QVBoxLayout(formationDialog);
     layout->setSpacing(8);
     layout->setContentsMargins(10, 10, 10, 10);
+
     QLabel *titleLabel = new QLabel("Formation Information");
     titleLabel->setProperty("class", "title");
     titleLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.title { font-size: 16px; color: white; font-weight: bold; padding-bottom: 10px; }");
     layout->addWidget(titleLabel);
-    Formation* formation = findFormationForEntity(entryInfo->platform);
+
+    Formation* formation = findFormationForEntity(ent);
     if (formation) {
-        displayFormationInfo(formation, entryInfo->platform, layout);
+        displayFormationInfo(formation, ent, layout);
     } else {
-        Formation* thisFormation = dynamic_cast<Formation*>(entryInfo->platform);
+        Formation* thisFormation = dynamic_cast<Formation*>(ent);
         if (thisFormation) {
-            displayFormationInfo(thisFormation, entryInfo->platform, layout);
+            displayFormationInfo(thisFormation, ent, layout);
             QLabel *noteLabel = new QLabel("Note: This is the Formation entity that manages the formation.");
             noteLabel->setProperty("class", "note");
             noteLabel->setStyleSheet(EntityInfoDialogStyles::SubDialog + " QLabel.note { color: #F1C40F; background-color: #1A3652; padding: 8px; border: 1px solid #F1C40F; border-radius: 3px; font-size: 11px; }");
@@ -990,6 +1200,8 @@ void EntityInfoDialog::onFormationClicked()
     layout->addLayout(buttonLayout);
 
     formationDialog->show();
+    formationDialog->raise();
+    formationDialog->activateWindow();
 }
 // by WARIS
 // Add this helper function implementation
@@ -1017,7 +1229,6 @@ Formation* EntityInfoDialog::findFormationForEntity(Entity* entity)
             }
         }
     }
-
     return nullptr;
 }
 
@@ -1188,9 +1399,9 @@ void EntityInfoDialog::updateSensorsTable(QTableWidget* sensorsTable, Entity* pl
     sensorsTable->setRowCount(0);
     Platform* platformPtr = dynamic_cast<Platform*>(platform);
 
-    if(platformPtr && platformPtr->sensors && platformPtr->sensors->sensors) {
+    if(platformPtr /*&& platformPtr->sensors*/ /*&& platformPtr->sensors.sensors*/) {
         int row = 0;
-        for (const auto& pair : *platformPtr->sensors->sensors) {
+        for (const auto& pair : platformPtr->sensors.sensors) {
             if(Sensor* sensor = pair.second) {
                 sensorsTable->insertRow(row);
                 sensorsTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(sensor->Name)));
@@ -1203,7 +1414,6 @@ void EntityInfoDialog::updateSensorsTable(QTableWidget* sensorsTable, Entity* pl
                 case Sensor::SubType::AESA: typeStr = "AESA"; break;
                 case Sensor::SubType::AIS: typeStr = "AIS"; break;
                 case Sensor::SubType::ADSB: typeStr = "ADSB"; break;
-
                 default: typeStr = "Other"; break;
                 }
                 sensorsTable->setItem(row, 1, new QTableWidgetItem(typeStr));
@@ -1235,69 +1445,164 @@ void EntityInfoDialog::updateSensorsTable(QTableWidget* sensorsTable, Entity* pl
 // Speed/Altitude Table Handlers
 // ========================================================================= //
 
+// void EntityInfoDialog::onSpeedAltCellChanged(int row, int column)
+// {
+//    if (column != 2 || row > 2) return;
+
+//     static bool updating = false;
+//     if (updating) return;
+
+//     if (!currentEntityId.isEmpty() && entryInfo) {
+//         QTableWidgetItem* item = speedAltTable->item(row, column);
+//         if (!item) return;
+//         QString text = item->text();
+//         QString cleanText = text;
+//         QString numberText;
+//         for (int i = 0; i < cleanText.length(); ++i) {
+//             QChar ch = cleanText[i];
+//             if (ch.isDigit() || ch == '.' || ch == '-') {
+//                 numberText.append(ch);
+//             }
+//         }
+//         if (numberText.isEmpty()) {
+//             updateEntityInfo();
+//             return;
+//         }
+//         bool ok;
+//         float value = numberText.toFloat(&ok);
+//         if (!ok) {
+//             updateEntityInfo();
+//             return;
+//         }
+//         DynamicModel* dynModel = entryInfo->dynamicModel ? entryInfo->dynamicModel :
+//                                      (entryInfo->platform && entryInfo->platform->dynamicModel) ?
+//                                      entryInfo->platform->dynamicModel : nullptr;
+
+//         if (!dynModel) {
+//             updateEntityInfo();
+//             return;
+//         }
+//         updating = true;
+//              if (row == 0) {
+//             bool isFollowing = dynModel->follow && dynModel->followEntity;
+
+//             if (isFollowing) {
+
+//                 Platform* mothership = dynamic_cast<Platform*>(dynModel->followEntity);
+//                 if (mothership && mothership->dynamicModel) {
+//                     mothership->dynamicModel.moveSpeed = value;
+//                 }
+//             } else {
+//                 dynModel->moveSpeed = value;
+//             }
+//             item->setText(QString::number(value, 'f', 2) + " km/h");
+//         }
+//         else if (row == 1) {
+//             dynModel->Altitude = value;
+//             item->setText(QString::number(value, 'f', 2) + " ft");
+//         }
+//         else if (row == 2) {
+//             if (entryInfo->coreTransform) {
+//                 entryInfo->coreTransform->setHeading(value);
+//             }
+//             bool isAlly = dynModel->follow && dynModel->followEntity;
+//             if (dynModel && !isAlly) {
+//                 dynModel->control = false;
+//             }
+//             m_headingManuallySet = true;
+//             item->setText(QString::number(value, 'f', 1) + "°");
+//         }
+//         updating = false;
+//         emit update();
+//         emit speedAltitudeUpdated(currentEntityId,
+//                                   row == 0 ? value : -1,
+//                                   row == 1 ? value : -1);
+//     }
+// }
 void EntityInfoDialog::onSpeedAltCellChanged(int row, int column)
 {
-    if (column != 2 || row > 1) return;
+    if (column != 2 || row > 2)
+        return;
 
     static bool updating = false;
-    if (updating) return;
+    if (updating)
+        return;
 
-    if (!currentEntityId.isEmpty() && entryInfo) {
-        QTableWidgetItem* item = speedAltTable->item(row, column);
-        if (!item) return;
-        QString text = item->text();
-        QString cleanText = text;
-        QString numberText;
-        for (int i = 0; i < cleanText.length(); ++i) {
-            QChar ch = cleanText[i];
-            if (ch.isDigit() || ch == '.' || ch == '-') {
-                numberText.append(ch);
-            }
-        }
-        if (numberText.isEmpty()) {
-            // If no number found, revert
-            updateEntityInfo();
-            return;
-        }
-        bool ok;
-        float value = numberText.toFloat(&ok);
-        if (!ok) {
-            updateEntityInfo();
-            return;
-        }
-        DynamicModel* dynModel = entryInfo->dynamicModel ? entryInfo->dynamicModel :
-                                     (entryInfo->platform && entryInfo->platform->dynamicModel) ?
-                                     entryInfo->platform->dynamicModel : nullptr;
+    if (currentEntityId.isEmpty())
+        return;
 
-        if (!dynModel) {
-            updateEntityInfo();
-            return;
-        }
-        updating = true;
-        if (row == 0) {
-            dynModel->moveSpeed = value;
+    QTableWidgetItem* item = speedAltTable->item(row, column);
+    if (!item)
+        return;
 
-            if (dynModel->follow && dynModel->followEntity) {
-                Platform* mothership = dynamic_cast<Platform*>(dynModel->followEntity);
-                if (mothership && mothership->dynamicModel) {
-                    mothership->dynamicModel->moveSpeed = value;
-                }
-            }
-            item->setText(QString::number(value, 'f', 2) + " km/h");
-        }
-        else if (row == 1) {
-            dynModel->Altitude = value;
-            item->setText(QString::number(value, 'f', 2) + " ft");
-        }
-        updating = false;
-
-        emit update();
-        emit speedAltitudeUpdated(currentEntityId,
-                                  row == 0 ? value : -1,
-                                  row == 1 ? value : -1);
+    QString numberText;
+    for (const QChar& ch : item->text()) {
+        if (ch.isDigit() || ch == '.' || ch == '-')
+            numberText.append(ch);
     }
-}
+    if (numberText.isEmpty()) {
+        updateEntityInfo();
+        return;
+    }
 
+    bool ok = false;
+    float value = numberText.toFloat(&ok);
+    if (!ok) {
+        updateEntityInfo();
+        return;
+    }
+
+    DynamicModel* dynModel = nullptr;
+    Transform*    coreXf   = nullptr;
+
+    if (entryInfo) {
+        dynModel = entryInfo->dynamicModel;
+        coreXf   = entryInfo->coreTransform;
+        if (!dynModel && entryInfo->platform) {
+            if (Platform* p = dynamic_cast<Platform*>(entryInfo->platform))
+                dynModel = &p->dynamicModel;
+        }
+        if (!coreXf && entryInfo->platform) {
+            if (Platform* p = dynamic_cast<Platform*>(entryInfo->platform))
+                coreXf = &p->transform;
+        }
+    } else if (m_platformFromHierarchy) {
+        dynModel = &m_platformFromHierarchy->dynamicModel;
+        coreXf   = &m_platformFromHierarchy->transform;
+    }
+
+    if (!dynModel && row != 2) {
+        updateEntityInfo();
+        return;
+    }
+
+    updating = true;
+
+    if (row == 0) {          // Speed
+        dynModel->moveSpeed = value;
+        item->setText(QString::number(value, 'f', 2) + " km/h");
+    } else if (row == 1) {   // Altitude
+        dynModel->Altitude = value;
+        item->setText(QString::number(value, 'f', 2) + " ft");
+    } else if (row == 2) {   // Heading
+        if (coreXf)
+            dynModel->commandedHeading = value;
+        if (dynModel) {
+            bool isAlly = dynModel->follow && dynModel->followEntity;
+            if (!isAlly)
+                dynModel->control = false;
+        }
+        m_headingManuallySet = true;
+        item->setText(QString::number(value, 'f', 1) + "°");
+    }
+
+    updating = false;
+
+    emit update();
+    emit speedAltitudeUpdated(currentEntityId,
+                              row == 0 ? value : -1.0f,
+                              row == 1 ? value : -1.0f);
+}
 // entityinfodialog.cpp
 void EntityInfoDialog::onEntityInvalidated(const QString& entityId)
 {

@@ -42,12 +42,12 @@ if ((val1) == (val2)) { \
 void test_IFFProfile_initialization() {
     std::cout << "\n--- Running IFFProfile Initialization Tests ---" << std::endl;
     Hierarchy* h = new Hierarchy();
-    IFFProfile* ip = new IFFProfile(h);
+    IFFProfile* ip = new IFFProfile();
 
     ASSERT_NEQ(ip, nullptr, "IFFProfile should be a valid object");
     ASSERT_TRUE(ip->Active, "IFFProfile should be active by default");
-    ASSERT_NEQ(ip->iffs, nullptr, "IFFProfile internal map (iffs) should be initialized");
-    ASSERT_TRUE(ip->iffs->empty(), "IFFProfile should start with an empty map");
+    // ASSERT_NEQ(ip->iffs, nullptr, "IFFProfile internal map (iffs) should be initialized");
+    ASSERT_TRUE(ip->iffs.empty(), "IFFProfile should start with an empty map");
 
     delete ip;
     delete h;
@@ -56,18 +56,18 @@ void test_IFFProfile_initialization() {
 void test_IFFProfile_Subcomponent_Management() {
     std::cout << "\n--- Running IFFProfile Subcomponent Management Tests ---" << std::endl;
     Hierarchy* h = new Hierarchy();
-    IFFProfile* ip = new IFFProfile(h);
+    IFFProfile* ip = new IFFProfile();
 
     // Test addSubComponent
     try {
         ip->addSubComponent("Test_IFF_1");
-        ASSERT_EQ(ip->iffs->size(), 1, "addSubComponent should add one IFF object");
+        ASSERT_EQ(ip->iffs.size(), 1, "addSubComponent should add one IFF object");
     } catch(...) {
         ASSERT_FALSE(true, "addSubComponent crashed during execution");
     }
 
     // Get the ID of the added component for further tests
-    std::string addedID = ip->iffs->begin()->first;
+    std::string addedID = ip->iffs.begin()->first;
 
     // Test getsubComponentData
     QJsonObject data = ip->getsubComponentData(addedID);
@@ -78,11 +78,11 @@ void test_IFFProfile_Subcomponent_Management() {
 
     // Test renameSubComponent
     ip->renameSubComponent(addedID, "Renamed_IFF");
-    ASSERT_EQ((*ip->iffs)[addedID]->Name, std::string("Renamed_IFF"), "renameSubComponent should update the Name property");
+    ASSERT_EQ((ip->iffs)[addedID]->Name, std::string("Renamed_IFF"), "renameSubComponent should update the Name property");
 
     // Test removeSubComponent
     ip->removeSubComponent(addedID);
-    ASSERT_TRUE(ip->iffs->empty(), "removeSubComponent should remove the item from the map");
+    ASSERT_TRUE(ip->iffs.empty(), "removeSubComponent should remove the item from the map");
 
     delete ip;
     delete h;
@@ -91,11 +91,11 @@ void test_IFFProfile_Subcomponent_Management() {
 void test_IFFProfile_Serialization() {
     std::cout << "\n--- Running IFFProfile Serialization (JSON) Tests ---" << std::endl;
     Hierarchy* h = new Hierarchy();
-    IFFProfile* ip = new IFFProfile(h);
+    IFFProfile* ip = new IFFProfile();
 
     // Setup initial state
     ip->addSubComponent("Serial_Test");
-    std::string originalID = ip->iffs->begin()->first;
+    std::string originalID = ip->iffs.begin()->first;
 
     // Test toJson
     QJsonObject root = ip->toJson();
@@ -103,13 +103,13 @@ void test_IFFProfile_Serialization() {
     ASSERT_TRUE(root["iffs"].toObject().contains(QString::fromStdString(originalID)), "JSON should contain the specific IFF ID");
 
     // Test fromJson
-    IFFProfile* ip2 = new IFFProfile(h);
+    IFFProfile* ip2 = new IFFProfile();
     try {
         ip2->fromJson(root);
-        ASSERT_EQ(ip2->iffs->size(), 1, "fromJson should restore subcomponents from JSON");
+        ASSERT_EQ(ip2->iffs.size(), 1, "fromJson should restore subcomponents from JSON");
 
         // Check if data is consistent
-        std::string restoredID = ip2->iffs->begin()->first;
+        std::string restoredID = ip2->iffs.begin()->first;
         ASSERT_EQ(restoredID, originalID, "Restored IFF ID should match original");
     } catch(...) {
         ASSERT_FALSE(true, "fromJson crashed during execution");

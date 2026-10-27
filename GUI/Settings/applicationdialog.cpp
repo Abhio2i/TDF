@@ -45,6 +45,9 @@
 #include <QFileDialog>
 #include <QDir>
 #include <Setup.h>
+#include "GUI/mainwindow.h"
+#include "GUI/dialogwindowutils.h"
+
 
 
 // %%% Static Member Initialization %%%
@@ -66,7 +69,7 @@ bool isMainThread() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Static accessors — existing ones unchanged
+// Static accessors
 // ─────────────────────────────────────────────────────────────────────────────
 int ApplicationDialog::getGlobalFPS()
 {
@@ -225,8 +228,8 @@ ApplicationDialog::ApplicationDialog(QWidget *parent)
     setWindowTitle("Application Settings");
     setModal(true);
     resize(430, 400);
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
-
+    makeDialogResizable(this);
+    setWindowModality(Qt::WindowModal);
     QTimer::singleShot(0, this, [this]() {
         try {
             setupUI();
@@ -328,7 +331,6 @@ QWidget* ApplicationDialog::buildGeneralTab()
     imageSizeErrorLabel->setStyleSheet(ApplicationDialogStyles::ErrorLabel);
     form->addRow(imgLbl, imageSizeEdit);
     form->addRow(imageSizeErrorLabel);
-
     settingsGroup->setLayout(form);
     outer->addWidget(settingsGroup);
     outer->addStretch();
@@ -552,11 +554,8 @@ void ApplicationDialog::onBrowseDatabasePath()
 void ApplicationDialog::onResetDatabasePath()
 {
     if (databasePathEdit) {
-        // Reset the path display to default
         QString defaultPath = "Aircraft.db (Default)";
         databasePathEdit->setText(defaultPath);
-
-        // Disable the checkbox (optional - aap chahe to enable bhi rakh sakte hain)
         if (databaseEnabledCheckBox) {
             databaseEnabledCheckBox->setChecked(true);
         }
@@ -596,57 +595,43 @@ void ApplicationDialog::onResetDatabasePath()
                         QJsonObject obj = doc.object();
                         if (obj.contains("hierarchy")) {
                             // Load default hierarchy
-                            scEditor->library->fromJson(obj["hierarchy"].toObject());
-
+                            if (MainWindow* mw = MainWindow::instance()) {
+                                if (Hierarchy* dbHier = mw->getDatabaseHierarchy())
+                                    dbHier->fromJson(obj["hierarchy"].toObject());
+                            }
                             // Update tree view
                             if (scEditor->libTreeView) {
                                 scEditor->libTreeView->setLibraryFileName("Aircraft.db (Default)");
                                 scEditor->libTreeView->getTreeWidget()->update();
                                 scEditor->libTreeView->getTreeWidget()->collapseAll();
                             }
-
-                            qDebug() << "Default Aircraft.db loaded into Scenario Editor library";
                         }
                     }
                 }
             }
             else if (RuntimeEditor* rtEditor = qobject_cast<RuntimeEditor*>(currentEditor)) {
-                // Load default database into runtime editor's library
                 QFile file(aircraftDbPath);
                 if (file.open(QIODevice::ReadOnly)) {
                     QByteArray data = file.readAll();
                     file.close();
-
                     QJsonParseError err;
                     QJsonDocument doc = QJsonDocument::fromJson(data, &err);
                     if (err.error == QJsonParseError::NoError && doc.isObject()) {
                         QJsonObject obj = doc.object();
                         if (obj.contains("hierarchy")) {
-                            //Load default hierarchy
                             rtEditor->library->fromJson(obj["hierarchy"].toObject());
-
-                            // Update tree view
                             if (rtEditor->libTreeView) {
                                 rtEditor->libTreeView->setLibraryFileName("Aircraft.db (Default)");
                                 rtEditor->libTreeView->getTreeWidget()->update();
                                 rtEditor->libTreeView->getTreeWidget()->collapseAll();
                             }
-
-                            qDebug() << "Default Aircraft.db loaded into Runtime Editor library";
                         }
                     }
                 }
             }
-
             mainWin->hideLoadingOverlay();
-
-
         }
-
-        // Emit signal
         emit databaseSettingsChanged(true, "");
-
-        qDebug() << "Database reset to default Aircraft.db";
     }
 }
 // ─────────────────────────────────────────────────────────────────────────────

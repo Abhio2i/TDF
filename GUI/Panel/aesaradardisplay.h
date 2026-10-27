@@ -416,6 +416,10 @@ private:
     // Initialised to +60°. REQ-AESA-004.
     float scanMaxAz =  60.0f;
 
+    // Antenna mount azimuth (degrees, clockwise from the nose). The sector
+    // [scanMinAz, scanMaxAz] is relative to this direction. REQ-AESA-011.
+    float scanMountAz = 0.0f;
+
     // =========================================================================
     // LOCK STATE
     // =========================================================================
@@ -469,7 +473,19 @@ private:
         // Classification confidence [0.0, 1.0]. REQ-AESA-050.
         float    confidence   = 0.0f;
     };
-
+    // In aesaradardisplay.h, private section:
+    bool validateSensor();   // returns true if sensor is valid; nulls it and returns false otherwise
+    // =========================================================================
+    // FUNCTION:    sensorStillExists
+    //
+    // DESCRIPTION: Checks whether a Sensor* is still a live entry in the bound
+    //              entity's sensor map, by pointer identity only. Never
+    //              dereferences the candidate pointer — safe to call even if it
+    //              has already been deleted elsewhere (e.g. sensorlist holding a
+    //              stale entry after SensorProfile::removeSubComponent()).
+    //              REQ-AESA-004.
+    // =========================================================================
+    bool sensorStillExists(Sensor* candidate) const;
     // Latest IFF result per track ID. Populated by iffResult signal.
     // Read by drawAirTargets() and drawHUD() for symbol colouring and data.
     // REQ-AESA-050.

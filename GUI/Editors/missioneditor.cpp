@@ -48,8 +48,6 @@
 #include <QProgressDialog>
 #include <QScrollArea>
 
-
-
 // %%% Utility Functions %%%
 /* Capitalize the first letter of a string */
 static QString capitalizeFirstLetter(const QString &str)
@@ -119,7 +117,7 @@ MissionEditor::MissionEditor(QWidget *parent)
     if (hierarchy && treeView) {
         HierarchyConnector::instance()->connectSignals(hierarchy, nullptr, treeView);
         HierarchyConnector::instance()->initializeDummyData(hierarchy);
-        HierarchyConnector::instance()->setupFileOperations(this, hierarchy, nullptr);
+        // HierarchyConnector::instance()->setupFileOperations(this, hierarchy, nullptr);
     }
 
     // %%% Tree View Signals %%%
@@ -137,9 +135,9 @@ MissionEditor::MissionEditor(QWidget *parent)
         connect(menuBar, &MenuBar::applicationTriggered, this, &MissionEditor::showApplicationDialog);
         connect(menuBar, &MenuBar::exitTriggered,        qApp, &QApplication::quit);
     }
+
     connect(doctrinePanel, &DoctrineParameters::forceTypeChanged,
             tacticalPanel, &TacticalRules::setForceType);
-    // Constructor ke end mein yeh add karein:
     setStyleSheet(R"(
     QMainWindow::separator {
         background: #2a3f5a;
@@ -161,15 +159,13 @@ MissionEditor::MissionEditor(QWidget *parent)
     }
 )");
 }
-
-
 // %%% Enhanced Dock Setup %%%
 void MissionEditor::setupEnhancedDockWidgets()
 {
     QDockWidget::DockWidgetFeatures fullDockFeatures =
-        QDockWidget::DockWidgetClosable  |
-        QDockWidget::DockWidgetMovable   |
-        QDockWidget::DockWidgetFloatable;
+    QDockWidget::DockWidgetClosable  |
+    QDockWidget::DockWidgetMovable   |
+    QDockWidget::DockWidgetFloatable;
 
     // %%% Hierarchy Dock (Far Left) %%%
     hierarchyDock = new QDockWidget("Editor", this);
@@ -190,7 +186,6 @@ void MissionEditor::setupEnhancedDockWidgets()
     doctrineDock->setMinimumWidth(380);
     doctrineDock->setTitleBarWidget(nullptr);
     addDockWidget(Qt::RightDockWidgetArea, doctrineDock);
-
 
     // %%% Tactical Rules Dock (Top Center Right) %%%
     tacticalDock = new QDockWidget("Tactical Rules", this);
@@ -242,7 +237,6 @@ void MissionEditor::setupEnhancedDockWidgets()
     connect(assumptionsDock, &QDockWidget::visibilityChanged, this, &MissionEditor::onDockVisibilityChanged);
     connect(areaDefinitionDock, &QDockWidget::visibilityChanged, this, &MissionEditor::onDockVisibilityChanged);
     connect(consoleDock,   &QDockWidget::visibilityChanged, this, &MissionEditor::onDockVisibilityChanged);
-
     // %%% Dock Configuration %%%
     setTabPosition(Qt::AllDockWidgetAreas, QTabWidget::North);
     setDockOptions(QMainWindow::AllowNestedDocks  |
@@ -297,12 +291,12 @@ void MissionEditor::setupEnhancedDockWidgets()
         areaDefinitionDock->show();
     });
 }
+
 // %%% Legacy Dock Setup %%%
 /* Legacy method replaced by enhanced version */
 void MissionEditor::setupDockWidgets(QDockWidget::DockWidgetFeatures dockFeatures)
 {
     setupEnhancedDockWidgets();
-
 }
 
 // %%% Dock Visibility Handler %%%
@@ -496,8 +490,6 @@ void MissionEditor::loadFromJsonFile(const QString &filePath)
 
     if (obj.contains("tactical") && tacticalPanel)
         tacticalPanel->loadBothTeamsFromJson(obj["tactical"].toObject());
-
-
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
 
@@ -510,7 +502,6 @@ void MissionEditor::onTreeItemSelected(QVariantMap data)
 
     // %%% Show Doctrine Dock on relevant selections %%%
     if (type == "doctrine" || type == "entity" || type == "folder") {
-        // Load doctrine data for this node if available
         QString nodeId = data["ID"].toString();
         QJsonObject doctrineData = hierarchy->getComponentData(nodeId, "doctrine");
         if (!doctrineData.isEmpty() && doctrinePanel) {

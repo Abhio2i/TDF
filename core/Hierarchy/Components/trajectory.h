@@ -24,6 +24,7 @@
 #define TRAJECTORY_H
 
 #include "./component.h"
+#include "core/Hierarchy/ECS/Struct/trajectory_component.h"
 #include <QObject>
 #include <QJsonObject>
 #include <core/Hierarchy/Struct/waypoints.h>
@@ -49,10 +50,10 @@ public:
         Short
     };
     const std::string followRuleNames[3] = {
-                                              "Stop",
-                                              "Reverse",
-                                              "Short"
-                };
+        "Stop",
+        "Reverse",
+        "Short"
+    };
 
     // =========================================================================
     // SECTION: Trajectory State
@@ -68,6 +69,7 @@ public:
     int current = 0;                //!< Index of current waypoint
     bool reverse = false;           //!< Traverse path in reverse order
 
+    ECS::trajectoryPathComponent& getTrajectoryPath();
     // =========================================================================
     // SECTION: Behaviour Methods
     // DESCRIPTION: Actions triggered at waypoints or by mission logic.
@@ -84,6 +86,10 @@ public:
     // =========================================================================
     QJsonObject AdditionalParameters;    //!< Custom key-value parameters
 
+    void init(Entity* Entity) override;
+    void Awake() override;
+    void Start() override;
+
     // Component interface overrides
     void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QJsonObject data3 = QJsonObject()) override;
     void removeSubComponent(std::string ID) override;
@@ -93,6 +99,8 @@ public:
     // Serialization
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject &obj) override;
+    void SaveState();
+    void RestoreState();
 
     // =========================================================================
     // SECTION: Waypoint Management
@@ -105,6 +113,11 @@ public:
     void addTrajectory(Waypoints* waypoint);                //!< Adds waypoint to end
     void addWaypoint(float x, float y, float z);            //!< Creates and adds simple waypoint
     void addWaypoint(float x, float y, float z, bool activateSensor);  //!< Creates waypoint with sensor activation flag
+
+private:
+    bool statesaved = false;
+    QJsonObject InitalState;
+
 };
 
 #endif // TRAJECTORY_H

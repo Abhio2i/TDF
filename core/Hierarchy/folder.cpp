@@ -18,6 +18,7 @@
 #include "core/Hierarchy/EntityProfiles/sensor.h"
 #include "core/Hierarchy/EntityProfiles/specialzone.h"
 #include "core/Hierarchy/Utils/entityutils.h"
+#include "qapplication.h"
 #include "qjsonarray.h"
 #include <core/Hierarchy/hierarchy.h> // Required for type
 #include <core/Utility/uuid.h>
@@ -482,7 +483,9 @@ void Folder::fromJson(const QJsonObject& obj)
             entity->ID = entityObj["id"].toString().toStdString();
             if (entity) {
                 addEntityWithObject(entity);
+                entity->addSupportedcomponent();
                 entity->fromJson(entityObj);
+                QCoreApplication::processEvents();
             }
         }
     }

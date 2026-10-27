@@ -1,61 +1,23 @@
-/* =============================================================================
- * FILE:         designtoolbar.h
- * MODULE:       Design Toolbar
- * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
- * ORGANISATION: Oxygen 2 Innovation (O2I).
- * STANDARD:     RTCA DO-178C / ED-12C, DAL B
- * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
- *
- * DESCRIPTION:  Declares the DesignToolBar class which provides a toolbar for
- *               design and map interaction. Includes actions for view, move,
- *               rotate, scale, zoom, grid control, snapping, measure distance,
- *               map layer management (preset, custom, GeoJSON), coordinate
- *               system selection, tooltip options, and trajectory editing.
- *               Also declares StayOpenMenu, a custom QMenu that stays open
- *               when an action is clicked.
- *
- * REQUIREMENTS: REQ-DESIGNTOOLBAR-010  Design toolbar with transform modes
- *               REQ-DESIGNTOOLBAR-011  Zoom in/out actions
- *               REQ-DESIGNTOOLBAR-012  Grid visibility, snapping, plane toggles
- *               REQ-DESIGNTOOLBAR-013  Measure distance action
- *               REQ-DESIGNTOOLBAR-014  Map layer selection and custom map addition
- *               REQ-DESIGNTOOLBAR-015  GeoJSON import and layer toggling
- *               REQ-DESIGNTOOLBAR-016  Coordinate system selection
- *               REQ-DESIGNTOOLBAR-017  Tooltip options configuration
- *               REQ-DESIGNTOOLBAR-018  Add/edit trajectory actions
- *
- * AUTHOR:       Arti Rajpoot
- * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-DESIGNTOOLBAR-001
- *
- *
- * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
- *               Restricted circulation — defence simulation use only.
- * =============================================================================
- */
-
 #ifndef DESIGNTOOLBAR_H
 #define DESIGNTOOLBAR_H
 
-#include "GUI/Tacticaldisplay/canvaswidget.h"     // For canvas widget
-#include <QToolBar>                               // For toolbar base class
-#include <QAction>                                // For action items
-#include <QMenu>                                  // For menu widget
-#include <core/Hierarchy/Components/transform.h>  // For transform component
-#include <GUI/Tacticaldisplay/Gis/layerinformationdialog.h> // For layer info dialog
+#include "GUI/Tacticaldisplay/canvaswidget.h"
+#include <QToolBar>
+#include <QAction>
+#include <QMenu>
+#include <QToolButton>
+#include <QMap>
+#include <QList>
+#include <core/Hierarchy/Components/transform.h>
+#include <GUI/Tacticaldisplay/Layer/layerinformationdialog.h>
 #include <core/Config/scenarioconfig.h>
 
 // %%% StayOpenMenu Class %%%
-/* Menu that stays open on click */
 class StayOpenMenu : public QMenu {
-    Q_OBJECT  // Added Q_OBJECT macro for qobject_cast
-
+    Q_OBJECT
 public:
-    // Initialize menu
     explicit StayOpenMenu(QWidget* parent = nullptr) : QMenu(parent) {}
-
-
 protected:
-    // Handle mouse release events
     void mouseReleaseEvent(QMouseEvent* e) override {
         QAction* action = activeAction();
         if (action && action->isEnabled()) {
@@ -67,234 +29,144 @@ protected:
 };
 
 // %%% DesignToolBar Class %%%
-/* Toolbar for design and map tools */
 class DesignToolBar : public QToolBar {
     Q_OBJECT
 
 public:
-    // Initialize toolbar
-    // explicit DesignToolBar(QWidget *parent = nullptr);
     explicit DesignToolBar(QWidget *parent = nullptr, ScenarioConfig* config = nullptr);
-    // Get load JSON action
-    QAction* getLoadAction() { return loadJsonAction; }
-    // Get save JSON action
-    QAction* getSaveAction() { return saveJsonAction; }
-    // Zoom in action
-    QAction *zoomInAction;
-    // Zoom out action
-    QAction *zoomOutAction;
-    // Map layer selection action
-    QAction *mapSelectLayerAction;
-    // Select center action
-    QAction *selectCenterAction;
-    // Search place action
-    QAction *searchPlaceAction;
-    // Layer info action
-    QAction *layerInfoAction;
-    // Shape selection action
-    QAction *shapeAction;
-    // Bitmap selection action
-    QAction *bitmapAction;
-    // Select bitmap action
-    QAction *selectBitmapAction;
-    // Preset layers action
-    QAction *presetLayersAction;
-    // Get measure distance action
-    QAction* getMeasureDistanceAction() const { return measureDistanceAction; }
-    // GeoJSON import action
-    // QAction *importGeoJsonAction;
-    // GeoJSON layers action
-    // QAction *geoJsonLayersAction;
-    QAction *coordinateSystemAction;
-    QAction *layerSelectAction;
+
+    QAction* getZoomInAction()           const { return zoomInAction; }
+    QAction* getZoomOutAction()          const { return zoomOutAction; }
+    QAction* getMapSelectLayerAction()   const { return mapSelectLayerAction; }
+    QAction* getSelectCenterAction()     const { return selectCenterAction; }
+    QAction* getSearchPlaceAction()      const { return searchPlaceAction; }
+    QAction* getLayerInfoAction()        const { return layerInfoAction; }
+    QAction* getShapeAction()            const { return shapeAction; }
+    QAction* getBitmapAction()           const { return bitmapAction; }
+    QAction* getSelectBitmapAction()     const { return selectBitmapAction; }
+    QAction* getPresetLayersAction()     const { return presetLayersAction; }
+    QAction* getCoordinateSystemAction() const { return coordinateSystemAction; }
+    QAction* getLayerSelectAction()      const { return layerSelectAction; }
+    QAction* getMeasureDistanceAction()  const { return measureDistanceAction; }
+    QAction* getAddTrajectoryAction()    const { return addTrajectoryAction; }
+    QAction* getLoadAction()             const { return loadJsonAction; }
+    QAction* getSaveAction()             const { return saveJsonAction; }
+
+    QAction* zoomInAction           = nullptr;
+    QAction* zoomOutAction          = nullptr;
+    QAction* selectCenterAction     = nullptr;
 
     // %%% Data Structures %%%
-    /* Structure for map layer data */
     struct MapLayer {
-        QString name;                             // Layer name
-        QString id;                               // Layer ID
-        int zoomMin;                              // Minimum zoom level
-        int zoomMax;                              // Maximum zoom level
-        QString tileUrl;                          // Tile URL
-        bool isCustom;                            // Custom layer flag
-        qreal opacity;                            // Layer opacity
-        QString resolution;                       // Layer resolution
-        QString type;                             // Layer type
+        QString name;
+        QString id;
+        int     zoomMin;
+        int     zoomMax;
+        QString tileUrl;
+        bool    isCustom;
+        qreal   opacity;
+        QString resolution;
+        QString type;
     };
-    QAction* getAddTrajectoryAction() const { return addTrajectoryAction; }
+
+    QAction* registerPluginAction(const QString& pluginId,
+                                  QAction* action,
+                                  int position = -1);
+    QToolButton* registerPluginToolButton(const QString& pluginId,
+                                          QAction* action,
+                                          QToolButton::ToolButtonPopupMode mode = QToolButton::InstantPopup,
+                                          int position = -1);
+    QAction* registerPluginMenu(const QString& pluginId,
+                                const QString& title,
+                                QMenu* menu,
+                                int position = -1);
+
+    void unregisterPlugin(const QString& pluginId);
+    QAction* getSelectionAction() const { return selectionAction; }
 
 signals:
-    // Signal view action triggered
     void viewTriggered();
-    // Signal move action triggered
-    void moveTriggered();
-    // Signal rotate action triggered
-    void rotateTriggered();
-    // Signal scale action triggered
-    void scaleTriggered();
-    // Signal zoom in triggered
     void zoomInTriggered();
-    // Signal zoom out triggered
     void zoomOutTriggered();
-    // Signal grid visibility toggle
-    void gridVisibilityToggled(bool);
-    // Signal grid snapping toggle
-    void gridSnappingToggled(bool);
-    // Signal layer selection triggered
     void layerSelectTriggered();
-    // Signal measure distance triggered
     void measureDistanceTriggered();
-    // Signal grid plane X toggle
-    void gridPlaneXToggled(bool);
-    // Signal grid plane Y toggle
-    void gridPlaneYToggled(bool);
-    // Signal grid plane Z toggle
-    void gridPlaneZToggled(bool);
-    // Signal grid opacity change
-    void gridOpacityChanged(int);
-    // Signal snap grid size X toggle
-    void snapGridSizeXToggled(bool);
-    // Signal snap grid size Y toggle
-    void snapGridSizeYToggled(bool);
-    // Signal snap grid size Z toggle
-    void snapGridSizeZToggled(bool);
-    // Signal snap rotate toggle
-    void snapRotateToggled(bool);
-    // Signal snap scale toggle
-    void snapScaleToggled(bool);
-    // Signal mode change
     void modeChanged(TransformMode mode);
-    // Signal transform mode change
-    void transformModeChanged(const Transform& mode);
-    // Signal grid plane X opacity change
-    void gridPlaneXOpacityChanged(int value);
-    // Signal grid plane Y opacity change
-    void gridPlaneYOpacityChanged(int value);
-    // Signal grid plane Z opacity change
-    void gridPlaneZOpacityChanged(int value);
-    // Signal layer option toggle
     void layerOptionToggled(const QString& option, bool checked);
-    // Signal search place triggered
     void searchPlaceTriggered(const QString& location);
-    // Signal search coordinate triggered
-    void searchCoordinateTriggered(double lat, double lon);
-    // Signal map layer change
-    void mapLayerChanged(const QString& layer);
-    // Signal select center triggered
-    void selectCenterTriggered();
-    // Signal custom map added
-    void customMapAdded(const QString &layerName, int zoomMin, int zoomMax, const QString &tileUrl, qreal opacity);
-    // Signal shape selection
-    void shapeSelected(const QString &shape);
-    // Signal bitmap selection
-    void bitmapSelected(const QString &bitmap);
-    // Signal bitmap image selection
-    void bitmapImageSelected(const QString& filePath);
-    // Signal edit trajectory triggered
-    void editTrajectoryTriggered();
-    // Signal preset layer selection
-    void presetLayerSelected(const QString &preset);
-    // Signal GeoJSON import triggered
-    // void importGeoJsonTriggered(const QString &filePath);
-        void importLayerTriggered(const QString& filePath);
-    // Signal GeoJSON layer toggle
-    void geoJsonLayerToggled(const QString &layerName, bool visible);
-    // Signal search coordinates triggered
     void searchCoordinatesTriggered(double latitude, double longitude);
+    void mapLayerChanged(const QString& layer);
+    void selectCenterTriggered();
+    void customMapAdded(const QString& layerName, int zoomMin, int zoomMax,
+                        const QString& tileUrl, qreal opacity);
+    void shapeSelected(const QString& shape);
+    void bitmapSelected(const QString& bitmap);
+    void bitmapImageSelected(const QString& filePath);
+    void editTrajectoryTriggered();
+    void presetLayerSelected(const QString& preset);
+    void importLayerTriggered(const QString& filePath);
+    void geoJsonLayerToggled(const QString& layerName, bool visible);
     void addTrajectoryTriggered();
     void coordinateSystemChanged(const QString& crsId);
     void tooltipOptionsChanged(const QSet<QString>& activeOptions);
+    void selectionModeChanged(bool withGis);
+    void dataSyncTriggered();
+
 public slots:
-    // Handle mode change
     void onModeChanged(TransformMode mode);
-    // Handle measure distance triggered
     void onMeasureDistanceTriggered();
-    // Handle GeoJSON layer addition
-    // void onGeoJsonLayerAdded(const QString &layerName);
-      void setTrajectoryActionEnabled(bool enabled);
+    void setTrajectoryActionEnabled(bool enabled);
+    void clearSelectionModeUI();
 
 private slots:
-    // Handle GeoJSON import
-    // void importGeoJson();
-    // Handle adding a base layer to selected layers
     void onAddBaseLayerToSelected(const QString& layerId);
-    // Update the map layers menu display
     void updateMapLayersMenu();
-private slots:
-    // void importGeoJson();   // Remove this
-    void importLayer();        // Add this
-private:
-    // %%% UI Components %%%
-    QAction *addTrajectoryAction;
-    // View action
-    QAction *viewAction;
-    // Move action
-    QAction *moveAction;
-    // Rotate action
-    QAction *rotateAction;
-    // Scale action
-    QAction *scaleAction;
-    // Grid toggle action
-    QAction *gridToggleAction;
-    // Snapping toggle action
-    QAction *snappingToggleAction;
-    // Measure distance action
-    QAction *measureDistanceAction;
-    // Grid plane X action
-    QAction *gridPlaneXAction;
-    // Grid plane Y action
-    QAction *gridPlaneYAction;
-    // Grid plane Z action
-    QAction *gridPlaneZAction;
-    // Snap grid size X action
-    QAction *snapGridSizeXAction;
-    // Snap grid size Y action
-    QAction *snapGridSizeYAction;
-    // Snap grid size Z action
-    QAction *snapGridSizeZAction;
-    // Snap rotate action
-    QAction *snapRotateAction;
-    // Snap scale action
-    QAction *snapScaleAction;
-    // Add custom map action
-    QAction *addCustomMapAction;
-    // Map of layer actions (for selected layers)
-    QMap<QString, QAction*> layerActions;
-    // Map of add button actions (for base layers)
-    QMap<QString, QAction*> addLayerActions;
-    // List of map layer info
-    QList<LayerInformationDialog::MapLayerInfo> mapLayers;
-    // Load JSON action
-    QAction* loadJsonAction;
-      QAction* importLayerAction;
-    // Save JSON action
-    QAction* saveJsonAction;
-    // Edit trajectory action
-    QAction *editTrajectoryAction;
-    // Map of GeoJSON layer actions
-    QMap<QString, QAction*> geoJsonLayerActions;
-    QSlider* opacitySlider;
+    void importLayer();
 
-    // Track map layer rendering order
-    QStringList currentLayerOrder;
-    // Track which base layers have been added to selected layers
-    QStringList selectedBaseLayers;
+private:
+    // %%% Actions %%%
+    QAction* mapSelectLayerAction   = nullptr;
+    QAction* searchPlaceAction      = nullptr;
+    QAction* layerInfoAction        = nullptr;
+    QAction* shapeAction            = nullptr;
+    QAction* bitmapAction           = nullptr;
+    QAction* selectBitmapAction     = nullptr;
+    QAction* presetLayersAction     = nullptr;
+    QAction* coordinateSystemAction = nullptr;
+    QAction* layerSelectAction      = nullptr;
+    QAction* addTrajectoryAction    = nullptr;
+    QAction* viewAction             = nullptr;
+    QAction* moveAction             = nullptr;
+    QAction* rotateAction           = nullptr;
+    QAction* measureDistanceAction  = nullptr;
+    QAction* editTrajectoryAction   = nullptr;
+    QAction* importLayerAction      = nullptr;
+    QAction* loadJsonAction         = nullptr;
+    QAction* saveJsonAction         = nullptr;
+
+    // %%% Maps & Lists %%%
+    QMap<QString, QAction*>  layerActions;
+    QMap<QString, QAction*>  addLayerActions;
+    QMap<QString, QAction*>  geoJsonLayerActions;
+    QMap<QString, QAction*>  tooltipFieldActions;
+    QList<LayerInformationDialog::MapLayerInfo> mapLayers;
+    QStringList              currentLayerOrder;
+    QStringList              selectedBaseLayers;
+    ScenarioConfig* scenarioConfig = nullptr;
+
+    // Plugin tracking
+    QMap<QString, QList<QObject*>> m_pluginOwnedObjects;
 
     // %%% Utility Methods %%%
-    // Create toolbar actions
-    void createActions();
-    // Setup toolbar
-    void setupToolBar();
-    // Highlight action
-    void highlightAction(QAction *action);
-    // Create pixmap with white background
-    QPixmap withWhiteBg(const QString &iconPath);
-    // Handle bitmap image selection
-    void onSelectBitmapImage();
-    // void updateTooltipOptions(const QMap<QString, QAction*>& fieldActions);
-    QMap<QString, QAction*> tooltipFieldActions;
-    void updateTooltipOptions();
-    ScenarioConfig* scenarioConfig;
+    void     createActions();
+    void     setupToolBar();
+    void     highlightAction(QAction* action);
+    QPixmap  withWhiteBg(const QString& iconPath);
+    void     updateTooltipOptions();
+    QAction* selectionAction = nullptr;
+    QAction* selectionWithGisAction = nullptr;
+    QAction* selectionWithoutGisAction = nullptr;
+    QAction* dataSyncAction = nullptr;
 };
 
-#endif
+
+#endif // DESIGNTOOLBAR_H

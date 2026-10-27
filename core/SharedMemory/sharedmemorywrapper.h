@@ -72,6 +72,7 @@ private:
     void updateTransformData(SharedComponent comp, SharedStructs::Entity* entity);
     void updateDynamicData(SharedComponent comp, SharedStructs::Entity* entity);
     void updateSensorData(SharedComponent comp, SharedStructs::Entity* entity);
+    void updateRadioData(SharedComponent comp, SharedStructs::Entity* entity);
     void updateTrajectoryData(SharedComponent comp, SharedStructs::Entity* entity);
 
 private:

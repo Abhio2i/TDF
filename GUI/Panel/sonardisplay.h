@@ -10,10 +10,12 @@
 
 #include "core/Hierarchy/hierarchy.h"
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar/active_sonar.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h"
+
 
 class Simulation;
 
-/**
+/*
  * @brief Represents a sonar contact displayed on the sonar screen.
  *
  * Contains target information received from the sonar backend
@@ -184,6 +186,8 @@ private:
 
     Simulation* simulation = nullptr;
 
+    Sensor* sensor = nullptr;
+
     // =====================================================
     // Sonar contacts
     // =====================================================
@@ -194,7 +198,7 @@ private:
     // Display configuration
     // =====================================================
 
-    int maxRange  = 100;   // Display range (km)
+    int maxRange  = 80;   // Display range (km)
 
     int ringCount = 5;     // Number of range rings
 

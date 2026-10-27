@@ -1,41 +1,3 @@
-/* =============================================================================
- * FILE:         menubar.h
- * MODULE:       Application Menu Bar
- * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
- * ORGANISATION: Oxygen 2 Innovation (O2I).
- * STANDARD:     RTCA DO-178C / ED-12C, DAL B
- * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
- *
- * DESCRIPTION:  Declares the MenuBar class which provides the main application
- *               menu bar. It contains File, Edit, View, and Feedback menus with
- *               actions for file operations (new, open, save, save as, load to
- *               library, recent projects, exit), edit operations (undo, redo,
- *               select/deselect all, cut, copy, paste, duplicate, rename, delete),
- *               view operations (play/pause simulation), feedback, profile info,
- *               application info, XML loading, and runtime instance opening.
- *               Supports dynamic visibility of library actions and editor‑specific
- *               menu updates. Emits signals for all triggerable actions.
- *
- * REQUIREMENTS: REQ-MENU-010  File menu with New, Open, Save, Save As, Load to
- *                             Library, Recent Projects, Exit
- *               REQ-MENU-011  Edit menu with Undo, Redo, Select/Deselect All,
- *                             Cut, Copy, Paste, Duplicate, Rename, Delete
- *               REQ-MENU-012  View menu with Play/Pause simulation
- *               REQ-MENU-013  Feedback menu with Feedback, Profile Info,
- *                             Application Info
- *               REQ-MENU-014  Load XML and Open Runtime Instance actions
- *               REQ-MENU-015  Signals emitted on action triggers
- *               REQ-MENU-016  Dynamic hiding/showing of library actions
- *
- * AUTHOR:       Arti Rajpoot
- * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-MENU-001
- *
- *
- * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
- *               Restricted circulation — defence simulation use only.
- * =============================================================================
- */
-
 #ifndef MENUBAR_H
 #define MENUBAR_H
 
@@ -44,202 +6,70 @@
 #include <QAction>
 #include <GUI/Feedback/projectinformation.h>
 
-// %%% Class Definition %%%
-/* Menu bar for application UI */
 class MenuBar : public QMenuBar
 {
     Q_OBJECT
 
 public:
-    // Initialize menu bar
     explicit MenuBar(QWidget *parent = nullptr);
-    // Get file menu
-    QMenu* getFileMenu();
-    // Get edit menu
-    QMenu* getEditMenu();
-    // Get view menu
-    QMenu* getViewMenu();
-    // Get load action
+
+    QMenu*   getFileMenu();
+
     QAction* getLoadAction();
-    // Get load to library action
     QAction* getLoadToLibraryAction();
-    // Get save same action
     QAction* getSameSaveAction();
-    // Get save action
     QAction* getSaveAction();
-    // Get feedback action
     QAction* getFeedbackAction();
-    // Get new file action
     QAction* getNewFileAction();
-    // Get recent project action
     QAction* getRecentProjectAction();
-        QAction* getrecentProjectLibraryAction();
-    // Get run action (commented)
-    // QAction* getRunAction();
-    // Get exit action
+    QAction* getrecentProjectLibraryAction();
     QAction* getExitAction();
-    // Get undo action
-    QAction* getUndoAction();
-    // Get redo action
-    QAction* getRedoAction();
-    // Get select all action
-    QAction* getSelectAllAction();
-    // Get deselect all action
-    QAction* getDeselectAllAction();
-    // Get cut action
-    QAction* getCutAction();
-    // Get copy action
-    QAction* getCopyAction();
-    // Get paste action
-    QAction* getPasteAction();
-    // Get duplicate action
-    QAction* getDuplicateAction();
-    // Get rename action
-    QAction* getRenameAction();
-    // Get delete action
-    QAction* getDeleteAction();
-    // Get play action
-    QAction* getPlayAction();
-    // Get pause action
-    QAction* getPauseAction();
-    // Get add 3D view action
-    // QAction* getAdd3DViewAction();
-    // // Get remove 3D view action
-    // QAction* getRemove3DViewAction();
     QAction* getProfileAction();
     QAction* getApplicationAction() { return applicationAction; }
     QAction* getLoadXmlAction();
     QAction* getOpenRuntimeInstanceAction();
+    QAction* getOpenMissionFileAction();
+    QAction* getPluginsAction();
 
-
-    //====8feb====
     void setLibraryActionsVisible(bool visible);
     void updateFileMenuForEditor(const QString& editorKey);
-    QAction* getOpenMissionFileAction();
-
-    void runMenuBarTests();
-    QAction* pluginsAction = nullptr;
-
 
 signals:
-    // Signal feedback action triggered
     void feedbackTriggered();
-    // Signal new file action triggered
     void newFileTriggered();
-    // Signal recent project action triggered
     void recentProjectTriggered();
     void recentProjectLibraryTriggered();
-    // Signal load action triggered
     void loadTriggered();
-    // Signal load to library action triggered
     void loadToLibraryTriggered();
-    // Signal save same action triggered
     void sameSaveTriggered();
-    // Signal save action triggered
     void saveTriggered();
-    // Signal run action triggered (commented)
-    // void runTriggered();
-    // Signal exit action triggered
     void exitTriggered();
-    // Signal undo action triggered
-    void undoTriggered();
-    // Signal redo action triggered
-    void redoTriggered();
-    // Signal select all action triggered
-    void selectAllTriggered();
-    // Signal deselect all action triggered
-    void deselectAllTriggered();
-    // Signal cut action triggered
-    void cutTriggered();
-    // Signal copy action triggered
-    void copyTriggered();
-    // Signal paste action triggered
-    void pasteTriggered();
-    // Signal duplicate action triggered
-    void duplicateTriggered();
-    // Signal rename action triggered
-    void renameTriggered();
-    // Signal delete action triggered
-    void deleteTriggered();
-    // Signal play action triggered
-    void playTriggered();
-    // Signal pause action triggered
-    void pauseTriggered();
-    // Signal add 3D view action triggered
-    // void add3DViewTriggered();
-    // // Signal remove 3D view action triggered
-    // void remove3DViewTriggered();
     void profileTriggered();
     void applicationTriggered();
     void loadXmlTriggered();
     void openRuntimeInstanceTriggered();
     void openMissionFileTriggered();
-        void pluginsTriggered();
-
+    void pluginsTriggered();
 
 private:
-    // %%% Menu Components %%%
-    // File menu
-    QMenu* fileMenu;
-    // Edit menu
-    // QMenu* editMenu;
-    // View menu
-    QMenu* viewMenu;
-    // New file action
-    QAction* newFileAction;
-    // Recent project action
-    QAction* recentProjectAction;
-    QAction* recentProjectLibraryAction;
-    // Load JSON action
-    QAction* loadJsonAction;
-    // Load to library action
-    QAction* loadToLibraryAction;
-    // Save same action
-    QAction* sameSaveAction;
-    // Save JSON action
-    QAction* saveJsonAction;
-    // Run action (commented)
-    // QAction* runAction;
-    // Exit action
-    QAction* exitAction;
-    // Undo action
-    QAction* undoAction;
-    // Redo action
-    QAction* redoAction;
-    // Select all action
-    QAction* selectAllAction;
-    // Deselect all action
-    QAction* deselectAllAction;
-    // Cut action
-    QAction* cutAction;
-    // Copy action
-    QAction* copyAction;
-    // Paste action
-    QAction* pasteAction;
-    // Duplicate action
-    QAction* duplicateAction;
-    // Rename action
-    QAction* renameAction;
-    // Delete action
-    QAction* deleteAction;
-    // Play action
-    QAction* playAction;
-    // Pause action
-    QAction* pauseAction;
-    // Add 3D view action
-    QAction* add3DViewAction;
-    // Remove 3D view action
-    QAction* remove3DViewAction;
-    // Feedback menu
-    QMenu* feedbackMenu;
-    // Feedback action
-    QAction* feedbackAction;
-    QAction* profileAction;
-    QAction *applicationAction;
-    QAction* loadXmlAction;
-    QAction* openRuntimeInstanceAction;
-    QAction* openMissionFileAction;
+    QMenu*   fileMenu    = nullptr;
+    QMenu*   feedbackMenu= nullptr;
 
+    QAction* newFileAction             = nullptr;
+    QAction* recentProjectAction       = nullptr;
+    QAction* recentProjectLibraryAction= nullptr;
+    QAction* loadJsonAction            = nullptr;
+    QAction* loadXmlAction             = nullptr;
+    QAction* loadToLibraryAction       = nullptr;
+    QAction* openRuntimeInstanceAction = nullptr;
+    QAction* openMissionFileAction     = nullptr;
+    QAction* sameSaveAction            = nullptr;
+    QAction* saveJsonAction            = nullptr;
+    QAction* exitAction                = nullptr;
+    QAction* feedbackAction            = nullptr;
+    QAction* profileAction             = nullptr;
+    QAction* applicationAction         = nullptr;
+    QAction* pluginsAction             = nullptr;
 };
 
 #endif // MENUBAR_H

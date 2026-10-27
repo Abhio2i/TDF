@@ -274,3 +274,46 @@ void EntityIDMapper::debugDump() const
     }
     qDebug() << "[EntityIDMapper] ────────────────────";
 }
+// =============================================================================
+// takeOwnership
+// Flips isLocal to true for a remote entity.
+// Called when this machine accepts a Transfer Ownership PDU.
+// The entity's DIS ID (site/app/entity) stays unchanged — IEEE 1278.1
+// requires the new owner to send EntityState with the ORIGINAL entity ID.
+// This ensures all other machines see continuity with no ID change.
+// =============================================================================
+void EntityIDMapper::takeOwnership(const std::string& engineID)
+{
+    QWriteLocker lock(&m_lock);
+
+    auto it = m_isLocal.find(engineID);
+    if (it != m_isLocal.end()) {
+        it->second = true;
+        qDebug() << "[EntityIDMapper] Ownership taken for:"
+                 << QString::fromStdString(engineID);
+    } else {
+        qDebug() << "[EntityIDMapper] takeOwnership: entity not found:"
+                 << QString::fromStdString(engineID);
+    }
+}
+// =============================================================================
+// giveUpOwnership
+// Flips isLocal to false for a local entity.
+// Called when Machine A's Transfer Ownership is acknowledged.
+// EntityStateHandler will now accept incoming EntityState for this
+// entity from the new owner (Machine B) instead of skipping it.
+// =============================================================================
+void EntityIDMapper::giveUpOwnership(const std::string& engineID)
+{
+    QWriteLocker lock(&m_lock);
+
+    auto it = m_isLocal.find(engineID);
+    if (it != m_isLocal.end()) {
+        it->second = false;
+        qDebug() << "[EntityIDMapper] Ownership given up for:"
+                 << QString::fromStdString(engineID);
+    } else {
+        qDebug() << "[EntityIDMapper] giveUpOwnership: entity not found:"
+                 << QString::fromStdString(engineID);
+    }
+}

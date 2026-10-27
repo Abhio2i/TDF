@@ -7,6 +7,7 @@
 #include <QStyle>
 #include <core/Hierarchy/hierarchy.h>
 #include <core/Hierarchy/EntityProfiles/weapon.h>
+#include "GUI/dialogwindowutils.h"
 
 // ──────────────────────────────────────────────────────────────
 //  Helpers
@@ -184,6 +185,7 @@ AddWeaponDialog::AddWeaponDialog(QWidget* parent,
     , m_dbHierarchy(dbHierarchy)
     , m_isDatabaseEditor(isDatabaseEditor)
 {
+     makeDialogResizable(this);
     setWindowTitle("Add Weapon");
     setMinimumSize(460, isDatabaseEditor ? 540 : 680);
     setStyleSheet(kDialogStyle);
@@ -299,7 +301,7 @@ Weapon::WeaponType AddWeaponDialog::weaponType() const
                                                           {"Missile",   Weapon::WeaponType::Missile},
                                                           {"Sonobuoy",   Weapon::WeaponType::Sonobuoy},
                                                           {"Bomb",      Weapon::WeaponType::Bomb},
-                                                          {"Gun",       Weapon::WeaponType::Artillery},   // closest enum
+                                                          {"Gun",       Weapon::WeaponType::Artillery},
                                                           {"Rocket",    Weapon::WeaponType::Rocket},
                                                           {"Torpedo",   Weapon::WeaponType::Torpedo},
                                                           {"Artillery", Weapon::WeaponType::Artillery},
@@ -377,10 +379,8 @@ void AddWeaponDialog::buildSearchSection(QVBoxLayout* root)
 void AddWeaponDialog::populateWeaponEntities()
 {
     if (!m_dbHierarchy || !m_completer) return;
-
     m_entityMap.clear();
     QStringList names;
-
     for (const auto& [profileId, profile] : m_dbHierarchy->ProfileCategories) {
         if (!profile) continue;
         QString profileName = QString::fromStdString(profile->Name);
@@ -572,11 +572,13 @@ QWidget* AddWeaponDialog::buildSonoBuoyPanel()
     vl->setSpacing(10);
     vl->setContentsMargins(4,4,4,4);
 
-    QFormLayout* gf; QGroupBox* gg = makeGroup("Guidance System", gf);
     m_count = makeDSpin(0, 1000, 10, 0, "");
-    gf->addRow("Count:",   m_count);
-    vl->addWidget(gg);
 
+    if (!m_isDatabaseEditor) {
+        QFormLayout* gf; QGroupBox* gg = makeGroup("Guidance System", gf);
+        gf->addRow("Count:", m_count);
+        vl->addWidget(gg);
+    }
 
     vl->addStretch();
     return w;
@@ -818,7 +820,7 @@ QJsonObject AddWeaponDialog::buildBombJson() const
 QJsonObject AddWeaponDialog::buildGunJson() const
 {
     QJsonObject obj;
-    obj["weaponType"]         = "Artillery";  // maps to Gun via Artillery enum
+    obj["weaponType"]         = "Artillery";
     obj["maxVelocity"]        = m_gunMaxVelocity->value();
     obj["maxRange"]           = m_gunMaxRange->value();
     obj["blastRadius"]        = m_gunBlastRadius->value();
@@ -849,7 +851,7 @@ QJsonObject AddWeaponDialog::buildTorpedoJson() const
     obj["guidanceType"]  = kGuidanceStr.value(m_torpedoGuidance->currentIndex(), "FullyActive");
     obj["maxVelocity"]   = m_torpedoMaxVelocity->value();
     obj["maxRange"]      = m_torpedoMaxRange->value();
-    obj["maxAltitude"]   = m_torpedoMaxAltitude->value();   // depth stored here
+    obj["maxAltitude"]   = m_torpedoMaxAltitude->value();
     obj["blastRadius"]   = m_torpedoBlastRadius->value();
     obj["payloadMass"]   = m_torpedoPayloadMass->value();
     return obj;

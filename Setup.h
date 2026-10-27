@@ -48,6 +48,7 @@ public:
 
     // Get path to city.json (from TDF if exists, otherwise resource)
     QString getCityJsonPath();
+      QString getAirbaseJsonPath();
 
 private:
     TDFManager();
@@ -65,6 +66,7 @@ private:
     QString readJsonVersion(const QString& path);
     QVector<int> parseVersion(const QString& versionStr);
     bool isVersionNewer(const QString& candidate, const QString& existing);
+     QString m_airbaseDataFolderPath;
 };
 
 #endif // SETUP_H

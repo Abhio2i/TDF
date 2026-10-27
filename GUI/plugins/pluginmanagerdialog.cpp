@@ -12,6 +12,8 @@
 #include <algorithm>
 #include <QDebug>
 #include <QSettings>
+#include "GUI/dialogwindowutils.h"
+
 
 PluginManagerDialog::PluginManagerDialog(QWidget *parent)
     : QDialog(parent)
@@ -19,9 +21,15 @@ PluginManagerDialog::PluginManagerDialog(QWidget *parent)
     setWindowTitle("Plugin Manager");
     setMinimumSize(820, 540);
     resize(880, 560);
+    setWindowModality(Qt::NonModal);
+    setWindowFlags(Qt::Window
+                   | Qt::WindowTitleHint
+                   | Qt::WindowSystemMenuHint
+                   | Qt::WindowMinMaxButtonsHint
+                   | Qt::WindowCloseButtonHint);
 
-setWindowFlags(Qt::Dialog);
-
+    makeDialogResizable(this);
+    setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
     initPlugins();
     setupUI();
     renderList();

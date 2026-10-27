@@ -33,7 +33,15 @@
 #include <chrono>
 #include <cstring>
 #include "core/DISPlugin/utils/dislogger.h"
-
+#include <dis7/AcknowledgePdu.h>
+#include <dis7/transferownershippdu.h>
+#include <dis7/ElectromagneticEmissionsPdu.h>
+#include <dis7/DesignatorPdu.h>
+#include <dis7/transmitterpdu.h>
+#include <dis7/signalpdu.h>
+#include <dis7/DataQueryPdu.h>
+#include <dis7/SetDataPdu.h>
+#include <dis7/DataPdu.h>
 // =============================================================================
 // buildDISEntityID
 // DIS::EntityID uses SimulationAddress (site+app) + entityNumber
@@ -156,9 +164,11 @@ QByteArray PDUSerializer::serializeEntityState(const DISEntitySnapshot& snap,
     ECEFPosition ecef = CoordConverter::geocordToECEF(
         snap.latitude, snap.longitude, snap.altitude);
 
+    // DISOrientation euler = CoordConverter::headingToEuler(
+    //     snap.heading, snap.pitch, snap.roll);
     DISOrientation euler = CoordConverter::headingToEuler(
-        snap.heading, snap.pitch, snap.roll);
-
+        snap.heading, snap.pitch, snap.roll,
+        snap.latitude, snap.longitude);
     // Correct field names from DISEntitySnapshot:
     // northVel, eastVel, verticalVel
     DISVelocity vel = CoordConverter::nedToECEFVelocity(
@@ -481,6 +491,48 @@ QByteArray PDUSerializer::serializeCreateEntity(const DISCreateEntityData& data,
     return marshalToQByteArray(pdu);
 }
 // =============================================================================
+// serializeAcknowledge
+// IEEE 1278.1 type 15 — sent in response to:
+//   CreateEntity (flag=1), RemoveEntity (flag=2),
+//   StartResume (flag=3), StopFreeze (flag=4)
+//
+// Originating entity = who sent the request (from DISAcknowledgeData)
+// Receiving entity   = us (our siteID/applicationID)
+// No EntityIDMapper needed — uses raw DIS triplets
+// =============================================================================
+QByteArray PDUSerializer::serializeAcknowledge(const DISAcknowledgeData& data,
+                                               const DISConfig&          config)
+{
+    DIS::AcknowledgePdu pdu;
+
+    // ── Header ────────────────────────────────────────────────────────────────
+    // Protocol version hardcoded to 7 (IEEE 1278.1-2012), not config.defaultVersion.
+    // DIS::AcknowledgePdu is a single dis7-library class — its body layout is
+    // always the 2012 format regardless of what version byte gets stamped here.
+    // Stamping anything else (e.g. exercise-wide v6) would label a v7 body as
+    // v6, which a strict receiver may reject or misparse.
+    pdu.setProtocolVersion(7);
+    pdu.setExerciseID     (config.exerciseID);
+    pdu.setPduType        (15);  // Acknowledge
+    pdu.setProtocolFamily (5);   // Simulation Management Family
+    pdu.setTimestamp      (generateTimestamp(config.useAbsTimestamp));
+
+    // ── Originating entity — who sent us the request we are acknowledging ─────
+    pdu.setOriginatingEntityID(
+        buildDISEntityID(data.originSite, data.originApp, data.originEntity));
+
+    // ── Receiving entity — us ─────────────────────────────────────────────────
+    pdu.setReceivingEntityID(
+        buildDISEntityID(config.siteID, config.applicationID, 0));
+
+    // ── Acknowledge fields ────────────────────────────────────────────────────
+    pdu.setAcknowledgeFlag(data.acknowledgeFlag);
+    pdu.setResponseFlag   (data.responseFlag);
+    pdu.setRequestID      (data.requestID);
+
+    return marshalToQByteArray(pdu);
+}
+// =============================================================================
 // serializeIFF
 // Builds DIS IFF PDU (type 28) from engine IFF state snapshot.
 // Maps engine mode codes → FundamentalOperationalData fields.
@@ -598,3 +650,428 @@ QByteArray PDUSerializer::serializeIFF(const DISIFFSnapshot&  snap,
 
     return marshalToQByteArray(pdu);
 }
+QByteArray PDUSerializer::serializeTransferOwnership(
+    const DISTransferOwnershipData& data,
+    const DISConfig&                config,
+    const EntityIDMapper&           mapper)
+{
+    DISEntityID transferDISID = mapper.getDISID(data.transferEntityID);
+    if (!transferDISID.isValid()) return QByteArray();
+
+    DIS::TransferOwnershipPdu pdu;
+
+    // Protocol version hardcoded to 7 (IEEE 1278.1-2012), not config.defaultVersion.
+    // The DIS v6 predecessor of this PDU ("Transfer Control Request") had a
+    // different structure entirely — renamed and substantially revised in the
+    // 2012 standard. DIS::TransferOwnershipPdu (this dis7-library class) only
+    // ever produces the 2012-format body, so the header must say so too.
+    pdu.setProtocolVersion(7);
+    pdu.setExerciseID     (config.exerciseID);
+    pdu.setTimestamp      (generateTimestamp(config.useAbsTimestamp));
+
+    pdu.setOriginatingEntityID(
+        buildDISEntityID(config.siteID, config.applicationID, 0));
+    pdu.setReceivingEntityID(
+        buildDISEntityID(data.receivingSiteID, data.receivingAppID, 0));
+
+    pdu.setRequestID(data.requestID);
+    pdu.setRequiredReliabilityService(0);  // Acknowledged
+    pdu.setTransferType(data.transferType);
+    pdu.setTransferEntityID(
+        buildDISEntityID(transferDISID.site,
+                         transferDISID.application,
+                         transferDISID.entity));
+    pdu.setNumberOfRecordSets(0);
+
+    return marshalToQByteArray(pdu);
+}
+QByteArray PDUSerializer::serializeEmission(const DISEmissionSnapshot& snap,
+                                            const DISConfig&           config,
+                                            const EntityIDMapper&      mapper)
+{
+    uint16_t site, app, entityNum;
+    if (!buildEntityID(snap.emittingEntityID, mapper, site, app, entityNum))
+        return QByteArray();
+
+    DIS::ElectromagneticEmissionsPdu pdu;
+    pdu.setProtocolVersion(config.defaultVersion);
+    pdu.setExerciseID(config.exerciseID);
+    pdu.setPduType(DIS::PDU_ELECTRONIC_EMMISIONS);
+    pdu.setProtocolFamily(6);  // Distributed Emissions Family
+    pdu.setTimestamp(generateTimestamp(config.useAbsTimestamp));
+
+    pdu.setEmittingEntityID(buildDISEntityID(site, app, entityNum));
+
+    DIS::EventIdentifier eventID;
+    DIS::SimulationAddress simAddr;
+    simAddr.setSite(site);
+    simAddr.setApplication(app);
+    eventID.setSimulationAddress(simAddr);
+    eventID.setEventNumber(static_cast<unsigned short>(entityNum));
+    pdu.setEventID(eventID);
+
+    // 0 = Heartbeat (full state). We always send full state — no
+    // delta-tracking exists yet, so "changed data only" isn't meaningful.
+    pdu.setStateUpdateIndicator(0);
+
+    DIS::ElectromagneticEmissionSystemData system;
+    system.setEmissionsPadding2(0);
+
+    DIS::EmitterSystem emitterSystem;
+    emitterSystem.setEmitterName(0);  // 0 = Other. No SISO-REF-010 emitter
+    // name table wired up yet — placeholder
+    // until a real emitter database exists.
+    emitterSystem.setFunction(snap.emitterFunction);
+    emitterSystem.setEmitterIdNumber(snap.systemID);
+    system.setEmitterSystem(emitterSystem);
+
+    // Antenna location relative to entity origin. No per-sensor mounting
+    // offset is tracked yet — defaults to the entity's own origin.
+    DIS::Vector3Float location;
+    location.setX(0.0f); location.setY(0.0f); location.setZ(0.0f);
+    system.setLocation(location);
+
+    std::vector<DIS::ElectromagneticEmissionBeamData> beamRecords;
+    for (const DISEmissionBeam& b : snap.beams) {
+        DIS::ElectromagneticEmissionBeamData beam;
+        beam.setBeamIDNumber(b.beamID);
+        beam.setBeamParameterIndex(0);
+
+        DIS::EEFundamentalParameterData fpd;
+        fpd.setFrequency(b.frequency);
+        fpd.setFrequencyRange(b.freqRange);
+        fpd.setEffectiveRadiatedPower(b.erpPower);
+        fpd.setPulseRepetitionFrequency(b.prf);
+        fpd.setPulseWidth(b.pulseWidth);
+        beam.setFundamentalParameterData(fpd);
+
+        // IEEE 1278.1 BeamData az/el fields are RADIANS on the wire;
+        // DISEmissionBeam stores DEGREES — same unit boundary already
+        // handled for orientation. Convert here.
+        DIS::BeamData beamData;
+        beamData.setBeamAzimuthCenter(static_cast<float>(b.beamAzCenter * CoordConverter::DEG_TO_RAD));
+        beamData.setBeamAzimuthSweep(static_cast<float>(b.beamAzSweep * CoordConverter::DEG_TO_RAD));
+        beamData.setBeamElevationCenter(static_cast<float>(b.beamElCenter * CoordConverter::DEG_TO_RAD));
+        beamData.setBeamElevationSweep(static_cast<float>(b.beamElSweep * CoordConverter::DEG_TO_RAD));
+        beamData.setBeamSweepSync(0.0f);
+        beam.setBeamData(beamData);
+
+        beam.setBeamFunction(b.beamFunction);
+        beam.setHighDensityTrackJam(0);
+        beam.setBeamStatus(snap.active ? 0 : 1);  // 0 = Active per SISO-REF-010
+
+        DIS::JammingTechnique jamming;
+        jamming.setKind(0);
+        jamming.setCategory(0);
+        jamming.setSubcategory(0);
+        jamming.setSpecific(0);
+        beam.setJammingTechnique(jamming);
+
+        std::vector<DIS::TrackJamData> trackJam;
+        for (const std::string& trackedID : b.trackedEntityIDs) {
+            DISEntityID trackedDISID = mapper.getDISID(trackedID);
+            if (!trackedDISID.isValid()) continue;
+            DIS::TrackJamData tj;
+            tj.setEntityID(buildDISEntityID(trackedDISID.site,
+                                            trackedDISID.application,
+                                            trackedDISID.entity));
+            tj.setEmitterNumber(snap.systemID);
+            tj.setBeamNumber(b.beamID);
+            trackJam.push_back(tj);
+        }
+        beam.setTrackJamTargets(trackJam);
+
+        beam.setBeamDataLength(0);
+        int beamBytes = beam.getMarshalledSize();
+        beam.setBeamDataLength(static_cast<unsigned char>((beamBytes + 3) / 4));
+
+        beamRecords.push_back(beam);
+    }
+    system.setBeamDataRecords(beamRecords);
+
+    system.setSystemDataLength(0);
+    int systemBytes = system.getMarshalledSize();
+    system.setSystemDataLength(static_cast<unsigned char>((systemBytes + 3) / 4));
+
+    std::vector<DIS::ElectromagneticEmissionSystemData> systems;
+    systems.push_back(system);
+    pdu.setSystems(systems);
+
+    return marshalToQByteArray(pdu);
+}
+QByteArray PDUSerializer::serializeDesignator(const DISDesignatorSnapshot& snap,
+                                              const DISConfig&              config,
+                                              const EntityIDMapper&         mapper)
+{
+    uint16_t site, app, entityNum;
+    if (!buildEntityID(snap.designatingEntityID, mapper, site, app, entityNum))
+        return QByteArray();
+
+    if (!CoordConverter::isValidGeocord(snap.latitude, snap.longitude, snap.altitude))
+        return QByteArray();
+
+    DIS::DesignatorPdu pdu;
+    pdu.setProtocolVersion(config.defaultVersion);
+    pdu.setExerciseID(config.exerciseID);
+    pdu.setPduType(DIS::PDU_DESIGNATOR);
+    pdu.setProtocolFamily(6);  // Distributed Emissions Family — same as Emission/IFF
+    pdu.setTimestamp(generateTimestamp(config.useAbsTimestamp));
+
+    pdu.setDesignatingEntityID(buildDISEntityID(site, app, entityNum));
+    pdu.setCodeName(snap.codeName);
+
+    // Designated entity optional — skip if not in mapper (no target yet)
+    if (!snap.designatedEntityID.empty()) {
+        uint16_t dsite, dapp, dentity;
+        if (buildEntityID(snap.designatedEntityID, mapper, dsite, dapp, dentity))
+            pdu.setDesignatedEntityID(buildDISEntityID(dsite, dapp, dentity));
+    }
+
+    pdu.setDesignatorCode(snap.designatorCode);
+    pdu.setDesignatorPower(snap.designatorPower);
+    pdu.setDesignatorWavelength(snap.designatorWavelength);
+
+    // Offset from designated entity — no per-spot tracking yet, spot
+    // assumed centered on the designated entity until that exists.
+    DIS::Vector3Float spotOffset;
+    spotOffset.setX(0.0f); spotOffset.setY(0.0f); spotOffset.setZ(0.0f);
+    pdu.setDesignatorSpotWrtDesignated(spotOffset);
+
+    ECEFPosition ecef = CoordConverter::geocordToECEF(
+        snap.latitude, snap.longitude, snap.altitude);
+    DIS::Vector3Double spotLocation;
+    spotLocation.setX(ecef.x); spotLocation.setY(ecef.y); spotLocation.setZ(ecef.z);
+    pdu.setDesignatorSpotLocation(spotLocation);
+
+    pdu.setDeadReckoningAlgorithm(static_cast<char>(snap.deadReckoningAlgorithm));
+    pdu.setPadding1(0);
+    pdu.setPadding2(0);
+
+    DIS::Vector3Float accel;
+    accel.setX(0.0f); accel.setY(0.0f); accel.setZ(0.0f);
+    pdu.setEntityLinearAcceleration(accel);
+
+    return marshalToQByteArray(pdu);
+}
+QByteArray PDUSerializer::serializeTransmitter(const DISTransmitterSnapshot& snap,
+                                               const DISConfig&               config,
+                                               const EntityIDMapper&          mapper)
+{
+
+
+    uint16_t site, app, entityNum;
+    if (!buildEntityID(snap.transmittingEntityID, mapper, site, app, entityNum))
+        return QByteArray();
+
+    if (!CoordConverter::isValidGeocord(snap.latitude, snap.longitude, snap.altitude))
+        return QByteArray();
+
+    DIS::TransmitterPdu pdu;
+    pdu.setProtocolVersion(config.defaultVersion);
+    pdu.setExerciseID(config.exerciseID);
+    pdu.setPduType(DIS::PDU_TRANSMITTER);
+    pdu.setProtocolFamily(4);  // Radio Communications Family — NOT the same
+    // family as Emission/Designator (family 6)
+    pdu.setTimestamp(generateTimestamp(config.useAbsTimestamp));
+
+    pdu.setEntityID(buildDISEntityID(site, app, entityNum));
+    pdu.setRadioID(snap.radioID);
+
+    DIS::RadioType radioType;
+    radioType.setEntityKind(snap.radioKind);
+    radioType.setDomain(snap.radioDomain);
+    radioType.setCountry(snap.radioCountry);
+    radioType.setCategory(snap.radioCategory);
+    radioType.setSubcategory(snap.radioSubcategory);
+    radioType.setSpecific(snap.radioSpecific);
+    radioType.setExtra(snap.radioExtra);
+    pdu.setRadioType(radioType);
+
+    pdu.setTransmitState(snap.active ? snap.transmitState : 0);
+    pdu.setInputSource(snap.inputSource);
+
+    ECEFPosition ecef = CoordConverter::geocordToECEF(
+        snap.latitude, snap.longitude, snap.altitude);
+    DIS::Vector3Double antennaLoc;
+    antennaLoc.setX(ecef.x); antennaLoc.setY(ecef.y); antennaLoc.setZ(ecef.z);
+    pdu.setAntennaLocation(antennaLoc);
+
+    // No per-radio mounting offset tracked yet — defaults to entity origin.
+    DIS::Vector3Float relLoc;
+    relLoc.setX(0.0f); relLoc.setY(0.0f); relLoc.setZ(0.0f);
+    pdu.setRelativeAntennaLocation(relLoc);
+
+    pdu.setAntennaPatternType(0);  // 0 = Omnidirectional
+    // antennaPatternCount stays 0 — no directional pattern records
+    // implemented yet, see TransmitterPdu.h class note.
+
+    pdu.setFrequency(snap.frequency);
+    pdu.setTransmitFrequencyBandwidth(snap.transmitFrequencyBandwidth);
+    pdu.setPower(snap.power);
+
+    DIS::ModulationType modType;
+    modType.setSpreadSpectrum(snap.modSpreadSpectrum);
+    modType.setMajorModulation(snap.modMajorModulation);
+    modType.setDetail(snap.modDetail);
+    modType.setRadioSystem(snap.modRadioSystem);
+    pdu.setModulationType(modType);
+
+    pdu.setCryptoSystem(snap.cryptoSystem);
+    pdu.setCryptoKeyId(snap.cryptoKeyId);
+    // modulationParameterCount stays 0 — no variable modulation-parameter
+    // records implemented yet.
+
+    return marshalToQByteArray(pdu);
+}
+
+QByteArray PDUSerializer::serializeSignal(const DISSignalSnapshot& snap,
+                                          const DISConfig&          config,
+                                          const EntityIDMapper&     mapper)
+{
+    uint16_t site, app, entityNum;
+    if (!buildEntityID(snap.transmittingEntityID, mapper, site, app, entityNum))
+        return QByteArray();
+
+    DIS::SignalPdu pdu;
+    pdu.setProtocolVersion(config.defaultVersion);
+    pdu.setExerciseID(config.exerciseID);
+    pdu.setPduType(DIS::PDU_SIGNAL);
+    pdu.setProtocolFamily(4);  // Radio Communications Family — must match
+    // the Transmitter PDU this Signal references
+    pdu.setTimestamp(generateTimestamp(config.useAbsTimestamp));
+
+    pdu.setEntityID(buildDISEntityID(site, app, entityNum));
+    pdu.setRadioID(snap.radioID);
+    pdu.setEncodingScheme(snap.encodingScheme);
+    pdu.setTdlType(snap.tdlType);
+    pdu.setSampleRate(snap.sampleRate);
+    pdu.setSamples(snap.samples);
+    pdu.setData(snap.data);   // dataLength is derived automatically inside SignalPdu
+
+    return marshalToQByteArray(pdu);
+}
+
+static void buildDatumRecords(const DISDatumSnapshot& snap,
+                              std::vector<DIS::FixedDatum>&    outFixed,
+                              std::vector<DIS::VariableDatum>& outVariable)
+{
+    for (const DISFixedDatumEntry& f : snap.fixedDatums) {
+        DIS::FixedDatum fd;
+        fd.setFixedDatumID(f.datumID);
+        fd.setFixedDatumValue(f.datumValue);
+        outFixed.push_back(fd);
+    }
+    for (const DISVariableDatumEntry& v : snap.variableDatums) {
+        DIS::VariableDatum vd;
+        vd.setVariableDatumID(v.datumID);
+        std::vector<uint8_t> bytes(v.data.begin(), v.data.end());
+        vd.setPayloadBytes(bytes);   // uses the corrected VariableDatum API
+        outVariable.push_back(vd);
+    }
+}
+QByteArray PDUSerializer::serializeDataQuery(const DISDatumSnapshot& snap,
+                                             const DISConfig&        config,
+                                             const EntityIDMapper&   mapper)
+{
+    uint16_t osite, oapp, oentity;
+    if (!buildEntityID(snap.originatingEntityID, mapper, osite, oapp, oentity))
+        return QByteArray();
+
+    DIS::DataQueryPdu pdu;
+    pdu.setProtocolVersion(config.defaultVersion);
+    pdu.setExerciseID(config.exerciseID);
+    pdu.setPduType(DIS::PDU_DATA_QUERY);
+    pdu.setProtocolFamily(5);  // Simulation Management Family
+    pdu.setTimestamp(generateTimestamp(config.useAbsTimestamp));
+
+    pdu.setOriginatingEntityID(buildDISEntityID(osite, oapp, oentity));
+
+    if (!snap.receivingEntityID.empty()) {
+        uint16_t rsite, rapp, rentity;
+        if (buildEntityID(snap.receivingEntityID, mapper, rsite, rapp, rentity))
+            pdu.setReceivingEntityID(buildDISEntityID(rsite, rapp, rentity));
+    }
+
+    pdu.setRequestID(snap.requestID);
+    pdu.setTimeInterval(snap.timeInterval);
+
+    std::vector<DIS::FixedDatum> fixed;
+    std::vector<DIS::VariableDatum> variable;
+    buildDatumRecords(snap, fixed, variable);
+    pdu.setFixedDatums(fixed);
+    pdu.setVariableDatums(variable);
+
+    return marshalToQByteArray(pdu);
+}
+
+QByteArray PDUSerializer::serializeSetData(const DISDatumSnapshot& snap,
+                                           const DISConfig&        config,
+                                           const EntityIDMapper&   mapper)
+{
+    uint16_t osite, oapp, oentity;
+    if (!buildEntityID(snap.originatingEntityID, mapper, osite, oapp, oentity))
+        return QByteArray();
+
+    DIS::SetDataPdu pdu;
+    pdu.setProtocolVersion(config.defaultVersion);
+    pdu.setExerciseID(config.exerciseID);
+    pdu.setPduType(DIS::PDU_SET_DATA);
+    pdu.setProtocolFamily(5);
+    pdu.setTimestamp(generateTimestamp(config.useAbsTimestamp));
+
+    pdu.setOriginatingEntityID(buildDISEntityID(osite, oapp, oentity));
+
+    if (!snap.receivingEntityID.empty()) {
+        uint16_t rsite, rapp, rentity;
+        if (buildEntityID(snap.receivingEntityID, mapper, rsite, rapp, rentity))
+            pdu.setReceivingEntityID(buildDISEntityID(rsite, rapp, rentity));
+    }
+
+    pdu.setRequestID(snap.requestID);
+    pdu.setPadding1(0);
+
+    std::vector<DIS::FixedDatum> fixed;
+    std::vector<DIS::VariableDatum> variable;
+    buildDatumRecords(snap, fixed, variable);
+    pdu.setFixedDatums(fixed);
+    pdu.setVariableDatums(variable);
+
+    return marshalToQByteArray(pdu);
+}
+
+QByteArray PDUSerializer::serializeData(const DISDatumSnapshot& snap,
+                                        const DISConfig&        config,
+                                        const EntityIDMapper&   mapper)
+{
+    uint16_t osite, oapp, oentity;
+    if (!buildEntityID(snap.originatingEntityID, mapper, osite, oapp, oentity))
+        return QByteArray();
+
+    DIS::DataPdu pdu;
+    pdu.setProtocolVersion(config.defaultVersion);
+    pdu.setExerciseID(config.exerciseID);
+    pdu.setPduType(DIS::PDU_DATA);
+    pdu.setProtocolFamily(5);
+    pdu.setTimestamp(generateTimestamp(config.useAbsTimestamp));
+
+    pdu.setOriginatingEntityID(buildDISEntityID(osite, oapp, oentity));
+
+    if (!snap.receivingEntityID.empty()) {
+        uint16_t rsite, rapp, rentity;
+        if (buildEntityID(snap.receivingEntityID, mapper, rsite, rapp, rentity))
+            pdu.setReceivingEntityID(buildDISEntityID(rsite, rapp, rentity));
+    }
+
+    pdu.setRequestID(snap.requestID);
+    pdu.setPadding1(0);
+
+    std::vector<DIS::FixedDatum> fixed;
+    std::vector<DIS::VariableDatum> variable;
+    buildDatumRecords(snap, fixed, variable);
+    pdu.setFixedDatums(fixed);
+    pdu.setVariableDatums(variable);
+
+    return marshalToQByteArray(pdu);
+}
+
+

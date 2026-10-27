@@ -46,7 +46,7 @@
 #include <core/Hierarchy/Components/mission.h>
 #include <core/Hierarchy/Components/attachedenitities.h>
 #include <vector>
-
+#include "core/Hierarchy/Components/distypeprofile.h"
 // =============================================================================
 // CLASS: Platform
 //
@@ -141,25 +141,25 @@ public:
     // SECTION: Functional Components
     // DESCRIPTION: Pointers to physics, navigation, and visual sub-systems.
     // =========================================================================
-    Transform *transform = nullptr;
-    Trajectory *trajectory = nullptr;
-    Rigidbody *rigidbody = nullptr;
-    DynamicModel *dynamicModel = nullptr;
-    Collider *collider = nullptr;
-    NetworkObject *networkObject = nullptr;
-    MeshRenderer2D *meshRenderer2d = nullptr;
-    Mission *mission = nullptr;
-    TaskGroup* taskgroup;
-    CrossSection *crossSection = nullptr;
-
+    Transform transform;
+    Trajectory trajectory;
+    Rigidbody rigidbody;
+    DynamicModel dynamicModel;
+    Collider collider;
+    // NetworkObject *networkObject = nullptr;
+    MeshRenderer2D meshRenderer2d;
+    // Mission *mission = nullptr;
+    TaskGroup* taskgroup = nullptr;
+    CrossSection crossSection;
+    DISTypeProfile disType;   // ← ADD THIS LINE//by aman
     // =========================================================================
     // SECTION: Profile & Payload Management
     // DESCRIPTION: Logic for managing sensor, radio, and weapon attachments.
     // =========================================================================
-    SensorProfile *sensors = nullptr;
-    RadioProfile *radios = nullptr;
-    WeaponProfile *weapons = nullptr;
-    IFFProfile *iffs = nullptr;
+    SensorProfile sensors;
+    RadioProfile radios;
+    WeaponProfile weapons;
+    IFFProfile iffs;
 
     Sensor* getSensorByName(const std::string& name) const;
     Radio* getRadioByName(const std::string& name) const;
@@ -197,7 +197,9 @@ public:
     // SECTION: Virtual Interface Overrides
     // DESCRIPTION: Mandatory methods for entity lifecycle and component mapping.
     // =========================================================================
+    void SyncByJson(const QJsonObject& obj) override;
     std::vector<std::string> getSupportedComponents() override;
+    void addSupportedcomponent() override;
     void addComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;
     void updateComponent(QString name, const QJsonObject& obj) override;
@@ -213,12 +215,19 @@ public:
     float time = 0;
     bool autoDrop = false;
     float dropcount = 0;
+    bool followme = true;
     float dropInterval = 10;//s
     float dropTime =0;
+    void SaveState();
+    void RestoreState();
 public slots:
     void start();
     void reset();
     void pause();
+
+private:
+    bool statesaved = false;
+    QJsonObject InitalState;
 };
 
 #endif // PLATFORM_H

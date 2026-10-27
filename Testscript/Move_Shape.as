@@ -1,13 +1,10 @@
 void main(ScriptEngine@ e)
 {
-    // City context (if you already use this)
     e.useCity("Bhopal");
 
-    // Add a circle
-    e.canvasAddCircle("Circle", 10.0);
+    e.AddCircle("Circle", 10000.0);
 
-    // Move the newly created circle
-    e.moveShape("TempCircle_0", 75.8481, 22.7375);
+    e.moveShape("Circle", 22.7375, 75.8481);
 
     e.generatePDFReport("shape_move_report.pdf");
 }

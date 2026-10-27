@@ -51,8 +51,6 @@ TextScriptItemWidget::TextScriptItemWidget(const QString &fileName, const QStrin
     layout->setSpacing(8);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setFixedHeight(32);
-
-
     QLabel *nameLabel = new QLabel(fileName, this);
     nameLabel->setStyleSheet("background: transparent; color: white;");
     nameLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -82,7 +80,6 @@ TextScriptItemWidget::TextScriptItemWidget(const QString &fileName, const QStrin
     connect(playButton, &QPushButton::clicked, this, [this, filePath]() {
         emit playClicked(filePath);
     });
-
     // Set initial button state
     setActiveButton("none");
     if (playButton->icon().isNull()) {
@@ -153,9 +150,7 @@ TextScriptWidget::TextScriptWidget(QWidget *parent)
         "}"
         );
     topLayout->addWidget(addScriptButton);
-
     layout->addLayout(topLayout);
-
     // File list
     fileListWidget = new QListWidget(this);
     fileListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -190,7 +185,6 @@ TextScriptWidget::TextScriptWidget(QWidget *parent)
         "}"
         );
     layout->addWidget(fileListWidget);
-
     // Signals
     connect(fileListWidget, &QListWidget::customContextMenuRequested,
             this, &TextScriptWidget::handleCustomContextMenu);
@@ -220,10 +214,7 @@ void TextScriptWidget::loadScriptFiles(const QString &directoryPath)
     dir.setNameFilters(QStringList() << "*.as");
     dir.setFilter(QDir::Files | QDir::NoDotAndDotDot);
     QFileInfoList fileList = dir.entryInfoList();
-
-    // ← Full list save karo for filtering
     allFiles = fileList;
-
     fileListWidget->clear();
     fileStatus.clear();
     activeButtonState.clear();
@@ -259,7 +250,6 @@ void TextScriptWidget::updateStatusIcon(QListWidgetItem *item, const QString &st
         item->setIcon(QIcon());
         // item->setToolTip("Status: Not run");
     }
-
     // Force item to update
     item->setData(Qt::DecorationRole, item->icon());
 }
@@ -414,17 +404,13 @@ void TextScriptWidget::addFileToList(const QFileInfo &fileInfo)
     QListWidgetItem *item = new QListWidgetItem(fileListWidget);
     item->setData(Qt::UserRole, filePath);
     item->setSizeHint(QSize(fileListWidget->width(), 32));
-
     TextScriptItemWidget *itemWidget = new TextScriptItemWidget(
-        fileInfo.fileName(), filePath, fileListWidget);
-
+    fileInfo.fileName(), filePath, fileListWidget);
     fileListWidget->setItemWidget(item, itemWidget);
-
     connect(itemWidget, &TextScriptItemWidget::playClicked,
             this, &TextScriptWidget::handlePlayClicked);
     connect(itemWidget, &TextScriptItemWidget::pauseClicked,
             this, &TextScriptWidget::handlePauseClicked);
-
     fileStatus[filePath] = "none";
     activeButtonState[filePath] = "none";
     updateStatusIcon(item, "none");
@@ -432,14 +418,12 @@ void TextScriptWidget::addFileToList(const QFileInfo &fileInfo)
 void TextScriptWidget::filterScripts(const QString &text)
 {
     fileListWidget->clear();
-
     for (const QFileInfo &fileInfo : allFiles) {
         if (text.isEmpty() ||
             fileInfo.fileName().contains(text, Qt::CaseInsensitive)) {
             addFileToList(fileInfo);
         }
     }
-
     if (fileListWidget->count() == 0 && !text.isEmpty()) {
         fileListWidget->addItem("No scripts match: " + text);
     }

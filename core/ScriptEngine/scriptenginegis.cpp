@@ -3,11 +3,22 @@
  * This file implements ScriptEngineGIS, which provides script-driven GIS functionality.
  * It handles drawing of points, lines, polygons, circles, rectangles, bitmaps, distance
  * measurement, offline geo-verification (India region), auto-zoom, screenshots and logging.
+ *
+ * UPDATED: migrated from the old Widget/GISlib/ShapesFeature stack to the new
+ * GIS backend: ShapeApi, LayerApi, MapApi (singletons wrapping ShapeManager, LayerManager,
+ * GISEngine). MapWidget is now the only widget-level dependency left, and it is only used
+ * for pixel-level operations (screenshots, forced repaint, interactive draw mode).
+ *
+ * UPDATED (param order): all AngelScript-facing geo APIs that took (lon, lat) now take
+ * (lat, lon) instead, e.g. moveShape(shapeName, lat, lon). Internal calls into ShapeApi/
+ * MapWidget/QPointF still use whatever order those backends expect (QPointF is (x=lon,
+ * y=lat)); only the public parameter order as seen by AngelScript scripts has changed.
+ *
  * Author - Amjad
  ******************************************************************************************/
 
-
 #include "scriptenginegis.h"
+#include "scriptengine.h"
 #include "qtimer.h"
 #include <angelscript.h>
 #include <angelscript/add_on/scriptstdstring/scriptstdstring.h>
@@ -16,32 +27,45 @@
 #include <string>
 #include <QObject>
 #include <QVector3D>
-#include "core/Hierarchy/entity.h"
 #include <QPointF>
 #include <cstdlib>
-#include <angelscript/add_on/scriptarray/scriptarray.h>  // make sure included
+#include <cmath>
+#include <angelscript/add_on/scriptarray/scriptarray.h>
 #include "core/GlobalRegistry.h"
 #include "core/Simulation/simulation.h"
 #include "core/structure/runtime.h"
+#include "core/Debug/console.h"
 #include <fstream>
-#include <QPrinter>
-#include <QPainter>
-#include <QFont>
-#include <QFontMetrics>
-#include <QDateTime>
-#include <QPageSize>
 #include <QDir>
 #include <QPixmap>
 #include <QDateTime>
-#include <QPainter>
-#include <QPrinter>
 #include <QCoreApplication>
 #include <QThread>
 #include <QRectF>
 #include <QtMath>
-#include "scriptengine.h"
-#include "GUI/Tacticaldisplay/Gis/shapes_feature.h"
+#include <QFileInfo>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QFile>
+#include <QTextStream>
 
+// ===== New GIS backend =====
+#include <GIS_API/frontend/widgets/map_widget.h>
+#include <GIS_API/backend/api/shape_api.h>
+#include <GIS_API/backend/api/layer_api.h>
+#include <GIS_API/backend/api/map_api.h>
+#include <GIS_API/backend/formats/layer_format_registry.h>
+#include <GIS_API/backend/formats/builtin_layer_formats.h>
+#include "backend/api/measure_api.h"
+
+// NOTE: AirbaseApi / ShapeHistoryApi headers were not supplied for this migration.
+// Their usage below matches the exact call pattern already used elsewhere in the
+// codebase (ui_action_api.cpp, editor.cpp): AirbaseApi::instance()->initialize()/
+// toggleVisibility()/isVisible(), ShapeHistoryApi::instance()->startPreview()/
+// restoreHistory()/hidePreview(). If the include paths differ, adjust these two
+// includes accordingly.
+#include <GIS_API/backend/api/airbase_api.h>
+#include <GIS_API/backend/api/shape_history_api.h>
 
 // Helper: Convert latitude & longitude to formatted string
 static QString geoToString(double lat, double lon)
@@ -51,29 +75,112 @@ static QString geoToString(double lat, double lon)
         .arg(lon, 0, 'f', 6);
 }
 
-// Inject GIS library dependency
-void ScriptEngineGIS::setGIS(GISlib* g)
+// Helper: Expand bounding box using lat/lon
+static void updateBounds(QRectF& r, double lat, double lon)
 {
-    gis = g;
+    if (r.isNull())
+        r = QRectF(QPointF(lon, lat), QSizeF(0, 0));
+    else
+        r = r.united(QRectF(QPointF(lon, lat), QSizeF(0, 0)));
 }
 
-// Static city database (offline, defence-safe)
-struct CityInfo {
-    QString name;
-    double lat;
-    double lon;
-};
+// Approximate meters -> degrees conversion (equatorial approximation, good
+// enough for the auto-zoom bounds / demo shapes used by AutoScript).
+static const double METERS_PER_DEGREE = 111000.0;
 
-// Supported city list
-static const CityInfo CITY_DB[] = {
-    {"Bhopal",    23.278665, 77.369882},
-    {"Delhi",     28.613939, 77.209023},
-    {"Hyderabad", 17.385044, 78.486671},
-    {"Mumbai",    19.076090, 72.877426},
-    {"Bangalore", 12.9629, 77.5775},
-    {"Chennai", 13.0843, 80.2705},
+// Haversine distance in meters between two lat/lon points.
+static double haversineMeters(double lat1, double lon1, double lat2, double lon2)
+{
+    const double R = 6371000.0; // Earth radius in meters
+    const double dLat = qDegreesToRadians(lat2 - lat1);
+    const double dLon = qDegreesToRadians(lon2 - lon1);
+    const double a = std::sin(dLat / 2.0) * std::sin(dLat / 2.0) +
+                     std::cos(qDegreesToRadians(lat1)) * std::cos(qDegreesToRadians(lat2)) *
+                         std::sin(dLon / 2.0) * std::sin(dLon / 2.0);
+    const double c = 2.0 * std::atan2(std::sqrt(a), std::sqrt(1.0 - a));
+    return R * c;
+}
 
-    };
+// Built-in bitmap name -> icon path (mirrors MapWidget's bitmapIconForName)
+static QString builtinBitmapIconPath(const QString& name)
+{
+    if (name.compare(QStringLiteral("Hospital"), Qt::CaseInsensitive) == 0)
+        return QStringLiteral(":/icons/images/hospital.png");
+    if (name.compare(QStringLiteral("School"), Qt::CaseInsensitive) == 0)
+        return QStringLiteral(":/icons/images/school.png");
+    if (name.compare(QStringLiteral("Forest Area"), Qt::CaseInsensitive) == 0)
+        return QStringLiteral(":/icons/images/forest-area.png");
+    return QString();
+}
+
+// Inject the MapWidget dependency (replaces set()/setGIS())
+void ScriptEngineGIS::setMapWidget(MapWidget* map)
+{
+    gisMap = map;
+}
+
+QMap<QString, CityInfo> ScriptEngineGIS::s_cityDatabase;
+bool ScriptEngineGIS::s_cityDatabaseLoaded = false;
+
+
+void ScriptEngineGIS::loadCityDatabase(const QString& jsonPath)
+{
+    if (s_cityDatabaseLoaded)
+        return;
+
+    QFile file(jsonPath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "[GIS] Could not load city database from:" << jsonPath;
+        return;
+    }
+
+    QByteArray data = file.readAll();
+    file.close();
+
+    QJsonParseError parseError;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
+
+    if (parseError.error != QJsonParseError::NoError) {
+        qWarning() << "[GIS] Failed to parse city JSON:" << parseError.errorString();
+        return;
+    }
+
+    if (!doc.isObject()) {
+        qWarning() << "[GIS] City JSON root is not an object";
+        return;
+    }
+
+    QJsonObject rootObj = doc.object();
+    if (!rootObj.contains("indian_cities") || !rootObj["indian_cities"].isArray()) {
+        qWarning() << "[GIS] 'indian_cities' key missing or not an array";
+        return;
+    }
+
+    QJsonArray citiesArray = rootObj["indian_cities"].toArray();
+    int loadedCount = 0;
+
+    for (const QJsonValue& val : citiesArray) {
+        if (!val.isObject())
+            continue;
+
+        QJsonObject cityObj = val.toObject();
+
+        CityInfo info;
+        info.name = cityObj["name"].toString();
+        info.lat  = cityObj["lat"].toDouble();
+        info.lon  = cityObj["lon"].toDouble();
+
+        if (info.name.isEmpty())
+            continue;
+
+        s_cityDatabase.insert(info.name.toLower(), info);
+        loadedCount++;
+    }
+
+    s_cityDatabaseLoaded = true;
+
+    qDebug() << "[GIS] City database loaded:" << loadedCount << "entries from JSON";
+}
 
 // Return active city location string
 QString ScriptEngineGIS::cityLocationString() const
@@ -86,47 +193,46 @@ QString ScriptEngineGIS::cityLocationString() const
         .arg(cityLon, 0, 'f', 6);
 }
 
-// ================= GEO VERIFICATION (OFFLINE – INDIA REGION) =================
+// ================= CITY CONTEXT =================
 void ScriptEngineGIS::useCity(const std::string& cityName)
 {
-    QString name = QString::fromStdString(cityName);
-
-    // Search city in static DB
-    for (const auto& c : CITY_DB) {
-        if (c.name.compare(name, Qt::CaseInsensitive) == 0) {
-
-            // Activate city context
-            activeCity = c.name;
-            cityLat = c.lat;
-            cityLon = c.lon;
-            cityActive = true;
-
-            // Log success
-            if (logFn) {
-                logFn(
-                    ReportCategory::SYSTEM,
-                    "City Selected",
-                    activeCity,
-                    geoToString(cityLat, cityLon),
-                    "",
-                    "City context set",
-                    "SUCCESS",
-                    "",
-                    ""
-                    );
-            }
-            return;
-        }
+    if (!s_cityDatabaseLoaded) {
+        loadCityDatabase();
     }
 
-    // City not found
+    QString name = QString::fromStdString(cityName).trimmed().toLower();
+
+    if (s_cityDatabase.contains(name)) {
+        CityInfo c = s_cityDatabase.value(name);
+
+        activeCity = c.name;
+        cityLat = c.lat;
+        cityLon = c.lon;
+        cityActive = true;
+
+        if (logFn) {
+            logFn(
+                ReportCategory::SYSTEM,
+                "City Selected",
+                activeCity,
+                geoToString(cityLat, cityLon),
+                "",
+                "City context set",
+                "SUCCESS",
+                "",
+                ""
+                );
+        }
+        return;
+    }
+
     cityActive = false;
 
     if (logFn) {
         logFn(
             ReportCategory::SYSTEM,
             "City Selected",
-            name,
+            QString::fromStdString(cityName),
             "",
             "",
             "Unknown city",
@@ -137,16 +243,7 @@ void ScriptEngineGIS::useCity(const std::string& cityName)
     }
 }
 
-// Helper: Expand bounding box using lat/lon
-static void updateBounds(QRectF& r, double lat, double lon)
-{
-    if (r.isNull())
-        r = QRectF(QPointF(lon, lat), QSizeF(0, 0));
-    else
-        r = r.united(QRectF(QPointF(lon, lat), QSizeF(0, 0)));
-}
-
-// ================= GEO VERIFICATION (OFFLINE – INDIA REGION) =================
+// ================= GEO VERIFICATION (OFFLINE - INDIA REGION) =================
 // Simple India bounding box (defence-safe offline check)
 bool ScriptEngineGIS::isLatLonInIndia(double lat, double lon) const
 {
@@ -169,176 +266,260 @@ QString ScriptEngineGIS::geoVerificationLine(double lat, double lon) const
     return "Geo Verification : FAILED (Outside India Region)";
 }
 
-
-// Set selected drawing shape on canvas
-void ScriptEngineGIS::setCanvasSelectedShape(const std::string &shapeName)
+// ================= NAME -> ID RESOLUTION =================
+QString ScriptEngineGIS::findShapeIdByName(const QString& name) const
 {
-    if (!canvas) {
-        qWarning() << "Canvas not set! Cannot set selected shape.";
+    if (name.isEmpty())
+        return QString();
+
+    const QJsonArray shapes = ShapeApi::instance()->getAllShapes();
+    for (const QJsonValue& v : shapes) {
+        const QJsonObject obj = v.toObject();
+        if (obj.value(QStringLiteral("text")).toString() == name)
+            return obj.value(QStringLiteral("id")).toString();
+    }
+    return QString();
+}
+
+QString ScriptEngineGIS::findLayerIdByName(const QString& name) const
+{
+    if (name.isEmpty())
+        return QString();
+
+    LayerApi* la = LayerApi::instance();
+    const QStringList ids = la->getLayers();
+    for (const QString& id : ids) {
+        if (la->getLayerName(id) == name)
+            return id;
+    }
+    return QString();
+}
+
+double ScriptEngineGIS::convertMeasurement(double meters) const
+{
+    if (measurementUnit == QLatin1String("meters"))     return meters;
+    if (measurementUnit == QLatin1String("kilometers")) return meters / 1000.0;
+    if (measurementUnit == QLatin1String("miles"))      return meters / 1609.344;
+    if (measurementUnit == QLatin1String("feet"))       return meters * 3.280839895;
+    return meters / 1000.0; // default: kilometers
+}
+
+// Set selected drawing shape on  (interactive draw mode)
+void ScriptEngineGIS::setSelectedShape(const std::string &shapeName)
+{
+    if (!gisMap) {
+        qWarning() << "[ScriptEngineGIS] MapWidget not available. Cannot set selected shape.";
         return;
     }
 
     QString qShape = QString::fromStdString(shapeName);
-    canvas->setShapeDrawingMode(true, qShape);
+    gisMap->startDrawing(qShape);
     qDebug() << "[ScriptEngineGIS] Shape drawing mode enabled for:" << qShape;
 }
 
-void ScriptEngineGIS::setCanvas(CanvasWidget* c)
+void ScriptEngineGIS::AddLayer(const std::string &layerName)
 {
-    canvas = c;
-
-    // 🔥 CREATE ShapesFeature HERE (ONLY ONCE)
-    // if (canvas && !canvas->getShapesFeature()) {
-    //     canvas->getShapesFeature() = new ShapesFeature(canvas);
-    // }
-}
-
-void ScriptEngineGIS::canvasCreateVectorLayer(const std::string &layerName)
-{
-    qDebug() << "SCRIPT creating layer:" << QString::fromStdString(layerName);
-
-    if (!canvas) return;
-
     QString qname = QString::fromStdString(layerName);
+    qDebug() << "SCRIPT creating layer:" << qname;
 
-    LayerPanel* panel = canvas->getLayerPanel();
-    if (!panel) {
-        qDebug() << "LayerPanel NULL";
+    QString layerId = LayerApi::instance()->addLayer(qname);
+    if (layerId.isEmpty()) {
+        if (logFn) {
+            logFn(ReportCategory::GIS, "Layer Creation", qname, "", "", "Not Created",
+                  "FAILED", "Could not create layer", "");
+        }
         return;
     }
 
-    panel->addLayerFromScript(qname);
+    LayerApi::instance()->setActiveLayer(layerId);
+
+    if (logFn) {
+        logFn(ReportCategory::GIS, "Layer Created", qname, "", "",
+              "Active Layer Set", "SUCCESS", "", "");
+    }
 }
 
-void ScriptEngineGIS::canvasSelectLayer(const std::string &layerName)
+void ScriptEngineGIS::SelectLayer(const std::string &layerName)
 {
-    if (!canvas) return;
-
     QString qname = QString::fromStdString(layerName);
+    QString layerId = findLayerIdByName(qname);
+    if (layerId.isEmpty()) {
+        if (logFn) {
+            logFn(ReportCategory::GIS, "Layer Select", qname, "", "", "Not Found",
+                  "FAILED", "Layer does not exist", "");
+        }
+        return;
+    }
 
-    LayerPanel* panel = canvas->getLayerPanel();
-    if (!panel) return;
+    LayerApi::instance()->setActiveLayer(layerId);
 
-    panel->setActiveLayer(qname);
+    if (logFn) {
+        logFn(ReportCategory::GIS, "Layer Selected", qname, "", "",
+              "Active Layer Set", "SUCCESS", "", "");
+    }
 }
 
-void ScriptEngineGIS::canvasRenameShape(const std::string &id,const std::string &newName)
+void ScriptEngineGIS::RenameShape(const std::string &id,const std::string &newName)
 {
-    if (!canvas) return;
-
     QString qid = QString::fromStdString(id);
     QString qname = QString::fromStdString(newName);
 
-    LayerPanel* panel = canvas->getLayerPanel();
-    if (!panel) return;
-
-    panel->setShapeDisplayName(qid, qname);
+    QJsonObject patch;
+    patch[QStringLiteral("text")] = qname;
+    ShapeApi::instance()->updateShape(qid, patch);
 }
 
 //===================LINE TOOL====================
 // Start line drawing
-void ScriptEngineGIS::canvasStartLine()
+void ScriptEngineGIS::StartLine()
 {
-    if (!canvas) return;
-
-    canvas->getShapesFeature()->scriptStartLine();
-
-    // reset state
     linePoints.clear();
     lastShapeBounds = QRectF();
+
+    if (gisMap)
+        gisMap->startDrawing(QStringLiteral("line"));
 }
 
-// Add line point
-void ScriptEngineGIS::canvasAddLinePoint(float lon, float lat)
+// Add line point (parameter order: latitude, then longitude)
+void ScriptEngineGIS::AddLinePoint(float lat, float lon)
 {
-    if (!canvas) return;
-
     QPointF geo(lon, lat);
     lastGeoCursor = geo;
-
-    canvas->getShapesFeature()->scriptAddLinePoint(geo);
 
     // collect point for final report
     linePoints.push_back(geo);
 
     updateBounds(lastShapeBounds, lat, lon);
 }
+
 // Finish line drawing
-void ScriptEngineGIS::canvasFinishLine()
+// ============================================================
+// Finish line drawing
+// ============================================================
+void ScriptEngineGIS::FinishLine()
 {
-    if (!canvas || linePoints.size() < 2)
+    if (linePoints.size() < 2) {
+        if (logFn) {
+            logFn(
+                ReportCategory::GIS,
+                "Line Created",
+                "Line Tool",
+                "",
+                "",
+                "Not Rendered",
+                "FAILED",
+                "At least 2 points required",
+                ""
+                );
+        }
+
+        // IMPORTANT:
+        // Even when script has insufficient points,
+        // exit interactive drawing mode.
+        if (gisMap)
+            gisMap->cancelDrawing();
+
+        linePoints.clear();
+        lastShapeBounds = QRectF();
+
         return;
+    }
 
-    canvas->getShapesFeature()->scriptFinishLine();
-
-    // lastShapeBounds = QRectF();
     bool geoOk = true;
+    QVector<QPointF> pts;
+    pts.reserve(static_cast<int>(linePoints.size()));
 
     for (const auto& p : linePoints) {
-        updateBounds(lastShapeBounds, p.y(), p.x());
+        // p = (lon, lat)
+        pts.append(p);
+
+        updateBounds(
+            lastShapeBounds,
+            p.y(),   // lat
+            p.x()    // lon
+            );
+
         if (!isLatLonInIndia(p.y(), p.x()))
             geoOk = false;
     }
 
-    // FORCE AUTO ZOOM (state level)
-    canvas->gislib->fitToBounds(
-        lastShapeBounds.top(),
-        lastShapeBounds.left(),
-        lastShapeBounds.bottom(),
-        lastShapeBounds.right(),
-        -2   // slightly zoomed out
-        );
+    // Create actual line in ShapeApi
+    QString lineId = ShapeApi::instance()->addLine(pts);
 
+    // IMPORTANT:
+    // Script-created line is finished, so disable
+    // MapWidget's interactive mouse drawing mode.
+    if (gisMap)
+        gisMap->cancelDrawing();
+
+    if (gisMap && !lastShapeBounds.isNull()) {
+        gisMap->setCenter(
+            lastShapeBounds.center().y(), // lat
+            lastShapeBounds.center().x()  // lon
+            );
+
+        gisMap->update();
+    }
 
     // Capture screenshot
-    QString screenshot = screenshotFn("line");
+    QString screenshot =
+        screenshotFn
+            ? screenshotFn("line")
+            : QString();
 
-    if(logFn) {
+    if (logFn) {
         logFn(
             ReportCategory::GIS,
             "Line Created",
             "Line Tool",
             "Auto From Points",
             QString("Total Points : %1").arg(linePoints.size()),
-            geoOk ? "Geo Verification : VERIFIED (India Region)"
-                  : "Geo Verification : FAILED (Outside India Region)",
-            geoOk ? "SUCCESS" : "FAILED",
-            "",
+            lineId.isEmpty()
+                ? "Line Creation Failed"
+                : QString("Line Created"),
+            geoOk
+                ? "Geo Verification : VERIFIED (India Region)"
+                : "Geo Verification : FAILED (Outside India Region)",
+            lineId.isEmpty()
+                ? "FAILED"
+                : (geoOk ? "SUCCESS" : "FAILED"),
             screenshot
             );
     }
+
+    // Clear script-side points also
     linePoints.clear();
+    lastShapeBounds = QRectF();
 }
 
 // Add a polygon
-void ScriptEngineGIS::canvasAddPolygon(const std::string &name, CScriptArray* points)
+// NOTE: each point string in the array is parsed as "lat,lon" (latitude first,
+// then longitude) to match the rest of the geo APIs.
+void ScriptEngineGIS::AddPolygon(const std::string &name, CScriptArray* points)
 {
-    if (!canvas || !points || points->GetSize() < 3) {
+    QString qname = QString::fromStdString(name);
+
+    if (!points || points->GetSize() < 3) {
         if(logFn) {
             logFn(
                 ReportCategory::GIS,
                 "Polygon Creation",
-                QString::fromStdString(name),
+                qname,
                 "",
                 "Vertices < 3",
                 "Not Rendered",
                 "FAILED",
                 "Polygon requires minimum 3 points",
-                ""   // ✅ screenshotPath (EMPTY for failure)
+                ""
                 );
         }
         return;
     }
 
     bool geoOk = true;
-
-    // RESET bounds
     lastShapeBounds = QRectF();
+    QVector<QPointF> pts;
 
-    ShapesFeature* shapes = canvas->getShapesFeature();
-    if(!shapes) return;
-
-    //  DRAW POLYGON
     for (asUINT i = 0; i < points->GetSize(); i++) {
         QString pt = QString::fromStdString(*(std::string*)points->At(i));
         auto xy = pt.split(",");
@@ -346,54 +527,47 @@ void ScriptEngineGIS::canvasAddPolygon(const std::string &name, CScriptArray* po
         if (xy.size() != 2)
             continue;
 
-        double lon = xy[0].toDouble();
-        double lat = xy[1].toDouble();
+        double lat = xy[0].toDouble();
+        double lon = xy[1].toDouble();
 
         QPointF geo(lon, lat);
         lastGeoCursor = geo;
+        pts.append(geo);
 
-        // Update bounds (same helper as line/circle/rectangle)
         updateBounds(lastShapeBounds, lat, lon);
 
-        // India geo check
         if (!isLatLonInIndia(lat, lon))
             geoOk = false;
-
-        // DRAW vertex
-        shapes->drawPolygon(geo, i == points->GetSize() - 1);
-
     }
 
-    // FORCE AUTO ZOOM (state level)
-    canvas->gislib->fitToBounds(
-        lastShapeBounds.top(),
-        lastShapeBounds.left(),
-        lastShapeBounds.bottom(),
-        lastShapeBounds.right(),
-        -2   // slightly zoomed out
-        );
+    if (pts.size() < 3) {
+        if (logFn) {
+            logFn(ReportCategory::GIS, "Polygon Creation", qname, "", "Vertices < 3",
+                  "Not Rendered", "FAILED", "Not enough valid points", "");
+        }
+        return;
+    }
 
-    // Draw polygon vertex
-    // canvas->getShapesFeature()->drawPolygon(geo, i == points->GetSize() - 1);
-    //}
+    QString id = ShapeApi::instance()->addPolygon(pts);
+    if (!id.isEmpty()) {
+        QJsonObject patch;
+        patch[QStringLiteral("text")] = qname;
+        ShapeApi::instance()->updateShape(id, patch);
+    }
 
-    // FORCE redraw before screenshot
-    canvas->update();
-    if (canvas->gislib)
-        canvas->gislib->update();
-
-    QCoreApplication::processEvents();
-    QThread::msleep(150);
-    QCoreApplication::processEvents();
+    if (gisMap && !lastShapeBounds.isNull()) {
+        gisMap->setCenter(lastShapeBounds.center().y(), lastShapeBounds.center().x());
+        gisMap->update();
+    }
 
     // SCREENSHOT
-    QString screenshot = screenshotFn("polygon");
+    QString screenshot = screenshotFn ? screenshotFn("polygon") : QString();
 
     if(logFn) {
         logFn(
             ReportCategory::GIS,
             "Polygon Created",
-            QString::fromStdString(name),
+            qname,
             "Auto From Vertices",
             QString("Vertices = %1").arg(points->GetSize()),
             geoOk
@@ -406,80 +580,83 @@ void ScriptEngineGIS::canvasAddPolygon(const std::string &name, CScriptArray* po
     }
 }
 
-// 4Add a rectangle
-void ScriptEngineGIS::canvasAddRectangle(
+// Add a rectangle
+void ScriptEngineGIS::AddRectangle(
     const std::string &name,
     float width,
     float height
     )
 {
-    if (!cityActive || !canvas){
+    QString qname = QString::fromStdString(name);
+
+    if (!cityActive){
         if(logFn) {
             logFn(
                 ReportCategory::GIS,
                 "Rectangle Creation",
-                QString::fromStdString(name),
+                qname,
                 "",
                 "",
                 "Not Rendered",
                 "FAILED",
                 "City not selected",
-                ""   // ✅ screenshotPath (EMPTY for failure)
+                ""
                 );
         }
         return;
     }
 
-    // Center of rectangle
-    QPointF center(cityLon, cityLat);
-    lastGeoCursor = center;
-
-    // Geo validation
+    lastGeoCursor = QPointF(cityLon, cityLat);
     bool geoOk = isLatLonInIndia(cityLat, cityLon);
 
-    // Convert meters → degrees (approx, screenshot-safe)
-    double halfWidthDeg  = (width  / 2.0) / 111000.0;
-    double halfHeightDeg = (height / 2.0) / 111000.0;
+    // Convert meters -> degrees (approx, screenshot-safe). width/height are
+    // the FULL width/height of the rectangle (see RectangleShapeType::finishDrawing).
+    double widthDeg  = width  / METERS_PER_DEGREE;
+    double heightDeg = height / METERS_PER_DEGREE;
 
-    ShapesFeature* shapes = canvas->getShapesFeature();
-    if(!shapes) return;
-
-    // draw rectangle (default naming handled internally)
-    shapes->drawRectangle(center, halfWidthDeg, halfHeightDeg);
-
-    // draw rectangle ONLY ONCE
-    //canvas->getShapesFeature()->drawRectangle(center, halfWidthDeg, halfHeightDeg);
-
-    // Draw rectangle (center-based)
-    //canvas->getShapesFeature()->drawRectangle(center);
-
-    // Reset previous bounds
-    lastShapeBounds = {};
-
-    // Update bounding box
-    updateBounds(lastShapeBounds, cityLat + halfHeightDeg, cityLon + halfWidthDeg);
-    updateBounds(lastShapeBounds, cityLat - halfHeightDeg, cityLon - halfWidthDeg);
-
-    // FORCE AUTO ZOOM (state level)
-    canvas->gislib->fitToBounds(
-        lastShapeBounds.top(),
-        lastShapeBounds.left(),
-        lastShapeBounds.bottom(),
-        lastShapeBounds.right(),
-        -2   // slightly zoomed out
+    QString id = ShapeApi::instance()->addRectangle(
+        cityLon,
+        cityLat,
+        widthDeg,
+        heightDeg
         );
 
-    canvas->update();
+    if (!id.isEmpty())
+    {
+        QJsonObject patch;
+        patch[QStringLiteral("text")] = qname;
+
+        ShapeApi::instance()->updateShape(id, patch);
+
+        // IMPORTANT:
+        // Store actual ShapeApi ID
+        shapeNameToId[qname] = id;
+
+        qDebug()
+            << "[GIS] Rectangle created"
+            << "Name =" << qname
+            << "ID =" << id;
+    }
+
+    // Reset previous bounds
+    lastShapeBounds = QRectF();
+    updateBounds(lastShapeBounds, cityLat + heightDeg / 2.0, cityLon + widthDeg / 2.0);
+    updateBounds(lastShapeBounds, cityLat - heightDeg / 2.0, cityLon - widthDeg / 2.0);
+
+    if (gisMap) {
+        gisMap->setCenter(cityLat, cityLon);
+        gisMap->update();
+    }
 
     // Capture screenshot AFTER drawing & bounds update
-    QString screenshot = screenshotFn("rectangle");
+    QString screenshot = screenshotFn ? screenshotFn("rectangle") : QString();
 
     // Log event
     if(logFn) {
         logFn(
             ReportCategory::GIS,
             "Rectangle Created",
-            QString::fromStdString(name),
+            qname,
             cityLocationString(),
             QString("Width : %1 m, Height : %2 m").arg(width).arg(height),
             geoVerificationLine(cityLat, cityLon),
@@ -490,135 +667,160 @@ void ScriptEngineGIS::canvasAddRectangle(
     }
 }
 
-// Add a circle
-void ScriptEngineGIS::canvasAddCircle(const std::string &name, float radius)
+
+void ScriptEngineGIS::AddCircle(
+    const std::string &name,
+    float radius)
 {
-    if (!cityActive || !canvas || !canvas->getShapesFeature()) {
-        return;
-    }
+    QString qname = QString::fromStdString(name);
 
-    ShapesFeature* shapes = canvas->getShapesFeature();
-
-    //center
-    QPointF center(cityLon, cityLat);
-    lastGeoCursor = center;
-
-    bool geoOk = isLatLonInIndia(cityLat, cityLon);
-
-    double radiusDeg = radius / 111000.0;
-    canvas->getShapesFeature()->drawCircle(center, radiusDeg);
-
-    // 🔴 ADD THIS (layer support)
-    LayerPanel* panel = canvas->getLayerPanel();
-    if(panel) {
-        QString shapeId = QString("TempCircle_%1").arg(shapes->getPolygonCounter()-1);
-        panel->addShapeToLayer(shapeId, "Circle");
-    }
-
-    // Reset previous bounds
-    // lastShapeBounds = {};
-    lastShapeBounds = QRectF();
-
-    updateBounds(lastShapeBounds, cityLat + radiusDeg, cityLon + radiusDeg);
-    updateBounds(lastShapeBounds, cityLat - radiusDeg, cityLon - radiusDeg);
-
-    // FORCE AUTO ZOOM (state level)
-    canvas->gislib->fitToBounds(
-        lastShapeBounds.top(),
-        lastShapeBounds.left(),
-        lastShapeBounds.bottom(),
-        lastShapeBounds.right(),
-        -2   // slightly zoomed out
-        );
-
-    // Screenshot AFTER draw
-    QString screenshot = screenshotFn("circle");
-
-    if(logFn) {
-        logFn(
-            ReportCategory::GIS,
-            "Circle Created",
-            QString::fromStdString(name),
-            cityLocationString(),
-            QString("Radius : %1").arg(radius),
-            geoVerificationLine(cityLat, cityLon),
-            geoOk ? "SUCCESS" : "FAILED",
-            "",
-            screenshot        // store path
-            );
-    }
-}
-
-// Add a point
-void ScriptEngineGIS::canvasAddPoint(const std::string &name, float lon, float lat)
-{
-    if (!canvas || !canvas->gislib || !canvas->getShapesFeature()) {
-        if(logFn) {
+    if (!cityActive) {
+        if (logFn) {
             logFn(
                 ReportCategory::GIS,
-                "Point Creation",
-                QString::fromStdString(name),
-                geoToString(lat, lon),
+                "Circle Creation",
+                qname,
+                "",
                 "",
                 "Not Rendered",
                 "FAILED",
-                "Canvas or GIS not available",
-                ""   // ✅ screenshotPath (EMPTY for failure)
+                "City not selected",
+                ""
                 );
         }
         return;
     }
 
+    // Active city = circle center
+    lastGeoCursor = QPointF(cityLon, cityLat);
+
+    bool geoOk =
+        isLatLonInIndia(cityLat, cityLon);
+
+    // Convert meters -> degrees
+    double radiusDeg =
+        radius / METERS_PER_DEGREE;
+
+    // Create circle
+    QString id =
+        ShapeApi::instance()->addCircle(
+            cityLon,
+            cityLat,
+            radiusDeg
+            );
+
+    if (id.isEmpty()) {
+        qWarning()
+        << "[GIS] Failed to create circle:"
+        << qname;
+
+        return;
+    }
+
+    qDebug()
+        << "[GIS] Circle created"
+        << "Name =" << qname
+        << "ID =" << id;
+
+    // Set display/name
+    QJsonObject patch;
+
+    patch[QStringLiteral("text")] = qname;
+
+    ShapeApi::instance()->updateShape(
+        id,
+        patch
+        );
+
+    // =====================================================
+    // IMPORTANT:
+    // Store mapping Name -> actual ShapeApi ID
+    // =====================================================
+
+    shapeNameToId[qname] = id;
+
+    // Bounds
+    lastShapeBounds = QRectF();
+
+    updateBounds(
+        lastShapeBounds,
+        cityLat + radiusDeg,
+        cityLon + radiusDeg
+        );
+
+    updateBounds(
+        lastShapeBounds,
+        cityLat - radiusDeg,
+        cityLon - radiusDeg
+        );
+
+    if (gisMap) {
+        gisMap->setCenter(
+            cityLat,
+            cityLon
+            );
+
+        gisMap->update();
+    }
+
+    // Screenshot
+    QString screenshot =
+        screenshotFn
+            ? screenshotFn("circle")
+            : QString();
+
+    if (logFn) {
+
+        logFn(
+            ReportCategory::GIS,
+            "Circle Created",
+            qname,
+            cityLocationString(),
+            QString("Radius : %1 m").arg(radius),
+            geoVerificationLine(
+                cityLat,
+                cityLon
+                ),
+            geoOk ? "SUCCESS" : "FAILED",
+            "",
+            screenshot
+            );
+    }
+}
+
+// Add a point (parameter order: latitude, then longitude)
+void ScriptEngineGIS::AddPoint(const std::string &name, float lat, float lon)
+{
+    QString qname = QString::fromStdString(name);
     QPointF geo(lon, lat);
     lastGeoCursor = geo;
 
     bool geoOk = isLatLonInIndia(lat, lon);
 
-    //Draw point
-    canvas->getShapesFeature()->drawPoints(geo);
+    QString id = ShapeApi::instance()->addPoint(lon, lat);
+    if (!id.isEmpty()) {
+        QJsonObject patch;
+        patch[QStringLiteral("text")] = qname;
+        ShapeApi::instance()->updateShape(id, patch);
+    }
 
-    // RESET & EXPAND BOUNDS (🔥 KEY FIX)
+    // RESET & EXPAND BOUNDS
     lastShapeBounds = QRectF();
     expandPointBounds(lastShapeBounds, lat, lon);
 
-    // FORCE AUTO ZOOM (state level)
-    canvas->gislib->fitToBounds(
-        lastShapeBounds.top(),
-        lastShapeBounds.left(),
-        lastShapeBounds.bottom(),
-        lastShapeBounds.right(),
-        -1   // slightly zoomed out
-        );
+    if (gisMap) {
+        gisMap->setCenter(lat, lon);
+        gisMap->update();
+    }
 
-    // Force render
-    canvas->update();
-    canvas->gislib->update();
-    QCoreApplication::processEvents();
-    QThread::msleep(180);
-    QCoreApplication::processEvents();
-
-    // SCREENSHOT (MAP + CANVAS)
-    QWidget* container = canvas->parentWidget();
-    if (!container) return;
-
-    QPixmap pixmap = container->grab();
-
-    QString dir = QDir::tempPath() + "/gis_reports";
-    QDir().mkpath(dir);
-
-    QString screenshot =
-        dir + "/" +
-        QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz") +
-        "_point.png";
-
-    pixmap.save(screenshot, "PNG");
+    QString screenshot = screenshotFn ? screenshotFn("point") : QString();
 
     // LOG
     if(logFn) {
         logFn(
             ReportCategory::GIS,
             "Point Created",
-            QString::fromStdString(name),
+            qname,
             geoToString(lat, lon),
             "",
             geoVerificationLine(lat, lon),
@@ -632,7 +834,7 @@ void ScriptEngineGIS::canvasAddPoint(const std::string &name, float lon, float l
 // BOUNDS HELPERS
 void ScriptEngineGIS::expandPointBounds(QRectF &bounds, double lat, double lon)
 {
-    // approx 15–20 km box (state / district level)
+    // approx 15-20 km box (state / district level)
     double pad = 0.15; // degrees (~16 km)
 
     bounds = QRectF(
@@ -641,67 +843,73 @@ void ScriptEngineGIS::expandPointBounds(QRectF &bounds, double lat, double lon)
         );
 }
 
-
 // BITMAP HANDLING
-void ScriptEngineGIS::expandBitmapBoundsFromCanvas(QRectF &bounds)
+void ScriptEngineGIS::expandBitmapBoundsFrom(QRectF &bounds)
 {
-    if (!canvas || canvas->tempMeshes.empty())
+    // Find the most recently added bitmap-type shape and pad a box around it.
+    const QJsonArray shapes = ShapeApi::instance()->getAllShapes();
+    for (int i = shapes.size() - 1; i >= 0; --i) {
+        const QJsonObject obj = shapes.at(i).toObject();
+        if (obj.value(QStringLiteral("type")).toString() != QLatin1String("bitmap"))
+            continue;
+
+        const double lon = obj.value(QStringLiteral("longitude")).toDouble();
+        const double lat = obj.value(QStringLiteral("latitude")).toDouble();
+
+        // small visual padding (~10-15 km)
+        double pad = 0.12;
+        bounds = QRectF(
+            QPointF(lon - pad, lat - pad),
+            QPointF(lon + pad, lat + pad)
+            );
         return;
-
-    const MeshEntry &entry = canvas->tempMeshes.back();
-    if (!entry.position)
-        return;
-
-    double lon = entry.position->x();
-    double lat = entry.position->y();
-
-    // small visual padding (~10–15 km)
-    double pad = 0.12;
-
-    bounds = QRectF(
-        QPointF(lon - pad, lat - pad),
-        QPointF(lon + pad, lat + pad)
-        );
+    }
 }
 
-// select bitmap
-void ScriptEngineGIS::onBitmapSelected(const std::string &bitmapType, float lon, float lat)
+// select bitmap (parameter order: latitude, then longitude)
+void ScriptEngineGIS::onBitmapSelected(const std::string &bitmapType, float lat, float lon)
 {
-    if (!canvas || !canvas->gislib)
+    QString qtype = QString::fromStdString(bitmapType);
+    QString iconPath = builtinBitmapIconPath(qtype);
+    if (iconPath.isEmpty()) {
+        if (logFn) {
+            logFn(ReportCategory::UI, "Bitmap Placed", qtype, geoToString(lat, lon), "",
+                  "Unknown bitmap type", "FAILED", "", "");
+        }
         return;
+    }
 
-    // Set exact geo position
     QPointF geo(lon, lat);
     lastGeoCursor = geo;
 
-    // Place bitmap
-    canvas->onBitmapSelectedAtGeo(
-        QString::fromStdString(bitmapType),
-        geo
-        );
+    QJsonObject shapeJson;
+    shapeJson[QStringLiteral("type")]      = QStringLiteral("bitmap");
+    shapeJson[QStringLiteral("longitude")] = static_cast<double>(lon);
+    shapeJson[QStringLiteral("latitude")]  = static_cast<double>(lat);
+    shapeJson[QStringLiteral("width")]     = 0.5;
+    shapeJson[QStringLiteral("height")]    = 0.5;
+    shapeJson[QStringLiteral("imagePath")] = iconPath;
+    shapeJson[QStringLiteral("rotation")]  = 0.0;
+    shapeJson[QStringLiteral("text")]      = qtype;
+    ShapeApi::instance()->addShape(shapeJson);
 
     // Bounds (treat bitmap as point)
     lastShapeBounds = QRectF();
     expandPointBounds(lastShapeBounds, lat, lon);
 
-    // FORCE AUTO ZOOM (state level)
-    canvas->gislib->fitToBounds(
-        lastShapeBounds.top(),
-        lastShapeBounds.left(),
-        lastShapeBounds.bottom(),
-        lastShapeBounds.right(),
-        -2   // slightly zoomed out
-        );
-
+    if (gisMap) {
+        gisMap->setCenter(lat, lon);
+        gisMap->update();
+    }
 
     // Screenshot
-    QString screenshot = screenshotFn("bitmap");
+    QString screenshot = screenshotFn ? screenshotFn("bitmap") : QString();
 
     if(logFn) {
         logFn(
             ReportCategory::UI,
             "Bitmap Placed",
-            QString::fromStdString(bitmapType),
+            qtype,
             geoToString(lat, lon),
             "Script Placed Bitmap",
             "Bitmap Visible",
@@ -712,55 +920,51 @@ void ScriptEngineGIS::onBitmapSelected(const std::string &bitmapType, float lon,
     }
 }
 
-// Place bitmap image from arbitrary file
 // Get path of built-in bitmap
 std::string ScriptEngineGIS::getBitmapImagePath(const std::string &bitmapType)
 {
-    if (!canvas) return "";
-    QString path = canvas->getBitmapImagePath(QString::fromStdString(bitmapType));
+    QString path = builtinBitmapIconPath(QString::fromStdString(bitmapType));
     return path.toStdString();
 }
-// select bitmap from device
+
+// select bitmap from device (parameter order: latitude, then longitude)
 void ScriptEngineGIS::onBitmapImageSelected(
     const std::string &filePath,
-    float lon,
-    float lat
+    float lat,
+    float lon
     )
 {
-    if (!canvas || !canvas->gislib)
-        return;
-
+    QString qpath = QString::fromStdString(filePath);
     QPointF geo(lon, lat);
     lastGeoCursor = geo;
 
-    // Place bitmap (canvas decides final geo)
-    canvas->onBitmapImageSelectedAtGeo(
-        QString::fromStdString(filePath),
-        geo
-        );
+    QJsonObject shapeJson;
+    shapeJson[QStringLiteral("type")]      = QStringLiteral("bitmap");
+    shapeJson[QStringLiteral("longitude")] = static_cast<double>(lon);
+    shapeJson[QStringLiteral("latitude")]  = static_cast<double>(lat);
+    shapeJson[QStringLiteral("width")]     = 28;
+    shapeJson[QStringLiteral("height")]    = 28;
+    shapeJson[QStringLiteral("imagePath")] = qpath;
+    shapeJson[QStringLiteral("rotation")]  = 0.0;
+    ShapeApi::instance()->addShape(shapeJson);
 
     // TAKE BOUNDS FROM ACTUAL BITMAP POSITION
     lastShapeBounds = QRectF();
-    expandBitmapBoundsFromCanvas(lastShapeBounds);
+    expandBitmapBoundsFrom(lastShapeBounds);
 
-    // FORCE AUTO ZOOM (state level)
-    canvas->gislib->fitToBounds(
-        lastShapeBounds.top(),
-        lastShapeBounds.left(),
-        lastShapeBounds.bottom(),
-        lastShapeBounds.right(),
-        -2   // slightly zoomed out
-        );
-
+    if (gisMap) {
+        gisMap->setCenter(lat, lon);
+        gisMap->update();
+    }
 
     // Screenshot (zoom happens inside screenshotFn)
-    QString screenshot = screenshotFn("user_bitmap");
+    QString screenshot = screenshotFn ? screenshotFn("user_bitmap") : QString();
 
     if(logFn) {
         logFn(
             ReportCategory::UI,
             "Bitmap Placed",
-            QFileInfo(QString::fromStdString(filePath)).fileName(),
+            QFileInfo(qpath).fileName(),
             geoToString(lat, lon),
             "User Image (Script)",
             "Bitmap Visible",
@@ -772,171 +976,252 @@ void ScriptEngineGIS::onBitmapImageSelected(
 }
 
 // GEOJSON
-void ScriptEngineGIS::canvasImportGeoJsonLayer(const std::string &filePath)
+void ScriptEngineGIS::ImportGeoJsonLayer(const std::string &filePath)
 {
-    if (!canvas) return;
+    QString qpath = QString::fromStdString(filePath);
+    registerBuiltInLayerFormats();
 
-    canvas->importGeoJsonLayer(QString::fromStdString(filePath));
+    bool ok = LayerApi::instance()->importLayer(qpath, QStringLiteral("geojson"));
 
     if(logFn) {
         logFn(
             ReportCategory::GIS,
             "GeoJSON Imported",
-            QFileInfo(QString::fromStdString(filePath)).fileName(),
+            QFileInfo(qpath).fileName(),
             "",
-            "Not Rendered",
             "File Import",
-            "Layer Loaded",
-            "SUCCESS",
-            ""   // ✅ screenshotPath (EMPTY for failure)
+            ok ? "Layer Loaded" : "Import Failed",
+            ok ? "SUCCESS" : "FAILED",
+            "",
+            ""
             );
     }
 }
 
-void ScriptEngineGIS::canvasToggleGeoJsonLayer(const std::string &layerName, bool visible)
+void ScriptEngineGIS::ToggleGeoJsonLayer(const std::string &layerName, bool visible)
 {
-    if (!canvas) return;
+    QString qname = QString::fromStdString(layerName);
+    QString layerId = findLayerIdByName(qname);
+    if (layerId.isEmpty()) {
+        if (logFn) {
+            logFn(ReportCategory::GIS, "GeoJSON Layer Toggled", qname, "", "", "Not Found",
+                  "FAILED", "Layer does not exist", "");
+        }
+        return;
+    }
 
-    canvas->onGeoJsonLayerToggled(QString::fromStdString(layerName), visible);
+    LayerApi::instance()->setVisibility(layerId, visible);
 
     if(logFn) {
         logFn(
             ReportCategory::GIS,
             "GeoJSON Layer Toggled",
-            QString::fromStdString(layerName),
+            qname,
             "",
             "Not Rendered",
             visible ? "ON" : "OFF",
             visible ? "Visible" : "Hidden",
             "SUCCESS",
-            ""   // ✅ screenshotPath (EMPTY for failure)
+            ""
             );
     }
 }
 
 // DISTANCE MEASUREMENT
-void ScriptEngineGIS::canvasStartDistanceMeasurement()
+// void ScriptEngineGIS::StartDistanceMeasurement()
+// {
+//     measurementPoints.clear();
+//     lastShapeBounds = QRectF();
+
+//     MeasureApi* api = MeasureApi::instance();
+
+//     if (!api)
+//         return;
+
+//     // Start measurement at API level
+//     api->clearPoints();
+//     api->startMeasuring();
+
+//     // Enable GIS interaction and start map measurement
+//     if (gisMap) {
+//         gisMap->setGisInteractionEnabled(true);
+//         gisMap->startMeasuring();
+//         gisMap->update();
+//     }
+// }
+
+void ScriptEngineGIS::StartDistanceMeasurement()
 {
-    if (!canvas) return;
-
-    canvas->startDistanceMeasurement();
-
-    // ✅ reset measurement session
     measurementPoints.clear();
-
     lastShapeBounds = QRectF();
+
+    MeasureApi* api = MeasureApi::instance();
+
+    qDebug() << "[MEASURE] StartDistanceMeasurement";
+    qDebug() << "[MEASURE] gisMap =" << gisMap;
+    qDebug() << "[MEASURE] api =" << api;
+
+    if (!api)
+        return;
+
+    api->clearPoints();
+    api->startMeasuring();
+
+    qDebug() << "[MEASURE] API measuring =" << api->isMeasuring();
+
+    if (gisMap) {
+        gisMap->setGisInteractionEnabled(true);
+        gisMap->startMeasuring();
+        gisMap->update();
+
+        qDebug() << "[MEASURE] Map measurement started";
+    } else {
+        qDebug() << "[MEASURE] ERROR: gisMap is NULL";
+    }
 }
 
-void ScriptEngineGIS::canvasAddMeasurePoint(double lon, double lat)
+// void ScriptEngineGIS::AddMeasurePoint(double lat, double lon)
+// {
+//     if (!gisMap)
+//         return;
+
+//     lastGeoCursor = QPointF(lon, lat);
+
+//     // Script API = lat, lon
+//     // MeasureApi  = lon, lat
+//     MeasureApi* api = MeasureApi::instance();
+
+//     if (!api)
+//         return;
+
+//     if (!api->isMeasuring()) {
+//         gisMap->setGisInteractionEnabled(true);
+//         gisMap->startMeasuring();
+//     }
+
+//     api->addPoint(lon, lat);
+
+//     // Keep ScriptEngine-side points for report/logging
+//     measurementPoints.push_back(QPointF(lon, lat));
+
+//     updateBounds(lastShapeBounds, lat, lon);
+
+//     gisMap->update();
+// }
+
+void ScriptEngineGIS::AddMeasurePoint(double lat, double lon)
 {
+    qDebug() << "[MEASURE] AddPoint lat =" << lat
+             << "lon =" << lon
+             << "gisMap =" << gisMap;
+
+    if (!gisMap) {
+        qDebug() << "[MEASURE] ERROR: gisMap is NULL";
+        return;
+    }
+
     lastGeoCursor = QPointF(lon, lat);
-    if (!canvas) return;
 
-    canvas->addMeasurePoint(lon, lat);
+    MeasureApi* api = MeasureApi::instance();
 
-    // ✅ collect points for final report
+    if (!api)
+        return;
+
+    if (!api->isMeasuring()) {
+        gisMap->setGisInteractionEnabled(true);
+        gisMap->startMeasuring();
+    }
+
+    api->addPoint(lon, lat);
+
     measurementPoints.push_back(QPointF(lon, lat));
 
     updateBounds(lastShapeBounds, lat, lon);
+
+    gisMap->update();
+
+    qDebug() << "[MEASURE] Point count =" << api->pointCount();
 }
 
-double ScriptEngineGIS::canvasGetLastSegmentDistance() {
-    return canvas ? canvas->getLastSegmentDistance() : 0.0;
-}
-
-double ScriptEngineGIS::canvasGetTotalDistance()
+double ScriptEngineGIS::GetLastSegmentDistance()
 {
-    if (!canvas || measurementPoints.size() < 2) {
-        if(logFn) {
-            logFn(
-                ReportCategory::MEASUREMENT,
-                "Distance Measurement",
-                "Distance Tool",
-                "",
-                "",
-                "Not Rendered",
-                "FAILED",
-                "At least 2 points required",
-                ""   // ✅ screenshotPath (EMPTY for failure)
-                );
-            return 0.0;
-        }
-    }
+    MeasureApi* api = MeasureApi::instance();
 
-    bool geoOk = true;
-    for (const auto& p : measurementPoints) {
-        if (!isLatLonInIndia(p.y(), p.x())) {
-            geoOk = false;
-        }
-    }
+    if (!api)
+        return 0.0;
 
-    double dist = canvas->getTotalDistance();
+    const QVector<double> segments = api->getSegmentMeters();
 
-    // 🔹 Take screenshot (MAP + CANVAS + MEASUREMENT)
-    QString screenshot = screenshotFn("measurement");
+    if (segments.isEmpty())
+        return 0.0;
 
-    if(logFn) {
+    return convertMeasurement(segments.last());
+}
+
+double ScriptEngineGIS::GetTotalDistance()
+{
+    MeasureApi* api = MeasureApi::instance();
+
+    if (!api)
+        return 0.0;
+
+    if (api->pointCount() < 2)
+        return 0.0;
+
+    const double totalMeters = api->getTotalMeters();
+
+    const double dist = convertMeasurement(totalMeters);
+
+    if (logFn) {
         logFn(
             ReportCategory::MEASUREMENT,
             "Distance Measurement",
             "Distance Tool",
             "Auto From Points",
-            QString("Total Points : %1").arg(measurementPoints.size()),
-            QString("Total Distance : %1 %2").arg(dist, 0, 'f', 2).arg(measurementUnit),
-            geoOk ? "SUCCESS" : "FAILED",
+            QString("Total Points : %1").arg(api->pointCount()),
+            QString("Total Distance : %1 %2")
+                .arg(dist, 0, 'f', 2)
+                .arg(measurementUnit),
+            "SUCCESS",
             "",
-            screenshot
+            screenshotFn ? screenshotFn("measurement") : QString()
             );
     }
 
     return dist;
 }
 
-void ScriptEngineGIS::canvasSetMeasurementUnit(const std::string &unit)
+// void ScriptEngineGIS::SetMeasurementUnit(const std::string &unit)
+// {
+//     measurementUnit = QString::fromStdString(unit).toLower();
+// }
+void ScriptEngineGIS::SetMeasurementUnit(const std::string &unit)
 {
-    if (!canvas) return;
+    measurementUnit =
+        QString::fromStdString(unit).trimmed().toLower();
 
-    measurementUnit = QString::fromStdString(unit).toLower();
-    canvas->setMeasurementUnit(measurementUnit);
+    MeasureApi* api = MeasureApi::instance();
+
+    if (api)
+        api->setDisplayUnit(measurementUnit);
 }
 
-
-void ScriptEngineGIS::canvasToggleAirbases()
+void ScriptEngineGIS::ToggleAirbases(bool visible)
 {
-    if (!canvas)
+    AirbaseApi* api = AirbaseApi::instance();
+    if (!api)
         return;
 
-    // Toggle Airbase layer ON / OFF
-    canvas->onPresetLayerSelected("Airbase");
-    airbaseLayerVisible = !airbaseLayerVisible;
+    api->initialize();
 
-    // Let map + icons render at CURRENT zoom
-    canvas->update();
-    if (canvas->gislib)
-        canvas->gislib->update();
+    if (api->isVisible() != visible)
+        api->toggleVisibility();
 
-    QCoreApplication::processEvents();
-    QThread::msleep(200);
-    QCoreApplication::processEvents();
+    airbaseLayerVisible = api->isVisible();
 
-    // DIRECT SCREENSHOT (NO ZOOM CHANGE)
-    QWidget* container = canvas->parentWidget();
-    if (!container)
-        return;
+    if (gisMap)
+        gisMap->update();
 
-    QPixmap pixmap = container->grab();
-
-    QString dir = QDir::tempPath() + "/gis_reports";
-    QDir().mkpath(dir);
-
-    QString screenshot =
-        dir + "/" +
-        QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz") +
-        "_airbases.png";
-
-    pixmap.save(screenshot, "PNG");
-
-    // CLEAN LOG (NO LOCATION / NO COUNT)
     if(logFn) {
         logFn(
             ReportCategory::UI,
@@ -944,24 +1229,21 @@ void ScriptEngineGIS::canvasToggleAirbases()
             "Airbase",
             "",
             "",
-            airbaseLayerVisible ? "Airbases Visible"
-                                : "Airbases Hidden",
+            airbaseLayerVisible ? "Airbases Visible" : "Airbases Hidden",
             "SUCCESS",
             "",
-            screenshot
+            ""
             );
     }
 }
 
-
-void ScriptEngineGIS::canvasSwitchMap(const std::string& mapName)
+void ScriptEngineGIS::SwitchMap(const std::string& mapName)
 {
-    if (!gis) return;
-
     QString layer = QString::fromStdString(mapName).toLower();
 
-    // Switch base layer
-    gis->setLayers(QStringList() << layer);
+    bool ok = MapApi::instance()->setActiveTileSource(layer);
+    if (gisMap)
+        gisMap->reloadTiles();
 
     if (logFn) {
         logFn(
@@ -971,17 +1253,15 @@ void ScriptEngineGIS::canvasSwitchMap(const std::string& mapName)
             "",
             "",
             layer,
-            "SUCCESS",
+            ok ? "SUCCESS" : "FAILED",
             "",
-            screenshotFn ? screenshotFn("map_switch_" + layer) : ""
+            ""
             );
     }
 }
 
 void ScriptEngineGIS::switchCoordinateSystem(const std::string& system)
 {
-    if (!gis) return;
-
     QString mode = QString::fromStdString(system).toLower();
     QString crsId;
 
@@ -999,9 +1279,10 @@ void ScriptEngineGIS::switchCoordinateSystem(const std::string& system)
         return;
     }
 
-    gis->setCoordinateSystem(crsId);
+    // Coordinate system is a MapWidget display concern (not part of MapApi).
+    if (gisMap)
+        gisMap->setCoordSystem(crsId);
 
-    // Optional logging + screenshot (same pattern as map switch)
     if (logFn) {
         logFn(
             ReportCategory::GIS,
@@ -1012,123 +1293,238 @@ void ScriptEngineGIS::switchCoordinateSystem(const std::string& system)
             crsId,
             "SUCCESS",
             "",
-            screenshotFn ? screenshotFn("coord_" + crsId) : ""
+            ""
             );
     }
 }
 
+// Move a shape to a new geo location (parameter order: latitude, then longitude)
+// void ScriptEngineGIS::moveShape(const std::string& shapeName,
+//                                 double lat, double lon)
+// {
+//     QString name = QString::fromStdString(shapeName);
+//     QString id = findShapeIdByName(name);
+//     if (id.isEmpty())
+//         id = name; // allow a raw shape id to be passed directly
+
+//     if (!ShapeApi::instance()->moveShape(id, lon, lat)) {
+//         Console::error("Shape not found: " + shapeName);
+//         return;
+//     }
+
+//     if (gisMap)
+//         gisMap->update();
+// }
 void ScriptEngineGIS::moveShape(const std::string& shapeName,
-                                double lon, double lat)
+                                double lat,
+                                double lon)
 {
-    if (!canvas) return;
+    QString name = QString::fromStdString(shapeName);
 
-    canvas->moveShapeByName(shapeName, QPointF(lon, lat));
-}
+    QString id;
 
-// rotate shape by angle
-void ScriptEngineGIS::rotateShape(const std::string& shapeName, double angleDeg)
-{
-    if (!canvas) {
-        Console::error("Canvas not available");
+    // --------------------------------------------------------
+    // 1. First use the ID stored when the shape was created
+    // --------------------------------------------------------
+    auto it = shapeNameToId.find(name);
+
+    if (it != shapeNameToId.end())
+    {
+        id = it.value();
+    }
+
+    // --------------------------------------------------------
+    // 2. Fallback: search ShapeApi by display name
+    // --------------------------------------------------------
+    if (id.isEmpty())
+    {
+        id = findShapeIdByName(name);
+    }
+
+    // --------------------------------------------------------
+    // 3. Allow raw ShapeApi ID also
+    // --------------------------------------------------------
+    if (id.isEmpty())
+    {
+        id = name;
+    }
+
+    // --------------------------------------------------------
+    // 4. Move
+    // ShapeApi expects: longitude, latitude
+    // --------------------------------------------------------
+    if (!ShapeApi::instance()->moveShape(id, lon, lat))
+    {
+        Console::error(
+            QString("Shape not found or move failed: %1")
+                .arg(name)
+                .toStdString()
+            );
         return;
     }
 
-    for (auto &entry : canvas->tempMeshes) {
-        if (entry.name.toStdString() == shapeName) {
+    // --------------------------------------------------------
+    // 5. Update script-side state
+    // --------------------------------------------------------
+    lastGeoCursor = QPointF(lon, lat);
 
-            // ✅ SAVE STATE FIRST
-            canvas->getShapesFeature()->saveShapeState(entry.name, &entry);
+    // --------------------------------------------------------
+    // 6. Refresh map
+    // --------------------------------------------------------
+    if (gisMap)
+        gisMap->update();
 
-            // if (!entry.rotation)
-            //     return;
+}
+// rotate shape by angle
+// void ScriptEngineGIS::rotateShape(const std::string& shapeName, double angleDeg)
+// {
+//     QString name = QString::fromStdString(shapeName);
+//     QString id = findShapeIdByName(name);
+//     if (id.isEmpty())
+//         id = name;
 
-            // degrees → radians
-            double rad = qDegreesToRadians(angleDeg);
+//     QJsonObject patch;
+//     patch[QStringLiteral("rotation")] = angleDeg;
 
-            entry.rotation->setZ(rad);
+//     if (!ShapeApi::instance()->updateShape(id, patch)) {
+//         Console::error("Shape not found: " + shapeName);
+//         return;
+//     }
 
-            canvas->Refresh();
-            return;
-        }
+//     if (gisMap)
+//         gisMap->update();
+// }
+
+void ScriptEngineGIS::rotateShape(
+    const std::string& shapeName,
+    double angleDeg)
+{
+    QString name = QString::fromStdString(shapeName);
+
+    QString id;
+
+    // First use stored ID
+    auto it = shapeNameToId.find(name);
+
+    if (it != shapeNameToId.end())
+    {
+        id = it.value();
     }
 
-    Console::error("Shape not found: " + shapeName);
-}
+    // Fallback: search by display name
+    if (id.isEmpty())
+    {
+        id = findShapeIdByName(name);
+    }
 
+    // Allow raw ID
+    if (id.isEmpty())
+    {
+        id = name;
+    }
+
+    QJsonObject patch;
+    patch[QStringLiteral("rotation")] = angleDeg;
+
+    if (!ShapeApi::instance()->updateShape(id, patch))
+    {
+        Console::error(
+            QString("Shape rotation failed: %1")
+                .arg(name)
+                .toStdString()
+            );
+        return;
+    }
+
+    if (gisMap)
+        gisMap->update();
+}
 
 void ScriptEngineGIS::showShapeHistory(const std::string& shapeName)
 {
-    if (!canvas || !canvas->getShapesFeature()) return;
+    QString name = QString::fromStdString(shapeName);
+    QString id = findShapeIdByName(name);
+    if (id.isEmpty())
+        id = name;
 
-    canvas->getShapesFeature()->showHistoryPreview(
-        QString::fromStdString(shapeName)
-        );
+    ShapeHistoryApi::instance()->startPreview(id);
+
+    if (gisMap)
+        gisMap->update();
 }
 
 void ScriptEngineGIS::hideShapeHistory()
 {
-    if (!canvas || !canvas->getShapesFeature()) return;
+    ShapeHistoryApi::instance()->hidePreview();
 
-    canvas->getShapesFeature()->hideHistoryPreview();
+    if (gisMap)
+        gisMap->update();
 }
 
 void ScriptEngineGIS::restoreShapeHistory(const std::string& shapeName)
 {
-    if (!canvas || !canvas->getShapesFeature()) return;
+    QString name = QString::fromStdString(shapeName);
+    QString id = findShapeIdByName(name);
+    if (id.isEmpty())
+        id = name;
 
-    for (auto& entry : canvas->tempMeshes) {
-        if (entry.name.toStdString() == shapeName) {
-            canvas->getShapesFeature()->restorePreviousState(
-                entry.name,
-                &entry
-                );
-            canvas->Refresh();
-            return;
-        }
-    }
+    ShapeHistoryApi::instance()->restoreHistory(id);
 
-    Console::error("Shape not found for history restore: " + shapeName);
+    if (gisMap)
+        gisMap->update();
 }
 
-void ScriptEngineGIS::addText(const std::string& text, double lon, double lat)
+// Add text at a geo location (parameter order: latitude, then longitude)
+void ScriptEngineGIS::addText(const std::string& text, double lat, double lon)
 {
-    if (!canvas) return;
-
+    QString qtext = QString::fromStdString(text);
     QPointF geo(lon, lat);
     lastGeoCursor = geo;
 
-    canvas->addTextAtGeo(QString::fromStdString(text), geo);
+    ShapeApi::instance()->addText(lon, lat, qtext);
+
+    if (gisMap)
+        gisMap->update();
 }
 
 void ScriptEngineGIS::addShapeProperties(const std::string& shapeName,int r, int g, int b,int borderThickness)
 {
-    if (!canvas) return;
+    QString name = QString::fromStdString(shapeName);
+    QString id = findShapeIdByName(name);
+    if (id.isEmpty())
+        id = name;
 
-    canvas->updateShapeProperties(
-        QString::fromStdString(shapeName),
-        QColor(r, g, b),
-        borderThickness
-        );
+    ShapeApi::instance()->updateShapeColor(id, QColor(r, g, b));
+    ShapeApi::instance()->updateShapeWidth(id, borderThickness);
+
+    if (gisMap)
+        gisMap->update();
 }
 
 void ScriptEngineGIS::deleteshape(const std::string& id)
 {
-    if (!canvas) return;
-    canvas->deleteObjectById(QString::fromStdString(id));
+    QString qid = QString::fromStdString(id);
+    QString realId = findShapeIdByName(qid);
+    if (realId.isEmpty())
+        realId = qid; // allow a raw shape id to be passed directly
+
+    ShapeApi::instance()->deleteShape(realId);
+
+    if (gisMap)
+        gisMap->update();
 }
 
 
 
 ScriptEngineGIS::ScriptEngineGIS() {
+    gisMap = nullptr;
+    registerBuiltInLayerFormats();
 
-    canvas = nullptr;
-    gis = nullptr;
-    // canvas->getShapesFeature() = nullptr;
+    loadCityDatabase();
 }
 
 
 ScriptEngineGIS::~ScriptEngineGIS()
 {
-    delete canvas->getShapesFeature();
-    //canvas->getShapesFeature() = nullptr;
+    // gisMap is injected (owned by RuntimeEditor / MapWith), not owned here.
 }

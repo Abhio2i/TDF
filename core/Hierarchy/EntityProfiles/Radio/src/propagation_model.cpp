@@ -809,6 +809,20 @@ PropagationModelConfig PropagationModelImpl::getConfig() const { // function sta
     return config_; // return value
 } // block end
 
+// Path loss for a passive receiver; mirrors the path-loss part of evaluate_link()
+// (computed loss, then the fixed override) without polarization/gains/noise.
+double PropagationModelImpl::pathLossDb(const Position& tx_pos, const Position& rx_pos,
+                                        const RadioConfig& tx_config,
+                                        const RadioConfig& rx_config) const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    PropagationModelConfig link_config = resolve_propagation_config(tx_config, rx_config, config_);
+    double loss = compute_path_loss(tx_pos, rx_pos, tx_config, rx_config, link_config).total_loss_db;
+    if (link_config.enable_fixed_path_loss_override && tx_config.fixed_path_loss_db > 0.0) {
+        loss = tx_config.fixed_path_loss_db;
+    }
+    return loss;
+}
+
 // Transmit path: evaluate link budget from sender to every other radio and
 // deliver payloads to those that pass all checks.
 void PropagationModelImpl::transmit(Radiolib* sender, const std::vector<std::byte>& data,

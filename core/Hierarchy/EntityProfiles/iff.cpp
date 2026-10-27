@@ -38,8 +38,8 @@ IFF::IFF(Hierarchy* h) : Entity(h) {
  * @brief Emits signals to notify the hierarchy that this IFF has been added.
  */
 void IFF::spawn() {
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-    emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
+    // Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    emit root->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
 }
 
 /**
@@ -48,6 +48,10 @@ void IFF::spawn() {
  */
 std::vector<std::string> IFF::getSupportedComponents() {
     return std::vector<std::string>{};
+}
+
+void IFF::addSupportedcomponent(){
+
 }
 
 /**
@@ -292,8 +296,8 @@ void IFF::fromJson(const QJsonObject& obj) {
 void IFF::scan(){
     if(!Active)return;
     if(!parentEntity) return;
-    Transform* source = (root->Platforms)[parentEntity->ID]->transform;
-    if(!source) return;
+    Transform& source = (root->Platforms)[parentEntity->ID]->transform;
+    // if(!source) return;
 
     for (auto& [key, entity] : root->Iffs)
     {
@@ -301,9 +305,9 @@ void IFF::scan(){
         auto it = root->Platforms.find(entity->parentEntity->ID);
         if (it != root->Platforms.end()) {
             Platform* platform = it->second;
-            if(platform->ID == parentEntity->ID || !platform || !platform->transform) continue;
-            QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
-            float metredis = distanceBetween(source->getLatitude(),source->getLongitude(),platform->transform->getLatitude(),platform->transform->getLongitude())/1000;
+            if(platform->ID == parentEntity->ID || !platform /*|| !platform->transform*/) continue;
+            QVector3D localPos = source.inverseTransformPoint(platform->transform.matrix.translation());
+            float metredis = distanceBetween(source.getLatitude(),source.getLongitude(),platform->transform.getLatitude(),platform->transform.getLongitude())/1000;
 
             // horizontal angle (Y axis) : x vs z
             float yAngle = std::atan2(localPos.x(), localPos.z()) * RAD2DEG;
@@ -317,6 +321,8 @@ void IFF::scan(){
                     target.angle = yAngle;
                     target.ally = entity->code == code;
                     target.radius = metredis;
+                    target.code = std::to_string(entity->code);
+                    target.status = target.ally ? 1 : 0;
                     targets.append(target);
                 }else{
                     for (int i = 0; i < targets.size(); ++i) {
@@ -324,6 +330,8 @@ void IFF::scan(){
                             targets[i].angle = yAngle;
                             targets[i].ally = entity->code == code;
                             targets[i].radius = metredis;
+                            targets[i].code = std::to_string(entity->code);
+                            targets[i].status = targets[i].ally ? 1 : 0;
                             break;
                         }
                     }
@@ -447,13 +455,13 @@ void IFF::interrogateTargets(Transform* source)
         return;
     }
 
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-    if (!parent) {
-        return;
-    }
+    // Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    // if (!parent) {
+    //     return;
+    // }
 
     Platform* sourcePlatform = nullptr;
-    for (auto& [key, entity] : parent->Platforms) {
+    for (auto& [key, entity] : root->Platforms) {
         if (Platform* plat = entity) {
             for (IFF* iff : plat->iffList) {
                 if (iff == this) {
@@ -473,13 +481,13 @@ void IFF::interrogateTargets(Transform* source)
     // ================================
     for (int i = iffTargets.size() - 1; i >= 0; --i) {
         IFFTarget &t = iffTargets[i];
-        if (!t.entity || !t.entity->transform || !t.entity->transform->matrix) {
+        if (!t.entity /*|| !t.entity->transform*/ /*|| !t.entity->transform.matrix*/) {
             localIffSeen.erase(t.responderId);
             iffTargets.removeAt(i);
             continue;
         }
 
-        QVector3D localPos = source->inverseTransformPoint(t.entity->transform->matrix->translation());
+        QVector3D localPos = source->inverseTransformPoint(t.entity->transform.matrix.translation());
         float dist = localPos.length();
 
         if (dist > range_m) {
@@ -491,20 +499,20 @@ void IFF::interrogateTargets(Transform* source)
     // ======================================
     //   MAIN INTERROGATION LOOP
     // ======================================
-    for (auto& [key, entity] : parent->Platforms) {
+    for (auto& [key, entity] : root->Platforms) {
         Platform* platform = entity;
         if (!platform || platform == sourcePlatform || platform->iffList.empty()) continue;
-        if (!platform->transform || !platform->transform->matrix) continue;
+        // if (/*!platform->transform || *//*!platform->transform.matrix*/) continue;
         bool anyTransponderOn = false;
         for (IFF* other : platform->iffList) {
             if (other && other->transponder) { anyTransponderOn = true; break; }
         }
         if (!anyTransponderOn) continue;
-        QVector3D localPos = source->inverseTransformPoint(platform->transform->matrix->translation());
+        QVector3D localPos = source->inverseTransformPoint(platform->transform.matrix.translation());
         float distance = localPos.length();
         float metredis = distanceBetween(
                              source->translation().x(), source->translation().z(),
-                             platform->transform->matrix->translation().x(), platform->transform->matrix->translation().z()
+                             platform->transform.matrix.translation().x(), platform->transform.matrix.translation().z()
                              ) / 1000;
 
         if (distance > range_m)

@@ -132,6 +132,11 @@ public:
     // Check if entity is locally owned (sent by us)
     bool isLocalEntity(const std::string& engineID) const;
     bool isLocalEntity(const DISEntityID& disID) const;
+    // Take ownership of a remote entity — mark as local
+    // Called when Transfer Ownership PDU accepted
+    // Entity keeps its original DIS ID — only isLocal flag changes
+    void takeOwnership(const std::string& engineID);
+    void giveUpOwnership(const std::string& engineID);
 bool isOwnApplication(uint16_t site, uint16_t app) const;
     // ── Bulk operations ───────────────────────────────────────────────────────
 

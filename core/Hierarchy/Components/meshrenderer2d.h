@@ -23,6 +23,7 @@
 #define MESHRENDERER2D_H
 
 #include "./component.h"
+#include "core/Hierarchy/ECS/Struct/mesh_component.h"
 #include <QObject>
 #include <core/Hierarchy/Components/mesh.h>
 #include <QJsonObject>
@@ -40,6 +41,7 @@ class MeshRenderer2D : public QObject, public Component
     Q_OBJECT
 public:
     MeshRenderer2D();
+    ~MeshRenderer2D();
     ComponentType Typo() const override { return ComponentType::MeshRenderer2D; }
 
     // =========================================================================
@@ -51,11 +53,14 @@ public:
     std::string* Texture;           //!< Path to texture image (if any)
     std::string* Model3d;           //!< Path to 3d Model (if any)
 
+    ECS::SpritePath& getSpritePath() const;
+
     // =========================================================================
     // SECTION: Color Properties
     // DESCRIPTION: Color overrides for mesh rendering.
     // =========================================================================
     QColor* color;                          //!< Primary color (raw pointer)
+    float scale = 1.0f;
     std::shared_ptr<QColor> color2;         //!< Secondary color (shared ownership)
 
     // =========================================================================
@@ -65,6 +70,16 @@ public:
     QJsonObject AdditionalParameters;            //!< User-defined key-value parameters
     std::vector<Mesh*> Meshes;              //!< Collection of meshes to render
 
+    void init(Entity* Entity) override;
+    void Awake() override;
+    void Start() override;
+    // =========================================================================
+    // SECTION: Sprite Update
+    // DESCRIPTION: Updates both the stored Sprite path string and the ECS
+    //              SpritePath component actually consumed by the renderer.
+    //              Direct assignment to *Sprite alone does NOT update rendering.
+    // =========================================================================
+    void setSprite(const std::string& path);
     // Component interface overrides
     void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QJsonObject data3 = QJsonObject()) override;
     void removeSubComponent(std::string ID) override;

@@ -53,7 +53,7 @@ public:
          MissionEditor,
         RuntimeEditor,    // For runtime editing applications
         DatabaseEditor,   // For database editing applications
-         LibraryData
+        LibraryData
     };
 
     // %%% Singleton Access Method %%%

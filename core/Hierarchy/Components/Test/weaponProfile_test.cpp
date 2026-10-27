@@ -43,7 +43,7 @@ if ((val1) == (val2)) { \
 void test_WeaponProfile_initialization() {
     std::cout << "\n--- Running WeaponProfile Initialization Tests ---" << std::endl;
     Hierarchy* h = new Hierarchy();
-    WeaponProfile* wp = new WeaponProfile(h);
+    WeaponProfile* wp = new WeaponProfile();
 
     ASSERT_NEQ(wp, nullptr, "WeaponProfile object should be created");
     ASSERT_TRUE(wp->Active, "WeaponProfile should be active by default");
@@ -57,7 +57,7 @@ void test_WeaponProfile_initialization() {
 void test_WeaponProfile_Subcomponent_Operations() {
     std::cout << "\n--- Running WeaponProfile Subcomponent Tests ---" << std::endl;
     Hierarchy* h = new Hierarchy();
-    WeaponProfile* wp = new WeaponProfile(h);
+    WeaponProfile* wp = new WeaponProfile();
 
     // 1. Test addSubComponent with different types
     wp->addSubComponent("Main_Missile", "Missile");
@@ -90,7 +90,7 @@ void test_WeaponProfile_Subcomponent_Operations() {
 void test_WeaponProfile_JSON_Logic() {
     std::cout << "\n--- Running WeaponProfile JSON Tests ---" << std::endl;
     Hierarchy* h = new Hierarchy();
-    WeaponProfile* wp = new WeaponProfile(h);
+    WeaponProfile* wp = new WeaponProfile();
 
     wp->addSubComponent("Rocket_Alpha", "Rocket");
     wp->addSubComponent("Artillery_Beta", "Artillery");
@@ -102,7 +102,7 @@ void test_WeaponProfile_JSON_Logic() {
     ASSERT_EQ(weaponsObj.size(), 2, "JSON should contain data for 2 weapons");
 
     // Test fromJson
-    WeaponProfile* wp2 = new WeaponProfile(h);
+    WeaponProfile* wp2 = new WeaponProfile();
     try {
         wp2->fromJson(root);
         ASSERT_EQ(wp2->weapons->size(), 2, "fromJson should restore 2 weapons from JSON");
@@ -125,7 +125,7 @@ void test_WeaponProfile_JSON_Logic() {
 void test_WeaponProfile_Edge_Cases() {
     std::cout << "\n--- Running WeaponProfile Edge Case Tests ---" << std::endl;
     Hierarchy* h = new Hierarchy();
-    WeaponProfile* wp = new WeaponProfile(h);
+    WeaponProfile* wp = new WeaponProfile();
 
     // Test adding unknown type (should fall back to default logic)
     wp->addSubComponent("Unknown_Thing", "NonExistentType");

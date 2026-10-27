@@ -10,7 +10,6 @@
 #include "../core/Hierarchy/hierarchy.h"
 #include "../core/Hierarchy/profilecategaory.h"
 
-
 #define M_PI 3.14159265358979323846
 const float EARTH_RADIUS_METERS = 6371000.0f;
 

@@ -67,6 +67,10 @@ void CustomResizableOverlayDock::setWidget(QWidget *widget)
 // ─── Mouse Press ─────────────────────────────────────────────────────────────
 void CustomResizableOverlayDock::mousePressEvent(QMouseEvent *event)
 {
+    if (!m_customResizeEnabled) {
+        QDockWidget::mousePressEvent(event);
+        return;
+    }
     if (event->button() == Qt::LeftButton) {
         resizeEdge = getResizeEdge(event->pos());
         if (resizeEdge != Qt::Edges()) {
@@ -85,6 +89,10 @@ void CustomResizableOverlayDock::mousePressEvent(QMouseEvent *event)
 // ─── Mouse Move ──────────────────────────────────────────────────────────────
 void CustomResizableOverlayDock::mouseMoveEvent(QMouseEvent *event)
 {
+    if (!m_customResizeEnabled) {
+        QDockWidget::mouseMoveEvent(event);
+        return;
+    }
     if (resizing) {
         QRect rect = geometry();
         QPoint globalPos  = event->globalPos();
@@ -99,7 +107,6 @@ void CustomResizableOverlayDock::mouseMoveEvent(QMouseEvent *event)
         } else if (resizeEdge.testFlag(Qt::BottomEdge)) {
             rect.setBottom(posInParent.y());
         }
-
         if (resizeEdge.testFlag(Qt::LeftEdge)) {
             int oldRight = rect.right();
             int newLeft  = posInParent.x();
@@ -121,6 +128,7 @@ void CustomResizableOverlayDock::mouseMoveEvent(QMouseEvent *event)
         event->accept();
     }
 }
+
 // ─── Mouse Release ───────────────────────────────────────────────────────────
 void CustomResizableOverlayDock::mouseReleaseEvent(QMouseEvent *event)
 {
@@ -137,9 +145,10 @@ void CustomResizableOverlayDock::mouseReleaseEvent(QMouseEvent *event)
 // ─── Edge Detection ──────────────────────────────────────────────────────────
 Qt::Edges CustomResizableOverlayDock::getResizeEdge(const QPoint &pos) const
 {
+    if (!m_customResizeEnabled)
+        return Qt::Edges();
     Qt::Edges edges;
     QRect r = rect();
-
     if (pos.x() <= resizeMargin)                  edges |= Qt::LeftEdge;
     if (pos.x() >= r.width()  - resizeMargin - 1) edges |= Qt::RightEdge;
     if (pos.y() <= resizeMargin)                  edges |= Qt::TopEdge;
@@ -150,6 +159,20 @@ Qt::Edges CustomResizableOverlayDock::getResizeEdge(const QPoint &pos) const
 // ─── Cursor Update ───────────────────────────────────────────────────────────
 void CustomResizableOverlayDock::updateCursor(const QPoint &pos)
 {
+    if (!m_customResizeEnabled) {
+        unsetCursor();
+        if (QWidget *tb = titleBarWidget()) {
+            tb->unsetCursor();
+            for (QWidget *child : tb->findChildren<QWidget*>())
+                child->unsetCursor();
+        }
+        if (QWidget *w = widget()) {
+            w->unsetCursor();
+            for (QWidget *child : w->findChildren<QWidget*>())
+                child->unsetCursor();
+        }
+        return;
+    }
     Qt::Edges edge = getResizeEdge(pos);
     Qt::CursorShape shape = Qt::ArrowCursor;
     if (edge.testFlag(Qt::LeftEdge) || edge.testFlag(Qt::RightEdge))
@@ -172,6 +195,9 @@ void CustomResizableOverlayDock::updateCursor(const QPoint &pos)
 // ─── Event Filter ────────────────────────────────────────────────────────────
 bool CustomResizableOverlayDock::eventFilter(QObject *watched, QEvent *event)
 {
+    if (!m_customResizeEnabled)
+        return QObject::eventFilter(watched, event);
+
     if (event->type() == QEvent::MouseMove || event->type() == QEvent::HoverMove) {
         QPoint localPos = this->mapFromGlobal(QCursor::pos());
         if (this->rect().contains(localPos)) {
@@ -342,4 +368,18 @@ void CustomResizableOverlayDock::setTitleStripe(bool enabled, const QColor &colo
     // Layout ke bilkul start mein insert karo
     layout->insertWidget(0, stripe);
     layout->setContentsMargins(0, 0, 4, 0);
+}
+void CustomResizableOverlayDock::setCustomResizeEnabled(bool enabled)
+{
+    m_customResizeEnabled = enabled;
+    resizing   = false;
+    resizeEdge = Qt::Edges();
+
+    if (!enabled) {
+        for (QObject *child : children()) {
+            if (qstrcmp(child->metaObject()->className(), "QWidgetResizeHandler") == 0)
+                removeEventFilter(child);
+        }
+    }
+    updateCursor(QPoint(-1, -1));
 }

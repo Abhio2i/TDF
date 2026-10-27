@@ -5,6 +5,7 @@
 
 #include "specialzone.h"
 
+#include "core/Hierarchy/ECS/Struct/Meta_Data_Component.h"
 #include "core/Hierarchy/EntityProfiles/radio.h"
 #include "qjsonarray.h"
 #include "core/Hierarchy/Utils/entityutils.h"
@@ -18,16 +19,33 @@
  * @brief Constructs a SpecialZone entity.
  * @param h Pointer to the parent Hierarchy.
  */
-Specialzone::Specialzone(Hierarchy* h) : Entity(h) {
+Specialzone::Specialzone(Hierarchy* h) : Entity(h),collider() {
     type = Constants::EntityType::SpecialZone;
+    if(root){
+        auto& data = root->world.AddComponent<ECS::Entity_Data>(ecsID);
+        data.active = true;
+        data.destroy = false;
+    }
+}
+
+Specialzone::~Specialzone(){
+    std::vector<std::string>supportedComponents =  Specialzone::getSupportedComponents();
+    for (const std::string &component : supportedComponents) {
+        removeComponent(component);
+    }
+    if(root){
+        auto* data = root->world.GetComponent<ECS::Entity_Data>(ecsID);
+        data->active = false;
+        data->destroy = true;
+    }
 }
 
 /**
  * @brief Emits signals to notify the hierarchy that this zone has been added.
  */
 void Specialzone::spawn() {
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-    emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
+    // Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    emit root->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
 }
 
 /**
@@ -40,24 +58,24 @@ void Specialzone::spawn() {
 void Specialzone::Update(float delta){
     time += delta;
     if(root){
-        if(!transform || !collider)return;
+        // if(!transform || !collider)return;
         for (auto& [key, entity] : root->Platforms){
-            if(!entity || !entity->Active || entity->isDestroy || !entity->transform) continue;
-            float distance = transform->matrix->translation().distanceToPoint(entity->transform->matrix->translation())*1000;
-            if(entity->dynamicModel){
-                float alt = entity->dynamicModel->currentAltitude * 1; // KMtoFT factor not applied
-                if(distance < collider->CollideRadius && alt > (MinAltitude-100) && alt < MaxAltitude){
-                    entity->dynamicModel->windAngle = direction;
-                    entity->dynamicModel->windDierction = getDynamicWind(direction,  time);
-                    entity->dynamicModel->windSpeed = Speed;
+            if(!entity || !entity->Active || entity->isDestroy /*|| !entity->transform*/) continue;
+            float distance = transform.matrix.translation().distanceToPoint(entity->transform.matrix.translation())*1000;
+            if(/*entity->dynamicModel*/true){
+                float alt = entity->dynamicModel.currentAltitude * 1; // KMtoFT factor not applied
+                if(distance < collider.CollideRadius && alt > (MinAltitude-100) && alt < MaxAltitude){
+                    entity->dynamicModel.windAngle = direction;
+                    entity->dynamicModel.windDierction = getDynamicWind(direction,  time);
+                    entity->dynamicModel.windSpeed = Speed/3.6f;
                 }else{
-                    entity->dynamicModel->windSpeed = 0;
+                    entity->dynamicModel.windSpeed = 0;
                 }
             }
 
-            if(entity->radios && entity->radios->radios->size() > 0){
-                if(distance < collider->CollideRadius){
-                    for (auto const& pair : *entity->radios->radios) {
+            if(/*entity->radios &&*/ entity->radios.radios.size() > 0){
+                if(distance < collider.CollideRadius){
+                    for (auto const& pair : entity->radios.radios) {
                         Radio* r = pair.second;
                         if (r && r->lib_radio) {
                             radio::RadioConfig cfg = r->lib_radio->getConfiguration();
@@ -72,9 +90,9 @@ void Specialzone::Update(float delta){
             }
 
             // By Himanshu For EO/IR Sensor
-            if(entity->sensors && entity->sensors->sensors->size() > 0){
-                if(distance < collider->CollideRadius){
-                    for(auto const& pair : *entity->sensors->sensors){
+            if(/*entity->sensors && */entity->sensors.sensors.size() > 0){
+                if(distance < collider.CollideRadius){
+                    for(auto const& pair : entity->sensors.sensors){
                         EOSensor* radar = dynamic_cast<EOSensor*>(pair.second);
                         if(!radar) continue;
 
@@ -92,7 +110,7 @@ void Specialzone::Update(float delta){
 
                     }
                 }else{
-                    for(auto const& pair : *entity->sensors->sensors){
+                    for(auto const& pair : entity->sensors.sensors){
                         EOSensor* radar = dynamic_cast<EOSensor*>(pair.second);
                         if(!radar) continue;
                         radar->setEnvironmentToDefault();
@@ -105,14 +123,14 @@ void Specialzone::Update(float delta){
             // AESARadar sensor on this platform so propagation loss and
             // display range reflect the actual zone conditions.
             // ----------------------------------------------------------------
-            if(entity->sensors && entity->sensors->sensors->size() > 0){
-                for(auto const& pair : *entity->sensors->sensors){
+            if(/*entity->sensors &&*/ entity->sensors.sensors.size() > 0){
+                for(auto const& pair : entity->sensors.sensors){
                     AESARadar* radar = dynamic_cast<AESARadar*>(pair.second);
                     if(!radar) continue;
 
                     aesa::RadarConfig cfg = radar->getRadarConfig();
 
-                    if(distance < collider->CollideRadius){
+                    if(distance < collider.CollideRadius){
                         // Platform is inside the zone — apply zone atmosphere.
                         cfg.atmosphere.temperature_C   = Temprature;
                         cfg.atmosphere.humidity_pct    = humidity;
@@ -183,6 +201,14 @@ std::vector<std::string> Specialzone::getSupportedComponents() {
     return supported;
 }
 
+void Specialzone::addSupportedcomponent(){
+    for (const auto& item : getSupportedComponents()) {
+        addComponent(item.c_str());
+        // 'item' har ek string ko represent karega
+        qDebug() << item.c_str(); // Ya std::cout << item << std::endl;
+    }
+}
+
 /**
  * @brief Serializes the SpecialZone entity to JSON.
  * @return QJsonObject containing zone parameters and components.
@@ -237,8 +263,8 @@ QJsonObject Specialzone::toJson() const {
     radarObj["solar irradiance"]      = toParm(solarIrradiance,     "W/m^2",  0,      1100   ); // 800
     obj["radar"] = radarObj;
 
-    if (transform) obj["transform"] = transform->toJson();
-    if (meshRenderer2d) obj["bitmap"] = meshRenderer2d->toJson();
+    /*if (transform)*/ obj["transform"] = transform.toJson();
+    /*if (meshRenderer2d)*/ obj["bitmap"] = meshRenderer2d.toJson();
 
     QJsonObject entityObj;
     entityObj["type"] = "option";
@@ -257,8 +283,13 @@ QJsonObject Specialzone::toJson() const {
  * @param obj JSON object containing zone data.
  */
 void Specialzone::fromJson(const QJsonObject& obj) {
-    if (obj.contains("active"))
+    if (obj.contains("active")){
         Active = obj["active"].toBool();
+        if(root){
+            auto* data = root->world.GetComponent<ECS::Entity_Data>(ecsID);
+            data->active = Active;
+        }
+    }
     if (obj.contains("name"))
         Name = obj["name"].toString().toStdString();
     if (obj.contains("id"))
@@ -328,13 +359,13 @@ void Specialzone::fromJson(const QJsonObject& obj) {
     }
 
     if (obj.contains("transform") && obj["transform"].isObject()) {
-        if (!transform) addComponent("transform");
-        transform->fromJson(obj["transform"].toObject());
+        // /*if (!transform) */addComponent("transform");
+        transform.fromJson(obj["transform"].toObject());
     }
 
     if (obj.contains("bitmap") && obj["bitmap"].isObject()) {
-        if (!meshRenderer2d) addComponent("bitmap");
-        meshRenderer2d->fromJson(obj["bitmap"].toObject());
+        // /*if (!meshRenderer2d)*/ addComponent("bitmap");
+        meshRenderer2d.fromJson(obj["bitmap"].toObject());
     }
 }
 
@@ -343,42 +374,45 @@ void Specialzone::fromJson(const QJsonObject& obj) {
  * @param name Component name ("transform", "collider", or "bitmap").
  */
 void Specialzone::addComponent(std::string name) {
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    // Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (name == "transform") {
-        if (!transform){
-            transform = new Transform();
-            transform->parentEntity = this;
-            parent->Components.insert({transform->ID, transform});
-            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(transform->ID), "transform");
-        }
+        transform.init(this);
+            root->Components.insert({transform.ID, &transform});
+            emit root->componentAdded(QString::fromStdString(ID),QString::fromStdString(transform.ID), "transform");
     }else if (name == "collider") {
-        if (!collider) {
-            if (!transform)
-                addComponent("transform");
-            collider = new Collider(parent);
-            collider->CollideRadius = 20000;
-            collider->parentEntity = this;
-            collider->parentID = ID;
-            parent->Components.insert({collider->ID, collider});
-            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(collider->ID), "collider");
-            emit parent->entityPhysicsAdded(QString::fromStdString(parentID), this);
+        collider.init(this);
+            collider.CollideRadius = 20000;
+            collider.parentID = ID;
+            root->Components.insert({collider.ID, &collider});
+            emit root->componentAdded(QString::fromStdString(ID),QString::fromStdString(collider.ID), "collider");
+            emit root->entityPhysicsAdded(QString::fromStdString(parentID), this);
+
+    }/*else if (name == "bitmap") {
+        meshRenderer2d.init(this);
+            root->Components.insert({meshRenderer2d.ID, &meshRenderer2d});
+            meshRenderer2d.Sprite = new std::string(":/texture/images/Texture/zone.png");
+            meshRenderer2d.Meshes[0]->Sprite = meshRenderer2d.Sprite;
+            meshRenderer2d.Meshes[0]->clear();
+            emit root->componentAdded(QString::fromStdString(ID),QString::fromStdString(meshRenderer2d.ID), "bitmap");
+            emit root->entityMeshAdded(QString::fromStdString(parentID), this);
+    }*/
+
+    //fix by yogesh
+    else if (name == "bitmap") {
+        meshRenderer2d.init(this);
+        root->Components.insert({meshRenderer2d.ID, &meshRenderer2d});
+
+        meshRenderer2d.setSprite(":/texture/images/Texture/zone.png");
+        if (meshRenderer2d.Meshes[0]) {
+            meshRenderer2d.Meshes[0]->Sprite = meshRenderer2d.Sprite;
+            meshRenderer2d.Meshes[0]->clear();
         }
 
-    }else if (name == "bitmap") {
-        if (!meshRenderer2d) {
-            if (!transform)
-                addComponent("transform");
-            if (!collider)
-                addComponent("collider");
-            meshRenderer2d = new MeshRenderer2D();
-            meshRenderer2d->parentEntity = this;
-            parent->Components.insert({meshRenderer2d->ID, meshRenderer2d});
-            meshRenderer2d->Sprite = new std::string(":/texture/images/Texture/zone.png");
-            meshRenderer2d->Meshes[0]->Sprite = meshRenderer2d->Sprite;
-            meshRenderer2d->Meshes[0]->clear();
-            emit parent->componentAdded(QString::fromStdString(ID),QString::fromStdString(meshRenderer2d->ID), "bitmap");
-            emit parent->entityMeshAdded(QString::fromStdString(parentID), this);
-        }
+        emit root->componentAdded(
+            QString::fromStdString(ID),
+            QString::fromStdString(meshRenderer2d.ID),
+            "bitmap");
+        emit root->entityMeshAdded(QString::fromStdString(parentID), this);
     }
 }
 
@@ -387,30 +421,31 @@ void Specialzone::addComponent(std::string name) {
  * @param name Component name.
  */
 void Specialzone::removeComponent(std::string name) {
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    if(!root)return;
+    // Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (name == "transform") {
-        if (!transform) return;
-        parent->Components.erase(transform->ID);
-        delete transform;
-        transform = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "transform");
-        emit parent->entityMeshRemoved(QString::fromStdString(parentID));
-        emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+        // if (!transform) return;
+        root->Components.erase(transform.ID);
+        // delete transform;
+        // transform = nullptr;
+        emit root->componentRemoved(QString::fromStdString(ID), "transform");
+        emit root->entityMeshRemoved(QString::fromStdString(parentID));
+        emit root->entityPhysicsRemoved(QString::fromStdString(parentID));
     } else if (name == "collider") {
-        if (!collider) return;
-        parent->Components.erase(collider->ID);
-        delete collider;
-        collider = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "collider");
-        emit parent->entityMeshRemoved(QString::fromStdString(parentID));
-        emit parent->entityPhysicsRemoved(QString::fromStdString(parentID));
+        // if (!collider) return;
+        root->Components.erase(collider.ID);
+        // delete collider;
+        // collider = nullptr;
+        emit root->componentRemoved(QString::fromStdString(ID), "collider");
+        emit root->entityMeshRemoved(QString::fromStdString(parentID));
+        emit root->entityPhysicsRemoved(QString::fromStdString(parentID));
     } else if (name == "bitmap") {
-        if (!meshRenderer2d) return;
-        parent->Components.erase(meshRenderer2d->ID);
-        delete meshRenderer2d;
-        meshRenderer2d = nullptr;
-        emit parent->componentRemoved(QString::fromStdString(ID), "bitmap");
-        emit parent->entityMeshRemoved(QString::fromStdString(parentID));
+        // if (!meshRenderer2d) return;
+        root->Components.erase(meshRenderer2d.ID);
+        // delete meshRenderer2d;
+        // meshRenderer2d = nullptr;
+        emit root->componentRemoved(QString::fromStdString(ID), "bitmap");
+        emit root->entityMeshRemoved(QString::fromStdString(parentID));
     }
 }
 
@@ -421,14 +456,14 @@ void Specialzone::removeComponent(std::string name) {
  */
 QJsonObject Specialzone::getComponent(std::string name) {
     if (name == "transform") {
-        if (!transform) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return transform->toJson();
+        // if (!transform) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return transform.toJson();
     } else if (name == "collider") {
-        if (!collider) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return collider->toJson();
+        // if (!collider) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return collider.toJson();
     } else if (name == "bitmap") {
-        if (!meshRenderer2d) { Console::error(name + ": not exist"); return QJsonObject(); }
-        return meshRenderer2d->toJson();
+        // if (!meshRenderer2d) { Console::error(name + ": not exist"); return QJsonObject(); }
+        return meshRenderer2d.toJson();
     }
     return QJsonObject();
 }
@@ -440,13 +475,13 @@ QJsonObject Specialzone::getComponent(std::string name) {
  */
 void Specialzone::updateComponent(QString name, const QJsonObject& obj) {
     if (name == "transform") {
-        if (!transform) { Console::error(name.toStdString() + ": not exist"); return; }
-        transform->fromJson(obj);
+        // if (!transform) { Console::error(name.toStdString() + ": not exist"); return; }
+        transform.fromJson(obj);
     } else if (name == "collider") {
-        if (!collider) { Console::error(name.toStdString() + ": not exist"); return; }
-        collider->fromJson(obj);
+        // if (!collider) { Console::error(name.toStdString() + ": not exist"); return; }
+        collider.fromJson(obj);
     } else if (name == "bitmap") {
-        if (!meshRenderer2d) { Console::error(name.toStdString() + ": not exist"); return; }
-        meshRenderer2d->fromJson(obj);
+        // if (!meshRenderer2d) { Console::error(name.toStdString() + ": not exist"); return; }
+        meshRenderer2d.fromJson(obj);
     }
 }

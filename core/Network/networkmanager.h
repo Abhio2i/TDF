@@ -88,8 +88,6 @@ public:
     void getJsonData(const QJsonObject& obj);
 signals:
     void initSyncComplete();
-
-
     void addFolder(QString parentId,QString ID,QString FolderName,bool Profile);
     void addEntity(QString parentId,QString ID,QString EntityName,bool Profile);
     void addEntityFromJson(QString parentId,QJsonObject obj,bool Profile);

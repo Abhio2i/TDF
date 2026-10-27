@@ -25,6 +25,10 @@
 #include <QPainterPath>
 #include <QPointer>
 #include <mutex>
+#include "core/Hierarchy/EntityProfiles/sensor.h"
+#include "core/Hierarchy/hierarchy.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/sonar.h"
+#include "core/Hierarchy/EntityProfiles/platform.h"
 std::mutex contactsMutex;
 
 SonarDisplay::SonarDisplay(QWidget *parent)
@@ -61,37 +65,127 @@ void SonarDisplay::setHierarchy(Hierarchy* h) { hierarchy = h; }
 
 void SonarDisplay::selectEntity(Entity* e)
 {
-    entity = e;
+    Platform* platform = dynamic_cast<Platform*>(e);
 
-    if (e)
-        selectedEntityId =
-            QString::fromStdString(e->ID);
-    else
+    if (!platform)
+    {
+        entity = nullptr;
+        sensor = nullptr;
+        contacts.clear();
         selectedEntityId.clear();
 
+        update();
+        return;
+    }
+
+    entity = platform;
+    selectedEntityId = QString::fromStdString(platform->ID);
+
+    sensor = nullptr;
     contacts.clear();
+
+    // Find first Sonar from this Platform
+    for (auto const& pair : platform->sensors.sensors)
+    {
+        Sensor* s = pair.second;
+
+        if (!s)
+            continue;
+
+        Sonar* sonar = dynamic_cast<Sonar*>(s);
+
+        if (sonar)
+        {
+            sensor = sonar;
+
+            setPingInterval(sonar->getPingInterval());
+            updateContacts(sonar->getLastResults());
+
+            break;
+        }
+    }
+
     update();
 }
 
+
 void SonarDisplay::RemoveEntity(QString id)
 {
-    if(entity &&
-        QString::fromStdString(entity->ID) == id)
+    if (entity && QString::fromStdString(entity->ID) == id)
     {
         entity = nullptr;
+        sensor = nullptr;
         contacts.clear();
         update();
     }
 }
 
-void SonarDisplay::updateRadar()              { update(); }
+// void SonarDisplay::updateRadar()              { update(); }
+
+void SonarDisplay::updateRadar()
+{
+    if (!entity &&
+        hierarchy &&
+        !selectedEntityId.isEmpty())
+    {
+        auto it = hierarchy->Entities.find(
+            selectedEntityId.toStdString());
+
+        if (it != hierarchy->Entities.end())
+            entity = it->second;
+    }
+
+    if (!entity)
+        return;
+
+    Platform* platform = dynamic_cast<Platform*>(entity.data());
+
+    if (!platform)
+        return;
+
+    // Check current Sonar pointer
+    if (sensor &&
+        platform->sensors.getSensor(sensor->ID) == nullptr)
+    {
+        sensor = nullptr;
+    }
+
+    if (!sensor)
+    {
+        for (auto const& pair : platform->sensors.sensors)
+        {
+            Sensor* s = pair.second;
+
+            if (!s)
+                continue;
+
+            Sonar* sonar = dynamic_cast<Sonar*>(s);
+
+            if (sonar)
+            {
+                sensor = sonar;
+                break;
+            }
+        }
+    }
+
+    if (!sensor)
+        return;
+
+    Sonar* sonar = dynamic_cast<Sonar*>(sensor);
+
+    if (!sonar)
+        return;
+
+    setPingInterval(sonar->getPingInterval());
+
+    auto results = sonar->getLastResults();
+
+    updateContacts(results);
+}
 
 void SonarDisplay::paintEvent(QPaintEvent *)
 {
-    qDebug()
-    << "[PAINT EVENT]"
-    << "contacts:"
-    << contacts.size();
 
     updateHeadingFromEntity();
 
@@ -147,10 +241,7 @@ void SonarDisplay::drawSonarRing(QPainter &p, QPoint center, int radius)
             dottedPen.setStyle(Qt::DotLine);
             p.setPen(dottedPen);
         }
-        // qDebug() << "[DRAW]"
-        //          << QString::fromStdString(c.name)
-        //          << "range:" << c.range
-        //          << "angle:" << c.angle;
+
         p.setBrush(Qt::NoBrush);
         p.drawEllipse(center, r, r);
 
@@ -410,19 +501,12 @@ void SonarDisplay::drawContactLabels(QPainter &p, QPoint center, int radius)
 
     for (auto &c : contacts)
     {
-        double angle = c.angle;
-        if (angle < 6.5)
-        {
-            angle = angle * 180.0 / M_PI;
-        }
-
-        double theta = qDegreesToRadians(angle - 90);
+        double theta = qDegreesToRadians(c.angle - 90);   // seedha use karo, koi conversion nahi
 
         double rangeKm = c.range / 1000.0;
         if (rangeKm > maxRange) continue;
 
         int r = (int)(radius * rangeKm / maxRange);
-
         int x = center.x() + r * cos(theta);
         int y = center.y() + r * sin(theta);
 
@@ -517,7 +601,6 @@ float normalizeRelativeAngle(float bearing, float heading)
 
 void SonarDisplay::updateContacts(const std::vector<DetectionResult>& results)
 {
-    qDebug() << "[UI UPDATE CONTACTS] incoming:" << results.size();
 
     qint64 now = QDateTime::currentMSecsSinceEpoch();
 
@@ -535,11 +618,6 @@ void SonarDisplay::updateContacts(const std::vector<DetectionResult>& results)
     for (const auto& r : results)
     {
         if (!r.detected) continue;
-
-        // Debug
-        qDebug() << "Contact:" << QString::fromStdString(r.name)
-                 << "distance:" << r.distance
-                 << "bearing:" << r.bearing;
 
         bool found = false;
         for (auto& existing : contacts)
@@ -632,9 +710,9 @@ void SonarDisplay::onSimulationUpdate()
     }
 }
 
+
 SonarDisplay::~SonarDisplay()
 {
-    qDebug() << "SonarDisplay destroyed:" << this;
 
     disconnect();
 }

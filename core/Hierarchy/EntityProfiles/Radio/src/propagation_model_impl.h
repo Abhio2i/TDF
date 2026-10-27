@@ -20,6 +20,9 @@ public: // public section
     void setConfig(const PropagationModelConfig& config) override; // statement
     // by codex: read current model config.
     PropagationModelConfig getConfig() const override; // statement
+    double pathLossDb(const Position& tx_pos, const Position& rx_pos,
+                      const RadioConfig& tx_config,
+                      const RadioConfig& rx_config) const override;
 
 private: // private section
     struct RadioEntry { // type definition

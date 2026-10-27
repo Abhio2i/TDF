@@ -20,7 +20,7 @@
 // =============================================================================
 // Constructor
 // =============================================================================
-WeaponProfile::WeaponProfile(Hierarchy* h) : Component(h)
+WeaponProfile::WeaponProfile() : Component()
 {
     Active  = true;
     weapons = new std::unordered_map<std::string, Weapon*>();
@@ -33,7 +33,37 @@ WeaponProfile::~WeaponProfile(){
     delete weapons;
     weapons = nullptr;
 }
+void WeaponProfile::init(Entity *Entity){
+    parentEntity = Entity;
+}
+void WeaponProfile::Awake(){}
+void WeaponProfile::Start(){}
 
+void WeaponProfile::SaveState(){
+    if(weapons){
+        for (const auto& [key, weaponPtr] : *weapons){
+            if(weaponPtr && weaponPtr->weaponType == Sonobuoy::WeaponType::Sonobuoy){
+                Sonobuoy* sono = dynamic_cast<Sonobuoy*>(weaponPtr);
+                if(sono){
+                    sono->SaveState();
+                }
+            }
+        }
+    }
+}
+
+void WeaponProfile::RestoreState(){
+    if(weapons){
+        for (const auto& [key, weaponPtr] : *weapons){
+            if(weaponPtr && weaponPtr->weaponType == Sonobuoy::WeaponType::Sonobuoy){
+                Sonobuoy* sono = dynamic_cast<Sonobuoy*>(weaponPtr);
+                if(sono){
+                    sono->RestoreState();
+                }
+            }
+        }
+    }
+}
 // =============================================================================
 // addSubComponent
 // Exact same pattern as SensorProfile::addSubComponent:
@@ -43,7 +73,7 @@ void WeaponProfile::addSubComponent(std::string name,
                                     QString data2,
                                     QJsonObject /*data3*/)
 {
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    Hierarchy* parent = parentEntity->root;
 
     Weapon* weapon = nullptr;
 
@@ -60,95 +90,95 @@ void WeaponProfile::addSubComponent(std::string name,
         }
         weapon = m;
     }else
-    if (data1 == "SunoBuoy") {
-        Sonobuoy* m = new Sonobuoy(parent);
-        if (!data2.isEmpty()) {
-            auto it = parent->Weapons.find(data2.toStdString());
-            if (it != parent->Weapons.end() && it->second) {
-                std::string id = m->ID;
-                m->fromJson(it->second->toJson());
-                m->ID       = id;
-                m->parentID = parentID;
+        if (data1 == "SunoBuoy") {
+            Sonobuoy* m = new Sonobuoy(parent);
+            if (!data2.isEmpty()) {
+                auto it = parent->Weapons.find(data2.toStdString());
+                if (it != parent->Weapons.end() && it->second) {
+                    std::string id = m->ID;
+                    m->fromJson(it->second->toJson());
+                    m->ID       = id;
+                    m->parentID = parentID;
+                }
             }
+            weapon = m;
         }
-        weapon = m;
-    }
-    else if (data1 == "Bomb") {
-        Bomb* b = new Bomb(parent);
-        if (!data2.isEmpty()) {
-            auto it = parent->Weapons.find(data2.toStdString());
-            if (it != parent->Weapons.end() && it->second) {
-                std::string id = b->ID;
-                b->fromJson(it->second->toJson());
-                b->ID       = id;
-                b->parentID = parentID;
+        else if (data1 == "Bomb") {
+            Bomb* b = new Bomb(parent);
+            if (!data2.isEmpty()) {
+                auto it = parent->Weapons.find(data2.toStdString());
+                if (it != parent->Weapons.end() && it->second) {
+                    std::string id = b->ID;
+                    b->fromJson(it->second->toJson());
+                    b->ID       = id;
+                    b->parentID = parentID;
+                }
             }
-        }
-        weapon = b;
-    } else if (data1 == "Torpedo") {
-        Torpedo* t = new Torpedo(parent);
-        if (!data2.isEmpty()) {
-            auto it = parent->Weapons.find(data2.toStdString());
-            if (it != parent->Weapons.end() && it->second) {
-                std::string id = t->ID;
-                t->fromJson(it->second->toJson());
-                t->ID       = id;
-                t->parentID = parentID;
+            weapon = b;
+        } else if (data1 == "Torpedo") {
+            Torpedo* t = new Torpedo(parent);
+            if (!data2.isEmpty()) {
+                auto it = parent->Weapons.find(data2.toStdString());
+                if (it != parent->Weapons.end() && it->second) {
+                    std::string id = t->ID;
+                    t->fromJson(it->second->toJson());
+                    t->ID       = id;
+                    t->parentID = parentID;
+                }
             }
-        }
-        weapon = t;
-    } else if (data1 == "Artillery") {
-        Artillery* a = new Artillery(parent);
-        if (!data2.isEmpty()) {
-            auto it = parent->Weapons.find(data2.toStdString());
-            if (it != parent->Weapons.end() && it->second) {
-                std::string id = a->ID;
-                a->fromJson(it->second->toJson());
-                a->ID       = id;
-                a->parentID = parentID;
+            weapon = t;
+        } else if (data1 == "Artillery") {
+            Artillery* a = new Artillery(parent);
+            if (!data2.isEmpty()) {
+                auto it = parent->Weapons.find(data2.toStdString());
+                if (it != parent->Weapons.end() && it->second) {
+                    std::string id = a->ID;
+                    a->fromJson(it->second->toJson());
+                    a->ID       = id;
+                    a->parentID = parentID;
+                }
             }
-        }
-        weapon = a;
-    } else if (data1 == "Rocket") {
-        Rocket* r = new Rocket(parent);
-        if (!data2.isEmpty()) {
-            auto it = parent->Weapons.find(data2.toStdString());
-            if (it != parent->Weapons.end() && it->second) {
-                std::string id = r->ID;
-                r->fromJson(it->second->toJson());
-                r->ID       = id;
-                r->parentID = parentID;
+            weapon = a;
+        } else if (data1 == "Rocket") {
+            Rocket* r = new Rocket(parent);
+            if (!data2.isEmpty()) {
+                auto it = parent->Weapons.find(data2.toStdString());
+                if (it != parent->Weapons.end() && it->second) {
+                    std::string id = r->ID;
+                    r->fromJson(it->second->toJson());
+                    r->ID       = id;
+                    r->parentID = parentID;
+                }
             }
-        }
-        weapon = r;
-    } else if (data1 == "Flare") {
-        Flare* f = new Flare(parent);
-        if (!data2.isEmpty()) {
-            auto it = parent->Weapons.find(data2.toStdString());
-            if (it != parent->Weapons.end() && it->second) {
-                std::string id = f->ID;
-                f->fromJson(it->second->toJson());
-                f->ID       = id;
-                f->parentID = parentID;
+            weapon = r;
+        } else if (data1 == "Flare") {
+            Flare* f = new Flare(parent);
+            if (!data2.isEmpty()) {
+                auto it = parent->Weapons.find(data2.toStdString());
+                if (it != parent->Weapons.end() && it->second) {
+                    std::string id = f->ID;
+                    f->fromJson(it->second->toJson());
+                    f->ID       = id;
+                    f->parentID = parentID;
+                }
             }
-        }
-        weapon = f;
-    } else if (data1 == "Chaff") {
-        Chaff* c = new Chaff(parent);
-        if (!data2.isEmpty()) {
-            auto it = parent->Weapons.find(data2.toStdString());
-            if (it != parent->Weapons.end() && it->second) {
-                std::string id = c->ID;
-                c->fromJson(it->second->toJson());
-                c->ID       = id;
-                c->parentID = parentID;
+            weapon = f;
+        } else if (data1 == "Chaff") {
+            Chaff* c = new Chaff(parent);
+            if (!data2.isEmpty()) {
+                auto it = parent->Weapons.find(data2.toStdString());
+                if (it != parent->Weapons.end() && it->second) {
+                    std::string id = c->ID;
+                    c->fromJson(it->second->toJson());
+                    c->ID       = id;
+                    c->parentID = parentID;
+                }
             }
+            weapon = c;
+        } else {
+            // Default fallback — same as SensorProfile defaulting to Radar
+            weapon = new Missile(parent);
         }
-        weapon = c;
-    } else {
-        // Default fallback — same as SensorProfile defaulting to Radar
-        weapon = new Missile(parent);
-    }
 
     weapon->parentEntity = parentEntity;
     weapon->Name         = name;
@@ -175,13 +205,13 @@ void WeaponProfile::emitAutoComponentSignals(Hierarchy* parent, Weapon* weapon)
 {
     QString wID = QString::fromStdString(weapon->ID);
     struct { const char* name; std::string id; } comps[] = {
-                 { "transform",    weapon->transform      ? weapon->transform->ID      : "" },
-                 { "rigidbody",    weapon->rigidbody      ? weapon->rigidbody->ID      : "" },
-                 { "collider",     weapon->collider       ? weapon->collider->ID       : "" },
-                 { "trajectory",   weapon->trajectory     ? weapon->trajectory->ID     : "" },
-                 { "bitmap",       weapon->meshRenderer2d ? weapon->meshRenderer2d->ID : "" },
-                 { "dynamicModel", weapon->dynamicModel   ? weapon->dynamicModel->ID   : "" },
-                 { "crossSection", weapon->crossSection   ? weapon->crossSection->ID   : "" },
+                 { "transform",    weapon->transform.ID      },
+                 { "rigidbody",    weapon->rigidbody.ID      },
+                 { "collider",     weapon->collider.ID       },
+                 { "trajectory",   weapon->trajectory.ID     },
+                 { "bitmap",       weapon->meshRenderer2d.ID },
+                 { "dynamicModel", weapon->dynamicModel.ID   },
+                 { "crossSection", weapon->crossSection.ID   },
                  };
     for (const auto& c : comps)
         if (!c.id.empty())
@@ -195,7 +225,7 @@ void WeaponProfile::emitAutoComponentSignals(Hierarchy* parent, Weapon* weapon)
 // =============================================================================
 void WeaponProfile::removeSubComponent(std::string ID)
 {
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    Hierarchy* parent = parentEntity->root;
     auto it = weapons->find(ID);
     if (it != weapons->end() && it->second) {
         Weapon* weapon = it->second;
@@ -264,9 +294,10 @@ void WeaponProfile::fromJson(const QJsonObject& obj)
         return;
 
     QJsonObject weaponsObj = obj["weapons"].toObject();
-    Hierarchy*  parent     = GlobalRegistry::getParentHierarchy(this);
+    Hierarchy*  parent     = parentEntity->root;
 
     for (const QString& key : weaponsObj.keys()) {
+        if(!parent)break;
         QJsonObject weaponObj = weaponsObj[key].toObject();
         QString     type      = weaponObj.value("weaponTypeName").toString();
         std::string id        = weaponObj["id"].toString().toStdString();
@@ -293,17 +324,20 @@ void WeaponProfile::fromJson(const QJsonObject& obj)
         } else if (type == "Chaff") {
             weapon = new Chaff(parent);
         } else {
-            weapon = new Missile(parent);  // default fallback
+            weapon = new Missile(parent);
         }
 
         weapon->parentEntity = parentEntity;
         weapon->parentID = parentEntity->ID;
         weapon->Name         = weaponObj["name"].toString().toStdString();
-        weapon->ID           = weaponObj["id"].toString().toStdString();
+        //weapon->ID           = weaponObj["id"].toString().toStdString();
         weapon->parentEntity = parentEntity;
         weapon->parentID = parentEntity->ID;
         weapon->init();
+        std::string newId = weapon->ID;
         weapon->fromJson(weaponObj);
+        weapon->ID = newId;
+
         weapon->parentEntity = parentEntity;
         weapon->parentID = parentEntity->ID;
 
@@ -343,7 +377,7 @@ void WeaponProfile::renameSubComponent(std::string id, QString newName)
 {
     auto it = weapons->find(id);
     if (it != weapons->end() && it->second) {
-        Hierarchy* parent    = GlobalRegistry::getParentHierarchy(this);
+        Hierarchy* parent    = parentEntity->root;
         it->second->Name     = newName.toStdString();
         emit parent->subComponentRenamed(QString::fromStdString(ID),
                                          QString::fromStdString(id),

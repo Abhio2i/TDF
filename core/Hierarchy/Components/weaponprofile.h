@@ -45,7 +45,7 @@ class WeaponProfile : public QObject, public Component
 {
     Q_OBJECT
 public:
-    WeaponProfile(Hierarchy* h);
+    WeaponProfile();
     ~WeaponProfile();
     ComponentType Typo() const override { return ComponentType::WeaponProfile; }
 
@@ -63,6 +63,9 @@ public:
     // DESCRIPTION: Extensible key-value store for user-defined weapon data.
     // =========================================================================
     QJsonObject AdditionalParameters;                          //!< Custom key-value parameters
+    void init(Entity* Entity) override;
+    void Awake() override;
+    void Start() override;
 
     // =========================================================================
     // SECTION: Subcomponent Management
@@ -86,8 +89,11 @@ public:
     // Serialization
     QJsonObject toJson()                                          const  override;
     void        fromJson(const QJsonObject& obj)                        override;
-
+    void SaveState();
+    void RestoreState();
 private:
+    bool statesaved = false;
+    QJsonObject InitalState;
     // Helper to emit signals when a weapon is added (UI/network sync)
     static void emitAutoComponentSignals(Hierarchy* parent, Weapon* weapon);
 };

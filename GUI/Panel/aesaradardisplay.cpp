@@ -186,6 +186,15 @@ static float normBearing(float b)
     return b;
 }
 
+// Target ID for lock-on / IFF matching: same FNV-1a algorithm as
+// AESARadar::platformToRadarID(). REQ-AESA-004.
+static uint32_t fnv1aTargetID(const std::string& key)
+{
+    uint32_t hash = 2166136261u;
+    for (unsigned char c : key) { hash ^= c; hash *= 16777619u; }
+    return (hash == 0u) ? 1u : hash;
+}
+
 // =============================================================================
 // SIZE POLICY OVERRIDES
 // =============================================================================
@@ -309,6 +318,8 @@ void AESARadarDisplay::updateModeButtonStyles()
 // =============================================================================
 void AESARadarDisplay::onModeButtonClicked(int idx)
 {
+    if (!validateSensor()) return;   // asAESA() below now safe
+
     AESARadar* aesa = asAESA();
     if (!aesa) return;
 
@@ -352,7 +363,19 @@ void AESARadarDisplay::onModeButtonClicked(int idx)
     updateModeButtonStyles();
     update();
 }
+bool AESARadarDisplay::sensorStillExists(Sensor* candidate) const
+{
+    if (!candidate || !entity) return false;
 
+    // Pointer-identity comparison only — never dereferences `candidate`,
+    // so this is safe even if it points at freed memory. REQ-AESA-004.
+    for (auto const& pair : entity->sensors.sensors)
+    {
+        if (pair.second == candidate)
+            return true;
+    }
+    return false;
+}
 // =============================================================================
 // FUNCTION:    AESARadarDisplay::applyAESAMode
 // (Full description in header)
@@ -420,6 +443,8 @@ void AESARadarDisplay::setDisplayMode(DisplayMode m)
 // =============================================================================
 void AESARadarDisplay::mousePressEvent(QMouseEvent* event)
 {
+    validateSensor();
+
     if (event->button() != Qt::LeftButton) return;
     QPointF click = event->pos();
 
@@ -505,7 +530,21 @@ void AESARadarDisplay::updateDropdown()
 void AESARadarDisplay::onSensorSelected(int index)
 {
     if (index < 0 || index >= sensorlist.size()) return;
-    sensor         = sensorlist[index];
+
+    Sensor* candidate = sensorlist[index];
+
+    // sensorlist is only rebuilt in selectEntity(); a sensor may have been
+    // individually removed since, leaving a stale entry here. Verify by
+    // pointer identity before touching it. REQ-AESA-004.
+    if (!sensorStillExists(candidate))
+    {
+        // Stale selection — rebuild sensorlist/dropdown from the live
+        // entity state instead of proceeding with a dangling pointer.
+        selectEntity(entity);
+        return;
+    }
+
+    sensor         = candidate;
     lockedTargetID = 0;
     lockedTargetPos = {};
     iffMap_.clear();
@@ -516,6 +555,7 @@ void AESARadarDisplay::onSensorSelected(int index)
         aesa::RadarConfig cfg = aesa->getRadarConfig();
         scanMinAz = cfg.minAzimuth;
         scanMaxAz = cfg.maxAzimuth;
+        scanMountAz = aesa->mountAzimuth();
 
         connect(aesa, &AESARadar::iffResult, this,
                 [this](uint32_t tid, int code, uint32_t sq, float conf)
@@ -565,13 +605,13 @@ void AESARadarDisplay::selectEntity(Entity* ent)
     sensorlist.clear();   // clear old list
     if (sensorDropdown) sensorDropdown->hide();
 
-    if (!entity->sensors || !entity->sensors->sensors) {
-        updateModeButtonStyles();
-        update();
-        return;
-    }
+    // if (/*!entity->sensors ||*/ !entity->sensors.sensors) {
+    //     updateModeButtonStyles();
+    //     update();
+    //     return;
+    // }
 
-    for (auto const& pair : *entity->sensors->sensors)
+    for (auto const& pair : entity->sensors.sensors)
     {
         Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::AESA)
@@ -588,6 +628,7 @@ void AESARadarDisplay::selectEntity(Entity* ent)
             aesa::RadarConfig cfg = aesa->getRadarConfig();
             scanMinAz = cfg.minAzimuth;
             scanMaxAz = cfg.maxAzimuth;
+            scanMountAz = aesa->mountAzimuth();
 
             connect(aesa, &AESARadar::iffResult, this,
                     [this](uint32_t tid, int code, uint32_t sq, float conf)
@@ -610,6 +651,7 @@ void AESARadarDisplay::selectEntity(Entity* ent)
         {
             scanMinAz = -sensor->maxDetectionAngle;
             scanMaxAz =  sensor->maxDetectionAngle;
+            scanMountAz = 0.0f;
         }
 
         setDisplayMode(scanMaxAz >= 180.0f ? DisplayMode::SURFACE : DisplayMode::AIR);
@@ -633,7 +675,7 @@ void AESARadarDisplay::updateRadar()
     // Re-read FoV limits — they may change if config is updated at runtime.
     // REQ-AESA-004.
     // Validate sensor still exists in the hierarchy before touching it
-    if (entity->sensors->getSensor(sensor->ID) == nullptr)
+    if (entity->sensors.getSensor(sensor->ID) == nullptr)
     {
         sensor = nullptr;
         return;
@@ -644,6 +686,7 @@ void AESARadarDisplay::updateRadar()
         aesa::RadarConfig cfg = aesa->getRadarConfig();
         scanMinAz = cfg.minAzimuth;
         scanMaxAz = cfg.maxAzimuth;
+        scanMountAz = aesa->mountAzimuth();
     }
 
     // Decrement DRFM warning frame countdown. REQ-AESA-060.
@@ -815,7 +858,12 @@ void AESARadarDisplay::drawLabel(QPainter& p, int x, int y,
     // REQ-AESA-004.
     if (t.speed > 0.5f)
     {
-        double theta = qDegreesToRadians(static_cast<double>(90.0f - t.direction));
+        // Screen reference: AIR view is own-nose-up, SURFACE view is North-up.
+        // t.direction is a compass heading. Transform::yaw() is the compass
+        // heading of the nose (same zero as body azimuth). REQ-AESA-004.
+        const float screenUp = (displayMode == DisplayMode::AIR && entity)
+                                   ? entity->transform.yaw() : 0.0f;
+        double theta = qDegreesToRadians(static_cast<double>(90.0f - (t.direction - screenUp)));
         float  vlen  = 14.0f + std::min(t.speed / 30.0f, 1.0f) * 14.0f;
         int    vx    = x + static_cast<int>(vlen * std::cos(theta));
         int    vy    = y - static_cast<int>(vlen * std::sin(theta));
@@ -996,7 +1044,8 @@ void AESARadarDisplay::drawAirSector(QPainter& p, int cx, int cy)
     float r  = static_cast<float>(ph) * 1.02f;   // slightly beyond outer ring
 
     p.setFont(QFont("Courier", 7));
-    for (float az : { scanMinAz, scanMaxAz })
+    // Sector edges around the array's facing direction. REQ-AESA-011.
+    for (float az : { scanMountAz + scanMinAz, scanMountAz + scanMaxAz })
     {
         double theta = qDegreesToRadians(static_cast<double>(90.0f - az));
         int ex = cx + static_cast<int>(r * std::cos(theta));
@@ -1004,7 +1053,7 @@ void AESARadarDisplay::drawAirSector(QPainter& p, int cx, int cy)
         p.setPen(QPen(C_SECTOR, 1, Qt::DashLine));
         p.drawLine(cx, cy, ex, ey);
         p.setPen(C_RING_LBL);
-        p.drawText(ex - 14, ey - 3, QString("%1°").arg(static_cast<int>(az)));
+        p.drawText(ex - 14, ey - 3, QString("%1°").arg(static_cast<int>(normBearing(az))));
     }
 }
 
@@ -1036,13 +1085,7 @@ void AESARadarDisplay::drawAirTargets(QPainter& p, int cx, int cy)
         // Use the same FNV-1a hash as platformToRadarID() in aesaradar.cpp to
         // ensure the lockedTargetID comparison is consistent. REQ-AESA-004.
         uint32_t tid = 0;
-        if (tgt.entity)
-        {
-            const std::string& key = tgt.entity->ID;
-            uint32_t hash = 2166136261u;
-            for (unsigned char c : key) { hash ^= c; hash *= 16777619u; }
-            tid = (hash == 0u) ? 1u : hash;
-        }
+        if (tgt.entity) tid = fnv1aTargetID(tgt.entity->ID);
 
         bool isLocked = (tid != 0 && tid == lockedTargetID);
 
@@ -1053,7 +1096,8 @@ void AESARadarDisplay::drawAirTargets(QPainter& p, int cx, int cy)
         // REQ-AESA-004.
         if (!isLocked && sensor->mode == Sensor::Mode::Search)
         {
-            float bearing = normBearing(tgt.angle);
+            // Bearing relative to the array's facing direction. REQ-AESA-011.
+            float bearing = normBearing(tgt.angle - scanMountAz);
             if (bearing < scanMinAz || bearing > scanMaxAz) continue;
         }
 
@@ -1147,15 +1191,14 @@ void AESARadarDisplay::drawSurfaceTargets(QPainter& p, int cx, int cy, int radiu
     {
         if (tgt.radius > dr) continue;
 
-        QPointF pos = polarToScreen(tgt.radius, tgt.angle, cx, cy, dr, ppk);
+        // SURFACE view is North-up (N/E/S/W labels): use true bearing.
+        QPointF pos = polarToScreen(tgt.radius, tgt.trueBearing, cx, cy, dr, ppk);
         int tx = static_cast<int>(pos.x());
         int ty = static_cast<int>(pos.y());
 
-        // Surface mode uses std::hash — separate from the AESA FNV-1a path.
-        // This is the existing surface mode behaviour, unchanged. REQ-AESA-004.
+        // Same FNV-1a ID as the radar, so lock-on and IFF match. REQ-AESA-004.
         uint32_t tid = 0;
-        if (tgt.entity)
-            tid = static_cast<uint32_t>(std::hash<std::string>{}(tgt.entity->ID));
+        if (tgt.entity) tid = fnv1aTargetID(tgt.entity->ID);
 
         bool isLocked = (tid != 0 && tid == lockedTargetID);
         if (isLocked) lockedTargetPos = pos;
@@ -1272,7 +1315,16 @@ void AESARadarDisplay::drawHUD(QPainter& p)
         p.drawText(lx + 14, ly + 16 + i * 13, legend[i].lbl);
     }
 }
-
+// In aesaradardisplay.cpp:
+bool AESARadarDisplay::validateSensor()
+{
+    if (sensor && entity && entity->sensors.getSensor(sensor->ID) == nullptr)
+    {
+        sensor = nullptr;
+        updateModeButtonStyles();
+    }
+    return sensor != nullptr;
+}
 // =============================================================================
 // PAINT EVENT — MAIN RENDER DISPATCH
 // =============================================================================
@@ -1283,6 +1335,8 @@ void AESARadarDisplay::drawHUD(QPainter& p)
 // =============================================================================
 void AESARadarDisplay::paintEvent(QPaintEvent* event)
 {
+    validateSensor();
+
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 

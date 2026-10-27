@@ -98,48 +98,48 @@ QMap<QString, QString> TooltipHelper::getDynamicModelInfo(const MeshEntry& entry
 {
     QMap<QString, QString> data;
 
-    if (entry.platform && entry.platform->dynamicModel) {
-        DynamicModel* dm = entry.platform->dynamicModel;
+    if (entry.platform /*&& entry.platform->dynamicModel*/) {
+        DynamicModel& dm = entry.platform->dynamicModel;
 
-        if (dm->moveSpeed >= 0) {
-            data["Move Speed"] = QString::number(dm->moveSpeed, 'f', 2) + " km/h";
+        if (dm.moveSpeed >= 0) {
+            data["Move Speed"] = QString::number(dm.moveSpeed, 'f', 2) + " km/h";
         }
 
-        if (dm->minSpeed >= 0) {
-            data["Min Speed"] = QString::number(dm->minSpeed, 'f', 2) + " km/h";
+        if (dm.minSpeed >= 0) {
+            data["Min Speed"] = QString::number(dm.minSpeed, 'f', 2) + " km/h";
         }
 
-        if (dm->maxSpeed >= 0) {
-            data["Max Speed"] = QString::number(dm->maxSpeed, 'f', 2) + " km/h";
+        if (dm.maxSpeed >= 0) {
+            data["Max Speed"] = QString::number(dm.maxSpeed, 'f', 2) + " km/h";
         }
 
         // Acceleration data
-        if (dm->Acceleration >= 0) {
-            data["Acceleration"] = QString::number(dm->Acceleration, 'f', 2) + " m/s²";
+        if (dm.Acceleration >= 0) {
+            data["Acceleration"] = QString::number(dm.Acceleration, 'f', 2) + " m/s²";
         }
 
-        if (dm->Decceleration >= 0) {
-            data["Deceleration"] = QString::number(dm->Decceleration, 'f', 2) + " m/s²";
+        if (dm.Decceleration >= 0) {
+            data["Deceleration"] = QString::number(dm.Decceleration, 'f', 2) + " m/s²";
         }
 
         // Current speed
-        if (dm->currentSpeed >= 0) {
-            data["Speed"] = QString::number(dm->currentSpeed, 'f', 2) + " km/h";
+        if (dm.currentSpeed >= 0) {
+            data["Speed"] = QString::number(dm.currentSpeed, 'f', 2) + " km/h";
         } else if (entry.velocity) {
             data["Speed"] = calculateSpeedFromVelocity(entry.velocity);
         }
 
         // Other parameters
-        if (dm->turnRate >= 0) {
-            data["Turn Rate"] = QString::number(dm->turnRate, 'f', 2) + " deg/s";
+        if (dm.turnRate >= 0) {
+            data["Turn Rate"] = QString::number(dm.turnRate, 'f', 2) + " deg/s";
         }
 
-        if (dm->climbRate >= 0) {
-            data["Climb Rate"] = QString::number(dm->climbRate, 'f', 2) + " ft/min";
+        if (dm.climbRate >= 0) {
+            data["Climb Rate"] = QString::number(dm.climbRate, 'f', 2) + " ft/min";
         }
 
-        if (dm->diveRate >= 0) {
-            data["Dive Rate"] = QString::number(dm->diveRate, 'f', 2) + " ft/min";
+        if (dm.diveRate >= 0) {
+            data["Dive Rate"] = QString::number(dm.diveRate, 'f', 2) + " ft/min";
         }
     }
 
@@ -265,32 +265,24 @@ double TooltipHelper::calculateCompletionTime(const MeshEntry& entry)
     if (!entry.trajectory || entry.trajectory->Trajectories.empty()) {
         return -1.0;
     }
-
-    if (!entry.platform || !entry.platform->dynamicModel) {
+    if (!entry.platform /*|| !entry.platform->dynamicModel*/) {
         return -1.0;
     }
-
-    double currentSpeed = entry.platform->dynamicModel->currentSpeed;
-
+    double currentSpeed = entry.platform->dynamicModel.currentSpeed;
     if (currentSpeed <= 0) {
-        currentSpeed = entry.platform->dynamicModel->moveSpeed;
+        currentSpeed = entry.platform->dynamicModel.moveSpeed;
     }
-
     if (currentSpeed <= 0) {
         return -1.0;
     }
-
     QPointF currentPos(entry.coreTransform->getLongitude(),
                        entry.coreTransform->getLatitude());
 
     int nearestWaypointIndex = findNearestUpcomingWaypoint(entry, currentPos);
-
     if (nearestWaypointIndex < 0) {
         return 0.0;
     }
-
     double totalTime = 0.0;
-
     Waypoints* nextWp = entry.trajectory->Trajectories[nearestWaypointIndex];
     QPointF nextWpPos(nextWp->position->z, nextWp->position->x);
 
@@ -311,7 +303,6 @@ double TooltipHelper::calculateCompletionTime(const MeshEntry& entry)
     return totalTime;
 }
 
-
 double TooltipHelper::calculateHaversineDistance(const QPointF& pos1, const QPointF& pos2)
 {
     const double R = 6371.0;
@@ -327,6 +318,7 @@ double TooltipHelper::calculateHaversineDistance(const QPointF& pos1, const QPoi
     double c = 2 * std::atan2(std::sqrt(a), std::sqrt(1-a));
     return R * c; // Distance in kilometers
 }
+
 QString TooltipHelper::formatTime(double seconds)
 {
     if (seconds < 0) return "N/A";
@@ -357,9 +349,7 @@ int TooltipHelper::findNearestUpcomingWaypoint(const MeshEntry& entry, const QPo
         return -1;
     }
 
-
     int currentTargetIndex = entry.trajectory->current;
-
     if (currentTargetIndex < 0 || currentTargetIndex >= entry.trajectory->Trajectories.size()) {
         double minDistance = std::numeric_limits<double>::max();
         int nearestIndex = 0;

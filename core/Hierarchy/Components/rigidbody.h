@@ -84,6 +84,10 @@ public:
     // =========================================================================
     QJsonObject AdditionalParameters;
 
+    void init(Entity* Entity) override;
+    void Awake() override;
+    void Start() override;
+
     // Physics methods
     void addForce(const Vector& force);         //!< Applies a linear force
     void addTorque(const Vector& torque);       //!< Applies a torque (rotational force)

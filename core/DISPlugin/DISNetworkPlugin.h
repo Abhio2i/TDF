@@ -54,6 +54,20 @@
 #include "core/Hierarchy/Components/transform.h"
 #include "core/Hierarchy/Components/dynamicmodel.h"
 #include "core/Hierarchy/Struct/geocords.h"
+#include "interface/DISIncomingEmission.h"
+#include "interface/DISDesignatorSnapshot.h"
+#include "interface/DISIncomingDesignator.h"
+#include "interface/DISTransmitterSnapshot.h"
+#include "interface/DISIncomingTransmitter.h"
+#include "interface/DISSignalSnapshot.h"
+#include "interface/DISIncomingSignal.h"
+#include "interface/DISDatumSnapshot.h"
+#include "interface/DISIncomingDatum.h"
+#include "core/DISPlugin/utils/disdatumregistry.h"   // new include
+struct DataQuerySubscription {                        // new struct
+    DISIncomingDatum request;
+    int64_t lastSentMs = 0;
+};
 // Forward declarations — internal classes, engine never sees these
 class DISManager;
 class DISNetworkBridge;
@@ -102,6 +116,12 @@ public:
     void publishStopFreeze  (const DISStopFreezeData&     data);
     void publishRemoveEntity(const DISRemoveEntityData&   data);
     void publishCreateEntity(const DISCreateEntityData&   data);
+    void publishDesignator(const DISDesignatorSnapshot& snap);
+    void publishTransmitter(const DISTransmitterSnapshot& snap);
+    void publishSignal(const DISSignalSnapshot& snap);
+    void publishDataQuery(const DISDatumSnapshot& snap);
+    void publishSetData(const DISDatumSnapshot& snap);
+    void publishData(const DISDatumSnapshot& snap);
     // Called by DISManager to check before registering an entity as local
     bool isRemoteEntity(const QString& entityID) const;
     // ── Config reload (from UI via DISUIBridge) ────────────────────────────────
@@ -110,6 +130,20 @@ public:
     // ── Read current config (for UI) ──────────────────────────────────────────
     DISConfig       currentConfig()  const;
     DISNetworkStatus currentStatus() const;
+    // Initiate transfer — called from UI Transfer tab
+    // entityID: engine ID of locally owned entity
+    // targetSiteID/targetAppID: the receiving machine's DIS address
+    void transferEntityOwnership(const QString& entityID,
+                                 uint16_t targetSiteID,
+                                 uint16_t targetAppID);
+    // Called by UI after the person answers the accept/reject prompt shown
+    // in response to transferOwnershipRequested(). entityKey must match the
+    // value passed in that signal.
+    void respondToTransferOwnership(const QString& entityKey, bool accept);
+    // Returns list of {engineID, name} pairs for locally owned entities
+    // Used by Transfer tab to populate entity dropdown
+    QList<QPair<QString,QString>> getLocalEntityList() const;
+    QList<QPair<QString,QString>> getRemoteEntityList() const;
 
 public slots:
     // ── Connected to Weapon::missileDetonated signal ──────────────────────────
@@ -132,6 +166,15 @@ public slots:
     void onIncomingDetonation  (DISIncomingDetonation  event);
     void onIncomingExercise    (DISIncomingExercise    event);
     void onIncomingIFF(DISIncomingIFF iff);
+    void onIncomingAcknowledge(DISIncomingAcknowledge ack);
+    void onIncomingTransferOwnership(DISIncomingTransferOwnership data);
+    void onIncomingEmission(DISIncomingEmission data);
+    void onIncomingDesignator(DISIncomingDesignator data);
+    void onIncomingTransmitter(DISIncomingTransmitter data);
+    void onIncomingSignal(DISIncomingSignal data);
+    void onIncomingDataQuery(DISIncomingDatum data);
+    void onIncomingSetData(DISIncomingDatum data);
+    void onIncomingData(DISIncomingDatum data);
 signals:
     // ── Status signals (connect UI to these) ──────────────────────────────────
     void statusUpdated    (DISNetworkStatus status);
@@ -166,6 +209,20 @@ signals:
                             QString entityName, bool profile);
     void removeRemoteDISEntity(QString parentID, QString entityID, bool profile);
     void _internalPushIFFSnapshot(DISIFFSnapshot snap);
+    void _internalSendTransferOwnership (DISTransferOwnershipData data);
+    void _internalTakeEntityOwnership   (QString entityID);
+    void _internalSendDesignator(DISDesignatorSnapshot snap);
+    void _internalGiveUpEntityOwnership (QString entityID);
+    void _internalSendTransmitter(DISTransmitterSnapshot snap);
+    void _internalSendSignal(DISSignalSnapshot snap);
+    void _internalSendDataQuery(DISDatumSnapshot snap);
+    void _internalSendSetData(DISDatumSnapshot snap);
+    void _internalSendData(DISDatumSnapshot snap);
+    void _internalSendAcknowledgeDecision(DISAcknowledgeData ack);
+    void transferOwnershipRequested(uint16_t originSite, uint16_t originApp,
+                                    QString entityKey, QString entityName);
+    void dataResponseReceived(QString summary);
+
 private slots:
     // ── Received FROM DISManager (network thread → main thread) ───────────────
 
@@ -214,6 +271,8 @@ private:
 
     bool buildIFFSnapshot(Platform* platform, DISIFFSnapshot& snap) const;
     void applyIFFEvents();
+    void applyAcknowledgeEvents();
+    void applyDataQuerySubscriptions();
     void pushAllIFFSnapshots();
     void pushAllLocalSnapshots();
     bool buildEntitySnapshot(Platform* platform, DISEntitySnapshot& snap) const;
@@ -252,6 +311,25 @@ private:
                         float& collideRadius, float& warningRadius) const;
     QMutex                   m_iffQueueMutex;
     QQueue<DISIncomingIFF>   m_iffQueue;
+    QMutex                           m_acknowledgeQueueMutex;
+    QQueue<DISIncomingAcknowledge>   m_acknowledgeQueue;
+    QMutex                               m_transferQueueMutex;
+    QQueue<DISIncomingTransferOwnership> m_transferQueue;
+    QMap<uint32_t, QString>              m_pendingTransfers;   // requestID → entityID
+    uint32_t                             m_nextTransferRequestID = 1;
+
+    void applyTransferOwnershipEvents();
+    QString describeDatumResponse(const DISIncomingDatum& data) const;
+    QSet<QString> m_awaitingTransferDecision;
+    bool m_transferDecisionInProgress = false;
+    // Holds the in-flight request data between transferOwnershipRequested()
+    // being emitted and respondToTransferOwnership() being called back.
+    // Keyed by entityKey — only one entry at a time in practice, since
+    // applyTransferOwnershipEvents() won't dequeue a new item while
+    // m_transferDecisionInProgress is true.
+    QMap<QString, DISIncomingTransferOwnership> m_pendingTransferDecisions;
+    QMap<uint32_t, DataQuerySubscription> m_dataQuerySubscriptions;
+
 };
 
 #endif // DISNETWORKPLUGIN_H

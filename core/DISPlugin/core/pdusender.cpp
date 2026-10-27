@@ -12,6 +12,7 @@
 #include <QMutexLocker>
 #include "../DISNetworkPlugin.h"
 #include "core/DISPlugin//utils/dislogger.h"
+
 // =============================================================================
 // Constructor
 // =============================================================================
@@ -100,12 +101,23 @@ void PDUSender::stop()
 // Called by bridge every frame for each locally owned entity
 // Thread safe — bridge may call from main thread
 // =============================================================================
+// void PDUSender::updateEntitySnapshot(const DISEntitySnapshot& snap)
+// {
+//     QMutexLocker lock(&m_snapshotMutex);
+//     m_snapshots[QString::fromStdString(snap.entityID)] = snap;
+// }
 void PDUSender::updateEntitySnapshot(const DISEntitySnapshot& snap)
 {
-    QMutexLocker lock(&m_snapshotMutex);
-    m_snapshots[QString::fromStdString(snap.entityID)] = snap;
-}
+    QMutexLocker lock(&m_snapshotMutex);   // lock FIRST
 
+    QString entityKey = QString::fromStdString(snap.entityID);
+
+    // Block re-insertion of transferred entities.
+    // Ownership given up — another machine now owns and broadcasts this entity.
+    if (m_transferredEntities.contains(entityKey)) return;
+
+    m_snapshots[entityKey] = snap;
+}
 // =============================================================================
 // onSendTimer
 // Called every 200ms (5Hz) on the DIS network thread
@@ -119,30 +131,27 @@ void PDUSender::onSendTimer()
     if (!m_transport || !m_mapper) return;
     if (!m_bridge) return;  // ADD THIS LINE
 
-    // Collect fresh snapshots from bridge every tick
-    // Collect fresh snapshots on the main thread to avoid racing
-    // with entity deletion. BlockingQueuedConnection blocks this
-    // DIS thread until the main thread finishes the call.
-    // if (m_bridge && m_plugin) {
-    //     QList<DISEntitySnapshot> snapshots;
-    //     QMetaObject::invokeMethod(m_plugin, [this, &snapshots]() {
-    //         snapshots = m_bridge->collectSnapshots();
-    //     }, Qt::BlockingQueuedConnection);
-    //     QMutexLocker bridgeLock(&m_snapshotMutex);
+    // if (m_bridge) {
+    //     QList<DISEntitySnapshot> snapshots = m_bridge->collectSnapshots();
     //     for (const DISEntitySnapshot& snap : snapshots) {
-    //         m_snapshots[QString::fromStdString(snap.entityID)] = snap;
+    //         QString entityKey = QString::fromStdString(snap.entityID);
+    //         if (m_transferredEntities.contains(entityKey)) continue;
+    //         m_snapshots[entityKey] = snap;
     //     }
     // }
-    if (m_bridge) {
-        QList<DISEntitySnapshot> snapshots = m_bridge->collectSnapshots();
 
-        QMutexLocker bridgeLock(&m_snapshotMutex);
-        for (const DISEntitySnapshot& snap : snapshots) {
-            m_snapshots[QString::fromStdString(snap.entityID)] = snap;
-        }
-    }
-
+    // { QMutexLocker lock(&m_snapshotMutex);
     { QMutexLocker lock(&m_snapshotMutex);
+
+        if (m_bridge) {
+            QList<DISEntitySnapshot> snapshots = m_bridge->collectSnapshots();
+            for (const DISEntitySnapshot& snap : snapshots) {
+                QString entityKey = QString::fromStdString(snap.entityID);
+                if (m_transferredEntities.contains(entityKey)) continue;
+                m_snapshots[entityKey] = snap;
+            }
+        }
+
     for (const DISEntitySnapshot& snap : m_snapshots) {
         if (!snap.active) continue;
 
@@ -174,9 +183,11 @@ void PDUSender::onSendTimer()
                 ECEFPosition ecef = CoordConverter::geocordToECEF(
                     snap.latitude, snap.longitude, snap.altitude);
 
+                // DISOrientation euler = CoordConverter::headingToEuler(
+                //     snap.heading, snap.pitch, snap.roll);
                 DISOrientation euler = CoordConverter::headingToEuler(
-                    snap.heading, snap.pitch, snap.roll);
-
+                    snap.heading, snap.pitch, snap.roll,
+                    snap.latitude, snap.longitude);
                 // Convert angle threshold from degrees (config) to radians (DR function)
                 const float kDegToRad = 3.14159265358979f / 180.0f;
                 drThresholdExceeded = DeadReckoning::shouldSendUpdate(
@@ -204,8 +215,11 @@ void PDUSender::onSendTimer()
         // ── Update DR state after sending ────────────────────────────────────
         ECEFPosition ecef = CoordConverter::geocordToECEF(
             snap.latitude, snap.longitude, snap.altitude);
+        // DISOrientation euler = CoordConverter::headingToEuler(
+        //     snap.heading, snap.pitch, snap.roll);
         DISOrientation euler = CoordConverter::headingToEuler(
-            snap.heading, snap.pitch, snap.roll);
+            snap.heading, snap.pitch, snap.roll,
+            snap.latitude, snap.longitude);
         DISVelocity vel = CoordConverter::nedToECEFVelocity(
             snap.northVel, snap.eastVel, snap.verticalVel,
             snap.latitude, snap.longitude);
@@ -226,6 +240,26 @@ void PDUSender::onSendTimer()
         for (const DISIFFSnapshot& snap : m_iffSnapshots) {
             if (snap.systemOn)
                 sendIFF(snap);
+        }
+    }
+
+    // ── Send Emission PDUs ────────────────────────────────────────────────────
+    // AESARadar::scan() updates this cache on every radar physics tick
+    // (potentially 100+ Hz). Actual wire transmission is capped to this
+    // timer's 5Hz rate — same throttling pattern already used for IFF above.
+    // Prevents flooding the network with an Emission PDU on every radar tick.
+    {
+        QMutexLocker lock(&m_snapshotMutex);
+        for (const DISEmissionSnapshot& snap : m_emissionSnapshots) {
+            if (snap.active)
+                sendEmission(snap);
+        }
+    }
+    {
+        QMutexLocker lock(&m_snapshotMutex);
+        for (const DISTransmitterSnapshot& snap : m_transmitterSnapshots) {
+            if (snap.active)
+                sendTransmitter(snap);
         }
     }
 }
@@ -324,11 +358,31 @@ void PDUSender::sendRemoveEntity(const DISRemoveEntityData& data)
 }
 void PDUSender::removeEntitySnapshot(const QString& entityID)
 {
-    QMutexLocker lock(&m_snapshotMutex);
-    m_snapshots.remove(entityID);
-    m_drStates.remove(entityID);    // also clear DR state so it doesn't linger
-    m_lastSentMs.remove(entityID);
+    QMutexLocker lock(&m_snapshotMutex);   // lock FIRST — correct order
+
+    m_snapshots.remove(entityID);          // remove snapshot
+    m_drStates.remove(entityID);           // remove DR state
+    m_lastSentMs.remove(entityID);         // remove send timer
+    m_transferredEntities.insert(entityID); // blacklist permanently
+
+    DIS_LOG_BASIC("[PDUSender] Entity transferred — blacklisted:" << entityID);
 }
+// void PDUSender::removeEntitySnapshot(const QString& entityID)
+// {
+//     qDebug()<<"[DEBUG-BUG1-6] removeEntitySnapshot called:"
+//                   << "entityID=" << entityID
+//                   << "snapshotMapSize=" << m_snapshots.size()
+//                   << "snapshotMapKeys=" << m_snapshots.keys();
+//     bool removed = m_snapshots.remove(entityID) > 0;
+//     qDebug()<<"[DEBUG-BUG1-7] removeEntitySnapshot result:"
+//              << "removed=" << removed
+//              << "newSize=" << m_snapshots.size();
+//     QMutexLocker lock(&m_snapshotMutex);
+//     m_snapshots.remove(entityID);
+//     m_drStates.remove(entityID);    // also clear DR state so it doesn't linger
+//     m_lastSentMs.remove(entityID);
+
+// }
 void PDUSender::sendCreateEntity(const DISCreateEntityData& data)
 {
     if (!m_mapper) return;
@@ -400,6 +454,18 @@ void PDUSender::updateIFFSnapshot(const DISIFFSnapshot& snap)
     QMutexLocker lock(&m_snapshotMutex);
     m_iffSnapshots[QString::fromStdString(snap.entityID)] = snap;
 }
+// void PDUSender::updateEmissionSnapshot(const DISEmissionSnapshot& snap)
+// {
+//     QMutexLocker lock(&m_snapshotMutex);
+//     m_emissionSnapshots[QString::fromStdString(snap.emittingEntityID)] = snap;
+// }
+void PDUSender::updateEmissionSnapshot(const DISEmissionSnapshot& snap)
+{
+    QMutexLocker lock(&m_snapshotMutex);
+    QString key = QString::fromStdString(snap.emittingEntityID)
+                  + ":" + QString::number(snap.systemID);
+    m_emissionSnapshots[key] = snap;
+}
 void PDUSender::sendIFF(const DISIFFSnapshot& snap)
 {
 
@@ -421,18 +487,121 @@ void PDUSender::sendIFF(const DISIFFSnapshot& snap)
                QString::fromStdString(snap.entityID));
 
 }
-// void PDUSender::sendIFF(const DISIFFSnapshot& snap)
+// =============================================================================
+// sendAcknowledge
+// Sent immediately — not on 5Hz timer
+// Called by DISManager when ExerciseHandler emits acknowledgeNeeded
+// =============================================================================
+void PDUSender::sendAcknowledge(const DISAcknowledgeData& data)
+{
+    if (!isSendEnabled(m_config, DISPDUType::Acknowledge)) return;
+
+    QByteArray pduBytes = PDUSerializer::serializeAcknowledge(data, m_config);
+    if (pduBytes.isEmpty()) return;
+
+    sendRawPDU(pduBytes, "Acknowledge");
+
+    DIS_LOG_BASIC("[PDUSender] Acknowledge sent"
+                  << "flag="      << data.acknowledgeFlag
+                  << "requestID=" << data.requestID
+                  << "to site="   << data.originSite
+                  << "app="       << data.originApp);
+}
+// =============================================================================
+// sendTransferOwnership
+// Sent immediately — not on 5Hz timer
+// Called by DISManager when DISNetworkPlugin initiates a transfer
+// =============================================================================
+void PDUSender::sendTransferOwnership(const DISTransferOwnershipData& data)
+{
+    if (!m_mapper) return;
+    if (!isSendEnabled(m_config, DISPDUType::TransferOwnership)) return;
+
+    QByteArray pduBytes = PDUSerializer::serializeTransferOwnership(
+        data, m_config, *m_mapper);
+
+    if (pduBytes.isEmpty()) return;
+
+    sendRawPDU(pduBytes, "TransferOwnership",
+               QString::fromStdString(data.transferEntityID));
+
+    DIS_LOG_BASIC("[PDUSender] Transfer Ownership PDU sent"
+                  << "entity="    << QString::fromStdString(data.transferEntityID)
+                  << "to site="   << data.receivingSiteID
+                  << "app="       << data.receivingAppID
+                  << "requestID=" << data.requestID);
+}
+void PDUSender::sendEmission(const DISEmissionSnapshot& snap)
+{
+    if (!m_mapper) return;
+    if (!isSendEnabled(m_config, DISPDUType::ElectromagneticEmission)) return;
+
+    QByteArray pduBytes = PDUSerializer::serializeEmission(snap, m_config, *m_mapper);
+    if (pduBytes.isEmpty()) return;
+
+    sendRawPDU(pduBytes, "Emission", QString::fromStdString(snap.emittingEntityID));
+}
+void PDUSender::sendDesignator(const DISDesignatorSnapshot& snap)
+{
+    if (!m_mapper) return;
+    if (!isSendEnabled(m_config, DISPDUType::Designator)) return;
+
+    QByteArray pduBytes = PDUSerializer::serializeDesignator(snap, m_config, *m_mapper);
+    if (pduBytes.isEmpty()) return;
+
+    sendRawPDU(pduBytes, "Designator", QString::fromStdString(snap.designatingEntityID));
+}
+void PDUSender::sendTransmitter(const DISTransmitterSnapshot& snap)
+{
+    if (!m_mapper) return;
+    if (!isSendEnabled(m_config, DISPDUType::Transmitter)) return;
+    QByteArray pduBytes = PDUSerializer::serializeTransmitter(snap, m_config, *m_mapper);
+    if (pduBytes.isEmpty()) return;
+    sendRawPDU(pduBytes, "Transmitter", QString::fromStdString(snap.transmittingEntityID));
+}
+
+void PDUSender::sendSignal(const DISSignalSnapshot& snap)
+{
+    if (!m_mapper) return;
+    if (!isSendEnabled(m_config, DISPDUType::Signal)) return;
+    QByteArray pduBytes = PDUSerializer::serializeSignal(snap, m_config, *m_mapper);
+    if (pduBytes.isEmpty()) return;
+    sendRawPDU(pduBytes, "Signal", QString::fromStdString(snap.transmittingEntityID));
+}
+void PDUSender::sendDataQuery(const DISDatumSnapshot& snap)
+{
+    if (!m_mapper) return;
+    if (!isSendEnabled(m_config, DISPDUType::DataQuery)) return;
+    QByteArray pduBytes = PDUSerializer::serializeDataQuery(snap, m_config, *m_mapper);
+    if (pduBytes.isEmpty()) return;
+    sendRawPDU(pduBytes, "DataQuery", QString::fromStdString(snap.originatingEntityID));
+}
+void PDUSender::sendSetData(const DISDatumSnapshot& snap)
+{
+    if (!m_mapper) return;
+    if (!isSendEnabled(m_config, DISPDUType::SetData)) return;
+    QByteArray pduBytes = PDUSerializer::serializeSetData(snap, m_config, *m_mapper);
+    if (pduBytes.isEmpty()) return;
+    sendRawPDU(pduBytes, "SetData", QString::fromStdString(snap.originatingEntityID));
+}
+void PDUSender::sendData(const DISDatumSnapshot& snap)
+{
+    if (!m_mapper) return;
+    if (!isSendEnabled(m_config, DISPDUType::Data)) return;
+    QByteArray pduBytes = PDUSerializer::serializeData(snap, m_config, *m_mapper);
+    if (pduBytes.isEmpty()) return;
+    sendRawPDU(pduBytes, "Data", QString::fromStdString(snap.originatingEntityID));
+}
+void PDUSender::updateTransmitterSnapshot(const DISTransmitterSnapshot& snap)
+{
+    QMutexLocker lock(&m_snapshotMutex);
+    QString key = QString::fromStdString(snap.transmittingEntityID)
+                  + ":" + QString::number(snap.radioID);
+    m_transmitterSnapshots[key] = snap;
+}
+
+// void PDUSender::updateTransmitterSnapshot(const DISTransmitterSnapshot& snap)
 // {
-//     if (!m_mapper) return;
-//     if (!isSendEnabled(m_config, DISPDUType::IFF)) return;
-
-//     QByteArray pduBytes = PDUSerializer::serializeIFF(
-//         snap, m_config, *m_mapper);
-
-//     if (pduBytes.isEmpty()) return;
-//     sendRawPDU(pduBytes, "IFF",
-//                QString::fromStdString(snap.entityID));
-
-//     DIS_LOG_BASIC("[PDUSender] IFF PDU sent for:"
-//                   << QString::fromStdString(snap.entityID));
+//     QMutexLocker lock(&m_snapshotMutex);
+//     m_transmitterSnapshots[QString::fromStdString(snap.transmittingEntityID)] = snap;
 // }

@@ -47,6 +47,15 @@
 #include "../interface/DISExerciseControl.h"
 #include "../interface/DISConfig.h"
 #include "core/DISPlugin/DISNetworkPlugin.h"  // for DISNetworkStatus
+#include "../handlers/acknowledgehandler.h"
+#include "../handlers/transferownershiphandler.h"
+#include "../interface/DISEmissionSnapshot.h"
+#include "../interface/DISDesignatorSnapshot.h"
+#include "../handlers/designatorhandler.h"
+#include "../interface/DISTransmitterSnapshot.h"
+#include "../interface/DISSignalSnapshot.h"
+#include "../interface/DISDatumSnapshot.h"
+
 
 // Forward declarations — all owned by DISManager
 class DISTransport;
@@ -60,7 +69,13 @@ class DISNetworkBridge;
 class DISNetworkPlugin;
 class Hierarchy;
 class IFFHandler;
-
+class EmissionHandler;
+class DesignatorHandler;\
+class TransmitterHandler;
+class SignalHandler;
+class DataQueryHandler;
+class SetDataHandler;
+class DataHandler;
 class DISManager : public QObject {
     Q_OBJECT
 
@@ -96,6 +111,17 @@ public slots:
     void onPushEntitySnapshot  (DISEntitySnapshot snap);
     void onRemoveEntitySnapshot(QString           entityID);
      void onPushIFFSnapshot(DISIFFSnapshot snap);
+    void onSendTransferOwnership(DISTransferOwnershipData data);
+    void onTakeEntityOwnership  (QString entityID);
+    void onGiveUpEntityOwnership(QString entityID);
+    void onSendEmission(DISEmissionSnapshot snap);
+    void onSendDesignator(DISDesignatorSnapshot snap);
+    void onSendTransmitter(DISTransmitterSnapshot snap);
+    void onSendSignal(DISSignalSnapshot snap);
+    void onSendDataQuery(DISDatumSnapshot snap);
+    void onSendSetData(DISDatumSnapshot snap);
+    void onSendData(DISDatumSnapshot snap);
+    void onSendAcknowledgeDecision(DISAcknowledgeData ack);
 signals:
     // ── Status — forwarded to DISNetworkPlugin ────────────────────────────────
     void statusUpdated  (int pdusSent, int pdusRecv, int peerCount);
@@ -114,6 +140,15 @@ private:
     ExerciseHandler*    m_exerciseHandler = nullptr;
     DISNetworkBridge*   m_bridge          = nullptr;
     IFFHandler* m_iffHandler = nullptr;
+    AcknowledgeHandler* m_ackHandler = nullptr;
+    TransferOwnershipHandler* m_transferHandler = nullptr;
+    EmissionHandler* m_emissionHandler = nullptr;
+    DesignatorHandler* m_designatorHandler = nullptr;
+    TransmitterHandler* m_transmitterHandler = nullptr;
+    SignalHandler* m_signalHandler = nullptr;
+    DataQueryHandler* m_dataQueryHandler = nullptr;
+    SetDataHandler*   m_setDataHandler   = nullptr;
+    DataHandler*      m_dataHandler      = nullptr;
     // ── Shared resources ──────────────────────────────────────────────────────
     EntityIDMapper      m_mapper;
     PeerVersionRegistry m_peerRegistry;

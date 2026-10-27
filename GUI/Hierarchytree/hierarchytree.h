@@ -1,56 +1,28 @@
-/* =============================================================================
- * FILE:         hierarchytree.h
- * MODULE:       Hierarchy Tree Widget
- * PROJECT:      Indigenous Scenario and Sensor Simulation Toolkit (ISSST)
- * ORGANISATION: Oxygen 2 Innovation (O2I).
- * STANDARD:     RTCA DO-178C / ED-12C, DAL B
- * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
- *
- * DESCRIPTION:  Declares the HierarchyTree class which provides a widget for
- *               displaying and interacting with a hierarchical tree of profiles,
- *               folders, entities, components, and sub‑components. Supports
- *               adding/removing/renaming items, context menus, drag‑and‑drop,
- *               multi‑select, copy/paste, filtering by profile and search text,
- *               and signals for UI actions. Includes a custom CompactMenuAction
- *               for compact menu items.
- *
- * REQUIREMENTS: REQ-TREE-010  Display hierarchy tree with expandable nodes
- *               REQ-TREE-011  Add/remove/rename profiles, folders, entities,
- *                             components, sub‑components
- *               REQ-TREE-012  Context menu for operations
- *               REQ-TREE-013  Drag‑and‑drop support
- *               REQ-TREE-014  Multi‑select and bulk operations
- *               REQ-TREE-015  Filter by profile type and search text
- *               REQ-TREE-016  Copy/paste items
- *               REQ-TREE-017  Signals for item selection, copy, paste, drop
- *               REQ-TREE-018  Update entity active state visualisation
- *               REQ-TREE-019  Library file name display
- *
- * AUTHOR:       Arti Rajpoot
- * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-TREE-001
- *
- *
- * COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
- *               Restricted circulation — defence simulation use only.
- * =============================================================================
- */
-
 #ifndef HIERARCHYTREE_H
 #define HIERARCHYTREE_H
 
-#include <QWidget>                                // For widget base class
-#include <QTreeWidget>                            // For tree widget
-#include <QMap>                                   // For key-value mapping
-#include <QVariant>                               // For variant data type
-#include <QComboBox>                              // For profile dropdown
-#include <QLineEdit>                              // For search bar
-#include <QHBoxLayout>                            // For horizontal layout
-#include "core/Hierarchy/entity.h"                // For entity data structure
+#include <QWidget>
+#include <QTreeWidget>
+#include <QMap>
+#include <QVariant>
+#include <QComboBox>
+#include <QLineEdit>
+#include <QHBoxLayout>
+#include "core/Hierarchy/entity.h"
 #include "qwidgetaction.h"
 #include <QLabel>
 
-// %%% Forward Declarations %%%
 class ContextMenu;
+
+namespace HierarchyItemType {
+inline const QString ProfileItem      = "profile";
+inline const QString FolderItem       = "folder";
+inline const QString EntityItem       = "entity";
+inline const QString ComponentItem    = "component";
+inline const QString SubComponentItem = "subcomponent";
+inline const QString OptionTag        = "option";
+}
+
 class CompactMenuAction : public QWidgetAction {
 public:
     CompactMenuAction(const QIcon& icon, const QString& text, QObject* parent = nullptr)
@@ -59,116 +31,77 @@ public:
         QHBoxLayout* layout = new QHBoxLayout(widget);
         layout->setContentsMargins(2, 2, 2, 2);
         layout->setSpacing(0);
-
-        // Icon label
         QLabel* iconLabel = new QLabel();
         if (!icon.isNull()) {
             iconLabel->setPixmap(icon.pixmap(16, 16));
         }
         iconLabel->setFixedSize(16, 16);
-
-        // Text label
         QLabel* textLabel = new QLabel(text);
         textLabel->setStyleSheet("color: white; background: transparent;");
         textLabel->setContentsMargins(0, 0, 0, 0);
-
         layout->addWidget(iconLabel);
         layout->addWidget(textLabel);
         layout->addStretch();
-
         widget->setLayout(layout);
         widget->setStyleSheet("background: transparent;");
         setDefaultWidget(widget);
     }
 };
-// %%% Class Definition %%%
-/* Widget for hierarchy tree display */
+
 class HierarchyTree : public QWidget
 {
     Q_OBJECT
 
 public:
-    // Initialize hierarchy tree
     explicit HierarchyTree(QWidget *parent = nullptr);
-    // Clean up resources
     ~HierarchyTree();
     bool islib = false;
-    // Get tree widget
     QTreeWidget* getTreeWidget();
-    // Add profile to tree
     void profileAdded(QString ID, QString profileName);
-    // Add folder to tree
     void folderAdded(QString parentID, QString ID, QString folderName);
-    // Add entity to tree
     void entityAdded(QString parentID, QString ID, QString entityName);
-    // Add component to entity
     void componentAdded(QString parentID, QString ID, QString componentName);
-    // Add subcomponent to entity
     void subComponentAdded(QString parentID, QString ID, QString subComponentName);
-    // Remove profile from tree
     void profileRemoved(QString ID);
-    // Remove folder from tree
     void folderRemoved(QString ID);
-    // Remove entity from tree
     void entityRemoved(QString ID);
-    // Remove component from entity
     void componentRemoved(QString entityID, QString componentName);
-    // Remove subcomponent from entity
-    void subComponentRemoved(QString compID,QString subCompID, QString componentName);
-    void subComponentRenamed(QString compID, QString subCompID, QString newName);
-    // Rename profile in tree
+    void subComponentRemoved(QString CompID, QString subCompID, QString componentName);
+    void subComponentRenamed(QString componentId, QString subCompId, QString newName);
     void profileRenamed(QString ID, QString name);
-    // Rename folder in tree
     void folderRenamed(QString ID, QString name);
-    // Rename entity in tree
     void entityRenamed(QString ID, QString name);
-    // Get context menu
     ContextMenu* getContextMenu() const;
-    // Select entity by ID
     void selectEntityById(const QString& entityId);
-    // Get selected entities
+    void renameEntityById(const QString& entityId, const QString& newName);
+    void removeEntityById(const QString& entityId);
     QList<QVariantMap> getSelectedEntities() const;
-    // Remove multiple entities
     void removeSelectedEntities();
-    // Get all profile names
     QStringList getAllProfileNames() const;
-    // Filter hierarchy based on profile and search text
     void filterHierarchy(const QString& profileFilter = "", const QString& searchText = "");
     QList<QVariantMap> copiedItems;
     void setLibraryFileName(const QString& fileName);
     void selectMultipleEntitiesInTree(const QList<QString>& entityIds);
     QMap<QString, QTreeWidgetItem*> Items;
-    void updateEntityActiveState(const QString& entityID, bool active);
     void setEntityActiveState(const QString& entityId, bool active);
     QTreeWidget *tree;
     QLineEdit *searchBar;
     QComboBox *profileFilterCombo;
+    QString libraryFilePath() const { return m_libraryFilePath; }
 
 signals:
     void copyItemsRequested(QList<QVariantMap> data);
     void pasteItemsRequested(QVariantMap targetData, QList<QVariantMap> itemsToPaste);
     void removeEntitiesRequested(QList<QPair<QString, QString>> entityInfoList);
-    // Signal for profile filter change
     void profileFilterChanged(const QString& profileName);
-    // Signal for search filter change
     void searchFilterChanged(const QString& searchText);
-    // Signal item selection
     void itemSelected(QVariantMap data);
-    // Signal multiple items selected
     void itemsSelected(QList<QVariantMap> data);
-    // Signal copy item request
     void copyItemRequested(QVariantMap data);
-    // Signal copy multiple items request
-    // void copyItemsRequested(QList<QVariantMap> data);
-    // Signal paste item request
     void pasteItemRequested(QVariantMap targetData);
-    // Signal remove component request
     void removeComponentRequested(QString entityID, QString componentName);
-    // Signal item drop event
     void itemDropped(QVariantMap sourceData, QVariantMap targetData);
-    // Signal entity selection
     void entitySelected(Entity* entity, QVariantMap data);
-    //formation
     void addFormationRequested(QList<QVariantMap> selectedEntities);
     void libraryFileNameChanged(const QString& fileName);
     void setEntitiesActiveRequested(QList<QVariantMap> entities, bool active);
@@ -181,49 +114,39 @@ signals:
     void selectFormationWithEntityRequested(const QString& formationId);
     void formationSelectWithEntity(const QString& formationId);
     void entityRemovedNotify(const QString& entityId);
+    void editMultipleSubComponentsRequested(QList<QVariantMap> subComponents);
 
 protected:
-    // %%% Event Handlers %%%
-    // Show context menu
     void showContextMenu(const QPoint &pos);
-    // Handle context menu event
     void contextMenuEvent(QContextMenuEvent *event) override;
-    // Handle key press event for multi-select operations
     void keyPressEvent(QKeyEvent *event) override;
-    // Handle drag enter event
     void dragEnterEvent(QDragEnterEvent *event) override;
-    // Handle drag move event
     void dragMoveEvent(QDragMoveEvent *event) override;
-    // Handle drop event
     void dropEvent(QDropEvent *event) override;
 
 private slots:
-    // Handle search text change
     void onSearchTextChanged(const QString& text);
-    // Handle profile filter change
     void onProfileFilterChanged(int index);
-    // Update profile dropdown with all available profiles
     void updateProfileDropdown();
 
 private:
     ContextMenu *contextMenu;
-    // %%% Layouts %%%
     QVBoxLayout *mainLayout;
     QHBoxLayout *filterLayout;
-    // %%% Data Storage %%%
     QMap<QString, QString> profileMap;
-    // Original items backup for filtering
     QMap<QString, QTreeWidgetItem*> originalItems;
     static inline QVariantMap dragsourceData;
-    // %%% Helper Methods %%%
-    // Recursively show/hide items based on filters
+
+    //fix by yogesh
+    void removeItemFromMapRecursively(QTreeWidgetItem* item);
     void applyFilters(QTreeWidgetItem* item, const QString& profileFilter, const QString& searchText);
-    // Check if item matches search criteria
     bool itemMatchesSearch(QTreeWidgetItem* item, const QString& searchText);
-    // Check if item belongs to profile
     bool itemBelongsToProfile(QTreeWidgetItem* item, const QString& profileName);
     void removeDescendantsFromMap(QTreeWidgetItem* item);
-
+    bool isItemInTree(QTreeWidgetItem* item) const;
+    QString getCurrentEditorContext() const;
+    QString multiSelectMenuStyleSheet() const;
+    QString m_libraryFilePath;
 };
 
 #endif // HIERARCHYTREE_H

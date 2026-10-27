@@ -13,6 +13,7 @@ class Missile : public Weapon
     Q_OBJECT
 public:
     explicit Missile(Hierarchy* h);
+    ~Missile();
 
     WeaponType weaponType = WeaponType::Missile;
     QString weaponTypeName() const override { return "Missile"; }

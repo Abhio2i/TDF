@@ -108,7 +108,12 @@ public:
         EchelonLeft,    //!< Left echelon (staggered)
         EchelonRight,   //!< Right echelon (staggered)
         StaggeredColumn,//!< Alternating left/right offset
-        Wedge           //!< Wedge shape
+        Wedge   ,        //!< Wedge shape
+        Coil,
+        Herringbone,
+        Skirmish,
+        BoxFormation,
+        Custom
     };
     Q_ENUM(FormationType)
 

@@ -206,7 +206,6 @@ QWidget* ReportsEditor::weaponRow(const QString& name, int used, int hits,
     QHBoxLayout* hl = new QHBoxLayout(w);
     hl->setContentsMargins(0, 1, 0, 1);
     hl->setSpacing(6);
-
     auto lbl = [](const QString& t, int fixW,
                   Qt::Alignment a = Qt::AlignLeft | Qt::AlignVCenter) {
         QLabel* l = new QLabel(t);
@@ -237,6 +236,7 @@ QWidget* ReportsEditor::weaponRow(const QString& name, int used, int hits,
     hl->addWidget(bar, 1);
     hl->addWidget(pctLbl);
     return w;
+
 }
 
 /* =========================================================================
@@ -247,7 +247,6 @@ QList<double> ReportsEditor::jsonObjToSortedValues(const QJsonValue& val,
 {
     QList<double> values;
     if (timesOut) timesOut->clear();
-
     if (val.isObject()) {
         QJsonObject obj = val.toObject();
         QList<QPair<double,double>> pairs;
@@ -1051,7 +1050,6 @@ QWidget* ReportsEditor::buildBottomBar()
         "QPushButton:hover { background:#3a3a4a; }");
     connect(printBtn, &QPushButton::clicked, this, &ReportsEditor::onPrint);
     hl->addWidget(printBtn);
-
     return bar;
 }
 
@@ -1725,7 +1723,6 @@ void ReportsEditor::onPreviewReport()
     dlg->setWindowTitle("Report Preview — " +
                         (m_missionName.isEmpty() ? "Mission Report" : m_missionName));
     dlg->resize(820, 640);
-
     QVBoxLayout* vl = new QVBoxLayout(dlg);
     vl->setContentsMargins(8, 8, 8, 8);
     vl->setSpacing(6);

@@ -103,6 +103,20 @@ public:
     virtual void setConfig(const PropagationModelConfig& config) = 0;
     // by codex: read current model config.
     virtual PropagationModelConfig getConfig() const = 0;
+
+    // Path loss (dB) between two positions under the same loss model and the same
+    // fixed-path-loss override rule that the link budget uses. Intended for
+    // passive receivers that are not registered radios (e.g. CSM), so they reuse
+    // this model instead of duplicating it.
+    //
+    // Includes: base loss (FSPL/log-distance/two-ray), comms-mode loss, gas/rain/
+    // wind/sea attenuation, and shadowing/fading when those are enabled (the
+    // stochastic terms make repeated calls differ, exactly as in the link budget).
+    // Excludes: polarization mismatch loss, antenna gains, noise.
+    // `rx_config` supplies only receiver-side flags the model reads (e.g. is_naval).
+    virtual double pathLossDb(const Position& tx_pos, const Position& rx_pos,
+                              const RadioConfig& tx_config,
+                              const RadioConfig& rx_config) const = 0;
 };
 
 // Factory function to create a propagation model.

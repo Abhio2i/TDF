@@ -25,6 +25,7 @@
 
 #include "./component.h"
 #include "core/Hierarchy/EntityProfiles/sensor.h"
+#include "core/Hierarchy/ECS/Struct/sensor_component.h"
 #include <QObject>
 #include <QJsonObject>
 
@@ -42,7 +43,7 @@ class SensorProfile: public QObject, public Component
 {
     Q_OBJECT
 public:
-    SensorProfile(Hierarchy* h);
+    SensorProfile();
     ~SensorProfile();
     ComponentType Typo() const override { return ComponentType::SensorProfile; }
 
@@ -51,15 +52,20 @@ public:
     // DESCRIPTION: Core state and reference to global sensor registry.
     // =========================================================================
     bool Active;                                      //!< Whether this sensor profile is active
-    std::unordered_map<std::string, Sensor*> *sensors; //!< Pointer to map of Sensor entries
+    std::unordered_map<std::string, Sensor*> sensors; //!< Pointer to map of Sensor entries
 
     Sensor* getSensor(const std::string& id) const;   //!< Retrieves a sensor by its ID
 
+    ECS::sensorComponent& getSensorData() const;
     // =========================================================================
     // SECTION: Custom Parameters
     // DESCRIPTION: Extensible key-value store for user-defined sensor parameters.
     // =========================================================================
     QJsonObject AdditionalParameters;                     //!< Custom key-value parameters
+
+    void init(Entity* Entity) override;
+    void Awake() override;
+    void Start() override;
 
     // Component interface overrides
     void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QJsonObject data3 = QJsonObject()) override;
@@ -72,6 +78,8 @@ public:
     void fromJson(const QJsonObject &obj) override;
     void addSensor(Sensor* sensor);
     void renameSubComponent(std::string ID, QString newName) override;
+private:
+    int m_nextEmitterIndex = 1;
 };
 
 #endif // SENSORPROFILE_H

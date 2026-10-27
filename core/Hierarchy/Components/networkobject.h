@@ -64,6 +64,10 @@ public:
 
     void recieveUpdate();           //!< Handle incoming network update
 
+    void init(Entity* Entity) override;
+    void Awake() override;
+    void Start() override;
+
     // Component interface overrides
     void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QJsonObject data3 = QJsonObject()) override;
     void removeSubComponent(std::string ID) override;

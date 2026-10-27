@@ -23,16 +23,20 @@ Sensor::Sensor(Hierarchy* h) : Entity(h) {
     par->type = Constants::ParameterType::FLOAT;
     par->value = 0.0f;
     parameters["sensor_param"] = par;
-    subType = SubType::Generic;
+    // subType = SubType::Generic;
 }
 
 void Sensor::spawn() {
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-    emit parent->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
+    // Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    emit root->entityAdded(QString::fromStdString(parentID), QString::fromStdString(ID), QString::fromStdString(Name));
 }
 
 std::vector<std::string>Sensor:: getSupportedComponents() {
     return std::vector<std::string>{};
+}
+
+void Sensor::addSupportedcomponent(){
+
 }
 
 void Sensor::addComponent(std::string name) {
@@ -232,7 +236,7 @@ Sensor::SubType Sensor::stringToSubType(const QString& str) const {
     if (lower == "adsb") return SubType::ADSB;
     if (lower == "aesa") return SubType::AESA;
     if (lower == "sensor" || lower == "generic") return SubType::Generic;
-    return SubType::Generic;  // ✅ Default fallback
+    return SubType::Generic;
 }
 
 QString Sensor::detectionCapabilitiesToString(DetectionCapabilities t) const  {
@@ -247,15 +251,17 @@ Sensor::DetectionCapabilities Sensor::stringTodetectionCapabilities(const QStrin
     QString lower = str.toLower();
     if (lower == "all") return DetectionCapabilities::All;
     if (lower == "movingonly") return DetectionCapabilities::MovingOnly;
-        return DetectionCapabilities::All;  // ✅ Default fallback
+        return DetectionCapabilities::All;
 }
 
 // ================= Generic Targets =================
-int Sensor::getTargetCount() const {
+int Sensor::getTargetCount() const
+{
     return targets.size();
 }
 
-Target Sensor::getTarget(int index) const {
+Target Sensor::getTarget(int index) const
+{
     if (index < 0 || index >= targets.size()) {
         throw std::out_of_range("Generic Target index out of range");
     }
@@ -263,25 +269,33 @@ Target Sensor::getTarget(int index) const {
 }
 
 // ================= CSM Targets =================
-int Sensor::getCSMTargetCount() const {
-    return ewtargets.size();  // Changed from csmtargets
+
+int Sensor::getCSMTargetCount() const
+{
+    return csmtargets.size();
 }
 
-Target Sensor::getCSMTarget(int index) const {
+Target Sensor::getCSMTarget(int index) const
+{
     if (index < 0 || index >= csmtargets.size()) {
         throw std::out_of_range("CSM Target index out of range");
     }
-    return ewtargets[index];  // Changed from csmtargets
+
+    return csmtargets[index];
 }
 
 // ================= ESM Targets =================
-int Sensor::getESMTargetCount() const {
-    return ewtargets.size();  // Changed from esmtargets
+
+int Sensor::getESMTargetCount() const
+{
+    return esmtargets.size();
 }
 
-Target Sensor::getESMTarget(int index) const {
+Target Sensor::getESMTarget(int index) const
+{
     if (index < 0 || index >= esmtargets.size()) {
         throw std::out_of_range("ESM Target index out of range");
     }
-    return ewtargets[index];  // Changed from esmtargets
+
+    return esmtargets[index];
 }

@@ -4,6 +4,7 @@
 /* ========================================================================= */
 
 #include "missile.h"
+#include "core/Hierarchy/ECS/Struct/Meta_Data_Component.h"
 #include "core/Hierarchy/EntityProfiles/platform.h"
 #include "core/Hierarchy/Utils/entityutils.h"
 #include "GUI/Tacticaldisplay/canvaswidget.h"
@@ -33,6 +34,19 @@ Missile::Missile(Hierarchy* h) : Weapon(h)
     maxRange       = 120000.0f;
     detonationType = DetonationType::Proximity;
     isActive       = false;
+    if(root){
+        auto& data = root->world.AddComponent<ECS::Entity_Data>(ecsID);
+        data.active = false;
+        data.destroy = false;
+    }
+}
+
+Missile::~Missile(){
+    if(root){
+        auto* data = root->world.GetComponent<ECS::Entity_Data>(ecsID);
+        data->active = false;
+        data->destroy = true;
+    }
 }
 
 // launch() — called by platform Decision() to arm + start flight monitor
@@ -94,13 +108,13 @@ void Missile::missileStart()
     // ── Snap to parent platform position at launch ────────────────────────────
     if (parentEntity) {
         Platform* parentPlatform = dynamic_cast<Platform*>(parentEntity);
-        if (parentPlatform && parentPlatform->transform && parentPlatform->transform->geocord
-            && transform && transform->geocord) {
-            double pLat = parentPlatform->transform->geocord->latitude;
-            double pLon = parentPlatform->transform->geocord->longitude;
-            double pAlt = parentPlatform->transform->geocord->altitude;
+        if (parentPlatform /*&& parentPlatform->transform *//*&& parentPlatform->transform.geocord
+             && transform /*&& transform->geocord*/) {
+            double pLat = parentPlatform->transform.geocord.latitude;
+            double pLon = parentPlatform->transform.geocord.longitude;
+            double pAlt = parentPlatform->transform.geocord.altitude;
             if (pLat >= -90.0 && pLat <= 90.0 && pLon >= -180.0 && pLon <= 360.0) {
-                transform->setGeoCord(
+                transform.setGeoCord(
                     static_cast<float>(pLat),
                     static_cast<float>(pLon),
                     static_cast<float>(pAlt),
@@ -112,32 +126,32 @@ void Missile::missileStart()
     }
 
     // ── Fallback: invalid coords → reset to near target ───────────────────────
-    if (transform && transform->geocord) {
-        double ownLat = transform->geocord->latitude;
-        double ownLon = transform->geocord->longitude;
+    // if (transform /*&& transform->geocord*/) {
+        double ownLat = transform.geocord.latitude;
+        double ownLon = transform.geocord.longitude;
         if (ownLat < -90.0 || ownLat > 90.0 || ownLon < -180.0 || ownLon > 360.0) {
             Console::log("[Missile] WARNING: invalid coords, resetting near target");
-            transform->setGeoCord(
+            transform.setGeoCord(
                 static_cast<float>(m_targetLat - 1.0),
                 static_cast<float>(m_targetLon),
                 0.0f, 0.0f);
         }
-    }
+    // }
 
     // ── Compute great-circle bearing to target ────────────────────────────────
     float parentHeading = 0.0f;
     if (parentEntity) {
         Platform* pp = dynamic_cast<Platform*>(parentEntity);
-        if (pp && pp->transform) parentHeading = pp->transform->getHeading();
-    } else if (transform) {
-        parentHeading = transform->getHeading();
+        if (pp /*&& pp->transform*/) parentHeading = pp->transform.getHeading();
+    } else /*if (transform) */{
+        parentHeading = transform.getHeading();
     }
 
     double launchLat = 0.0, launchLon = 0.0;
-    if (transform && transform->geocord) {
-        launchLat = static_cast<double>(transform->geocord->latitude);
-        launchLon = static_cast<double>(transform->geocord->longitude);
-    }
+    //if (transform /*&& transform->geocord*/) {
+        launchLat = static_cast<double>(transform.geocord.latitude);
+        launchLon = static_cast<double>(transform.geocord.longitude);
+    //}
     {
         double lat1 = qDegreesToRadians(launchLat);
         double lat2 = qDegreesToRadians(m_targetLat);
@@ -148,7 +162,7 @@ void Missile::missileStart()
         m_launchHeading = static_cast<float>(
             std::fmod(qRadiansToDegrees(std::atan2(y, x)) + 360.0, 360.0));
     }
-    if (transform) transform->setHeading(m_launchHeading);
+    /*if (transform)*/ transform.setHeading(m_launchHeading);
 
     Console::log("[Missile] LAUNCHED: " + Name
                  + "  parentHeading=" + std::to_string((int)parentHeading)
@@ -181,7 +195,7 @@ void Missile::missileStart()
 // =============================================================================
 void Missile::missileUpdate(float deltaTime)
 {
-    if (!m_updateRunning || !transform || !transform->geocord) return;
+    if (!m_updateRunning /*|| !transform *//*|| !transform->geocord*/) return;
 
     if (m_target) {
         m_targetLat = m_target->getLatitude();
@@ -192,8 +206,8 @@ void Missile::missileUpdate(float deltaTime)
     m_distanceTravelled += distThisTick;
     m_flightTime        += deltaTime;
 
-    double curLat = static_cast<double>(transform->geocord->latitude);
-    double curLon = static_cast<double>(transform->geocord->longitude);
+    double curLat = static_cast<double>(transform.geocord.latitude);
+    double curLon = static_cast<double>(transform.geocord.longitude);
 
     // Recalculate bearing each tick (proportional navigation)
     {
@@ -206,16 +220,16 @@ void Missile::missileUpdate(float deltaTime)
         m_launchHeading = static_cast<float>(
             std::fmod(qRadiansToDegrees(std::atan2(y, x)) + 360.0, 360.0));
     }
-    transform->setHeading(m_launchHeading);
+    transform.setHeading(m_launchHeading);
 
     double distKm = static_cast<double>(distThisTick) / 1000.0;
 
     // setGeoCord internally calls geoToFlatXYZ — this is what moves the sprite on canvas
     auto [newLat, newLon] = calculateNewLatLong(curLat, curLon, m_launchHeading, distKm);
-    transform->setGeoCord(
+    transform.setGeoCord(
         static_cast<float>(newLat),
         static_cast<float>(newLon),
-        transform->geocord->altitude,
+        transform.geocord.altitude,
         m_launchHeading);
 
     // Haversine distance to target
@@ -269,11 +283,11 @@ void Missile::missileEnd()
     armed    = false;
 
     double detLat = 0.0, detLon = 0.0, detAlt = 0.0;
-    if (transform && transform->geocord) {
-        detLat = static_cast<double>(transform->geocord->latitude);
-        detLon = static_cast<double>(transform->geocord->longitude);
-        detAlt = static_cast<double>(transform->geocord->altitude);
-    }
+    // if (transform /*&& transform->geocord*/) {
+        detLat = static_cast<double>(transform.geocord.latitude);
+        detLon = static_cast<double>(transform.geocord.longitude);
+        detAlt = static_cast<double>(transform.geocord.altitude);
+    // }
 
     Console::log("[Missile] DETONATED: " + Name
                  + "  lat=" + std::to_string(detLat)
@@ -322,7 +336,7 @@ void Missile::missileEnd()
             blastEntry.mesh->closePath = false;
             blastEntry.bitmapPath      = ":/texture/images/Texture/blast.png";
 
-            m_canvas->tempMeshes.push_back(blastEntry);
+            m_canvas->getTempMeshes().push_back(blastEntry);
             m_canvas->update();
 
             Console::log("[Missile] Blast at TARGET lat=" + std::to_string(blastLat)
@@ -331,14 +345,14 @@ void Missile::missileEnd()
             QTimer::singleShot(5000, m_canvas, [this]() {
                 if (!m_canvas) return;
                 QString prefix = QString("Blast_%1_").arg(QString::fromStdString(Name));
-                m_canvas->tempMeshes.erase(
+                m_canvas->getTempMeshes().erase(
                     std::remove_if(
-                        m_canvas->tempMeshes.begin(),
-                        m_canvas->tempMeshes.end(),
+                        m_canvas->getTempMeshes().begin(),
+                        m_canvas->getTempMeshes().end(),
                         [&prefix](const MeshEntry& e) {
                             return e.name.startsWith(prefix);
                         }),
-                    m_canvas->tempMeshes.end());
+                    m_canvas->getTempMeshes().end());
                 m_canvas->update();
             });
         });

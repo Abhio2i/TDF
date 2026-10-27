@@ -146,6 +146,7 @@ public:
     // =========================================================================
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
+    void addSupportedcomponent() override;
     void addComponent(std::string name) override;
     void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;

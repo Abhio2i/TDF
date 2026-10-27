@@ -3,13 +3,10 @@
 #include "core/Hierarchy/EntityProfiles/platform.h"
 #include <core/Hierarchy/hierarchy.h>
 #include <core/Debug/console.h>
-#include "core/Hierarchy/Utils/entityutils.h"
 #include <core/GlobalRegistry.h>
 #include <cmath>
 #include <QtMath>
 #include <QVector3D>
-#include <algorithm>
-#include "GUI/Tacticaldisplay/canvaswidget.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -29,7 +26,6 @@ Weapon::Weapon(Hierarchy* h) : Entity(h)
     par->type  = Constants::ParameterType::FLOAT;
     par->value = 0.0f;
     parameters["weapon_param"] = par;
-
 
 }
 
@@ -79,6 +75,10 @@ std::vector<std::string> Weapon::getSupportedComponents()
             "bitmap", "dynamicModel", "crossSection" };
 }
 
+void Weapon::addSupportedcomponent(){
+
+}
+
 void Weapon::Update(){
 
 }
@@ -89,85 +89,90 @@ void Weapon::addComponent(std::string name)
 {
     Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
     if (!parent) return;
-
     if (name == "transform") {
-        if (!transform) {
-            transform = new Transform();
-            transform->parentEntity = this;
-            parent->Components.insert({transform->ID, transform});
+        // if (transform) {
+            // transform = new Transform();
+            transform.parentEntity = this;
+            transform.init(this);
+            parent->Components.insert({transform.ID, &transform});
             emit parent->componentAdded(QString::fromStdString(ID),
-                                        QString::fromStdString(transform->ID), "transform");
-        }
+                                        QString::fromStdString(transform.ID), "transform");
+        // }
     } else if (name == "rigidbody") {
-        if (!rigidbody) {
-            if (!transform) addComponent("transform");
-            rigidbody = new Rigidbody();
-            rigidbody->parentEntity = this;
-            parent->Components.insert({rigidbody->ID, rigidbody});
-            emit parent->componentAdded(QString::fromStdString(ID),
-                                        QString::fromStdString(rigidbody->ID), "rigidbody");
-        }
+        // if (!rigidbody) {
+        //     if (!transform) addComponent("transform");
+            // rigidbody = new Rigidbody();
+            rigidbody.parentEntity = this;
+            rigidbody.init(this);
+            parent->Components.insert({rigidbody.ID, &rigidbody});
+            //emit parent->componentAdded(QString::fromStdString(ID),
+                                        //QString::fromStdString(rigidbody.ID), "rigidbody");
+        // }
     } else if (name == "collider") {
-        if (!collider) {
-            if (!transform) addComponent("transform");
-            collider = new Collider(parent);
-            collider->parentEntity = this;
-            collider->parentID     = ID;
-            parent->Components.insert({collider->ID, collider});
+        // if (!collider) {
+            // if (!transform) addComponent("transform");
+            // collider = new Collider();
+            collider.parentEntity = this;
+            collider.parentID     = ID;
+            collider.init(this);
+            parent->Components.insert({collider.ID, &collider});
             emit parent->componentAdded(QString::fromStdString(ID),
-                                        QString::fromStdString(collider->ID), "collider");
-        }
+                                        QString::fromStdString(collider.ID), "collider");
+        // }
     } else if (name == "trajectory") {
-        if (!trajectory) {
-            if (!transform) addComponent("transform");
-            trajectory = new Trajectory();
-            trajectory->parentEntity = this;
-            parent->Components.insert({trajectory->ID, trajectory});
-            emit parent->componentAdded(QString::fromStdString(ID),
-                                        QString::fromStdString(trajectory->ID), "trajectory");
-        }
+        // if (!trajectory) {
+        //     if (!transform) addComponent("transform");
+        //     trajectory = new Trajectory();
+            trajectory.parentEntity = this;
+            trajectory.init(this);
+            parent->Components.insert({trajectory.ID, &trajectory});
+            //emit parent->componentAdded(QString::fromStdString(ID),
+                                        //QString::fromStdString(trajectory.ID), "trajectory");
+        // }
     } else if (name == "bitmap") {
-        if (!meshRenderer2d) {
-            if (!transform) addComponent("transform");
-            if (!collider)  addComponent("collider");
-            meshRenderer2d = new MeshRenderer2D();
-            meshRenderer2d->parentEntity = this;
-            meshRenderer2d->Sprite->clear();
+        // if (!meshRenderer2d) {
+        //     if (!transform) addComponent("transform");
+        //     if (!collider)  addComponent("collider");
+        //     meshRenderer2d = new MeshRenderer2D();
+            meshRenderer2d.parentEntity = this;
+            meshRenderer2d.Sprite->clear();
+
             if(weaponType == WeaponType::Sonobuoy){
-                meshRenderer2d->Sprite->append(":/sea/images/sea/sonobuoy.png");
+                meshRenderer2d.Sprite->append(":/sea/images/sea/sonobuoy.png");
             }else{
-                meshRenderer2d->Sprite->append(":/sea/images/sea/AUV.png");
+                meshRenderer2d.Sprite->append(":/sea/images/sea/AUV.png");
             }
-            parent->Components.insert({meshRenderer2d->ID, meshRenderer2d});
+            meshRenderer2d.init(this);
+            parent->Components.insert({meshRenderer2d.ID, &meshRenderer2d});
             emit parent->componentAdded(QString::fromStdString(ID),
-                                        QString::fromStdString(meshRenderer2d->ID), "bitmap");
+                                        QString::fromStdString(meshRenderer2d.ID), "bitmap");
             emit parent->entityMeshAdded(QString::fromStdString(parentID), this);
-        }
+        // }
     } else if (name == "dynamicModel") {
-        if (!dynamicModel) {
-            if (!transform)  addComponent("transform");
-            if (!rigidbody)  addComponent("rigidbody");
-            if (!collider)   addComponent("collider");
-            if (!trajectory) addComponent("trajectory");
-            dynamicModel = new DynamicModel();
-            dynamicModel->parentEntity = this;
-            dynamicModel->transform    = transform;
-            dynamicModel->rigidbody    = rigidbody;
-            dynamicModel->trajectory   = trajectory;
-            dynamicModel->init();
-            parent->Components.insert({dynamicModel->ID, dynamicModel});
-            emit parent->componentAdded(QString::fromStdString(ID),
-                                        QString::fromStdString(dynamicModel->ID), "dynamicModel");
-            emit parent->entityPhysicsAdded(QString::fromStdString(parentID), this);
-        }
+        // if (!dynamicModel) {
+        //     if (!transform)  addComponent("transform");
+        //     if (!rigidbody)  addComponent("rigidbody");
+        //     if (!collider)   addComponent("collider");
+        //     if (!trajectory) addComponent("trajectory");
+        //     dynamicModel = new DynamicModel();
+            dynamicModel.transform    = &transform;
+            dynamicModel.rigidbody    = &rigidbody;
+            dynamicModel.trajectory   = &trajectory;
+            dynamicModel.init(this);
+            parent->Components.insert({dynamicModel.ID, &dynamicModel});
+            //emit parent->componentAdded(QString::fromStdString(ID),
+                                       // QString::fromStdString(dynamicModel.ID), "dynamicModel");
+            //emit parent->entityPhysicsAdded(QString::fromStdString(parentID), this);
+        // }
     } else if (name == "crossSection") {
-        if (!crossSection) {
-            crossSection = new CrossSection();
-            crossSection->parentEntity = this;
-            parent->Components.insert({crossSection->ID, crossSection});
-            emit parent->componentAdded(QString::fromStdString(ID),
-                                        QString::fromStdString(crossSection->ID), "crossSection");
-        }
+        // if (!crossSection) {
+        //     crossSection = new CrossSection();
+            crossSection.parentEntity = this;
+            crossSection.init(this);
+            parent->Components.insert({crossSection.ID, &crossSection});
+            //emit parent->componentAdded(QString::fromStdString(ID),
+                                        //QString::fromStdString(crossSection.ID), "crossSection");
+        // }
     }
 }
 
@@ -180,46 +185,46 @@ void Weapon::removeComponent(std::string name)
     if (!parent) return;
 
     if (name == "transform") {
-        if (!transform) return;
-        parent->Components.erase(transform->ID);
-        delete transform; transform = nullptr;
+        // if (!transform) return;
+        parent->Components.erase(transform.ID);
+        // delete transform; transform = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "transform");
         emit parent->entityMeshRemoved(QString::fromStdString(ID));
         emit parent->entityPhysicsRemoved(QString::fromStdString(ID));
     } else if (name == "rigidbody") {
-        if (!rigidbody) return;
-        parent->Components.erase(rigidbody->ID);
-        delete rigidbody; rigidbody = nullptr;
+        // if (!rigidbody) return;
+        parent->Components.erase(rigidbody.ID);
+        // delete rigidbody; rigidbody = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "rigidbody");
         emit parent->entityPhysicsRemoved(QString::fromStdString(ID));
     } else if (name == "collider") {
-        if (!collider) return;
-        parent->Components.erase(collider->ID);
-        delete collider; collider = nullptr;
+        // if (!collider) return;
+        parent->Components.erase(collider.ID);
+        // delete collider; collider = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "collider");
         emit parent->entityMeshRemoved(QString::fromStdString(ID));
         emit parent->entityPhysicsRemoved(QString::fromStdString(ID));
     } else if (name == "trajectory") {
-        if (!trajectory) return;
-        parent->Components.erase(trajectory->ID);
-        delete trajectory; trajectory = nullptr;
+        // if (!trajectory) return;
+        parent->Components.erase(trajectory.ID);
+        // delete trajectory; trajectory = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "trajectory");
     } else if (name == "bitmap") {
-        if (!meshRenderer2d) return;
-        parent->Components.erase(meshRenderer2d->ID);
-        delete meshRenderer2d; meshRenderer2d = nullptr;
+        // if (!meshRenderer2d) return;
+        parent->Components.erase(meshRenderer2d.ID);
+        // delete meshRenderer2d; meshRenderer2d = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "bitmap");
         emit parent->entityMeshRemoved(QString::fromStdString(ID));
     } else if (name == "dynamicModel") {
-        if (!dynamicModel) return;
-        parent->Components.erase(dynamicModel->ID);
-        delete dynamicModel; dynamicModel = nullptr;
+        // if (!dynamicModel) return;
+        parent->Components.erase(dynamicModel.ID);
+        // delete dynamicModel; dynamicModel = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "dynamicModel");
         emit parent->entityPhysicsRemoved(QString::fromStdString(ID));
     } else if (name == "crossSection") {
-        if (!crossSection) return;
-        parent->Components.erase(crossSection->ID);
-        delete crossSection; crossSection = nullptr;
+        // if (!crossSection) return;
+        parent->Components.erase(crossSection.ID);
+        // delete crossSection; crossSection = nullptr;
         emit parent->componentRemoved(QString::fromStdString(ID), "crossSection");
     }
 }
@@ -230,26 +235,27 @@ void Weapon::removeComponent(std::string name)
 QJsonObject Weapon::getComponent(std::string name)
 {
     if (name == "_self")    return toJson();
-    if (name == "transform")    { if (!transform)     { Console::error(name+": not exist"); return {}; } return transform->toJson(); }
-    if (name == "rigidbody")    { if (!rigidbody)     { Console::error(name+": not exist"); return {}; } return rigidbody->toJson(); }
-    if (name == "collider")     { if (!collider)      { Console::error(name+": not exist"); return {}; } return collider->toJson(); }
-    if (name == "trajectory")   { if (!trajectory)    { Console::error(name+": not exist"); return {}; } return trajectory->toJson(); }
-    if (name == "bitmap")       { if (!meshRenderer2d){ Console::error(name+": not exist"); return {}; } return meshRenderer2d->toJson(); }
-    if (name == "dynamicModel" || name == "dynamicmodel") { if (!dynamicModel) { Console::error(name+": not exist"); return {}; } return dynamicModel->toJson(); }
-    if (name == "crossSection" || name == "crosssection") { if (!crossSection) { Console::error(name+": not exist"); return {}; } return crossSection->toJson(); }
+    if (name == "transform")    { /*if (!transform)     { Console::error(name+": not exist"); return {}; } */return transform.toJson(); }
+    if (name == "rigidbody")    {/* if (!rigidbody)     { Console::error(name+": not exist"); return {}; }*/ return rigidbody.toJson(); }
+    if (name == "collider")     { /*if (!collider)      { Console::error(name+": not exist"); return {}; } */return collider.toJson(); }
+    if (name == "trajectory")   { /*if (!trajectory)    { Console::error(name+": not exist"); return {}; } */return trajectory.toJson(); }
+    if (name == "bitmap")       { /*if (!meshRenderer2d){ Console::error(name+": not exist"); return {}; } */return meshRenderer2d.toJson(); }
+    if (name == "dynamicModel" || name == "dynamicmodel") { /*if (!dynamicModel) { Console::error(name+": not exist"); return {}; }*/ return dynamicModel.toJson(); }
+    if (name == "crossSection" || name == "crosssection") { /*if (!crossSection) { Console::error(name+": not exist"); return {}; } */return crossSection.toJson(); }
     Console::error("Weapon::getComponent – unknown: " + name);
     return {};
 }
 
 void Weapon::updateComponent(QString name, const QJsonObject& obj)
 {
-    if (name == "transform")    { if (transform)      transform->fromJson(obj);      return; }
-    if (name == "rigidbody")    { if (rigidbody)      rigidbody->fromJson(obj);      return; }
-    if (name == "collider")     { if (collider)       collider->fromJson(obj);       return; }
-    if (name == "trajectory")   { if (trajectory)     trajectory->fromJson(obj);     return; }
-    if (name == "bitmap")       { if (meshRenderer2d) meshRenderer2d->fromJson(obj); return; }
-    if (name == "dynamicModel" || name == "dynamicmodel") { if (dynamicModel) dynamicModel->fromJson(obj); return; }
-    if (name == "crossSection" || name == "crosssection") { if (crossSection) crossSection->fromJson(obj); return; }
+
+    if (name == "transform")    {      transform.fromJson(obj);      return; }
+    if (name == "rigidbody")    {      rigidbody.fromJson(obj);      return; }
+    if (name == "collider")     {      collider.fromJson(obj);       return; }
+    if (name == "trajectory")   {      trajectory.fromJson(obj);     return; }
+    if (name == "bitmap")       {      meshRenderer2d.fromJson(obj); return; }
+    if (name == "dynamicModel" || name == "dynamicmodel") {  dynamicModel.fromJson(obj); return; }
+    if (name == "crossSection" || name == "crosssection") {  crossSection.fromJson(obj); return; }
     Console::error(name.toStdString() + ": Weapon – unknown component");
 }
 
@@ -266,15 +272,15 @@ void Weapon::clearTargets()   { detects.clear(); targets.clear(); }
 
 bool Weapon::canEngage(Platform* target)
 {
-    if (!target || safed || !armed || !transform) return false;
-    float distance = transform->translation().distanceToPoint(target->transform->translation());
+    if (!target || safed || !armed ) return false;
+    float distance = transform.translation().distanceToPoint(target->transform.translation());
     return distance <= maxRange && distance >= minRange;
 }
 
 float Weapon::calculateImpactTime(Platform* target)
 {
-    if (!target || maxVelocity == 0.0f || !transform) return -1.0f;
-    float distance = transform->translation().distanceToPoint(target->transform->translation());
+    if (!target || maxVelocity == 0.0f ) return -1.0f;
+    float distance = transform.translation().distanceToPoint(target->transform.translation());
     return distance / maxVelocity;
 }
 
@@ -324,20 +330,20 @@ QString Weapon::weaponTypeNameFromEnum(WeaponType t) const {
 // =============================================================================
 void Weapon::syncComponentsFromWeaponData()
 {
-    if (rigidbody) {
-        rigidbody->Mass = totalMass;
-        rigidbody->Drag = (diameter > 0.0f) ? (diameter * 0.1f) : 0.02f;
+     {
+        rigidbody.Mass = totalMass;
+        rigidbody.Drag = (diameter > 0.0f) ? (diameter * 0.1f) : 0.02f;
     }
-    if (dynamicModel) {
-        dynamicModel->maxSpeed    = maxVelocity * 3.6f;
-        dynamicModel->moveSpeed   = maxVelocity * 3.6f;
-        dynamicModel->minSpeed    = minVelocity * 3.6f;
-        dynamicModel->maxAltitude = maxAltitude * 3.28084f;
-        dynamicModel->mass        = totalMass;
+   {
+        dynamicModel.maxSpeed    = maxVelocity * 3.6f;
+        dynamicModel.moveSpeed   = maxVelocity * 3.6f;
+        dynamicModel.minSpeed    = minVelocity * 3.6f;
+        dynamicModel.maxAltitude = maxAltitude * 3.28084f;
+        dynamicModel.mass        = totalMass;
     }
-    if (transform) {
-        if (transform->geocord && transform->geocord->altitude == 0.0f)
-            transform->geocord->altitude = minAltitude;
+     {
+        if (/*transform->geocord &&*/ transform.geocord.altitude == 0.0f)
+            transform.geocord.altitude = minAltitude;
     }
 }
 
@@ -394,13 +400,13 @@ QJsonObject Weapon::toJson() const
     obj["parameters"] = parObj;
 
     // 7 auto-components
-    if (transform)      obj["transform"]    = transform->toJson();
-    if (rigidbody)      obj["rigidbody"]    = rigidbody->toJson();
-    if (collider)       obj["collider"]     = collider->toJson();
-    if (trajectory)     obj["trajectory"]   = trajectory->toJson();
-    if (meshRenderer2d) obj["bitmap"]       = meshRenderer2d->toJson();
-    if (dynamicModel)   obj["dynamicModel"] = dynamicModel->toJson();
-    if (crossSection)   obj["crossSection"] = crossSection->toJson();
+         obj["transform"]    = transform.toJson();
+         obj["rigidbody"]    = rigidbody.toJson();
+           obj["collider"]     = collider.toJson();
+         obj["trajectory"]   = trajectory.toJson();
+     obj["bitmap"]       = meshRenderer2d.toJson();
+      obj["dynamicModel"] = dynamicModel.toJson();
+      obj["crossSection"] = crossSection.toJson();
 
     return obj;
     // NOTE: subclass appends its own type-specific keys after this.
@@ -444,13 +450,13 @@ void Weapon::fromJson(const QJsonObject& obj)
     if (obj.contains("rearmTime"))       rearmTime       = obj["rearmTime"].toInt(rearmTime);
 
     // 7 auto-components
-    if (obj.contains("transform")    && transform)     transform->fromJson(obj["transform"].toObject());
-    if (obj.contains("rigidbody")    && rigidbody)     rigidbody->fromJson(obj["rigidbody"].toObject());
-    if (obj.contains("collider")     && collider)      collider->fromJson(obj["collider"].toObject());
-    if (obj.contains("trajectory")   && trajectory)    trajectory->fromJson(obj["trajectory"].toObject());
-    if (obj.contains("bitmap")       && meshRenderer2d) meshRenderer2d->fromJson(obj["bitmap"].toObject());
-    if (obj.contains("dynamicModel") && dynamicModel)  dynamicModel->fromJson(obj["dynamicModel"].toObject());
-    if (obj.contains("crossSection") && crossSection)  crossSection->fromJson(obj["crossSection"].toObject());
+    if (obj.contains("transform")    )     transform.fromJson(obj["transform"].toObject());
+    if (obj.contains("rigidbody")    )     rigidbody.fromJson(obj["rigidbody"].toObject());
+    if (obj.contains("collider")     )      collider.fromJson(obj["collider"].toObject());
+    if (obj.contains("trajectory")   )    trajectory.fromJson(obj["trajectory"].toObject());
+    if (obj.contains("bitmap")       ) meshRenderer2d.fromJson(obj["bitmap"].toObject());
+    if (obj.contains("dynamicModel") )  dynamicModel.fromJson(obj["dynamicModel"].toObject());
+    if (obj.contains("crossSection") )  crossSection.fromJson(obj["crossSection"].toObject());
 
     syncComponentsFromWeaponData();
     // NOTE: subclass reads its own type-specific keys after this.
@@ -483,8 +489,8 @@ void Weapon::setTarget(Transform* tr, float detonationRangeMetres)
 
         // Original pointer access karein
         m_targetplatform = (parent->Platforms)[targetID];
-        m_targetLat = m_targetplatform->transform->getLatitude();
-        m_targetLon = m_targetplatform->transform->getLongitude();
+        m_targetLat = m_targetplatform->transform.getLatitude();
+        m_targetLon = m_targetplatform->transform.getLongitude();
     } else {
         qDebug() << "Error: Target ID not found in Platforms map!";
     }

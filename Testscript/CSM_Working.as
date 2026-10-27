@@ -1,90 +1,174 @@
 void main(ScriptEngine@ e)
 {
-    ProfileCategaory@ platformProfile = e.getProfileByName("Platform");
-    
     // ==================================================
-    // Jet1: Agra → New Delhi (HAS RADIO)
+    // PLATFORM PROFILE
     // ==================================================
-    Platform@ jet1 = e.addEntityToPlatform(platformProfile, "Jet1");
+
+    ProfileCategaory@ platformProfile =
+        e.getProfileByName("Platform");
+
+
+    // ==================================================
+    // JET 1 : AGRA -> NEW DELHI
+    // RADIO
+    // ==================================================
+
+    Platform@ jet1 =
+        e.addEntityToPlatform(platformProfile, "Jet1");
+
     jet1.dynamicModel.moveSpeed = 1500;
-    jet1.transform.setGeoCord(27.1767f, 78.0081f, 0.0f); // Agra
-    jet1.trajectory.addWaypoint(27.1767f, 0.0f, 78.0081f); // Start
-    jet1.trajectory.addWaypoint(28.6139f, 0.0f, 77.2090f); // New Delhi
-    
-    // ✅ Add Radio (emits communication signals)
+
+    jet1.transform.setGeoCord(
+        27.1767f,   // Latitude
+        78.0081f,   // Longitude
+        0.0f        // Altitude
+    );
+
+    jet1.trajectory.addWaypoint(
+        27.1767f,   // Agra Latitude
+        78.0081f,   // Agra Longitude
+        0.0f        // Altitude
+    );
+
+    jet1.trajectory.addWaypoint(
+        28.6139f,   // New Delhi Latitude
+        77.2090f,   // New Delhi Longitude
+        0.0f        // Altitude
+    );
+
+    // Add Radio directly
     e.addRadioSubComponent(jet1, "Radio1");
-    Print("✅ Jet1 equipped with Radio1");
-    
+
+    Print("Jet1 created with Radio1");
+
+
     // ==================================================
-    // Jet2: Gurugram → Hathras (HAS CSM)
+    // JET 2 : GURUGRAM -> HATHRAS
+    // CSM
     // ==================================================
-    Platform@ jet2 = e.addEntityToPlatform(platformProfile, "Jet2");
+
+    Platform@ jet2 =
+        e.addEntityToPlatform(platformProfile, "Jet2");
+
     jet2.dynamicModel.moveSpeed = 1500;
-    jet2.transform.setGeoCord(28.4595f, 77.0266f, 0.0f); // Gurugram
-    jet2.trajectory.addWaypoint(28.4595f, 0.0f, 77.0266f); // Start
-    jet2.trajectory.addWaypoint(27.5983f, 0.0f, 78.0506f); // End
-    
-    // ✅ Add CSM (detects radio communications)
-    e.addSensorSubComponent(jet2, "CSM1", "CSM");
-    Sensor@ jet2CSM = jet2.getSensorByName("CSM1");
-    Print("✅ Jet2 equipped with CSM1");
-    
+
+    jet2.transform.setGeoCord(
+        28.4595f,   // Latitude
+        77.0266f,   // Longitude
+        0.0f        // Altitude
+    );
+
+    jet2.trajectory.addWaypoint(
+        28.4595f,   // Gurugram Latitude
+        77.0266f,   // Gurugram Longitude
+        0.0f        // Altitude
+    );
+
+    jet2.trajectory.addWaypoint(
+        27.5983f,   // Hathras Latitude
+        78.0506f,   // Hathras Longitude
+        0.0f        // Altitude
+    );
+
+    // Add CSM directly
+    e.addSensorSubComponent(
+        jet2,
+        "CSM1",
+        "CSM"
+    );
+
+    Print("Jet2 created with CSM1");
+
+
     // ==================================================
-    // Show CSM Display
+    // GET CSM ONLY FOR DETECTION CHECK
     // ==================================================
-    if (jet2CSM !is null) {
+
+    Sensor@ jet2CSM =
+        jet2.getSensorByName("CSM1");
+
+    if (jet2CSM !is null)
+    {
         e.selectEntityDisplay(jet2CSM);
-        Print("✅ CSM display selected");
+
+        Print("CSM display selected");
+
         e.sleep(1000);
     }
-    
+
+
     // ==================================================
-    // Simulation
+    // START SIMULATION
     // ==================================================
+
     SimStart(e);
-    Print("🚀 Simulation started!");
-    Print("📻 CSM listening for radio communications...");
-    
+
+    Print("=======================================");
+    Print("Simulation Started");
+    Print("CSM listening for Radio communications");
+    Print("=======================================");
+
+
+    // ==================================================
+    // MONITOR CSM
+    // ==================================================
+
     for (int t = 0; t < 400; t++)
     {
         e.sleep(1000);
-        
+
         if (jet2CSM !is null)
         {
-            int csmCount = jet2CSM.getCSMTargetCount();
-            
-            // Debug output
-            if (t % 10 == 0) {
-                Print("[t=" + t + "] CSM targets: " + csmCount);
+            int csmCount =
+                jet2CSM.getCSMTargetCount();
+
+            if (t % 10 == 0)
+            {
+                Print(
+                    "[t=" + t +
+                    "] CSM targets: " +
+                    csmCount
+                );
             }
-            
-            // ✅ AS SOON AS CSM DETECTS, STOP!
+
             if (csmCount > 0)
             {
-                Print("═══════════════════════════════════════");
-                Print("📻 CSM DETECTED RADIO! Count: " + csmCount);
-                Print("═══════════════════════════════════════");
-                
-                // Switch display
+                Print("=======================================");
+                Print("CSM DETECTED RADIO!");
+                Print("Target Count: " + csmCount);
+                Print("=======================================");
+
                 e.selectEntityDisplay(jet2CSM);
+
                 e.sleep(1000);
-                
-                // Capture screenshots
-                e.captureSensorScreenshot("csm_detection.png");
-                Print("📸 Screenshots captured!");
-                
-                // Generate report
-                Print("🛑 Stopping at t=" + t);
-                e.generatePDFReport("CSM_Detection_Report.pdf");
-                Print("✅ Report generated!");
-                Print("═══════════════════════════════════════");
-                
-                // Break out of loop
+
+                e.captureSensorScreenshot(
+                    "csm_detection.png"
+                );
+
+                Print("Screenshot captured");
+
+                e.generatePDFReport(
+                    "CSM_Detection_Report.pdf"
+                );
+
+                Print("PDF report generated");
+
+                Print("Stopping simulation at t=" + t);
+
                 break;
             }
         }
     }
-    
+
+
+    // ==================================================
+    // END SIMULATION
+    // ==================================================
+
     SimPause(e);
-    Print("✅ Simulation finished!");
+
+    Print("=======================================");
+    Print("Simulation Finished");
+    Print("=======================================");
 }

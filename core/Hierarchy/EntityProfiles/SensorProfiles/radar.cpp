@@ -105,6 +105,34 @@ Radar::Radar(Hierarchy* h) : Sensor(h)
     maxDetectionAngle = cfg.maxAzimuth;
 }
 
+// (Vansh)
+/* Nominal RF parameters for passive receivers (ESM). Peak power, main-beam gain,
+ * bandwidth derived as 1/pulseWidth (unmodulated-pulse approximation).
+ * antennaBandwidth is the RECEIVER bandwidth and is deliberately not used here. */
+bool Radar::rfEmitterParams(RFEmitterParams& out) const
+{
+    out = RFEmitterParams();
+    const RadarConfig cfg = radarCore_.getConfig();
+
+    out.emitting = Active;
+    if (!(cfg.emissionPower_kW > 0.0) || !(cfg.frequency_Hz > 0.0) || !(cfg.pulseWidth > 0.0f))
+        return false;                                   // not enough data: do not invent any
+
+    out.frequencyMHz   = cfg.frequency_Hz / 1.0e6;
+    out.bandwidthHz    = 1.0 / static_cast<double>(cfg.pulseWidth);
+    out.txPowerDbm     = 10.0 * std::log10(cfg.emissionPower_kW * 1.0e6);   // kW -> mW -> dBm
+    out.txGainDbi      = cfg.antennaGain;
+    out.sidelobePeakDb = cfg.peakSidelobeLevel;         // dB relative to main beam
+    out.sidelobeAvgDb  = cfg.avgSidelobeLevel;
+    out.emitterId      = cfg.emitterCode;               // 0 -> ESM derives an ID
+    out.typeLabel      = QStringLiteral("Radar");
+    return out.isValid();
+}
+
+ECS::sensorComponent& Radar::getSensorData() const{
+    return *parentEntity->root->world.GetComponent<ECS::sensorComponent>(parentEntity->ecsID);
+}
+
 // =============================================================================
 // Lock / break lock  (unchanged)
 // =============================================================================
@@ -146,20 +174,20 @@ RadarPose Radar::buildPose() const
     if (!root || !parentEntity) return pose;
 
     auto it = root->Platforms.find(parentEntity->ID);
-    if (it == root->Platforms.end() || !it->second->transform)
+    if (it == root->Platforms.end() /*|| !it->second->transform*/)
         return pose;
 
-    QVector3D wpos = it->second->transform->matrix->translation();
+    QVector3D wpos = it->second->transform.matrix.translation();
     pose.x = static_cast<double>(wpos.x()) * COORD_SCALE;
     pose.y = static_cast<double>(wpos.y()) * COORD_SCALE;
     pose.z = static_cast<double>(wpos.z()) * COORD_SCALE;
 
-    if (it->second->dynamicModel)
-    {
-        pose.heading = it->second->dynamicModel->TrueHeading;
-        pose.pitch   = it->second->dynamicModel->pitch;//0.0f;
-        pose.roll    = it->second->dynamicModel->roll;//0.0f;
-    }
+    // if (it->second->dynamicModel)
+    // {
+    pose.heading = it->second->dynamicModel.TrueHeading;
+    pose.pitch   = it->second->dynamicModel.pitch;//0.0f;
+    pose.roll    = it->second->dynamicModel.roll;//0.0f;
+    // }
     return pose;
 }
 
@@ -182,10 +210,10 @@ std::vector<TargetInput> Radar::collectTargets(
         if (!entity || key == parentEntity->ID) continue;
 
         Platform* platform = entity;
-        if (!platform->transform) continue;
+        // if (!platform->transform) continue;
 
         QVector3D localPos =
-            source->inverseTransformPoint(platform->transform->matrix->translation());
+            source->inverseTransformPoint(platform->transform.matrix.translation());
 
         TargetInput t;
         t.x = static_cast<double>(localPos.z()) * COORD_SCALE;
@@ -195,9 +223,9 @@ std::vector<TargetInput> Radar::collectTargets(
         t.id = platformToRadarID(key);
         outIdMap[t.id] = platform;
 
-        if (platform->dynamicModel)
+        if (/*platform->dynamicModel*/true)
         {
-            QVector3D worldPos = platform->transform->matrix->translation();
+            QVector3D worldPos = platform->transform.matrix.translation();
             uint32_t tid = platformToRadarID(key);
 
             if (prevPositions_.count(tid))
@@ -216,7 +244,7 @@ std::vector<TargetInput> Radar::collectTargets(
             float hdg = computedHeadings_.count(tid) ? computedHeadings_[tid] : 0.0f;
             velocityFromHeadingSpeed(
                 static_cast<double>(hdg),
-                static_cast<double>(platform->dynamicModel->currentSpeed),
+                static_cast<double>(platform->dynamicModel.currentSpeed),
                 t.vx, t.vy, t.vz);
         }
         else
@@ -325,8 +353,8 @@ void Radar::scan()
 {
     if (!parentEntity) return;
 
-    Transform* source = (root->Platforms)[parentEntity->ID]->transform;
-    if (!source) return;
+    Transform& source = (root->Platforms)[parentEntity->ID]->transform;
+    // if (!source) return;
 
     double dt;
     if (!timerStarted_)
@@ -357,7 +385,7 @@ void Radar::scan()
     }
 
     std::unordered_map<uint32_t, Platform*> idMap;
-    std::vector<TargetInput> radarInputs = collectTargets(source, idMap);
+    std::vector<TargetInput> radarInputs = collectTargets(&source, idMap);
 
     radarCore_.update(dt, pose, radarInputs, simTime_);
 
@@ -371,6 +399,10 @@ void Radar::scan()
     cachedDisplayRange_ = std::clamp(
         static_cast<float>(output.displayRange_km), 5.0f, 1000.0f);
     range = cachedDisplayRange_;
+    if(parentEntity){
+        auto& data = getSensorData();
+        data.sensor[dataid].range = range;
+    }
 
     switch (output.mode)
     {
@@ -517,6 +549,9 @@ QJsonObject Radar::toJson() const
 
 void Radar::fromJson(const QJsonObject& obj)
 {
+
+    if (obj.contains("Active"))
+        Active = obj["Active"].toBool();
     RadarConfig cfg = radarCore_.getConfig();
 
     // --- Transmitter (existing fields unchanged + new sidelobe + all PRF levels) ---
@@ -551,6 +586,13 @@ void Radar::fromJson(const QJsonObject& obj)
         if (s.contains("scanDwellTimeMax")) cfg.scanDwellTime[1] = valueFromParm(s["scanDwellTimeMax"].toObject());
         minAzimuth = cfg.minAzimuth;
         maxAzimuth = cfg.maxAzimuth;
+        if(parentEntity){
+            auto& data = getSensorData();
+            data.sensor[dataid].minAzimuth = cfg.minAzimuth;
+            data.sensor[dataid].maxAzimuth = cfg.maxAzimuth;
+            data.sensor[dataid].range = range;
+        }
+
     }
 
     // --- Detection (existing fields + targetCategory) ---

@@ -144,7 +144,15 @@ int ElectromagneticEmissionSystemData::getMarshalledSize() const
 
     return marshalSize;
 }
+unsigned short ElectromagneticEmissionSystemData::getEmissionsPadding2() const
+{
+    return _emissionsPadding2;
+}
 
+void ElectromagneticEmissionSystemData::setEmissionsPadding2(unsigned short pX)
+{
+    _emissionsPadding2 = pX;
+}
 // Copyright (c) 1995-2009 held by the author(s).  All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions

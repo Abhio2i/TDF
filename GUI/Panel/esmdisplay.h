@@ -1,4 +1,3 @@
-
 /* =============================================================================
  * FILE:         ESMDisplay.h
  * MODULE:       ESM (Electronic Support Measures) Display
@@ -7,12 +6,14 @@
  * STANDARD:     RTCA DO-178C / ED-12C, DAL B
  * COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
  *
- * DESCRIPTION:  Declares the ESMDisplay class which provides a widget for
- *               visualising Electronic Support Measures (ESM) / electronic
- *               intelligence data. It displays detected emitters in a polar
- *               (radar‑like) format with configurable range, rings, ticks,
- *               and hover detection. Integrates with Hierarchy and Sensor/
- *               Platform entities for real‑time tracking and display updates.
+ * DESCRIPTION:  Declares the ESMDisplay class: the ESM panel. It hosts two
+ *               selectable display modes (PPI scope and Signal Spectrum) and
+ *               one observation table shared by both. The circular PPI is
+ *               drawn by ESMPpiWidget, the spectrum graph by
+ *               ESMSpectrumWidget, and both tables/plots read the same
+ *               ESMObservationModel. ESMDisplay keeps the public API used by
+ *               the rest of the application (selectEntity, RemoveEntity,
+ *               updateRadar, ...) and owns the PPI <-> table selection sync.
  *
  * REQUIREMENTS: REQ-ESM-010  ESM visualisation widget
  *               REQ-ESM-011  Display targets with angle and radius
@@ -21,7 +22,9 @@
  *               REQ-ESM-014  Mouse hover detection over targets
  *               REQ-ESM-015  Integration with Hierarchy and Sensor entities
  *               REQ-ESM-016  Update display on entity selection and removal
- *               REQ-ESM-017  Maintain aspect ratio (16:9)
+ *               REQ-ESM-017  (Rev 3) PPI keeps a 1:1 aspect (circular scope)
+ *                            inside a resizable panel; the former 16:9
+ *                            height-for-width rule applied to the bare scope
  *
  * AUTHOR:       Arti Rajpoot
  * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-ESM-001
@@ -41,35 +44,38 @@
 #include <QVector>                                // For vector container
 #include <QComboBox>
 #include <core/Debug/profiler.h>
-// %%% Data Structures %%%
-/* Structure for electronic warfare target */
 
+class QLabel;
+class QPushButton;
+class QSplitter;
+class QStackedWidget;
+class QTableView;
+class ESMObservationModel;
+class ESMPpiWidget;
+class ESMSpectrumWidget;
 
 // %%% Class Definition %%%
-/* Widget for electronic warfare visualization */
+/* ESM panel: PPI / Signal Spectrum modes + shared observation table */
 class ESMDisplay : public QWidget
 {
     Q_OBJECT
 
 public:
-    // Initialize EW display
+    // Initialize ESM panel
     explicit ESMDisplay(QWidget *parent = nullptr);
     // Set hierarchy instance
     void setHierarchy(Hierarchy* h) { hierarchy = h; }
     // Get size hint
     QSize sizeHint() const override;
-    // Get minimum size
-     int range = 100;
-    QSize minimumSize() const;
+    // Configured ESM range in km (mirrors sensor->range)
+    int range = 100;
     // Set radar range
-    void setRange(float value) { range = value; }
-    // Get height for width
-    int heightForWidth(int width) const override;
+    void setRange(float value);
     // Select entity
     void selectEntity(Entity* entity);
     // Remove entity by ID
     void RemoveEntity(QString ID);
-    // Update radar display
+    // Update display from the current sensor detections
     void updateRadar();
     // Sensor instance
     ESM* sensor = nullptr;
@@ -77,57 +83,47 @@ public:
     // Entity platform
     Platform* entity = nullptr;
 
-protected:
-    // Handle paint events
-    void paintEvent(QPaintEvent *event) override;
-    // Handle mouse move for hover detection
-    void mouseMoveEvent(QMouseEvent *event) override;
-    // Handle mouse leave
-    void leaveEvent(QEvent *event) override;
-       void resizeEvent(QResizeEvent *event) override;
+    // Hook for the future ESM processing modules: feed measured spectrum here
+    // via ESMSpectrumWidget::setSpectrum().
+    ESMSpectrumWidget* spectrumWidget() const { return spectrum; }
+
 private slots:
     void onSensorSelected(int index);
+    void onPpiObservationSelected(const QString& key);
+    void onTableSelectionChanged();
+    void setMode(int mode);
+
 private:
-    // %%% Display Properties %%%
-    // Aspect ratio for display
-    const double ASPECT_RATIO = 16.0/9.0;
-    // Padding for display
-    int padding = 18;
-    // Number of radar rings
-    int ringCount = 3;
-    // Major tick interval
-    int majorTickEvery = 30;
-    // Minor ticks per major
-    int minorTicksPerMajor = 5;
-    // Radar green color
-    QColor radarGreen = QColor(0, 255, 0);
-    // Current angle
-    int ang = 0;
-    // List of targets
-    QVector<Target> targets;
+    // %%% Helpers %%%
+    void buildUi();
+    void collectSensors();
+    void updateDropdown();
+    void refreshObservations();
+    void applySelection(bool scrollToSelection);
+    void updateSelectedInfo();
+    void updateStatusLabel();
+
+    // %%% State %%%
     // Entity ID
     QString id = "";
     // Hierarchy instance
     Hierarchy* hierarchy = nullptr;
+    // Key (platform ID) of the selected observation, shared by PPI and table
+    QString selectedKey;
+    bool syncing = false;
 
-    // Hover tracking
-    int hoveredTargetIndex = -1;
-    QPoint lastMousePos;
+    // %%% Child widgets (owned by Qt parent/child) %%%
+    ESMObservationModel* model = nullptr;
+    ESMPpiWidget* ppi = nullptr;
+    ESMSpectrumWidget* spectrum = nullptr;
+    QTableView* table = nullptr;
+    QStackedWidget* stack = nullptr;
+    QSplitter* splitter = nullptr;
+    QPushButton* ppiButton = nullptr;
+    QPushButton* spectrumButton = nullptr;
+    QLabel* statusLabel = nullptr;
+    QLabel* observationsLabel = nullptr;
     QComboBox* sensorDropdown = nullptr;
-    void updateDropdown();
-    // %%% Drawing Methods %%%
-    // Draw background
-    void drawBackground(QPainter &p);
-    // Draw radar ring
-    void drawRadarRing(QPainter &p, const QPoint &center, int outerRadius);
-    // Draw ticks and labels
-    void drawTicksAndLabels(QPainter &p, const QPoint &center, int outerRadius);
-    // Draw concentric circles
-    void drawConcentricCircles(QPainter &p, const QPoint &center, int outerRadius);
-    // Draw center mark
-    void drawCenterMark(QPainter &p, const QPoint &center);
-    // Draw top marker
-    void drawTopMarker(QPainter &p, const QPoint &center, int outerRadius);
 };
 
 #endif // ESMDisplay_H

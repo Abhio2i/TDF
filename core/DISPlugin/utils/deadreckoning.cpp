@@ -124,7 +124,12 @@ PredictedState DeadReckoning::predict(const DeadReckoningState& state,
     euler.theta = predicted.theta;
     euler.phi   = predicted.phi;
 
+    // CoordConverter::eulerToHeading(euler,
+    //                                predicted.heading,
+    //                                predicted.pitch,
+    //                                predicted.roll);
     CoordConverter::eulerToHeading(euler,
+                                   lat, lon,
                                    predicted.heading,
                                    predicted.pitch,
                                    predicted.roll);

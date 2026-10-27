@@ -118,16 +118,26 @@ public:
     // Input:  heading, pitch, roll in DEGREES (from your geocord/dynamicModel)
     // Output: DISOrientation with psi, theta, phi in RADIANS
     // =========================================================================
+    // static DISOrientation headingToEuler(float heading_deg,
+    //                                      float pitch_deg,
+    //                                      float roll_deg);
     static DISOrientation headingToEuler(float heading_deg,
                                          float pitch_deg,
-                                         float roll_deg);
-
+                                         float roll_deg,
+                                         double lat_deg,
+                                         double lon_deg);
     // =========================================================================
     // ORIENTATION REVERSE — DIS Euler radians → degrees
     // Input:  DISOrientation from received PDU
     // Output: heading, pitch, roll in degrees for your geocord
     // =========================================================================
+    // static void eulerToHeading(const DISOrientation& euler,
+    //                            float& heading_deg,
+    //                            float& pitch_deg,
+    //                            float& roll_deg);
     static void eulerToHeading(const DISOrientation& euler,
+                               double lat_deg,
+                               double lon_deg,
                                float& heading_deg,
                                float& pitch_deg,
                                float& roll_deg);

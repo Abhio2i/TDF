@@ -6,6 +6,8 @@
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLBuffer>
 #include <QMatrix4x4>
+#include <QVector>
+#include <QVector3D>
 
 class EOLand : protected QOpenGLFunctions
 {
@@ -14,15 +16,14 @@ public:
     ~EOLand();
 
     void initialize();
-
-    // --> NEW: Added rx, ry, rz parameters
-    void render(const QMatrix4x4 &projection, const QMatrix4x4 &cameraMatrix,
-                float altitude, float rx, float ry, float rz);
+    void render(const QMatrix4x4 &projection, const QMatrix4x4 &cameraMatrix);
 
 private:
     QOpenGLShaderProgram groundProgram;
     QOpenGLVertexArrayObject groundVao;
     QOpenGLBuffer groundVbo;
+
+    int vertexCount; // Tracks the size of our generated 3D mesh
 };
 
 #endif // EOLAND_H

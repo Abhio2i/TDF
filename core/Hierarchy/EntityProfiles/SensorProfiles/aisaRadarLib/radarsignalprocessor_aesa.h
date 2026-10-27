@@ -318,6 +318,17 @@ public:
     double computePropagationLoss(double range_m,
                                   const RadarConfig& cfg) const;
 
+    // Plugin logic overrides (AESA plugin SDK). Set by RadarModel_AESA at the
+    // start of each update(); nullptr = built-in only. The object is owned by
+    // the model. This pointer is the only member of this class: a documented
+    // exception to "stateless". REQ-AESA-090.
+    void setLogicOverrides(const LogicOverrides* ov) { overrides_ = ov; }
+
+private:
+    const LogicOverrides* overrides_ = nullptr;
+
+public:
+
     // =========================================================================
     // FUNCTION:    computeSINR
     //
@@ -540,6 +551,11 @@ public:
     double computeRadialVelocity(const TargetInput& target, double range,
                                  std::normal_distribution<double>& noise) const;
 
+    // Adds Doppler measurement noise to a range rate (uses this TU's RNG,
+    // same stream as computeRadialVelocity). REQ-AESA-040.
+    double addDopplerNoise(double rangeRate_m_s,
+                           std::normal_distribution<double>& noise) const;
+
     // =========================================================================
     // FUNCTION:    computeCPA
     //
@@ -555,7 +571,8 @@ public:
     // TRACEABILITY: TC-AESA-SP-029  Stationary target CPA = current range
     // =========================================================================
     void computeCPA(DetectionOutput& det, const TargetInput& target,
-                    double range) const;
+                    double range,
+                    double ownVx, double ownVy, double ownVz) const;
 
     // =========================================================================
     // FUNCTION:    computeAlbersheimPd
@@ -869,7 +886,8 @@ public:
     // =========================================================================
     bool isInDopplerBlindZone(double radVel_m_s,
                               const RadarConfig& cfg,
-                              const BeamWaveform& waveform) const;
+                              const BeamWaveform& waveform,
+                              double notchCentre_m_s) const;
 
     // =========================================================================
     // FUNCTION:    computeClutterNotch
@@ -886,7 +904,8 @@ public:
     // TRACEABILITY: TC-AESA-SP-047  Notch centre at platformSpeed
     // =========================================================================
     std::pair<double,double> computeClutterNotch(const RadarConfig& cfg,
-                                                  const BeamWaveform& wf) const;
+                                                  const BeamWaveform& wf,
+                                                  double notchCentre_m_s) const;
 
     // =========================================================================
     // FUNCTION:    computeSTAPGain
@@ -906,7 +925,7 @@ public:
     // TRACEABILITY: TC-AESA-SP-048  Far-from-notch target gets full STAP gain
     // =========================================================================
     double computeSTAPGain(double radialVelocity_m_s,
-                           double platformSpeed_m_s,
+                           double notchCentre_m_s,
                            const BeamWaveform& wf,
                            const RadarConfig& cfg) const;
 
@@ -924,7 +943,8 @@ public:
     // =========================================================================
     bool isInClutterNotchSTAP(double radVel_m_s,
                               const RadarConfig& cfg,
-                              const BeamWaveform& wf) const;
+                              const BeamWaveform& wf,
+                              double notchCentre_m_s) const;
 
     // =========================================================================
     // §L  MONOPULSE ANGLE ERROR

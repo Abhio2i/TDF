@@ -8,16 +8,18 @@
  *
  * DESCRIPTION:  Declares the WaypointEditDialog class which provides a modal
  *               dialog for editing waypoint parameters (latitude, longitude,
- *               altitude, speed). Used within trajectory editing workflows
- *               to modify individual waypoint data. Supports setting initial
- *               values, retrieving updated values, and a static convenience
- *               method for one‑shot editing.
+ *               altitude, speed, drop weapon flag, drop count). Used within
+ *               trajectory editing workflows to modify individual waypoint
+ *               data. Supports setting initial values, retrieving updated
+ *               values, and a static convenience method for one‑shot editing.
  *
  * REQUIREMENTS: REQ-WAYPOINT-010  Waypoint editing dialog
  *               REQ-WAYPOINT-011  Edit latitude, longitude, altitude, speed
  *               REQ-WAYPOINT-012  Set initial waypoint values
  *               REQ-WAYPOINT-013  Retrieve updated values after dialog acceptance
  *               REQ-WAYPOINT-014  Static convenience method for modal editing
+ *               REQ-WAYPOINT-015  Edit drop weapon enable/disable flag
+ *               REQ-WAYPOINT-016  Edit drop count value
  *
  * AUTHOR:       Arti Rajpoot
  * REVIEWED BY:  [Reviewer Name], [Review Date] — SPR-WAYPOINT-001
@@ -29,7 +31,8 @@
  */
 /* ========================================================================= */
 /* File: WaypointEditDialog.h                                                */
-/* Purpose: Dialog for editing waypoint parameters (lat, lon, alt, speed)    */
+/* Purpose: Dialog for editing waypoint parameters (lat, lon, alt, speed,    */
+/*          drop weapon, drop count)                                        */
 /* Written by   : Arti Rajpoot                                               */
 /* ========================================================================= */
 
@@ -38,6 +41,8 @@
 
 #include <QDialog>
 #include <QDoubleSpinBox>
+#include <QSpinBox>
+#include <QCheckBox>
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -50,16 +55,23 @@ class WaypointEditDialog : public QDialog
 public:
     explicit WaypointEditDialog(QWidget *parent = nullptr);
     ~WaypointEditDialog();
-
-    // Set initial values
-    void setWaypointValues(double latitude, double longitude, double altitude, double speed = 100.0);
+    void setWaypointValues(double latitude, double longitude, double altitude,
+                           double speed = 100.0, bool dropWeapon = false, int dropCount = 0);
 
     // Get updated values
     double getLatitude() const;
     double getLongitude() const;
     double getAltitude() const;
     double getSpeed() const;
+    bool getDropWeapon() const;
+    int  getDropCount() const;
+
+    static bool editWaypoint(QWidget* parent, double& latitude, double& longitude,
+                             double& altitude, double& speed, bool& dropWeapon, int& dropCount);
     static bool editWaypoint(QWidget* parent, double& latitude, double& longitude, double& altitude, double& speed);
+
+private slots:
+    void onDropWeaponToggled(bool checked);
 
 private:
     void setupUI();
@@ -70,6 +82,8 @@ private:
     QDoubleSpinBox* lonSpinBox;
     QDoubleSpinBox* altSpinBox;
     QDoubleSpinBox* speedSpinBox;
+    QCheckBox* dropWeaponCheckBox;
+    QSpinBox*  dropCountSpinBox;
     QPushButton* okButton;
     QPushButton* cancelButton;
 };

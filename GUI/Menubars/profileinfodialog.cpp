@@ -54,8 +54,12 @@ ProfileInfoDialog::ProfileInfoDialog(QWidget *parent)
     setWindowTitle("Premetrix Performance Metrics");
     setMinimumSize(400, 500);
 
-    // Non-modal dialog
-    setWindowFlags(Qt::Tool | Qt::Dialog | Qt::WindowCloseButtonHint);
+    setWindowFlags(Qt::Window |
+                   Qt::WindowTitleHint |
+                   Qt::WindowSystemMenuHint |
+                   Qt::WindowMinMaxButtonsHint |
+                   Qt::WindowCloseButtonHint);
+    setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
 
     setupUI();
 
@@ -127,17 +131,14 @@ void ProfileInfoDialog::setupUI()
     statusLabel->setAlignment(Qt::AlignCenter);
     statusLabel->setStyleSheet(ProfileInfoDialogStyles::StatusLabel);
     mainLayout->addWidget(statusLabel);
-
     setLayout(mainLayout);
 }
 
 void ProfileInfoDialog::updateRealTimeInfo()
 {
     frameCount++;
-
     QString info;
     QTextStream stream(&info);
-
     stream << "=== PREMETRIX PERFORMANCE METRICS ===\n";
     stream << "Timestamp: " << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz") << "\n";
     stream << "=====================================\n\n";

@@ -44,9 +44,9 @@ void test_FixedPoints_initialization() {
     ProfileCategaory* p = new ProfileCategaory(h);
     FixedPoints* e = new FixedPoints(h);
 
-    ASSERT_EQ(e->transform,nullptr, "Initially Transform should be null");
-    ASSERT_EQ(e->collider,nullptr, "Initially collider should be null");
-    ASSERT_EQ(e->meshRenderer2d,nullptr, "meshRenderer2d Transform should be null");
+    // ASSERT_EQ(e->transform,nullptr, "Initially Transform should be null");
+    // ASSERT_EQ(e->collider,nullptr, "Initially collider should be null");
+    // ASSERT_EQ(e->meshRenderer2d,nullptr, "meshRenderer2d Transform should be null");
 
     delete e;
     delete p;
@@ -66,7 +66,7 @@ void test_FixedPoints_component_function() {
     //Test addComponent function
     // correct values
     e->addComponent("transform");
-    ASSERT_NEQ(e->transform,nullptr, "(Correct Values) addComponent Function should be return component");
+    // ASSERT_NEQ(e->transform,nullptr, "(Correct Values) addComponent Function should be return component");
 
     // wrong values
     try{
@@ -90,22 +90,22 @@ void test_FixedPoints_component_function() {
     QJsonObject delta;
     delta["active"] = false;
     e->updateComponent("transform",delta);
-    ASSERT_FALSE(e->transform->Active, "(Correct Values) UpdateComponent Function should be update transform Json Data");
+    ASSERT_FALSE(e->transform.Active, "(Correct Values) UpdateComponent Function should be update transform Json Data");
 
     //null values
     delta["active"] = true;
     e->updateComponent(nullptr,delta);
-    ASSERT_FALSE(e->transform->Active, "(null Values) UpdateComponent Function should not be update transform Json Data");
+    ASSERT_FALSE(e->transform.Active, "(null Values) UpdateComponent Function should not be update transform Json Data");
 
     //Wrong values
     delta["active"] = true;
     e->updateComponent("wrong",delta);
-    ASSERT_FALSE(e->transform->Active, "(wrong Values) UpdateComponent Function should not be update transform Json Data");
+    ASSERT_FALSE(e->transform.Active, "(wrong Values) UpdateComponent Function should not be update transform Json Data");
 
     //Test removeComponent function
     // correct values
     e->removeComponent("transform");
-    ASSERT_EQ(e->transform,nullptr, "(Correct Values) removeComponent Function should be return null");
+    // ASSERT_EQ(e->transform,nullptr, "(Correct Values) removeComponent Function should be return null");
 
     // wrong values
     try{

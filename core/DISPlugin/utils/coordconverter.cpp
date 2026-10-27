@@ -8,7 +8,7 @@
 #include "coordconverter.h"
 #include <cmath>
 #include <QtDebug>
-
+#include <array>
 // =============================================================================
 // computeN
 // Radius of curvature in the prime vertical
@@ -115,93 +115,175 @@ void CoordConverter::ecefToGeocord(const ECEFPosition& ecef,
 // DIS psi is measured from East in radians
 // This function handles the mapping
 // =============================================================================
-DISOrientation CoordConverter::headingToEuler(float heading_deg,
-                                              float pitch_deg,
-                                              float roll_deg)
+// =============================================================================
+// Internal 3x3 rotation matrix helpers — used only for the geocentric <->
+// topographic Euler angle conversion below. Not exposed in the header.
+//
+// Method: heading/pitch/roll are Tait-Bryan angles referenced to the LOCAL
+// North-East-Down frame at the entity's own lat/lon. DIS psi/theta/phi are
+// the same Tait-Bryan sequence referenced to ECEF instead. Converting between
+// them requires composing the local->body rotation with the ECEF->local
+// rotation (which depends on lat/lon), then re-extracting the three angles
+// from the combined matrix. Verified term-for-term against the NPS/MOVES
+// Institute reference implementation (edu.nps.moves.disutil.EulerConversions).
+// =============================================================================
+namespace {
+
+using Mat3 = std::array<std::array<double,3>,3>;
+
+Mat3 matMul(const Mat3& a, const Mat3& b)
 {
+    Mat3 r{};
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j) {
+            double sum = 0.0;
+            for (int k = 0; k < 3; ++k) sum += a[i][k] * b[k][j];
+            r[i][j] = sum;
+        }
+    return r;
+}
+
+Mat3 matTranspose(const Mat3& a)
+{
+    Mat3 r{};
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+            r[i][j] = a[j][i];
+    return r;
+}
+
+// Tait-Bryan (yaw-pitch-roll / 3-2-1) rotation: reference frame -> body frame.
+Mat3 buildTaitBryanMatrix(double psi, double theta, double phi)
+{
+    double cpsi = std::cos(psi),   spsi = std::sin(psi);
+    double cth  = std::cos(theta), sth  = std::sin(theta);
+    double cphi = std::cos(phi),   sphi = std::sin(phi);
+
+    Mat3 r;
+    r[0][0] = cth * cpsi;
+    r[0][1] = cth * spsi;
+    r[0][2] = -sth;
+
+    r[1][0] = sphi * sth * cpsi - cphi * spsi;
+    r[1][1] = sphi * sth * spsi + cphi * cpsi;
+    r[1][2] = sphi * cth;
+
+    r[2][0] = cphi * sth * cpsi + sphi * spsi;
+    r[2][1] = cphi * sth * spsi - sphi * cpsi;
+    r[2][2] = cphi * cth;
+    return r;
+}
+
+// Extracts (psi, theta, phi) radians from a matrix built as above.
+// Valid away from the theta = +/-90 deg gimbal-lock singularity.
+void extractTaitBryanAngles(const Mat3& r, double& psi, double& theta, double& phi)
+{
+    theta = std::asin(-r[0][2]);
+    psi   = std::atan2(r[0][1], r[0][0]);
+    phi   = std::atan2(r[1][2], r[2][2]);
+}
+
+// ECEF -> local North/East/Down rotation at given lat/lon (radians).
+// Uses the same North/East/Up basis vectors already validated in
+// CoordConverter::nedToECEFVelocity / ecefToNEDVelocity, so orientation
+// and velocity math stay consistent with each other.
+Mat3 buildEcefToNedMatrix(double lat_rad, double lon_rad)
+{
+    double sinLat = std::sin(lat_rad), cosLat = std::cos(lat_rad);
+    double sinLon = std::sin(lon_rad), cosLon = std::cos(lon_rad);
+
+    Mat3 r;
+    r[0][0] = -sinLat * cosLon; r[0][1] = -sinLat * sinLon; r[0][2] =  cosLat; // North
+    r[1][0] = -sinLon;          r[1][1] =  cosLon;          r[1][2] =  0.0;    // East
+    r[2][0] = -cosLat * cosLon; r[2][1] = -cosLat * sinLon; r[2][2] = -sinLat; // Down
+    return r;
+}
+
+} // anonymous namespace
+
+DISOrientation CoordConverter::headingToEuler(float heading_deg, float pitch_deg, float roll_deg,
+                                              double lat_deg, double lon_deg)
+{
+    double latRad = lat_deg * DEG_TO_RAD;
+    double lonRad = lon_deg * DEG_TO_RAD;
+
+    Mat3 localToBody = buildTaitBryanMatrix(
+        heading_deg * DEG_TO_RAD, pitch_deg * DEG_TO_RAD, roll_deg * DEG_TO_RAD);
+    Mat3 ecefToLocal = buildEcefToNedMatrix(latRad, lonRad);
+    Mat3 ecefToBody  = matMul(localToBody, ecefToLocal);
+
+    double psi, theta, phi;
+    extractTaitBryanAngles(ecefToBody, psi, theta, phi);
+
     DISOrientation euler;
-
-    // heading_deg is compass bearing from North
-    // DIS psi is measured counter-clockwise from East
-    // Conversion: psi = 90 - heading (in degrees) then to radians
-    float psi_deg = 90.0f - heading_deg;
-
-    euler.psi   = static_cast<float>(psi_deg   * DEG_TO_RAD);
-    euler.theta = static_cast<float>(pitch_deg  * DEG_TO_RAD);
-    euler.phi   = static_cast<float>(roll_deg   * DEG_TO_RAD);
-
+    euler.psi   = static_cast<float>(psi);
+    euler.theta = static_cast<float>(theta);
+    euler.phi   = static_cast<float>(phi);
     return euler;
 }
 
-// =============================================================================
-// eulerToHeading
-// Converts incoming DIS Euler angles (radians) back to heading/pitch/roll (degrees)
-// =============================================================================
 void CoordConverter::eulerToHeading(const DISOrientation& euler,
-                                    float& heading_deg,
-                                    float& pitch_deg,
-                                    float& roll_deg)
+                                    double lat_deg, double lon_deg,
+                                    float& heading_deg, float& pitch_deg, float& roll_deg)
 {
-    // Reverse of headingToEuler
-    float psi_deg = static_cast<float>(euler.psi * RAD_TO_DEG);
+    double latRad = lat_deg * DEG_TO_RAD;
+    double lonRad = lon_deg * DEG_TO_RAD;
 
-    heading_deg = 90.0f - psi_deg;
+    Mat3 ecefToBody  = buildTaitBryanMatrix(euler.psi, euler.theta, euler.phi);
+    Mat3 ecefToLocal = buildEcefToNedMatrix(latRad, lonRad);
+    Mat3 localToBody = matMul(ecefToBody, matTranspose(ecefToLocal));
 
-    // Normalize heading to 0-360
-    while (heading_deg < 0.0f)   heading_deg += 360.0f;
+    double heading, pitch, roll;
+    extractTaitBryanAngles(localToBody, heading, pitch, roll);
+
+    heading_deg = static_cast<float>(heading * RAD_TO_DEG);
+    while (heading_deg < 0.0f)    heading_deg += 360.0f;
     while (heading_deg >= 360.0f) heading_deg -= 360.0f;
 
-    pitch_deg = static_cast<float>(euler.theta * RAD_TO_DEG);
-    roll_deg  = static_cast<float>(euler.phi   * RAD_TO_DEG);
+    pitch_deg = static_cast<float>(pitch * RAD_TO_DEG);
+    roll_deg  = static_cast<float>(roll  * RAD_TO_DEG);
 }
-
-// =============================================================================
-// nedToECEFVelocity
-// Converts NED (North-East-Down) velocity to ECEF velocity
-//
-// Your dynamicModel provides:
-//   NorthVelocity, EastVelocity, VerticalVelocity in m/s
-//
-// DIS needs velocity in ECEF frame (X,Y,Z meters per second)
-// =============================================================================
-// DISVelocity CoordConverter::nedToECEFVelocity(float northVel_ms,
-//                                               float eastVel_ms,
-//                                               float vertVel_ms,
-//                                               double lat_deg,
-//                                               double lon_deg)
+// DISOrientation CoordConverter::headingToEuler(float heading_deg,
+//                                               float pitch_deg,
+//                                               float roll_deg)
 // {
-//     double lat_rad = lat_deg * DEG_TO_RAD;
-//     double lon_rad = lon_deg * DEG_TO_RAD;
+//     DISOrientation euler;
 
-//     double sinLat = std::sin(lat_rad);
-//     double cosLat = std::cos(lat_rad);
-//     double sinLon = std::sin(lon_rad);
-//     double cosLon = std::cos(lon_rad);
+//     // heading_deg is compass bearing from North
+//     // DIS psi is measured counter-clockwise from East
+//     // Conversion: psi = 90 - heading (in degrees) then to radians
+//     float psi_deg = 90.0f - heading_deg;
 
-//     // NED to ECEF rotation matrix
-//     // [vx]   [-sinLat*cosLon  -sinLon   cosLat*cosLon] [vN]
-//     // [vy] = [-sinLat*sinLon   cosLon   cosLat*sinLon] [vE]
-//     // [vz]   [ cosLat          0        sinLat        ] [vD]
-//     // Note: VerticalVelocity is UP in your model, DIS vD is DOWN
-//     float vD = -vertVel_ms;  // UP to DOWN
+//     euler.psi   = static_cast<float>(psi_deg   * DEG_TO_RAD);
+//     euler.theta = static_cast<float>(pitch_deg  * DEG_TO_RAD);
+//     euler.phi   = static_cast<float>(roll_deg   * DEG_TO_RAD);
 
-//     DISVelocity vel;
-//     vel.x = static_cast<float>(
-//         -sinLat * cosLon * northVel_ms
-//         - sinLon         * eastVel_ms
-//         + cosLat * cosLon * vD);
-
-//     vel.y = static_cast<float>(
-//         -sinLat * sinLon * northVel_ms
-//         + cosLon         * eastVel_ms
-//         + cosLat * sinLon * vD);
-
-//     vel.z = static_cast<float>(
-//         cosLat * northVel_ms
-//         + sinLat * vD);
-
-//     return vel;
+//     return euler;
 // }
+
+// // =============================================================================
+// // eulerToHeading
+// // Converts incoming DIS Euler angles (radians) back to heading/pitch/roll (degrees)
+// // =============================================================================
+// void CoordConverter::eulerToHeading(const DISOrientation& euler,
+//                                     float& heading_deg,
+//                                     float& pitch_deg,
+//                                     float& roll_deg)
+// {
+//     // Reverse of headingToEuler
+//     float psi_deg = static_cast<float>(euler.psi * RAD_TO_DEG);
+
+//     heading_deg = 90.0f - psi_deg;
+
+//     // Normalize heading to 0-360
+//     while (heading_deg < 0.0f)   heading_deg += 360.0f;
+//     while (heading_deg >= 360.0f) heading_deg -= 360.0f;
+
+//     pitch_deg = static_cast<float>(euler.theta * RAD_TO_DEG);
+//     roll_deg  = static_cast<float>(euler.phi   * RAD_TO_DEG);
+// }
+
+
 DISVelocity CoordConverter::nedToECEFVelocity(float northVel_ms,
                                               float eastVel_ms,
                                               float vertVel_ms,   // positive UP

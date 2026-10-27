@@ -39,8 +39,10 @@
 #include <core/Network/libs/MessageBus.h>
 #include <core/Network/libs/TransformUpdate.h>
 #include "core/DISPlugin//SimulationPlugin.h"
+#include <QPointer>
 
 #include "core/Dynamics/Model/aircraft.h"
+#include "core/Dynamics/Model/seamodel.h"
 #include "simulation_state.h"
 #include "core/Hierarchy/EntityProfiles/weapon.h"
 
@@ -54,15 +56,16 @@ class CanvasWidget;
 // =============================================================================
 struct PhysicsComponent {
     std::string name;                       //!< Entity name/ID
-    Entity *base = nullptr;                 //!< Base entity
-    Platform *platform = nullptr;           //!< Platform data
-    Weapon *weapon = nullptr;               //!< Weapon data (if any)
-    Specialzone *zone = nullptr;            //!< Special zone data
+    QPointer<Entity> base = nullptr;                 //!< Base entity
+    QPointer<Platform> platform = nullptr;           //!< Platform data
+    QPointer<Weapon> weapon = nullptr;               //!< Weapon data (if any)
+    QPointer<Specialzone> zone = nullptr;            //!< Special zone data
     Transform *transform = nullptr;         //!< Spatial transform
     DynamicModel *dynamicModel = nullptr;   //!< Motion dynamics
     Rigidbody *rigidbody = nullptr;         //!< Physics rigidbody
     Collider *collider = nullptr;           //!< Collision shape
-    Aircraft *aircraft = nullptr;           //!< Aircraft dynamics model
+    std::shared_ptr<Aircraft> aircraft = nullptr;           //!< Aircraft dynamics model
+    std::shared_ptr<SeaModel> sea = nullptr;
 };
 
 // =============================================================================
@@ -143,6 +146,7 @@ public:
     void unregisterPlugin(SimulationPlugin* plugin);
     // Set canvas so weapons can display blast effects on detonation
     void setCanvas(CanvasWidget* canvas) { m_canvas = canvas; }
+    void promoteToLocalPhysics(const std::string& entityID);
 
 private:
     void frame();           //!< Called each simulation frame

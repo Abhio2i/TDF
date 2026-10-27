@@ -114,5 +114,75 @@ struct DISCreateEntityData {
     // Request identifier
     uint32_t requestID = 0;
 };
+// =============================================================================
+// Acknowledge flag codes — IEEE 1278.1 Table B.47
+// Identifies which PDU type is being acknowledged
+// =============================================================================
+namespace DISAcknowledgeFlag {
+constexpr uint16_t CreateEntity      = 1;
+constexpr uint16_t RemoveEntity      = 2;
+constexpr uint16_t StartResume       = 3;
+constexpr uint16_t StopFreeze        = 4;
+constexpr uint16_t TransferOwnership = 5;
+}
 
+// =============================================================================
+// Acknowledge response flag — IEEE 1278.1 Table B.48
+// =============================================================================
+namespace DISResponseFlag {
+constexpr uint16_t Other          = 0;
+constexpr uint16_t AbleToComply   = 1;
+constexpr uint16_t UnableToComply = 2;
+}
+
+// =============================================================================
+// DISAcknowledgeData
+// Sent automatically in response to CreateEntity, RemoveEntity,
+// StartResume, StopFreeze, and (future) TransferOwnership PDUs.
+// Uses raw DIS triplets — no engine ID mapping needed.
+// ExerciseHandler fills this from the received PDU and emits acknowledgeNeeded.
+// PDUSender serializes and sends it immediately.
+// =============================================================================
+struct DISAcknowledgeData {
+    // Originator of the request we are acknowledging (extracted from received PDU)
+    uint16_t originSite      = 0;
+    uint16_t originApp       = 0;
+    uint16_t originEntity    = 0;
+
+    // Which PDU type we are acknowledging — DISAcknowledgeFlag::*
+    uint16_t acknowledgeFlag = 0;
+
+    // Response — always AbleToComply for now
+    uint16_t responseFlag    = DISResponseFlag::AbleToComply;
+
+    // Must match the requestID from the PDU being acknowledged
+    uint32_t requestID       = 0;
+};
+// =============================================================================
+// Transfer type codes — IEEE 1278.1 Table 70
+// =============================================================================
+namespace DISTransferType {
+constexpr uint8_t Other                          = 1;
+constexpr uint8_t ControllingAppRequestsTransfer = 2;  // owner initiates
+constexpr uint8_t RequestingAppDesiresControl    = 3;  // receiver requests
+constexpr uint8_t MutualConsent                  = 4;
+constexpr uint8_t AutomaticTransfer              = 7;
+}
+
+// =============================================================================
+// DISTransferOwnershipData
+// Sent by the current owner to transfer an entity to another machine.
+// The entity keeps its original DIS ID after transfer — all receivers
+// see continuity with no ID change.
+// requestID must be set before sending — used to match Acknowledge response.
+// =============================================================================
+struct DISTransferOwnershipData {
+    std::string transferEntityID;  // engine ID for local lookup in mapper
+
+    uint16_t receivingSiteID = 0;  // target machine's site ID
+    uint16_t receivingAppID  = 0;  // target machine's app ID
+
+    uint8_t  transferType = DISTransferType::ControllingAppRequestsTransfer;
+    uint32_t requestID    = 0;     // set by DISNetworkPlugin before sending
+};
 #endif // DISEXERCISECONTROL_H

@@ -1,3 +1,4 @@
+
 // =============================================================================
 // FILE:        radio.h
 // MODULE:      Tactical Simulation Communication Systems
@@ -33,7 +34,7 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
-
+#include "core/DISPlugin/interface/DISTransmitterSnapshot.h"
 class CanvasWidget;
 
 // =============================================================================
@@ -48,6 +49,7 @@ class Radio : public Entity
     Q_OBJECT
 public:
     explicit Radio(Hierarchy* h);
+    ~Radio();
 
     // =========================================================================
     // SECTION: Communication Enumerations
@@ -125,6 +127,38 @@ public:
         float angle = 0.0f;
         float range = 0.0f;
         float frequency = 1.0f;
+        double distance_m = 0.0;
+
+        double radius_m = 0.0;
+        double azimuth_deg = 0.0;
+
+        double scanner_max_range_m = 0.0;
+        double scanner_frequency_hz = 0.0;
+
+        double path_loss_db = 0.0;
+        double rx_power_dbm = 0.0;
+        double noise_floor_dbm = 0.0;
+        double snr_db = 0.0;
+        double rain_attenuation_db = 0.0;
+        double wind_attenuation_db_per_km = 0.0;
+        double los_horizon_distance_m = 0.0;
+        double polarization_loss_db = 0.0;
+        double required_snr_threshold_db = 0.0;
+
+        bool network_match = false;
+        bool frequency_match = false;
+        bool range_ok = false;
+        bool beam_ok = false;
+        bool sensitivity_ok = false;
+        bool squelch_ok = false;
+        bool snr_ok = false;
+
+        // New: transmitter-only scan result can return a footprint record
+        bool is_footprint = false;
+        double heading_deg = 0.0;
+        double beamwidth_deg = 0.0;
+
+
     };
     static void resetModel() {
         if (model) {
@@ -151,13 +185,14 @@ public:
         float& outRange,
         float& outFrequency
         ) const;
-
+    ECS::radioComponent& getRadioData() const;
     // =========================================================================
     // SECTION: Virtual Interface Overrides
     // DESCRIPTION: Entity lifecycle and component management.
     // =========================================================================
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
+    void addSupportedcomponent() override;
     void addComponent(std::string name) override;
     void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;
@@ -170,6 +205,11 @@ public:
     // =========================================================================
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& obj) override;
+    int radioIndex = 0;   // 0 = unassigned; RadioProfile assigns a real, per-platform-unique value at attachment
+
+signals:
+    void transmitterSnapshotReady(DISTransmitterSnapshot snap);
+
 };
 
 #endif // RADIO_H

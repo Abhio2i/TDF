@@ -422,7 +422,7 @@ public:
     qint64 maxDuration = 0;
     PayLoad payload;
     QSharedPointer<PayLoad> packet;
-    CanvasWidget canvas;
+    CanvasWidget* canvas = nullptr;
     std::unordered_map<int, EntitiesDetails> entitiesIndexDetails;
     std::unordered_map<int, ProfileCategoriesDetails> profileCategoriesIndexDetails;
     std::unordered_map<int, EntitiesMeshRenderer2D> entitiesMeshRenderer2DIndex;

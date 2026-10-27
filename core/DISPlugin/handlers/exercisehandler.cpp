@@ -39,6 +39,18 @@ void ExerciseHandler::onStartResumeReceived(QByteArray   pduBytes,
     DISIncomingExercise event;
     event.type = DISIncomingExercise::StartResume;
     emit incomingExercise(event);
+    // ── Send Acknowledge per IEEE 1278.1 ──────────────────────────────────────
+    const DIS::EntityID& originID = pdu.getOriginatingEntityID();
+    const DIS::SimulationAddress& simAddr = originID.getSimulationAddress();
+
+    DISAcknowledgeData ack;
+    ack.originSite      = simAddr.getSite();
+    ack.originApp       = simAddr.getApplication();
+    ack.originEntity    = originID.getEntityNumber();
+    ack.acknowledgeFlag = DISAcknowledgeFlag::StartResume;
+    ack.responseFlag    = DISResponseFlag::AbleToComply;
+    ack.requestID       = pdu.getRequestID();
+    emit acknowledgeNeeded(ack);
 }
 
 // =============================================================================
@@ -63,6 +75,18 @@ void ExerciseHandler::onStopFreezeReceived(QByteArray   pduBytes,
     event.type       = DISIncomingExercise::StopFreeze;
     event.stopReason = pdu.getReason();
     emit incomingExercise(event);
+    // ── Send Acknowledge per IEEE 1278.1 ──────────────────────────────────────
+    const DIS::EntityID& originID = pdu.getOriginatingEntityID();
+    const DIS::SimulationAddress& simAddr = originID.getSimulationAddress();
+
+    DISAcknowledgeData ack;
+    ack.originSite      = simAddr.getSite();
+    ack.originApp       = simAddr.getApplication();
+    ack.originEntity    = originID.getEntityNumber();
+    ack.acknowledgeFlag = DISAcknowledgeFlag::StopFreeze;
+    ack.responseFlag    = DISResponseFlag::AbleToComply;
+    ack.requestID       = pdu.getRequestID();
+    emit acknowledgeNeeded(ack);
 }
 
 // =============================================================================
@@ -83,9 +107,39 @@ void ExerciseHandler::onRemoveEntityReceived(QByteArray   pduBytes,
     qDebug() << "[ExerciseHandler] Remove Entity PDU received"
              << "requestID=" << pdu.getRequestID();
 
-    // RemoveEntity is handled by the absence of EntityState heartbeats
-    // We log here for now — entity timeout handled by EntityStateHandler
+    // ── Send Acknowledge per IEEE 1278.1 ──────────────────────────────────────
+    const DIS::EntityID& originID = pdu.getOriginatingEntityID();
+    const DIS::SimulationAddress& simAddr = originID.getSimulationAddress();
+
+    DISAcknowledgeData ack;
+    ack.originSite      = simAddr.getSite();
+    ack.originApp       = simAddr.getApplication();
+    ack.originEntity    = originID.getEntityNumber();
+    ack.acknowledgeFlag = DISAcknowledgeFlag::RemoveEntity;
+    ack.responseFlag    = DISResponseFlag::AbleToComply;
+    ack.requestID       = pdu.getRequestID();
+    emit acknowledgeNeeded(ack);
+
+    // Entity removal tracked by EntityState heartbeat timeout
+    // 12-second timeout in DISNetworkPlugin removes ghost entity
 }
+// void ExerciseHandler::onRemoveEntityReceived(QByteArray   pduBytes,
+//                                              QHostAddress sender)
+// {
+//     Q_UNUSED(sender)
+
+//     DIS::RemoveEntityPdu pdu;
+//     DIS::DataStream ds(pduBytes.constData(),
+//                        static_cast<size_t>(pduBytes.size()),
+//                        DIS::BIG);
+//     pdu.unmarshal(ds);
+
+//     qDebug() << "[ExerciseHandler] Remove Entity PDU received"
+//              << "requestID=" << pdu.getRequestID();
+
+//     // RemoveEntity is handled by the absence of EntityState heartbeats
+//     // We log here for now — entity timeout handled by EntityStateHandler
+// }
 
 // =============================================================================
 // onCreateEntityReceived
@@ -105,6 +159,38 @@ void ExerciseHandler::onCreateEntityReceived(QByteArray   pduBytes,
     qDebug() << "[ExerciseHandler] Create Entity PDU received"
              << "requestID=" << pdu.getRequestID();
 
+    // ── Send Acknowledge per IEEE 1278.1 ──────────────────────────────────────
+    // IEEE requires Acknowledge PDU in response to CreateEntity.
+    // Extract originator from PDU and emit — PDUSender handles serialization.
+    const DIS::EntityID& originID = pdu.getOriginatingEntityID();
+    const DIS::SimulationAddress& simAddr = originID.getSimulationAddress();
+
+    DISAcknowledgeData ack;
+    ack.originSite      = simAddr.getSite();
+    ack.originApp       = simAddr.getApplication();
+    ack.originEntity    = originID.getEntityNumber();
+    ack.acknowledgeFlag = DISAcknowledgeFlag::CreateEntity;
+    ack.responseFlag    = DISResponseFlag::AbleToComply;
+    ack.requestID       = pdu.getRequestID();
+    emit acknowledgeNeeded(ack);
+
     // New entity will announce itself via EntityState PDU shortly
-    // EntityStateHandler will register it when first EntityState arrives
+    // EntityStateHandler registers it on first EntityState arrival
 }
+// void ExerciseHandler::onCreateEntityReceived(QByteArray   pduBytes,
+//                                              QHostAddress sender)
+// {
+//     Q_UNUSED(sender)
+
+//     DIS::CreateEntityPdu pdu;
+//     DIS::DataStream ds(pduBytes.constData(),
+//                        static_cast<size_t>(pduBytes.size()),
+//                        DIS::BIG);
+//     pdu.unmarshal(ds);
+
+//     qDebug() << "[ExerciseHandler] Create Entity PDU received"
+//              << "requestID=" << pdu.getRequestID();
+
+//     // New entity will announce itself via EntityState PDU shortly
+//     // EntityStateHandler will register it when first EntityState arrives
+// }

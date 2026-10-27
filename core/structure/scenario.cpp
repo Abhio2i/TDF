@@ -12,7 +12,11 @@ Scenario::Scenario() {
     scenerenderer = new SceneRenderer();
     console  = Console::internalInstance();
     scriptengine = new ScriptEngine();
-    //scriptengine->setHierarchy(hierarchy);
+    scriptengine->setHierarchy(
+        hierarchy,
+        nullptr,
+        scenerenderer
+        );
     connect(hierarchy,&Hierarchy::entityMeshAdded,scenerenderer,&SceneRenderer::entityAdded);
     connect(hierarchy,&Hierarchy::entityMeshRemoved,scenerenderer,&SceneRenderer::entityRemoved);
 

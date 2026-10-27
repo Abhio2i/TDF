@@ -65,6 +65,7 @@ public:
     // =========================================================================
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
+    void addSupportedcomponent() override;
     void addComponent(std::string name) override;
     void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;
@@ -81,6 +82,16 @@ public:
     Constants::FormationType stringToFormationType(QString str) const;
     QStringList formationTypeOptions() const;
     void clear();
+
+
+
+    void removeEntityFromFormation(const QString& entityId);
+    bool addEntityToFormation(Entity* entity);
+    bool isAllyEntity(const QString& entityId) const;
+    bool isMothershipEntity(const QString& entityId) const;
+    void breakFormation();
+    void resumeFormation();
+    bool isFormationActive() const;
 private:
     // =========================================================================
     // SECTION: Private Helpers

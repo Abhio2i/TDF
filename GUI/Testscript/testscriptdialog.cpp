@@ -33,7 +33,7 @@
 /* ========================================================================= */
 
 #include "testscriptdialog.h"                      // For test script dialog class
-#include "core/Debug/console.h"                    // For console logging
+#include "core/Debug/console.h"                    // For//Console logging
 #include "qabstractitemview.h"                     // For abstract item view
 #include <QIcon>                                   // For icon handling
 #include <QHBoxLayout>                             // For horizontal layout
@@ -51,6 +51,8 @@
 #include <QScrollBar>                              // For scroll bar
 #include <QPalette>                                // For color palette
 #include <QAbstractTextDocumentLayout>             // For text document layout
+#include <QTableWidget>
+#include <QHeaderView>
 
 
 // %%% Line Number Area %%%
@@ -60,7 +62,7 @@ TestScriptDialog::LineNumberArea::LineNumberArea(QTextEdit *editor)
 {
     // Set fixed width for line numbers
     setFixedWidth(lineNumberAreaWidth());
-    Console::log("LineNumberArea created for codeEditor");
+    //Console::log("LineNumberArea created for codeEditor");
 }
 
 /* Calculate width for line number area */
@@ -112,10 +114,10 @@ TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString
     : QWidget(parent), editFilePath(filePath), isEditMode(editMode), isNewScript(false)
 {
     // Log initialization
-    Console::log("Creating TestScriptDialog with parent: " +
-                 std::string(parent ? parent->objectName().toStdString() : "null") +
-                 ", editMode: " + std::string(editMode ? "true" : "false"));
-    Console::log("Qt Version: " + std::string(qVersion()));
+    //Console::log("Creating TestScriptDialog with parent: " +
+    // std::string(parent ? parent->objectName().toStdString() : "null") +
+    // ", editMode: " + std::string(editMode ? "true" : "false"));
+    //Console::log("Qt Version: " + std::string(qVersion()));
     // Configure window
     setWindowTitle(tr("Test Script"));
     setMinimumSize(600, 400);
@@ -123,7 +125,7 @@ TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString
     setStyleSheet("TestScriptDialog { background-color: #1E1E1E; }");
     // Set up main layout
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    Console::log("Main vertical layout created for window");
+    //Console::log("Main vertical layout created for window");
     // Create top layout
     QHBoxLayout *topLayout = new QHBoxLayout();
     // Create new script button
@@ -143,20 +145,20 @@ TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString
         "   font-weight: bold;"
         "}");
     topLayout->addWidget(newScriptButton);
-    Console::log("New Script button created");
+    //Console::log("New Script button created");
     // Create script name combo
     scriptNameCombo = new QComboBox(this);
     scriptNameCombo->setObjectName("scriptNameCombo");
     scriptNameCombo->setEditable(false);
-    Console::log("Using native styling for scriptNameCombo");
+    //Console::log("Using native styling for scriptNameCombo");
     QString projectDir = QCoreApplication::applicationDirPath() + "/../..";
     QString testScriptPath = QDir(projectDir).absoluteFilePath("Testscript");
     QDir testScriptDir(testScriptPath);
     if (!testScriptDir.exists()) {
         if (testScriptDir.mkpath(testScriptPath)) {
-            Console::log("Created Testscript folder at: " + testScriptPath.toStdString());
+            //Console::log("Created Testscript folder at: " + testScriptPath.toStdString());
         } else {
-            Console::error("Failed to create Testscript folder at: " + testScriptPath.toStdString());
+            //Console::error("Failed to create Testscript folder at: " + testScriptPath.toStdString());
             QMessageBox::warning(this, tr("Folder Error"),
                                  tr("Testscript folder not found and could not be created at: %1").arg(testScriptPath));
         }
@@ -168,21 +170,21 @@ TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString
         testScriptDir.setNameFilters(filters);
         QStringList fileList = testScriptDir.entryList(QDir::Files, QDir::Name);
         scriptNameCombo->addItems(fileList);
-        Console::log("Populated scriptNameCombo with " + std::to_string(fileList.size()) +
-                     " .as files from " + testScriptPath.toStdString());
+        //Console::log("Populated scriptNameCombo with " + std::to_string(fileList.size()) +
+        // " .as files from " + testScriptPath.toStdString());
     } else {
-        Console::error("Testscript folder not found at: " + testScriptPath.toStdString());
+        //Console::error("Testscript folder not found at: " + testScriptPath.toStdString());
     }
     scriptNameCombo->setCurrentIndex(0);
     topLayout->addWidget(scriptNameCombo);
-    Console::log("Script name combo created");
+    //Console::log("Script name combo created");
     // Create script type combo
-    scriptTypeCombo = new QComboBox(this);
-    scriptTypeCombo->setObjectName("scriptTypeCombo");
-    scriptTypeCombo->addItems({"Entity Behaviour", "Sensors Script", "Radar Script", "Editor Script"});
-    Console::log("Script type combo created with native styling");
-    topLayout->addWidget(scriptTypeCombo);
-    Console::log("Script type combo added");
+    //  scriptTypeCombo = new QComboBox(this);
+    //  scriptTypeCombo->setObjectName("scriptTypeCombo");
+    //  scriptTypeCombo->addItems({"Entity Behaviour", "Sensors Script", "Radar Script", "Editor Script"});
+    // //Console::log("Script type combo created with native styling");
+    //  topLayout->addWidget(scriptTypeCombo);
+    //Console::log("Script type combo added");
     // Create script path edit and load button
     scriptPathEdit = new QLineEdit(this);
     scriptPathEdit->setObjectName("scriptPathEdit");
@@ -205,13 +207,13 @@ TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString
         "}");
     topLayout->addWidget(loadScriptButton);
     topLayout->addWidget(scriptPathEdit);
-    Console::log("Load Script button (text-based) and hidden path edit created");
+    //Console::log("Load Script button (text-based) and hidden path edit created");
     // Create run button
     runButton = new QPushButton(QIcon(":/icons/images/play.png"), "", this);
     runButton->setFixedSize(30, 30);
     topLayout->addWidget(runButton);
     topLayout->addStretch();
-    Console::log("Run button with icon created");
+    //Console::log("Run button with icon created");
     mainLayout->addLayout(topLayout);
     // Create bottom layout
     QVBoxLayout *bottomLayout = new QVBoxLayout();
@@ -267,7 +269,8 @@ TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString
     editorLayout->addWidget(lineNumberArea);
     editorLayout->addWidget(codeEditor);
     bottomLayout->addLayout(editorLayout);
-    Console::log("Code editor with line numbers created");
+
+    ////Console::log("Code editor with line numbers created");
     // Create OK and Cancel buttons
     okButton = new QPushButton(tr("Save"), this);
     okButton->setEnabled(!editMode);
@@ -277,7 +280,7 @@ TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString
     buttonLayout->addWidget(okButton);
     buttonLayout->addWidget(cancelButton);
     bottomLayout->addLayout(buttonLayout);
-    Console::log("OK and Cancel buttons created");
+    //Console::log("OK and Cancel buttons created");
     mainLayout->addLayout(bottomLayout);
     // Connect signals
     connect(newScriptButton, SIGNAL(clicked()), this, SLOT(onNewScriptButtonClicked()));
@@ -287,29 +290,28 @@ TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString
     connect(cancelButton, SIGNAL(clicked()), this, SLOT(onCancelButtonClicked()));
     connect(scriptPathEdit, SIGNAL(textChanged(const QString &)), this, SLOT(onScriptPathChanged()));
     connect(scriptNameCombo, SIGNAL(currentTextChanged(const QString &)), this, SLOT(onScriptNameChanged(const QString &)));
-    Console::log("Signals connected for window, including newScriptButton and loadScriptButton");
+    ////Console::log("Signals connected for window, including newScriptButton and loadScriptButton");
     // Verify icons
     if (runButton->icon().isNull()) {
-        Console::error("Failed to load run icon from :/icons/images/play.png");
+        ////Console::error("Failed to load run icon from :/icons/images/play.png");
     } else {
-        Console::log("Run icon loaded successfully");
+        ////Console::log("Run icon loaded successfully");
     }
     if (newScriptButton->icon().isNull()) {
-        Console::error("Failed to load add icon from :/icons/images/add.png");
+        ////Console::error("Failed to load add icon from :/icons/images/add.png");
     } else {
-        Console::log("Add icon loaded successfully for newScriptButton");
+        ////Console::log("Add icon loaded successfully for newScriptButton");
     }
     // Handle edit mode
     if (isEditMode) {
         newScriptButton->hide();
         scriptNameCombo->hide();
-        scriptTypeCombo->hide();
         loadScriptButton->hide();
         scriptPathEdit->hide();
-        Console::log("Hiding script name, type, path fields, and load script button for edit mode");
+        ////Console::log("Hiding script name, type, path fields, and load script button for edit mode");
         QFile file(filePath);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            Console::error("Failed to open file for editing: " + filePath.toStdString());
+            ////Console::error("Failed to open file for editing: " + filePath.toStdString());
             okButton->setEnabled(false);
         } else {
             QTextStream in(&file);
@@ -317,7 +319,7 @@ TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString
             file.close();
             codeEditor->setPlainText(scriptContent);
             okButton->setEnabled(true);
-            Console::log("Loaded script content from: " + filePath.toStdString());
+            ////Console::log("Loaded script content from: " + filePath.toStdString());
         }
     } else {
         scriptPathEdit->setText(testScriptPath);
@@ -325,7 +327,7 @@ TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString
     }
     scriptNameCombo->update();
     updateLineNumberArea();
-    Console::log("TestScriptDialog setup complete");
+    ////Console::log("TestScriptDialog setup complete");
 
 }
 
@@ -333,7 +335,7 @@ TestScriptDialog::TestScriptDialog(QWidget *parent, bool editMode, const QString
 /* Clean up test script dialog */
 TestScriptDialog::~TestScriptDialog()
 {
-    Console::log("Destroying TestScriptDialog");
+    ////Console::log("Destroying TestScriptDialog");
 }
 
 // %%% Line Number Management %%%
@@ -352,24 +354,25 @@ void TestScriptDialog::onNewScriptButtonClicked()
     scriptNameCombo->setCurrentIndex(0);
     codeEditor->clear();
     okButton->setEnabled(true);
-    Console::log("New Script button clicked, cleared code editor and reset script selection to 'Sample Script'");
+    //Console::log("New Script button clicked, cleared code editor and reset script selection to 'Sample Script'");
 }
 
 /* Handle run button click */
 void TestScriptDialog::onRunButtonClicked()
 {
-    if (!codeEditor || !scriptNameCombo || !scriptTypeCombo || !scriptPathEdit) {
-        Console::error("Invalid widget pointer in onRunButtonClicked");
+    if (!codeEditor || !scriptNameCombo || !scriptPathEdit)
         return;
-    }
+
     QString code = codeEditor->toPlainText();
-    QString scriptName = isNewScript || scriptNameCombo->currentText() == tr("Sample Script") ? "NewScript" : scriptNameCombo->currentText();
-    QString scriptType = scriptTypeCombo->currentText();
+
+    QString scriptName =
+        isNewScript ||
+                scriptNameCombo->currentText() == tr("Sample Script")
+            ? "NewScript"
+            : scriptNameCombo->currentText();
+
     QString scriptPath = scriptPathEdit->text();
-    Console::log("Run button clicked. Script Name: " + scriptName.toStdString() +
-                 ", Type: " + scriptType.toStdString() +
-                 ", Path: " + scriptPath.toStdString() +
-                 ", Content:\n" + code.toStdString());
+
     emit runScriptstring(code);
 }
 
@@ -377,7 +380,7 @@ void TestScriptDialog::onRunButtonClicked()
 void TestScriptDialog::onLoadScriptButtonClicked()
 {
     if (!scriptPathEdit || !codeEditor || !scriptNameCombo || !okButton) {
-        Console::error("Invalid widget pointer in onLoadScriptButtonClicked");
+        //Console::error("Invalid widget pointer in onLoadScriptButtonClicked");
         return;
     }
     QString projectDir = QCoreApplication::applicationDirPath() + "/../..";
@@ -402,17 +405,17 @@ void TestScriptDialog::onLoadScriptButtonClicked()
             }
             scriptNameCombo->setCurrentIndex(index);
             okButton->setEnabled(fileInfo.isWritable());
-            Console::log("Loaded script from: " + filePath.toStdString() +
-                         ", updated scriptNameCombo to: " + fileName.toStdString());
+            //Console::log("Loaded script from: " + filePath.toStdString() +
+            // ", updated scriptNameCombo to: " + fileName.toStdString());
             isNewScript = false;
         } else {
-            Console::error("Failed to open file for reading: " + filePath.toStdString());
+            //Console::error("Failed to open file for reading: " + filePath.toStdString());
             QMessageBox::warning(this, tr("File Error"),
                                  tr("Failed to open file: %1").arg(filePath));
             scriptNameCombo->setCurrentIndex(0);
         }
     } else {
-        Console::log("Load script dialog canceled by user");
+        //Console::log("Load script dialog canceled by user");
     }
 }
 
@@ -420,7 +423,7 @@ void TestScriptDialog::onLoadScriptButtonClicked()
 void TestScriptDialog::onScriptPathChanged()
 {
     if (!scriptPathEdit || !okButton) {
-        Console::error("Invalid widget pointer in onScriptPathChanged");
+        //Console::error("Invalid widget pointer in onScriptPathChanged");
         return;
     }
     QString folderPath = scriptPathEdit->text();
@@ -436,14 +439,14 @@ void TestScriptDialog::onScriptPathChanged()
 void TestScriptDialog::onScriptNameChanged(const QString &text)
 {
     if (!codeEditor || !scriptPathEdit) {
-        Console::error("Invalid widget pointer in onScriptNameChanged");
+        //Console::error("Invalid widget pointer in onScriptNameChanged");
         return;
     }
     if (text == tr("Sample Script")) {
         isNewScript = false;
         codeEditor->clear();
         scriptNameCombo->setCurrentIndex(0);
-        Console::log("Selected 'Sample Script', cleared codeEditor");
+        //Console::log("Selected 'Sample Script', cleared codeEditor");
         return;
     }
     isNewScript = false;
@@ -456,16 +459,16 @@ void TestScriptDialog::onScriptNameChanged(const QString &text)
             file.close();
             codeEditor->setPlainText(scriptContent);
             okButton->setEnabled(QFileInfo(file).isWritable());
-            Console::log("Loaded script content into codeEditor from: " + filePath.toStdString());
+            //Console::log("Loaded script content into codeEditor from: " + filePath.toStdString());
         } else {
-            Console::error("Failed to open file for reading: " + filePath.toStdString());
+            //Console::error("Failed to open file for reading: " + filePath.toStdString());
             QMessageBox::warning(this, tr("File Error"),
                                  tr("Failed to open file: %1").arg(filePath));
             codeEditor->clear();
             scriptNameCombo->setCurrentIndex(0);
         }
     } else {
-        Console::log("Selected script name: " + text.toStdString() + ", no file loaded");
+        //Console::log("Selected script name: " + text.toStdString() + ", no file loaded");
         codeEditor->clear();
         scriptNameCombo->setCurrentIndex(0);
     }
@@ -475,7 +478,7 @@ void TestScriptDialog::onScriptNameChanged(const QString &text)
 void TestScriptDialog::onOkButtonClicked()
 {
     if (!codeEditor) {
-        Console::error("Invalid widget pointer in onOkButtonClicked");
+        //Console::error("Invalid widget pointer in onOkButtonClicked");
         return;
     }
     QString filePath;
@@ -487,20 +490,19 @@ void TestScriptDialog::onOkButtonClicked()
                                                 QDir(projectDir).filePath("NewScript.as"),
                                                 tr("AngelScript Files (*.as)"));
         if (filePath.isEmpty()) {
-            Console::log("Save file dialog canceled by user");
+            //Console::log("Save file dialog canceled by user");
             return;
         }
         scriptPathEdit->setText(QFileInfo(filePath).absolutePath());
     } else {
-        if (!scriptNameCombo || !scriptPathEdit || !scriptTypeCombo) {
-            Console::error("Invalid widget pointer in onOkButtonClicked");
+        if (!scriptNameCombo || !scriptPathEdit) {
+            //Console::error("Invalid widget pointer in onOkButtonClicked");
             return;
         }
         QString scriptName = scriptNameCombo->currentText().trimmed();
-        QString scriptType = scriptTypeCombo->currentText().trimmed();
         QString folderPath = scriptPathEdit->text();
         if (scriptName == tr("Sample Script") || scriptName.isEmpty()) {
-            Console::error("No valid script name selected");
+            //Console::error("No valid script name selected");
             QMessageBox::warning(this, tr("Input Error"),
                                  tr("Please select a valid script or create a new one."));
             return;
@@ -510,7 +512,7 @@ void TestScriptDialog::onOkButtonClicked()
             scriptNameCombo->setCurrentText(scriptName);
         }
         if (folderPath.isEmpty()) {
-            Console::error("Folder path is empty");
+            //Console::error("Folder path is empty");
             QMessageBox::warning(this, tr("Input Error"),
                                  tr("Please provide a folder path."));
             return;
@@ -521,20 +523,20 @@ void TestScriptDialog::onOkButtonClicked()
     if (!isEditMode) {
         QFileInfo folderInfo(fileInfo.absolutePath());
         if (!folderInfo.exists() || !folderInfo.isDir()) {
-            Console::error("Folder does not exist: " + fileInfo.absolutePath().toStdString());
+            //Console::error("Folder does not exist: " + fileInfo.absolutePath().toStdString());
             QMessageBox::warning(this, tr("Folder Error"),
                                  tr("Folder does not exist: %1").arg(fileInfo.absolutePath()));
             return;
         }
         if (!folderInfo.isWritable()) {
-            Console::error("Folder is not writable: " + fileInfo.absolutePath().toStdString());
+            //Console::error("Folder is not writable: " + fileInfo.absolutePath().toStdString());
             QMessageBox::warning(this, tr("Permission Error"),
                                  tr("Folder is not writable: %1").arg(fileInfo.absolutePath()));
             return;
         }
     }
     if (fileInfo.exists() && !fileInfo.isWritable()) {
-        Console::error("File is not writable: " + filePath.toStdString());
+        //Console::error("File is not writable: " + filePath.toStdString());
         QMessageBox::warning(this, tr("Permission Error"),
                              tr("File is not writable: %1").arg(filePath));
         return;
@@ -544,19 +546,19 @@ void TestScriptDialog::onOkButtonClicked()
         QTextStream out(&file);
         out << codeEditor->toPlainText();
         file.close();
-        Console::log("Script saved successfully to: " + filePath.toStdString());
+        //Console::log("Script saved successfully to: " + filePath.toStdString());
     } else {
-        Console::error("Failed to save script to: " + filePath.toStdString());
+        //Console::error("Failed to save script to: " + filePath.toStdString());
         QMessageBox::warning(this, tr("File Error"),
                              tr("Failed to save script to: %1").arg(filePath));
         return;
     }
     if (!isEditMode) {
         QString scriptName = isNewScript ? QFileInfo(filePath).fileName() : scriptNameCombo->currentText();
-        QString scriptType = scriptTypeCombo->currentText();
-        Console::log("OK button clicked. Saved script: " + scriptName.toStdString() +
-                     ", Type: " + scriptType.toStdString() +
-                     ", Path: " + filePath.toStdString());
+
+        //Console::log("OK button clicked. Saved script: " + scriptName.toStdString() +
+        // ", Type: " + scriptType.toStdString() +
+        // ", Path: " + filePath.toStdString());
         if (isNewScript) {
             scriptNameCombo->clear();
             scriptNameCombo->addItem(tr("Sample Script"));
@@ -567,12 +569,12 @@ void TestScriptDialog::onOkButtonClicked()
             QStringList fileList = selectedDir.entryList(QDir::Files, QDir::Name);
             scriptNameCombo->addItems(fileList);
             scriptNameCombo->setCurrentIndex(0);
-            Console::log("Refreshed scriptNameCombo with " + std::to_string(fileList.size()) +
-                         " .as files from " + QFileInfo(filePath).absolutePath().toStdString());
+            //Console::log("Refreshed scriptNameCombo with " + std::to_string(fileList.size()) +
+            // " .as files from " + QFileInfo(filePath).absolutePath().toStdString());
             isNewScript = false;
         }
     } else {
-        Console::log("OK button clicked. Updated script at: " + filePath.toStdString());
+        //Console::log("OK button clicked. Updated script at: " + filePath.toStdString());
     }
     emit closed();
     close();

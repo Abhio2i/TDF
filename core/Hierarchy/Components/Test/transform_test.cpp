@@ -48,7 +48,7 @@ void test_Transform_initialization() {
     ASSERT_FALSE(t->ID.empty(), "Transform should have a generated ID");
 
     // Default Delhi coordinates check (from constructor logic)
-    ASSERT_NEQ(t->geocord, nullptr, "Geocords should be initialized");
+    // ASSERT_NEQ(t->geocord, nullptr, "Geocords should be initialized");
 
     delete t;
 }
@@ -62,7 +62,7 @@ void test_Transform_GeoLogic() {
     ASSERT_EQ(t->getLatitude(), 28.6139f, "Latitude should be set correctly");
     ASSERT_EQ(t->getLongitude(), 77.2090f, "Longitude should be set correctly");
     // getAltitude() function check (if implemented, otherwise direct access)
-    ASSERT_EQ(t->geocord->altitude, 100.0f, "Altitude should be set correctly");
+    ASSERT_EQ(t->geocord.altitude, 100.0f, "Altitude should be set correctly");
 
     delete t;
 }
@@ -102,7 +102,7 @@ void test_Transform_JSON_Serialization() {
         t2->fromJson(obj);
         ASSERT_FALSE(t2->Active, "fromJson should restore Active status");
         ASSERT_EQ(t2->getLatitude(), 15.0f, "fromJson should restore Latitude");
-        ASSERT_EQ(t2->geocord->altitude, 500.0f, "fromJson should restore Altitude");
+        ASSERT_EQ(t2->geocord.altitude, 500.0f, "fromJson should restore Altitude");
     } catch (...) {
         ASSERT_FALSE(true, "fromJson crashed");
     }
@@ -117,7 +117,7 @@ void test_Transform_PDU_Network() {
     TransformPDU pdu;
 
     t->setGeoCord(12.34f, 56.78f, 1000.0f);
-    t->matrix->setTranslation(QVector3D(1, 2, 3));
+    t->matrix.setTranslation(QVector3D(1, 2, 3));
 
     // toPDU
     t->toPDU(pdu, "entity_123", "parent_456");
@@ -127,7 +127,7 @@ void test_Transform_PDU_Network() {
     // fromPDU
     Transform* t2 = new Transform();
     t2->fromPDU(pdu);
-    ASSERT_EQ(t2->matrix->translation().x(), 1.0f, "fromPDU should restore X translation");
+    ASSERT_EQ(t2->matrix.translation().x(), 1.0f, "fromPDU should restore X translation");
 
     delete t;
     delete t2;

@@ -23,6 +23,7 @@
 #ifndef PLUGINMANAGER_H
 #define PLUGINMANAGER_H   // Note: Original guard macro has trailing "0"
 
+#include "core/Plugins/uipluginmanager.h"
 #include "qpluginloader.h"
 #include <qobject.h>
 #include <core/Config/scenarioconfig.h>
@@ -58,13 +59,14 @@ public:
     // SECTION: Core Component References
     // DESCRIPTION: Pointers to the major simulation and configuration objects.
     // =========================================================================
-    ScenarioConfig *scenarioconfig;     //!< Scenario configuration manager
-    Hierarchy *hierarchy;               //!< Entity hierarchy registry
-    SessionManager *sessionManager;     //!< User session preferences
-    Simulation *simulation;             //!< Simulation engine/controller
-    SceneRenderer *scenerenderer;       //!< 3D scene renderer
-    NetworkManager *networkManager;     //!< Network synchronisation manager
-    Console *console;                   //!< Logging console
+    ScenarioConfig *scenarioconfig = nullptr;     //!< Scenario configuration manager
+    Hierarchy *hierarchy = nullptr;               //!< Entity hierarchy registry
+    SessionManager *sessionManager = nullptr;     //!< User session preferences
+    Simulation *simulation = nullptr;             //!< Simulation engine/controller
+    SceneRenderer *scenerenderer = nullptr;       //!< 3D scene renderer
+    NetworkManager *networkManager = nullptr;     //!< Network synchronisation manager
+    UIPluginManager uiPluginManager;
+    Console *console = nullptr;                   //!< Logging console
 
     // Plugin operations
     bool loadPlugin(std::string path);      //!< Load a plugin (subsystem)
@@ -74,8 +76,14 @@ public:
     // void removePlugin();    //!< Removes an existing plugin
 
     std::unordered_map<std::string, QPluginLoader*> pluginList;
-    // Sahi Syntax (Extra '<' hata diya)
     std::unordered_map<std::string, std::vector<QMetaObject::Connection>> pluginconnection;
+    struct GisPluginRegistrations {
+        QStringList actionIds;
+        QStringList shapeTypeIds;
+        QStringList layerFormatIds;
+        QStringList tileSourceIds;
+    };
+    std::unordered_map<std::string, GisPluginRegistrations> m_gisRegs;
 };
 
 #endif // PLUGINMANAGER_H

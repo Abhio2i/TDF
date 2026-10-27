@@ -845,6 +845,44 @@ struct RadarConfig
 };
 
 // =============================================================================
+// SECTION 6b: FRAME HELPERS (stabilised <-> body). REQ-AESA-010.
+// Stabilised: x = North, y = East, z = Up (radar-centred).
+// Body:       x = Forward, y = Right, z = Up (antenna).
+// R rows are the body axes expressed in the stabilised frame.
+// =============================================================================
+inline void stabToBody(const double R[3][3], const double s[3], double b[3])
+{
+    for (int i = 0; i < 3; ++i)
+        b[i] = R[i][0] * s[0] + R[i][1] * s[1] + R[i][2] * s[2];
+}
+
+inline void bodyToStab(const double R[3][3], const double b[3], double s[3])
+{
+    for (int j = 0; j < 3; ++j)
+        s[j] = R[0][j] * b[0] + R[1][j] * b[1] + R[2][j] * b[2];
+}
+
+// az = atan2(y, x), el = asin(z / |v|), degrees. Zero vector -> (0, 0).
+inline void vecToAzEl(const double v[3], double& az_deg, double& el_deg)
+{
+    constexpr double RAD2DEG = 180.0 / 3.14159265358979323846;
+    const double r = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    if (r < 1e-9) { az_deg = 0.0; el_deg = 0.0; return; }
+    az_deg = std::atan2(v[1], v[0]) * RAD2DEG;
+    const double s = v[2] / r;
+    el_deg = std::asin(s < -1.0 ? -1.0 : (s > 1.0 ? 1.0 : s)) * RAD2DEG;
+}
+
+inline void azElToVec(double az_deg, double el_deg, double v[3])
+{
+    constexpr double DEG2RAD = 3.14159265358979323846 / 180.0;
+    const double a = az_deg * DEG2RAD, e = el_deg * DEG2RAD;
+    v[0] = std::cos(e) * std::cos(a);
+    v[1] = std::cos(e) * std::sin(a);
+    v[2] = std::sin(e);
+}
+
+// =============================================================================
 // SECTION 7: PLATFORM POSE
 // =============================================================================
 
@@ -867,6 +905,15 @@ struct RadarPose
 
     // Platform heading (degrees, 0 = north). REQ-AESA-010.
     float  heading = 0.0f;
+
+    // Own-platform velocity in the stabilised frame (m/s). REQ-AESA-040.
+    double vx = 0.0, vy = 0.0, vz = 0.0;
+
+    // Stabilised -> body rotation. Rows: forward, right, up expressed in
+    // (North, East, Up). Identity = level, heading North. REQ-AESA-010.
+    double bodyFromStab[3][3] = { { 1.0, 0.0, 0.0 },
+                                  { 0.0, 1.0, 0.0 },
+                                  { 0.0, 0.0, 1.0 } };
 };
 
 // =============================================================================
@@ -991,6 +1038,51 @@ struct TargetInput
 
     // IFF mode the target's transponder is set to. REQ-AESA-050.
     IFFMode  iffMode   = IFFMode::MODE_3A;
+};
+
+// =============================================================================
+// SECTION: PLUGIN LOGIC OVERRIDES (AESA plugin SDK). REQ-AESA-090.
+//
+// Optional replacement points for three simulation-logic stages. Each is a
+// plain function pointer plus an opaque context, so this library has no
+// dependency on Qt or on the plugin SDK. All pointers null = built-in logic
+// only (the default; behaviour identical to before this section existed).
+//
+// A function returns true to supply its own result, false to let the
+// built-in logic run for that call. The model validates every result
+// (finite, in range); an invalid result falls back to the built-in logic.
+//
+// Overrides are called from inside update() while mutex_ is held: they must
+// not call any RadarModel_AESA public method (that would deadlock).
+// =============================================================================
+struct DetectionStageInput
+{
+    double    sinr               = 0.0;    // linear
+    double    cfarThreshold      = 0.0;    // linear (built-in CFAR threshold)
+    double    radialVelocity_m_s = 0.0;    // relative to radar, negative = closing
+    RadarMode mode               = RadarMode::SURVEILLANCE;
+    bool      builtInDetected    = false;  // sinr > cfarThreshold
+};
+
+struct LogicOverrides
+{
+    // Opaque pointer passed back to every function below.
+    void* context = nullptr;
+
+    // Mean (pre-Swerling) RCS, m2, >= 0. The model applies the target's
+    // Swerling fluctuation to it.
+    bool (*meanRcs)(void* context, const TargetInput& target,
+                    double range_m, double frequency_Hz,
+                    double& meanRcs_m2) = nullptr;
+
+    // Detection decision for one target in the current beam.
+    bool (*detect)(void* context, const TargetInput& target, double range_m,
+                   const DetectionStageInput& in, bool& detected) = nullptr;
+
+    // Two-way propagation loss as a linear power factor in (0, 1].
+    bool (*propagationLoss)(void* context, double range_m,
+                            const RadarConfig& cfg,
+                            double& lossFactor) = nullptr;
 };
 
 // =============================================================================
@@ -1646,6 +1738,16 @@ public:
     // TRACEABILITY: TC-AESA-MODEL-009  getConfig() returns applied config
     // =========================================================================
     RadarConfig getConfig() const;
+    // Updates platform speed only. Does not set displayRangeDirty_:
+    // platform speed is not an input to computeMaxDetectionRange() or the
+    // horizon computation. REQ-AESA-040.
+    void setPlatformSpeed(float speed_m_s);
+
+    // Installs (or, with a default-constructed value, clears) the plugin
+    // logic overrides used by the next update() calls. The context pointer
+    // must stay valid until the overrides are cleared. Thread-safe.
+    // REQ-AESA-090.
+    void setLogicOverrides(const LogicOverrides& ov);
 
     // =========================================================================
     // MODE CONTROL METHODS
@@ -1941,7 +2043,21 @@ private:
     // Copy of worldInputs from current tick. Required by computeOcclusion()
     // which runs inside processTargetDetection() and needs all other targets.
     // REQ-AESA-070.
-    std::vector<TargetInput> currentWorldInputs_;
+    // Points to update()'s worldInputs during update() only. Cleared at the
+    // end of update(). Read only by computeOcclusion(). REQ-AESA-070.
+    const std::vector<TargetInput>* currentWorldInputs_ = nullptr;
+
+    // Clutter range rate in the current beam direction (m/s, negative =
+    // closing). Centre of the MTI / STAP notch. Set each tick. REQ-AESA-040.
+    double currentClutterRR_ = 0.0;
+
+    // Current beam direction in the stabilised frame (deg). Used for chaff
+    // (stabilised positions). Set each tick. REQ-AESA-061.
+    double currentBeamStabAz_ = 0.0;
+    double currentBeamStabEl_ = 0.0;
+
+    // Plugin logic overrides (all null = built-in only). REQ-AESA-090.
+    LogicOverrides overrides_;
 
     // =========================================================================
     // PRIVATE HELPER METHODS

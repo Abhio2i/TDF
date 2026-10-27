@@ -155,9 +155,9 @@ void CustomTrajectoryDialog::setupUI()
     minSpeedSpinBox->setRange(0, 1000);
     minSpeedSpinBox->setValue(800);
     minSpeedSpinBox->setSuffix(" km/h");
-    connect(minSpeedSpinBox, qOverload<double>(&QDoubleSpinBox::valueChanged),
-            this, [=](double newValue) {
-                if(maxSpeedSpinBox->value()<newValue){
+    connect(minSpeedSpinBox, &QDoubleSpinBox::editingFinished,
+            this, [=]() {
+                if(minSpeedSpinBox->value() > maxSpeedSpinBox->value()){
                     minSpeedSpinBox->setValue(maxSpeedSpinBox->value());
                 }
             });
@@ -165,17 +165,15 @@ void CustomTrajectoryDialog::setupUI()
     minSpeedLayout->addStretch();
     speedLayout->addLayout(minSpeedLayout);
 
-
-
     QHBoxLayout *maxSpeedLayout = new QHBoxLayout();
     maxSpeedLayout->addWidget(new QLabel("end Speed:", this));
     maxSpeedSpinBox = new QDoubleSpinBox(this);
     maxSpeedSpinBox->setRange(0, 5000);
     maxSpeedSpinBox->setValue(2500);
     maxSpeedSpinBox->setSuffix(" km/h");
-    connect(maxSpeedSpinBox, qOverload<double>(&QDoubleSpinBox::valueChanged),
-            this, [=](double newValue) {
-                if(minSpeedSpinBox->value()>newValue){
+    connect(maxSpeedSpinBox, &QDoubleSpinBox::editingFinished,
+            this, [=]() {
+                if(maxSpeedSpinBox->value() < minSpeedSpinBox->value()){
                     maxSpeedSpinBox->setValue(minSpeedSpinBox->value());
                 }
             });
@@ -202,9 +200,9 @@ void CustomTrajectoryDialog::setupUI()
     minAltitudeSpinBox->setRange(0, 50000);
     minAltitudeSpinBox->setValue(1000);
     minAltitudeSpinBox->setSuffix(" ft");
-    connect(minAltitudeSpinBox, qOverload<double>(&QDoubleSpinBox::valueChanged),
-            this, [=](double newValue) {
-                if(maxAltitudeSpinBox->value()<newValue){
+    connect(minAltitudeSpinBox, &QDoubleSpinBox::editingFinished,
+            this, [=]() {
+                if(minAltitudeSpinBox->value() > maxAltitudeSpinBox->value()){
                     minAltitudeSpinBox->setValue(maxAltitudeSpinBox->value());
                 }
             });
@@ -217,12 +215,12 @@ void CustomTrajectoryDialog::setupUI()
     maxAltitudeSpinBox->setRange(0, 50000);
     maxAltitudeSpinBox->setValue(10000);
     maxAltitudeSpinBox->setSuffix(" ft");
-    connect(maxAltitudeSpinBox, qOverload<double>(&QDoubleSpinBox::valueChanged),
-            this, [=](double newValue) {
-        if(minAltitudeSpinBox->value()>newValue){
-            maxAltitudeSpinBox->setValue(minAltitudeSpinBox->value());
-            }
-        });
+    connect(maxAltitudeSpinBox, &QDoubleSpinBox::editingFinished,
+            this, [=]() {
+                if(maxAltitudeSpinBox->value() < minAltitudeSpinBox->value()){
+                    maxAltitudeSpinBox->setValue(minAltitudeSpinBox->value());
+                }
+            });
     maxaltitudeValueLayout->addWidget(maxAltitudeSpinBox);
     maxaltitudeValueLayout->addStretch();
     altitudeLayout->addLayout(maxaltitudeValueLayout);
@@ -277,7 +275,6 @@ void CustomTrajectoryDialog::onSpeedCheckboxChanged(int state)
 void CustomTrajectoryDialog::onAltitudeCheckboxChanged(int state)
 {
     bool enabled = (state == Qt::Checked);
-    //altitudeSpinBox->setEnabled(enabled);
     minAltitudeSpinBox->setEnabled(enabled);
     maxAltitudeSpinBox->setEnabled(enabled);
 }

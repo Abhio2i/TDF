@@ -53,6 +53,7 @@
 #include <QTabWidget>                             // For tabbed interface
 #include <QStatusBar>                             // For status bar display
 #include <GUI/Menubars/profileinfodialog.h>
+#include <QSet>
 
 // %%% Class Definition %%%
 /* Main window class for the database editor */
@@ -79,6 +80,11 @@ public:
     HierarchyTree *treeView = nullptr;
     QDockWidget *consoleDock = nullptr;
     QStatusBar *statusBar;
+    void markEntityChanged(const QString& entityId);
+    QStringList modifiedEntityIds() const { return m_modifiedEntityIds.values(); }
+    bool hasModifiedEntities() const { return !m_modifiedEntityIds.isEmpty(); }
+    void clearModifiedEntityIds() { m_modifiedEntityIds.clear(); }
+
 public slots:
     void showProfileInfo();
     void showApplicationDialog();
@@ -95,11 +101,13 @@ private slots:
     void onTreeItemSelected(QVariantMap data);
     void cleanupExtraInspectors();
     void showAllEntityComponents(const QString& entityId, const QString& entityName);
+
 signals:
     // Signal unsaved changes state
     void unsavedChangesChanged(bool hasChanges);
     void Activated();
       void hierarchyLoaded(QJsonObject hierarchyData);
+    void databaseFileLoaded(const QString& filePath);
 private:
     // %%% UI Setup Methods %%%
     // Configure menu bar
@@ -144,6 +152,11 @@ private:
         const QString& title,
         const QJsonObject& data,
         int initialHeight);
+    QSet<QString> m_modifiedEntityIds;
+    void showFormationCanvas(const QString& entityId, const QString& entityName);
+    void showFormationProfileWithCanvas(const QString& profileId,
+                                        const QString& profileName,
+                                        const QJsonObject& profileData);
 };
 
 #endif

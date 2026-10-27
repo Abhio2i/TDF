@@ -70,11 +70,12 @@
 #include <QMessageBox>
 #include <QStandardItemModel>
 #include <QStandardItem>
+#include "GUI/dialogwindowutils.h"
 
 QMap<QString, QPointF> indianCities = {
 };
-// %%% String Utility Functions %%%
 
+// %%% String Utility Functions %%%
 
 QString demangleComponentName(const std::string& mangledName) {
     QString name = QString::fromStdString(mangledName);
@@ -135,6 +136,8 @@ AddItemDialog::AddItemDialog(DialogType type,
     nameLineEdit(nullptr),
     numberLineEdit(nullptr),
     sensorTypeComboBox(nullptr),
+    radioTypeComboBox(nullptr),
+    iffTypeComboBox(nullptr),
     profileComboBox(nullptr),
     scCheckBox(nullptr),
     scOptionsGroup(nullptr),
@@ -158,33 +161,36 @@ AddItemDialog::AddItemDialog(DialogType type,
     m_hierarchy(hierarchy),
     m_editorContext(editorContext)
 {
+    makeDialogResizable(this);
     setStyleSheet(AddItemDialogStyles::Dialog);
+
     QString cityJsonPath = TDFManager::instance()->getCityJsonPath();
     QFile file(cityJsonPath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return;
-    }
-    QByteArray jsonData = file.readAll();
-    file.close();
-    QJsonParseError parseError;
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData, &parseError);
-    if (parseError.error != QJsonParseError::NoError) {
-        return;
-    }
-    if (jsonDoc.isObject()) {
-        QJsonObject jsonObj = jsonDoc.object();
-        if (jsonObj.contains("indian_cities") && jsonObj["indian_cities"].isArray()) {
-            QJsonArray indian_cities = jsonObj["indian_cities"].toArray();
-            indianCities.clear();
-            for (const QJsonValue &value : indian_cities) {
-                QJsonObject cityObj = value.toObject();
-                QString name = cityObj["name"].toString();
-                double lat = cityObj["lat"].toDouble();
-                double lon = cityObj["lon"].toDouble();
-                indianCities.insert(name, QPointF(lat, lon));
+        qWarning() << "AddItemDialog: could not open city JSON at" << cityJsonPath;
+    } else {
+        QByteArray jsonData = file.readAll();
+        file.close();
+        QJsonParseError parseError;
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData, &parseError);
+        if (parseError.error != QJsonParseError::NoError) {
+            qWarning() << "AddItemDialog: failed to parse city JSON:" << parseError.errorString();
+        } else if (jsonDoc.isObject()) {
+            QJsonObject jsonObj = jsonDoc.object();
+            if (jsonObj.contains("indian_cities") && jsonObj["indian_cities"].isArray()) {
+                QJsonArray indian_cities = jsonObj["indian_cities"].toArray();
+                indianCities.clear();
+                for (const QJsonValue &value : indian_cities) {
+                    QJsonObject cityObj = value.toObject();
+                    QString name = cityObj["name"].toString();
+                    double lat = cityObj["lat"].toDouble();
+                    double lon = cityObj["lon"].toDouble();
+                    indianCities.insert(name, QPointF(lat, lon));
+                }
             }
         }
     }
+
     m_profileContext = determineProfileContext(specificType, dialogMode, editorContext);
     setupUI(type);
 }
@@ -231,13 +237,37 @@ QHBoxLayout* AddItemDialog::createMinMaxSpinBoxPair(const QString& label,
     layout->addStretch();
     return layout;
 }
-
 void AddItemDialog::setupScSection()
 {
     scCheckBox = new QCheckBox("Scenarioconfig", this);
     scCheckBox->setChecked(false);
     connect(scCheckBox, &QCheckBox::stateChanged,
             this, &AddItemDialog::onScCheckBoxStateChanged);
+
+    scComponentsWidget = new QWidget(this);
+    QHBoxLayout *compToggleLayout = new QHBoxLayout(scComponentsWidget);
+    compToggleLayout->setContentsMargins(0, 4, 0, 4);
+    QLabel *compLabel = new QLabel("Add Components:", this);
+    compLabel->setStyleSheet("color: white;");
+    compToggleLayout->addWidget(compLabel);
+
+    scSensorsCheckBox = new QCheckBox("Sensors", this);
+    scSensorsCheckBox->setChecked(false);
+    scSensorsCheckBox->setStyleSheet("color: white;");
+    compToggleLayout->addWidget(scSensorsCheckBox);
+
+    scIffCheckBox = new QCheckBox("IFF", this);
+    scIffCheckBox->setChecked(false);
+    scIffCheckBox->setStyleSheet("color: white;");
+    compToggleLayout->addWidget(scIffCheckBox);
+
+    scRadioCheckBox = new QCheckBox("Radio", this);
+    scRadioCheckBox->setChecked(false);
+    scRadioCheckBox->setStyleSheet("color: white;");
+    compToggleLayout->addWidget(scRadioCheckBox);
+
+    compToggleLayout->addStretch();
+    scComponentsWidget->setVisible(false);
 
     // Create options group
     scOptionsGroup = new QGroupBox("Scenarioconfig Options", this);
@@ -289,7 +319,6 @@ void AddItemDialog::setupScSection()
     cityComboBox->lineEdit()->setPlaceholderText("Search city...");
     cityComboBox->setCurrentIndex(-1);
     cityComboBox->lineEdit()->clear();
-    // Style completer popup
     if (cityCompleter->popup()) {
         cityCompleter->popup()->setStyleSheet(AddItemDialogStyles::CompleterPopup);
     }
@@ -430,11 +459,13 @@ void AddItemDialog::setupScSection()
     scOptionsGroup->setLayout(groupLayout);
     scOptionsGroup->setVisible(false);
 }
-
 /* Handle scenario config checkbox state change */
 void AddItemDialog::onScCheckBoxStateChanged(int state)
 {
     bool isChecked = (state == Qt::Checked);
+    if (scComponentsWidget) {
+        scComponentsWidget->setVisible(isChecked);
+    }
     if (scOptionsGroup) {
         scOptionsGroup->setVisible(isChecked);
     }
@@ -445,16 +476,13 @@ void AddItemDialog::populateEntityProfiles(const QString &profileTypeFilter,
     if (!entitySearchLineEdit) {
         return;
     }
-
     entityMap.clear();
     QStringList entityNames;
-
     if (!m_hierarchy) {
         return;
     }
     QStringList profileTypesToShow;
     QString filter = profileTypeFilter.trimmed();
-    bool showAllEntities = (filter.isEmpty() || filter == "All Profiles");
     if (filter == "All Profiles" || filter.isEmpty()) {
         if (!m_profileContext.isEmpty()) {
             profileTypesToShow.append(m_profileContext);
@@ -480,7 +508,6 @@ void AddItemDialog::populateEntityProfiles(const QString &profileTypeFilter,
             QString eName = QString::fromStdString(entity->Name).trimmed();
             if (eName.isEmpty()) continue;
             QString displayName;
-            // ✅ FIXED CODE:
             if (profileName == "Platform") {
                 QString categoryValue = QString::fromStdString(
                     entity->CategoryNames[static_cast<int>(entity->category)]
@@ -493,13 +520,16 @@ void AddItemDialog::populateEntityProfiles(const QString &profileTypeFilter,
                 }
 
                 if (!categoryFilter.isEmpty() && categoryFilter != "All") {
-                    QStringList allSubCats = {"Aircraft", "Helicopter", "UAV",
-                                              "Tank", "GroundRadar", "Human",
-                                              "Ship", "Frigate", "Submarine"};
+                    QStringList allSubCats = {
+                        "Aircraft", "Helicopter", "UAV", "FighterAircraft", "TransportAircraft","FixedWingDrone", "RotaryWingDrone",
+                        "Tank", "GroundRadar", "Human", "BattleVehicle", "MilitaryGroundVehicle", "TransportVehicle",
+                        "Ship", "Frigate", "Submarine", "AircraftCarrier", "GuidedMissileCruiser", "Destroyer", "SmallBoat"
+                    };
+
                     QStringList allCategories = {"Air", "Ground", "Marine"};
 
                     if (allCategories.contains(categoryFilter)) {
-                        // ← clicked "Air" / "Ground" / "Marine" header
+                        // clicked "Air" / "Ground" / "Marine" header
                         // map category name → categoryValue stored on entity
                         QMap<QString, QString> catToEntityCat = {
                             {"Air",    "Air"},
@@ -507,16 +537,15 @@ void AddItemDialog::populateEntityProfiles(const QString &profileTypeFilter,
                             {"Marine", "Marine"}
                         };
                         QString expected = catToEntityCat.value(categoryFilter, categoryFilter);
-                        if (categoryValue != expected) continue;          // show all subcats of this category
+                        if (categoryValue != expected) continue;
                     } else if (allSubCats.contains(categoryFilter)) {
-                        // ← clicked a specific subcat like "Aircraft", "Tank"
+                        // clicked a specific subcat like "Aircraft", "Tank"
                         if (subCatValue != categoryFilter) continue;
                     } else {
-                        // ← fallback: match category
+                        // fallback: match category
                         if (categoryValue != categoryFilter) continue;
                     }
                 }
-
                 displayName = eName + " (" + (subCatValue.isEmpty() ? categoryValue : subCatValue) + ")";
             }
             else if (profileName == "Sensor") {
@@ -548,7 +577,6 @@ void AddItemDialog::populateEntityProfiles(const QString &profileTypeFilter,
                 QString eName = QString::fromStdString(entity->Name).trimmed();
                 if (eName.isEmpty()) continue;
                 QString displayName;
-                // ✅ FIXED CODE:
                 if (profileName == "Platform") {
                     QString categoryValue = QString::fromStdString(
                         entity->CategoryNames[static_cast<int>(entity->category)]
@@ -562,11 +590,13 @@ void AddItemDialog::populateEntityProfiles(const QString &profileTypeFilter,
                     }
 
                     if (!categoryFilter.isEmpty() && categoryFilter != "All") {
-                        QStringList allSubCats = {"Aircraft", "Helicopter", "UAV",
-                                                  "Tank", "GroundRadar", "Human",
-                                                  "Ship", "Frigate", "Submarine"};
+                        QStringList allSubCats = {
+                            "Aircraft", "Helicopter", "UAV", "FighterAircraft", "TransportAircraft","FixedWingDrone", "RotaryWingDrone",
+                            "Tank", "GroundRadar", "Human", "BattleVehicle", "MilitaryGroundVehicle", "TransportVehicle",
+                            "Ship", "Frigate", "Submarine", "AircraftCarrier", "GuidedMissileCruiser", "Destroyer", "SmallBoat"
+                        };
                         if (allSubCats.contains(categoryFilter)) {
-                            if (subCatValue != categoryFilter) continue; // ✅ subCat filter
+                            if (subCatValue != categoryFilter) continue;
                         } else {
                             if (categoryValue != categoryFilter) continue;
                         }
@@ -604,34 +634,26 @@ void AddItemDialog::populateEntityProfiles(const QString &profileTypeFilter,
 
 void AddItemDialog::setupUI(DialogType type)
 {
-    if (this->window()) {
-    }
-    QWidget* currentWidget = this->parentWidget();
-    int level = 0;
-    while (currentWidget) {
-        if (currentWidget->isWindow()) {
-        }
-        currentWidget = currentWidget->parentWidget();
-        level++;
-    }
     QWidget *mainWidget = new QWidget(this);
     mainWidget->setStyleSheet("background-color: #0F2636;");
     QVBoxLayout *mainLayout = new QVBoxLayout(mainWidget);
     mainLayout->setSpacing(10);
     mainLayout->setContentsMargins(15, 15, 15, 15);
-    QString itemType = (type == EntityType) ? "Entity" : "Folder";
     bool isDatabaseEditor = false;
     if (!m_editorContext.isEmpty()) {
         isDatabaseEditor = (m_editorContext == "database");
     } else {
         isDatabaseEditor = detectDatabaseEditorFromWindow();
     }
-    // Determine dialog mode and type
     bool isProfileSensorAdd = (specificType == "Sensor");
+    bool isProfileRadioAdd = (specificType == "Radio");
+    bool isProfileIFFAdd = (specificType == "IFF");
     bool isComponentSensorAdd = (m_dialogMode == ComponentSensorMode) || (specificType == "sensors");
     bool isComponentIFFAdd = (m_dialogMode == ComponentIFFMode) || (specificType == "iffs");
     bool isComponentRadioAdd = (m_dialogMode == ComponentRadioMode) || (specificType == "radios");
     bool isComponentWeaponAdd = (m_dialogMode == ComponentWeaponMode) || (specificType == "weapons");
+    bool isForRadio = isProfileRadioAdd || isComponentRadioAdd;
+    bool isForIFF = isProfileIFFAdd || isComponentIFFAdd;
     bool isForComponentAdd = isComponentSensorAdd || isComponentIFFAdd || isComponentRadioAdd || isComponentWeaponAdd;
     bool isForSensor = isProfileSensorAdd || isComponentSensorAdd;
     bool shouldShowEntitySelection = false;
@@ -692,7 +714,6 @@ void AddItemDialog::setupUI(DialogType type)
         searchLabel->setStyleSheet("color: white; font-weight: bold;");
         searchRowLayout->addWidget(searchLabel);
 
-        searchRowLayout->addWidget(entitySearchLineEdit);
 
         entitySearchLineEdit = new QLineEdit(this);
         entitySearchLineEdit->setPlaceholderText("Type to search...");
@@ -705,11 +726,10 @@ void AddItemDialog::setupUI(DialogType type)
             categoryFilterComboBox = new QComboBox(this);
 
             QMap<QString, QStringList> catSubMap = {
-                {"Air",    QStringList{"Aircraft", "Helicopter", "UAV"}},
-                {"Ground", QStringList{"Tank", "GroundRadar", "Human"}},
-                {"Marine", QStringList{"Ship", "Frigate", "Submarine"}}
+                {"Air",    QStringList{"Aircraft", "Helicopter", "UAV", "FighterAircraft", "TransportAircraft","FixedWingDrone", "RotaryWingDrone"}},
+                {"Ground", QStringList{"Tank", "GroundRadar", "Human", "BattleVehicle", "MilitaryGroundVehicle", "TransportVehicle"}},
+                {"Marine", QStringList{"Ship", "Frigate", "Submarine", "AircraftCarrier", "GuidedMissileCruiser", "Destroyer", "SmallBoat"}}
             };
-
             // "All" item
             categoryFilterComboBox->addItem("  All", "All");
 
@@ -721,12 +741,11 @@ void AddItemDialog::setupUI(DialogType type)
                 const QStringList subCats = catIt.value();
 
                 // ── Header item: store category name as data, keep it ENABLED ──
-                categoryFilterComboBox->addItem("  " + category, category);  // ← data = "Air"/"Ground"/"Marine"
+                categoryFilterComboBox->addItem("  " + category, category);
                 int headerIndex = categoryFilterComboBox->count() - 1;
                 if (model) {
                     QStandardItem* headerItem = model->item(headerIndex);
                     if (headerItem) {
-                        // ← REMOVED setFlags(Qt::NoItemFlags) — keep it selectable
                         QFont f = headerItem->font();
                         f.setBold(true);
                         headerItem->setFont(f);
@@ -796,7 +815,12 @@ void AddItemDialog::setupUI(DialogType type)
             filterTypes += m_hierarchy
                                ? m_hierarchy->getAvailableSensorTypes()
                                : QStringList({"Generic", "CSM", "ESM", "EO", "IR", "Sonar", "AIS", "ADSB", "AESA"});
-            categoryFilterComboBox->addItems(filterTypes);            categoryFilterComboBox->setCurrentText("All");
+
+            for (const QString &type : filterTypes) {
+                categoryFilterComboBox->addItem(type, type);
+            }
+
+            categoryFilterComboBox->setCurrentText("All");
             categoryFilterComboBox->setFixedWidth(70);
             categoryFilterComboBox->setStyleSheet(
                 "QComboBox { color: white; background-color: #1A3652; "
@@ -835,17 +859,11 @@ void AddItemDialog::setupUI(DialogType type)
             connect(categoryFilterComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
                     this, [=](int index) {
                         QString selectedData = categoryFilterComboBox->itemData(index).toString();
-
-                        // "All" → no filter
-                        // "Air"/"Ground"/"Marine" → filter by category (shows all subcats of that category)
-                        // "Aircraft"/"Tank"/etc. → filter by exact subcat
                         QString filterToApply = (selectedData == "All" || selectedData.isEmpty())
                                                     ? "" : selectedData;
-
                         populateEntityProfiles(m_profileContext, filterToApply);
                         entitySearchLineEdit->clear();
                         selectedEntityId.clear();
-
                         if (entityCompleter) {
                             QStringListModel* mdl =
                                 qobject_cast<QStringListModel*>(entityCompleter->model());
@@ -858,8 +876,7 @@ void AddItemDialog::setupUI(DialogType type)
                             }
                         }
                     });
-        }    // connect(categoryFilterComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
-
+        }
 
         connect(showAllAction, &QAction::triggered, this, [=]() {
             if (entityCompleter) {
@@ -941,7 +958,8 @@ void AddItemDialog::setupUI(DialogType type)
                     if (sensorTypeComboBox->findText("Generic") >= 0)
                         sensorTypeComboBox->setCurrentText("Generic");
                     else if (sensorTypeComboBox->count() > 0)
-                        sensorTypeComboBox->setCurrentIndex(0);                }
+                        sensorTypeComboBox->setCurrentIndex(0);
+                }
             }
         });
 
@@ -1082,7 +1100,8 @@ void AddItemDialog::setupUI(DialogType type)
         QStringList sensorTypes = m_hierarchy
                                       ? m_hierarchy->getAvailableSensorTypes()
                                       : QStringList({"Generic", "CSM", "ESM", "EO", "IR", "Sonar", "AIS", "ADSB", "AESA"});
-        sensorTypeComboBox->addItems(sensorTypes);        sensorTypeComboBox->setCurrentText("Generic");
+        sensorTypeComboBox->addItems(sensorTypes);
+        sensorTypeComboBox->setCurrentText("Generic");
         sensorTypeComboBox->setStyleSheet("color: white;");
         sensorTypeLayout->addWidget(sensorTypeComboBox);
         sensorTypeLayout->addStretch();
@@ -1092,6 +1111,44 @@ void AddItemDialog::setupUI(DialogType type)
             m_sensorTypeContainer->setVisible(false);
         }
         mainLayout->addWidget(m_sensorTypeContainer);
+    }
+
+    if (isForRadio) {
+        m_radioTypeContainer = new QWidget(this);
+        QHBoxLayout *radioTypeLayout = new QHBoxLayout(m_radioTypeContainer);
+        radioTypeLayout->setContentsMargins(0, 0, 0, 0);
+        QLabel *radioLabel = new QLabel("Radio Type:", this);
+        radioLabel->setStyleSheet("color: white;");
+        radioTypeLayout->addWidget(radioLabel);
+        radioTypeComboBox = new QComboBox(this);
+        QStringList radioTypes = m_hierarchy
+                                     ? m_hierarchy->getAvailableRadioTypes()
+                                     : QStringList({"Generic"});
+        radioTypeComboBox->addItems(radioTypes);
+        radioTypeComboBox->setCurrentText("Generic");
+        radioTypeComboBox->setStyleSheet("color: white;");
+        radioTypeLayout->addWidget(radioTypeComboBox);
+        radioTypeLayout->addStretch();
+        mainLayout->addWidget(m_radioTypeContainer);
+    }
+
+    if (isForIFF) {
+        m_iffTypeContainer = new QWidget(this);
+        QHBoxLayout *iffTypeLayout = new QHBoxLayout(m_iffTypeContainer);
+        iffTypeLayout->setContentsMargins(0, 0, 0, 0);
+        QLabel *iffLabel = new QLabel("IFF Type:", this);
+        iffLabel->setStyleSheet("color: white;");
+        iffTypeLayout->addWidget(iffLabel);
+        iffTypeComboBox = new QComboBox(this);
+        QStringList iffTypes = m_hierarchy
+                                   ? m_hierarchy->getAvailableIFFTypes()
+                                   : QStringList({"Generic"});
+        iffTypeComboBox->addItems(iffTypes);
+        iffTypeComboBox->setCurrentText("Generic");
+        iffTypeComboBox->setStyleSheet("color: white;");
+        iffTypeLayout->addWidget(iffTypeComboBox);
+        iffTypeLayout->addStretch();
+        mainLayout->addWidget(m_iffTypeContainer);
     }
     bool shouldShowNumberField = false;
     QStringList showNumberForTypes = {"Platform", "SpecialZone", "FixedPoints", "Entity", ""};
@@ -1196,10 +1253,10 @@ void AddItemDialog::setupUI(DialogType type)
     if (isPlatformProfile && !isDatabaseEditor) {
         setupScSection();
         mainLayout->addWidget(scCheckBox);
+        mainLayout->addWidget(scComponentsWidget);
         mainLayout->addWidget(scOptionsGroup);
     }
-    bool shouldCreateComponents = true;
-    bool shouldShowComponents = false;
+
     bool createComponents = (type == EntityType && !isForComponentAdd && !isForSensor &&
                              (specificType.isEmpty() || specificType == "Platform" ||
                               specificType == "SpecialZone" || specificType == "FixedPoints" ||
@@ -1242,6 +1299,7 @@ void AddItemDialog::setupUI(DialogType type)
             }
             componentsGroup->setLayout(componentsLayout);
             delete entity;
+            entity = nullptr;
         }
     }
     mainLayout->addStretch();
@@ -1420,6 +1478,13 @@ QVariantMap AddItemDialog::getComponents() const {
 QString AddItemDialog::getSensorType() const {
     return sensorTypeComboBox ? sensorTypeComboBox->currentText() : "Generic";
 }
+QString AddItemDialog::getRadioType() const {
+    return radioTypeComboBox ? radioTypeComboBox->currentText() : "Generic";
+}
+/* Get selected IFF type */
+QString AddItemDialog::getIFFType() const {
+    return iffTypeComboBox ? iffTypeComboBox->currentText() : "Generic";
+}
 /* Get selected profile ID */
 QString AddItemDialog::getProfileId() const {
     // If the user selected an entity from the search, use its ID as the profile ID
@@ -1505,7 +1570,7 @@ void AddItemDialog::populateWeaponProfiles()
     populateProfiles("Weapon");
 }
 
-// %%% NEW: Clear Entity Selection %%%
+// %%% Clear Entity Selection %%%
 void AddItemDialog::clearEntitySelection()
 {
     selectedEntityId.clear();
@@ -1517,6 +1582,12 @@ void AddItemDialog::clearEntitySelection()
         sensorTypeComboBox->setEnabled(true);
         sensorTypeComboBox->setToolTip("");
         sensorTypeComboBox->setCurrentText("Generic");
+    }
+    if (radioTypeComboBox) {
+        radioTypeComboBox->setCurrentText("Generic");
+    }
+    if (iffTypeComboBox) {
+        iffTypeComboBox->setCurrentText("Generic");
     }
     if (nameLineEdit) {
         // Reset to default name based on type
@@ -1640,7 +1711,8 @@ bool AddItemDialog::detectDatabaseEditorFromWindow()
 
 bool AddItemDialog::eventFilter(QObject *watched, QEvent *event)
 {
-    if (watched == entityCompleter->popup() && event->type() == QEvent::Show) {
+
+    if (entityCompleter && watched == entityCompleter->popup() && event->type() == QEvent::Show) {
         if (entityCompleter->completionCount() == 0) {
             populateEntityProfiles(m_profileContext);
         }
@@ -1653,8 +1725,6 @@ QString AddItemDialog::determineProfileContext(const QString& specificType,
                                                DialogMode dialogMode,
                                                const QString& editorContext)
 {
-    QString profileContext;
-
     // First check dialog mode for component additions
     if (dialogMode == ComponentIFFMode) {
         return "IFF";
@@ -1705,7 +1775,6 @@ bool AddItemDialog::validateInputs()
     } else {
         isDatabaseEditor = detectDatabaseEditorFromWindow();
     }
-
     bool isComponentSensorAdd = (m_dialogMode == ComponentSensorMode) || (specificType == "sensors");
     bool isComponentIFFAdd    = (m_dialogMode == ComponentIFFMode)    || (specificType == "iffs");
     bool isComponentRadioAdd  = (m_dialogMode == ComponentRadioMode)  || (specificType == "radios");
@@ -1786,4 +1855,15 @@ QString AddItemDialog::getSelectedTeam() const {
     if (teamSelectComboBox && teamSelectComboBox->currentText() != "None")
         return teamSelectComboBox->currentText();
     return "";
+}
+bool AddItemDialog::isScSensorsEnabled() const {
+    return scSensorsCheckBox ? scSensorsCheckBox->isChecked() : false;
+}
+
+bool AddItemDialog::isScIffEnabled() const {
+    return scIffCheckBox ? scIffCheckBox->isChecked() : false;
+}
+
+bool AddItemDialog::isScRadioEnabled() const {
+    return scRadioCheckBox ? scRadioCheckBox->isChecked() : false;
 }

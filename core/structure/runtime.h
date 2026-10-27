@@ -36,11 +36,9 @@
 #include "core/Recorder/recorder.h"
 #include "core/ScriptEngine/scriptengine.h"
 #include "core/DISPlugin/DISNetworkPlugin.h"
-
 #include <QThread> // Include QThread
 #include <core/SharedMemory/sharedmemorywrapper.h>  //Shared Memory By Himanshu
 #include <core/Simulation/simulation_state.h>// Recorder By Himanshu
-
 #include <core/SQLite/sqlite.h>// For SQLite By Himanshu
 
 // =============================================================================
@@ -80,6 +78,7 @@ public:
     SQLite *sqlite;                 //!< SQLite database interface (Himanshu)
     DISNetworkPlugin* disPlugin = nullptr;
     PluginManager* pluginManager = nullptr;
+
 
 signals:
     // No signals defined currently

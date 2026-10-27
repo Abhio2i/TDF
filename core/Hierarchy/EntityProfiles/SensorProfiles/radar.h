@@ -15,18 +15,24 @@
 
 #include "core/Hierarchy/EntityProfiles/SensorProfiles/radarlib/radarmodel.h"
 #include "core/Hierarchy/EntityProfiles/sensor.h"
+#include "core/Hierarchy/ECS/Struct/sensor_component.h"
 
 #include <QElapsedTimer>
 #include <QJsonObject>
 #include <unordered_map>
 #include <unordered_set>
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/ESM/esmrf.h"
 
-class Radar : public Sensor
+class Radar : public Sensor, public IRFEmitter
 {
     Q_OBJECT
 
 public:
     explicit Radar(Hierarchy* h);
+
+    // IRFEmitter
+    bool rfEmitterParams(RFEmitterParams& out) const override;
+
 
     // ------------------------------------------------------------------
     // Lifecycle wrappers
@@ -51,6 +57,8 @@ public:
     // ------------------------------------------------------------------
     double    getCurrentAzimuth() const { return radarCore_.getOutput().currentAzimuth; }
     RadarMode getMode()           const { return radarCore_.getOutput().mode; }
+
+    ECS::sensorComponent& getSensorData() const;
 
     // ------------------------------------------------------------------
     // Engine tick

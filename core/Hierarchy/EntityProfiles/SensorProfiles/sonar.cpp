@@ -44,21 +44,19 @@ void Sonar::scan(){
     if (!parentEntity)
         return;
 
-    Transform* source = (root->Platforms)[parentEntity->ID]->transform;
-    if (!source) return;
+    Transform& source = (root->Platforms)[parentEntity->ID]->transform;
+    // if (!source) return;
 
-    double lat     = source->getLatitude();
-    double lon     = source->getLongitude();
-    float  heading = source->getHeading();
+    double lat     = source.getLatitude();
+    double lon     = source.getLongitude();
+    float  heading = source.getHeading();
 
-    // if (!m_timerStarted) {
-    //     m_timer.start();
-    //     m_timerStarted = true;
-    // }
+    if (!m_timerStarted) {
+        m_timer.start();
+        m_timerStarted = true;
+    }
 
-    // float simTime = m_timer.elapsed() / 1000.0f;
-
-    float simTime = Simulation::simulationTime;
+    float simTime = m_timer.elapsed() / 1000.0f;
 
     // Detect platform movement.
     // Position changes may require refreshing sonar state.
@@ -79,7 +77,7 @@ void Sonar::scan(){
     m_activeSonar.setBeamWidth(azimuth);
     m_activeSonar.setPingInterval(m_pingInterval);
     //m_activeSonar.setSoundSpeed(m_soundSpeed);
-    float sonarDepth = source->getAltitude();
+    float sonarDepth = source.getAltitude();
 
     sonarDepth = (sonarDepth < 0) ? -sonarDepth : 0.0f;
 
@@ -122,12 +120,10 @@ void Sonar::scan(){
     // ── Step 4: ather all potential sonar targets from hierarchy. ──
     std::vector<SonarTarget> sonarTargets = collectTargets(lat, lon);
 
-    qDebug() << "BEFORE OCCLUSION:" << sonarTargets.size();
 
     // Remove targets hidden behind nearer objects.
     sonarTargets = applyOcclusionFilter(sonarTargets, lat, lon);
 
-    // qDebug() << "After OCCLUSION:" << sonarTargets.size();
 
     if (sonarTargets.empty())
     {
@@ -135,7 +131,6 @@ void Sonar::scan(){
         return;
     }
 
-    //qDebug() << "Targets found:" << sonarTargets.size();
 
     // ── Step 5: Echo queue me schedule karo ──
     for (const auto& target : sonarTargets)
@@ -157,8 +152,6 @@ void Sonar::scan(){
         // Baffle zone — detect nahi karo
         if (dirFactor <= 0.05f)  // only ignore extremely weak
         {
-            // qDebug() << "BAFFLE ZONE — skip:"
-            //          << QString::fromStdString(target.name);
             continue;
         }
 
@@ -210,13 +203,13 @@ void Sonar::scan(){
 // ==========================================================
 void Sonar::processEchoQueue(float simTime){
     Platform* platform = (root->Platforms)[parentEntity->ID];
-    Transform* source = platform->transform;
+    Transform& source = platform->transform;
 
-    DynamicModel* model = platform->dynamicModel;
+    DynamicModel& model = platform->dynamicModel;
 
     // Obtain sonar platform position and heading
-    double lat = source->getLatitude();
-    double lon = source->getLongitude();
+    double lat = source.getLatitude();
+    double lon = source.getLongitude();
 
     bool anyDetected = false;
 
@@ -243,12 +236,12 @@ void Sonar::processEchoQueue(float simTime){
             it->targetLon
             );
 
-        float selfSpeed = model->velocity.length();
+        float selfSpeed = model.velocity.length();
 
         float speedKnots;
 
         if (selfSpeed < 0.1f)
-            speedKnots = model->moveSpeed / 1.852f;
+            speedKnots = model.moveSpeed / 1.852f;
         else
             speedKnots = selfSpeed * 1.94384f;
 
@@ -279,10 +272,6 @@ void Sonar::processEchoQueue(float simTime){
         input.noiseLevel = SonarModel::computeTotalNoise(noiseSources);
 
 
-        qDebug() << "[FLOW NOISE]"
-                 << "Speed(knots):" << speedKnots
-                 << "NL:" << flowNoise;
-
         // // 🌊 ambient ocean noise (dynamic, not hardcoded logic)
         // float seaState = 1.5f; // later config se lena
         // float ambientNoise = 20.0f + 2.0f * seaState;
@@ -300,7 +289,7 @@ void Sonar::processEchoQueue(float simTime){
             it->targetLon
             );
 
-        float relBearing = baseBearing - source->getHeading();
+        float relBearing = baseBearing - source.getHeading();
 
         // normalize
         while (relBearing > 180.0f) relBearing -= 360.0f;
@@ -310,7 +299,7 @@ void Sonar::processEchoQueue(float simTime){
         float losFactor = cos(relBearing * M_PI / 180.0f);
 
         //float depth1 = 0.0f;              // sonar (surface)
-        float depth1 = platform->transform->getAltitude();
+        float depth1 = platform->transform.getAltitude();
 
         depth1 = (depth1 < 0) ? -depth1 : 0.0f;
         float depth2 = it->targetDepth;     // target ka depth
@@ -366,25 +355,25 @@ void Sonar::processEchoQueue(float simTime){
         //float PRI = (2.0f * range * 1000.0f) / c1;
 
         // Calculate maximum range before range ambiguity occurs.
-        float maxRange = SonarModel::computeMaxUnambiguousRange(c1, PRI);
+        float maxUnambiguousRange = SonarModel::computeMaxUnambiguousRange(c1, PRI);
 
-        qDebug() << "[TL TEST]"
-                 << "Distance:" << newDistance
-                 << "TL:" << tl;
+        // qDebug() << "[TL TEST]"
+        //          << "Distance:" << newDistance
+        //          << "TL:" << tl;
 
-        if (newDistance > maxRange)
+        if (newDistance > maxUnambiguousRange)
         {
-            qDebug() << "[AMBIGUOUS WARNING] Range folding possible at"
-                     << newDistance << "m (limit:" << maxRange << "m)";
-
-            // it = m_echoQueue.erase(it);
+            // qDebug() << "[AMBIGUOUS WARNING] Range folding possible at"
+            //          << newDistance << "m (limit:" << maxUnambiguousRange << "m)";
             ++it;
             continue;
         }
 
-        qDebug() << "[MAX RANGE]"
-                 << "PRI:" << PRI
-                 << "MaxRange:" << maxRange;
+        // qDebug() << "[MAX RANGE]"
+        //          << "PRI:" << PRI
+        //          << "MaxRange:" << maxUnambiguousRange;
+
+
 
         // Doppler Loss
         float pulseDuration = m_pulseDuration;
@@ -402,19 +391,19 @@ void Sonar::processEchoQueue(float simTime){
         // degrees me convert
         float bearingResDeg = bearingRes * 180.0f / M_PI;
 
-        qDebug() << "[BEARING RES]"
-                 << "lambda:" << lambda
-                 << "L:" << arrayLength
-                 << "rad:" << bearingRes
-                 << "deg:" << bearingResDeg;
+        // qDebug() << "[BEARING RES]"
+        //          << "lambda:" << lambda
+        //          << "L:" << arrayLength
+        //          << "rad:" << bearingRes
+        //          << "deg:" << bearingResDeg;
 
         float vmax = SonarModel::computeMaxUnambiguousSpeed(lambda, PRI);
 
-        qDebug() << "[MAX SPEED]"
-                 << "lambda:" << lambda
-                 << "PRI:" << PRI
-                 << "vmax(m/s):" << vmax
-                 << "vmax(kts):" << vmax * 1.94384f;
+        // qDebug() << "[MAX SPEED]"
+        //          << "lambda:" << lambda
+        //          << "PRI:" << PRI
+        //          << "vmax(m/s):" << vmax
+        //          << "vmax(kts):" << vmax * 1.94384f;
 
         float newBearing = baseBearing;
 
@@ -448,9 +437,9 @@ void Sonar::processEchoQueue(float simTime){
 
         if (newDistance < MIN_DETECTION_RANGE)
         {
-            qDebug() << "[SONAR] Target too close / overlap ignored:"
-                     << newDistance << "m"
-                     << "TL:" << tl;
+            // qDebug() << "[SONAR] Target too close / overlap ignored:"
+            //          << newDistance << "m"
+            //          << "TL:" << tl;
 
             it = m_echoQueue.erase(it);
             continue;
@@ -465,9 +454,9 @@ void Sonar::processEchoQueue(float simTime){
         float DI = SonarModel::computeDirectivityIndex(elements);
         DI = std::clamp(DI, 0.0f, 30.0f);
 
-        qDebug() << "[DI]" << "arrayLength:" << m_arrayLength
-                 << "lambda:" << lambda
-                 << "DI:" << DI;
+        // qDebug() << "[DI]" << "arrayLength:" << m_arrayLength
+        //          << "lambda:" << lambda
+        //          << "DI:" << DI;
 
         float snr = SonarModel::computeActiveSNR(input.sourceLevel, tl, effectiveTS, input.noiseLevel,  DI);
 
@@ -478,17 +467,17 @@ void Sonar::processEchoQueue(float simTime){
         // SNR boost
         snr += integrationGain;
 
-        qDebug() << "[INTEGRATION]"
-                 << "Pulses:" << nPulses
-                 << "Gain(dB):" << integrationGain;
+        // qDebug() << "[INTEGRATION]"
+        //          << "Pulses:" << nPulses
+        //          << "Gain(dB):" << integrationGain;
 
         // TARGET SPEED (ID se)
         auto itPlatform = root->Platforms.find(it->targetId);
 
         if (itPlatform == root->Platforms.end())
         {
-            qDebug() << "[ERROR] targetId not found:"
-                     << QString::fromStdString(it->targetId);
+            // qDebug() << "[ERROR] targetId not found:"
+            //          << QString::fromStdString(it->targetId);
 
             it = m_echoQueue.erase(it);
             continue;
@@ -496,19 +485,19 @@ void Sonar::processEchoQueue(float simTime){
 
         Platform* targetPlatform = itPlatform->second;
 
-        if (!targetPlatform || !targetPlatform->dynamicModel)
+        if (!targetPlatform /*|| !targetPlatform->dynamicModel*/)
         {
-            qDebug() << "[ERROR] Null platform/dynamicModel";
+          //  qDebug() << "[ERROR] Null platform/dynamicModel";
 
             it = m_echoQueue.erase(it);
             continue;
-        }        DynamicModel* targetModel = targetPlatform->dynamicModel;
+        }        DynamicModel& targetModel = targetPlatform->dynamicModel;
 
-        float targetSpeed = targetModel->velocity.length();
+        float targetSpeed = targetModel.velocity.length();
 
         if (targetSpeed < 0.1f)
         {
-            targetSpeed = targetModel->moveSpeed / 3.6f;
+            targetSpeed = targetModel.moveSpeed / 3.6f;
         }
 
         // transmitter = target, receiver = self sonar
@@ -541,15 +530,15 @@ void Sonar::processEchoQueue(float simTime){
         snr += 10.0f * log10(dopplerLoss);
 
         // DEBUG
-        qDebug() << "[DOPPLER]"
-                 << "TargetSpeed:" << targetSpeed
-                 << "self:" << selfSpeed
-                 << "speed:" << estimatedSpeed
-                 << "Frequency:" << f0
-                 << "f_echo:" << f_echo
-                 << "deltaF:" << deltaF
-                 << "loss(L):" << dopplerLoss
-                 << "T:" << pulseDuration;
+        // qDebug() << "[DOPPLER]"
+        //          << "TargetSpeed:" << targetSpeed
+        //          << "self:" << selfSpeed
+        //          << "speed:" << estimatedSpeed
+        //          << "Frequency:" << f0
+        //          << "f_echo:" << f_echo
+        //          << "deltaF:" << deltaF
+        //          << "loss(L):" << dopplerLoss
+        //          << "T:" << pulseDuration;
 
         float theta = azimuth * M_PI/180.0f;
         float psi = theta * theta;
@@ -608,15 +597,15 @@ void Sonar::processEchoQueue(float simTime){
 
         float requiredSNR = SonarModel::computeRequiredSNR(pd, pfa);
 
-        qDebug() << "Pd:" << pd
-                 << "Pfa:" << pfa
-                 << "Required SNR:" << requiredSNR
-                 << "Actual SNR:" << effectiveSNR;
+        // qDebug() << "Pd:" << pd
+        //          << "Pfa:" << pfa
+        //          << "Required SNR:" << requiredSNR
+        //          << "Actual SNR:" << effectiveSNR;
 
         // Reverb sirf debug ke liye log karo
-        qDebug() << "[REVERB INFO] SNR:" << snr
-                 << "VOL:" << SNR_vol
-                 << "BOT:" << SNR_bot;
+        // qDebug() << "[REVERB INFO] SNR:" << snr
+        //          << "VOL:" << SNR_vol
+        //          << "BOT:" << SNR_bot;
 
         float FOM = SonarModel::computeFOM(input.sourceLevel, input.noiseLevel, DI, dt);
 
@@ -729,15 +718,15 @@ void Sonar::processEchoQueue(float simTime){
             }
 
             // DEBUG
-            qDebug() << "[PD + PFA]"
-                     << "SNR:" << effectiveSNR
-                     << "DT:" << dt
-                     << "Pfa:" << pfa
-                     << "Pd:" << pd
-                     << "SE:" << signalExcess
-                     << "Rand:" << randVal
-                     << "Real:" << realDetection
-                     << "False:" << falseDetection;
+            // qDebug() << "[PD + PFA]"
+            //          << "SNR:" << effectiveSNR
+            //          << "DT:" << dt
+            //          << "Pfa:" << pfa
+            //          << "Pd:" << pd
+            //          << "SE:" << signalExcess
+            //          << "Rand:" << randVal
+            //          << "Real:" << realDetection
+            //          << "False:" << falseDetection;
         }
 
         else
@@ -982,11 +971,11 @@ float Sonar::computeDirectionalFactor(float bearing,float heading) const{
 
     factor = std::clamp(factor,0.05f, 1.0f);
 
-    qDebug() << "[DIR FACTOR]"
-             << "bearing:" << bearing
-             << "heading:" << heading
-             << "relAngle:" << rel
-             << "factor:" << factor;
+    // qDebug() << "[DIR FACTOR]"
+    //          << "bearing:" << bearing
+    //          << "heading:" << heading
+    //          << "relAngle:" << rel
+    //          << "factor:" << factor;
 
     return factor;
 

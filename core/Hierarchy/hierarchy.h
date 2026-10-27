@@ -26,12 +26,17 @@
 #define HIERARCHY_H
 
 #include <QObject>
-#include <QSet>          // ← ADD THIS
+#include <QSet>
+#include <string>
 #include <unordered_map>
 #include "./profilecategaory.h"
+#include "core/Hierarchy/ECS/World/world.h"
 #include "core/Hierarchy/EntityProfiles/fixedpoints.h"
 #include "core/Hierarchy/EntityProfiles/formation.h"
 #include "core/Hierarchy/EntityProfiles/specialzone.h"
+#include "core/Plugins/Interfaces/customIFFInterface.h"
+#include "core/Plugins/Interfaces/customRadioInterface.h"
+#include "core/Plugins/Interfaces/customSensorInterface.h"
 
 // Forward declarations to reduce compile time
 class Weapon;
@@ -68,6 +73,7 @@ public:
     //              by their unique string identifiers.
     // =========================================================================
 public:
+    char ecsIDMap[100000][30];
     std::unordered_map<std::string, ProfileCategaory*> ProfileCategories;
     std::unordered_map<std::string, std::list<std::string>> dictionry;
     std::unordered_map<std::string, Folder*> Folders;
@@ -89,11 +95,37 @@ public:
     std::unordered_map<std::string, std::string*> EntityPaths;
     std::unordered_map<std::string, std::string*> FolderPaths;
 
-    QStringList* sensorlist = new QStringList({"Generic", "CSM", "ESM", "EO", "IR", "Sonar", "AIS", "ADSB", "AESA" });
+    static inline QStringList* sensorlist = new QStringList({/*"Generic", */"CSM", "ESM", "EO", "IR", "Sonar", "AIS", "ADSB", "AESA" });
     QStringList getAvailableSensorTypes() const;
     bool registerNewSensor(std::string name);
     bool unregisterNewSensor(std::string name);
 
+    static inline QStringList* radiolist = new QStringList({"Radio"});
+    QStringList getAvailableRadioTypes() const;
+    bool registerNewRadio(std::string name);
+    bool unregisterNewRadio(std::string name);
+
+    static inline QStringList* ifflist = new QStringList({"IFF"});
+    QStringList getAvailableIFFTypes() const;
+    bool registerNewIFF(std::string name);
+    bool unregisterNewIFF(std::string name);
+
+    static inline QStringList* dynamiclist = new QStringList({"flight_MODEL","Tank_Model"});
+    QStringList getAvailableDynamicTypes() const;
+    bool registerNewDynamic(std::string name);
+    bool unregisterNewDynamic(std::string name);
+
+
+    ECS::World world;
+signals:
+    void getCustomSensor(QString entityID,uint32_t ecsID,QString sensorID,CustomSensorInterface *&sensor);
+    void RemoveCustomSensor(QString entityID,uint32_t ecsID,QString sensorID);
+
+    void getCustomRadio(QString entityID,uint32_t ecsID,QString radioID,CustomRadioInterface *&radio);
+    void RemoveCustomRadio(QString entityID,uint32_t ecsID,QString radioID);
+
+    void getCustomIFF(QString entityID,uint32_t ecsID,QString iffID,CustomIFFInterface *&iff);
+    void RemoveCustomIFF(QString entityID,uint32_t ecsID,QString iffID);
 
 public:
     std::unordered_map<float, float> redengagements;

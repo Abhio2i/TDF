@@ -47,12 +47,12 @@ enum class ComponentType {
     SensorProfile,
     IFFProfile,
     RadioProfile,
-    WeaponProfile
+    WeaponProfile,
+    DISTypeProfile
 };
 
 class Hierarchy;
 class Entity;
-
 // =============================================================================
 // CLASS: Component (Abstract)
 //
@@ -62,7 +62,7 @@ class Entity;
 class Component
 {
 public:
-    Component(Hierarchy* h);
+    Component();
     virtual ~Component();
 
     // =========================================================================
@@ -79,8 +79,12 @@ public:
     //              dynamic sub-component management, and state persistence.
     // =========================================================================
     virtual ComponentType Typo() const { return ComponentType::Unknown; }
+    virtual void init(Entity* Entity) = 0;
+    virtual void Awake() = 0;
+    virtual void Start() = 0;
 
     // --- Sub-Component Management ---
+    // virtual void SyncByJson(const QJsonObject& obj);
     virtual void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QJsonObject data3 = QJsonObject()) = 0;
     virtual void removeSubComponent(std::string ID) = 0;
     virtual QJsonObject getsubComponentData(std::string ID) const = 0;
@@ -90,6 +94,7 @@ public:
     // --- Serialization ---
     virtual QJsonObject toJson() const = 0;
     virtual void fromJson(const QJsonObject& obj) = 0;
+
 };
 
 #endif // COMPONENT_H

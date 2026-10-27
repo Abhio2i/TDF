@@ -282,12 +282,12 @@ void NetworkManager::onMessaageRecevied(QString message) {
                                                         Entity* entity = entityMap.at(entityID.toStdString());
                                                         Platform* platform = dynamic_cast<Platform*>(entity);
                                                         if (platform) {
-                                                            if (platform->transform) {
-                                                                platform->transform->setTranslation(newPos);
-                                                                platform->transform->setFromEulerAngles(rot);
-                                                            } else {
-                                                                qWarning() << "Platform" << entityID << "is missing a Transform component.";
-                                                            }
+                                                            // if (platform->transform) {
+                                                                platform->transform.setTranslation(newPos);
+                                                                platform->transform.setFromEulerAngles(rot);
+                                                            // } else {
+                                                            //     qWarning() << "Platform" << entityID << "is missing a Transform component.";
+                                                            // }
                                                         }
                                                     } else {
                                                         //qWarning() << "Entity with ID" << entityID << "not found in hierarchy.";
@@ -478,10 +478,10 @@ void NetworkManager::UpdateClient() {
 
     for (auto& [key, entity] : hierarchy->Entities) {
         Platform* platform = dynamic_cast<Platform*>(entity);
-        if (!platform || !platform->transform) continue;
+        if (!platform /*|| !platform->transform*/) continue;
 
         TransformPDU pdu;
-        platform->transform->toPDU(pdu, key, platform->parentID);
+        platform->transform.toPDU(pdu, key, platform->parentID);
 
         TransformState current{
             pdu.posX, pdu.posY, pdu.posZ,

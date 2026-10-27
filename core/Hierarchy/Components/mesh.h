@@ -41,6 +41,7 @@ class Mesh : public QObject
     Q_OBJECT
 public:
     Mesh();
+    ~Mesh();
 
     // =========================================================================
     // SECTION: Mesh Properties
@@ -48,16 +49,16 @@ public:
     // =========================================================================
     bool Active;                    //!< Whether this mesh is currently active
     std::string ID;                 //!< Unique identifier for the mesh
-    std::string* Sprite;            //!< Path to sprite image (if any)
-    std::string* Texture;           //!< Path to texture image (if any)
+    std::string* Sprite = nullptr;     //!< Auto-initialized to nullptr
+    std::string* Texture = nullptr;    //!< Auto-initialized to nullptr
     std::string lastpath;           //!< Last loaded file path (for caching)
-    QPixmap* cacheimg;              //!< Cached pixmap for fast rendering
-    QPixmap scaledimg;              //!< Scaled version of the pixmap
+    QPixmap cacheimg ;              //!< Scaled version of the pixmap
+    QPixmap scaledimg;
     int ImageScale = 0;             //!< Scale factor for image rendering
 
     // Color attributes
-    QColor *color;                  //!< Outline color of the mesh
-    QColor *fillColor;              //!< Fill color for polygons
+    QColor *color = nullptr;                  //!< Outline color of the mesh
+    QColor *fillColor = nullptr;              //!< Fill color for polygons
 
     // =========================================================================
     // SECTION: Geometry Properties
@@ -71,7 +72,7 @@ public:
     // SECTION: Public Methods
     // DESCRIPTION: Operations for pixmap retrieval and geometry manipulation.
     // =========================================================================
-    QPixmap *getPixmap(int size);   //!< Returns scaled/cached pixmap for given size
+    QPixmap getPixmap(int size);   //!< Returns scaled/cached pixmap for given size
     void addPoint(Vector* point);   //!< Adds a vertex to the polygon
     void removePoint();             //!< Removes the last vertex
     void clear();                   //!< Clears all vertices

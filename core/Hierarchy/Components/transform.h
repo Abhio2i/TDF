@@ -28,8 +28,8 @@
 
 #include <QObject>
 #include "./component.h"
+#include "core/Hierarchy/ECS/Struct/transform_component.h"
 #include "core/Hierarchy/Struct/geocords.h"
-#include "qmutex.h"
 #include <QJsonObject>
 #include <QVector3D>
 #include <QQuaternion>
@@ -54,14 +54,16 @@ class Transform : public QObject, public Component
 public:
     Transform();
     ComponentType Typo() const override { return ComponentType::Transform; }
-
     // =========================================================================
     // SECTION: Core State
     // DESCRIPTION: Activation flag and geographic/transform data.
     // =========================================================================
     bool Active;                            //!< Whether this transform is active
-    Geocords* geocord;                      //!< Geographic coordinates (lat/lon/alt/heading)
-    Qt3DCore::QTransform* matrix;           //!< Qt3D transform matrix (for 3D rendering)
+    Geocords geocord;                      //!< Geographic coordinates (lat/lon/alt/heading)
+    Qt3DCore::QTransform matrix;           //!< Qt3D transform matrix (for 3D rendering)
+
+    ECS::TransformComponent& getPosition();
+    ECS::GeocordComponent& getGeocords();
 
     // =========================================================================
     // SECTION: Euler/Quaternion Conversions
@@ -76,6 +78,8 @@ public:
     // =========================================================================
     QJsonObject AdditionalParameters;            //!< User-defined key-value parameters
     std::vector<QVector3D> trailData;       //!< Historical position trail for path visualisation
+
+
 
     // =========================================================================
     // SECTION: Geographic Coordinate Setters/Getters
@@ -144,7 +148,9 @@ public:
     QVector3D inverseTransformPoint(const QVector3D& worldPos);     //!< World point to local point
 
     QVector3D transformPoint(const QVector3D& localPos);
-
+    void init(Entity* Entity) override;
+    void Awake() override;
+    void Start() override;
     // Component interface overrides
     void addSubComponent(std::string name, QString data1 = "", QString data2 = "", QJsonObject data3 = QJsonObject()) override;
     void removeSubComponent(std::string ID) override;
@@ -161,6 +167,8 @@ public:
     // -------------------------------------------------------------------------
     void toPDU(TransformPDU& pdu, const std::string& entityID, const std::string& parentID) const;
     void fromPDU(const TransformPDU& pdu);
+    void SaveState();
+    void RestoreState();
 
 public slots:
     void sync();            //!< Synchronises transform state with associated components
@@ -174,6 +182,9 @@ private:
 
     void VectorChanged(QVector3D v);    //!< Called when position changes
     void rotationChanged(QQuaternion r);//!< Called when rotation changes
+
+    bool statesaved = false;
+    QJsonObject InitalState;
 };
 
 #endif // TRANSFORM_H

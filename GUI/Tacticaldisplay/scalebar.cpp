@@ -23,9 +23,6 @@ void ScaleBar::updateScale(double metersPerPixel, int containerWidth)
 {
     m_currentConfig = getOptimalScale(metersPerPixel, containerWidth);
     update(); // Trigger repaint
-
-    // qDebug() << "Scale Bar:" << m_currentConfig.barLength << "px ="
-    //          << m_currentConfig.displayText << "(" << m_currentConfig.actualDistance << "m)";
 }
 
 ScaleBar::ScaleConfig ScaleBar::getOptimalScale(double metersPerPixel, int containerWidth) const
@@ -33,7 +30,6 @@ ScaleBar::ScaleConfig ScaleBar::getOptimalScale(double metersPerPixel, int conta
     if (metersPerPixel <= 0) {
         return {100, "1 km", 1000}; // Fallback
     }
-
     const QVector<int> barLengths = {50, 80, 100, 120, 150};
     const int maxBarWidth = 120; // Fixed max width for scale bar
 
@@ -87,7 +83,6 @@ ScaleBar::ScaleConfig ScaleBar::getOptimalScale(double metersPerPixel, int conta
             }
         }
     }
-
     // Final fallback
     return {100, "1 km", 1000};
 }
@@ -165,7 +160,7 @@ void ScaleBar::paintEvent(QPaintEvent *event)
     painter.setBrush(Qt::black);
     painter.drawRect(barX, barY, m_currentConfig.barLength, barHeight);
 
-    // Draw alternating white segments (like Google Maps)
+    // Draw alternating white segments
     painter.setBrush(Qt::white);
     int segmentCount = m_currentConfig.barLength / 20;
     for (int i = 0; i < segmentCount; i++) {
@@ -184,7 +179,6 @@ void ScaleBar::paintEvent(QPaintEvent *event)
     font.setPointSize(8);
     font.setWeight(QFont::Normal);
     painter.setFont(font);
-
     painter.drawText(barX, barY + barHeight + 15, m_currentConfig.displayText);
 }
 

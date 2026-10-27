@@ -33,14 +33,20 @@
 #include <QFont>
 #include <QFrame>
 
-
 Feedback::Feedback(QWidget *parent)
     : QDialog(parent)
 {
     // Apply dark theme to dialog
     setStyleSheet(ProjectInformationStyles::Dialog);
     setWindowTitle("Project Information");
+
     setFixedSize(500, 280);
+    setWindowFlags(Qt::Window |
+                   Qt::WindowTitleHint |
+                   Qt::WindowSystemMenuHint |
+                   Qt::WindowMinimizeButtonHint |
+                   Qt::WindowCloseButtonHint);
+    setWindowModality(Qt::WindowModal);
     setModal(true);
 
     // Main layout
@@ -79,7 +85,6 @@ Feedback::Feedback(QWidget *parent)
     // Version section with horizontal layout
     QHBoxLayout *versionLayout = new QHBoxLayout();
     versionLayout->setSpacing(10);
-
     QLabel *versionTitleLabel = new QLabel("Version:");
     QFont versionTitleFont;
     versionTitleFont.setPointSize(11);
@@ -88,7 +93,7 @@ Feedback::Feedback(QWidget *parent)
     versionTitleLabel->setStyleSheet(ProjectInformationStyles::TitleLabel);
     versionTitleLabel->setMinimumWidth(80);
 
-    QLabel *versionLabel = new QLabel("5.0.51");
+    QLabel *versionLabel = new QLabel("7.0.2");
     QFont versionFont;
     versionFont.setPointSize(11);
     versionFont.setBold(true);
@@ -105,5 +110,7 @@ Feedback::Feedback(QWidget *parent)
     okButton->setStyleSheet(ProjectInformationStyles::OkButton);
     connect(okButton, &QPushButton::clicked, this, &QDialog::accept);
     mainLayout->addWidget(okButton, 0, Qt::AlignCenter);
+
 }
+
 

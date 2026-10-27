@@ -25,11 +25,13 @@
 #define COLLIDER_H
 
 #include "./component.h"
+#include "core/Hierarchy/ECS/Struct/collider_component.h"
 #include <QObject>
 #include <QJsonObject>
 #include <core/Hierarchy/Struct/vector.h>
 #include <core/Hierarchy/Struct/constants.h>
 
+class Entity;
 class Hierarchy;
 
 // =============================================================================
@@ -43,7 +45,7 @@ class Collider : public QObject, public Component
 {
     Q_OBJECT
 public:
-    Collider(Hierarchy* h);
+    Collider();
 
     // =========================================================================
     // SECTION: Component Identity
@@ -59,15 +61,19 @@ public:
     bool Active;
     float CollideRadius;
     float WarningRadius;
-    float Width;
-    float Length;
-    float Height;
+    float blinkRadius = 0;
+
+    ECS::ColliderSizeComponent& getDimension() const;
+    ECS::ColliderWarningComponent& getWarning() const;
+    // float Width;
+    // float Length;
+    // float Height;
 
     // =========================================================================
     // SECTION: Type Definitions
     // DESCRIPTION: Pointers to vector data and classification constants.
     // =========================================================================
-    Vector *vector;
+    Vector vector;
     Constants::EntityType type;
     Constants::ColliderType collider;
 
@@ -76,7 +82,9 @@ public:
     // DESCRIPTION: Storage for custom key-value pairs associated with collision.
     // =========================================================================
     QJsonObject AdditionalParameters;
-
+    void init(Entity* Entity) override;
+    void Awake() override;
+    void Start() override;
     // =========================================================================
     // SECTION: Virtual Interface Overrides
     // DESCRIPTION: Mandatory methods for sub-component CRUD and serialization.
@@ -99,6 +107,8 @@ public slots:
     // DESCRIPTION: Slot for real-time physics updates based on delta time.
     // =========================================================================
     void Update(float deltaTime = 0.01f);
+
+
 };
 
 #endif // COLLIDER_H

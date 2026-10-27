@@ -47,6 +47,7 @@
 
 // %%% Forward Declarations %%%
 class QMainWindow;
+class MapWithCanvas;
 
 // %%% Class Definition %%%
 /* Connector for hierarchy and UI interactions */
@@ -59,13 +60,16 @@ public:
     // Connect signals for hierarchy and UI
     void connectSignals(Hierarchy* hierarchy, Hierarchy* library, HierarchyTree* treeView,
                         TacticalDisplay* tactical = nullptr,
-                        Inspector* inspector = nullptr);
+                        Inspector* inspector = nullptr,
+                        // ARTI CHANGE: naya param — active/inactive toggle par canvas
+                        // refresh karne ke liye (TacticalDisplay ab use nahi ho raha)
+                        MapWithCanvas* apiMapWidget = nullptr);
     // Connect library signals
     void connectLibrarySignals(Hierarchy* library, HierarchyTree* libTree);
     // Initialize dummy data
     static void initializeDummyData(Hierarchy* hierarchy);
     // Setup file operations
-    void setupFileOperations(QMainWindow* parent, Hierarchy* hierarchy, TacticalDisplay* tacticalDisplay);
+    // void setupFileOperations(QMainWindow* parent, Hierarchy* hierarchy, TacticalDisplay* tacticalDisplay);
     // Initialize library data
     static void initializeLibraryData(Hierarchy* library);
     // Set hierarchy instance
@@ -78,14 +82,11 @@ public:
     QString getLastSavedFilePath(QMainWindow* parent);
     // Get feedback data as JSON
     QJsonObject getFeedbackData(Hierarchy* hierarchy);
-    void addToRecentProjects(const QString& filePath);
-    QStringList getRecentProjects() const;
-    void clearRecentProjects();
-    void newfile(Hierarchy* hierarchy);
     void openXmlFile(Hierarchy* hierarchy,QString filePath);
     QDomElement getDom(QString filePath);
     Hierarchy* library = nullptr;
-
+bool confirmAndLoadAssociatedDatabase(Hierarchy* targetHierarchy, QWidget* parentWidget) const;
+    bool hasCopiedItem() const { return !copydata.isEmpty(); }
 
 public slots:
     void loadToLibrary(QMainWindow* parent);

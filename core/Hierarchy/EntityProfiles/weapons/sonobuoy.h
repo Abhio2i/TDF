@@ -48,7 +48,11 @@ public:
     QJsonObject toJson()                        const override;
     void        fromJson(const QJsonObject&)          override;
     QJsonObject AdditionalParameters;   //!< User-defined extension parameters
-
+    void SaveState();
+    void RestoreState();
+private:
+    bool statesaved = false;
+    QJsonObject InitalState;
 };
 
 #endif // SONOBUOY_H

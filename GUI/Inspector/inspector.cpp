@@ -27,6 +27,7 @@
  */
 
 #include "inspector.h"                             // For inspector class
+#include "qapplication.h"
 #include "qjsondocument.h"                         // For JSON document handling
 #include "qtimer.h"
 #include <QVBoxLayout>                             // For vertical layout
@@ -59,6 +60,9 @@
 #include "inspector-styles.h"
 #include <QToolTip>
 #include <QCursor>
+#include "GUI/dialogwindowutils.h"
+#include <QMouseEvent>
+
 static bool safeAddWidget(QLayout* layout, QWidget* widget, const QString& context = "") {
     if (!layout) {
         return false;
@@ -93,24 +97,27 @@ WheelableLineEdit::WheelableLineEdit(QWidget *parent)
 /* Handle mouse wheel events */
 void WheelableLineEdit::wheelEvent(QWheelEvent *event)
 {
-    if (hasFocus()) {
-        double step = event->angleDelta().y() > 0 ? 1.0 : -1.0;
-        if (event->modifiers() & Qt::ControlModifier) step *= 0.1;
-        else if (event->modifiers() & Qt::ShiftModifier) step *= 10.0;
-        bool ok;
-        double value = text().toDouble(&ok);
-        if (ok) {
-            setText(QString::number(value + step));
-            emit editingFinished();
-        }
-    }
-    QLineEdit::wheelEvent(event);
+    // if (hasFocus()) {
+    //     double step = event->angleDelta().y() > 0 ? 1.0 : -1.0;
+    //     if (event->modifiers() & Qt::ControlModifier) step *= 0.1;
+    //     else if (event->modifiers() & Qt::ShiftModifier) step *= 10.0;
+    //     bool ok;
+    //     double value = text().toDouble(&ok);
+    //     if (ok) {
+    //         setText(QString::number(value + step));
+    //         emit editingFinished();
+    //     }
+    // }
+    // QLineEdit::wheelEvent(event);
+    event->ignore();
 }
 
 // %%% Inspector Constructor %%%
 /* Initialize inspector dock widget */
+// Inspector::Inspector(QWidget *parent)
+//     : QDockWidget(parent)
 Inspector::Inspector(QWidget *parent)
-    : QDockWidget(parent)
+    : QWidget(parent)
 {
     setStyleSheet(InspectorStyles::InspectorWidget);
     setupUI();
@@ -190,26 +197,26 @@ QMenu* Inspector::createContextMenu()
     QAction *pasteAction = menu->addAction("Paste Component");
     pasteAction->setEnabled(!copiedComponentData.isEmpty());
     // ── Reset action ──────────────────────────────────────────────────────
-    QAction *resetAction = menu->addAction("Reset Component");
-    resetAction->setEnabled(!m_initialComponentData.isEmpty());
-    resetAction->setToolTip("Restore component to its initial loaded values");
+    // QAction *resetAction = menu->addAction("Reset Component");
+    // resetAction->setEnabled(!m_initialComponentData.isEmpty());
+    // resetAction->setToolTip("Restore component to its initial loaded values");
     // ────────────────────────────────────────────────────────────────────
     QAction *closeAction = menu->addAction("Close");
     connect(copyAction, &QAction::triggered, this, &Inspector::copyCurrentComponent);
     connect(pasteAction, &QAction::triggered, this, &Inspector::pasteToCurrentComponent);
     connect(closeAction, &QAction::triggered, this, [](){});
     // ── Reset connection ──────────────────────────────────────────────────
-    connect(resetAction, &QAction::triggered, this, [this]() {
-        if (m_initialComponentData.isEmpty() || ConnectedID.isEmpty() || Name.isEmpty()) {
-            return;
-        }
-        // Restore UI to initial state
-        init(ConnectedID, Name, m_initialComponentData);
-        // Emit so hierarchy also gets updated
-        QJsonObject delta = m_initialComponentData;
-        delta["_id"] = mainID;
-        emit valueChanged(ConnectedID, Name, delta);
-    });
+    // connect(resetAction, &QAction::triggered, this, [this]() {
+    //     if (m_initialComponentData.isEmpty() || ConnectedID.isEmpty() || Name.isEmpty()) {
+    //         return;
+    //     }
+    //     // Restore UI to initial state
+    //     init(ConnectedID, Name, m_initialComponentData);
+    //     // Emit so hierarchy also gets updated
+    //     QJsonObject delta = m_initialComponentData;
+    //     delta["_id"] = mainID;
+    //     emit valueChanged(ConnectedID, Name, delta);
+    // });
     return menu;
 }
 /* Copy current component data */
@@ -245,40 +252,50 @@ void Inspector::handleAddTab()
 }
 void Inspector::setupUI()
 {
-    QWidget *container = new QWidget(this);
-    if (!container) {
-        return;
-    }
-    container->setStyleSheet(R"(
+    // Inspector is now a plain QWidget. Its own title strip stays inside the content
+    // so the outer CustomResizableOverlayDock is the only window chrome.
+    setStyleSheet(R"(
         QWidget {
             background-color: #0F2636;
             border: 2px solid #27446d;
             border-radius: 3px;
         }
     )");
-    QVBoxLayout *layout = new QVBoxLayout(container);
+
+    QVBoxLayout *layout = new QVBoxLayout(this);
     if (!layout) {
-        delete container;
         return;
     }
     layout->setContentsMargins(2, 2, 2, 2);
+    layout->setSpacing(0);
+
     setupTitleBar();
     if (titleBarWidget) {
-        setTitleBarWidget(titleBarWidget);
+        layout->addWidget(titleBarWidget);
     }
+
     tableWidget = new QTableWidget(0, 2, this);
     if (!tableWidget) {
-        delete layout;
-        delete container;
         return;
     }
     tableWidget->horizontalHeader()->setVisible(false);
     tableWidget->verticalHeader()->setVisible(false);
-    tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    m_columnGripWidget = new QWidget(tableWidget->viewport());
+    m_columnGripWidget->setCursor(Qt::SplitHCursor);
+    m_columnGripWidget->setStyleSheet("background: transparent;");
+    m_columnGripWidget->installEventFilter(this);
+    m_columnGripWidget->show();
+    tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive); // ARTI CHANGE
+    tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);      // ARTI CHANGE
+    tableWidget->horizontalHeader()->resizeSection(0, 120);                             // ARTI CHANGE
+    tableWidget->viewport()->installEventFilter(this);
+    // ARTI CHANGE: layout apply hone ke baad hi viewport ki real height milegi,
+    // isliye event-loop ke next tick pe geometry fix karo (creation-time pe height 0 hoti hai).
+    QTimer::singleShot(0, this, [this]() { updateColumnGripPosition(); });
     tableWidget->setStyleSheet(InspectorStyles::TableWidget);
-    tableWidget->horizontalHeader()->setDefaultSectionSize(0);
+
     tableWidget->setAlternatingRowColors(true);
+    tableWidget->viewport()->installEventFilter(this);
     tableWidget->setShowGrid(false);
     tableWidget->setFrameShape(QFrame::NoFrame);
     tableWidget->verticalHeader()->setDefaultSectionSize(24);
@@ -289,27 +306,52 @@ void Inspector::setupUI()
             this, &Inspector::showAdditionalParamContextMenu);
     if (!safeAddWidget(layout, tableWidget, "setupUI - tableWidget")) {
         delete tableWidget;
-        delete layout;
-        delete container;
         return;
     }
-    QHBoxLayout *buttonLayout = new QHBoxLayout();
+
+    // QHBoxLayout *buttonLayout = new QHBoxLayout();
+    // if (!buttonLayout) {
+    //     return;
+    // }
+
+    // QSpacerItem *spacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+    // addButton = new QPushButton("Add", this);
+    // if (!addButton) {
+    //     delete buttonLayout;
+    //     return;
+    // }
+    // addButton->setFixedSize(40, 25);
+    // addButton->setStyleSheet(InspectorStyles::AddButton);
+    // addButton->setToolTip("Add new parameter to AdditionalParameters");
+    // addButton->setVisible(false);
+    // buttonLayout->addSpacerItem(spacer);
+    // if (!safeAddWidget(buttonLayout, addButton, "setupUI - addButton to buttonLayout")) {
+    //     delete addButton;
+    //     delete buttonLayout;
+    //     return;
+    // }
+    // buttonLayout->setSpacing(10);
+    // buttonLayout->setContentsMargins(10, 5, 10, 5);
+    // layout->addLayout(buttonLayout);
+    // Container so the bottom strip (Add button area) always has the same dark background
+    QWidget *buttonContainer = new QWidget(this);
+    if (!buttonContainer) {
+        return;
+    }
+    buttonContainer->setStyleSheet(
+        "QWidget { background-color: #0F2636; border: none; }"
+        );
+    QHBoxLayout *buttonLayout = new QHBoxLayout(buttonContainer);
     if (!buttonLayout) {
-        delete tableWidget;
-        delete layout;
-        delete container;
+        delete buttonContainer;
         return;
     }
     QSpacerItem *spacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-    addButton = new QPushButton("Add", this);
+    addButton = new QPushButton("Add", buttonContainer);
     if (!addButton) {
-        delete buttonLayout;
-        delete tableWidget;
-        delete layout;
-        delete container;
+        delete buttonContainer;
         return;
     }
-    // ─────────────────────────────────────────────────────────────────────
     addButton->setFixedSize(40, 25);
     addButton->setStyleSheet(InspectorStyles::AddButton);
     addButton->setToolTip("Add new parameter to AdditionalParameters");
@@ -317,16 +359,13 @@ void Inspector::setupUI()
     buttonLayout->addSpacerItem(spacer);
     if (!safeAddWidget(buttonLayout, addButton, "setupUI - addButton to buttonLayout")) {
         delete addButton;
-        delete buttonLayout;
-        delete tableWidget;
-        delete layout;
-        delete container;
+        delete buttonContainer;
         return;
     }
     buttonLayout->setSpacing(10);
     buttonLayout->setContentsMargins(10, 5, 10, 5);
-    layout->addLayout(buttonLayout);
-    setWidget(container);
+    layout->addWidget(buttonContainer);
+
     connect(tableWidget, &QTableWidget::cellChanged, this, [this](int r, int col) {
         if (col != 1 || !rowToKeyPath.contains(r)) return;
         QString keyPath = rowToKeyPath[r];
@@ -350,11 +389,11 @@ void Inspector::setupUI()
     });
     connect(addButton, &QPushButton::clicked, this, &Inspector::handleAddParameter);
     connect(tableWidget, &QTableWidget::cellPressed,
-            this, [this](int row, int col) {
-             if (!sectionRows.contains(row)) return;
+            this, [this](int row, int /*col*/) {
+                if (!sectionRows.contains(row)) return;
                 QString secName = sectionRows[row];
                 if (!secName.startsWith("Waypoint_", Qt::CaseInsensitive)) return;
-                                bool ok = false;
+                bool ok = false;
                 int wpNumber = secName.mid(QString("Waypoint_").length()).toInt(&ok);
                 if (!ok || wpNumber < 1) return;
                 int wpIndex = wpNumber - 1;
@@ -382,7 +421,6 @@ void Inspector::setupUI()
                 }
             });
 }
-
 /* Create remove button for parameter */
 QPushButton* Inspector::createRemoveButton(const QString &parameterName)
 {
@@ -425,7 +463,6 @@ QPushButton* Inspector::createRemoveButton(const QString &parameterName)
         emit parameterChanged(ConnectedID, Name, key, "", false);
         emit valueChanged(ConnectedID, Name, delta);
     });
-
     return removeButton;
 }
 
@@ -451,6 +488,8 @@ void Inspector::handleAddParameter()
         return;
     }
     CustomParameterDialog dialog(this);
+    makeDialogResizable(&dialog);
+    dialog.setWindowModality(Qt::WindowModal);
     if (dialog.exec() != QDialog::Accepted) {
         return;
     }
@@ -985,6 +1024,70 @@ void Inspector::handleRemoveParameter()
 // EventFilter
 bool Inspector::eventFilter(QObject *watched, QEvent *event)
 {
+    // ARTI CHANGE: grip widget → column resize drag. Ye widget khud boundary
+    // pixels ko own karta hai, isliye neeche ke LineEdit ko event milta hi nahi.
+    // ARTI CHANGE: grip widget → column resize drag. Ye widget khud boundary
+    // pixels ko own karta hai, isliye neeche ke LineEdit ko event milta hi nahi.
+    if (watched == m_columnGripWidget) {
+        // ARTI CHANGE: parent overlay docks (CustomResizableOverlayDock in
+        // ScenarioEditor/RuntimeEditor) push their own override cursor while
+        // hovering, which hides a plain setCursor() on our grip. Pushing our
+        // own override cursor guarantees SplitHCursor wins regardless.
+        if (event->type() == QEvent::Enter) {
+            if (!m_gripCursorOverridden) {
+                QApplication::setOverrideCursor(Qt::SplitHCursor);
+                m_gripCursorOverridden = true;
+            }
+            return false; // let it propagate normally too
+        }
+        if (event->type() == QEvent::Leave) {
+            if (m_gripCursorOverridden && !m_resizingColumn) {
+                QApplication::restoreOverrideCursor();
+                m_gripCursorOverridden = false;
+            }
+            return false;
+        }
+        if (event->type() == QEvent::MouseButtonPress) {
+            if (!m_gripCursorOverridden) {
+                QApplication::setOverrideCursor(Qt::SplitHCursor);
+                m_gripCursorOverridden = true;
+            }
+            QMouseEvent *me = static_cast<QMouseEvent*>(event);
+            m_resizingColumn   = true;
+            m_resizeStartX     = me->globalPos().x();
+            m_resizeStartWidth = tableWidget->columnWidth(0);
+            return true;
+        }
+        if (event->type() == QEvent::MouseMove && m_resizingColumn) {
+            QMouseEvent *me = static_cast<QMouseEvent*>(event);
+            int delta    = me->globalPos().x() - m_resizeStartX;
+            int minWidth = 60;
+            int maxWidth = tableWidget->viewport()->width() - 60;
+            int newWidth = qBound(minWidth, m_resizeStartWidth + delta, maxWidth);
+            tableWidget->setColumnWidth(0, newWidth);
+            updateColumnGripPosition();
+            return true;
+        }
+        if (event->type() == QEvent::MouseButtonRelease && m_resizingColumn) {
+            m_resizingColumn = false;
+            // ARTI CHANGE: drag khatam hote hi override pop karo (agar mouse
+            // grip se bahar chala gaya ho to Leave event already handle kar
+            // chuka hoga; yahan safety-net hai taaki cursor stuck na rahe).
+            if (m_gripCursorOverridden) {
+                QApplication::restoreOverrideCursor();
+                m_gripCursorOverridden = false;
+            }
+            return true;
+        }
+    }
+    // ARTI CHANGE: window/table resize hone par grip ko boundary pe pinned rakho.
+    if (watched == tableWidget->viewport()) {
+        if (event->type() == QEvent::Resize) {
+            updateColumnGripPosition();
+        } else if (event->type() == QEvent::MouseMove || event->type() == QEvent::Enter) {
+            m_columnGripWidget->raise();
+        }
+    }
     if (event->type() == QEvent::MouseButtonPress) {
         QLabel *label = qobject_cast<QLabel*>(watched);
         if (label && label->property("isWaypointLabel").toBool()) {
@@ -1124,7 +1227,7 @@ bool Inspector::eventFilter(QObject *watched, QEvent *event)
             return true;
         }
     }
-    return QDockWidget::eventFilter(watched, event);
+    return QWidget::eventFilter(watched, event);
 }
 // init Function
 void Inspector::init(QString ID, QString name, QJsonObject object)
@@ -1150,12 +1253,16 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
     }
     if (tableWidget) {
         if (newName == "sensors" || newName == "iffs" || newName == "radios") {
-            tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+            tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
             tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
         } else {
-            tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+            tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
             tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
         }
+    }
+    if (menuButton) {
+        QString objType = object.value("type").toString().toLower();
+        menuButton->setVisible(objType == "component");
     }
     QString currentComponentId = "";
     if (object.contains("type") && object["type"].toString().toLower() == "subcomponent") {
@@ -1215,6 +1322,9 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
             QString type = obj["type"].toString().toLower();
             if (type == "section") {
                 rowCount += 1 + (obj.keys().size() - 1);
+            }
+            else if (type == "time") {
+                rowCount += 1;
             }
             else if (key == "modeConfiguration") {
                 QJsonObject subObj = object[key].toObject();
@@ -1285,12 +1395,14 @@ void Inspector::init(QString ID, QString name, QJsonObject object)
         }
         tableWidget->setRowCount(row);
         tableWidget->blockSignals(false);
-        tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+        tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
         tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
         if (tableWidget->rowCount() > 0) {
             tableWidget->scrollToTop();
         }
         tableWidget->viewport()->update();
+        // updateColumnGripPosition();
+        autoFitKeyColumn();
     }
 }
 // Add addSimpleRow
@@ -1356,6 +1468,7 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
         QString type = obj["type"].toString().toLower();
 
         if (type == "section") {
+            QCoreApplication::processEvents();
             QString sectionKey = key;
             int headerRow = row;
             QWidget *headerWidget = createSectionHeader(sectionKey, headerRow, obj);
@@ -1383,6 +1496,7 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
                     break;
                 }
             }
+
             if (hasUnitParams) {
                 tableWidget->insertRow(currentRow);
                 tableWidget->setRowHeight(currentRow, 22);
@@ -1402,7 +1516,6 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
                 QHBoxLayout *hl = new QHBoxLayout(hdrWidget);
                 hl->setContentsMargins(2, 0, 2, 0);
                 hl->setSpacing(0);
-
                 auto makeHdr = [](const QString &text, int width = -1) {
                     QLabel *l = new QLabel(text);
                     l->setStyleSheet(
@@ -1563,6 +1676,9 @@ int Inspector::addSimpleRow(int row, const QString &key, const QJsonValue &value
             image->setupImageCell(row, key, obj, tableWidget);
             connect(image, &ImageTemplate::valueChanged, this, &Inspector::valueChanged);
         }
+        else if (type == "time") {
+            setupTimeCell(row, key, obj);
+        }
         else {
             setupGenericObjectCell(row, key, obj);
         }
@@ -1625,6 +1741,9 @@ void Inspector::setupValueCell(int row, const QString &fullKey, const QJsonValue
             image->setMainID(mainID);
             image->setupImageCell(row, fullKey, obj, tableWidget);
             connect(image, &ImageTemplate::valueChanged, this, &Inspector::valueChanged);
+        }
+        else if (type == "time") {
+            setupTimeCell(row, fullKey, obj);
         }
         else {
             setupGenericObjectCell(row, fullKey, obj);
@@ -2039,7 +2158,7 @@ QWidget* Inspector::createSectionHeader(const QString &sectionKey, int headerRow
     }
     connect(dropdownButton, &QPushButton::clicked, this, [=]() {
         toggleSectionExpansion(sectionKey, headerRow, dropdownButton);
-                if (sectionKey.startsWith("Waypoint_", Qt::CaseInsensitive) && !ConnectedID.isEmpty()) {
+        if (sectionKey.startsWith("Waypoint_", Qt::CaseInsensitive) && !ConnectedID.isEmpty()) {
             bool ok = false;
             int wpNumber = sectionKey.mid(QString("Waypoint_").length()).toInt(&ok);
             int wpIndex = ok ? (wpNumber - 1) : -1;
@@ -2284,7 +2403,6 @@ int Inspector::addMultiComponentContainerRow(int row, const QString &key, const 
     return row + 1;
 }
 
-
 void Inspector::handleMultiComponentContainer(QString ID, QString name, QJsonObject object)
 {
     ConnectedID = ID;
@@ -2303,7 +2421,7 @@ void Inspector::handleMultiComponentContainer(QString ID, QString name, QJsonObj
     if (object.contains(containerKey)) {
         containerObj = object[containerKey].toObject();
     }
-    tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
     tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     bool developerMode = ApplicationDialog::getGlobalDeveloperMode();
     int row = 0;
@@ -2773,6 +2891,7 @@ void Inspector::handleMultiComponentContainer(QString ID, QString name, QJsonObj
         tableWidget->scrollToTop();
     }
     tableWidget->viewport()->update();
+    autoFitKeyColumn();
     return;
 }
 // refreshForDeveloperMode
@@ -2794,11 +2913,14 @@ void Inspector::resetState()
     ConnectedID.clear();
     Name.clear();
     mainID.clear();
+    if (menuButton) {
+        menuButton->setVisible(false);
+    }
     if (tableWidget) {
         tableWidget->blockSignals(true);
         tableWidget->clearContents();
         tableWidget->setRowCount(0);
-        tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+        tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
         tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
         tableWidget->blockSignals(false);
     }
@@ -2806,8 +2928,8 @@ void Inspector::resetState()
         titleLabel->setText("Inspector");
     }
     currentlyExpandedButton = nullptr;
-    copiedComponentData = QJsonObject();
-    copiedComponentType.clear();
+    // copiedComponentData = QJsonObject();
+    // copiedComponentType.clear();
     m_initialComponentData = QJsonObject();
 }
 void Inspector::storeInitialData(const QJsonObject& data)
@@ -2973,4 +3095,96 @@ void Inspector::emitFullAdditionalParametersUpdate()
     emit valueChanged(ConnectedID, Name, delta);
 }
 
+void Inspector::setupTimeCell(int row, const QString &fullKey, const QJsonObject &timeObj)
+{
+    double totalSeconds = 0.0;
+    QJsonObject paramObj;
+    if (timeObj.contains("value") && timeObj["value"].isObject()) {
+        paramObj = timeObj["value"].toObject();
+        totalSeconds = paramObj.value("value").toDouble(0.0);
+    } else {
+        totalSeconds = timeObj.value("value").toDouble(0.0);
+    }
+    int totalSec = static_cast<int>(totalSeconds);
+    int hh = totalSec / 3600;
+    int mm = (totalSec % 3600) / 60;
+    int ss = totalSec % 60;
+    QWidget *timeWidget = new QWidget();
+    if (!timeWidget) return;
+    QHBoxLayout *layout = new QHBoxLayout(timeWidget);
+    layout->setContentsMargins(4, 0, 4, 0);
+    layout->setSpacing(3);
+    QSpinBox *hhSpin = new QSpinBox();
+    hhSpin->setRange(0, 99);
+    hhSpin->setValue(hh);
+    hhSpin->setSuffix("h");
+    hhSpin->setFixedWidth(52);
+    hhSpin->setStyleSheet(InspectorStyles::TimeSpinBox);
+    hhSpin->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    QSpinBox *mmSpin = new QSpinBox();
+    mmSpin->setRange(0, 59);
+    mmSpin->setValue(mm);
+    mmSpin->setSuffix("m");
+    mmSpin->setFixedWidth(52);
+    mmSpin->setStyleSheet(InspectorStyles::TimeSpinBox);
+    mmSpin->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    QSpinBox *ssSpin = new QSpinBox();
+    ssSpin->setRange(0, 59);
+    ssSpin->setValue(ss);
+    ssSpin->setSuffix("s");
+    ssSpin->setFixedWidth(52);
+    ssSpin->setStyleSheet(InspectorStyles::TimeSpinBox);
+    ssSpin->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    layout->addWidget(hhSpin);
+    layout->addWidget(mmSpin);
+    layout->addWidget(ssSpin);
+    layout->addStretch();
+    tableWidget->setRowHeight(row, 30);
+    tableWidget->setCellWidget(row, 1, timeWidget);
+    auto emitTime = [=]() {
+        int newTotal = hhSpin->value() * 3600
+                       + mmSpin->value() * 60
+                       + ssSpin->value();
 
+        QJsonObject updatedParam = paramObj;
+        updatedParam["value"] = static_cast<double>(newTotal);
+
+        QJsonObject updatedTimeObj;
+        updatedTimeObj["type"]  = "Time";
+        updatedTimeObj["value"] = updatedParam;
+        QJsonObject delta;
+        if (fullKey.contains(".")) {
+            QStringList parts = fullKey.split(".");
+            delta[parts[0]] = QJsonObject{{parts[1], updatedTimeObj}};
+        } else {
+            delta[fullKey] = updatedTimeObj;
+        }
+        delta["_id"] = mainID;
+        emit valueChanged(ConnectedID, Name, delta);
+    };
+    connect(hhSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int){ emitTime(); });
+    connect(mmSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int){ emitTime(); });
+    connect(ssSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int){ emitTime(); });
+}
+void Inspector::updateColumnGripPosition()
+{
+    if (!m_columnGripWidget || !tableWidget) return;
+    int boundaryX = tableWidget->columnWidth(0);
+    int h = tableWidget->viewport()->height();
+    m_columnGripWidget->setGeometry(boundaryX - kGripWidthPx / 2, 0, kGripWidthPx, h);
+    m_columnGripWidget->raise();
+}
+void Inspector::autoFitKeyColumn()
+{
+    if (!tableWidget) return;
+    tableWidget->resizeColumnToContents(0);
+    int viewportWidth   = tableWidget->viewport()->width();
+    int minValueSpace   = 60;
+    int maxAllowed       = qMax(80, viewportWidth - minValueSpace);
+    int fitted  = tableWidget->columnWidth(0);
+    int clamped = qMin(fitted, maxAllowed);
+    if (clamped != fitted) {
+        tableWidget->setColumnWidth(0, clamped);
+    }
+    updateColumnGripPosition();
+}

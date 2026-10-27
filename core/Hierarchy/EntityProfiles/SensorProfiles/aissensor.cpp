@@ -117,7 +117,7 @@ AISSensor::AISSensor(Hierarchy* h) : Sensor(h) {
     });
 
     ownship.setReceiveCallback([this](const ais::AisReceiveReport& r) {
-        rxEvents.append({Simulation::simulationTime, r});
+        // rxEvents.append({Simulation::simulationTime, r});
     });
 
 
@@ -128,13 +128,13 @@ void AISSensor::scan(){
     if(!Active)return;
     // qDebug() << "[Sensor::ewscan] called for ID:" << QString::fromStdString(id)
     if(!parentEntity) return;
-    Transform* source = (root->Platforms)[parentEntity->ID]->transform;
-    if(!source) return;
+    Transform& source = (root->Platforms)[parentEntity->ID]->transform;
+    // if(!source) return;
 
     rf::RfPosition pos;
-    pos.x = source->translation().z()*1000.f;
-    pos.y = source->translation().x()*1000.f;
-    pos.altitude = source->translation().y()*1000.f;
+    pos.x = source.translation().z()*1000.f;
+    pos.y = source.translation().x()*1000.f;
+    pos.altitude = source.translation().y()*1000.f;
     ownship.updatePosition(pos);
 
 
@@ -146,7 +146,7 @@ void AISSensor::scan(){
         cfg.tx_enabled = tx_enabled;
         cfg.rx_enabled = rx_enabled;
 
-        cfg.dynamic_data.heading_deg = source->getHeading();
+        cfg.dynamic_data.heading_deg = source.getHeading();
 
         ownship.configureAis(cfg);
 
@@ -157,7 +157,7 @@ void AISSensor::scan(){
     }
 
 
-    ownship.tick(Simulation::simulationTime);
+    // ownship.tick(Simulation::simulationTime);
 
     std::vector<rf::RfScanHit> rf_hits = ownship.rfDevice().scan();
 
@@ -189,32 +189,32 @@ void AISSensor::scan(){
         }
     }
 
-    if ((Simulation::simulationTime - lastPrintTime) >= 1.0f) {
-        lastPrintTime = Simulation::simulationTime;
+    // if ((Simulation::simulationTime - lastPrintTime) >= 1.0f) {
+    //     lastPrintTime = Simulation::simulationTime;
 
-        for (const auto& e : rxEvents) {
-            const auto& t = e.report.track;
+    //     for (const auto& e : rxEvents) {
+    //         const auto& t = e.report.track;
 
-            if (parentEntity && t.last_report.sender_id == parentEntity->ID) {
-                continue;
-            }
+    //         if (parentEntity && t.last_report.sender_id == parentEntity->ID) {
+    //             continue;
+    //         }
 
-            qDebug().noquote()
-                << QString("[AIS RX] receiver=%1 sender=%2 mmsi=%3 name=%4 lat=%5 lon=%6 sog=%7 cog=%8 hdg=%9 snr=%10")
-                       .arg(QString::fromStdString(parentEntity ? parentEntity->Name : Name))
-                       .arg(QString::fromStdString(t.last_report.sender_id))
-                       .arg(t.mmsi)
-                       .arg(QString::fromStdString(t.static_data.name))
-                       .arg(t.dynamic_data.latitude_deg, 0, 'f', 5)
-                       .arg(t.dynamic_data.longitude_deg, 0, 'f', 5)
-                       .arg(t.dynamic_data.sog_kn, 0, 'f', 2)
-                       .arg(t.dynamic_data.cog_deg, 0, 'f', 2)
-                       .arg(t.dynamic_data.heading_deg, 0, 'f', 2)
-                       .arg(t.last_report.snr_db, 0, 'f', 2);
-        }
+    //         qDebug().noquote()
+    //             << QString("[AIS RX] receiver=%1 sender=%2 mmsi=%3 name=%4 lat=%5 lon=%6 sog=%7 cog=%8 hdg=%9 snr=%10")
+    //                    .arg(QString::fromStdString(parentEntity ? parentEntity->Name : Name))
+    //                    .arg(QString::fromStdString(t.last_report.sender_id))
+    //                    .arg(t.mmsi)
+    //                    .arg(QString::fromStdString(t.static_data.name))
+    //                    .arg(t.dynamic_data.latitude_deg, 0, 'f', 5)
+    //                    .arg(t.dynamic_data.longitude_deg, 0, 'f', 5)
+    //                    .arg(t.dynamic_data.sog_kn, 0, 'f', 2)
+    //                    .arg(t.dynamic_data.cog_deg, 0, 'f', 2)
+    //                    .arg(t.dynamic_data.heading_deg, 0, 'f', 2)
+    //                    .arg(t.last_report.snr_db, 0, 'f', 2);
+    //     }
 
-        rxEvents.clear();
-    }
+    //     rxEvents.clear();
+    // }
 }
 
 QJsonObject AISSensor::toJson() const {

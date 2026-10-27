@@ -1,11 +1,11 @@
-
-
 #include "meshrenderer2d.h"
-#include "qjsondocument.h"
+#include "core/Hierarchy/Utils/entityutils.h"
+#include "core/Hierarchy/entity.h"
+#include "core/Hierarchy/hierarchy.h"
 #include <QColor>
 #include <QDebug>
 
-MeshRenderer2D::MeshRenderer2D():Component(nullptr) {
+MeshRenderer2D::MeshRenderer2D():Component() {
     Active = true;
     color = new QColor(Qt::red);
     color2 = std::make_shared<QColor>(Qt::blue);
@@ -24,6 +24,39 @@ MeshRenderer2D::MeshRenderer2D():Component(nullptr) {
     Meshes.push_back(mesh);
 }
 
+MeshRenderer2D::~MeshRenderer2D(){
+    delete Sprite;
+    Sprite = nullptr;
+    delete color;
+    color = nullptr;
+    delete Texture;
+    Texture = nullptr;
+    delete Model3d;
+    Model3d = nullptr;
+    for (Mesh* mesh : Meshes) {
+        delete mesh; // Destructor call hoga aur memory free hogi
+    }
+
+    // 2. Vector ke andar ke pointers ko clear karein
+    Meshes.clear();
+
+    // 3. (Optional) Memory buffer capacity ko bhi zero/reset karein
+    Meshes.shrink_to_fit();
+
+}
+void MeshRenderer2D::init(Entity *Entity){
+    parentEntity = Entity;
+    parentEntity->root->world.AddComponent<ECS::SpritePath>(parentEntity->ecsID);
+    strcpy(getSpritePath().path,Sprite->c_str());
+    getSpritePath().scale = scale;
+}
+
+ECS::SpritePath& MeshRenderer2D::getSpritePath() const{
+    return *parentEntity->root->world.GetComponent<ECS::SpritePath>(parentEntity->ecsID);
+}
+
+void MeshRenderer2D::Awake(){}
+void MeshRenderer2D::Start(){}
 void MeshRenderer2D::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
 
 }
@@ -39,12 +72,22 @@ void MeshRenderer2D::updateSubComponent(std::string ID, const QJsonObject& obj){
 QJsonObject MeshRenderer2D::getsubComponentData(std::string ID) const{
     return QJsonObject();
 }
+void MeshRenderer2D::setSprite(const std::string& path)
+{
+    if (!Sprite) return;
 
+    *Sprite = path;
+
+    // Sync to ECS component — this is what the render system actually reads
+    strncpy(getSpritePath().path, Sprite->c_str(), sizeof(getSpritePath().path) - 1);
+    getSpritePath().path[sizeof(getSpritePath().path) - 1] = '\0';
+}
 QJsonObject MeshRenderer2D::toJson() const {
     QJsonObject obj;
     obj["active"] = Active;
     obj["id"] = QString::fromStdString(ID);
     obj["type"] = "component";
+    obj["scale"] = toParm(scale,"x",0,10);
     QJsonObject colorObj;
     colorObj["type"] = "color";
     colorObj["value"] = color->name();
@@ -63,7 +106,7 @@ QJsonObject MeshRenderer2D::toJson() const {
     QJsonObject model3dObj;
     textureObj["type"] = "Section";
     textureObj["value"] = QString::fromStdString(*Model3d);
-    obj["Model3d"] = textureObj;
+    obj["Model3d"] = model3dObj;
 
     QJsonObject AddParameters = AdditionalParameters;
     AddParameters["type"] = "Section";
@@ -74,6 +117,10 @@ QJsonObject MeshRenderer2D::toJson() const {
 }
 
 void MeshRenderer2D::fromJson(const QJsonObject& obj) {
+    if (!parentEntity || !parentEntity->root)
+    {
+        return;
+    }
     //qDebug() << "MeshRenderer2D::fromJson input:" << QJsonDocument(obj).toJson(QJsonDocument::Compact);
 
     // Standard fields
@@ -81,11 +128,19 @@ void MeshRenderer2D::fromJson(const QJsonObject& obj) {
         Active = obj["active"].toBool();
     // if (obj.contains("id"))
     //     ID = obj["id"].toString().toStdString();
+
+    if (obj.contains("scale")){
+        scale = valueFromParm(obj["scale"].toObject());
+        getSpritePath().scale = scale;
+    }
+
     if (obj.contains("sprite")) {
         Sprite->clear();
         QJsonObject spriteObj = obj["sprite"].toObject();
-        if (spriteObj.contains("value"))
+        if (spriteObj.contains("value")){
             Sprite->append(spriteObj["value"].toString().toStdString());
+            strcpy(getSpritePath().path,Sprite->data());
+        }
     }
     if (obj.contains("texture")) {
         Texture->clear();
@@ -115,8 +170,6 @@ void MeshRenderer2D::fromJson(const QJsonObject& obj) {
     if(obj.contains("AdditionalParameters")){
         AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
-
-
 
     //qDebug() << "MeshRenderer2D::fromJson customParameters:" << QJsonDocument(customParameters).toJson(QJsonDocument::Compact);
 }

@@ -166,7 +166,6 @@ qreal CustomMapDialog::getOpacity() const {
     // Remove '%' character and convert to numeric value
     bool ok;  // Success flag for conversion
     qreal opacity = selectedOpacity.remove('%').toDouble(&ok) / 100.0;  // Convert to decimal
-
     return ok ? opacity : 1.0; // Return converted value or 1.0 (fully opaque) if conversion fails
 }
 

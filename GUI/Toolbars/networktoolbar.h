@@ -39,6 +39,10 @@
 #include <QGridLayout>
 #include <QMessageBox>
 #include <QPainter>
+#include <QToolButton>
+#include <QMap>
+#include <QList>
+#include <QMenu>
 
 #include "core/DISPlugin/DISNetworkPlugin.h"
 
@@ -56,14 +60,29 @@ public:
     ~NetworkToolbar();
 
     void setDISPlugin(DISNetworkPlugin* plugin);
+    QAction* registerPluginAction(const QString& pluginId,
+                                  QAction* action,
+                                  int position = -1);
 
+    QToolButton* registerPluginToolButton(const QString& pluginId,
+                                          QAction* action,
+                                          QToolButton::ToolButtonPopupMode mode = QToolButton::InstantPopup,
+                                          int position = -1);
+
+    QAction* registerPluginMenu(const QString& pluginId,
+                                const QString& title,
+                                QMenu* menu,
+                                int position = -1);
+
+    void unregisterPlugin(const QString& pluginId);
 private slots:
     void onConnectClicked();
     void onDisconnectClicked();
     void onSettingsClicked();
     void onStatusClicked();
     void updateStatusIndicator();
-
+    void onTransferOwnershipRequested(uint16_t originSite, uint16_t originApp,
+                                      QString entityKey, QString entityName);
 private:
     // ── Plugin reference ──────────────────────────────────────────────────────
     DISNetworkPlugin* m_disPlugin = nullptr;
@@ -77,7 +96,7 @@ private:
     // ── Status indicator ──────────────────────────────────────────────────────
     QLabel*  m_statusLabel      = nullptr;
     QTimer*  m_statusTimer      = nullptr;
-
+    QMap<QString, QList<QObject*>> m_pluginOwnedObjects;
     // ── Helpers ───────────────────────────────────────────────────────────────
     void createActions();
     QPixmap withWhiteBg(const QString& iconPath);
@@ -88,6 +107,9 @@ private:
     //QWidget* createMessagesTab   ();
     QWidget* createMessagesTab   (DISConfig& config);  // ADD config parameter
     QWidget* createStatusTab     ();
+    QWidget* createTransferTab();
+    // private section, alongside createTransferTab():
+    QWidget* createDataExchangeTab();
 };
 
 #endif // NETWORKTOOLBAR_H

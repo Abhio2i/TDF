@@ -46,6 +46,7 @@
 #include <QScrollArea>
 #include "database-styles.h"
 #include "GUI/Inspector/inspector-styles.h"
+#include "GUI/Hierarchytree/formationcanvaswidget.h"
 
 
 // %%% Utility Functions %%%
@@ -55,7 +56,21 @@ static QString capitalizeFirstLetter(const QString &str)
     if (str.isEmpty()) return str;
     return str[0].toUpper() + str.mid(1);
 }
-
+static QJsonObject filterEntityJsonForInspector(const QJsonObject &entityJson)
+{
+    static const QStringList hiddenKeys = {
+        "Iffs", "iffs",
+        "Sensors", "sensors",
+        "Radios", "radios",
+        "Weapons", "weapons",
+        "ReferenceIDE", "referenceIDE", "ReferenceIdE", "referenceIdE"
+    };
+    QJsonObject filtered = entityJson;
+    for (const QString &key : hiddenKeys) {
+        filtered.remove(key);
+    }
+    return filtered;
+}
 // %%% Constructor %%%
 /* Initialize database editor with scenario and UI components */
 DatabaseEditor::DatabaseEditor(QWidget *parent)
@@ -121,11 +136,15 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
     connect(hierarchy, &Hierarchy::folderRenamed, this, &DatabaseEditor::markUnsavedChanges);
     connect(hierarchy, &Hierarchy::entityRenamed, this, &DatabaseEditor::markUnsavedChanges);
     connect(inspector, &Inspector::valueChanged, this, &DatabaseEditor::markUnsavedChanges);
+    connect(inspector, &Inspector::valueChanged, this,
+            [this](QString ID, QString, QJsonObject) {
+                markEntityChanged(ID);
+            });
     // %%% Hierarchy Connector Setup %%%
     if (hierarchy && treeView) {
         HierarchyConnector::instance()->connectSignals(hierarchy,nullptr, treeView);
         HierarchyConnector::instance()->initializeDummyData(hierarchy);
-        HierarchyConnector::instance()->setupFileOperations(this, hierarchy, nullptr);
+        // HierarchyConnector::instance()->setupFileOperations(this, hierarchy, nullptr);
     }
     // %%% Tree View Signals %%%
     if (treeView && hierarchy) {
@@ -151,7 +170,6 @@ DatabaseEditor::DatabaseEditor(QWidget *parent)
         connect(menuBar, &MenuBar::applicationTriggered, this, &DatabaseEditor::showApplicationDialog);
         connect(menuBar, &MenuBar::exitTriggered, qApp, &QApplication::quit);
     }
-
 }
 // %%% Enhanced Dock Setup %%%
 /* Setup dock widgets with full features for Linux compatibility */
@@ -213,7 +231,6 @@ void DatabaseEditor::setupEnhancedDockWidgets()
         int hierarchyWidth = static_cast<int>(totalWidth * 0.10);
         int inspectorWidth = static_cast<int>(totalWidth * 0.85);
         int consoleHeight = static_cast<int>(height() * 0.3);
-
         resizeDocks({hierarchyDock}, {hierarchyWidth}, Qt::Horizontal);
         resizeDocks({inspectorDock}, {inspectorWidth}, Qt::Horizontal);
         resizeDocks({consoleDock}, {consoleHeight}, Qt::Vertical);
@@ -333,6 +350,10 @@ void DatabaseEditor::addInspectorTab()
     // %%% Inspector Connections %%%
     connect(newInspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
     connect(newInspector, &Inspector::valueChanged, this, &DatabaseEditor::markUnsavedChanges);
+    connect(newInspector, &Inspector::valueChanged, this,
+            [this](QString ID, QString, QJsonObject ) {
+                markEntityChanged(ID);
+            });
     connect(newInspector, &Inspector::addTabRequested, this, &DatabaseEditor::addInspectorTab);
     connect(newInspectorDock, &QDockWidget::visibilityChanged, this, &DatabaseEditor::onDockVisibilityChanged);
     // %%% Dock Placement %%%
@@ -409,12 +430,9 @@ void DatabaseEditor::updateStatusBar(const QString &message)
 /* Load project from file with progress dialog */
 void DatabaseEditor::loadRecentProject(const QString& filePath)
 {
-
-
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(this, "Error", "Failed to open scenario file");
-        // loadingDialog->deleteLater();
+        QMessageBox::warning(this, "Error", "Failed to open database file");
         return;
     }
     QByteArray data = file.readAll();
@@ -422,22 +440,22 @@ void DatabaseEditor::loadRecentProject(const QString& filePath)
     QJsonParseError err;
     QJsonDocument doc = QJsonDocument::fromJson(data, &err);
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
-        QMessageBox::warning(this, "Error", "Invalid scenario file format");
-        // loadingDialog->deleteLater();
+        QMessageBox::warning(this, "Error", "Invalid database file format");
         return;
     }
     QJsonObject obj = doc.object();
     if (!obj.contains("hierarchy")) {
-        QMessageBox::warning(this, "Error", "Not a valid scenario file");
-        // loadingDialog->deleteLater();
+        QMessageBox::warning(this, "Error", "Not a valid database file");
         return;
     }
     QJsonObject hier = obj["hierarchy"].toObject();
     hierarchy->fromJson(hier);
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
-    RecentProjectsManager::instance()->addToRecentProjects(filePath, RecentProjectsManager::ScenarioEditor);
-    updateStatusBar("Scenario loaded: " + QFileInfo(filePath).fileName());
+    RecentProjectsManager::instance()->addToRecentProjects(filePath, RecentProjectsManager::DatabaseEditor);
+    updateStatusBar("database loaded: " + QFileInfo(filePath).fileName());
+    emit hierarchyLoaded(hier);
+    emit databaseFileLoaded(filePath);
 }
 
 // %%% Recent Projects Menu %%%
@@ -461,12 +479,9 @@ void DatabaseEditor::showApplicationDialog()
 }
 void DatabaseEditor::loadFromJsonFile(const QString &filePath)
 {
-
-
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this, "Error", QString("Failed to open JSON file: %1").arg(filePath));
-        // loadingDialog->deleteLater();
         return;
     }
     QByteArray data = file.readAll();
@@ -475,10 +490,8 @@ void DatabaseEditor::loadFromJsonFile(const QString &filePath)
     QJsonDocument doc = QJsonDocument::fromJson(data, &err);
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
         QMessageBox::warning(this, "Error", QString("Failed to parse JSON: %1").arg(err.errorString()));
-        // loadingDialog->deleteLater();
         return;
     }
-
     QJsonObject obj = doc.object();
     if (obj.contains("hierarchy")) {
         QJsonObject hier = obj["hierarchy"].toObject();
@@ -488,14 +501,14 @@ void DatabaseEditor::loadFromJsonFile(const QString &filePath)
             treeView->getTreeWidget()->update();
         }
     }
-
     lastSavedFilePath = filePath;
     clearUnsavedChanges();
-
     updateStatusBar("Project loaded: " + QFileInfo(filePath).fileName());
+    emit databaseFileLoaded(filePath);
 }
 // %%% Tree Item Selection Handler %%%
 /* Handle selection of items in hierarchy tree */
+// %%% Inspector Cleanup %%%
 void DatabaseEditor::onTreeItemSelected(QVariantMap data)
 {
     QString type;
@@ -509,75 +522,127 @@ void DatabaseEditor::onTreeItemSelected(QVariantMap data)
     } else {
         type = data["type"].toString();
     }
+
     QString name = data["name"].toString();
-    QString ID = data["parentId"].toString();
+    QString ID = data.contains("ID") ? data["ID"].toString() : data["parentId"].toString();
     QString displayName = capitalizeFirstLetter(name);
+
     cleanupExtraInspectors();
-    // Reset inspector state
+
     if (inspector) {
         inspector->resetState();
     }
-    // %%% Entity Type Handling %%%
-    if (type == "entity") {
-        QString entityId = data["ID"].toString();
-        showAllEntityComponents(entityId, displayName);
-        auto entityIt = hierarchy->Entities.find(entityId.toStdString());
-        if (entityIt != hierarchy->Entities.end()) {
-            QJsonObject entityData = entityIt->second->toJson();
-            inspector->init(entityId, displayName + "_self", entityData);
-        }
+
+    // Inspector dock wapas normal inspector pe (canvas ke baad)
+    if (inspectorDock->widget() != inspector) {
+        inspectorDock->setWidget(inspector);
+        inspectorDock->setWindowTitle("Inspector");
     }
 
-    // %%% Subcomponent Type Handling %%%
+    // ── ENTITY ────────────────────────────────────────────────────────
+    if (type == "entity") {
+        QString entityId = data["ID"].toString();
+
+        // Formation entity → canvas
+        bool isFormation = false;
+        auto entityIt = hierarchy->Entities.find(entityId.toStdString());
+        if (entityIt != hierarchy->Entities.end() && entityIt->second) {
+            if (entityIt->second->type == Constants::EntityType::Formation)
+                isFormation = true;
+            if (!isFormation && dynamic_cast<Formation*>(entityIt->second) != nullptr)
+                isFormation = true;
+        }
+
+        if (isFormation) {
+            showFormationCanvas(entityId, displayName);
+            return;
+        }
+
+        showAllEntityComponents(entityId, displayName);
+
+        if (entityIt != hierarchy->Entities.end() && entityIt->second) {
+            QJsonObject entityData = entityIt->second->toJson();
+
+            QString entityType;
+            if (entityData.contains("type") && entityData["type"].isObject())
+                entityType = entityData["type"].toObject().value("value").toString();
+
+            // Platform ka data grid mein already aa chuka – dubara init mat karo
+            // Radio / IFF / Sensor / … ke liye full JSON
+            if (entityType != "Platform") {
+                if (inspectorDock->widget() != inspector) {
+                    inspectorDock->setWidget(inspector);
+                    inspectorDock->setWindowTitle("Inspector");
+                }
+                inspector->init(entityId, displayName + "_self", entityData);
+            }
+        }
+    }
+    // ── SUBCOMPONENT ──────────────────────────────────────────────────
     else if (type == "subcomponent") {
         QString subCompId = data["ID"].toString();
         QString parentCompId = data["parentId"].toString();
         QJsonObject subComponentData;
         auto compIt = hierarchy->Components.find(parentCompId.toStdString());
-        if (compIt != hierarchy->Components.end()) {
-            auto compPtr = compIt->second;
-            if (compPtr) {
-                subComponentData = compPtr->getsubComponentData(subCompId.toStdString());
-            }
+        if (compIt != hierarchy->Components.end() && compIt->second) {
+            subComponentData = compIt->second->getsubComponentData(subCompId.toStdString());
         }
         if (!subComponentData.isEmpty()) {
-            inspector->init(ID, displayName + "_sub", subComponentData);
+            inspector->init(subCompId, displayName + "_sub", subComponentData);
         }
     }
-    // %%% Component Type Handling %%%
+    // ── COMPONENT (Collider, Transform, …) ────────────────────────────
     else if (type == "component") {
-        QJsonObject componentData = hierarchy->getComponentData(ID, name);
+        // parent entity ID + component name
+        QString parentId = data.contains("parentId") ? data["parentId"].toString()
+                                                     : data["ID"].toString();
+        // kuch trees mein ID = entity, name = component
+        if (data.contains("parentId"))
+            parentId = data["parentId"].toString();
+        else if (data.contains("ID"))
+            parentId = data["ID"].toString();
+
+        QJsonObject componentData = hierarchy->getComponentData(parentId, name);
+        // fallback: lowercase name
+        if (componentData.isEmpty())
+            componentData = hierarchy->getComponentData(parentId, name.toLower());
+
         if (!componentData.isEmpty()) {
-            inspector->init(ID, displayName, componentData);
+            inspector->init(parentId, displayName, componentData);
+        } else {
+            qWarning() << "[Inspector] No data for component" << name
+                       << "parent" << parentId;
         }
     }
-    // %%% Profile Type Handling %%%
+    // ── PROFILE ───────────────────────────────────────────────────────
     else if (type == "profile") {
-        auto profileIt = hierarchy->ProfileCategories.find(data["ID"].toString().toStdString());
+        QString profileId = data.contains("ID") ? data["ID"].toString()
+                                                : data["parentId"].toString();
+        auto profileIt = hierarchy->ProfileCategories.find(profileId.toStdString());
         if (profileIt != hierarchy->ProfileCategories.end()) {
-            inspector->init(ID, displayName + "_self", profileIt->second->toJson());
+            inspector->init(profileId, displayName + "_self", profileIt->second->toJson());
         }
     }
-    // %%% Folder Type Handling %%%
+    // ── FOLDER ────────────────────────────────────────────────────────
     else if (type == "folder") {
-        auto folderIt = hierarchy->Folders.find(data["ID"].toString().toStdString());
+        QString folderId = data.contains("ID") ? data["ID"].toString()
+                                               : data["parentId"].toString();
+        auto folderIt = hierarchy->Folders.find(folderId.toStdString());
         if (folderIt != hierarchy->Folders.end()) {
-            inspector->init(ID, displayName + "_self", folderIt->second->toJson());
+            inspector->init(folderId, displayName + "_self", folderIt->second->toJson());
         }
     }
-    // %%% Default Type Handling %%%
+    // ── DEFAULT ───────────────────────────────────────────────────────
     else {
         inspector->init(ID, displayName, QJsonObject());
     }
 
-    // Ensure inspector dock is visible
     if (!inspectorDock->isVisible()) {
         addDockWidget(Qt::RightDockWidgetArea, inspectorDock);
         inspectorDock->show();
     }
 }
 
-// %%% Inspector Cleanup %%%
 /* Clean up extra inspector widgets and restore main inspector */
 void DatabaseEditor::cleanupExtraInspectors()
 {
@@ -666,7 +731,7 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
 
     // Component layout configuration
     QMap<QString, int> componentMinHeights = {
-        {"entity", 400},
+        {"entity", 800},
         {"transform", 200},
         {"trajectory", 200},
         {"dynamicModel", 400},
@@ -679,7 +744,6 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
         {"iffs", 400},
         {"parameters", 150}
     };
-
     QStringList hiddenComponents = {"collider", "transform", "trajectory", "rigidbody", /*"entity", */"crossSection"};
     QStringList dynamicModelBitmapColumn = {"dynamicModel", "bitmap"};
     QStringList iffRadioColumnComponents = {"iffs", "radios"};
@@ -745,24 +809,29 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
     totalColumns += !group2ComponentsList.isEmpty() ? 1 : 0;
     int otherComponentCount = otherComponents.size();
     totalColumns += (otherComponentCount + 1) / 2;
-
     // %%% Column Setup %%%
     QVector<QWidget*> columnWidgets(totalColumns);
     QVector<QVBoxLayout*> columnLayouts(totalColumns);
     QMap<QString, int> componentColumnMap;
     int currentColumn = 0;
 
-    // Exclusive components columns
-    for (const auto& comp : exclusiveComponents) {
-        columnWidgets[currentColumn] = new QWidget();
-        columnLayouts[currentColumn] = new QVBoxLayout(columnWidgets[currentColumn]);
-        columnLayouts[currentColumn]->setContentsMargins(0, 0, 0, 0);
-        columnLayouts[currentColumn]->setSpacing(0);
-        columnLayouts[currentColumn]->addStretch(1);
-        componentColumnMap[comp.first] = currentColumn;
-        currentColumn++;
+    QVector<QList<QPair<QString, int>>> otherColumnComponents((otherComponentCount + 1) / 2);
+    for (int i = 0; i < otherComponentCount; i++) {
+        int columnIndex = i % otherColumnComponents.size();
+        otherColumnComponents[columnIndex].append(otherComponents[i]);
     }
-
+    for (int col = 0; col < otherColumnComponents.size(); col++) {
+        int columnIndex = currentColumn + col;
+        columnWidgets[columnIndex] = new QWidget();
+        columnLayouts[columnIndex] = new QVBoxLayout(columnWidgets[columnIndex]);
+        columnLayouts[columnIndex]->setContentsMargins(0, 0, 0, 0);
+        columnLayouts[columnIndex]->setSpacing(10);
+        columnLayouts[columnIndex]->addStretch(1);
+        for (const auto& comp : otherColumnComponents[col]) {
+            componentColumnMap[comp.first] = columnIndex;
+        }
+    }
+    currentColumn += otherColumnComponents.size();
     // Dynamic model/bitmap column
     if (!dynamicModelBitmapList.isEmpty()) {
         columnWidgets[currentColumn] = new QWidget();
@@ -815,23 +884,18 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
         currentColumn++;
     }
 
+    for (const auto& comp : exclusiveComponents) {
+        columnWidgets[currentColumn] = new QWidget();
+        columnLayouts[currentColumn] = new QVBoxLayout(columnWidgets[currentColumn]);
+        columnLayouts[currentColumn]->setContentsMargins(0, 0, 0, 0);
+        columnLayouts[currentColumn]->setSpacing(0);
+        columnLayouts[currentColumn]->addStretch(1);
+        componentColumnMap[comp.first] = currentColumn;
+        currentColumn++;
+    }
     // %%% Other Components Distribution %%%
-    QVector<QList<QPair<QString, int>>> otherColumnComponents((otherComponentCount + 1) / 2);
-    for (int i = 0; i < otherComponentCount; i++) {
-        int columnIndex = i % otherColumnComponents.size();
-        otherColumnComponents[columnIndex].append(otherComponents[i]);
-    }
-    for (int col = 0; col < otherColumnComponents.size(); col++) {
-        int columnIndex = currentColumn + col;
-        columnWidgets[columnIndex] = new QWidget();
-        columnLayouts[columnIndex] = new QVBoxLayout(columnWidgets[columnIndex]);
-        columnLayouts[columnIndex]->setContentsMargins(0, 0, 0, 0);
-        columnLayouts[columnIndex]->setSpacing(10);
-        columnLayouts[columnIndex]->addStretch(1);
-        for (const auto& comp : otherColumnComponents[col]) {
-            componentColumnMap[comp.first] = columnIndex;
-        }
-    }
+
+
     // %%% Component Widget Creation %%%
     for (const auto& comp : availableComponents) {
         QString compType = comp.first;
@@ -859,14 +923,17 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
         if (compType == "entity") {
             auto entityIt = hierarchy->Entities.find(entityId.toStdString());
             if (entityIt != hierarchy->Entities.end()) {
-                componentData = entityIt->second->toJson();
+                componentData = filterEntityJsonForInspector(entityIt->second->toJson());
                 Inspector *entityInspector = new Inspector();
                 entityInspector->setHierarchy(hierarchy);
-                 entityInspector->setDatabaseEditorMode(true);
+                entityInspector->setDatabaseEditorMode(true);
                 entityInspector->init(entityId, "entity_self", componentData);
-
                 connect(entityInspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
                 connect(entityInspector, &Inspector::valueChanged, this, &DatabaseEditor::markUnsavedChanges);
+                connect(entityInspector, &Inspector::valueChanged, this,
+                        [this](QString ID, QString, QJsonObject) {
+                            markEntityChanged(ID);
+                        });
                 connect(entityInspector, &Inspector::valueChanged, this,
                         [=](QString eID, QString compName, QJsonObject delta) {
                             if (!delta.contains("Category")) return;
@@ -881,15 +948,14 @@ void DatabaseEditor::showAllEntityComponents(const QString& entityId, const QStr
                                 onTreeItemSelected(data);
                             });
                         });
-                entityInspector->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+                entityInspector->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
                 entityInspector->setMinimumWidth(350);
                 entityInspector->setMinimumHeight(minHeight);
-                entityInspector->setMaximumHeight(minHeight * 1.1);
+                entityInspector->setMaximumHeight(16777215);
 
                 QFrame *frame = new QFrame();
-                frame->setFrameStyle(QFrame::Box | QFrame::Raised);
-                frame->setLineWidth(1);
-                frame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+                frame->setStyleSheet(DatabaseStyles::ComponentFrame);
+                frame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
                 QVBoxLayout *frameLayout = new QVBoxLayout(frame);
                 frameLayout->setContentsMargins(0, 0, 0, 0);
@@ -1014,11 +1080,13 @@ QWidget* DatabaseEditor::createComponentInspector(
 
     connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
     connect(inspector, &Inspector::valueChanged, this, &DatabaseEditor::markUnsavedChanges);
-
+    connect(inspector, &Inspector::valueChanged, this,
+            [this](QString ID, QString /*name*/, QJsonObject /*delta*/) {
+                markEntityChanged(ID);
+            });
     QFrame *frame = new QFrame();
-    frame->setFrameStyle(QFrame::Box | QFrame::Raised);
-    frame->setLineWidth(1);
-    frame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    frame->setStyleSheet(DatabaseStyles::ComponentFrame);
+    frame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     QVBoxLayout *frameLayout = new QVBoxLayout(frame);
     frameLayout->setContentsMargins(0, 0, 0, 0);
@@ -1041,7 +1109,6 @@ QWidget* DatabaseEditor::createComponentInspectorWithDynamicHeight(
     if (componentName == "entity") {
         componentName = "entity_self";
     }
-
     inspector->init(entityId, componentName, data);
     inspector->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     inspector->setMinimumWidth(350);
@@ -1050,11 +1117,14 @@ QWidget* DatabaseEditor::createComponentInspectorWithDynamicHeight(
 
     connect(inspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
     connect(inspector, &Inspector::valueChanged, this, &DatabaseEditor::markUnsavedChanges);
+    connect(inspector, &Inspector::valueChanged, this,
+            [this](QString ID, QString /*name*/, QJsonObject /*delta*/) {
+                markEntityChanged(ID);
+            });
 
     QFrame *frame = new QFrame();
-    frame->setFrameStyle(QFrame::Box | QFrame::Raised);
-    frame->setLineWidth(1);
-    frame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    frame->setStyleSheet(DatabaseStyles::ComponentFrame);
+    frame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     QVBoxLayout *frameLayout = new QVBoxLayout(frame);
     frameLayout->setContentsMargins(0, 0, 0, 0);
@@ -1063,3 +1133,324 @@ QWidget* DatabaseEditor::createComponentInspectorWithDynamicHeight(
     return frame;
 }
 
+void DatabaseEditor::markEntityChanged(const QString& entityId)
+{
+    if (entityId.isEmpty()) {
+        return;
+    }
+    m_modifiedEntityIds.insert(entityId);
+}
+void DatabaseEditor::showFormationCanvas(const QString& entityId, const QString& entityName)
+{
+    cleanupExtraInspectors();
+
+    // ── Outer container ───────────────────────────────────────────────
+    QWidget *container = new QWidget();
+    QVBoxLayout *outerLayout = new QVBoxLayout(container);
+    outerLayout->setContentsMargins(0, 0, 0, 0);
+    outerLayout->setSpacing(0);
+
+    // ── Splitter (vertical) ───────────────────────────────────────────
+    QSplitter *splitter = new QSplitter(Qt::Vertical, container);
+    splitter->setHandleWidth(6);
+    splitter->setChildrenCollapsible(false);
+    splitter->setStyleSheet(
+        "QSplitter::handle:vertical {"
+        "  background-color: #27446d;"
+        "  height: 6px;"
+        "  margin: 0 8px;"
+        "  border-radius: 3px;"
+        "}"
+        "QSplitter::handle:vertical:hover {"
+        "  background-color: #4A90D9;"
+        "}"
+        "QSplitter::handle:vertical:pressed {"
+        "  background-color: #5BA3E8;"
+        "}"
+        );
+
+    // ══════════════════════════════════════════════════════════════════
+    // TOP: Formation_self fields
+    // ══════════════════════════════════════════════════════════════════
+    QWidget *topWidget = new QWidget();
+    QVBoxLayout *topLayout = new QVBoxLayout(topWidget);
+    topLayout->setContentsMargins(6, 6, 6, 4);
+    topLayout->setSpacing(4);
+
+    QJsonObject entityData;
+    auto entityIt = hierarchy->Entities.find(entityId.toStdString());
+    if (entityIt != hierarchy->Entities.end() && entityIt->second) {
+        entityData = entityIt->second->toJson();
+    }
+
+    Inspector *formInspector = new Inspector(topWidget);
+    formInspector->setHierarchy(hierarchy);
+    formInspector->setDatabaseEditorMode(true);
+    formInspector->init(entityId, entityName + "_self", entityData);
+    formInspector->setMinimumHeight(120);
+
+    connect(formInspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
+    connect(formInspector, &Inspector::valueChanged, this, &DatabaseEditor::markUnsavedChanges);
+    connect(formInspector, &Inspector::valueChanged, this,
+            [this](QString ID, QString, QJsonObject) {
+                markEntityChanged(ID);
+            });
+
+    topLayout->addWidget(formInspector);
+    topWidget->setMinimumHeight(100);
+
+    // ══════════════════════════════════════════════════════════════════
+    // BOTTOM: Canvas
+    // ══════════════════════════════════════════════════════════════════
+    QWidget *bottomWidget = new QWidget();
+    QVBoxLayout *bottomLayout = new QVBoxLayout(bottomWidget);
+    bottomLayout->setContentsMargins(6, 4, 6, 6);
+    bottomLayout->setSpacing(6);
+
+    QLabel *canvasTitle = new QLabel("Custom Formation Shape (offsets)");
+    canvasTitle->setStyleSheet("color:white; font-size:13px; font-weight:bold;");
+    bottomLayout->addWidget(canvasTitle);
+
+    QLabel *info = new QLabel(
+        "Click = add | Drag = move | Right-click = remove |  Blue = Mothership");
+    info->setStyleSheet("color:#A0C0D0; font-size:11px;");
+    info->setWordWrap(true);
+    bottomLayout->addWidget(info);
+
+    FormationCanvasWidget *canvas = new FormationCanvasWidget(bottomWidget);
+    canvas->setMinimumHeight(200);
+    bottomLayout->addWidget(canvas, 1);
+
+    bottomWidget->setMinimumHeight(180);
+
+    // ── Load existing offsets ─────────────────────────────────────────
+    QJsonArray existingPositions;
+    if (entityIt != hierarchy->Entities.end()) {
+        Formation *form = dynamic_cast<Formation*>(entityIt->second);
+        if (form && form->formationPositions) {
+            for (int i = 0; ; ++i) {
+                std::string key = "ally_" + std::to_string(i);
+                auto pit = form->formationPositions->find(key);
+                if (pit == form->formationPositions->end()) break;
+                FormationPosition *pos = pit->second;
+                if (!pos || !pos->Offset) continue;
+                QJsonObject pt;
+                pt["x"] = pos->Offset->x;
+                pt["y"] = pos->Offset->z;
+                existingPositions.append(pt);
+            }
+        }
+    }
+    canvas->setPositions(existingPositions);
+
+    // ── Save ──────────────────────────────────────────────────────────
+    connect(canvas, &FormationCanvasWidget::positionsChanged, this,
+            [=](const QJsonArray &positions) {
+                auto eit = hierarchy->Entities.find(entityId.toStdString());
+                if (eit == hierarchy->Entities.end() || !eit->second) return;
+
+                Formation *form = dynamic_cast<Formation*>(eit->second);
+                if (!form || !form->formationPositions) return;
+
+                std::vector<std::string> keysToRemove;
+                for (const auto& pair : *form->formationPositions)
+                    keysToRemove.push_back(pair.first);
+                for (const auto& name : keysToRemove)
+                    form->removeComponent(name);
+                form->formationPositions->clear();
+
+                int i = 0;
+                for (const QJsonValue& v : positions) {
+                    QJsonObject pt = v.toObject();
+                    double x = pt.value("x").toDouble();
+                    double y = pt.value("y").toDouble();
+                    std::string name = "ally_" + std::to_string(i);
+                    form->addComponent(name);
+                    FormationPosition *pos = (*form->formationPositions)[name];
+                    if (pos && pos->Offset) {
+                        pos->Offset->x = static_cast<float>(x);
+                        pos->Offset->y = 0.0f;
+                        pos->Offset->z = static_cast<float>(y);
+                    }
+                    i++;
+                }
+                form->count = positions.size();
+                markUnsavedChanges();
+                markEntityChanged(entityId);
+            });
+
+    // ── Splitter assemble ─────────────────────────────────────────────
+    splitter->addWidget(topWidget);
+    splitter->addWidget(bottomWidget);
+    // Initial sizes: top ~35%, bottom ~65%
+    splitter->setStretchFactor(0, 1);
+    splitter->setStretchFactor(1, 2);
+    splitter->setSizes({220, 450});
+
+    outerLayout->addWidget(splitter);
+
+    // ── Dock ──────────────────────────────────────────────────────────
+    QScrollArea *scroll = new QScrollArea();
+    scroll->setWidgetResizable(true);
+    scroll->setWidget(container);
+    scroll->setStyleSheet(
+        "QScrollArea { background-color: #0F2636; border: none; }"
+        "QScrollBar:vertical { background:#0F2636; width:10px; }"
+        "QScrollBar::handle:vertical { background:#3A506B; border-radius:5px; }");
+
+    inspectorDock->setWidget(scroll);
+    inspectorDock->setWindowTitle(entityName + " – Formation + Canvas");
+    inspectorDock->setProperty("IsAllComponentsMode", true);
+    inspectorDock->setProperty("EntityId", entityId);
+    inspectorDock->show();
+    inspectorDock->raise();
+}
+void DatabaseEditor::showFormationProfileWithCanvas(const QString& profileId,
+                                                    const QString& profileName,
+                                                    const QJsonObject& profileData)
+{
+    cleanupExtraInspectors();
+
+    QWidget *container = new QWidget();
+    QVBoxLayout *layout = new QVBoxLayout(container);
+    layout->setContentsMargins(6, 6, 6, 6);
+    layout->setSpacing(10);
+
+    // ── 1) Normal profile inspector (upar) ─────────────────────────────
+    Inspector *profileInspector = new Inspector(container);
+    profileInspector->setHierarchy(hierarchy);
+    profileInspector->setDatabaseEditorMode(true);
+    profileInspector->init(profileId, profileName + "_self", profileData);
+    profileInspector->setMinimumHeight(120);
+    profileInspector->setMaximumHeight(180);
+
+    connect(profileInspector, &Inspector::valueChanged, hierarchy, &Hierarchy::UpdateComponent);
+    connect(profileInspector, &Inspector::valueChanged, this, &DatabaseEditor::markUnsavedChanges);
+
+    layout->addWidget(profileInspector);
+
+    // Separator
+    QFrame *line = new QFrame();
+    line->setFrameShape(QFrame::HLine);
+    line->setStyleSheet("color: #27446d;");
+    layout->addWidget(line);
+
+    // ── 2) Canvas (neeche) ─────────────────────────────────────────────
+    QLabel *canvasTitle = new QLabel("Custom Formation Shape (offsets)");
+    canvasTitle->setStyleSheet("color:white; font-size:13px; font-weight:bold;");
+    layout->addWidget(canvasTitle);
+
+    QLabel *info = new QLabel(
+        "Click = add point | Drag = move | Right-click = remove\n"
+        "Blue circle = Mothership origin. Offsets relative to it.");
+    info->setStyleSheet("color:#A0C0D0; font-size:11px;");
+    info->setWordWrap(true);
+    layout->addWidget(info);
+
+    FormationCanvasWidget *canvas = new FormationCanvasWidget(container);
+    canvas->setMinimumHeight(400);
+    layout->addWidget(canvas, 1);
+
+    // Existing positions load (profile pe store karenge)
+    QJsonArray existingPositions;
+    if (profileData.contains("FormationPositions") && profileData["FormationPositions"].isArray()) {
+        existingPositions = profileData["FormationPositions"].toArray();
+    }
+    canvas->setPositions(existingPositions);
+
+    // Save on change → profile pe
+    connect(canvas, &FormationCanvasWidget::positionsChanged, this,
+            [=](const QJsonArray &positions) {
+
+                // Profile ke under pehli Formation entity dhoondo
+                Formation* form = nullptr;
+                QString formEntityId;
+
+                for (const auto& epair : hierarchy->Entities) {
+                    Entity* e = epair.second;
+                    if (!e) continue;
+
+                    if (QString::fromStdString(e->parentID) != profileId)
+                        continue;
+
+                    Formation* f = dynamic_cast<Formation*>(e);
+                    if (f) {
+                        form = f;
+                        formEntityId = QString::fromStdString(e->ID);
+                        break;
+                    }
+                    if (e->type == Constants::EntityType::Formation) {
+                        form = dynamic_cast<Formation*>(e);
+                        formEntityId = QString::fromStdString(e->ID);
+                        if (form) break;
+                    }
+                }
+
+                if (!form || !form->formationPositions) {
+                    qWarning() << "[FormationCanvas] No Formation entity under profile."
+                               << "Create a Formation entity first, then draw points.";
+                    return;
+                }
+
+                // 1) Purane ally slots hatao
+                std::vector<std::string> keysToRemove;
+                for (const auto& pair : *form->formationPositions) {
+                    keysToRemove.push_back(pair.first);
+                }
+                for (const auto& name : keysToRemove) {
+                    form->removeComponent(name);
+                }
+                form->formationPositions->clear();
+
+                // 2) Canvas points se naye slots
+                // Canvas (x,y) → Formation Offset (x, z), y=0
+                int i = 0;
+                for (const QJsonValue& v : positions) {
+                    QJsonObject pt = v.toObject();
+                    double x = pt.value("x").toDouble();
+                    double y = pt.value("y").toDouble();
+
+                    std::string name = "ally_" + std::to_string(i);
+                    form->addComponent(name);
+
+                    FormationPosition* pos = (*form->formationPositions)[name];
+                    if (pos && pos->Offset) {
+                        pos->Offset->x = static_cast<float>(x);
+                        pos->Offset->y = 0.0f;
+                        pos->Offset->z = static_cast<float>(y);
+                    }
+                    i++;
+                }
+
+                form->count = positions.size();
+
+                markUnsavedChanges();
+                markEntityChanged(formEntityId);
+
+                // Verify
+                QJsonObject check = form->toJson();
+                int saved = 0;
+                if (check.contains("formationPositions") && check["formationPositions"].isArray())
+                    saved = check["formationPositions"].toArray().size();
+
+                qDebug() << "[FormationCanvas] profile→entity" << formEntityId
+                         << "slots=" << form->count
+                         << "toJson formationPositions=" << saved;
+            });
+
+    // Dock mein daalo
+    QScrollArea *scroll = new QScrollArea();
+    scroll->setWidgetResizable(true);
+    scroll->setWidget(container);
+    scroll->setStyleSheet(
+        "QScrollArea { background-color: #0F2636; border: none; }"
+        "QScrollBar:vertical { background:#0F2636; width:10px; }"
+        "QScrollBar::handle:vertical { background:#3A506B; border-radius:5px; }");
+
+    inspectorDock->setWidget(scroll);
+    inspectorDock->setWindowTitle(profileName + " – Profile + Canvas");
+    inspectorDock->setProperty("IsAllComponentsMode", true);
+    inspectorDock->setProperty("EntityId", profileId);
+    inspectorDock->show();
+    inspectorDock->raise();
+}

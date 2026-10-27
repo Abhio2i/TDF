@@ -44,7 +44,6 @@ class CustomResizableOverlayDock : public QDockWidget
 
 public:
     explicit CustomResizableOverlayDock(const QString &title, QWidget *parent = nullptr);
-
     enum HandlePosition { Left, Right };
     HandlePosition handlePos = Right;
     bool isLocked() const { return m_locked; }
@@ -53,7 +52,7 @@ public:
     void setWindowTitle(const QString &title);
     void setWidget(QWidget *widget);
     void setTitleStripe(bool enabled, const QColor &color = QColor("#00BFFF"));
-
+    void setCustomResizeEnabled(bool enabled);
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
@@ -71,7 +70,6 @@ signals:
 
 private slots:
     void onLockButtonClicked();
-
 private:
     QPoint dragPosition;
     bool resizing = false;
@@ -84,6 +82,7 @@ private:
     void setupTitleBar(const QString &title);
     bool m_stripeEnabled = false;
     QColor m_stripeColor = QColor("#00BFFF");
+    bool m_customResizeEnabled = true;
 };
 
 #endif // CUSTOMRESIZABLEOVERLAYDOCK_H

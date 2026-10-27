@@ -72,10 +72,10 @@ void EO::setEnvironment(const Surrounding &surrounding) {
 }
 
 float EO::computeSignal(float area,
-                         float distance,
-                         float angleDeg,
-                         float illumination,
-                         float glintFactor) const {
+                        float distance,
+                        float angleDeg,
+                        float illumination,
+                        float glintFactor) const {
 
     if (distance <= 0.0) return 0.0;
 

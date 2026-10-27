@@ -38,15 +38,16 @@ class FixedPoints: public Entity
     Q_OBJECT
 public:
     FixedPoints(Hierarchy* h);
+    ~FixedPoints();
 
     // =========================================================================
     // SECTION: Core Components
     // DESCRIPTION: Pointers to functional blocks that define physical and
     //              visual properties.
     // =========================================================================
-    Transform *transform = nullptr;
-    Collider *collider = nullptr;
-    MeshRenderer2D *meshRenderer2d = nullptr;
+    Transform transform;
+    Collider collider;
+    MeshRenderer2D meshRenderer2d;
 
     // =========================================================================
     // SECTION: Virtual Interface Overrides
@@ -54,6 +55,7 @@ public:
     // =========================================================================
     void spawn() override;
     std::vector<std::string> getSupportedComponents() override;
+    void addSupportedcomponent() override;
     void addComponent(std::string name) override;
     void removeComponent(std::string name) override;
     QJsonObject getComponent(std::string name) override;

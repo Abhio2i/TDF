@@ -345,12 +345,12 @@ void RadarDisplay::selectEntity(Entity* entit)
     sensorlist.clear();
     lockedTargetID = 0;
     // Remote DIS entities have no sensors component
-    if (!entity->sensors || !entity->sensors->sensors) {
-        updateModeButtonStyles();
-        update();
-        return;
-    }
-    for (auto const& pair : *entity->sensors->sensors) {
+    // if (/*!entity->sensors || */!entity->sensors.sensors) {
+    //     updateModeButtonStyles();
+    //     update();
+    //     return;
+    // }
+    for (auto const& pair : entity->sensors.sensors) {
         Sensor* s = pair.second;
         if (s && s->subType == Sensor::SubType::Generic) {
             if(sensor == nullptr){
@@ -385,15 +385,15 @@ void RadarDisplay::updateRadar()
     if (!entity || !sensor) return;
     // Re-validate: confirm sensor still exists in the entity's live sensor list
     // Prevents crash if sensor was freed by engine between ticks
-    if (!entity->sensors || !entity->sensors->sensors) {
-        sensor = nullptr;
-        updateModeButtonStyles();
-        update();
-        return;
-    }
+    // if (/*!entity->sensors ||*/ !entity->sensors.sensors) {
+    //     sensor = nullptr;
+    //     updateModeButtonStyles();
+    //     update();
+    //     return;
+    // }
 
     bool sensorStillValid = false;
-    for (auto const& pair : *entity->sensors->sensors) {
+    for (auto const& pair : entity->sensors.sensors) {
         if (pair.second == sensor) {
             sensorStillValid = true;
             break;

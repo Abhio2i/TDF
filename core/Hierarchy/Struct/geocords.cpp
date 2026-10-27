@@ -7,7 +7,7 @@ Geocords::Geocords(double latitude, double longitude, double altitude,double Hea
 }
 
 
-QJsonObject Geocords::toJson(){
+QJsonObject Geocords::toJson()const{
     QJsonObject obj;
     obj["type"] = "geocord";
     obj["latitude"] = latitude;

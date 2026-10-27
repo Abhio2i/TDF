@@ -66,6 +66,7 @@ void PDUDispatcher::onDatagramReceived(QByteArray   data,
 
     // ── Step 1: Validate ──────────────────────────────────────────────────────
     // ── Step 1: Validate ──────────────────────────────────────────────────────
+
     if (!PDUVersionAdapter::isValidDISPDU(data, m_config.exerciseID)) {
         m_totalDropped++;
         emit invalidPDUReceived(sender);
@@ -166,52 +167,46 @@ void PDUDispatcher::dispatch(const QByteArray& pduBytes,
         if (!isReceiveEnabled(m_config, DIS::PDU_ELECTRONIC_EMMISIONS)) break;
         emit emissionReceived(pduBytes, sender);
         break;
-
+    case DIS::PDU_DESIGNATOR:
+        if (!isReceiveEnabled(m_config, DISPDUType::Designator)) break;
+        emit designatorReceived(pduBytes, sender);
+        break;
+    case DISPDUType::Acknowledge:
+        // IEEE 1278.1 type 15 — response to Create/Remove/Start/Stop PDUs
+        if (!isReceiveEnabled(m_config, DISPDUType::Acknowledge)) break;
+        emit acknowledgeReceived(pduBytes, sender);
+        break;
+    case DISPDUType::TransferOwnership:
+        // IEEE 1278.1 type 35 — entity ownership transfer
+        if (!isReceiveEnabled(m_config, DISPDUType::TransferOwnership)) break;
+        emit transferOwnershipReceived(pduBytes, sender);
+        break;
+    case DIS::PDU_TRANSMITTER:
+        if (!isReceiveEnabled(m_config, DISPDUType::Transmitter)) break;
+        emit transmitterReceived(pduBytes, sender);
+        break;
+    case DIS::PDU_SIGNAL:
+        if (!isReceiveEnabled(m_config, DISPDUType::Signal)) break;
+        emit signalReceived(pduBytes, sender);
+        break;
+    case DIS::PDU_DATA_QUERY:
+        if (!isReceiveEnabled(m_config, DISPDUType::DataQuery)) break;
+        emit dataQueryReceived(pduBytes, sender);
+        break;
+    case DIS::PDU_SET_DATA:
+        if (!isReceiveEnabled(m_config, DISPDUType::SetData)) break;
+        emit setDataReceived(pduBytes, sender);
+        break;
+    case DIS::PDU_DATA:
+        if (!isReceiveEnabled(m_config, DISPDUType::Data)) break;
+        emit dataReceived(pduBytes, sender);
+        break;
     default:
         // PDU type we do not handle — not an error, just log
         emit unknownPDUReceived(pduType, sender);
         break;
     }
-    // switch (pduType) {
 
-    // case DIS::PDU_ENTITY_STATE:
-    //     m_entityStateCount++;
-    //     emit entityStateReceived(pduBytes, sender);
-    //     break;
-
-    // case DIS::PDU_FIRE:
-    //     emit fireReceived(pduBytes, sender);
-    //     break;
-
-    // case DIS::PDU_DETONATION:
-    //     emit detonationReceived(pduBytes, sender);
-    //     break;
-
-    // case DIS::PDU_START_RESUME:
-    //     emit startResumeReceived(pduBytes, sender);
-    //     break;
-
-    // case DIS::PDU_STOP_FREEZE:
-    //     emit stopFreezeReceived(pduBytes, sender);
-    //     break;
-
-    // case DIS::PDU_REMOVE_ENTITY:
-    //     emit removeEntityReceived(pduBytes, sender);
-    //     break;
-
-    // case DIS::PDU_CREATE_ENTITY:
-    //     emit createEntityReceived(pduBytes, sender);
-    //     break;
-
-    // case DIS::PDU_ELECTRONIC_EMMISIONS:
-    //     emit emissionReceived(pduBytes, sender);
-    //     break;
-
-    // default:
-    //     // PDU type we do not handle — not an error, just log
-    //     emit unknownPDUReceived(pduType, sender);
-    //     break;
-    // }
 }
 
 // =============================================================================

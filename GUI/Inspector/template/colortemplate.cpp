@@ -81,7 +81,6 @@ void ColorTemplate::setupColorCell(int row, const QString &fullKey, const QJsonO
             QString hex = color.name();
             colorBtn->setText(hex);
             colorBtn->setStyleSheet(makeButtonStyle(hex));
-
             QJsonObject delta;
             QJsonObject colorObj;
             colorObj["value"] = hex;

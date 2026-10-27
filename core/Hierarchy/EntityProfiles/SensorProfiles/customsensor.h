@@ -1,6 +1,7 @@
 #ifndef CUSTOMSENSOR_H
 #define CUSTOMSENSOR_H
 
+#include "core/Plugins/Interfaces/customSensorInterface.h"
 #include <core/Hierarchy/EntityProfiles/sensor.h>
 
 
@@ -10,7 +11,9 @@ class CustomSensor: public Sensor
 
 public:
     explicit CustomSensor(Hierarchy* h);
+    ~CustomSensor();
     QString type = "";
+    CustomSensorInterface*  sensor = nullptr;
     // ------------------------------------------------------------------
     // Engine tick
     // ------------------------------------------------------------------

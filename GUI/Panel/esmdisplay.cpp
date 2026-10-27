@@ -6,12 +6,12 @@
 // STANDARD:     RTCA DO-178C / ED-12C, DAL B
 // COVERAGE:     Branch / Decision Coverage required (100% true/false paths)
 //
-// DESCRIPTION:  Implements the ESMDisplay class which provides a widget for
-//               visualising Electronic Support Measures (ESM) / electronic
-//               intelligence data. It displays detected emitters in a polar
-//               (radar‑like) format with configurable range, rings, ticks,
-//               and hover detection. Integrates with Hierarchy and Sensor/
-//               Platform entities for real‑time tracking and display updates.
+// DESCRIPTION:  Implements the ESMDisplay panel: PPI / Signal Spectrum modes
+//               and a shared observation table. Integrates with Hierarchy and
+//               Sensor/Platform entities. All observation data flows through
+//               one ESMObservationModel which is refreshed from
+//               ESM::detect in updateRadar() (the application's existing
+//               update call); this class owns no timers.
 //
 // REQUIREMENTS: Implements REQ-ESM-010 through REQ-ESM-017
 //
@@ -22,142 +22,271 @@
 //   Rev 1  01 Jan 2026  Initial implementation. Basic ESM display.
 //   Rev 2  20 Apr 2026  DO-178C DAL B compliant comments added throughout.
 //                       Added requirement references and structured file header.
+//   Rev 3  20 Oct 2026  Panel with PPI / Signal Spectrum modes and shared
+//                       observation table. PPI painting moved to ESMPpiWidget.
 //
 // COPYRIGHT:    Oxygen 2 Innovation (O2I). All rights reserved.
 //               Restricted circulation — defence simulation use only.
 //============================================================================
-#include "esmdisplay.h"                           // For EW display class
+#include "esmdisplay.h"                           // For ESM panel class
+// esmdisplay.cpp
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/ESM/esmobservationmodel.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/ESM/esmppiwidget.h"
+#include "core/Hierarchy/EntityProfiles/SensorProfiles/ESM/esmspectrumwidget.h"
+// #include "esmppiwidget.h"
+// #include "esmspectrumwidget.h"
 #include "core/Hierarchy/Utils/entityutils.h"
-#include "qelapsedtimer.h"
-#include <QPainter>                                // For painting operations
-#include <QPaintEvent>                             // For paint events
-#include <QFont>                                   // For font settings
-#include <QtMath>                                  // For math functions
-#include <QDebug>                                  // For debug output
+#include <QAbstractItemView>
+#include <QHBoxLayout>
+#include <QHeaderView>
+#include <QItemSelectionModel>
+#include <QLabel>
+#include <QPushButton>
+#include <QSignalBlocker>
+#include <QSplitter>
+#include <QStackedWidget>
+#include <QTableView>
+#include <QVBoxLayout>
 #include <core/Debug/console.h>                    // For console error logging
 
+namespace {
+
+const char* kStyleSheet = R"(
+
+QWidget#esmRoot { background-color: #070b08; }
+QLabel { color: #9fe8b0; background: transparent; }
+QLabel#esmTitle { color: #35ff7a; font-size: 15px; font-weight: bold; }
+QLabel#esmStatus { color: #7fcf94; font-size: 11px; }
+QLabel#esmSection { color: #35ff7a; font-size: 11px; font-weight: bold; padding: 1px 4px; }
+QPushButton { background-color: #0a140c; color: #7fcf94; border: 1px solid #0e5a26;
+              padding: 5px 20px; font-size: 12px; }
+QPushButton:hover { border: 1px solid #1fa04a; }
+QPushButton:checked { background-color: #0c3a1a; color: #c9ffd9; border: 1px solid #2ee06a; }
+QComboBox { background-color: #001a00; color: #00ff00; border: 1px solid #00ff00;
+            font-size: 10px; padding: 2px; }
+QComboBox QAbstractItemView { background-color: #001a00; color: #00ff00;
+                              selection-background-color: #003300; }
+QTableView { background-color: #050805; alternate-background-color: #09100a;
+             color: #b5f0c4; gridline-color: #0b3a1a; border: 1px solid #0e5a26;
+             selection-background-color: #0f4a22; selection-color: #eafff0; font-size: 10px; }
+QHeaderView::section { background-color: #0a160c; color: #35ff7a; border: 0px;
+                       border-right: 1px solid #0b3a1a; border-bottom: 1px solid #0e5a26;
+                       padding: 2px 3px; font-size: 10px; font-weight: bold; }
+QSplitter::handle { background-color: #0b3a1a; }
+QScrollBar:vertical { background: #050805; width: 8px; }
+QScrollBar::handle:vertical { background: #0e5a26; min-height: 20px; }
+QScrollBar:horizontal { background: #050805; height: 8px; }
+QScrollBar::handle:horizontal { background: #0e5a26; min-width: 20px; }
+QScrollBar::add-line, QScrollBar::sub-line { width: 0px; height: 0px; }
+QToolTip { background-color: #050805; color: #b5f0c4; border: 1px solid #0e5a26; }
+)";
+
+// Observation table geometry (matches the 10px stylesheet font)
+constexpr int kRowHeight       = 18;
+constexpr int kHeaderHeight    = 20;
+constexpr int kMinVisibleRows  = 4;   // table never gets less than this many rows
+constexpr int kScrollBarExtent = 8;   // must match QScrollBar width/height above
+} // namespace
+
 // %%% Constructor %%%
-/* Initialize electronic warfare display */
+/* Initialize ESM panel */
 ESMDisplay::ESMDisplay(QWidget *parent)
-    : QWidget(parent), hoveredTargetIndex(-1)
+    : QWidget(parent)
 {
-    // Set background color
-    setStyleSheet("background-color: black;");
-    // Set size policy with aspect ratio
-    QSizePolicy policy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-    policy.setHeightForWidth(true);
-    setSizePolicy(policy);
-    padding = 40;
-    setMouseTracking(true);
+    setObjectName("esmRoot");
+    setAttribute(Qt::WA_StyledBackground, true);
+    setStyleSheet(QString::fromLatin1(kStyleSheet));
+    setMinimumSize(480, 480);
+    buildUi();
+    refreshObservations();
+}
+
+void ESMDisplay::buildUi()
+{
+    model = new ESMObservationModel(this);
+
+    auto* rootLayout = new QVBoxLayout(this);
+    rootLayout->setContentsMargins(4, 4, 4, 4);
+    rootLayout->setSpacing(4);
+
+    // ---- header: title, sensor status, sensor selector ----
+    auto* header = new QHBoxLayout;
+    auto* title = new QLabel(QStringLiteral("ESM"), this);
+    title->setObjectName("esmTitle");
+    statusLabel = new QLabel(this);
+    statusLabel->setObjectName("esmStatus");
     sensorDropdown = new QComboBox(this);
-    sensorDropdown->setStyleSheet(
-        "QComboBox { background-color: #001a00; color: #00ff00; "
-        "border: 1px solid #00ff00; font-size: 10px; padding: 2px; }"
-        "QComboBox QAbstractItemView { background-color: #001a00; "
-        "color: #00ff00; selection-background-color: #003300; }"
-        );
     sensorDropdown->hide();
     connect(sensorDropdown, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &ESMDisplay::onSensorSelected);
+    header->addWidget(title);
+    header->addSpacing(16);
+    header->addWidget(statusLabel, 1);
+    header->addWidget(sensorDropdown);
+    rootLayout->addLayout(header);
+
+    // ---- mode buttons ----
+    auto* modes = new QHBoxLayout;
+    ppiButton = new QPushButton(QStringLiteral("PPI"), this);
+    spectrumButton = new QPushButton(QStringLiteral("SIGNAL SPECTRUM"), this);
+    ppiButton->setCheckable(true);
+    spectrumButton->setCheckable(true);
+    ppiButton->setCursor(Qt::PointingHandCursor);
+    spectrumButton->setCursor(Qt::PointingHandCursor);
+    connect(ppiButton, &QPushButton::clicked, this, [this]() { setMode(0); });
+    connect(spectrumButton, &QPushButton::clicked, this, [this]() { setMode(1); });
+    modes->addWidget(ppiButton);
+    modes->addWidget(spectrumButton);
+    modes->addStretch(1);
+    rootLayout->addLayout(modes);
+
+    // ---- active display (stacked) ----
+    stack = new QStackedWidget(this);
+    ppi = new ESMPpiWidget(model, stack);
+    spectrum = new ESMSpectrumWidget(stack);
+    stack->addWidget(ppi);
+    stack->addWidget(spectrum);
+    connect(ppi, &ESMPpiWidget::observationSelected,
+            this, &ESMDisplay::onPpiObservationSelected);
+
+    // ---- observation table (shared) ----
+    auto* observationsPanel = new QWidget(this);
+    auto* obsLayout = new QVBoxLayout(observationsPanel);
+    obsLayout->setContentsMargins(0, 0, 0, 0);
+    obsLayout->setSpacing(2);
+    observationsLabel = new QLabel(observationsPanel);
+    observationsLabel->setObjectName("esmSection");
+    table = new QTableView(observationsPanel);
+    table->setModel(model);
+    table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    table->setSelectionMode(QAbstractItemView::SingleSelection);
+    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table->setAlternatingRowColors(true);
+    table->setWordWrap(false);
+    table->setShowGrid(true);
+    table->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    table->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+
+    table->verticalHeader()->hide();
+    table->verticalHeader()->setDefaultSectionSize(kRowHeight);
+    table->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    table->setTextElideMode(Qt::ElideRight);
+    table->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);   // fallback only
+    table->setMinimumHeight(kHeaderHeight + kMinVisibleRows * kRowHeight
+                            + kScrollBarExtent + 2);
+
+    QHeaderView* hh = table->horizontalHeader();
+    hh->setHighlightSections(false);
+    hh->setSectionsClickable(false);
+    hh->setStretchLastSection(false);
+    hh->setMinimumSectionSize(20);
+    hh->setDefaultAlignment(Qt::AlignCenter);
+    hh->setFixedHeight(kHeaderHeight);
+
+    // Compact fixed widths (px) for the 10px font. Platform ID and Name are
+    // 0 here because they use Stretch and share whatever width is left.
+    static const int widths[ESMObservationModel::ColumnCount] = {
+        22,   // #
+        0,    // Platform ID  (stretch)
+        0,    // Name         (stretch)
+        34,   // Emitter ID
+        42,   // Bearing   "045.0°"
+        38,   // Range     "175.2"
+        38,   // Frequency "8000"
+        24,   // Bandwidth
+        24,   // Rx Power
+        28,   // SNR
+        30,   // Type
+        72,   // Status    "Beyond range"
+        30    // Last Seen
+    };
+    for (int c = 0; c < ESMObservationModel::ColumnCount; ++c) {
+        if (c == ESMObservationModel::ColPlatformId || c == ESMObservationModel::ColName) {
+            hh->setSectionResizeMode(c, QHeaderView::Stretch);
+        } else {
+            hh->setSectionResizeMode(c, QHeaderView::Fixed);
+            hh->resizeSection(c, widths[c]);
+        }
+    }
+    connect(table->selectionModel(), &QItemSelectionModel::selectionChanged,
+            this, [this]() { onTableSelectionChanged(); });
+    obsLayout->addWidget(observationsLabel);
+    obsLayout->addWidget(table, 1);
+
+    splitter = new QSplitter(Qt::Vertical, this);
+    splitter->setChildrenCollapsible(false);
+    splitter->setHandleWidth(4);
+    splitter->addWidget(stack);
+    splitter->addWidget(observationsPanel);
+    splitter->setStretchFactor(0, 3);
+    splitter->setStretchFactor(1, 2);
+    rootLayout->addWidget(splitter, 1);
+
+    setMode(0);
+}
+
+void ESMDisplay::setMode(int mode)
+{
+    const int m = (mode == 1) ? 1 : 0;
+    stack->setCurrentIndex(m);
+    ppiButton->setChecked(m == 0);
+    spectrumButton->setChecked(m == 1);
 }
 
 // %%% Size Management %%%
 /* Provide size hint for widget */
 QSize ESMDisplay::sizeHint() const
 {
-    int defaultWidth = 400;
-    return QSize(defaultWidth, heightForWidth(defaultWidth));
+    return QSize(720, 780);
 }
 
-/* Provide minimum size for widget */
-QSize ESMDisplay::minimumSize() const
+void ESMDisplay::setRange(float value)
 {
-    int minW = 250;
-    return QSize(minW, heightForWidth(minW));
+    range = static_cast<int>(value);
+    if (ppi)
+        ppi->update();
 }
 
-/* Calculate height based on width and aspect ratio */
-int ESMDisplay::heightForWidth(int width) const
+/* Rebuild sensorlist from the selected platform; keep the current sensor if
+ * it is still present, otherwise fall back to the first ESM sensor. */
+void ESMDisplay::collectSensors()
 {
-    return qRound(width * ASPECT_RATIO);
-}
-
-/* Handle mouse move events for hover detection */
-void ESMDisplay::mouseMoveEvent(QMouseEvent *event)
-{
-        // return;
-    lastMousePos = event->pos();
-
-    if (sensor->detect.isEmpty()) {
-        hoveredTargetIndex = -1;
-        update();
+    ESM* previous = sensor;
+    sensor = nullptr;
+    sensorlist.clear();
+    if (!entity)
         return;
-    }
 
-    int w = width();
-    int h = height();
-    int outerDiameter = qMin(w - padding*2, h - padding*2);
-    int outerRadius = outerDiameter / 2;
-    QPoint center(w / 2, h / 2);
-
-    // Check if mouse is near any target
-    int closestIndex = -1;
-    double minDistance = 20.0;
-
-    int i=0;
-    for (const ESMTarget &t : sensor->detect) {
-
-        // Calculate target position on screen
-        double per = t.radius / range;
-        if (per < 0.0) per = 0.0;
-        if (per > 1.0) per = 1.0;
-
-        double r = per * outerRadius;
-        double angleDeg = t.angle;
-        double theta = qDegreesToRadians(angleDeg - 90.0);
-        int tx = center.x() + int(r * cos(theta));
-        int ty = center.y() + int(r * sin(theta));
-
-        // Calculate distance from mouse to target
-        double dx = lastMousePos.x() - tx;
-        double dy = lastMousePos.y() - ty;
-        double distance = sqrt(dx*dx + dy*dy);
-
-        if (distance < minDistance) {
-            minDistance = distance;
-            closestIndex = i;
+    for (auto const& pair : entity->sensors.sensors) {
+        Sensor* s = pair.second;
+        if (s && s->subType == Sensor::SubType::ESM) {
+            ESM* esm = dynamic_cast<ESM*>(s);
+            if (esm)
+                sensorlist.append(esm);
         }
-        i++;
     }
-
-    if (hoveredTargetIndex != closestIndex) {
-        hoveredTargetIndex = closestIndex;
-        update();
-    }
-
-    QWidget::mouseMoveEvent(event);
-}
-
-/* Handle mouse leave events */
-void ESMDisplay::leaveEvent(QEvent *event)
-{
-    Q_UNUSED(event);
-    hoveredTargetIndex = -1;
-    update();
-    QWidget::leaveEvent(event);
+    if (previous && sensorlist.contains(previous))
+        sensor = previous;
+    else if (!sensorlist.isEmpty())
+        sensor = sensorlist.first();
 }
 
 /* Select and configure entity for display */
 void ESMDisplay::selectEntity(Entity* entit)
 {
     entity = nullptr;
+    sensor = nullptr;
+    sensorlist.clear();
     id = "";
+    selectedKey.clear();
 
     Platform* platform = dynamic_cast<Platform*>(entit);
     if (!platform) {
         Console::error("Entity is not a Platform");
         setWindowTitle("ESM Display (No Platform)");
-        update();
+        updateDropdown();
+        refreshObservations();
+        applySelection(false);
         return;
     }
 
@@ -165,295 +294,186 @@ void ESMDisplay::selectEntity(Entity* entit)
     id = QString::fromStdString(platform->ID);
     entity = platform;
 
-    sensor = nullptr;
-        sensorlist.clear();
-    if (!entity->sensors || !entity->sensors->sensors) {
-        update();
-        return;
-    }
-    for (auto const& pair :  *entity->sensors->sensors) {
-        Sensor* s = pair.second;
-        if (s && s->subType == Sensor::SubType::ESM) {
+    collectSensors();
+    if (!sensorlist.isEmpty())
+        setWindowTitle("ESM Display (" + QString::fromStdString(entity->Name) + ")");
 
-            ESM* sono = dynamic_cast<ESM*>(s);
-            if(sono){
-
-                if(sensor == nullptr){
-                    sensor = sono;
-                }
-                sensorlist.append(sono);
-            }
-            setWindowTitle("ESM Display (" + QString::fromStdString(entity->Name) + ")");
-
-        }
-    }
-
-    // Reset hover state when entity changes
-    hoveredTargetIndex = -1;
     updateDropdown();
-
-        update();
+    refreshObservations();
+    applySelection(false);
 }
 
 /* Remove entity if ID matches */
 void ESMDisplay::RemoveEntity(QString ID)
 {
     if (id == ID) {
-        // Clear entity and sensor
         entity = nullptr;
         sensor = nullptr;
-            sensorlist.clear();
-        // Reset window title
+        sensorlist.clear();
+        if (sensorDropdown) {
+            QSignalBlocker blocker(sensorDropdown);
+            sensorDropdown->clear();
+            sensorDropdown->hide();
+        }
+
+        id.clear();
+        selectedKey.clear();
         setWindowTitle("ESM Display");
-        // Reset hover state
-        hoveredTargetIndex = -1;
+        refreshObservations();
+        applySelection(false);
     }
 }
 
-/* Update radar display data */
+/* Update display data (called by the application's existing update path) */
 void ESMDisplay::updateRadar()
 {
     if (entity && sensor) {
-        // Set radar range and trigger repaint
+        bool stillValid = false;
+        for (auto const& pair : entity->sensors.sensors) {
+            if (pair.second == sensor) { stillValid = true; break; }
+        }
+        if (!stillValid) {
+            // Sensor removed: rebuild the list from the platform, never keep
+            // a dangling ESM pointer.
+            collectSensors();
+            updateDropdown();
+        }
+    }
+    refreshObservations();
+}
+
+/* Pull the current detections into the shared model and keep the selection
+ * valid. Cheap when nothing changed (model reports "no change"). */
+// void ESMDisplay::refreshObservations()
+// {
+//     bool changed;
+//     if (entity && sensor) {
+//         setRange(sensor->range);
+//         changed = model->refresh(sensor);
+//     } else {
+//         changed = model->clear();
+//     }
+
+//     // A selected observation that no longer exists is dropped.
+//     if (!selectedKey.isEmpty() && model->rowForKey(selectedKey) < 0) {
+//         selectedKey.clear();
+//         changed = true;
+//     }
+//     if (changed)
+//         applySelection(false);
+
+//     updateStatusLabel();
+// }
+
+//Vansh
+
+void ESMDisplay::refreshObservations()
+{
+    bool changed;
+    if (entity && sensor) {
         setRange(sensor->range);
-        update();
+        changed = model->refresh(sensor);
     } else {
-        // Reset targets if no entity/sensor
-        targets.clear();
-           if (sensorDropdown) sensorDropdown->hide();
-        hoveredTargetIndex = -1;
-    }
-}
-
-/* Main paint event handler */
-void ESMDisplay::paintEvent(QPaintEvent * /*event*/)
-{
-    QElapsedTimer timer;
-    timer.start();  // Start measuring
-    if (width() <= 0 || height() <= 0) return;
-
-    // Initialize painter
-    QPainter p(this);
-    //p.setRenderHint(QPainter::Antialiasing);
-
-    // Draw display components
-    drawBackground(p);
-    int w = width();
-    int h = height();
-    int outerDiameter = qMin(w - padding*2, h - padding*2);
-    int outerRadius = outerDiameter / 2;
-    QPoint center(w / 2, h / 2);
-
-    drawRadarRing(p, center, outerRadius);
-    drawConcentricCircles(p, center, outerRadius);
-    drawTicksAndLabels(p, center, outerRadius);
-    drawCenterMark(p, center);
-    drawTopMarker(p, center, outerRadius);
-
-    if(!sensor)return;
-    // Draw targets with dotted lines and labels
-    if (!sensor->detect.isEmpty()) {
-        int i=0;
-        for (const ESMTarget &t : sensor->detect) {
-            // const Target &t = targets[i];
-            double per = t.radius / range;
-            if (per < 0.0) per = 0.0;
-            if (per > 1.0) per = 1.0;
-
-            double r = per * outerRadius;
-            double angleDeg = t.angle-90;
-            double theta = qDegreesToRadians(angleDeg);
-            int tx = center.x() + int(r * cos(theta));
-            int ty = center.y() + int(r * sin(theta));
-
-            // Draw dotted line from center to target
-            // p.setPen(QPen(radarGreen, 0, Qt::DotLine));
-            // p.drawLine(center, QPoint(tx, ty));
-
-            // Draw target dot - blue normally, red if hovered
-            if (i == hoveredTargetIndex) {
-                p.setBrush(Qt::red);
-            } else {
-                p.setBrush(Qt::blue);
-            }
-            p.setPen(Qt::NoPen);
-            p.drawEllipse(QPointF(tx, ty), 4, 4);
-
-            // Draw labels ONLY if this target is hovered
-            if (i == hoveredTargetIndex) {
-                p.setPen(QPen(Qt::yellow, 1));
-                QFont font = p.font();
-                font.setPointSize(8);
-                p.setFont(font);
-
-                // Show angle and distance for hovered target
-                QString angleText = QString("A:%1°").arg(angleDeg, 0, 'f', 1);
-                QString distText = QString("D:%1").arg(t.radius, 0, 'f', 1);
-                QString emmitterID = QString::fromStdString(t.entity->ID);//, 0, 'f', 1);
-                QString emmittername = QString::fromStdString(t.entity->Name);//QString("D:%1").arg(t.radius, 0, 'f', 1);
-                QString frequency = QString("F:%1 MHz").arg(t.frequency);
-                QString frequencytype = "UHF";
-
-                // Draw text at target position
-                p.drawText(tx + 6, ty - 6, angleText);
-                p.drawText(tx + 6, ty + 12, distText);
-                p.drawText(tx + 6, ty + 30, emmitterID);
-                p.drawText(tx + 6, ty + 48, emmittername);
-                p.drawText(tx + 6, ty + 66, frequency);
-                p.drawText(tx + 6, ty + 84, frequencytype);
-
-
-                // Platform* targetPlatform = dynamic_cast<Platform*>(t.entity);
-                // if (targetPlatform) {
-                //     QString nameText = QString::fromStdString(targetPlatform->Name);
-                //     p.drawText(tx + 6, ty + 30, nameText);
-                // }
-            }
-            i++;
-        }
-    } else if (entity && sensor) {
-        // No targets message
-        p.setPen(Qt::white);
-        QFont font = p.font();
-        font.setPointSize(10);
-        p.setFont(font);
-        QRect textRect = p.fontMetrics().boundingRect("No ESM Targets Detected");
-        p.drawText(center.x() - textRect.width()/2, center.y(), "No ESM Targets Detected");
+        changed = model->clear();
     }
 
-    qint64 elapsedMs = timer.elapsed();
-    Profiler::currentFrame->esmdisplay = elapsedMs;
-}
-
-
-/* Draw display background */
-void ESMDisplay::drawBackground(QPainter &p)
-{
-    p.save();
-    // Fill background
-    p.fillRect(rect(), Qt::black);
-    // Draw border
-    QPen pen(radarGreen, 1);
-    p.setPen(pen);
-    p.setBrush(Qt::NoBrush);
-    QRect inner(padding, padding, width() - padding*2, height() - padding*2);
-    p.drawRect(inner);
-    p.restore();
-}
-
-/* Draw outer radar ring */
-void ESMDisplay::drawRadarRing(QPainter &p, const QPoint &center, int outerRadius)
-{
-    p.save();
-    QPen ringPen(radarGreen, 2);
-    p.setPen(ringPen);
-    p.setBrush(Qt::NoBrush);
-    QRectF circle(center.x() - outerRadius, center.y() - outerRadius, outerRadius*2.0, outerRadius*2.0);
-    p.drawEllipse(circle);
-    p.restore();
-}
-
-/* Draw concentric radar circles */
-void ESMDisplay::drawConcentricCircles(QPainter &p, const QPoint &center, int outerRadius)
-{
-    p.save();
-    QPen pen(radarGreen, 1, Qt::DashLine);
-    pen.setCosmetic(true);
-    p.setPen(pen);
-    p.setBrush(Qt::NoBrush);
-    for (int i = 1; i <= ringCount; ++i) {
-        double r = outerRadius * (double(i) / double(ringCount + 1));
-        QRectF ring(center.x() - r, center.y() - r, r * 2.0, r * 2.0);
-        p.drawEllipse(ring);
+    if (!selectedKey.isEmpty() && model->rowForKey(selectedKey) < 0) {
+        selectedKey.clear();
+        changed = true;
     }
-    p.restore();
+    if (changed)
+        applySelection(false);
+
+    // Spectrum feed: har tick, "changed" se independent (graph live rehna chahiye)
+    if (entity && sensor && sensor->Active && sensor->hasSpectrum())
+        spectrum->setSpectrum(sensor->spectrumFreqMHz(), sensor->spectrumPsdDbmPerHz());
+    else
+        spectrum->clearSpectrum();      // "Spectrum data unavailable" wapas
+
+    updateStatusLabel();
 }
 
-/* Draw radar ticks and labels */
-void ESMDisplay::drawTicksAndLabels(QPainter &p, const QPoint &center, int outerRadius)
+/* Push selectedKey to the table, the PPI and the spectrum header. */
+void ESMDisplay::applySelection(bool scrollToSelection)
 {
-    p.save();
-    QPen majorPen(radarGreen, 2);
-    QPen minorPen(radarGreen, 1);
-    QFont labelFont("Arial", qMax(8, outerRadius/18), QFont::Bold);
-    p.setFont(labelFont);
-    for (int deg = 0; deg < 360; deg += (majorTickEvery / minorTicksPerMajor)) {
-        double angleDeg = deg - 90.0 + ang;
-        double theta = qDegreesToRadians(angleDeg);
-        bool isMajor = (deg % majorTickEvery == 0);
-        int tickOut = outerRadius;
-        int tickIn = isMajor ? outerRadius - qMax(16, outerRadius/12) : outerRadius - qMax(6, outerRadius/24);
-        int x1 = center.x() + int(tickOut * cos(theta));
-        int y1 = center.y() + int(tickOut * sin(theta));
-        int x2 = center.x() + int(tickIn * cos(theta));
-        int y2 = center.y() + int(tickIn * sin(theta));
-        p.setPen(isMajor ? majorPen : minorPen);
-        p.drawLine(QPoint(x1, y1), QPoint(x2, y2));
-        if (isMajor) {
-            // Draw degree labels
-            int labelRadius = outerRadius + qMax(16, outerRadius/10);
-            int lx = center.x() + int(labelRadius * cos(theta));
-            int ly = center.y() + int(labelRadius * sin(theta));
-            int heading = (deg % 360);
-            QString text = QString("%1").arg(heading, 3, 10, QChar('0'));
-            QRect textRect = QFontMetrics(p.font()).boundingRect(text);
-            int tx = lx - textRect.width()/2;
-            int ty = ly + textRect.height()/2;
-            p.setPen(radarGreen);
-            p.drawText(tx, ty, text);
-        }
+    const bool previous = syncing;
+    syncing = true;
+
+    const int row = model->rowForKey(selectedKey);
+    if (row >= 0) {
+        table->selectRow(row);
+        if (scrollToSelection)
+            table->scrollTo(model->index(row, 0));
+    } else {
+        table->clearSelection();
     }
-    p.restore();
+    ppi->setSelectedKey(selectedKey);
+    updateSelectedInfo();
+
+    syncing = previous;
 }
 
-/* Draw center cross mark */
-void ESMDisplay::drawCenterMark(QPainter &p, const QPoint &center)
+void ESMDisplay::updateSelectedInfo()
 {
-    p.save();
-    p.setPen(QPen(radarGreen, 2));
-    int cross = qMax(6, width()/80);
-    p.drawLine(center.x() - cross, center.y(), center.x() + cross, center.y());
-    p.drawLine(center.x(), center.y() - cross, center.x(), center.y() + cross);
-    QRect sq(center.x() - 5, center.y() - 5, 10, 10);
-    p.setBrush(radarGreen);
-    p.drawRect(sq);
-    p.restore();
-}
-
-/* Draw top marker triangle and label */
-void ESMDisplay::drawTopMarker(QPainter &p, const QPoint &center, int outerRadius)
-{
-    p.save();
-    double theta = qDegreesToRadians(-90.0);
-    int triCenterX = center.x() + int((outerRadius + 4) * cos(theta));
-    int triCenterY = center.y() + int((outerRadius + 4) * sin(theta));
-    int triW = qMax(6, outerRadius/20);
-    QPoint pts[3] = {
-        QPoint(triCenterX, triCenterY - triW),
-        QPoint(triCenterX - triW, triCenterY + (triW/2)),
-        QPoint(triCenterX + triW, triCenterY + (triW/2))
-    };
-    p.setPen(QPen(radarGreen, 1));
-    p.setBrush(radarGreen);
-    p.drawPolygon(pts, 3);
-    QFont f("Arial", qMax(6, outerRadius/25), QFont::Bold);
-    p.setFont(f);
-    QString txt = "000";
-    QRect txtRect = QFontMetrics(f).boundingRect(txt);
-    int tx = triCenterX - txtRect.width()/2;
-    int ty = triCenterY + triW + txtRect.height() + 1;
-    p.setPen(radarGreen);
-    p.drawText(tx, ty, txt);
-    p.restore();
-}
-void ESMDisplay::resizeEvent(QResizeEvent *event)
-{
-    QWidget::resizeEvent(event);
-    if (sensorDropdown) {
-        int dropW = 120;
-        int dropH = 22;
-        sensorDropdown->setGeometry(width() - dropW - padding, 4, dropW, dropH);
+    const int row = model->rowForKey(selectedKey);
+    if (row < 0) {
+        spectrum->setSelectedInfo(QString());
+        spectrum->clearMarker();
+        return;
     }
+    spectrum->setSelectedInfo(QStringLiteral("SELECTED  ") + model->summaryText(row));
+    const ESMObservation& o = model->observations().at(row);
+    if (o.emitterValid)
+        spectrum->setMarkerFrequencyMHz(o.frequencyMHz);
+    else
+        spectrum->clearMarker();
+}
+
+void ESMDisplay::updateStatusLabel()
+{
+    QString text;
+    switch (model->sensorState()) {
+    case ESMObservationModel::SensorState::NoSensor:
+        text = QStringLiteral("NO SENSOR");
+        break;
+    case ESMObservationModel::SensorState::Inactive:
+    case ESMObservationModel::SensorState::Active: {
+        const bool active = (model->sensorState() == ESMObservationModel::SensorState::Active);
+        const QString rangeText = model->rangeKm() > 0.0
+                                      ? QString::number(model->rangeKm(), 'g', 5) + QStringLiteral(" km")
+                                      : QStringLiteral("--");
+        text = QString("%1   |   RANGE %2   |   DETECTIONS %3")
+                   .arg(active ? QStringLiteral("ACTIVE") : QStringLiteral("INACTIVE"))
+                   .arg(rangeText)
+                   .arg(model->rowCount());
+        break;
+    }
+    }
+    statusLabel->setText(text);
+    observationsLabel->setText(QString("OBSERVATIONS (%1)").arg(model->rowCount()));
+}
+
+void ESMDisplay::onPpiObservationSelected(const QString& key)
+{
+    if (syncing)
+        return;
+    selectedKey = key;
+    applySelection(true);
+}
+
+void ESMDisplay::onTableSelectionChanged()
+{
+    if (syncing)
+        return;
+
+    const QModelIndexList rows = table->selectionModel()->selectedRows();
+    selectedKey = rows.isEmpty() ? QString() : model->keyAt(rows.first().row());
+
+    const bool previous = syncing;
+    syncing = true;
+    ppi->setSelectedKey(selectedKey);
+    updateSelectedInfo();
+    syncing = previous;
 }
 
 void ESMDisplay::updateDropdown()
@@ -480,20 +500,18 @@ void ESMDisplay::updateDropdown()
     if (currentIdx >= 0)
         sensorDropdown->setCurrentIndex(currentIdx);
 
-    if (sensorlist.size() > 1)
-        sensorDropdown->show();
-    else
-        sensorDropdown->hide();
-
-    sensorDropdown->setGeometry(width() - 120 - padding, 4, 120, 22);
+    sensorDropdown->setVisible(sensorlist.size() > 1);
 }
 
 void ESMDisplay::onSensorSelected(int index)
 {
     if (index < 0 || index >= sensorlist.size()) return;
-    sensor = sensorlist[index];
-    hoveredTargetIndex = -1;
-    if (sensor)
-        setRange(sensor->range);
-    update();
+
+    ESM* s = sensorlist[index];
+    if (!s) return;
+
+    sensor = s;
+    selectedKey.clear();
+    refreshObservations();
+    applySelection(false);
 }

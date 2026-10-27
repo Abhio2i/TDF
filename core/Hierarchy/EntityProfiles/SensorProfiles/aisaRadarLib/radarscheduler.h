@@ -304,6 +304,14 @@ public:
     // =========================================================================
     void advance(double dt_s);
 
+    // Stabilised -> body rotation used to point TRACK / FIRE_CONTROL beams at
+    // stabilised track positions. Set by the model each tick. REQ-AESA-010.
+    void setBodyFromStab(const double R[3][3])
+    {
+        for (int i = 0; i < 3; ++i)
+            for (int j = 0; j < 3; ++j) bodyFromStab_[i][j] = R[i][j];
+    }
+
     // =========================================================================
     // ACCESSORS — read-only state queries
     // All return by value. No side effects. REQ-AESA-010, REQ-AESA-020.
@@ -574,6 +582,11 @@ private:
     // Populated in buildSchedule() when the schedule is otherwise empty,
     // and used as a const return reference in currentBeam().
     BeamRequest fallbackBeam_;
+
+    // Stabilised -> body rotation (identity until set). REQ-AESA-010.
+    double bodyFromStab_[3][3] = { { 1.0, 0.0, 0.0 },
+                                   { 0.0, 1.0, 0.0 },
+                                   { 0.0, 0.0, 1.0 } };
 };
 
 } // namespace aesa

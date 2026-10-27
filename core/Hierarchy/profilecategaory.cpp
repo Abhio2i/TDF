@@ -18,6 +18,14 @@
 #include "core/Hierarchy/EntityProfiles/radio.h"
 #include "core/Hierarchy/EntityProfiles/sensor.h"
 #include "core/Hierarchy/EntityProfiles/specialzone.h"
+#include "core/Hierarchy/EntityProfiles/weapons/artillery.h"
+#include "core/Hierarchy/EntityProfiles/weapons/bomb.h"
+#include "core/Hierarchy/EntityProfiles/weapons/chaff.h"
+#include "core/Hierarchy/EntityProfiles/weapons/flare.h"
+#include "core/Hierarchy/EntityProfiles/weapons/missile.h"
+#include "core/Hierarchy/EntityProfiles/weapons/rocket.h"
+#include "core/Hierarchy/EntityProfiles/weapons/sonobuoy.h"
+#include "core/Hierarchy/EntityProfiles/weapons/torpedo.h"
 #include "core/Hierarchy/Utils/entityutils.h"
 #include "qjsonarray.h"
 #include <core/Hierarchy/hierarchy.h> // Required for type
@@ -264,13 +272,13 @@ Entity* ProfileCategaory::addEntity(std::string entityName, std::string iD, QStr
             if (weapon) {
                 QString wID = QString::fromStdString(weapon->ID);
                 struct { const char* name; std::string id; } comps[] = {
-                             { "transform",    weapon->transform      ? weapon->transform->ID      : "" },
-                             { "rigidbody",    weapon->rigidbody      ? weapon->rigidbody->ID      : "" },
-                             { "collider",     weapon->collider       ? weapon->collider->ID       : "" },
-                             { "trajectory",   weapon->trajectory     ? weapon->trajectory->ID     : "" },
-                             { "bitmap",       weapon->meshRenderer2d ? weapon->meshRenderer2d->ID : "" },
-                             { "dynamicModel", weapon->dynamicModel   ? weapon->dynamicModel->ID   : "" },
-                             { "crossSection", weapon->crossSection   ? weapon->crossSection->ID   : "" },
+                             { "transform",    /*weapon->transform      ?*/ weapon->transform.ID      /*: "" */},
+                             { "rigidbody",    /*weapon->rigidbody      ?*/ weapon->rigidbody.ID      /*: ""*/ },
+                             { "collider",     /*weapon->collider       ?*/ weapon->collider.ID       /*: "" */},
+                             { "trajectory",   /*weapon->trajectory     ?*/ weapon->trajectory.ID     /*: "" */},
+                             { "bitmap",       /*weapon->meshRenderer2d ?*/ weapon->meshRenderer2d.ID /*: "" */},
+                             { "dynamicModel", /*weapon->dynamicModel   ?*/ weapon->dynamicModel.ID   /*: "" */},
+                             { "crossSection", /*weapon->crossSection   ?*/ weapon->crossSection.ID   /*: "" */},
                              };
                 for (const auto& c : comps) {
                     if (!c.id.empty()) {
@@ -340,22 +348,23 @@ void ProfileCategaory::addEntityWithObject(Entity *entity){
             if (weapon) {
                 QString wID = QString::fromStdString(weapon->ID);
                 struct { const char* name; std::string id; } comps[] = {
-                             { "transform",    weapon->transform      ? weapon->transform->ID      : "" },
-                             { "rigidbody",    weapon->rigidbody      ? weapon->rigidbody->ID      : "" },
-                             { "collider",     weapon->collider       ? weapon->collider->ID       : "" },
-                             { "trajectory",   weapon->trajectory     ? weapon->trajectory->ID     : "" },
-                             { "bitmap",       weapon->meshRenderer2d ? weapon->meshRenderer2d->ID : "" },
-                             { "dynamicModel", weapon->dynamicModel   ? weapon->dynamicModel->ID   : "" },
-                             { "crossSection", weapon->crossSection   ? weapon->crossSection->ID   : "" },
+                             { "transform",    /*weapon->transform      ? */weapon->transform.ID      /*: "" */},
+                             { "rigidbody",    /*weapon->rigidbody      ? */weapon->rigidbody.ID      /*: "" */},
+                             { "collider",     /*weapon->collider       ? */weapon->collider.ID       /*: "" */},
+                             { "trajectory",   /*weapon->trajectory     ? */weapon->trajectory.ID     /*: "" */},
+                             { "bitmap",       /*weapon->meshRenderer2d ? */weapon->meshRenderer2d.ID /*: "" */},
+                             { "dynamicModel", /*weapon->dynamicModel   ? */weapon->dynamicModel.ID   /*: "" */},
+                             { "crossSection", /*weapon->crossSection   ? */weapon->crossSection.ID   /*: "" */},
                              };
-                for (const auto& c : comps) {
-                    if (!c.id.empty()) {
-                        emit parent->componentAdded(
-                            wID,
-                            QString::fromStdString(c.id),
-                            QString::fromLatin1(c.name));
-                    }
-                }
+                weapon->init();
+                // for (const auto& c : comps) {
+                //     if (!c.id.empty()) {
+                //         emit parent->componentAdded(
+                //             wID,
+                //             QString::fromStdString(c.id),
+                //             QString::fromLatin1(c.name));
+                //     }
+                // }
             }
         }
 
@@ -547,7 +556,30 @@ void ProfileCategaory::fromJson(const QJsonObject& obj)
                                     entity = new IFF(parent);
                                 }else
                                     if(type == Constants::EntityType::Weapon){
-                                        entity = new Weapon(parent);
+                                        // entity = new Weapon(parent);
+                                        QString typeName = entityJson["weaponTypeName"].toString();
+                                        if (typeName == "Bomb")
+                                            entity = new Bomb(parent);
+                                        else
+                                        if (typeName == "Sunobuoy")
+                                            entity = new Sonobuoy(parent);
+                                        else
+                                        if (typeName == "Torpedo")
+                                            entity = new Torpedo(parent);
+                                        else
+                                        if (typeName == "Artillery")
+                                            entity = new Artillery(parent);
+                                        else
+                                        if (typeName == "Rocket")
+                                            entity = new Rocket(parent);
+                                        else
+                                        if (typeName == "Flare")
+                                            entity = new Flare(parent);
+                                        else
+                                        if (typeName == "Chaff")
+                                            entity = new Chaff(parent);
+                                        else
+                                        entity = new Missile(parent);
                                     }else{
                                         entity = new Platform(parent);
                                     }
@@ -555,6 +587,7 @@ void ProfileCategaory::fromJson(const QJsonObject& obj)
             entity->ID = entityJson["id"].toString().toStdString();
             if (entity) {
                 addEntityWithObject(entity);
+                entity->addSupportedcomponent();
                 entity->fromJson(entityJson);
                 QCoreApplication::processEvents();
             }

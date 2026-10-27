@@ -18,6 +18,7 @@
 #include <QVBoxLayout>
 #include <QDialogButtonBox>
 #include <QPushButton>
+#include <QCheckBox>
 
 class AddFormationDialog : public QDialog
 {
@@ -34,7 +35,8 @@ public:
     QString getFormationType() const;
     QList<QVariantMap> getAllies() const;
     int getAlliesCount() const;
-    // static void runUnitTestsOnce();
+    QString getSelectedCustomFormationId() const;
+    bool    isCustomFromDatabase() const;
 
 
 private slots:
@@ -55,6 +57,9 @@ private:
     QComboBox *m_comboBoxFormationType;
     QLabel *m_labelAlliesCount;
     QLabel *m_labelSelectedCount;
+    QComboBox *m_comboCustomFormations = nullptr;
+    QCheckBox *m_chkUseCustom = nullptr;
+    void loadCustomFormationsFromDatabase();
 };
 
 #endif // ADDFORMATIONDIALOG_H

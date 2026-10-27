@@ -39,6 +39,7 @@ TDFManager::TDFManager()
     m_tdfPath       = homeDir + "/TDF";
     m_dbFolderPath  = m_tdfPath + "/Data";
     m_cityDataFolderPath = m_tdfPath + "/CityData";
+    m_airbaseDataFolderPath = m_tdfPath + "/AirbaseData";
 }
 
 TDFManager* TDFManager::instance()
@@ -61,6 +62,8 @@ void TDFManager::initializeTDFStructure()
     // city.json — sirf copy if missing (file_Version nahi hai isme)
     QString cityJsonDest = m_cityDataFolderPath + "/city.json";
     copyResourceIfNeeded(":/jsonData/DB/jsonData/city.json", cityJsonDest);
+    QString airbaseJsonDest = m_airbaseDataFolderPath + "/airbase.json";
+    copyJsonIfOutdated(":/jsonData/DB/jsonData/airbase.json", airbaseJsonDest);
     m_initialized = true;
 }
 // -----------------------------------------------------------------------------
@@ -82,6 +85,11 @@ void TDFManager::createFolderStructure()
     if (!dir.exists(m_cityDataFolderPath)) {
         if (!dir.mkpath(m_cityDataFolderPath)) {
             qWarning() << "Failed to create CityData folder:" << m_cityDataFolderPath;
+        }
+    }
+    if (!dir.exists(m_airbaseDataFolderPath)) {
+        if (!dir.mkpath(m_airbaseDataFolderPath)) {
+            qWarning() << "Failed to create AirbaseData folder:" << m_airbaseDataFolderPath;
         }
     }
 }
@@ -272,4 +280,12 @@ QString TDFManager::getCityJsonPath()
         return tdfPath;
     }
     return ":/jsonData/DB/jsonData/city.json";
+}
+QString TDFManager::getAirbaseJsonPath()
+{
+    QString tdfPath = m_airbaseDataFolderPath + "/airbase.json";
+    if (fileExists(tdfPath)) {
+        return tdfPath;
+    }
+    return ":/jsonData/DB/jsonData/airbase.json";
 }

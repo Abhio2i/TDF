@@ -9,7 +9,7 @@ Task::Task(QWidget *parent, TaskGroup *master)
     , ui(new Ui::Task)
 {
     ui->setupUi(this);
-     this->layout()->setAlignment(Qt::AlignTop);
+    this->layout()->setAlignment(Qt::AlignTop);
     action = new Actions();
     condition = new IFCondition();
     ui->verticalLayout->addWidget(action);
@@ -38,30 +38,30 @@ void Task::Execute(){
             run(true);
             return;
         }else
-        if(action->action == Actions::Action::Jump){//jump command
-            Index = results;
-        }
+            if(action->action == Actions::Action::Jump){//jump command
+                Index = results;
+            }
     }else
-    if(command == Task::Command::Condition){
-        int results = condition->Execute();
-        qDebug()<<"Condition";
-        if(condition->action->action == Actions::Action::end){//end command
-            qDebug()<<"END";
-            run(true);
-            return;
+        if(command == Task::Command::Condition){
+            int results = condition->Execute();
+            qDebug()<<"Condition";
+            if(condition->action->action == Actions::Action::end){//end command
+                qDebug()<<"END";
+                run(true);
+                return;
+            }else
+                if(condition->action->action == Actions::Action::Jump){//jump command
+                    Index = results;
+                }
         }else
-        if(condition->action->action == Actions::Action::Jump){//jump command
-            Index = results;
-        }
-    }else
-    if(command == Task::Command::Jump){
-        qDebug()<<"Jump";
-        Index = ui->JumpspinBox->value();
-    }else
-    if(command == Task::Command::Wait){
-        qDebug()<<"Wait";
-        waitTime += ui->waitspinBox->value() * 1000;
-    }
+            if(command == Task::Command::Jump){
+                qDebug()<<"Jump";
+                Index = ui->JumpspinBox->value();
+            }else
+                if(command == Task::Command::Wait){
+                    qDebug()<<"Wait";
+                    waitTime += ui->waitspinBox->value() * 1000;
+                }
 
 
     qDebug()<<label->text()<<" Execute"<<QString::number(index);

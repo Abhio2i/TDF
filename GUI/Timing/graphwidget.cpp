@@ -74,7 +74,6 @@ static bool naturalLess(Platform* a, Platform* b) {
         int numB = extractTrailingNumber(nb);
         if (numA != numB) return numA < numB;
     }
-
     return na < nb;
 }
 
@@ -113,7 +112,12 @@ protected:
 // %%% Constructor %%%
 /* Initialize graph widget with default settings */
 GraphWidget::GraphWidget(QWidget *parent): QWidget(parent) {
-    setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint);
+    setWindowFlags(Qt::Window
+                   | Qt::WindowTitleHint
+                   | Qt::WindowSystemMenuHint
+                   | Qt::WindowMinMaxButtonsHint
+                   | Qt::WindowCloseButtonHint
+                   | Qt::WindowStaysOnTopHint);
     setStyleSheet("background-color: black;");
 
     time   = 0;
@@ -153,17 +157,13 @@ GraphWidget::GraphWidget(QWidget *parent): QWidget(parent) {
     tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     tableWidget->horizontalHeader()->setStretchLastSection(true);
     tableWidget->setMaximumHeight(150);
-
     graphCanvas = new GraphCanvas(this);
-
     mainLayout->addWidget(tableWidget);
     mainLayout->addWidget(graphCanvas, 1);
     setLayout(mainLayout);
-
     graphDataList.append({0, 1.5, 4.0, Qt::blue});
     graphDataList.append({1, 0.5, 3.2, Qt::green});
     graphDataList.append({2, 5.0, 8.5, Qt::red});
-
     update();
 }
 
@@ -175,37 +175,49 @@ void GraphWidget::setHierarchy(Hierarchy* hier){
 
 // %%% Refresh Method %%%
 
-void GraphWidget::refresh(float delta){
-    if(h){
-        entity = h->Platforms.size();
-        t     += delta;
-        t      = Simulation::simulationTime;
-        time   = Simulation::simulationTime;
-        updateTable();
-        if(graphCanvas) graphCanvas->update();
+void GraphWidget::refresh(float delta)
+{
+    if (!h) return;
+
+    entity = static_cast<int>(h->Platforms.size());
+
+    // Prefer simulation clock; fallback accumulate
+    if (Simulation::simulationTime > 0.0f)
+        t = static_cast<double>(Simulation::simulationTime);
+    else
+        t += static_cast<double>(delta);
+
+    double maxT = t;
+    for (auto& [key, platform] : h->Platforms) {
+        if (!platform) continue;
+        double st = platform->dynamicModel.startTime;
+        double et = platform->dynamicModel.endTime;
+        if (et < 0) et = t;                 // still running
+        if (et < st) et = st;
+        if (st > maxT) maxT = st;
+        if (et > maxT) maxT = et;
     }
+    // Axis thoda padding
+    time = static_cast<int>(std::ceil(maxT));
+    if (time < 1) time = 1;               // never 0 — avoids /0
+
+    updateTable();
+    if (graphCanvas) graphCanvas->update();
 }
 
 // %%% Table Update %%%
 
 void GraphWidget::updateTable(){
     if(!h) return;
-
     tableWidget->setRowCount(0);
-
-
     QVector<Platform*> sorted = getSortedPlatforms();
-
     for (Platform* platform : sorted) {
-        if (!platform || !platform->dynamicModel) continue;
-
-        double startTime     = platform->dynamicModel->startTime;
-        double endTime       = platform->dynamicModel->endTime < 0
-                             ? t : platform->dynamicModel->endTime;
+        if (!platform /*|| !platform->dynamicModel*/) continue;
+        double startTime     = platform->dynamicModel.startTime;
+        double endTime       = platform->dynamicModel.endTime < 0
+                             ? t : platform->dynamicModel.endTime;
         if (endTime < startTime) endTime = startTime;
-
         double totalDuration = endTime - startTime;
-
         QString status;
         if (t < startTime) {
             status = "Pending";
@@ -309,125 +321,128 @@ void GraphWidget::drawGraph(QWidget* canvas) {
 
 /* Draw entity timeline data — naturally sorted order */
 void GraphWidget::drawData(QPainter &p, int startX, int bottomY,
-                           int canvasWidth, int canvasHeight) {
-    if (!h || h->Platforms.size() <= 0) return;
+                           int canvasWidth, int canvasHeight)
+{
+    if (!h || h->Platforms.empty()) return;
 
-    int availableWidth  = (canvasWidth  - 100);
-    int availableHeight = (canvasHeight - 100);
+    const int axisTime = (time > 0) ? time : 1;   // never divide by 0
 
-    double xSpacing = (availableWidth  / (double)time)   * (zoom / 100.0);
-    double ySpacing = (availableHeight / (double)entity) * (zoom / 100.0);
+    int availableWidth  = canvasWidth  - 100;
+    int availableHeight = canvasHeight - 100;
+    if (availableWidth <= 0 || availableHeight <= 0) return;
 
-    // ✅ Same naturally sorted order as Y-axis labels
+    double xSpacing = (availableWidth  / (double)axisTime) * (zoom / 100.0);
+    double ySpacing = (entity > 0)
+                          ? (availableHeight / (double)entity) * (zoom / 100.0)
+                          : 0.0;
+
     QVector<Platform*> sorted = getSortedPlatforms();
-
     int entityNum = 0;
-    for (Platform* platform : sorted) {
-        if (!platform || !platform->dynamicModel) continue;
 
-        double startTime = platform->dynamicModel->startTime;
-        double endTime   = platform->dynamicModel->endTime < 0
-                             ? t : platform->dynamicModel->endTime;
+    for (Platform* platform : sorted) {
+        if (!platform) continue;
+
+        double startTime = platform->dynamicModel.startTime;
+        double endTime   = platform->dynamicModel.endTime;
+        if (endTime < 0) endTime = t;          // open-ended → now
         if (endTime < startTime) endTime = startTime;
 
-        int x1 = startX + (startTime * xSpacing);
-        int x2 = startX + (endTime   * xSpacing);
-        int y  = bottomY - (entityNum * ySpacing);
+        int x1 = startX + static_cast<int>(startTime * xSpacing);
+        int x2 = startX + static_cast<int>(endTime   * xSpacing);
+        int y  = bottomY - static_cast<int>(entityNum * ySpacing);
 
-        int barHeight = 4;
+        int barHeight = 8;                     // was 4 — zyada visible
         int dotRadius = 4;
         int barWidth  = x2 - x1;
+        if (barWidth < 2) barWidth = 2;        // kam se kam dikhe
 
-        // Draw timeline bar (cyan)
-        p.setBrush(Qt::cyan);
-        p.setPen(Qt::NoPen);
-        p.drawRect(x1, y - (barHeight / 2), barWidth, barHeight);
+        // Pending: abhi start nahi hua — optional faint marker at start
+        bool pending = (t < startTime);
+        bool completed = (t > endTime);
 
-        // Draw start dot (yellow)
-        p.setBrush(Qt::yellow);
-        p.setPen(QPen(Qt::white, 1));
-        p.drawEllipse(QPoint(x1, y), dotRadius, dotRadius);
+        if (pending) {
+            p.setBrush(QColor(120, 120, 0));   // dim yellow segment placeholder
+            p.setPen(Qt::NoPen);
+            // sirf start tick
+            p.drawEllipse(QPoint(x1, y), dotRadius, dotRadius);
+        } else {
+            p.setBrush(completed ? QColor(0, 180, 180) : Qt::cyan);
+            p.setPen(Qt::NoPen);
+            p.drawRect(x1, y - barHeight / 2, barWidth, barHeight);
 
-        // Draw end dot (red)
-        p.setBrush(Qt::red);
-        p.drawEllipse(QPoint(x2, y), dotRadius, dotRadius);
+            p.setBrush(Qt::yellow);
+            p.setPen(QPen(Qt::white, 1));
+            p.drawEllipse(QPoint(x1, y), dotRadius, dotRadius);
+
+            p.setBrush(Qt::red);
+            p.drawEllipse(QPoint(x2, y), dotRadius, dotRadius);
+        }
 
         entityNum++;
     }
 }
-
 /* Draw X-axis ticks and time labels */
-void GraphWidget::drawXTick(QPainter &p, int startX, int endX, int y, int canvasWidth) {
-    int availableWidth = endX - startX;
-    if (availableWidth <= 0 || time <= 0) return;
+void GraphWidget::drawXTick(QPainter &p, int startX, int endX, int y, int canvasWidth)
+{
+    Q_UNUSED(canvasWidth);
 
-    double tickSpacing = (availableWidth / (double)time) * (zoom / 100.0);
+    int availableWidth = endX - startX;
+    if (availableWidth <= 0 || time <= 0)
+        return;
+
+    // time = total axis range in SECONDS (refresh set karta hai)
+    double tickSpacing = (availableWidth / static_cast<double>(time)) * (zoom / 100.0);
 
     QFontMetrics fm(p.font());
     QString sampleTime = formatTime(time);
-    int textWidth = fm.horizontalAdvance(sampleTime) + 10;
+    int textWidth = fm.horizontalAdvance(sampleTime) + 12;
 
+    // Step in seconds so labels na overlap karein
     int step = 1;
-    double requiredSpacing = textWidth / tickSpacing;
-
-    if (tickSpacing < 1) {
-        step = qMax(1, static_cast<int>(qCeil(requiredSpacing)));
-    } else if (tickSpacing * step < textWidth) {
-        step = qMax(1, static_cast<int>(qCeil(textWidth / tickSpacing)));
+    if (tickSpacing < 1e-6) {
+        step = qMax(1, time);
+    } else {
+        int minStep = static_cast<int>(qCeil(textWidth / tickSpacing));
+        step = qMax(1, minStep);
     }
 
-    if (step > time / 4) {
-        step = qMax(1, time / 4);
+    // Nice steps: 1, 5, 10, 30, 60, 120, 300, 600...
+    static const int kNice[] = {1, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600};
+    for (int nice : kNice) {
+        if (nice >= step) {
+            step = nice;
+            break;
+        }
     }
+    if (step > time)
+        step = qMax(1, time);
+
+    p.setPen(QPen(Qt::white, 1));
 
     for (int i = 0; i <= time; i += step) {
-        int x = startX + (i * tickSpacing);
-        if (x > endX) break;
+        int x = startX + static_cast<int>(i * tickSpacing);
+        if (x > endX)
+            break;
 
         p.drawLine(x, y - 5, x, y + 5);
 
-        QString timeLabel = formatTime(i);
+        QString timeLabel = formatTime(i);   // seconds → HH:MM:SS
 
-        bool canDrawHorizontal = true;
-        if (i > 0) {
-            int prevX         = startX + ((i - step) * tickSpacing);
-            int prevTextWidth = fm.horizontalAdvance(formatTime(i - step));
-            if (x - prevX < (prevTextWidth + textWidth) / 2) {
-                canDrawHorizontal = false;
-            }
-        }
-
-        if (canDrawHorizontal) {
-            QRect textRect(x - 40, y + 10, 80, 20);
-            p.drawText(textRect, Qt::AlignCenter, timeLabel);
-        } else {
-            p.save();
-            p.translate(x, y + 25);
-            p.rotate(45);
-            p.drawText(0, 0, timeLabel);
-            p.restore();
-        }
+        QRect textRect(x - 40, y + 8, 80, 20);
+        p.drawText(textRect, Qt::AlignCenter, timeLabel);
     }
 
-    if (step > 1) {
-        QRect startRect(startX - 20, y + 10, 40, 20);
-        p.drawText(startRect, Qt::AlignCenter, formatTime(0));
-
-        QRect endRect(endX - 20, y + 10, 40, 20);
-        p.drawText(endRect, Qt::AlignCenter, formatTime(time));
-    }
+    // Always show 0 and max on axis ends
+    p.drawText(QRect(startX - 20, y + 8, 40, 20), Qt::AlignCenter, formatTime(0));
+    p.drawText(QRect(endX - 40, y + 8, 80, 20), Qt::AlignCenter, formatTime(time));
 }
-
 /* Draw Y-axis ticks and entity labels */
 void GraphWidget::drawYTick(QPainter &p, int startY, int endY, int x,
                             int canvasHeight, QVector<QString> entityNames) {
     int availableHeight = startY - endY;
     int numEntities     = entity;
-
     if (numEntities == 0) return;
-
     double spacing = (availableHeight / (double)numEntities) * (zoom / 100.0);
-
     int minVerticalGap = 25;
     int step = 1;
     if (spacing < minVerticalGap) {

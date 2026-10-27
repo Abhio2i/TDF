@@ -22,6 +22,9 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QDebug>
+#include <functional>
+#include <memory>
+#include "../Airbase/airbase.h"
 #include <qgscoordinatereferencesystem.h>
 
 // Declare metatypes for event forwarding between threads
@@ -37,6 +40,8 @@ class GISlib : public QWidget {
     Q_OBJECT
 
 public:
+    void addOverlayCallback(std::function<void(QPainter*)> callback);
+
     /*
      * Constructor
      * Initializes the GIS library with default settings and network components
@@ -97,17 +102,9 @@ public:
      * Distance Measurement Methods
      */
 
-    /* Start distance measurement mode */
-    void startDistanceMeasurement();
-
-    /* End distance measurement mode */
-    void endDistanceMeasurement();
-
     /* Calculate distance between two geographic points (in lon, lat) */
     double calculateDistance(QPointF point1, QPointF point2);
 
-    /* Check if currently in distance measurement mode */
-    bool isMeasuringDistance() const { return measuringDistance; }
 
     /*
      * GeoJSON Layer Management Methods
@@ -145,7 +142,7 @@ public:
     /* Search by geographic coordinates */
     void searchByCoordinates(double latitude, double longitude);
     void removeVectorLayer(const QString& layerName);
-  void importVectorLayer(const QString& filePath);
+    void importVectorLayer(const QString& filePath);
 
 protected:
     /*
@@ -156,26 +153,15 @@ protected:
     void dropEvent(QDropEvent *event) override;
     // ===== PRESET LAYERS : AIRBASE =====
 private:
-    std::vector<std::pair<double, double>> airbasePositions;
-    bool showAirbases = false;
-    QString airbaseIconPath = ":/icons/images/airbase.png";
-    QPixmap airbasePixmap;
-
-    void loadAirbaseData();
-    void drawAirbases(QPainter& painter);
+    std::unique_ptr<Airbase> m_airbaseModule;
 
 public:
     void toggleAirbaseLayer();
-    bool isAirbaseVisible() const { return showAirbases; }
+    bool isAirbaseVisible() const;
 
-    const std::vector<std::pair<double,double>>& getAirbases() const {
-        return airbasePositions;
-    }
+    const std::vector<std::pair<double,double>>& getAirbases() const;
 
-    QPixmap getAirbasePixmap() const {
-        return airbasePixmap;
-    }
-
+    QPixmap getAirbasePixmap() const;
     void renderAirbases(QPainter& painter);
 
 signals:
@@ -277,10 +263,8 @@ private:
      */
 
     bool flipkeyaxis = false;           // Coordinate axis flipping flag
-
     GISNetwork* net;                    // Network manager for tile downloads
     QPixmap networkImage;               // Cached network status image
-
     bool dragging = false;              // Map dragging state flag
     QStringList activeLayers;           // List of currently active map layers
     QPoint lastMouse;                   // Last mouse position for dragging
@@ -303,28 +287,17 @@ private:
     QPointF initialOffset = QPointF(0, 0); // Initial map offset in pixels
 
     static constexpr int ABSOLUTE_MAX_ZOOM = 16;  // Maximum zoom level for the map (scales tiles if needed)
-
     /* Convert tile X coordinate to longitude */
     double xToLon(double x, int zoom);
-
     /* Convert tile Y coordinate to latitude */
     double yToLat(double y, int zoom);
-
     /* Convert decimal degrees to Degrees-Minutes-Seconds format */
     QString toDMS(double deg, bool isLat);
-
     static constexpr int maxCacheSize = 1000; // Maximum tile cache size
-
     QgsCoordinateReferenceSystem currentCrs; // Current coordinate reference system
-
     QString currentCoordinateSystem;
 
-    bool measuringDistance = false;     // Distance measurement mode flag
-    QPointF measureStartPoint;          // Start point for measurement (lon, lat)
-    QPointF measureEndPoint;            // End point for measurement (lon, lat)
-
     bool ellipsoidal = true;            // Use ellipsoidal calculations flag
-
     QgsCoordinateReferenceSystem customCrs; // Custom coordinate reference system
 
 public slots:
@@ -334,17 +307,12 @@ public slots:
 
     /* Handle received tile image data */
     void receiveImage(QString url, QByteArray data);
-
     /* Handle received place search results */
     void receivePlace(QString url, QByteArray data);
-
     /* Slot to change the current coordinate reference system */
     // void setCoordinateSystem(const QString& crsId);
-
-
     void fitToBounds(double minLat, double minLon,    // new for autozoom
                      double maxLat, double maxLon, int zoomOffset);
-
 
 protected:
     /*
@@ -355,6 +323,9 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+
+private:
+    std::vector<std::function<void(QPainter*)>> m_overlayCallbacks;
 };
 
 #endif // GISLIB_H

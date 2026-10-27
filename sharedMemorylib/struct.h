@@ -1,25 +1,53 @@
+#include <cstdint>
 #include <cstring>
 #include <variant>
 #include <string>
 
 namespace SharedStructs {
+
+// AIS Navigation Status
+enum class NavStatus : uint8_t {
+    UnderWayEngine = 0,
+    AtAnchor = 1,
+    NotUnderCommand = 2,
+    RestrictedManoeuvrability = 3,
+    ConstrainedByDraft = 4,
+    Moored = 5,
+    Aground = 6,
+    EngagedInFishing = 7,
+    UnderWaySailing = 8,
+    Reserved = 15 // Unknown
+};
+
+// Ship and Cargo Types
+enum class ShipType : uint8_t {
+    Unknown = 0,
+    Fishing = 30,
+    Tug = 52,
+    Passenger = 60,
+    Cargo = 70,
+    Tanker = 80,
+    PleasureCraft = 37
+};
+
+
 using ParamValue = std::variant<int, float, double, std::string, bool>;
 
 // Generic parameter structure for custom configurable values
 struct parameter {
-    private:
-        char name[50];          // Name of the parameter
-        int dataType;           // 0=int, 1=float, 2=double, 3=string, 4=bool
+private:
+    char name[50];          // Name of the parameter
+    int dataType;           // 0=int, 1=float, 2=double, 3=string, 4=bool
 
-        // Shared memory ke liye hum sirf primitive types use karenge
-        union {
-            int valueInt;
-            float valueFloat;
-            double valueDouble;
-            char valueString[100];
-            bool valueBool;
-        } data;
-    public:
+    // Shared memory ke liye hum sirf primitive types use karenge
+    union {
+        int valueInt;
+        float valueFloat;
+        double valueDouble;
+        char valueString[100];
+        bool valueBool;
+    } data;
+public:
     void setName(const char* newName) {
         strncpy(name, newName, sizeof(name) - 1);
         name[sizeof(name) - 1] = '\0'; // Null-terminate to avoid overflow
@@ -38,55 +66,55 @@ struct parameter {
     }
 
 
-    public:
-        void setValue(const ParamValue& val) {
-            // Yahan 'std::visit' use karna sabse sahi tarika hai variant ke liye
-            std::visit([this](auto&& arg) {
-                using T = std::decay_t<decltype(arg)>;
-                if constexpr (std::is_same_v<T, int>) {
-                    data.valueInt = arg;
-                    dataType = 0;
-                } else if constexpr (std::is_same_v<T, float>) {
-                    data.valueFloat = arg;
-                    dataType = 1;
-                } else if constexpr (std::is_same_v<T, std::string>) {
-                    strncpy(data.valueString, arg.c_str(), 99);
-                    dataType = 3;
-                } // ... baaki types ke liye bhi aise hi
-            }, val);
-        }
+public:
+    void setValue(const ParamValue& val) {
+        // Yahan 'std::visit' use karna sabse sahi tarika hai variant ke liye
+        std::visit([this](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, int>) {
+                data.valueInt = arg;
+                dataType = 0;
+            } else if constexpr (std::is_same_v<T, float>) {
+                data.valueFloat = arg;
+                dataType = 1;
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                strncpy(data.valueString, arg.c_str(), 99);
+                dataType = 3;
+            } // ... baaki types ke liye bhi aise hi
+        }, val);
+    }
 
-        void getValue(ParamValue& outVal) const {
-            switch(dataType) {
-                case 0:
-                    outVal = data.valueInt;
-                    break;
-                case 1:
-                    outVal = data.valueFloat;
-                    break;
-                case 2:
-                    outVal = data.valueDouble;
-                    break;
-                case 3:
-                    outVal = std::string(data.valueString);
-                    break;
-                case 4:
-                    outVal = data.valueBool;
-                    break;
-                default:
-                    // Unknown type, handle error
-                    break;
-            }
+    void getValue(ParamValue& outVal) const {
+        switch(dataType) {
+        case 0:
+            outVal = data.valueInt;
+            break;
+        case 1:
+            outVal = data.valueFloat;
+            break;
+        case 2:
+            outVal = data.valueDouble;
+            break;
+        case 3:
+            outVal = std::string(data.valueString);
+            break;
+        case 4:
+            outVal = data.valueBool;
+            break;
+        default:
+            // Unknown type, handle error
+            break;
         }
+    }
 };
 
 // 3D vector structure for position, rotation, scale, etc.
 struct vector3 {
-    private:
-        float x;    // X-axis value
-        float y;    // Y-axis value
-        float z;    // Z-axis value
-    public:
+private:
+    float x;    // X-axis value
+    float y;    // Y-axis value
+    float z;    // Z-axis value
+public:
     void set(float newX, float newY, float newZ) {
         x = newX;
         y = newY;
@@ -118,7 +146,7 @@ struct vector3 {
     void setY(float newY) {
         y = newY;
     }
-    
+
     void setZ(float newZ) {
         z = newZ;
     }
@@ -126,12 +154,12 @@ struct vector3 {
 
 // Geographic coordinate data
 struct geocord {
-    private:
-        double latitude;    // Latitude in degrees
-        double longitude;   // Longitude in degrees
-        double altitude;    // Altitude above sea level
-        double heading;     // Direction heading in degrees
-    public:
+private:
+    double latitude;    // Latitude in degrees
+    double longitude;   // Longitude in degrees
+    double altitude;    // Altitude above sea level
+    double heading;     // Direction heading in degrees
+public:
     void set(double lat, double lon, double alt, double head) {
         latitude = lat;
         longitude = lon;
@@ -183,12 +211,12 @@ struct target {
 
 // Waypoint definition for trajectories
 struct waypoint {
-    private:
-        char waypointID[30];    // Waypoint identifier
-        float speed;            // Desired speed at waypoint
-    public:
-        geocord geoCords;       // Geographic position
-        vector3 position;       // Local position
+private:
+    char waypointID[30];    // Waypoint identifier
+    float speed;            // Desired speed at waypoint
+public:
+    geocord geoCords;       // Geographic position
+    vector3 position;       // Local position
 
     float getspeed() const {
         return speed;
@@ -215,11 +243,11 @@ struct message {
 // Trajectory containing multiple waypoints
 
 struct Trajectory {
-    private:
-        waypoint waypoints[100]; // List of waypoints
-        int waypointCount;      // Active waypoint count
+private:
+    waypoint waypoints[100]; // List of waypoints
+    int waypointCount;      // Active waypoint count
 
-    public:
+public:
     void setWaypointCount(int count) {
         if(count >=0 && count <=100) {
             waypointCount = count;
@@ -247,37 +275,100 @@ struct Trajectory {
 
 // Physical and motion dynamics data
 struct dynamics {
-    private:
-    float maxSpeed;         // Maximum speed
-    float minSpeed;         // Minimum speed
-    float maxAcceleration; // Maximum acceleration
-    float minAcceleration; // Minimum acceleration
-    float maxDeceleration; // Maximum deceleration
-    float minDeceleration; // Minimum deceleration
-    float maxAltitude;      // Max operational altitude
-    float diveRate;         // Max dive rate
-    float climbRate;        // Max climb rate
-    float turnRate;         // Turn rate
-    float acceleration;     // Current accelerationoid
-    float speed;            // Current speed
-    float pitch = 0;        // Current pitch
-    float roll = 0;         // Current Roll
-    float yaw = 0;          // Current Yaw
-    float Rollrate = 0;     // Current PitchRate
-    float Pitchrate = 0;    // Current RollRate
-    float Yawrate = 0;      // Current YawRate
-    float DriftAngle = 0;   // Current DriftAngle
-    float TrueHeading = 0;  // Current TrueHeading
-    float TrueAirSpeed = 0; // Current TrueAirSpeed
-    float NorthVelocity = 0;// Current NorthVelocity
-    float EastVelocity = 0; // Current EastVelocity
-    float VerticalVelocity = 0;// Current VerticleVelocity
-    float GroundVelocity = 0;// Current GroundVelocity
+private:
+    float maxSpeed;         // Maximum speed km/h
+    float minSpeed;         // Minimum speed km/h
+    float maxAcceleration; // Maximum acceleration (m/s²)
+    float minAcceleration; // Minimum acceleration(m/s²)
+    float maxDeceleration; // Maximum deceleration(m/s²)
+    float minDeceleration; // Minimum deceleration(m/s²)
+    float maxAltitude;      // Max operational altitude ft
+    float diveRate;         // Max dive rate(ft/min)
+    float climbRate;        // Max climb rate(ft/min)
+
+    float currentSpeed; //km/h
+    float currentAcceralation;//(m/s²)
+    float currentHeightAboveGround;//km
+    float pitch;//deg
+    float roll;//deg
+    float yaw;//deg
+    float TrueHeading;//deg
+    float Pitchrate = 0;    // Current RollRate deg/s
+    float Rollrate = 0;     // Current PitchRate deg/s
+    float Yawrate = 0;      // Current YawRate deg/s
+    float currentTurnRate;         // Turn rate deg/s
+    float horizonPitchRate; //deg/s
+    float horizonRollRate; //deg/s
+    float angleOfAttack; //deg
+    float sideslipAngle; //deg
+    float flightPathAngle; //deg
+    float TrueAirSpeed; //km/h
+    float GroundVelocity;//m/s
+    float EastVelocity;//m/s
+    float VerticalVelocity;//m/s
+    float NorthVelocity;//m/s
+    float DriftAngle;//deg
+
+
+
+
     parameter customParams[20]; // Custom dynamics parameters
     int paramCount;          // Number of custom parameters
 
-    public:
-    vector3 velocity;
+public:
+    vector3 groundVelocity;//m/s
+    vector3 airVelocity;//m/s
+    vector3 bodyAirVelocity;//m/s
+    vector3 bodyGroundVelocity;//m/s
+    vector3 localVelocity;//m/s
+    vector3 acceleration;//(m/s²)
+    vector3 bodyAcceleration;//v
+    vector3 velocity;//km/h
+    vector3 angularVelocity;
+
+
+    void setCurrentHeightAboveGround(float v){
+        currentHeightAboveGround = v;
+    }
+    float getCurrentHeightAboveGround(){
+        return currentHeightAboveGround;
+    }
+
+    void setHorizonPitchRate(float v){
+        horizonPitchRate = v;
+    }
+    float getHorizonPitchRate(){
+        return horizonPitchRate;
+    }
+
+    void setHorizonRollRate(float v){
+        horizonRollRate = v;
+    }
+    float getHorizonRollRate(){
+        return horizonRollRate;
+    }
+
+    void setAngleOfAttack(float v){
+        angleOfAttack = v;
+    }
+    float getAngleOfAttack(){
+        return angleOfAttack;
+    }
+
+    void setSideslipAngle(float v){
+        sideslipAngle = v;
+    }
+    float getSideslipAngle(){
+        return sideslipAngle;
+    }
+
+    void setFlightPathAngle(float v){
+        flightPathAngle = v;
+    }
+    float getFlightPathAngle(){
+        return flightPathAngle;
+    }
+
     void setGroundVelocity(float v){
         GroundVelocity = v;
     }
@@ -361,7 +452,7 @@ struct dynamics {
     float getRoll(){
         return roll;
     }
-    
+
     void setPitch(float newpitch){
         pitch = newpitch;
     }
@@ -370,17 +461,17 @@ struct dynamics {
     }
 
     void setSpeed(float newSpeed) {
-        speed = newSpeed;
+        currentSpeed = newSpeed;
     }
     double getSpeed() const {
-        return speed;
+        return currentSpeed;
     }
 
     void setAcceleration(float newAcc) {
-        acceleration = newAcc;
+        currentAcceralation = newAcc;
     }
     double getAcceleration() const {
-        return acceleration;
+        return currentAcceralation;
     }
 
     void setMaxSpeed(float newMaxSpeed) {
@@ -388,7 +479,7 @@ struct dynamics {
     }
     double getMaxSpeed() const {
         return maxSpeed;
-    } 
+    }
 
     void setMinSpeed(float newMinSpeed) {
         minSpeed = newMinSpeed;
@@ -396,13 +487,13 @@ struct dynamics {
     double getMinSpeed()  {
         return minSpeed;
     }
-    
+
     void setMaxAcceleration(float newMaxAcc) {
         maxAcceleration = newMaxAcc;
     }
     double getMaxAcceleration() {
         return maxAcceleration;
-    }   
+    }
     void setMinAcceleration(float newMinAcc) {
         minAcceleration = newMinAcc;
     }
@@ -426,18 +517,18 @@ struct dynamics {
     }
     double getDiveRate() const {
         return  diveRate;
-    }   
+    }
     void setClimbRate(float newClimbRate) {
         climbRate = newClimbRate;
     }
     double getClimbRate() const {
         return climbRate;
-    }   
+    }
     void setTurnRate(float newTurnRate) {
-        turnRate = newTurnRate;
+        currentTurnRate = newTurnRate;
     }
     double getTurnRate() const {
-        return  turnRate;
+        return  currentTurnRate;
     }
 
     void setMaxAltitude(float newMaxAlt) {
@@ -477,7 +568,7 @@ struct dynamics {
             }
         }
     }
-    
+
     void removeCustomParameter(std::string name) {
         for(int i=0;i<20;i++) {
             char existingName[50];
@@ -506,7 +597,7 @@ struct dynamics {
             }
         }
     }
-    
+
     void listCustomParameterNames(std::string names[], int& outCount) const {
         outCount = 0;
         for(int i=0;i<20;i++) {
@@ -518,7 +609,7 @@ struct dynamics {
             }
         }
     }
-    
+
     void setParamCount(int count) {
         paramCount = count;
     }
@@ -567,17 +658,206 @@ struct sensor {
 };
 
 // Radio communication system
-struct radio {
+struct radioData {
     char radioID[30];       // Radio identifier
-    float frequency;        // Communication frequency
-    float channelBandwidth; // Channel bandwidth
-    float power;            // Transmission power
-    float range;            // Communication range
+    double distance_m = 0.0;
+    double radius_m = 0.0;
+    double azimuth_deg = 0.0;
+
+    double scanner_max_range_m = 0.0;
+    double scanner_frequency_hz = 0.0;
+
+    double path_loss_db = 0.0;
+    double rx_power_dbm = 0.0;
+    double noise_floor_dbm = 0.0;
+    double snr_db = 0.0;
+    double rain_attenuation_db = 0.0;
+    double wind_attenuation_db_per_km = 0.0;
+    double los_horizon_distance_m = 0.0;
+    double polarization_loss_db = 0.0;
+    double required_snr_threshold_db = 0.0;
+
+    bool network_match = false;
+    bool frequency_match = false;
+    bool range_ok = false;
+    bool beam_ok = false;
+    bool sensitivity_ok = false;
+    bool squelch_ok = false;
+    bool snr_ok = false;
+
+    // New: transmitter-only scan result can return a footprint record
+    bool is_footprint = false;
+    double heading_deg = 0.0;
+    double beamwidth_deg = 0.0;
 
     message messages[50];   // Message buffer
     int messageCount;       // Number of stored messages
+    void setRadioID(const char* value)
+    {
+        if (!value)
+        {
+            radioID[0] = '\0';
+            return;
+        }
 
-    parameter customParams[20]; // Custom radio parameters
+        std::strncpy(radioID, value, sizeof(radioID) - 1);
+        radioID[sizeof(radioID) - 1] = '\0';
+    }
+    // parameter customParams[20]; // Custom radio parameters
+};
+
+// AIS Data Structure
+struct aisData{
+    // --- Static Information (Every 6 mins) ---
+    uint32_t mmsi;                // Unique ID
+    uint32_t imo_number;          // Official IMO ID
+    char name[21];                // Vessel Name (Max 20 chars)
+    char call_sign[8];            // Radio Call Sign
+    char destination[21];         // Destination (Max 20 chars)
+
+    struct Dimensions {
+        uint16_t length;          // Meters
+        uint16_t beam;            // Width in meters
+        float draught;            // Current depth in water
+    } dims;
+
+    ShipType ship_type;
+
+    // --- Dynamic Information (Every 2-10 seconds) ---
+    struct Position {
+        double latitude;          // Decimal degrees
+        double longitude;         // Decimal degrees
+        uint32_t timestamp;       // UTC Unix Timestamp
+    } pos;
+
+    float sog;                    // Speed Over Ground (Knots)
+    float cog;                    // Course Over Ground (Degrees)
+    uint16_t heading;             // True Heading (0-359)
+    int8_t rot;                   // Rate of Turn (deg/min)
+
+    NavStatus nav_status;
+
+    // --- Voyage Related ---
+    struct ETA {
+        uint8_t month;
+        uint8_t day;
+        uint8_t hour;
+        uint8_t minute;
+    } eta;
+
+    // --- Metadata / System Level ---
+    uint8_t repeat_indicator;     // AIS Message repeat count
+    uint8_t ais_channel;          // 0 for A, 1 for B
+    bool is_verified;
+
+    void setName(const char* nm) {
+        strncpy(name, nm, sizeof(name) - 1);
+        name[sizeof(name) - 1] = '\0'; // Null-terminate to avoid overflow
+    }
+
+    void setCallSign(const char* value) {
+        std::strncpy(call_sign, value, sizeof(call_sign) - 1);
+        call_sign[sizeof(call_sign) - 1] = '\0';
+    }
+
+    void setDestination(const char* value) {
+        std::strncpy(destination, value, sizeof(destination) - 1);
+        destination[sizeof(destination) - 1] = '\0';
+    }
+};
+
+// ADSB Data Structure
+struct adsbData {
+
+    char messageType[16]{};
+    char transmissiontype[16]{};
+    char session_id[32]{};
+    char aircraft_id[32]{};
+    char hex_ident[16]{};
+    char fligh_Id[32]{};
+
+    char generated_date[16]{};
+    char generated_time[16]{};
+    char logged_date[16]{};
+    char logged_time[16]{};
+
+    char call_sign[32]{};
+
+    int32_t altitude = 0;
+    int32_t ground_speed = 0;
+    int32_t track = 0;
+
+    float lat = 0.0f;
+    float lon = 0.0f;
+
+    int32_t climb_rate = 0;
+
+    char squawk[8]{};
+
+    bool alert = false;
+    bool emergency = false;
+    bool spi = false;
+    bool is_on_ground = false;
+
+    void setMessageType(const char* value) {
+        std::strncpy(messageType, value, sizeof(messageType) - 1);
+        messageType[sizeof(messageType) - 1] = '\0';
+    }
+
+    void setTransmissionType(const char* value) {
+        std::strncpy(transmissiontype, value, sizeof(transmissiontype) - 1);
+        transmissiontype[sizeof(transmissiontype) - 1] = '\0';
+    }
+
+    void setSessionId(const char* value) {
+        std::strncpy(session_id, value, sizeof(session_id) - 1);
+        session_id[sizeof(session_id) - 1] = '\0';
+    }
+
+    void setAircraftId(const char* value) {
+        std::strncpy(aircraft_id, value, sizeof(aircraft_id) - 1);
+        aircraft_id[sizeof(aircraft_id) - 1] = '\0';
+    }
+
+    void setHexIdent(const char* value) {
+        std::strncpy(hex_ident, value, sizeof(hex_ident) - 1);
+        hex_ident[sizeof(hex_ident) - 1] = '\0';
+    }
+
+    void setFlightId(const char* value) {
+        std::strncpy(fligh_Id, value, sizeof(fligh_Id) - 1);
+        fligh_Id[sizeof(fligh_Id) - 1] = '\0';
+    }
+
+    void setGeneratedDate(const char* value) {
+        std::strncpy(generated_date, value, sizeof(generated_date) - 1);
+        generated_date[sizeof(generated_date) - 1] = '\0';
+    }
+
+    void setGeneratedTime(const char* value) {
+        std::strncpy(generated_time, value, sizeof(generated_time) - 1);
+        generated_time[sizeof(generated_time) - 1] = '\0';
+    }
+
+    void setLoggedDate(const char* value) {
+        std::strncpy(logged_date, value, sizeof(logged_date) - 1);
+        logged_date[sizeof(logged_date) - 1] = '\0';
+    }
+
+    void setLoggedTime(const char* value) {
+        std::strncpy(logged_time, value, sizeof(logged_time) - 1);
+        logged_time[sizeof(logged_time) - 1] = '\0';
+    }
+
+    void setCallSign(const char* value) {
+        std::strncpy(call_sign, value, sizeof(call_sign) - 1);
+        call_sign[sizeof(call_sign) - 1] = '\0';
+    }
+
+    void setSquawk(const char* value) {
+        std::strncpy(squawk, value, sizeof(squawk) - 1);
+        squawk[sizeof(squawk) - 1] = '\0';
+    }
 };
 
 // Identification Friend or Foe (IFF) system
@@ -614,24 +894,28 @@ struct crossSection {
 
 // Main entity structure
 struct Entity {
-    private:
-        char ID[30];                    // Unique entity ID
-        char name[50];                  // Entity name
-    public:
-        transform transformData;        // Transform data
-        collider colliderData;          // Collision data
-        dynamics dynamicsData;          // Motion dynamics
-        crossSection crossSectionData;  // Physical dimensions
-        Trajectory trajectoryData;      // Movement trajectory
-        bitmap entityBitmap;            // Visual/bitmap data
+private:
+    char ID[30];                    // Unique entity ID
+    char name[50];                  // Entity name
+public:
+    transform transformData;        // Transform data
+    collider colliderData;          // Collision data
+    dynamics dynamicsData;          // Motion dynamics
+    crossSection crossSectionData;  // Physical dimensions
+    Trajectory trajectoryData;      // Movement trajectory
+    bitmap entityBitmap;            // Visual/bitmap data
 
-        sensor sensors[5];              // Sensors attached
-        radio radios[5];                // Radios attached
-        iff iffs[5];                    // IFF systems attached
+    //sensor sensors[5];              // Sensors attached
+    radioData radios[100];          // Radios attached
+    aisData ais[100];
+    adsbData adsb[100];
+    iff iffs[5];                    // IFF systems attached
 
-        int iffCount;                   // Active IFF count
-        int sensorCount;                // Active sensor count
-        int radioCount;                 // Active radio count
+    int iffCount;                   // Active IFF count
+    int sensorCount;                // Active sensor count
+    int radioCount;                 // Active radio count
+    int aisCount;
+    int adsbCount;
 
     void setID(const char* newID) {
         strncpy(ID, newID, sizeof(ID) - 1);

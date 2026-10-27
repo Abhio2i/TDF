@@ -1,60 +1,96 @@
 #include "iffprofile.h"
 #include "core/GlobalRegistry.h"
+#include "core/Hierarchy/EntityProfiles/IFFs/customiff.h"
 #include "core/Hierarchy/hierarchy.h"
 
-IFFProfile::IFFProfile(Hierarchy* h):Component(h) {
+IFFProfile::IFFProfile():Component() {
     Active = true;
-    iffs =  new std::unordered_map<std::string, IFF*>();
+    // iffs =  new std::unordered_map<std::string, IFF*>();
 }
 
 IFFProfile::~IFFProfile(){
-    while (!iffs->empty()) {
-        removeSubComponent(iffs->begin()->second->ID);
+    while (!iffs.empty()) {
+        removeSubComponent(iffs.begin()->second->ID);
     }
-    delete iffs;
-    iffs = nullptr;
+    // delete iffs;
+    // iffs = nullptr;
 }
-
+void IFFProfile::init(Entity *Entity){
+    parentEntity = Entity;
+}
+void IFFProfile::Awake(){}
+void IFFProfile::Start(){}
 void IFFProfile::addSubComponent(std::string name, QString data1, QString data2, QJsonObject data3){
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-    IFF* iff = new IFF(parent);
-    if(!data2.isEmpty()){
-        std::string id = iff->ID;
-        iff->fromJson(data3);
-        iff->ID = id;
-        iff->parentID = parentID;
-    }
-    iff->parentEntity = parentEntity;
-    iff->Name = name;
-    iffs->insert({iff->ID,iff});
-    parent->Iffs.insert({iff->ID,iff});
-    emit parent->subComponentAdded(QString::fromStdString(ID),QString::fromStdString(iff->ID),QString::fromStdString(name));
+    // Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    if(!parentEntity->root)return;
+    if(data1 == "IFF"||data1.isLower()){
+        IFF* iff = new IFF(parentEntity->root);
+        if(!data2.isEmpty()){
+            std::string id = iff->ID;
+            iff->fromJson(data3);
+            iff->ID = id;
+            iff->parentID = parentID;
+        }
+        iff->parentEntity = parentEntity;
+        iff->Name = name;
+        iffs.insert({iff->ID,iff});
+        parentEntity->root->Iffs.insert({iff->ID,iff});
+        emit parentEntity->root->subComponentAdded(QString::fromStdString(ID),QString::fromStdString(iff->ID),QString::fromStdString(name));
+    }else{
+        CustomIFFInterface* ciff = nullptr;
+        if(parentEntity&&parentEntity->root){
+            std::string iD = Uuid::generateShortUniqueID();
+            emit parentEntity->root->getCustomIFF(QString::fromStdString(parentEntity->ID),parentEntity->ecsID,QString::fromStdString(iD),ciff);
+            if(ciff){
+                CustomIFF* iff = new CustomIFF(parentEntity->root);
+                iff->ID = iD;
+                iff->parentEntity = parentEntity;
+                iff->iff = ciff;
+                iff->type = data1;
+                iff->Name = name;
+                iffs.insert({iff->ID, iff});
+                parentEntity->root->Iffs.insert({iff->ID,iff});
+                emit parentEntity->root->subComponentAdded(
+                    QString::fromStdString(ID),
+                    QString::fromStdString(iff->ID),
+                    QString::fromStdString(name));
+                emit parentEntity->root->sensorAdded(QString::fromStdString(parentID), QString::fromStdString(iff->ID));
+                ciff->registerDestroyCallback([this,iD,iff](){
+                    if(iff){
+                        iff->iff = nullptr;
+                    }
+                    this->removeSubComponent(iD);
+                });
 
+            }
+        }
+
+    }
 }
 
 void IFFProfile::removeSubComponent(std::string ID){
-    Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
-    auto it = iffs->find(ID);
-    if (it != iffs->end() && it->second != nullptr) {
+    // Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    auto it = iffs.find(ID);
+    if (it != iffs.end() && it->second != nullptr) {
         IFF *iff = it->second;
-        emit parent->subComponentRemoved(QString::fromStdString(this->ID),QString::fromStdString(ID),QString::fromStdString(iff->Name));
-        iffs->erase(iff->ID);
-        parent->Iffs.erase(iff->ID);
+        emit parentEntity->root->subComponentRemoved(QString::fromStdString(this->ID),QString::fromStdString(ID),QString::fromStdString(iff->Name));
+        iffs.erase(iff->ID);
+        parentEntity->root->Iffs.erase(iff->ID);
         delete iff;
     }
 }
 
 void IFFProfile::updateSubComponent(std::string ID, const QJsonObject& obj){
-    auto it = iffs->find(ID);
-    if (it != iffs->end() && it->second != nullptr) {
+    auto it = iffs.find(ID);
+    if (it != iffs.end() && it->second != nullptr) {
         it->second->fromJson(obj);
     }
 
 }
 
 QJsonObject IFFProfile::getsubComponentData(std::string ID) const{
-    auto it = iffs->find(ID);
-    if (it != iffs->end() && it->second != nullptr) {
+    auto it = iffs.find(ID);
+    if (it != iffs.end() && it->second != nullptr) {
         return it->second->toJson();
     }
     return QJsonObject(); // Return empty object if not found
@@ -66,7 +102,7 @@ QJsonObject IFFProfile::toJson() const {
     obj["active"] = Active;
 
     QJsonObject iffObj;
-    for (const auto& [key, iffPtr] : *iffs) {
+    for (const auto& [key, iffPtr] : iffs) {
         if (iffPtr) {
             iffObj[QString::fromStdString(key)] = iffPtr->toJson();
         }
@@ -89,32 +125,34 @@ void IFFProfile::fromJson(const QJsonObject& obj) {
 
     if (obj.contains("iffs") && obj["iffs"].isObject()) {
         QJsonObject iffsObj = obj["iffs"].toObject();
+        // Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
         for (const QString& key : iffsObj.keys()) {
+            if(!parentEntity->root)break;
             QJsonObject iffObj = iffsObj[key].toObject();
-            Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
             std::string id = iffObj["id"].toString().toStdString();
 
             IFF *iff;
-            bool is = iffs->count(id);
+            bool is = iffs.count(id);
             if ( is > 0) {
-                iff = (*iffs)[id];   // OR iffs->at(id)
+                iff = (iffs)[id];   // OR iffs->at(id)
 
             } else {
-                iff = new IFF(parent);
+                iff = new IFF(parentEntity->root);
             }
             iff->parentEntity = parentEntity;
             iff->Name = iffObj["name"].toString().toStdString();
-            iff->ID = iffObj["id"].toString().toStdString();
+            std::string newId = iff->ID;
+            //iff->ID = iffObj["id"].toString().toStdString();
             iff->fromJson(iffObj);
+            iff->ID = newId;
             if (!is) {
-                iffs->insert({iff->ID,iff});
-                parent->Iffs.insert({iff->ID,iff});
-                emit parent->subComponentAdded(QString::fromStdString(ID),QString::fromStdString(iff->ID),QString::fromStdString(iff->Name));
+                iffs.insert({iff->ID,iff});
+                parentEntity->root->Iffs.insert({iff->ID,iff});
+                emit parentEntity->root->subComponentAdded(QString::fromStdString(ID),QString::fromStdString(iff->ID),QString::fromStdString(iff->Name));
 
             }
         }
     }
-
     if(obj.contains("AdditionalParameters")){
         AdditionalParameters = obj["AdditionalParameters"].toObject();
     }
@@ -123,11 +161,11 @@ void IFFProfile::fromJson(const QJsonObject& obj) {
     //Console::log("Collider::fromJson customParameters: " + QString(QJsonDocument(customParameters).toJson()).toStdString());
 }
 void IFFProfile::renameSubComponent(std::string id, QString newName) {
-    auto it = iffs->find(id);
-    if (it != iffs->end() && it->second != nullptr) {
-        Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
+    auto it = iffs.find(id);
+    if (it != iffs.end() && it->second != nullptr) {
+        // Hierarchy* parent = GlobalRegistry::getParentHierarchy(this);
         it->second->Name = newName.toStdString();
-        emit parent->subComponentRenamed(
+        emit parentEntity->root->subComponentRenamed(
             QString::fromStdString(ID),
             QString::fromStdString(id),
             newName);

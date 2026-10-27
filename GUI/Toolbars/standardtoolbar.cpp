@@ -64,23 +64,16 @@ void StandardToolBar::createActions()
     addTrajectoryAction = new QAction(QIcon(withWhiteBg(":/icons/images/trajectory.png")), tr("Add Trajectory"), this);
     addTrajectoryAction->setEnabled(false);
     if (addTrajectoryAction->icon().isNull()) {
-        Console::error("Failed to load trajectory icon from :/icons/images/trajectory.png");
     } else {
     }
-
     testScriptAction = new QAction(QIcon(withWhiteBg(":/icons/images/test.png")), tr("Test Script"), this);
     testScriptAction->setEnabled(true);
-
-
     if (testScriptAction->icon().isNull()) {
-
     } else {
-
     }
 }
 void StandardToolBar::onTestScriptTriggered()
 {
-
     TestScriptDialog *window = new TestScriptDialog(this);
     connect(window, &TestScriptDialog::closed, this, [=]() {
         window->deleteLater();
@@ -91,24 +84,21 @@ QPixmap StandardToolBar::withWhiteBg(const QString &iconPath)
 {
     QPixmap pixmap(iconPath);
     if (pixmap.isNull()) {
-        Console::error("Failed to load pixmap from: " + iconPath.toStdString());
+        // Console::error("Failed to load pixmap from: " + iconPath.toStdString());
         return QPixmap();
     }
-
     QPixmap newPixmap(pixmap.size());
     if (newPixmap.isNull()) {
-        Console::error("Failed to create new pixmap for: " + iconPath.toStdString());
+        // Console::error("Failed to create new pixmap for: " + iconPath.toStdString());
         return QPixmap();
     }
     newPixmap.fill(Qt::gray);
-
     QPainter painter(&newPixmap);
     if (!painter.isActive()) {
-        Console::error("Failed to initialize QPainter for: " + iconPath.toStdString());
+        // Console::error("Failed to initialize QPainter for: " + iconPath.toStdString());
         return newPixmap;
     }
     painter.drawPixmap(0, 0, pixmap);
     painter.end();
-
     return newPixmap;
 }

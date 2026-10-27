@@ -587,9 +587,16 @@ void RadarTracker_AESA::performKalmanUpdate(
     // vz independently clamped to ±VZ_CLAMP (200 m/s) to reflect
     // physical limits on vertical acceleration. REQ-AESA-023.
     // -------------------------------------------------------------------------
-    for (int a = 3; a < 5; ++a)
-        tr.X[a] = std::clamp(tr.X[a], -cfg.maxTrackSpeed, cfg.maxTrackSpeed);
-    tr.X[5] = std::clamp(tr.X[5], -VZ_CLAMP, VZ_CLAMP);
+    // Clamp the target's ABSOLUTE velocity (state is own-relative). Write back
+    // only when the limit is active, so unclamped states are untouched.
+    // REQ-AESA-023.
+    for (int a = 3; a < 6; ++a)
+    {
+        const double lim  = (a < 5) ? cfg.maxTrackSpeed : VZ_CLAMP;
+        const double vAbs = tr.X[a] + ownV_[a - 3];
+        const double vClp = std::clamp(vAbs, -lim, lim);
+        if (vClp != vAbs) tr.X[a] = vClp - ownV_[a - 3];
+    }
 
     // Synchronise scalar position and velocity fields from updated X.
     tr.x = tr.X[0]; tr.y = tr.X[1]; tr.z = tr.X[2];
@@ -1035,9 +1042,15 @@ void RadarTracker_AESA::performJPDAUpdate(
         // -----------------------------------------------------------------
         // Stage 5: Velocity clamping and scalar sync. REQ-AESA-023.
         // -----------------------------------------------------------------
-        for (int a = 3; a < 5; ++a)
-            tr.X[a] = std::clamp(tr.X[a], -cfg.maxTrackSpeed, cfg.maxTrackSpeed);
-        tr.X[5] = std::clamp(tr.X[5], -VZ_CLAMP, VZ_CLAMP);
+        // Clamp the target's ABSOLUTE velocity (state is own-relative).
+        // Write back only when the limit is active. REQ-AESA-023.
+        for (int a = 3; a < 6; ++a)
+        {
+            const double lim  = (a < 5) ? cfg.maxTrackSpeed : VZ_CLAMP;
+            const double vAbs = tr.X[a] + ownV_[a - 3];
+            const double vClp = std::clamp(vAbs, -lim, lim);
+            if (vClp != vAbs) tr.X[a] = vClp - ownV_[a - 3];
+        }
 
         tr.x = tr.X[0]; tr.y = tr.X[1]; tr.z = tr.X[2];
         tr.vx = tr.X[3]; tr.vy = tr.X[4]; tr.vz = tr.X[5];
@@ -1102,9 +1115,11 @@ void RadarTracker_AESA::createNewTrack(
     tr.y = r * std::cos(el) * std::sin(az);
     tr.z = r * std::sin(el);
 
-    // Seed velocity from ground-truth target input (simulation environment).
-    // REQ-AESA-020.
-    tr.vx = target.vx; tr.vy = target.vy; tr.vz = target.vz;
+    // Seed velocity from ground-truth target input (simulation environment),
+    // converted to own-relative velocity (state is radar-centred). REQ-AESA-020.
+    tr.vx = target.vx - ownV_[0];
+    tr.vy = target.vy - ownV_[1];
+    tr.vz = target.vz - ownV_[2];
     tr.X  = { tr.x, tr.y, tr.z, tr.vx, tr.vy, tr.vz };
 
     // Initial position covariance — floored at INIT_POS_VAR_FLOOR to avoid
@@ -1164,8 +1179,12 @@ void RadarTracker_AESA::injectExternalTrack(const TrackOutput& ext,
 
     TrackFile tr;
     tr.id = ext.id;
+    // ext position: radar-centred stabilised; ext velocity: absolute.
+    // Stored as own-relative velocity. REQ-AESA-027.
     tr.x  = ext.x;  tr.y  = ext.y;  tr.z  = ext.z;
-    tr.vx = ext.vx; tr.vy = ext.vy; tr.vz = ext.vz;
+    tr.vx = ext.vx - ownV_[0];
+    tr.vy = ext.vy - ownV_[1];
+    tr.vz = ext.vz - ownV_[2];
     tr.X  = { tr.x, tr.y, tr.z, tr.vx, tr.vy, tr.vz };
 
     // External tracks are immediately validated with sufficient hit count to
@@ -1253,12 +1272,13 @@ void RadarTracker_AESA::applyScanMissLogic(double simTime, const RadarConfig& cf
 //
 // REQUIREMENT: REQ-AESA-026
 // -----------------------------------------------------------------------------
-static void fillCommon(TrackOutput& o, const TrackFile& t)
+static void fillCommon(TrackOutput& o, const TrackFile& t, const double ownV[3])
 {
     // Copy identity and state vector fields. REQ-AESA-026.
     o.id = t.id;
     o.x  = t.x;  o.y  = t.y;  o.z  = t.z;
-    o.vx = t.vx; o.vy = t.vy; o.vz = t.vz;
+    // Report absolute target velocity (state is own-relative). REQ-AESA-026.
+    o.vx = t.vx + ownV[0]; o.vy = t.vy + ownV[1]; o.vz = t.vz + ownV[2];
     o.radialVelocity = t.velocity;
     o.isValidated    = t.isValidated;
     o.hitCount       = t.hitCount;
@@ -1283,8 +1303,9 @@ static void fillCommon(TrackOutput& o, const TrackFile& t)
     }
 
     // Speed over ground (horizontal magnitude) and heading. REQ-AESA-026.
-    o.speedOverGround = std::sqrt(t.vx*t.vx + t.vy*t.vy);
-    o.heading         = std::atan2(t.vy, t.vx) * (180.0 / M_PI);
+    // From absolute velocity: true speed over ground and compass heading.
+    o.speedOverGround = std::sqrt(o.vx*o.vx + o.vy*o.vy);
+    o.heading         = std::atan2(o.vy, o.vx) * (180.0 / M_PI);
     if (o.heading < 0.0) o.heading += 360.0;
 
     // Target aspect angle — angle between heading and bearing to sensor.
@@ -1325,7 +1346,7 @@ static void fillCommon(TrackOutput& o, const TrackFile& t)
 TrackOutput RadarTracker_AESA::buildTrackOutput(const TrackFile& t) const
 {
     TrackOutput o;
-    fillCommon(o, t);
+    fillCommon(o, t, ownV_);
     return o;
 }
 
@@ -1350,8 +1371,11 @@ DetectionOutput RadarTracker_AESA::buildTWSDetection(const TrackFile& t) const
         d.elevation = std::asin(std::clamp(t.z / rr, -1.0, 1.0)) * (180.0 / M_PI);
     }
 
-    d.speedOverGround = std::sqrt(t.vx*t.vx + t.vy*t.vy);
-    d.heading         = std::atan2(t.vy, t.vx) * (180.0 / M_PI);
+    // From absolute velocity (state is own-relative). REQ-AESA-026.
+    const double ax = t.vx + ownV_[0];
+    const double ay = t.vy + ownV_[1];
+    d.speedOverGround = std::sqrt(ax*ax + ay*ay);
+    d.heading         = std::atan2(ay, ax) * (180.0 / M_PI);
     if (d.heading < 0.0) d.heading += 360.0;
 
     d.isDRFMGhost = t.isDRFMSuspect;

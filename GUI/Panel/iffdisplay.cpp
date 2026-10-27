@@ -101,7 +101,6 @@ void IFFDisplay::mouseMoveEvent(QMouseEvent *event)
     int i=0;
     for (const IFF::IFFTarget &t : iff->targets) {
 
-
         double per = t.radius / range;
         if (per < 0.0) per = 0.0;
         if (per > 1.0) per = 1.0;
@@ -155,20 +154,20 @@ void IFFDisplay::selectEntity(Entity* entit)
     // Select first valid IFF
     iff = nullptr;
     ifflist.clear();
-    if (!entity->iffs || !entity->iffs->iffs) {
-        update();
-        return;
-    }
-    for (auto const& pair :  *entity->iffs->iffs) {
+    // if (/*!entity->iffs ||*/ !entity->iffs.iffs) {
+    //     update();
+    //     return;
+    // }
+    for (auto const& pair :  entity->iffs.iffs) {
         IFF* i = pair.second;
-        if (i) {
-            if(iff==nullptr){
-                iff = i;
-            }
-            ifflist.append(i);
-            setWindowTitle("IFF Display (" + QString::fromStdString(entity->Name) + ")");
 
+        if(iff==nullptr){
+                iff = i;
         }
+        ifflist.append(i);
+        setWindowTitle("IFF Display (" + QString::fromStdString(entity->Name) + ")");
+
+
     }
     if (!iff) {
     }
@@ -183,23 +182,37 @@ void IFFDisplay::RemoveEntity(QString ID)
     if (id == ID) {
         entity = nullptr;
         iff = nullptr;
-        ifflist.clear();
-        setWindowTitle("IFF Display");
-        // Reset hover state
-        hoveredTargetIndex = -1;
-        if (iffDropdown) iffDropdown->hide();
 
+
+        ifflist.clear();
+        if (iffDropdown) {
+            QSignalBlocker blocker(iffDropdown);
+            iffDropdown->clear();
+            iffDropdown->hide();
+        }
+
+        id.clear();
+        setWindowTitle("IFF Display");
+        hoveredTargetIndex = -1;
+
+        update();
     }
 }
 
 void IFFDisplay::updateRadar()
 {
     if (entity && iff) {
+        bool stillValid = false;
+        for (auto const& pair : entity->iffs.iffs) {
+            if (pair.second == iff) { stillValid = true; break; }
+        }
+        if (!stillValid) iff = nullptr;
+    }
+
+    if (entity && iff) {
         setRange(iff->emittingRange * 1.0f);
-        // targets = iff->targets;
         update();
     } else {
-
         targets.clear();
         hoveredTargetIndex = -1;
     }
@@ -209,8 +222,19 @@ void IFFDisplay::paintEvent(QPaintEvent * /*event*/)
 {
     if (width() <= 0 || height() <= 0) return;
 
-    QPainter p(this);
 
+    if (entity && iff) {
+        bool stillValid = false;
+        for (auto const& pair : entity->iffs.iffs) {
+            if (pair.second == iff) { stillValid = true; break; }
+        }
+        if (!stillValid) {
+            iff = nullptr;
+            hoveredTargetIndex = -1;
+        }
+    }
+
+    QPainter p(this);
 
     drawBackground(p);
 
@@ -227,7 +251,6 @@ void IFFDisplay::paintEvent(QPaintEvent * /*event*/)
     drawTopMarker(p, center, outerRadius);
 
     if(!iff)return;
-    // Draw targets with hover functionality
     if (!iff->targets.isEmpty()) {
         int i=0;
         for (const IFF::IFFTarget &t : iff->targets) {
@@ -242,19 +265,15 @@ void IFFDisplay::paintEvent(QPaintEvent * /*event*/)
             int tx = center.x() + int(r * cos(theta));
             int ty = center.y() + int(r * sin(theta));
 
-            // Draw dotted line from center to target
             p.setPen(QPen(Qt::yellow, 1, Qt::DotLine));
             p.drawLine(center, QPoint(tx, ty));
 
-            // Draw target dot with color based on friend/foe status
             if (i == hoveredTargetIndex) {
-                // Highlight hovered target
                 p.setPen(QPen(Qt::white, 2));
                 p.setBrush(Qt::white);
                 p.drawEllipse(QPointF(tx, ty), 6, 6);
             }
 
-            // Draw colored dot (non-transparent)
             if (t.status == 1 || t.ally) {
                 // Friend/ally - solid green
                 p.setBrush(Qt::blue);
@@ -267,7 +286,16 @@ void IFFDisplay::paintEvent(QPaintEvent * /*event*/)
 
             p.drawEllipse(QPointF(tx, ty), 4, 4);
 
-
+            if (!t.code.empty()) {
+                p.save();
+                QFont codeFont = p.font();
+                codeFont.setPointSize(8);
+                codeFont.setBold(false);
+                p.setFont(codeFont);
+                p.setPen(QPen(Qt::white, 1));
+                p.drawText(tx + 7, ty - 6, QString::fromStdString(t.code));
+                p.restore();
+            }
             if (i == hoveredTargetIndex) {
                 p.setPen(QPen(Qt::cyan, 1));
                 QFont font = p.font();
@@ -384,7 +412,7 @@ void IFFDisplay::drawTargetAndPath(QPainter &painter)
     int outerRadius = outerDiameter / 2;
 
     if (entity && iff) {
-        ang = entity->transform->toEulerAngles().y();
+        ang = entity->transform.toEulerAngles().y();
     }
 }
 
@@ -559,7 +587,11 @@ void IFFDisplay::updateDropdown()
 void IFFDisplay::onIFFSelected(int index)
 {
     if (index < 0 || index >= ifflist.size()) return;
-    iff = ifflist[index];
+
+    IFF* f = ifflist[index];
+    if (!f) return;
+
+    iff = f;
     hoveredTargetIndex = -1;
     if (iff)
         setRange(iff->emittingRange * 1.0f);

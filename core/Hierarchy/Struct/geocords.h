@@ -61,7 +61,7 @@ public:
     double distance(Geocords *cordinate1, Geocords *cordinate2); //!< Distance between two geocoords
 
     // Serialization
-    QJsonObject toJson();                       //!< Serialises geocoords to JSON
+    QJsonObject toJson()const;                       //!< Serialises geocoords to JSON
     void fromJson(const QJsonObject &obj);      //!< Deserialises geocoords from JSON
 };
 

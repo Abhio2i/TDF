@@ -643,6 +643,14 @@ public:
     // =========================================================================
     void performIMMPredict(TrackFile& tr, double dt) const noexcept;
 
+    // Own-platform velocity in the stabilised frame (m/s). The track state is
+    // radar-centred, so state velocity is relative to own platform. Set by the
+    // model each tick. REQ-AESA-020.
+    void setOwnVelocity(double vx, double vy, double vz)
+    {
+        ownV_[0] = vx; ownV_[1] = vy; ownV_[2] = vz;
+    }
+
     // =========================================================================
     // ACCESSORS — direct access to internal track database
     //
@@ -672,6 +680,9 @@ private:
     // when capacity is exceeded. Reserved to 2048 on clear().
     // REQ-AESA-020.
     std::vector<TrackFile> db_;
+
+    // Own-platform velocity (stabilised frame, m/s). REQ-AESA-020.
+    double ownV_[3] = { 0.0, 0.0, 0.0 };
 
     // =========================================================================
     // PRIVATE HELPER FUNCTIONS
